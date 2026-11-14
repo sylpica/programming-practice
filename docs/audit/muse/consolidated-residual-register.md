@@ -1,9 +1,9 @@
 # プログラミング練習 残件統合台帳（引継ぎ用）
 
 - 作成：2026-11-15、Muse 側。対象リビジョンは `0ee8c7a` 固定（公開サイトと同一）。
-- 目的：Codex 側は第3ラウンドで終了し、再開はユーザーがハルモニア2美術完了後に判断する。再開時に全残件を一括で渡せるよう、第1〜14ラウンド系の全残件を根本原因ごとに統合した台帳。再開までは全件「記録のみ」で、コード修正・push・Codex 連絡はしない。
-- 材料：findings-round1-local.md／findings-round1-blind-fuzz.md／findings-round1-angleA.md／findings-round1-angleEF-ext.md、integration-round1-draft.md、findings-round2-verification.md、findings-round3-verification.md、findings-round4-solo.md 〜 findings-round14-solo.md、findings-round14b-saturation.md、findings-round14c-ui-pwa.md、repo/docs/audit/REQUIREMENTS.md（Codex 要件対応表）。
-- 表記：統合ID は RG-01〜RG-41。重大度は統合元の最大値。再現手順は各統合元の出典ファイルの当該項目に記載されているため、本表では出典（ファイル名＋項目ID）を参照として示す。
+- 目的：Codex 側は第3ラウンドで終了し、再開はユーザーがハルモニア2美術完了後に判断する。再開時に全残件を一括で渡せるよう、第1〜15ラウンドの全残件を根本原因ごとに統合した台帳。再開までは全件「記録のみ」で、コード修正・push・Codex 連絡はしない。
+- 材料：findings-round1-local.md／findings-round1-blind-fuzz.md／findings-round1-angleA.md／findings-round1-angleEF-ext.md、integration-round1-draft.md、findings-round2-verification.md、findings-round3-verification.md、findings-round4-solo.md 〜 findings-round14-solo.md、findings-round14b-saturation.md、findings-round14c-ui-pwa.md、findings-round15-solo.md、repo/docs/audit/REQUIREMENTS.md（Codex 要件対応表）。
+- 表記：統合ID は RG-01〜RG-48。重大度は統合元の最大値。再現手順は各統合元の出典ファイルの当該項目に記載されているため、本表では出典（ファイル名＋項目ID）を参照として示す。
 
 ## 第1〜3ラウンド由来の残件の確定
 
@@ -41,12 +41,12 @@
 - 受け入れ条件：`NULL + 1`、`NULL == NULL`、`length(NULL + 1)`、`is.na(NULL)` が実 R と一致すること。NA の伝播や `c(1, NULL)` の既存の正挙動に回帰がないこと。
 
 ### RG-04 値表示の言語別書式の欠落（共有 formatValue が JS 記法のまま）
-- 根本原因：共有の値整形（formatValue／display）が JavaScript の文字列表現をそのまま使い、各言語の正規表記（真偽値の大文字小文字、NULL／Inf の表記、浮動小数の既定桁数、配列・レコードの表記、文字列の引用符）に追従しない。trace・出力・最終状態で食い違いや実在しない表示形式を生む。
+- 根本原因：共有の値整形（formatValue／display）が JavaScript の文字列表現をそのまま使い、各言語の正規表記（真偽値の大文字小文字、NULL／Inf の表記、浮動小数の既定桁数と負のゼロの符号、配列・レコードの表記、文字列の引用符）に追従しない。trace・出力・最終状態で食い違いや実在しない表示形式を生む。
 - 重大度：P3
-- 統合元：R4-N3（findings-round4-solo.md、R trace 代入ナレーションの JS 配列記法）、R5-N4（findings-round5-solo.md、VBA Boolean の小文字表示と型名 boolean）、R5-N5（findings-round5-solo.md、Power Fx の Blank が「null」とナレーション）、R5-N6（findings-round5-solo.md、R の NULL が全表面で小文字 "null"）、R5-N7（findings-round5-solo.md、C# bool の trace・最終状態の小文字）、R6-N3（findings-round6-solo.md、C++／VBA／R の浮動小数桁数）、R6-N4（findings-round6-solo.md、C# 連結出力 "xtrue"。R5-N7 と同根の別表面）、R6-N5（findings-round6-solo.md、VBA 文字列出力の引用符）、R7-N7（findings-round7-solo.md、R の Inf が "Infinity"）、R7-N10（findings-round7-solo.md、C# double 書式。R6-N3 と同根の別表面）、R7-N11（findings-round7-solo.md、C# 配列の WriteLine が中身表示）、R8-N8（findings-round8-solo.md、R の空ベクトル表示 c()）、R14B-N3（findings-round14b-saturation.md、R の長さ1の演算結果だけが c(5) と表示され、同値のリテラル表示（5）と食い違う。内部のスカラー／ベクトル型区分が表示に漏れる）
-- 影響する種類・表面：VBA／R／C#／C++／Power Apps の trace・出力・最終状態の全表示面。
+- 統合元：R4-N3（findings-round4-solo.md、R trace 代入ナレーションの JS 配列記法）、R5-N4（findings-round5-solo.md、VBA Boolean の小文字表示と型名 boolean）、R5-N5（findings-round5-solo.md、Power Fx の Blank が「null」とナレーション）、R5-N6（findings-round5-solo.md、R の NULL が全表面で小文字 "null"）、R5-N7（findings-round5-solo.md、C# bool の trace・最終状態の小文字）、R6-N3（findings-round6-solo.md、C++／VBA／R の浮動小数桁数）、R6-N4（findings-round6-solo.md、C# 連結出力 "xtrue"。R5-N7 と同根の別表面）、R6-N5（findings-round6-solo.md、VBA 文字列出力の引用符）、R7-N7（findings-round7-solo.md、R の Inf が "Infinity"）、R7-N10（findings-round7-solo.md、C# double 書式。R6-N3 と同根の別表面）、R7-N11（findings-round7-solo.md、C# 配列の WriteLine が中身表示）、R8-N8（findings-round8-solo.md、R の空ベクトル表示 c()）、R14B-N3（findings-round14b-saturation.md、R の長さ1の演算結果だけが c(5) と表示され、同値のリテラル表示（5）と食い違う。内部のスカラー／ベクトル型区分が表示に漏れる）、R15-N13（findings-round15-solo.md、C／C++／C# で -0.0 の符号が printf %f／cout／WriteLine／最終状態の全表示面から落ちる。値の伝播自体は正しく、R6-N3（桁数）とは別の表面（符号））
+- 影響する種類・表面：VBA／R／C／C++／C#／Power Apps の trace・出力・最終状態の全表示面。
 - 修正方針：値整形を種類別に持ち、真偽・NULL 系・無限大・浮動小数の桁数・配列／ベクトル・文字列の表記を各言語の既定表示に合わせる。実在しない表示形式（c() 等）は作らない。
-- 受け入れ条件：各統合元の再現値について、trace・出力・最終状態の3表面すべてが実物の表記と一致すること（同一画面内の矛盾がないこと）。
+- 受け入れ条件：各統合元の再現値について、trace・出力・最終状態の3表面すべてが実物の表記と一致すること（同一画面内の矛盾がないこと）。-0.0 は符号つきで表示されること（例：printf %f で "-0.000000"）。
 
 ### RG-05 C# の型意味論の欠落（char・型混在・暗黙縮小）
 - 根本原因：C# エンジンの型規則が不完全で、char を文字列のように扱い、型混在の比較・連結や暗黙の縮小変換を、実 C# の型検査なしに処理する（無言の受理・誤値・虚偽の停止が混在）。
@@ -57,20 +57,20 @@
 - 受け入れ条件：統合元の全再現が実 C#（CI の実コンパイラ確認を含む）と一致すること。C／C++ 側の合法な同形コード（char 算術・切り捨て）に回帰がないこと。
 
 ### RG-06 パーサの構文認識不足による虚偽・汎用・トークン名指しの原因表示（C系中心）
-- 根本原因：パーサに構文の処理自体が存在しない場合に、「未対応」の宣言ではなく、解析位置の無関係なトークン（本体先頭、型名、変数名、区切り記号）を名指すか、汎用の解釈エラーで停止する。宣言（DEVELOPMENT.md の対応・未対応リスト）にも記載がないものが多い。
+- 根本原因：パーサに構文の処理自体が存在しない場合に、「未対応」の宣言ではなく、解析位置の無関係なトークン（本体先頭、型名、変数名、区切り記号）を名指すか、汎用の解釈エラーで停止する。宣言（DEVELOPMENT.md の対応・未対応リスト）にも記載がないものが多い。前処理行（#include／using）の認識範囲の狭さ、sizeof の認識失敗がキャスト解釈へ横取りされる経路、隣接リテラル連結・接頭辞つき／raw のリテラル形式の未認識も、同じ系譜の表面である。
 - 重大度：**P2**
-- 統合元：R12-N9（findings-round12-solo.md、三項演算子が C／C++／C#／JavaScript の全位置で汎用・虚偽の停止。R7-N3・R9-N6 を包摂する全位置版）、R7-N3（findings-round7-solo.md、三項演算子の引数位置）、R9-N6（findings-round9-solo.md、C++ cout チェーン内の三項演算子）、R11-N1（findings-round11-solo.md、C# 文字列補間が未宣言＋汎用停止。Learn 逐語例5件が全滅）、R9-N3（findings-round9-solo.md、C／C++ の中括弧なし if-else）、R10-N4（findings-round10-solo.md、C# の中括弧なし if-else）、R10-N5（findings-round10-solo.md、JavaScript の do-while が本体トークン名指し）、R12-N10（findings-round12-solo.md、switch が JS／C／C++／C#／AHK で "{" 名指し。C系 do-while の同根表面を含む）、R9-N4（findings-round9-solo.md、C／C++ のユーザー関数定義が「キャスト形式」を名指し）、R11-N3（findings-round11-solo.md、C# `int.MaxValue` が「未定義の名前：int」）、R12-N15（findings-round12-solo.md、C# キャスト `(int)d` が「未定義の名前：int」。R11-N3 と同根の別表面）、R11-N10（findings-round11-solo.md、C# `new DateTime` が変数名を名指し）、R11-N11（findings-round11-solo.md、代入式の被演算子位置が JS／C／C++／C# で「) が必要です」）、R12-N1（findings-round12-solo.md、C# foreach が未宣言＋汎用停止）、R12-N2（findings-round12-solo.md、C# checked／unchecked の式形式が「関数」扱い）、R12-N11（findings-round12-solo.md、C系の前置 ++／--）、R12-N12（findings-round12-solo.md、C系の複合代入 %=）、R12-N13（findings-round12-solo.md、C系の二項シフト <<／>>）、R12-N16（findings-round12-solo.md、C# 文字列の .Length）、R14-N4（findings-round14-solo.md、C++ のジェネリック型宣言。vector／set は NameError、map／pair はカンマ名指し）、R14-N5（findings-round14-solo.md、C# の静的フィールド参照 `Math.PI`／`Math.E`／`String.Empty` が「未定義の名前：Math／String」。R11-N3 と同根の別表面）、R14-N6（findings-round14-solo.md、C# `int.TryParse`／`double.TryParse` の `out` 引数が「) が必要です」）、R14-N7（findings-round14-solo.md、C# の初期化子付き配列生成式 `new T[] { ... }` が汎用原因で停止。サイズ指定形式は動作）、R14-N8（findings-round14-solo.md、C# のジェネリック型宣言 List／Dictionary／HashSet が汎用・トークン名指し）、R14-N10（findings-round14-solo.md、C++ `std::getline(std::cin, s)` が「未定義の名前：cin」。値位置の cin 参照だけが虚偽原因になる）
+- 統合元：R12-N9（findings-round12-solo.md、三項演算子が C／C++／C#／JavaScript の全位置で汎用・虚偽の停止。R7-N3・R9-N6 を包摂する全位置版）、R7-N3（findings-round7-solo.md、三項演算子の引数位置）、R9-N6（findings-round9-solo.md、C++ cout チェーン内の三項演算子）、R11-N1（findings-round11-solo.md、C# 文字列補間が未宣言＋汎用停止。Learn 逐語例5件が全滅）、R9-N3（findings-round9-solo.md、C／C++ の中括弧なし if-else）、R10-N4（findings-round10-solo.md、C# の中括弧なし if-else）、R10-N5（findings-round10-solo.md、JavaScript の do-while が本体トークン名指し）、R12-N10（findings-round12-solo.md、switch が JS／C／C++／C#／AHK で "{" 名指し。C系 do-while の同根表面を含む）、R9-N4（findings-round9-solo.md、C／C++ のユーザー関数定義が「キャスト形式」を名指し）、R11-N3（findings-round11-solo.md、C# `int.MaxValue` が「未定義の名前：int」）、R12-N15（findings-round12-solo.md、C# キャスト `(int)d` が「未定義の名前：int」。R11-N3 と同根の別表面）、R11-N10（findings-round11-solo.md、C# `new DateTime` が変数名を名指し）、R11-N11（findings-round11-solo.md、代入式の被演算子位置が JS／C／C++／C# で「) が必要です」）、R12-N1（findings-round12-solo.md、C# foreach が未宣言＋汎用停止）、R12-N2（findings-round12-solo.md、C# checked／unchecked の式形式が「関数」扱い）、R12-N11（findings-round12-solo.md、C系の前置 ++／--）、R12-N12（findings-round12-solo.md、C系の複合代入 %=）、R12-N13（findings-round12-solo.md、C系の二項シフト <<／>>）、R12-N16（findings-round12-solo.md、C# 文字列の .Length）、R14-N4（findings-round14-solo.md、C++ のジェネリック型宣言。vector／set は NameError、map／pair はカンマ名指し）、R14-N5（findings-round14-solo.md、C# の静的フィールド参照 `Math.PI`／`Math.E`／`String.Empty` が「未定義の名前：Math／String」。R11-N3 と同根の別表面）、R14-N6（findings-round14-solo.md、C# `int.TryParse`／`double.TryParse` の `out` 引数が「) が必要です」）、R14-N7（findings-round14-solo.md、C# の初期化子付き配列生成式 `new T[] { ... }` が汎用原因で停止。サイズ指定形式は動作）、R14-N8（findings-round14-solo.md、C# のジェネリック型宣言 List／Dictionary／HashSet が汎用・トークン名指し）、R14-N10（findings-round14-solo.md、C++ `std::getline(std::cin, s)` が「未定義の名前：cin」。値位置の cin 参照だけが虚偽原因になる）、R15-N4（findings-round15-solo.md、C系の前処理行の認識が狭く、`#include<stdio.h>`（空白なし）・末尾コメントつきの include／using 行・`using std::cout;` が「#」「namespace」「cout」を名指して停止する）、R15-N5（findings-round15-solo.md、`sizeof(型)` の未対応形が parseCast に横取りされ「キャストのこの形式は未対応です」と虚偽表示する。`sizeof(long long)` 等も対象名を挙げない汎用の「未対応のsizeof対象」になる）、R15-N8（findings-round15-solo.md、C／C++ の隣接文字列リテラル連結と `u8` 接頭辞リテラルが「) が必要です」「未対応：…：<<」等の虚偽原因で停止する）、R15-N9（findings-round15-solo.md、C++ の raw 文字列が「NameError：未定義の名前：R」、C# の raw 文字列が引用符1文字を名指して停止する。いずれも未宣言）
 - 影響する種類・表面：C／C++／C#（c-family パーサ）が中心。JavaScript・AutoHotkey の同型表面（do-while、switch、代入式）を含む。
 - 修正方針：構文ごとに「実装する」か「構文名を挙げた未対応宣言で停止し、宣言リストにも記載する」かのどちらかに統一する。三項演算子・文字列補間・foreach など教材頻出の構文は実装の可否を優先的に判断する。型名・変数名・本体トークンを原因にしない。
-- 受け入れ条件：統合元の全再現コードで、実物どおりに動作するか、構文名を挙げて正直に停止すること。「) が必要です」「未定義の名前：＜型名＞」等の虚偽原因が再現しないこと。
+- 受け入れ条件：統合元の全再現コードで、実物どおりに動作するか、構文名を挙げて正直に停止すること。「) が必要です」「未定義の名前：＜型名＞」等の虚偽原因が再現しないこと。前処理行の正規形（空白なし・末尾コメント・using 宣言）が動作するか行自体を指して停止し、sizeof の未対応形は sizeof の話として（対象を名指して）表示されること。
 
 ### RG-07 共有スクリプトパーサ（script.js）の式解析の不足・誤認（JavaScript／R／Power Fx／AutoHotkey）
 - 根本原因：共有スクリプトパーサの式解析が、文脈依存の構文（宣言初期化子のレコードリテラル、コールバック、行末継続、値としての if）を誤認し、未対応構文についてはパーサ内部の期待文や対象オブジェクト名を原因として表示する。
 - 重大度：**P2**
-- 統合元：R12-N6（findings-round12-solo.md、JavaScript の宣言初期化子のレコードリテラル `{a: 1}` が「} が必要です」で停止）、R9-N5（findings-round9-solo.md、JavaScript のコールバックが「) が必要です」）、R11-N8（findings-round11-solo.md、JavaScript の未対応構文が内部期待文・汎用エラーになる。`?.`／for-of／スプレッド／分割代入／`new Date` を集約）、R12-N17（findings-round12-solo.md、JavaScript の `??` が内部文言で停止。R11-N8 と同根の別表面）、R12-N18（findings-round12-solo.md、JavaScript の静的メンバーが「未定義の名前：Math／JSON 等」の虚偽原因）、R9-N9（findings-round9-solo.md、R の行末演算子による式継続が空トークンの原因表示で停止）、R13-N12（findings-round13-solo.md、R の if 式（値位置）が「if／else は未対応」の虚偽原因）、R8-N6（findings-round8-solo.md、Power Fx の in／exactin が「) が必要です」）、R14B-N2（findings-round14b-saturation.md、式の途中改行（括弧・添字・演算子の後の継続）が JavaScript／AutoHotkey／Power Apps で全般に失敗し、見えない改行トークンが原因表示になる。R9-N9 の R 表面と同根の、他種類および括弧／添字内範囲への拡大）
+- 統合元：R12-N6（findings-round12-solo.md、JavaScript の宣言初期化子のレコードリテラル `{a: 1}` が「} が必要です」で停止）、R9-N5（findings-round9-solo.md、JavaScript のコールバックが「) が必要です」）、R11-N8（findings-round11-solo.md、JavaScript の未対応構文が内部期待文・汎用エラーになる。`?.`／for-of／スプレッド／分割代入／`new Date` を集約）、R12-N17（findings-round12-solo.md、JavaScript の `??` が内部文言で停止。R11-N8 と同根の別表面）、R12-N18（findings-round12-solo.md、JavaScript の静的メンバーが「未定義の名前：Math／JSON 等」の虚偽原因）、R9-N9（findings-round9-solo.md、R の行末演算子による式継続が空トークンの原因表示で停止）、R13-N12（findings-round13-solo.md、R の if 式（値位置）が「if／else は未対応」の虚偽原因）、R8-N6（findings-round8-solo.md、Power Fx の in／exactin が「) が必要です」）、R14B-N2（findings-round14b-saturation.md、式の途中改行（括弧・添字・演算子の後の継続）が JavaScript／AutoHotkey／Power Apps で全般に失敗し、見えない改行トークンが原因表示になる。R9-N9 の R 表面と同根の、他種類および括弧／添字内範囲への拡大）、R15-N10（findings-round15-solo.md、Power Fx の文字列補間 `$"..."` が対応・未対応リストのどちらにも無く、汎用の「式を解釈できません：$」で停止する。R11-N1（C# 補間、RG-06）の Power Fx 版）
 - 影響する種類・表面：JavaScript／R／Power Apps（Power Fx）／AutoHotkey の式解析全般。
 - 修正方針：レコードリテラルの文脈判定（宣言初期化子）を修正する。未対応構文は演算子・構文名を挙げて停止し、内部期待文を出さない。静的メンバーはオブジェクト名ではなくメンバー名を原因とする。R の行末継続と値としての if を実装するか正直に宣言する。
-- 受け入れ条件：統合元の全再現で、動作するか構文名を挙げた停止になること。配列内・引数位置など既に動く位置のレコードリテラルに回帰がないこと。
+- 受け入れ条件：統合元の全再現で、動作するか構文名を挙げた停止になること。配列内・引数位置など既に動く位置のレコードリテラルに回帰がないこと。文字列補間は実装するか、宣言リストに記載したうえで構文名を挙げて停止すること。
 
 ### RG-08 AutoHotkey パーサの構文認識不足による虚偽・汎用・空の原因表示
 - 根本原因：AutoHotkey のパーサが、文形式（括弧なし）呼び出しの引数解析、宣言構文（関数定義・class）、参照渡し、引数省略、特殊ループ等を認識できず、関数名・区切り記号・本体トークンを名指すか、空の原因表示で停止する。
@@ -120,13 +120,13 @@
 - 修正方針：暗黙連結を式として実装し、代入・引数・文の各位置で一貫させる。
 - 受け入れ条件：公式 Beginner Tutorial §5／§6 の典例（`MsgBox "MyVar equals " MyVar "!!"` 等）が実物どおりに動作すること。
 
-### RG-14 R の演算子の型検査回避と関数定義の虚偽原因
-- 根本原因：R エンジンの演算子実装で、NA 伝播や `^` の恒等処理といった近道が被演算子の型検査より先に効き、本来エラーになる式が無言で NA／1 を返す。関数定義は未対応と宣言されず、引数名の NameError という虚偽原因になる。
+### RG-14 R の演算子の型検査回避と関数定義・関数参照の虚偽原因
+- 根本原因：R エンジンの演算子実装で、NA 伝播や `^` の恒等処理といった近道が被演算子の型検査より先に効き、本来エラーになる式が無言で NA／1 を返す。関数定義は未対応と宣言されず、引数名の NameError という虚偽原因になる。さらに apply 系の引数は値として先に評価されるため、関数名の参照が変数として引かれ、実在する組み込み関数まで「未定義の名前」という虚偽原因になる。
 - 重大度：P3
-- 統合元：R12-N19（findings-round12-solo.md、文字列×NA 等が無言で NA／1）、R12-N20（findings-round12-solo.md、`%in%` が文字被演算子で「数値の型が一致しません」）、R12-N23（findings-round12-solo.md、関数定義が引数名の NameError で停止）、R14-N9（findings-round14-solo.md、引数位置の無名関数式 `sapply(c(1, 2), function(v) v * 2)` が「) が必要です」の虚偽原因で停止。R12-N23 と同根の別表面）
+- 統合元：R12-N19（findings-round12-solo.md、文字列×NA 等が無言で NA／1）、R12-N20（findings-round12-solo.md、`%in%` が文字被演算子で「数値の型が一致しません」）、R12-N23（findings-round12-solo.md、関数定義が引数名の NameError で停止）、R14-N9（findings-round14-solo.md、引数位置の無名関数式 `sapply(c(1, 2), function(v) v * 2)` が「) が必要です」の虚偽原因で停止。R12-N23 と同根の別表面）、R15-N15（findings-round15-solo.md、sapply／lapply／mapply／tapply の関数名引数（sum／sqrt／as.numeric 等、実在する組み込み関数）が「未定義の名前」と虚偽表示される。引数を値として先に評価し関数名を変数として引く経路で、R14-N9（無名関数式）とは別の到達経路）
 - 影響する種類・表面：R の二項演算子と関数定義。
 - 修正方針：型検査を近道処理より先に行う。`%in%` は被演算子の型に応じた正直な原因にする。関数定義は未対応と宣言して停止する。
-- 受け入れ条件：統合元の全再現が実 R のエラー／結果と一致すること。数値での NA 伝播など正挙動に回帰がないこと。
+- 受け入れ条件：統合元の全再現が実 R のエラー／結果と一致すること。数値での NA 伝播など正挙動に回帰がないこと。関数名引数は、apply 系を実装する場合は実 R どおりに動作し、未対応とする場合は関数名でなく構文（高階関数への引数渡し）を名指して停止すること。
 
 ### RG-15 宣言範囲外の引数の無言無視（受理して捨てる）
 - 根本原因：関数・メソッドの引数検証がなく、対応範囲外の引数（書式、length.out、each、キーワード引数）がエラーにならず受理されて無言で捨てられ、学習者が効いたと誤認する結果を返す。
@@ -345,16 +345,72 @@
 - 修正方針：ラベルはコードの表記を忠実に引用し、正規化で `()` を付加しない。
 - 受け入れ条件：対象の再現でラベルがコードどおりに表示され、関数形・文字列比較・変数条件の既存の正確な引用に回帰がないこと。
 
+### RG-42 C系の前処理が文字列リテラル内の `std::` を無言で削除する
+- 根本原因：c-family の `parse()` が、#include／using 行でない全行に `line.replace(/std::/g, "")` を無条件に適用し、文字列リテラルの内容まで書き換える。前処理が字句構造を意識せず、行テキストをそのまま置換している。
+- 重大度：**P2**
+- 統合元：R15-N1（findings-round15-solo.md、C++ `std::cout << "std::ok"` が "ok" と出力される。C の `printf("std::ok\n")`、C# の文字列代入でも同型の計3表面を確認）
+- 影響する種類・表面：C／C++／C# の文字列リテラル全般（`std::` を含む文字列）。
+- 修正方針：`std::` の除去を文字列リテラルの外側だけに限定するか、字句解析後のトークン単位で名前空間修飾を落とす。リテラルの内容には一切触れない。
+- 受け入れ条件：再現3表面で文字列の内容がそのまま出力されること。`std::cout` 等のリテラル外の既存の正挙動に回帰がないこと。
+
+### RG-43 共有パーサのダイアレクト分離の欠落（他ダイアレクトの演算子・制御文・コメントが漏れる）
+- 根本原因：共有トークナイザの演算子表、ScriptParser の代入演算子リストと文ディスパッチ（repeat／Loop／next）、ブロックコメントの除去がダイアレクト無条件であり、ある言語の構文が他言語でも有効になってしまう。JavaScript だけが制御文を明示的に弾いており、分離方針が部分的にしか実装されていない。
+- 重大度：**P2**
+- 統合元：R15-N2（findings-round15-solo.md、JavaScript／C系で `<-` が R の代入演算子として最長一致で奪われ、無言の値書き換えや虚偽の原因表示になる。`:=` も JavaScript／C で無言の代入として実行される）、R15-N3（findings-round15-solo.md、C／C++／C# が R／AutoHotkey の `repeat`／`Loop`／`next` を継承し、存在しない構文を無言で実行する）、R15-N6（findings-round15-solo.md、R に存在しない `/* */` が共有トークナイザのコメント除去で無言で除去され、除算・乗算の演算子列であるはずの式が別物として実行される。Power Fx は公式にブロックコメントを持つため対象外）
+- 影響する種類・表面：JavaScript／R／C／C++／C#／Power Apps／AutoHotkey の字句解析・文解析全般。
+- 修正方針：演算子表・代入演算子・制御文キーワード・コメント形式を種類（ダイアレクト）ごとに分離し、他ダイアレクトの構文はその言語に無いものとして処理する（通常の字句規則で解釈するか、構文名を挙げて停止する）。本来の所有ダイアレクト（R の `<-`、AutoHotkey の `:=`／Loop、Power Fx のブロックコメント等）の正挙動は維持すること。
+- 受け入れ条件：統合元の全再現で、他ダイアレクトの構文が無言で有効にならないこと（実物どおりの比較・エラーになること）。R の `<-` による代入、AutoHotkey の `:=` と Loop、Power Fx のブロックコメントの正挙動に回帰がないこと。
+
+### RG-44 AutoHotkey のバッククォートエスケープの変換漏れ（制御文字が文字そのものに化ける）
+- 根本原因：共有トークナイザの AutoHotkey エスケープ処理が `` `n ``／`` `r ``／`` `t `` 等の一部だけを変換し、それ以外は「文字そのもの」を返すフォールバックになっているため、公式の制御文字エスケープ `` `a ``／`` `b ``／`` `f ``／`` `v `` が、エラーにならず無言で文字 'a'／'b'／'f'／'v' に化ける。
+- 重大度：P3
+- 統合元：R15-N7（findings-round15-solo.md、`MsgBox "x`ay"` が "xay" と出力される。実 AutoHotkey v2 では `` `a `` はベル（0x07）。他3エスケープも同型）
+- 影響する種類・表面：AutoHotkey の文字列リテラル内のバッククォートエスケープ全般。
+- 修正方針：公式 Escape Sequences の全エスケープを変換表に載せる。未知のエスケープは文字化せず、エスケープを名指して停止するか公式規則に合わせる。
+- 受け入れ条件：公式エスケープ全件が実 AutoHotkey v2 と一致すること。変換済みの `` `n ``／`` `t `` 等の正挙動に回帰がないこと。
+
+### RG-45 R の NaN が比較・論理演算で NA にならない（JS 意味論の真偽を返す）
+- 根本原因：R エンジンの二項演算が NA オブジェクトだけを欠損として先行処理し、数値 NaN は baseBinary の JavaScript 意味論（NaN の比較は false、!= は true）に落ちる。実 R では NaN は比較・論理演算で NA として扱われる。算術での NaN の伝播自体は正しい。
+- 重大度：**P2**
+- 統合元：R15-N11（findings-round15-solo.md、`(0/0) == (0/0)` が c(FALSE)、`(0/0) != 1` が c(TRUE)、`(0/0) & TRUE` が c(FALSE) 等。公式 Relational Operators の「comparisons involving NaN will always result in NA」と相違する）
+- 影響する種類・表面：R の NaN が絡む比較演算子・論理演算子全般（条件分岐の材料になる）。
+- 修正方針：R の二項演算で NaN を NA と同格に先行処理し、比較・論理の結果を NA にする（RG-03 の NULL の意味論とは別経路だが、欠損値の扱いとして一貫させること）。
+- 受け入れ条件：再現の全ての比較・論理式が実 R どおり NA を返すこと。NaN の算術伝播と通常値の比較の正挙動に回帰がないこと。
+
+### RG-46 Python の等価判定の同一性ショートカット（NaN の自己比較が True になる）
+- 根本原因：Python エンジンの eqVal が「同じオブジェクト同士は等しい」と同一性で先行判定し、float の NaN にも適用される。CPython の == は同一オブジェクトでも値比較であり、NaN は自分自身とも等しくない（`in` の同一性規則とは別の話で、そちらは現状どおり正しい）。
+- 重大度：P3
+- 統合元：R15-N12（findings-round15-solo.md、`n = float("nan")` の後に `n == n` が True、`n != n` が False、`n <= n` が True になる。いずれも実 CPython と逆）
+- 影響する種類・表面：Python の ==／!=／<=／>= 等の比較（同一変数を両辺に置く自己比較で表面化する）。
+- 修正方針：浮動小数の比較から同一性ショートカットを外し、値比較（NaN は非等価）にする。`in` の同一性規則には触れない。
+- 受け入れ条件：再現の自己比較が実 CPython と一致すること。通常値の等価判定と `n in [n]` の正挙動に回帰がないこと。
+
+### RG-47 R のデータフレームに対する `[[` の意味論の欠落（列ベクトルでなくデータフレームを返す）
+- 根本原因：R エンジンの index 読み取りで、データフレーム分岐が `a.double`（[[ かどうか）を見ずに、列選択のデータフレーム構築へ進む。ベクトルに対する [[ は正しく要素を返すため、壊れているのはデータフレーム分岐だけ。
+- 重大度：**P2**
+- 統合元：R15-N14（findings-round15-solo.md、`df[["x"]]` が "x: c(1, 2)" のデータフレーム表示になり、単一括弧 `df["x"]` と表示が完全に同一化する。下流では `mean(df[["x"]])` が虚偽の型エラー、`df[["x"]] + 10` が c(NaN) の無言の誤値になる）
+- 影響する種類・表面：R のデータフレームの添字操作全般（R 教材の中核操作）。
+- 修正方針：データフレーム分岐で [[ と [ を区別し、[[ は列ベクトル（要素）を取り出す実 R の意味論にする。数値添字 `df[[1]]` も同様に扱う。
+- 受け入れ条件：`df[["x"]]` と `df[[1]]` が列ベクトルを返すこと。`df["x"]`（データフレームを返す）の正挙動と、ベクトルの [[ の正挙動に回帰がないこと。下流の演算・関数適用が実 R と一致すること。
+
+### RG-48 AutoHotkey のメンバー解決の大文字小文字（`.Length` が停止し `.length` だけが通る）
+- 根本原因：共有実行器のメンバー読み取りが `length` の完全一致（小文字）でのみ配列長・文字列長を返し、AutoHotkey 側のメンバー解決に大文字小文字の正規化がない。実 AutoHotkey v2 ではプロパティ名は大文字小文字を区別しない。制御キーワードの照合（RG-32）とは別の機構（実行器のメンバー解決）である。
+- 重大度：P3
+- 統合元：R15-N16（findings-round15-solo.md、`a.Length` が「プロパティがありません：Length」で停止し、`a.length` は 3 を返す。文字列の `.Length` も同型）
+- 影響する種類・表面：AutoHotkey の組み込みプロパティ参照全般（配列・文字列の Length）。
+- 修正方針：AutoHotkey のメンバー解決で名前を大文字小文字不区別に照合する（言語仕様どおり）。他種類の大文字小文字を区別する解決に波及させない。
+- 受け入れ条件：`.Length`／`.length`／混在表記がいずれも実 AutoHotkey v2 どおりに動作すること。存在しないプロパティへの正直な停止に回帰がないこと。
+
 ---
 
 ## 件数と取りこぼしチェック
 
-- 元項目の総数：**135件**（P2 ×24、P3 ×111）。内訳はラウンド別に、R3＝1（P3×1）、R4＝4（P2×1／P3×3）、R5＝9（P2×2／P3×7）、R6＝12（P2×2／P3×10）、R7＝11（P2×2／P3×9）、R8＝11（P2×1／P3×10）、R9＝10（P2×2／P3×8）、R10＝5（P2×3／P3×2）、R11＝11（P2×2／P3×9）、R12＝34（P2×5／P3×29）、R13＝13（P3×13）、R14系＝14（P2×4／P3×10。下記の重複裁定により、報告15件から1件を統合した実質件数）。
-- 統合後の件数：**41件**（RG-01〜RG-41）。
+- 元項目の総数：**151件**（P2 ×29、P3 ×122）。内訳はラウンド別に、R3＝1（P3×1）、R4＝4（P2×1／P3×3）、R5＝9（P2×2／P3×7）、R6＝12（P2×2／P3×10）、R7＝11（P2×2／P3×9）、R8＝11（P2×1／P3×10）、R9＝10（P2×2／P3×8）、R10＝5（P2×3／P3×2）、R11＝11（P2×2／P3×9）、R12＝34（P2×5／P3×29）、R13＝13（P3×13）、R14系＝14（P2×4／P3×10。下記の重複裁定により、報告15件から1件を統合した実質件数）、R15＝16（P2×5／P3×11）。
+- 統合後の件数：**48件**（RG-01〜RG-48）。
 - 取りこぼしチェックの方法：
   1. 各 findings ファイルの結論表の項目IDを全件列挙し、本台帳の「統合元」と1対1で突合する。各IDはちょうど1つの RG に属する（例外は下記の重なり注記のみ）。
-  2. ラウンドごとの自己申告累計（R5 終了時26件→R6 37件→R7 48件→R8 58件→R9 63件→R10 68件→R11 79件→R12 108件→R13 121件）と、本台帳のラウンド別内訳の合計121件が一致することを検算する（実際に機械突合済み：台帳から抽出した固有ID 121件が期待集合と完全一致した）。第14ラウンド系は本更新で、R14-N1〜N11 と R14B-N1〜N4 の全15報告を列挙し、下記の重複1件の統合を除く各IDがちょうど1つの RG に属することを1対1で突合した（実質追加14件、累計135件）。
-  3. 重大度の内訳（P2 ×24）が、ラウンド別内訳の合計と一致することを検算する。
+  2. ラウンドごとの自己申告累計（R5 終了時26件→R6 37件→R7 48件→R8 58件→R9 63件→R10 68件→R11 79件→R12 108件→R13 121件）と、本台帳のラウンド別内訳の合計121件が一致することを検算する（実際に機械突合済み：台帳から抽出した固有ID 121件が期待集合と完全一致した）。第14ラウンド系は本更新で、R14-N1〜N11 と R14B-N1〜N4 の全15報告を列挙し、下記の重複1件の統合を除く各IDがちょうど1つの RG に属することを1対1で突合した（実質追加14件、累計135件）。第15ラウンドは本更新で、R15-N1〜N16 の全16件を列挙し、各IDがちょうど1つの RG に属することを1対1で突合した（追加16件、累計151件）。なお findings-round15-solo.md の自己申告累計152件は、重複裁定前の暫定136件を起点とする数え方であり、本台帳の実質総数151件との差1件は起点の違いによるもので、項目の取りこぼしではない。
+  3. 重大度の内訳（P2 ×29、P3 ×122）が、ラウンド別内訳の合計と一致することを検算する。
   4. 第1〜3ラウンド分は、INT-01〜20・R2-N1〜N3・R3-F1〜F12 の消込を findings-round2/3-verification.md で全件確認し、未修正のまま残るのは R3-N1 のみであることを確定してから集計に含めた。
 - 重なりの注記（二重の修正指示を避けるため）：
   - R8-N5 と R12-N30 は同一表面（Power Fx の Text 書式引数）の二重計上。RG-15 では1表面として扱う（件数121は各ラウンドの申告累計を保つため、元項目の数としては両方を数える）。
@@ -366,6 +422,8 @@
   - 第14ラウンド本体（findings-round14-solo.md）：新規11件（P2×3、P3×8）。角度4（パスごとの最終状態の正直さ、全88テンプレート／94パス）は新規ゼロだった。
   - 追加並行角度B（findings-round14b-saturation.md、飽和ファズ／メタモルフィック／不変条件、エンジン実行3,365件）：新規4件（P2×2、P3×2）。うち1件は本体の R14-N2 と重複（上記裁定）。
   - 追加並行角度C（findings-round14c-ui-pwa.md、実UI・PWA 使い倒し）：**438件の実測で新規欠陥ゼロ**。この実測により、付録の要件 2-5／6-2／11-1／9-1 に Muse 側の証拠が付いた（各要件の行に反映済み）。残件の追加はない。
+- 監査履歴の追記（第15ラウンド、2026-11-15）：
+  - 第15ラウンド本体（findings-round15-solo.md、角度：パーサのコードリーディング／エスケープと文字列リテラル形式の全表／数値の極端値の伝播／R・C#・AutoHotkey の応用教材コーパス）：新規16件（P2×5、P3×11）。振り分けは、既存グループへの追加が RG-04 に1件（R15-N13）、RG-06 に4件（R15-N4／N5／N8／N9）、RG-07 に1件（R15-N10）、RG-14 に1件（R15-N15）の計7件、新規グループが RG-42（R15-N1）、RG-43（R15-N2／N3／N6）、RG-44（R15-N7）、RG-45（R15-N11）、RG-46（R15-N12）、RG-47（R15-N14）、RG-48（R15-N16）の7グループ9件。累計は元項目151件（P2×29、P3×122）、統合48グループとなった。
 
 ---
 
@@ -404,9 +462,9 @@
 | 7-4 | 固定ページは全体俯瞰に寄せる | findings-round2-verification.md INT-19、findings-round10-solo.md 角度4 | 適合 | |
 | 8-1 | 画面表示・ファイル取込でテキスト投入 | findings-round2-verification.md §3 | 適合 | 取込時の確認ダイアログは観察 R2-O1 |
 | 9-1 | 縦長にせず主役を画面の一番上に。恒常文は下 | findings-round2-verification.md §3（375px）、findings-round4-solo.md 角度4（320／768px）、findings-round14c-ui-pwa.md「要件9-1」（26件全 PASS。全13種類×320／375px で、ワークスペース下端 ≦ 恒常文ブロック上端 ＜ フッター上端の順序と、初回表示に免責が入らないことを実測） | 適合 | 2026-11-15 の追加角度14c で「恒常的な文章は下」の配置の直接証拠が付いた |
-| 10-1 | 監査は多角的（相互非開示→統合でもう一巡） | findings-round1-local.md／blind-fuzz／angleA／angleEF-ext、integration-round1-draft.md、findings-round2/3-verification.md、findings-round4〜14-solo.md、findings-round14b-saturation.md、findings-round14c-ui-pwa.md（実施の証拠） | 未確認 | 収束は未達（Muse 側は継続中）。完了の証拠はなし |
+| 10-1 | 監査は多角的（相互非開示→統合でもう一巡） | findings-round1-local.md／blind-fuzz／angleA／angleEF-ext、integration-round1-draft.md、findings-round2/3-verification.md、findings-round4〜14-solo.md、findings-round14b-saturation.md、findings-round14c-ui-pwa.md、findings-round15-solo.md（実施の証拠） | 未確認 | 収束は未達（Muse 側は継続中）。完了の証拠はなし |
 | 10-2 | 成果物は実際に使えるか | findings-round3-verification.md §5（公開サイト最終確認）、findings-round2-verification.md §3 | 未確認 | Muse 側の実使用確認は実施済み。Codex 側判定は他主体（Codex）のため未確認 |
-| 10-3 | 結論が途中で途切れないように進める | 監査プロンプト（~/workspace/audit-prompts/programming-practice-audit-prompt-20261114.md）＋ findings-round1〜14系の各ファイル（実施の証拠） | 未確認 | 継続中 |
+| 10-3 | 結論が途中で途切れないように進める | 監査プロンプト（~/workspace/audit-prompts/programming-practice-audit-prompt-20261114.md）＋ findings-round1〜15の各ファイル（実施の証拠） | 未確認 | 継続中 |
 | 11-1 | 結果ウィンドウの拡大と連携（任意）の取消 | findings-round14c-ui-pwa.md「要件11-1」（26件全 PASS。全13種類×320／375px で、拡大／最大化／フルスクリーンを示す操作要素がゼロであり、結果パネルが元の大きさのままであることを積極的に確認） | 適合 | 2026-11-15 の追加角度14c で Muse 側の証拠が付いた |
 | 11-2 | 5-4 の再掲 | findings-round2-verification.md INT-02、findings-round3-verification.md §4・§5、findings-round10-solo.md 角度5 | 適合 | 5-4 と同じ |
 | 11-3 | 6-3 の再掲 | findings-round2-verification.md INT-19、findings-round10-solo.md 角度4・5 | 適合 | 6-3 と同じ |
