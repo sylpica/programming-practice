@@ -1021,3 +1021,72 @@ footer p {
 .state-row dd {
   white-space: pre-wrap;
 }
+
+.output-link {
+  display: block;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  padding: 4px 0;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+.trace button > span:last-child { min-width: 0; }
+#templateExplanation { margin-top: 18px; max-height: 280px; overflow: auto; }
+@media (min-width: 761px) {
+  .workspace { height: max(560px, calc(100dvh - 315px)); }
+  .left-column {
+    height: 100%;
+    display: grid;
+    grid-template-rows: minmax(0, 1fr) minmax(0, 1fr) minmax(0, .65fr);
+    gap: 12px;
+  }
+  .right-column {
+    height: 100%;
+    display: grid;
+    grid-template-rows: minmax(0, .9fr) auto minmax(0, 1fr);
+    gap: 12px;
+  }
+  .workspace .panel { display: flex; flex-direction: column; min-height: 0; }
+  .workspace .panel-heading, .editor-footer { flex-shrink: 0; }
+  .editor-wrap { flex: 1; min-height: 0; height: auto; }
+  .simulation-body, .final-body, .reference-body, .model-body {
+    flex: 1; min-height: 0; max-height: none; overflow: auto;
+  }
+  #modelJson { min-height: 95px; height: 110px; }
+  #builder { max-height: 50%; overflow: auto; }
+  .used-panel .chips { max-height: 82px; }
+}
+
+/* Model inputs stay beside the code; the sidebar contains learning references. */
+.model-panel:not([open]) .model-body { display: none; }
+.model-panel summary { cursor: pointer; list-style: none; }
+.model-panel summary::after { content: "▾"; flex-shrink: 0; }
+.model-panel[open] summary::after { content: "▴"; }
+.side-glossary { margin: 0; padding: 12px 15px; overflow: auto; min-height: 0; }
+.side-glossary div + div { margin-top: 12px; }
+.side-glossary dt { font-weight: 600; overflow-wrap: anywhere; }
+.side-glossary dd { margin: 3px 0 0; font-size: 12px; overflow-wrap: anywhere; }
+#templateExplanation { max-height: none; overflow: visible; }
+@media (min-width: 761px) {
+  .left-column { grid-template-rows: minmax(0, 1fr) auto minmax(0, 1fr) minmax(0, .65fr); }
+  .left-column:has(.model-panel[open]) { grid-template-rows: minmax(0, 1fr) minmax(125px, .8fr) minmax(0, 1fr) minmax(0, .65fr); }
+  .right-column { grid-template-rows: auto minmax(0, 1fr) minmax(0, .55fr); }
+  #templateExplanation { width: calc(100% - 368px); }
+}
+@media (min-width: 761px) and (max-width: 1050px) {
+  #templateExplanation { width: calc(100% - 320px); }
+}
+@media (max-width: 760px) {
+  .glossary-panel { order: 7; }
+}
+@media (max-width: 760px) {
+  .practice-heading > div, #syntaxName, .brand small { display: none; }
+  .type-selector { margin-bottom: 12px; }
+  .practice-heading { margin-bottom: 12px; }
+  .editor-wrap { height: 230px; }
+}
+@media (min-width: 761px) {
+  .workspace { grid-template-rows: minmax(0, 1fr); }
+  .left-column, .right-column { min-height: 0; }
+}

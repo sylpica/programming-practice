@@ -49,15 +49,15 @@ export const TEMPLATES = [
     explain: 'クラスは「データと振る舞い」をひとまとめにした設計図で、そこから作った実物がインスタンスです。__init__ は生成時に呼ばれる初期化メソッドで、self はインスタンス自身を指します。Counter をもう1つ作ると別々に数えられることや、dec() メソッドを足す実験をしてみてください。'
   },
   {
-    id: 'tpl-fileio', title: 'ファイルの読み書き', level: '応用', file: 'tpl_fileio.py',
-    code: 'with open("study_memo.txt", "w", encoding="utf-8") as f:\n    f.write("一行目\\n二行目\\n")\n\nwith open("study_memo.txt", encoding="utf-8") as f:\n    lines = f.read().splitlines()\nprint(len(lines), "行")\nprint(lines[0])',
+    id: 'tpl-fileio', title: 'モデル内の文章を保存して読む', level: '応用', file: 'tpl_fileio.py',
+    code: 'files = {}\nfiles["study_memo.txt"] = "一行目\\n二行目\\n"\nlines = files["study_memo.txt"].strip().split("\\n")\nprint(len(lines), "行")\nprint(lines[0])',
     expected: '2 行\n一行目',
-    explain: 'with 文（コンテキストマネージャ）でファイルを開くと、ブロックを抜けるときに自動で閉じられます。このアプリではブラウザ内の仮想ファイルシステムに書かれるので、ファイル一覧に study_memo.txt が増えるのも確認できます。書き込む文章を変えて、読み戻した結果と比べてください。'
+    explain: '辞書filesを明示したメモリ内モデルとして使い、文章を保存して読み戻します。実ファイルのopenやwithは未対応です。仮想ファイル一覧や実ディスクへの書き込みは行いません。'
   },
   {
-    id: 'tpl-csv', title: 'CSVの集計', level: '応用', file: 'tpl_csv.py',
-    code: 'import csv, io\n\ndata = "month,sales\\n1,120\\n2,150\\n3,90\\n"\ntotal = 0\nfor row in csv.DictReader(io.StringIO(data)):\n    total += int(row["sales"])\nprint("売上合計:", total)',
+    id: 'tpl-csv', title: 'モデルの表データを集計', level: '応用', file: 'tpl_csv.py',
+    code: 'rows = [{"month": "1", "sales": "120"}, {"month": "2", "sales": "150"}, {"month": "3", "sales": "90"}]\ntotal = 0\nfor row in rows:\n    total += int(row["sales"])\nprint("売上合計:", total)',
     expected: '売上合計: 360',
-    explain: 'csv モジュールはCSV形式を辞書の並びとして読めます。DictReader は1行を「列名: 値」の辞書にするので、row["sales"] のように列名で取り出せます。値は文字列なので、計算には int() での型変換が必要です。data の数値を変えたり、行を足したりして合計の変化を確認してください。'
+    explain: '読み込み済みの表を、辞書のリストrowsとして明示したモデルです。salesは文字列なのでintで変換して足します。csvやioの読み込み・CSV構文解析は未対応です。'
   }
 ];

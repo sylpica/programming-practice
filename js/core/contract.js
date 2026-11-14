@@ -26,6 +26,7 @@ export function refsInTrace(path) {
 }
 
 function safe(v, seen = new Map(), path = "$") {
+  if (isUnknown(v)) return `実行時に決まる（${v.source}）`;
   if (v === undefined) return "未設定";
   if (typeof v === "number" && !Number.isFinite(v)) return String(v);
   if (v === null || typeof v !== "object") return v;

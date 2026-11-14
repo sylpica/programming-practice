@@ -1,3 +1,4 @@
+import { additionalTemplates } from "./additional-templates.js";
 import {
   simulateScript,
   scanScript,
@@ -147,6 +148,19 @@ const reference = rows([
     false,
   ],
 ]);
+const exampleSetup = {"console.log":"let total=3;",appendChild:'const p=document.createElement("p");',push:"const values=[1,2,3];",pop:"const values=[1,2,3]; let last;",if:"let score=2;",for:"let total=0;"};
+for (const r of reference) if (exampleSetup[r.name]) r.example = exampleSetup[r.name] + "\n" + r.example;
+function convertedUnknown(value, conversion) {
+  return { ...unknown(conversion + "の入力による", conversion + ":" + value.id),
+    rootId: value.rootId || value.id, conversion,
+    valueType: conversion === "Number" ? "number" : conversion === "Boolean" ? "boolean" : "string" };
+}
+function containsUnknown(value, seen = new Set()) {
+  if (isUnknown(value)) return true;
+  if (!value || typeof value !== "object" || seen.has(value)) return false;
+  seen.add(value);
+  return Object.values(value).some(v => containsUnknown(v, seen));
+}
 export const definition = {
   id: "javascript",
   name: "JavaScript",
@@ -227,10 +241,89 @@ export const definition = {
       {
         dialect: "js",
         blockScopes: true,
-        initialize(s) {
+        logicalOperands: true,
+        initialize(s, api, nodes) {
           s.vars.document = { body: s.model.dom.body };
+          function hoist(list, enclosing = new Set()) {
+            const lexical = new Set();
+            for (const n of list) if (n.k === "declare") {
+              if (!["let", "const", "var"].includes(n.type) || n.pointer || n.size)
+                api.fail("このJavaScript宣言は未対応です", n, "未対応");
+              if (n.type === "const" && !n.value)
+                api.fail("constには初期化式が必要です", n, "SyntaxError");
+              if (n.type !== "var") {
+                if (lexical.has(n.name)) api.fail("同じスコープの宣言が重複しています", n, "SyntaxError");
+                lexical.add(n.name);
+              }
+            }
+            const visible = new Set([...enclosing, ...lexical]);
+            for (const n of list) {
+              if (n.k === "declare" && n.type === "var") {
+                if (visible.has(n.name)) api.fail("varとlet / constの宣言が競合しています", n, "SyntaxError");
+                if (!Object.hasOwn(s.vars, n.name)) s.vars[n.name] = undefined;
+              }
+              if (n.k === "for") hoist([n.init], visible);
+              if (n.body) hoist(n.body, visible);
+              if (n.otherwise) hoist(n.otherwise, visible);
+            }
+          }
+          hoist(nodes);
+        },
+        prepareScope(nodes, s, api) {
+          for (const n of nodes) if (n.k === "declare" && n.type !== "var") {
+            api.registerDeclaration(s, n);
+            s.vars[n.name] = { kind: "js-uninitialized" };
+            s.types[n.name] = n.type;
+          }
+        },
+        step(n, s, api) {
+          if (n.k !== "declare") return;
+          const v = n.value ? api.read(n.value, s) : undefined;
+          if (n.type !== "var" || n.value) s.vars[n.name] = v;
+          api.note(s, n, `${n.name} を用意します：${formatValue(s.vars[n.name])}`);
+          return [s];
+        },
+        increment(value, node, s, api) {
+          if (isUnknown(value)) api.fail("未確定値の増減は未確認です", node, "未確認");
+          const previous = Number(value);
+          return { previous, next: previous + (node.op === "++" ? 1 : -1) };
+        },
+        binary(op, a, b, node, s, api) {
+          if (!isUnknown(a) && !isUnknown(b)) return baseBinary(op, a, b, "js");
+          const comparison = ["==", "!=", "===", "!==", "<", ">", "<=", ">="].includes(op);
+          const numeric = ["<", ">", "<=", ">="].includes(op) &&
+            (typeof a === "number" || typeof b === "number" || a?.valueType === "number" || b?.valueType === "number");
+          if (numeric) {
+            if (isUnknown(a) && a.valueType === "prompt") a = convertedUnknown(a, "Number");
+            if (isUnknown(b) && b.valueType === "prompt") b = convertedUnknown(b, "Number");
+          }
+          if (["==", "!="].includes(op)) {
+            const u = isUnknown(a) ? a : b, known = isUnknown(a) ? b : a;
+            const safe = !isUnknown(known) &&
+              ((u.valueType === "prompt" && (known === null || typeof known === "string")) || typeof known === u.valueType);
+            if (!safe) api.fail("未確認：未確定値を型変換する == / != の比較", node, "未確認");
+          }
+          if (comparison) for (const value of [a, b].filter(isUnknown)) {
+            const root = value.rootId || value.id, mode = value.conversion || "raw";
+            s.jsComparisonModes ??= {};
+            if (s.jsComparisonModes[root] && s.jsComparisonModes[root] !== mode)
+              api.fail("未確認：型変換前後の未確定値を組み合わせた条件", node, "未確認");
+            s.jsComparisonModes[root] = mode;
+          }
+          if (["+", "-", "*", "/", "%", "^", "&", "|"].includes(op) &&
+              [a,b].some(v => isUnknown(v) && v.valueType !== "number"))
+            api.fail("未確認：型が未確定の算術・文字列演算", node, "未確認");
+          return baseBinary(op, a, b, "js");
         },
         read(a, s, api) {
+          if (a.k === "literal" && a.raw && /[LfF]$/.test(a.raw))
+            api.fail("JavaScriptに数値の型接尾辞はありません", a, "SyntaxError");
+          if (a.k === "var" && s.vars[a.name]?.kind === "js-uninitialized")
+            api.fail("初期化前のlet / constは参照できません", a, "ReferenceError");
+          if (a.k === "var" && ["True", "False", "TRUE", "FALSE", "NULL", "None", "Blank"].includes(a.name) && !Object.hasOwn(s.vars, a.name))
+            api.fail("未定義の名前：" + a.name, a, "ReferenceError");
+          if (a.k === "unary" && ["not", "&", "*"].includes(a.op))
+            api.fail("このJavaScript演算子は未対応です", a, "未対応");
           if (a.k === "var" && a.name === "undefined")
             return { handled: true, value: undefined };
           if (a.k === "var" && a.name === "NaN")
@@ -238,6 +331,8 @@ export const definition = {
           if (a.k === "var" && a.name === "Infinity")
             return { handled: true, value: Infinity };
           if (a.k === "member") {
+            if (["__proto__","constructor","prototype"].includes(a.name))
+              api.fail("このプロパティはモデルでは未対応です", a, "未対応");
             let value = api.read(a.target, s);
             if (value == null)
               api.fail(
@@ -253,6 +348,8 @@ export const definition = {
             return { handled: true, value: value[a.name] };
           }
           if (a.k === "index") {
+            if (a.indexes.length !== 1 || !a.indexes[0])
+              api.fail("この添字式は未対応です", a, "未対応");
             let value = api.read(a.target, s),
               index = api.read(a.indexes[0], s);
             if (value == null)
@@ -264,15 +361,19 @@ export const definition = {
           return null;
         },
         write(a, v, s, api, node) {
+          if (a.k === "var" && s.vars[a.name]?.kind === "js-uninitialized")
+            api.fail("初期化前のlet / constへは代入できません", node, "ReferenceError");
           if (a.k === "var" && s.types[a.name] === "const")
             api.fail("Assignment to constant variable", node, "TypeError");
           if (a.k === "member" || a.k === "index") {
             let obj = api.read(a.target, s);
+            if (isUnknown(obj)) api.fail("未確定オブジェクトへの書き込みは未確認です", node, "未確認");
             if (obj == null)
               api.fail("null / undefined へ書き込めません", node, "TypeError");
             if (typeof obj !== "object")
               api.fail("プリミティブ値へは書き込めません", node, "TypeError");
             let key = a.k === "member" ? a.name : api.read(a.indexes[0], s);
+            if (isUnknown(key)) api.fail("未確定の添字への書き込みは未確認です", node, "未確認");
             if (["__proto__", "constructor", "prototype"].includes(key))
               api.fail("このプロパティはモデルでは未対応です", node);
             obj[key] = v;
@@ -304,15 +405,19 @@ export const definition = {
               });
               return undefined;
             case "prompt":
-              return api.freshUnknown("promptの入力またはキャンセル", s);
+              return { ...api.freshUnknown("promptの入力またはキャンセル", s), valueType: "prompt" };
             case "document.getElementById":
-              return s.model.dom.elements[api.read(args[0], s)] ?? null;
+            {
+              const id = api.read(args[0], s);
+              if (isUnknown(id)) api.fail("未確定のIDによるDOM探索は未確認です", node, "未確認");
+              return Object.hasOwn(s.model.dom.elements,id) ? s.model.dom.elements[id] : null;
+            }
             case "document.querySelector": {
               let selector = api.read(args[0], s),
-                id = s.model.dom.selectors?.[selector];
+                id = Object.hasOwn(s.model.dom.selectors || {},selector) ? s.model.dom.selectors[selector] : undefined;
               if (id) return s.model.dom.elements[id] ?? null;
               if (typeof selector === "string" && selector.startsWith("#"))
-                return s.model.dom.elements[selector.slice(1)] ?? null;
+                return Object.hasOwn(s.model.dom.elements,selector.slice(1)) ? s.model.dom.elements[selector.slice(1)] : null;
               api.fail("モデルに未定義のCSSセレクターです", node);
             }
             case "document.createElement":
@@ -322,18 +427,20 @@ export const definition = {
                 children: [],
               };
             case "Number": {
+              if (!args.length) return 0;
               let v = api.read(args[0], s);
               return isUnknown(v)
-                ? unknown("Numberの入力による", v.id)
+                ? convertedUnknown(v, "Number")
                 : Number(v);
             }
             case "String": {
+              if (!args.length) return "";
               let v = api.read(args[0], s);
-              return isUnknown(v) ? v : String(v);
+              return isUnknown(v) ? convertedUnknown(v, "String") : String(v);
             }
             case "Boolean": {
               let v = api.read(args[0], s);
-              return isUnknown(v) ? v : Boolean(v);
+              return isUnknown(v) ? convertedUnknown(v, "Boolean") : Boolean(v);
             }
             case "parseInt": {
               let [v, radix] = values();
@@ -351,7 +458,7 @@ export const definition = {
             }
             case "JSON.stringify": {
               let v = api.read(args[0], s);
-              if (isUnknown(v)) return v;
+              if (containsUnknown(v)) return unknown("JSON.stringifyの入力に未確定値があります");
               try {
                 return JSON.stringify(v);
               } catch {
@@ -400,3 +507,5 @@ export const definition = {
     );
   },
 };
+
+definition.templates.push(...additionalTemplates(definition.model.defaults));

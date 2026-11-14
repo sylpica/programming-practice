@@ -13,6 +13,13 @@ const reference = REFERENCE.map((r) => ({
   supported: true,
   source: r.doc,
 }));
+for (const r of reference) {
+  if (["open","with","str.format","random","json","os","datetime","numpy.array","pandas.DataFrame"].includes(r.name)) {
+    r.supported = false;
+    r.caution += " このアプリのシミュレーションでは未対応として停止します。";
+  }
+  if (r.name === "filter") r.example = 'def even(x):\n    return x % 2 == 0\nprint(list(filter(even, range(6))))';
+}
 export const definition = {
   id: "python",
   name: "Python",
@@ -185,3 +192,5 @@ export function normalize(raw, code, def = definition) {
     reasons: raw.truncated ? ["探索またはループの上限"] : [],
   };
 }
+
+["基礎", "基礎", "基礎", "実践", "実践", "基礎", "実践", "応用", "応用", "応用"].forEach((level, i) => { definition.templates[i].level = level; });

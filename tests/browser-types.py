@@ -27,7 +27,7 @@ with sync_playwright() as p:
  page.reload();done();assert page.locator('#macroType').input_value()=='javascript';assert page.locator('#counter').inner_text()=='2 / 2';switch('r');assert page.locator('#editor').input_value()==r_code
  # Preserve temporarily invalid JSON model text, without losing code drafts.
  raw='{ "variables": '
- page.locator('#modelJson').fill(raw);switch('javascript');switch('r');assert page.locator('#modelJson').input_value()==raw;assert page.locator('#editor').input_value()==r_code
+ page.locator('#modelPanel summary').click();page.locator('#modelJson').fill(raw);switch('javascript');switch('r');assert page.locator('#modelJson').input_value()==raw;assert page.locator('#editor').input_value()==r_code
  page.locator('#resetModel').click();done()
  # Shared action editor edits, reorders and jumps to structurally located actions.
  switch('uivision');page.locator('#template').select_option('ui-form');done();assert page.locator('#builder .action-list li').count()==5

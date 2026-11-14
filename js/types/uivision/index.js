@@ -1,3 +1,4 @@
+import { additionalTemplates } from "./additional-templates.js";
 import {
   executeProgram,
   parseExpression,
@@ -51,6 +52,16 @@ const encode = (Commands) =>
     2,
   );
 const cmd = (Command, Target = "", Value = "") => ({ Command, Target, Value });
+for (const r of reference) {
+  const sample = palette.find(p => p.name === r.name).sample;
+  const setup = [cmd("open","https://example.test/form"),cmd("store","0","count"),cmd("store","完了","Result"),cmd("click","id=submit")];
+  let commands = [sample];
+  if (["if","elseif","else","end"].includes(r.name)) commands = [cmd("if","${count} == 0"),cmd("echo","0"),cmd("elseif","${count} == 1"),cmd("echo","1"),cmd("else"),cmd("echo","その他"),cmd("end")];
+  if (r.name === "while") commands = [sample,cmd("executeScript_Sandbox","return Number(${count}) + 1;","count"),cmd("end")];
+  if (r.name === "times") commands = [sample,cmd("echo","繰り返し"),cmd("end")];
+  if (["break","continue"].includes(r.name)) commands = [cmd("times","2"),sample,cmd("end")];
+  r.example = encode([...setup,...commands]);
+}
 export const definition = {
   id: "uivision",
   name: "UI.Vision RPA",
@@ -388,3 +399,5 @@ export const definition = {
     }
   },
 };
+
+definition.templates.push(...additionalTemplates(definition.model.defaults));

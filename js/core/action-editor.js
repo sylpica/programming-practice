@@ -15,6 +15,8 @@ export function createActionEditor({
       function parse() {
         let data = JSON.parse(getCode());
         if (!Array.isArray(data[key])) throw Error(`${key} 配列が必要です`);
+        if (data[key].some((item) => !item || typeof item !== "object" || Array.isArray(item)))
+          throw Error("アクションはオブジェクトで指定してください");
         return data;
       }
       function commit(data) {
@@ -129,7 +131,7 @@ export function createActionEditor({
           render();
           let card = root.querySelector(`[data-action-index="${index}"]`);
           card?.focus({ preventScroll: true });
-          card?.scrollIntoView({ behavior: "smooth", block: "center" });
+          card?.scrollIntoView({ behavior: "smooth", block: "start" });
         },
         destroy() {
           root.replaceChildren();

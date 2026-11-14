@@ -36,10 +36,14 @@ try {
 
 if (!Object.keys(drafts).length) {
   try {
-    let interim = JSON.parse(localStorage.getItem("macro-practice-v2"));
+    let raw = localStorage.getItem("macro-practice-v2"), interim = JSON.parse(raw);
     if (interim) {
-      drafts = interim.drafts || {};
-      active = getDefinition(interim.active);
+      if (interim.drafts && typeof interim.drafts === "object" && !Array.isArray(interim.drafts)) {
+        drafts = interim.drafts;
+        active = getDefinition(interim.active);
+      } else if (raw) {
+        localStorage.setItem("programming-practice-recovery-v2", raw);
+      }
     }
   } catch {}
 }
@@ -265,14 +269,14 @@ function renderTemplates() {
   $("template").append(none);
   $("templateCards").replaceChildren();
   for (let t of templates) {
-    let o = el("option", t.title);
+    let o = el("option", `${t.level} · ${t.title}`);
     o.value = t.id;
     $("template").append(o);
     let card = el("article", undefined, "template-card");
     card.append(
       el(
         "span",
-        "TEMPLATE " + String(templates.indexOf(t) + 1).padStart(2, "0"),
+        t.level,
         "eyebrow",
       ),
       el("h2", t.title),
@@ -338,10 +342,14 @@ $("referenceSearch").oninput = renderRefs;
 $("fullSearch").oninput = fullRefs;
 function renderGlossary() {
   $("glossaryList").replaceChildren();
+  $("sideGlossary").replaceChildren();
   for (let [word, definition] of glossary) {
     let box = el("div");
     box.append(el("dt", word), el("dd", definition));
     $("glossaryList").append(box);
+    const side = el("div");
+    side.append(el("dt", word), el("dd", definition));
+    $("sideGlossary").append(side);
   }
 }
 function updateUsed() {
@@ -375,7 +383,9 @@ function jumpLine(line, nodeId) {
   editor.focus({ preventScroll: true });
   editor.setSelectionRange(start, start + (lines[line - 1] || "").length);
   let lh = parseFloat(getComputedStyle(editor).lineHeight);
-  editor.scrollTop = Math.max(0, (line - 1) * lh - editor.clientHeight / 3);
+  editor.style.paddingBottom = editor.clientHeight + "px";
+  $("lineNumbers").style.paddingBottom = editor.clientHeight + "px";
+  editor.scrollTop = Math.max(0, (line - 1) * lh);
   syncScroll();
   editor.scrollIntoView({ behavior: "smooth", block: "center" });
 }
@@ -502,7 +512,15 @@ function renderPath() {
   if (p.outputs.length) {
     let box = el("div", undefined, "output-box");
     box.append(el("h3", "出力"));
-    for (let o of p.outputs) box.append(el("div", `${o.channel}  ${o.text}`));
+    for (let o of p.outputs) {
+      const entry = el(o.line ? "button" : "div", `${o.channel}  ${o.text}`);
+      if (o.line) {
+        entry.className = "output-link";
+        entry.onclick = () => jumpLine(o.line);
+        entry.setAttribute("aria-label", `${o.channel} ${o.text}：${o.line}行へ移動`);
+      }
+      box.append(entry);
+    }
     $("outputs").append(box);
   }
   $("final").replaceChildren();

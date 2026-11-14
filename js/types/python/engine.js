@@ -69,7 +69,7 @@ function poison(v, desc) {
   for (const k of Object.keys(v)) delete v[k];
   v.__unk = true; v.desc = desc || '中身が実行時に決まる値';
 }
-const isMutableVal = (v) => isList(v) || isDict(v) || isSet(v) || isTuple(v) || (v && !!v.__range) || isIter(v);
+const isMutableVal = (v) => isList(v) || isDict(v) || isSet(v) || isTuple(v) || (v && (!!v.__range || !!v.__instance)) || isIter(v);
 
 function typeName(v) {
   if (isUnk(v)) return '不明';
@@ -90,6 +90,7 @@ function typeName(v) {
   if (isMethodRef(v)) return 'builtin_function_or_method';
   if (isEllipsis(v)) return 'ellipsis';
   if (v && v.__class) return 'type';
+  if (v && v.__instance) return v.cls.cname;
   if (v && v.__exc) return v.kind;
   return '不明';
 }
@@ -263,6 +264,7 @@ function reprVal(v, depth) {
   if (isSet(v)) { if (!v.__set.length) return 'set()'; const ord = setOrder(v); if (ord) return '{' + ord.map(x => reprVal(x, depth + 1)).join(', ') + '}'; const inner = v.__set.map(x => reprVal(x, depth + 1)).join(', '); return /[（）]/.test(inner) ? '（集合・表示の並び順は実行時に決まります）' : '（集合 {' + inner + '}・表示の並び順は実行時に決まります）'; }
   if (v && v.__type) return "<class '" + v.__type + "'>";
   if (v && v.__class) return "<class '" + v.cname + "'>";
+  if (v && v.__instance) return '（モデルの ' + v.cls.cname + ' インスタンス）';
   if (v && v.__exc) return v.kind + '(' + v.argRepr + ')';
   if (isEllipsis(v)) return 'Ellipsis';
   if (isMethodRef(v)) return '（組み込みメソッド ' + v.name + '）';
@@ -816,10 +818,7 @@ function parseClass(lines, i, indent, tc) {
   tc.next(); // class
   const nameTok = tc.next();
   if (nameTok.t !== 'NAME') throw new SimDiag(L.line, 'SyntaxError', 'クラス名が必要です', 'class のあとに名前を書いてください');
-  if (tc.isOp('(')) { // 基底クラスなどは読み飛ばす
-    let depth = 0;
-    do { const tk = tc.next(); if (tk.t === 'OP' && tk.v === '(') depth++; else if (tk.t === 'OP' && tk.v === ')') depth--; if (tk.t === 'END') break; } while (depth > 0);
-  }
+  if (tc.eatOp('(')) { if (!tc.eatOp(')')) throw new SimDiag(L.line, '未対応', '継承・メタクラスは未対応です', ''); }
   tc.expectOp(':', L.line);
   const s = parseSuite(lines, i, indent, tc, L.line);
   return { stmts: [{ k: 'class', name: nameTok.v, body: s.body, line: L.line }], next: s.next };
@@ -1374,7 +1373,10 @@ class Interp {
   // 「入らない（対象が空）」か「入る（要素は実行時に決まる値として、本体を1回分だけ代表して実行）」のどちらかを仮定する。
   execForcedFor(s,env,ctx){const bid=this.bidOf(s);let broke=false,count=0;for(;;){let taken=this.branchChoice('for:'+bid,{line:s.line,kind:'for',textT:'次の要素がある',textF:'ここで終了する'},occ=>occ<=1);if(!taken)break;this.step(s.line,'実行時の対象による繰り返し '+(++count)+'回目');this.assignTo(s.target,UNK('実行時の繰り返し要素'),env,s.line,false);try{this.execBlock(s.body,env,{...ctx,inLoop:true});}catch(e){if(e instanceof Flow&&e.kind==='break'){broke=true;break;}if(!(e instanceof Flow&&e.kind==='continue'))throw e;}}if(!broke&&s.elseBody)this.execBlock(s.elseBody,env,ctx);}
 
-  diag(line, level, kind, msg, fix) { this.diags.push({ line, level, kind, msg, fix: fix || '' }); }
+  diag(line, level, kind, msg, fix) {
+    if (level === 'note' && kind === '対応外') throw new SimDiag(line, '未対応', msg, fix);
+    this.diags.push({ line, level, kind, msg, fix: fix || '' });
+  }
   step(line, text) {
     if (this.quiet > 0) return;
     if (this.steps.length >= MAX_STEPS) {
@@ -1498,6 +1500,7 @@ class Interp {
       case 'class': {
         const classEnv = new Env(env);
         try { this.execBlock(s.body, classEnv, { ...ctx, inFunc: false, inLoop: false }); } catch (e) { if (!(e instanceof Flow)) throw e; }
+        for (const value of classEnv.vars.values()) if (isFunc(value)) value.env = env;
         env.set(s.name, { __class: true, cname: s.name, cenv: classEnv });
         this.step(s.line, 'クラス「' + s.name + '」を定義します（中身の代入はクラスの属性になります）');
         return;
@@ -1567,6 +1570,8 @@ class Interp {
         this.err(s.line, kind, msg || kind + ' を発生させました', '', excStr, excRepr);
       }
       case 'import': {
+        if (!/^(?:import\s+math(?:\s+as\s+\w+)?|from\s+math\s+import\s+.+)$/.test((s.text || '').trim()))
+          this.err(s.line, '未対応', 'このモジュールの読み込みは未対応です。後続の結果は生成しません', '');
         this.diag(s.line, 'note', 'import', 'import はこの説明では中身を読み込みません。import した名前は「実行時に決まる値」として扱います', '');
         for (const nm of importNames(s.text || '')) env.set(nm, UNK('モジュール「' + nm + '」の内容'));
         { const t = (s.text || '').trim(); let m;
@@ -1864,6 +1869,7 @@ class Interp {
     }
     if (t.k === 'attr') {
       const obj = this.eval(t.obj, env);
+      if (obj && obj.__instance) { obj.attrs.set(t.name, v); if (record) this.step(line, 'モデルインスタンスの属性「' + t.name + '」を ' + reprVal(v) + ' にします'); return; }
       if (obj && obj.__class) { obj.cenv.vars.set(t.name, v); if (record) this.step(line, 'クラス「' + obj.cname + '」の属性「' + t.name + '」を ' + reprVal(v) + ' にします'); return; } // クラス属性は読み取りと同じ保存先へ書く（古い値を確定値として残さない）
       if (isUnk(obj)) return; // インスタンス等、対象が不明な値への代入は値も不明のままにする
       this.diag(line, 'note', '対応外', '属性（.名前）への代入はこの説明では解釈できません', '');
@@ -2009,6 +2015,14 @@ Interp.prototype.eval = function (n, env) {
     }
     case 'attr': {
       const obj = this.eval(n.obj, env);
+      if (obj && obj.__instance) {
+        if (obj.attrs.has(n.name)) return obj.attrs.get(n.name);
+        if (obj.cls.cenv.vars.has(n.name)) {
+          const value = obj.cls.cenv.vars.get(n.name);
+          return isFunc(value) ? { __bound: true, fn: value, instance: obj } : value;
+        }
+        this.err(n.line, 'AttributeError', '属性がありません：' + n.name, '');
+      }
       if (obj && obj.__type && (n.name === '__name__' || n.name === '__qualname__')) return obj.__type;
       if (isFunc(obj) && n.name === '__annotations__') {
         const d = DICT();
@@ -2363,20 +2377,22 @@ Interp.prototype.evalCall = function (n, env) {
   if (args === null) return UNK();
   if (fn && fn.__builtin) return this.callBuiltin(fn.__builtin, args, n.kwargs, env, n.line, n);
   if (isFunc(fn)) return this.callUserFunc(fn, args, n.kwargs, env, n.line);
+  if (fn && fn.__bound) return this.callUserFunc(fn.fn, [fn.instance, ...args], n.kwargs, env, n.line);
   if (fn && fn.__method) return this.callMethod(fn.obj, fn.name, args, n.kwargs, env, n.line);
-  if (fn && fn.__class) { this.diag(n.line, 'note', '対応外', 'クラス「' + fn.cname + '」のインスタンスそのものは追跡しません。値は「実行時に決まる値」として扱います（__init__ の処理は実行します）', ''); return this.instantiate(fn, args, n.kwargs, env, n.line); }
+  if (fn && fn.__class) return this.instantiate(fn, args, n.kwargs, env, n.line);
   if (isUnk(fn)) { for (const a of args) if (isMutableVal(a)) poison(a, '呼び出しで書き換えられたかもしれない値'); return UNK(); }
   this.err(n.line, 'TypeError', typeName(fn) + ' は呼び出し（ ）ができません', '関数名のあとに ( ) を付けて呼び出します。変数と関数を取り違えていないか確認してください');
   return UNK();
 };
 // インスタンスそのものは追跡しない（UNK）が、__init__ は実行して副作用（クラス属性や外側の変数の書き換え）を追う
 Interp.prototype.instantiate = function (cls, args, kwargs, env, line) {
-  const inst = UNK('「' + cls.cname + '」のインスタンス');
+  const inst = { __instance: true, cls, attrs: new Map() };
   const init = cls.cenv && cls.cenv.vars.get('__init__');
   if (isFunc(init)) {
-    try { this.callUserFunc(init, [inst, ...args], kwargs || {}, env, line); }
+    try { const value = this.callUserFunc(init, [inst, ...args], kwargs || {}, env, line); if (!isNone(value)) this.err(line, 'TypeError', '__init__はNoneを返す必要があります', ''); }
     catch (e) { if (!(e instanceof Flow && e.kind === 'return')) throw e; }
   }
+  else if (args.length || Object.keys(kwargs || {}).length) this.err(line, 'TypeError', 'このクラスはコンストラクタ引数を受け取りません', '');
   return inst;
 };
 Interp.prototype.callFn = function (fv, args, env, line) {
@@ -2651,6 +2667,7 @@ Interp.prototype.callBuiltin0 = function (name, args, kwargs, env, line, node) {
     case 'type': return isUnk(args[0]) ? UNK('型は実行時に決まります') : TYPEVAL(typeName(args[0]));
     case 'isinstance': {
       const want = args[1];
+      if (want && want.__class) return BOOL(args[0]?.__instance && args[0].cls === want);
       if (isUnk(args[0])) return UNK();
       if (want && want.__type) return BOOL(typeName(args[0]) === want.__type || (want.__type === 'int' && isBool(args[0])));
       if (want && want.__builtin) { const map = { int: 'int', float: 'float', str: 'str', bool: 'bool', list: 'list', dict: 'dict', tuple: 'tuple', set: 'set' }; const wn = map[want.__builtin]; if (wn) return BOOL(typeName(args[0]) === wn || (wn === 'int' && isBool(args[0]))); }
@@ -2712,6 +2729,14 @@ Interp.prototype.cmpVals = function (a, b, line) {
 };
 
 Interp.prototype.callMethod = function (obj, name, args, kwargs, env, line) {
+  if (obj && (obj.__instance || obj.__class)) {
+    const cls = obj.__instance ? obj.cls : obj;
+    const own = obj.__instance && obj.attrs.has(name);
+    const method = own ? obj.attrs.get(name) : cls.cenv.vars.get(name);
+    if (isFunc(method)) return this.callUserFunc(method, obj.__instance && !own ? [obj, ...args] : args, kwargs, env, line);
+    if (method === undefined) this.err(line, 'AttributeError', '属性がありません：' + name, '');
+    return this.callFn(method, args, env, line);
+  }
   if (isUnk(obj) && obj.mod === 'math') return this.mathCall(name, args, line);
   if (isUnk(obj)) return UNK();
   if (isNone(obj)) this.err(line, 'AttributeError', 'None にはメソッド「' + name + '」がありません（値が None になっていないか確認してください）', 'return を書き忘れた関数の戻り値などで None になっていないか確認してください');

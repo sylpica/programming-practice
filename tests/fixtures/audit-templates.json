@@ -1,0 +1,901 @@
+[
+  {
+    "kind": "vba",
+    "template": "cells",
+    "paths": 1,
+    "outputs": [
+      [
+        "100"
+      ]
+    ]
+  },
+  {
+    "kind": "vba",
+    "template": "if",
+    "paths": 1
+  },
+  {
+    "kind": "vba",
+    "template": "for",
+    "paths": 1,
+    "outputs": [
+      [
+        "15"
+      ]
+    ]
+  },
+  {
+    "kind": "vba",
+    "template": "each",
+    "paths": 1
+  },
+  {
+    "kind": "vba",
+    "template": "input",
+    "paths": 3,
+    "outputs": [
+      [
+        "\"開始します\""
+      ],
+      [
+        "\"終了します\""
+      ],
+      [
+        "\"入力を確認してください\""
+      ]
+    ]
+  },
+  {
+    "kind": "vba",
+    "template": "do",
+    "paths": 1,
+    "outputs": [
+      [
+        "1",
+        "2",
+        "3"
+      ]
+    ]
+  },
+  {
+    "kind": "vba",
+    "template": "array",
+    "paths": 1,
+    "outputs": [
+      [
+        "1, 3",
+        "9"
+      ]
+    ]
+  },
+  {
+    "kind": "vba",
+    "template": "text",
+    "paths": 1,
+    "outputs": [
+      [
+        "9",
+        "\"EXCEL\""
+      ]
+    ]
+  },
+  {
+    "kind": "imagej",
+    "template": "ij-0",
+    "paths": 1,
+    "outputs": [
+      [
+        "a + b = 7",
+        "a / b = 0.75",
+        "sample.tif"
+      ]
+    ]
+  },
+  {
+    "kind": "imagej",
+    "template": "ij-1",
+    "paths": 1,
+    "outputs": [
+      [
+        "1 は奇数",
+        "2 は偶数",
+        "3 は奇数",
+        "4 は偶数",
+        "5 は奇数"
+      ]
+    ]
+  },
+  {
+    "kind": "imagej",
+    "template": "ij-2",
+    "paths": 1,
+    "outputs": [
+      [
+        "合計 = 47",
+        "平均 = 11.75"
+      ]
+    ]
+  },
+  {
+    "kind": "imagej",
+    "template": "ij-3",
+    "paths": 1,
+    "numericAreas": [
+      3.141592653589793,
+      12.566370614359172,
+      28.274333882308138
+    ]
+  },
+  {
+    "kind": "imagej",
+    "template": "ij-4",
+    "paths": 1,
+    "outputs": [
+      [
+        "タイトル: demo.tif",
+        "幅: 512 px",
+        "高さ: 512 px",
+        "スライス数: 1",
+        "ビット深度: 8"
+      ]
+    ]
+  },
+  {
+    "kind": "imagej",
+    "template": "ij-5",
+    "paths": 1,
+    "outputs": [
+      []
+    ]
+  },
+  {
+    "kind": "imagej",
+    "template": "ij-6",
+    "paths": 1,
+    "outputs": [
+      []
+    ]
+  },
+  {
+    "kind": "imagej",
+    "template": "ij-7",
+    "paths": 1,
+    "outputs": [
+      []
+    ]
+  },
+  {
+    "kind": "imagej",
+    "template": "ij-8",
+    "modelFiles": 2,
+    "paths": 1,
+    "outputs": [
+      []
+    ]
+  },
+  {
+    "kind": "imagej",
+    "template": "ij-9",
+    "paths": 1,
+    "outputs": [
+      []
+    ]
+  },
+  {
+    "kind": "cloudformation",
+    "template": "cfn-transform",
+    "paths": 1
+  },
+  {
+    "kind": "cloudformation",
+    "template": "cfn-local",
+    "paths": 1
+  },
+  {
+    "kind": "cloudformation",
+    "template": "cfn-handler",
+    "paths": 1
+  },
+  {
+    "kind": "powerautomate",
+    "template": "pa-counter",
+    "paths": 1,
+    "outputs": [
+      [
+        "合計 3"
+      ]
+    ]
+  },
+  {
+    "kind": "powerautomate",
+    "template": "pa-branch",
+    "paths": 2,
+    "outputs": [
+      [],
+      [
+        "終了"
+      ]
+    ]
+  },
+  {
+    "kind": "powerautomate",
+    "template": "pa-files",
+    "paths": 1,
+    "outputs": [
+      []
+    ]
+  },
+  {
+    "kind": "autohotkey",
+    "template": "ahk-hotkey",
+    "paths": 1,
+    "outputs": [
+      []
+    ]
+  },
+  {
+    "kind": "autohotkey",
+    "template": "ahk-hotstring",
+    "paths": 1,
+    "outputs": [
+      []
+    ]
+  },
+  {
+    "kind": "autohotkey",
+    "template": "ahk-loop",
+    "paths": 2,
+    "outputs": [
+      [],
+      [
+        "終了"
+      ]
+    ]
+  },
+  {
+    "kind": "uivision",
+    "template": "ui-form",
+    "paths": 1,
+    "outputs": [
+      [
+        "完了"
+      ]
+    ]
+  },
+  {
+    "kind": "uivision",
+    "template": "ui-loop",
+    "paths": 1,
+    "outputs": [
+      [
+        "3"
+      ]
+    ]
+  },
+  {
+    "kind": "uivision",
+    "template": "ui-runtime",
+    "paths": 2,
+    "outputs": [
+      [],
+      [
+        "実行時のページ内容を確認"
+      ]
+    ]
+  },
+  {
+    "kind": "powerapps",
+    "template": "fx-state",
+    "paths": 1,
+    "outputs": [
+      [
+        "十分"
+      ]
+    ]
+  },
+  {
+    "kind": "powerapps",
+    "template": "fx-table",
+    "paths": 1,
+    "outputs": [
+      [
+        "14"
+      ]
+    ]
+  },
+  {
+    "kind": "powerapps",
+    "template": "fx-record",
+    "paths": 1,
+    "outputs": [
+      []
+    ]
+  },
+  {
+    "kind": "python",
+    "template": "tpl-calc",
+    "paths": 1,
+    "outputs": [
+      [
+        "小計: 360円",
+        "税込: 396円"
+      ]
+    ]
+  },
+  {
+    "kind": "python",
+    "template": "tpl-branch",
+    "paths": 1,
+    "outputs": [
+      [
+        "72点は B 判定です"
+      ]
+    ]
+  },
+  {
+    "kind": "python",
+    "template": "tpl-list-loop",
+    "paths": 1,
+    "outputs": [
+      [
+        "合計: 108",
+        "最大: 42",
+        "2倍: [8, 16, 30, 32, 46, 84]"
+      ]
+    ]
+  },
+  {
+    "kind": "python",
+    "template": "tpl-dict-count",
+    "paths": 1,
+    "outputs": [
+      [
+        "tea 3",
+        "coffee 2",
+        "juice 1"
+      ]
+    ]
+  },
+  {
+    "kind": "python",
+    "template": "tpl-func",
+    "paths": 1,
+    "outputs": [
+      [
+        "1100",
+        "1080"
+      ]
+    ]
+  },
+  {
+    "kind": "python",
+    "template": "tpl-strings",
+    "paths": 1,
+    "outputs": [
+      [
+        "Yuya Kohno",
+        "['2026', '11', '10']",
+        "2026/11/10",
+        "Mython"
+      ]
+    ]
+  },
+  {
+    "kind": "python",
+    "template": "tpl-try",
+    "paths": 1,
+    "outputs": [
+      [
+        "5.0",
+        "ゼロでは割れません"
+      ]
+    ]
+  },
+  {
+    "kind": "python",
+    "template": "tpl-class",
+    "paths": 1,
+    "outputs": [
+      [
+        "1",
+        "2",
+        "3"
+      ]
+    ]
+  },
+  {
+    "kind": "python",
+    "template": "tpl-fileio",
+    "paths": 1,
+    "outputs": [
+      [
+        "2 行",
+        "一行目"
+      ]
+    ]
+  },
+  {
+    "kind": "python",
+    "template": "tpl-csv",
+    "paths": 1,
+    "outputs": [
+      [
+        "売上合計: 360"
+      ]
+    ]
+  },
+  {
+    "kind": "r",
+    "template": "r-vectors",
+    "paths": 1,
+    "outputs": [
+      [
+        "NA",
+        "23.333333333333332",
+        "c(20, 40, NA, 80)",
+        "c(FALSE, FALSE, TRUE, FALSE)"
+      ]
+    ]
+  },
+  {
+    "kind": "r",
+    "template": "r-frame",
+    "paths": 1,
+    "outputs": [
+      [
+        "name: c(\"A\", \"B\", \"C\")\nscore: c(50, 80, 95)\nbonus: c(55, 85, 100)",
+        "80",
+        "name: c(\"A\")\nscore: c(50)\nbonus: c(55)"
+      ]
+    ]
+  },
+  {
+    "kind": "r",
+    "template": "r-loop",
+    "paths": 1,
+    "outputs": [
+      [
+        "\"大きい\"",
+        "c(15)"
+      ]
+    ]
+  },
+  {
+    "kind": "c",
+    "template": "c-array",
+    "paths": 1,
+    "outputs": [
+      [
+        "6\n"
+      ]
+    ]
+  },
+  {
+    "kind": "c",
+    "template": "c-pointer",
+    "paths": 1,
+    "outputs": [
+      [
+        "99\n"
+      ]
+    ]
+  },
+  {
+    "kind": "c",
+    "template": "c-error",
+    "paths": 1,
+    "error": "IndexOutOfRange|未定義|範囲"
+  },
+  {
+    "kind": "cpp",
+    "template": "cpp-array",
+    "paths": 1,
+    "outputs": [
+      [
+        "6\n"
+      ]
+    ]
+  },
+  {
+    "kind": "cpp",
+    "template": "cpp-pointer",
+    "paths": 1,
+    "outputs": [
+      [
+        "99\n"
+      ]
+    ]
+  },
+  {
+    "kind": "cpp",
+    "template": "cpp-error",
+    "paths": 1,
+    "error": "IndexOutOfRange|未定義|範囲"
+  },
+  {
+    "kind": "csharp",
+    "template": "csharp-array",
+    "paths": 1,
+    "outputs": [
+      [
+        "6"
+      ]
+    ]
+  },
+  {
+    "kind": "csharp",
+    "template": "cs-object",
+    "paths": 1,
+    "outputs": [
+      [
+        "5"
+      ]
+    ]
+  },
+  {
+    "kind": "csharp",
+    "template": "csharp-error",
+    "paths": 1,
+    "error": "IndexOutOfRange|未定義|範囲"
+  },
+  {
+    "kind": "javascript",
+    "template": "js-dom",
+    "paths": 1,
+    "outputs": [
+      [
+        "こんにちは、学習者"
+      ]
+    ]
+  },
+  {
+    "kind": "javascript",
+    "template": "js-array",
+    "paths": 1,
+    "outputs": [
+      [
+        "10",
+        "[\n  1,\n  2,\n  3,\n  4\n]"
+      ]
+    ]
+  },
+  {
+    "kind": "javascript",
+    "template": "js-runtime",
+    "paths": 2,
+    "outputs": [
+      [],
+      [
+        "終了"
+      ]
+    ]
+  },
+  {
+    "kind": "cloudformation",
+    "template": "cfn-pass",
+    "paths": 1,
+    "outputs": [
+      []
+    ],
+    "fragment": {
+      "Resources": {
+        "Bucket": {
+          "Type": "AWS::S3::Bucket"
+        }
+      }
+    }
+  },
+  {
+    "kind": "cloudformation",
+    "template": "cfn-two-macros",
+    "paths": 1,
+    "outputs": [
+      []
+    ],
+    "fragment": {
+      "Resources": {
+        "Bucket": {
+          "Type": "AWS::S3::Bucket"
+        }
+      },
+      "Metadata": {
+        "Stage": "dev",
+        "Label": "checked"
+      }
+    }
+  },
+  {
+    "kind": "cloudformation",
+    "template": "cfn-resource-loop",
+    "paths": 1,
+    "outputs": [
+      [
+        "Reviewed: 2"
+      ]
+    ],
+    "reviewed": 2
+  },
+  {
+    "kind": "powerautomate",
+    "template": "pa-read-model",
+    "paths": 1,
+    "outputs": [
+      [
+        "入力: モデルの入力"
+      ]
+    ]
+  },
+  {
+    "kind": "powerautomate",
+    "template": "pa-break-total",
+    "paths": 1,
+    "outputs": [
+      [
+        "合計 15"
+      ]
+    ]
+  },
+  {
+    "kind": "powerautomate",
+    "template": "pa-select-report",
+    "paths": 1,
+    "outputs": [
+      [
+        "34"
+      ]
+    ]
+  },
+  {
+    "kind": "autohotkey",
+    "template": "ahk-calc",
+    "paths": 1,
+    "outputs": [
+      [
+        "360"
+      ]
+    ]
+  },
+  {
+    "kind": "autohotkey",
+    "template": "ahk-match-window",
+    "paths": 1,
+    "outputs": [
+      [
+        "1"
+      ]
+    ],
+    "windowText": "練習中"
+  },
+  {
+    "kind": "autohotkey",
+    "template": "ahk-nested-index",
+    "paths": 1,
+    "outputs": [
+      [
+        "完了"
+      ]
+    ],
+    "windowText": "1:1\n1:2\n2:1\n2:2\n"
+  },
+  {
+    "kind": "uivision",
+    "template": "ui-store-echo",
+    "paths": 1,
+    "outputs": [
+      [
+        "こんにちは、学習者"
+      ]
+    ]
+  },
+  {
+    "kind": "uivision",
+    "template": "ui-check-model",
+    "paths": 1,
+    "outputs": [
+      [
+        "確認者"
+      ]
+    ]
+  },
+  {
+    "kind": "uivision",
+    "template": "ui-loop-select",
+    "paths": 1,
+    "outputs": [
+      [
+        "最後"
+      ]
+    ]
+  },
+  {
+    "kind": "powerapps",
+    "template": "fx-price",
+    "paths": 1,
+    "outputs": [
+      [
+        "360"
+      ]
+    ]
+  },
+  {
+    "kind": "powerapps",
+    "template": "fx-filter-total",
+    "paths": 1,
+    "outputs": [
+      [
+        "2:5"
+      ]
+    ]
+  },
+  {
+    "kind": "powerapps",
+    "template": "fx-build-save",
+    "paths": 1,
+    "outputs": [
+      [
+        "30"
+      ]
+    ],
+    "orderName": "30"
+  },
+  {
+    "kind": "r",
+    "template": "r-index",
+    "paths": 1,
+    "outputs": [
+      [
+        "c(10, 30)",
+        "c(10, 30)"
+      ]
+    ]
+  },
+  {
+    "kind": "r",
+    "template": "r-filter-loop",
+    "paths": 1,
+    "outputs": [
+      [
+        "c(13)"
+      ]
+    ]
+  },
+  {
+    "kind": "r",
+    "template": "r-frame-select",
+    "paths": 1,
+    "outputs": [
+      [
+        "name: c(\"B\", \"C\")\nscore: c(80, 95)\nbonus: c(85, 100)",
+        "83.33333333333333"
+      ]
+    ]
+  },
+  {
+    "kind": "c",
+    "template": "c-price",
+    "paths": 1,
+    "outputs": [
+      [
+        "360\n"
+      ]
+    ]
+  },
+  {
+    "kind": "c",
+    "template": "c-positive-total",
+    "paths": 1,
+    "outputs": [
+      [
+        "11\n"
+      ]
+    ]
+  },
+  {
+    "kind": "c",
+    "template": "c-pointer-loop",
+    "paths": 1,
+    "outputs": [
+      [
+        "2\n",
+        "6\n"
+      ]
+    ]
+  },
+  {
+    "kind": "cpp",
+    "template": "cpp-price",
+    "paths": 1,
+    "outputs": [
+      [
+        "360\n"
+      ]
+    ]
+  },
+  {
+    "kind": "cpp",
+    "template": "cpp-positive-total",
+    "paths": 1,
+    "outputs": [
+      [
+        "11\n"
+      ]
+    ]
+  },
+  {
+    "kind": "cpp",
+    "template": "cpp-pointer-loop",
+    "paths": 1,
+    "outputs": [
+      [
+        "2\n",
+        "6\n"
+      ]
+    ]
+  },
+  {
+    "kind": "csharp",
+    "template": "csharp-price",
+    "paths": 1,
+    "outputs": [
+      [
+        "360"
+      ]
+    ]
+  },
+  {
+    "kind": "csharp",
+    "template": "csharp-positive-total",
+    "paths": 1,
+    "outputs": [
+      [
+        "11"
+      ]
+    ]
+  },
+  {
+    "kind": "csharp",
+    "template": "cs-shared-total",
+    "paths": 1,
+    "outputs": [
+      [
+        "15"
+      ]
+    ]
+  },
+  {
+    "kind": "javascript",
+    "template": "js-coercion",
+    "paths": 1,
+    "outputs": [
+      [
+        "52",
+        "7",
+        "true",
+        "false"
+      ]
+    ]
+  },
+  {
+    "kind": "javascript",
+    "template": "js-scope",
+    "paths": 1,
+    "outputs": [
+      [
+        "undefined",
+        "2",
+        "1",
+        "外"
+      ]
+    ]
+  },
+  {
+    "kind": "javascript",
+    "template": "js-build-summary",
+    "paths": 1,
+    "outputs": [
+      [
+        "合計: 12"
+      ]
+    ]
+  }
+]

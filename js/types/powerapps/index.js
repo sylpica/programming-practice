@@ -1,3 +1,4 @@
+import { additionalTemplates } from "./additional-templates.js";
 import {
   ScriptParser,
   executeProgram,
@@ -173,6 +174,10 @@ const reference = rows([
     'Notify("保存しました")',
   ],
 ]);
+for (const r of reference) {
+  if (["If","Switch","Text"].includes(r.name)) r.example = "Set(Count, 2);\n" + r.example;
+  if (["CountRows","Sum","Filter","LookUp"].includes(r.name)) r.example = "ClearCollect(Items, {Value:1}, {Value:2});\n" + r.example;
+}
 function lowerBehavior(expr, line = expr.line || 1) {
   let name = callName(expr.target).toLowerCase();
   if (expr.k === "call" && name === "if") {
@@ -686,3 +691,5 @@ export const definition = {
     }
   },
 };
+
+definition.templates.push(...additionalTemplates(definition.model.defaults));

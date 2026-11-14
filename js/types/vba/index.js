@@ -5,6 +5,11 @@ import {
   usedReferences,
 } from "../../content.js";
 import { lex, display } from "../../engine.js";
+for (const r of reference) {
+  if (["LBound","UBound"].includes(r.name)) r.example = "Dim items(2) As String\n" + r.example;
+  if (r.name === "Next") r.example = "For i = 1 To 3\n    Debug.Print i\nNext i";
+  if (r.name === "Exit Do") r.example = "Do\n    Exit Do\nLoop";
+}
 export const definition = {
   id: "vba",
   name: "Excel VBA",
@@ -72,3 +77,5 @@ export const definition = {
     return r;
   },
 };
+
+["基礎", "基礎", "基礎", "実践", "実践", "実践", "応用", "応用"].forEach((level, i) => { definition.templates[i].level = level; });

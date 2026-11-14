@@ -1,0 +1,721 @@
+[
+  {
+    "kind": "vba",
+    "name": "Variant addition",
+    "code": "Dim x\nx = \"2\"\nDebug.Print x + 3",
+    "outputs": [
+      "5"
+    ],
+    "paths": 1,
+    "error": null,
+    "model": null
+  },
+  {
+    "kind": "vba",
+    "name": "known branch",
+    "code": "If 2 > 1 Then\nDebug.Print \"yes\"\nElse\nDebug.Print \"no\"\nEnd If",
+    "outputs": [
+      "\"yes\""
+    ],
+    "paths": 1,
+    "error": null,
+    "model": null
+  },
+  {
+    "kind": "vba",
+    "name": "descending loop",
+    "code": "For i = 3 To 1 Step -1\nDebug.Print i\nNext i",
+    "outputs": [
+      "3",
+      "2",
+      "1"
+    ],
+    "paths": 1,
+    "error": null,
+    "model": null
+  },
+  {
+    "kind": "vba",
+    "name": "division error",
+    "code": "x = 1\ny = x / 0",
+    "outputs": null,
+    "paths": 1,
+    "error": "0|ゼロ|11",
+    "model": null
+  },
+  {
+    "kind": "vba",
+    "name": "unknown paths",
+    "code": "x = InputBox(\"x\")\nIf x = \"a\" Then\nDebug.Print \"A\"\nElse\nDebug.Print \"B\"\nEnd If",
+    "outputs": null,
+    "paths": 2,
+    "error": null,
+    "model": null
+  },
+  {
+    "kind": "imagej",
+    "name": "array indexing",
+    "code": "a=newArray(2,4,6); print(a[1]);",
+    "outputs": [
+      "4"
+    ],
+    "paths": 1,
+    "error": null,
+    "model": null
+  },
+  {
+    "kind": "imagej",
+    "name": "branch",
+    "code": "if(2>1){print(\"yes\");}else{print(\"no\");}",
+    "outputs": [
+      "yes"
+    ],
+    "paths": 1,
+    "error": null,
+    "model": null
+  },
+  {
+    "kind": "imagej",
+    "name": "loop",
+    "code": "for(i=0;i<3;i++){print(i);}",
+    "outputs": [
+      "0",
+      "1",
+      "2"
+    ],
+    "paths": 1,
+    "error": null,
+    "model": null
+  },
+  {
+    "kind": "imagej",
+    "name": "array bounds",
+    "code": "a=newArray(1,2);\nprint(a[2]);",
+    "outputs": null,
+    "paths": 1,
+    "error": "範囲|index|添字",
+    "model": null
+  },
+  {
+    "kind": "imagej",
+    "name": "image state",
+    "code": "setPixel(0,0,7); print(getPixel(0,0));",
+    "outputs": [
+      "7"
+    ],
+    "paths": 1,
+    "error": null,
+    "model": null
+  },
+  {
+    "kind": "cloudformation",
+    "name": "no transform",
+    "code": "{\"Resources\":{}}",
+    "outputs": null,
+    "paths": 1,
+    "error": null,
+    "model": null
+  },
+  {
+    "kind": "cloudformation",
+    "name": "handler branch",
+    "code": "def handler(event, context):\n    if event[\"params\"].get(\"X\", 0) == 0:\n        return {\"requestId\":event[\"requestId\"],\"status\":\"success\",\"fragment\":{\"ok\":True}}\n    return {\"requestId\":event[\"requestId\"],\"status\":\"failure\",\"fragment\":{}}",
+    "outputs": null,
+    "paths": 1,
+    "error": null,
+    "model": null
+  },
+  {
+    "kind": "cloudformation",
+    "name": "handler loop",
+    "code": "def handler(event, context):\n    f = event[\"fragment\"]\n    n = 0\n    for i in range(3):\n        n += i\n    f[\"sum\"] = n\n    return {\"requestId\":event[\"requestId\"],\"status\":\"success\",\"fragment\":f}",
+    "outputs": null,
+    "paths": 1,
+    "error": null,
+    "model": null
+  },
+  {
+    "kind": "cloudformation",
+    "name": "missing macro",
+    "code": "{\"Transform\":\"NotDefined\",\"Resources\":{}}",
+    "outputs": null,
+    "paths": 1,
+    "error": "NotDefined|マクロ",
+    "model": null
+  },
+  {
+    "kind": "cloudformation",
+    "name": "failed status",
+    "code": "def handler(event, context):\n    return {\"requestId\":event[\"requestId\"],\"status\":\"failure\",\"fragment\":{}}",
+    "outputs": null,
+    "paths": 1,
+    "error": "failure|失敗|success",
+    "model": null
+  },
+  {
+    "kind": "powerautomate",
+    "name": "increment",
+    "code": "{\"actions\": [{\"action\": \"Set variable\", \"target\": \"X\", \"value\": 2}, {\"action\": \"Increase variable\", \"target\": \"X\", \"value\": 3}, {\"action\": \"Display message\", \"value\": \"%X%\"}]}",
+    "outputs": [
+      "5"
+    ],
+    "paths": 1,
+    "error": null,
+    "model": null
+  },
+  {
+    "kind": "powerautomate",
+    "name": "branch",
+    "code": "{\"actions\": [{\"action\": \"Set variable\", \"target\": \"X\", \"value\": 2}, {\"action\": \"If\", \"condition\": \"%X% > 1\"}, {\"action\": \"Display message\", \"value\": \"yes\"}, {\"action\": \"Else\"}, {\"action\": \"Display message\", \"value\": \"no\"}, {\"action\": \"End\"}]}",
+    "outputs": [
+      "yes"
+    ],
+    "paths": 1,
+    "error": null,
+    "model": null
+  },
+  {
+    "kind": "powerautomate",
+    "name": "loop",
+    "code": "{\"actions\": [{\"action\": \"Loop\", \"target\": \"I\", \"from\": 3, \"to\": 1, \"step\": -1}, {\"action\": \"Display message\", \"value\": \"%I%\"}, {\"action\": \"End\"}]}",
+    "outputs": [
+      "3",
+      "2",
+      "1"
+    ],
+    "paths": 1,
+    "error": null,
+    "model": null
+  },
+  {
+    "kind": "powerautomate",
+    "name": "missing file",
+    "code": "{\"actions\": [{\"action\": \"Read text from file\", \"target\": \"Text\", \"value\": \"missing\"}]}",
+    "outputs": null,
+    "paths": 1,
+    "error": "ファイル|missing",
+    "model": null
+  },
+  {
+    "kind": "powerautomate",
+    "name": "unknown",
+    "code": "{\"actions\": [{\"action\": \"Display input dialog\", \"target\": \"X\"}, {\"action\": \"If\", \"condition\": \"%X% == \\\"yes\\\"\"}, {\"action\": \"Display message\", \"value\": \"yes\"}, {\"action\": \"Else\"}, {\"action\": \"Display message\", \"value\": \"no\"}, {\"action\": \"End\"}]}",
+    "outputs": null,
+    "paths": 2,
+    "error": null,
+    "model": null
+  },
+  {
+    "kind": "autohotkey",
+    "name": "case comparison",
+    "code": "if \"A\" = \"a\" {\nMsgBox \"yes\"\n}",
+    "outputs": [
+      "yes"
+    ],
+    "paths": 1,
+    "error": null,
+    "model": {
+      "variables": {},
+      "event": null,
+      "windows": []
+    }
+  },
+  {
+    "kind": "autohotkey",
+    "name": "case sensitive comparison",
+    "code": "if \"A\" == \"a\" {\nMsgBox \"bad\"\n} else {\nMsgBox \"no\"\n}",
+    "outputs": [
+      "no"
+    ],
+    "paths": 1,
+    "error": null,
+    "model": {
+      "variables": {},
+      "event": null,
+      "windows": []
+    }
+  },
+  {
+    "kind": "autohotkey",
+    "name": "loop",
+    "code": "Loop 3 {\nMsgBox A_Index\n}",
+    "outputs": [
+      "1",
+      "2",
+      "3"
+    ],
+    "paths": 1,
+    "error": null,
+    "model": {
+      "variables": {},
+      "event": null,
+      "windows": []
+    }
+  },
+  {
+    "kind": "autohotkey",
+    "name": "undefined",
+    "code": "MsgBox missing",
+    "outputs": null,
+    "paths": 1,
+    "error": "未定義|未設定|missing",
+    "model": {
+      "variables": {},
+      "event": null,
+      "windows": []
+    }
+  },
+  {
+    "kind": "autohotkey",
+    "name": "unknown input",
+    "code": "x := InputBox(\"x\").Value\nif x = \"a\" {\nMsgBox \"a\"\n} else {\nMsgBox \"b\"\n}",
+    "outputs": null,
+    "paths": 2,
+    "error": null,
+    "model": {
+      "variables": {},
+      "event": null,
+      "windows": []
+    }
+  },
+  {
+    "kind": "uivision",
+    "name": "echo",
+    "code": "{\"Name\": \"audit\", \"Commands\": [{\"Command\": \"store\", \"Target\": \"hi\", \"Value\": \"X\"}, {\"Command\": \"echo\", \"Target\": \"${X}\", \"Value\": \"\"}]}",
+    "outputs": [
+      "hi"
+    ],
+    "paths": 1,
+    "error": null,
+    "model": null
+  },
+  {
+    "kind": "uivision",
+    "name": "branch",
+    "code": "{\"Name\": \"audit\", \"Commands\": [{\"Command\": \"if\", \"Target\": \"2 > 1\", \"Value\": \"\"}, {\"Command\": \"echo\", \"Target\": \"yes\", \"Value\": \"\"}, {\"Command\": \"else\", \"Target\": \"\", \"Value\": \"\"}, {\"Command\": \"echo\", \"Target\": \"no\", \"Value\": \"\"}, {\"Command\": \"end\", \"Target\": \"\", \"Value\": \"\"}]}",
+    "outputs": [
+      "yes"
+    ],
+    "paths": 1,
+    "error": null,
+    "model": null
+  },
+  {
+    "kind": "uivision",
+    "name": "times",
+    "code": "{\"Name\": \"audit\", \"Commands\": [{\"Command\": \"times\", \"Target\": \"3\", \"Value\": \"\"}, {\"Command\": \"echo\", \"Target\": \"loop\", \"Value\": \"\"}, {\"Command\": \"end\", \"Target\": \"\", \"Value\": \"\"}]}",
+    "outputs": [
+      "loop",
+      "loop",
+      "loop"
+    ],
+    "paths": 1,
+    "error": null,
+    "model": null
+  },
+  {
+    "kind": "uivision",
+    "name": "missing element",
+    "code": "{\"Name\": \"audit\", \"Commands\": [{\"Command\": \"click\", \"Target\": \"id=missing\", \"Value\": \"\"}]}",
+    "outputs": null,
+    "paths": 1,
+    "error": "要素|ページ",
+    "model": null
+  },
+  {
+    "kind": "uivision",
+    "name": "sandbox arithmetic",
+    "code": "{\"Name\": \"audit\", \"Commands\": [{\"Command\": \"executeScript_Sandbox\", \"Target\": \"return 7 % 3;\", \"Value\": \"X\"}, {\"Command\": \"echo\", \"Target\": \"${X}\", \"Value\": \"\"}]}",
+    "outputs": [
+      "1"
+    ],
+    "paths": 1,
+    "error": null,
+    "model": null
+  },
+  {
+    "kind": "powerapps",
+    "name": "arithmetic",
+    "code": "Set(X, 2 + 3); Notify(Text(X))",
+    "outputs": [
+      "5"
+    ],
+    "paths": 1,
+    "error": null,
+    "model": null
+  },
+  {
+    "kind": "powerapps",
+    "name": "lazy branch",
+    "code": "If(true, Notify(\"yes\"), Notify(\"no\"))",
+    "outputs": [
+      "yes"
+    ],
+    "paths": 1,
+    "error": null,
+    "model": null
+  },
+  {
+    "kind": "powerapps",
+    "name": "ForAll",
+    "code": "Set(X, Sum(ForAll(Sequence(3), {N: Value * 2}), N)); Notify(Text(X))",
+    "outputs": [
+      "12"
+    ],
+    "paths": 1,
+    "error": null,
+    "model": null
+  },
+  {
+    "kind": "powerapps",
+    "name": "unsupported",
+    "code": "Launch(\"https://example.invalid\")",
+    "outputs": null,
+    "paths": 1,
+    "error": "対応|Launch",
+    "model": null
+  },
+  {
+    "kind": "powerapps",
+    "name": "collection",
+    "code": "ClearCollect(A, {N: 1}); Collect(A, {N: 2}); Notify(Text(CountRows(A)))",
+    "outputs": [
+      "2"
+    ],
+    "paths": 1,
+    "error": null,
+    "model": null
+  },
+  {
+    "kind": "python",
+    "name": "round and end",
+    "code": "print(round(2.5), round(3.5), end=\"!\")\nprint(\"x\")",
+    "outputs": [
+      "2 4!x"
+    ],
+    "paths": 1,
+    "error": null,
+    "model": null
+  },
+  {
+    "kind": "python",
+    "name": "branch",
+    "code": "if 2 > 1:\n    print(\"yes\")\nelse:\n    print(\"no\")",
+    "outputs": [
+      "yes"
+    ],
+    "paths": 1,
+    "error": null,
+    "model": null
+  },
+  {
+    "kind": "python",
+    "name": "loop",
+    "code": "for i in range(3, 0, -1):\n    print(i)",
+    "outputs": [
+      "3",
+      "2",
+      "1"
+    ],
+    "paths": 1,
+    "error": null,
+    "model": null
+  },
+  {
+    "kind": "python",
+    "name": "division error",
+    "code": "x = 1\nprint(x / 0)",
+    "outputs": null,
+    "paths": 1,
+    "error": "ZeroDivisionError",
+    "model": null
+  },
+  {
+    "kind": "python",
+    "name": "mutable default global",
+    "code": "x=1\ndef f(a=[]):\n    global x\n    x += 1\n    a.append(x)\n    return a\nprint(f())\nprint(f())\nprint(x)",
+    "outputs": [
+      "[2]",
+      "[2, 3]",
+      "3"
+    ],
+    "paths": 1,
+    "error": null,
+    "model": null
+  },
+  {
+    "kind": "r",
+    "name": "type coercion",
+    "code": "print(c(TRUE, 2, \"a\"))",
+    "outputs": [
+      "c(\"TRUE\", \"2\", \"a\")"
+    ],
+    "paths": 1,
+    "error": null,
+    "model": null
+  },
+  {
+    "kind": "r",
+    "name": "branch",
+    "code": "if (2 > 1) { print(\"yes\") } else { print(\"no\") }",
+    "outputs": [
+      "\"yes\""
+    ],
+    "paths": 1,
+    "error": null,
+    "model": null
+  },
+  {
+    "kind": "r",
+    "name": "loop",
+    "code": "for (i in 3:1) { print(i) }",
+    "outputs": [
+      "3",
+      "2",
+      "1"
+    ],
+    "paths": 1,
+    "error": null,
+    "model": null
+  },
+  {
+    "kind": "r",
+    "name": "NA error",
+    "code": "if (NA) { print(1) }",
+    "outputs": null,
+    "paths": 1,
+    "error": "missing value",
+    "model": null
+  },
+  {
+    "kind": "r",
+    "name": "vector recycling",
+    "code": "print(c(1, 2, 3, 4) + c(10, 20))",
+    "outputs": [
+      "c(11, 22, 13, 24)"
+    ],
+    "paths": 1,
+    "error": null,
+    "model": null
+  },
+  {
+    "kind": "c",
+    "name": "integer division",
+    "code": "int x = -7 / 2;\nprintf(\"%d\", x);",
+    "outputs": [
+      "-3"
+    ],
+    "paths": 1,
+    "error": null,
+    "model": null
+  },
+  {
+    "kind": "c",
+    "name": "branch",
+    "code": "if (2 > 1) { printf(\"%d\", 1); } else { printf(\"%d\", 0); }",
+    "outputs": [
+      "1"
+    ],
+    "paths": 1,
+    "error": null,
+    "model": null
+  },
+  {
+    "kind": "c",
+    "name": "loop",
+    "code": "for (int i = 0; i < 3; i++) { printf(\"%d\", i); }",
+    "outputs": [
+      "0",
+      "1",
+      "2"
+    ],
+    "paths": 1,
+    "error": null,
+    "model": null
+  },
+  {
+    "kind": "c",
+    "name": "undefined array",
+    "code": "int a[1] = {1};\nprintf(\"%d\", a[1]);",
+    "outputs": null,
+    "paths": 1,
+    "error": "未定義",
+    "model": null
+  },
+  {
+    "kind": "c",
+    "name": "remainder",
+    "code": "printf(\"%d\", -7 % 3);",
+    "outputs": [
+      "-1"
+    ],
+    "paths": 1,
+    "error": null,
+    "model": null
+  },
+  {
+    "kind": "cpp",
+    "name": "integer division",
+    "code": "int x = -7 / 2;\ncout << x;",
+    "outputs": [
+      "-3"
+    ],
+    "paths": 1,
+    "error": null,
+    "model": null
+  },
+  {
+    "kind": "cpp",
+    "name": "branch",
+    "code": "if (2 > 1) { cout << 1; } else { cout << 0; }",
+    "outputs": [
+      "1"
+    ],
+    "paths": 1,
+    "error": null,
+    "model": null
+  },
+  {
+    "kind": "cpp",
+    "name": "loop",
+    "code": "for (int i = 0; i < 3; i++) { cout << i; }",
+    "outputs": [
+      "0",
+      "1",
+      "2"
+    ],
+    "paths": 1,
+    "error": null,
+    "model": null
+  },
+  {
+    "kind": "cpp",
+    "name": "undefined array",
+    "code": "int a[1] = {1};\ncout << a[1];",
+    "outputs": null,
+    "paths": 1,
+    "error": "未定義",
+    "model": null
+  },
+  {
+    "kind": "cpp",
+    "name": "remainder",
+    "code": "cout << -7 % 3;",
+    "outputs": [
+      "-1"
+    ],
+    "paths": 1,
+    "error": null,
+    "model": null
+  },
+  {
+    "kind": "csharp",
+    "name": "integer division",
+    "code": "int x = -7 / 2;\nConsole.WriteLine(x);",
+    "outputs": [
+      "-3"
+    ],
+    "paths": 1,
+    "error": null,
+    "model": null
+  },
+  {
+    "kind": "csharp",
+    "name": "branch",
+    "code": "if (2 > 1) { Console.WriteLine(1); } else { Console.WriteLine(0); }",
+    "outputs": [
+      "1"
+    ],
+    "paths": 1,
+    "error": null,
+    "model": null
+  },
+  {
+    "kind": "csharp",
+    "name": "loop",
+    "code": "for (int i = 0; i < 3; i++) { Console.WriteLine(i); }",
+    "outputs": [
+      "0",
+      "1",
+      "2"
+    ],
+    "paths": 1,
+    "error": null,
+    "model": null
+  },
+  {
+    "kind": "csharp",
+    "name": "array bounds",
+    "code": "int[] a = {1};\nConsole.WriteLine(a[1]);",
+    "outputs": null,
+    "paths": 1,
+    "error": "IndexOutOfRange|範囲",
+    "model": null
+  },
+  {
+    "kind": "csharp",
+    "name": "short circuit",
+    "code": "if (false && missing) { Console.WriteLine(1); } else { Console.WriteLine(0); }",
+    "outputs": [
+      "0"
+    ],
+    "paths": 1,
+    "error": null,
+    "model": null
+  },
+  {
+    "kind": "javascript",
+    "name": "number division",
+    "code": "let x = -7 / 2;\nconsole.log(x);",
+    "outputs": [
+      "-3.5"
+    ],
+    "paths": 1,
+    "error": null,
+    "model": null
+  },
+  {
+    "kind": "javascript",
+    "name": "branch",
+    "code": "if (2 > 1) { console.log(1); } else { console.log(0); }",
+    "outputs": [
+      "1"
+    ],
+    "paths": 1,
+    "error": null,
+    "model": null
+  },
+  {
+    "kind": "javascript",
+    "name": "loop",
+    "code": "for (let i = 0; i < 3; i++) { console.log(i); }",
+    "outputs": [
+      "0",
+      "1",
+      "2"
+    ],
+    "paths": 1,
+    "error": null,
+    "model": null
+  },
+  {
+    "kind": "javascript",
+    "name": "null error",
+    "code": "let a = null;\nconsole.log(a.x);",
+    "outputs": null,
+    "paths": 1,
+    "error": "null|TypeError",
+    "model": null
+  },
+  {
+    "kind": "javascript",
+    "name": "short circuit",
+    "code": "if (false && missing) { console.log(1); } else { console.log(0); }",
+    "outputs": [
+      "0"
+    ],
+    "paths": 1,
+    "error": null,
+    "model": null
+  }
+]

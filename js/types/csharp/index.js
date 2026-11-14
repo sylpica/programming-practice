@@ -1,3 +1,4 @@
+import { additionalTemplates } from "./additional-templates.js";
 import { createCFamily } from "../../core/c-family.js";
 export const definition = createCFamily({
   id: "csharp",
@@ -5,3 +6,5 @@ export const definition = createCFamily({
   extensions: [".cs", ".txt"],
   language: "csharp",
 });
+
+definition.templates.push(...additionalTemplates(definition.model.defaults));

@@ -53,6 +53,9 @@ export function validateDefinition(d) {
 const ids = new Set();
 for (let d of definitions) {
   validateDefinition(d);
+  d.templates.forEach((t, i) => {
+    t.level = t.level === "入門" ? "基礎" : (t.level || ["基礎", "実践", "応用"][i % 3]);
+  });
   if (ids.has(d.id)) throw Error("種類idが重複しています");
   ids.add(d.id);
 }

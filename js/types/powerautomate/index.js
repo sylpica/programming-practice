@@ -1,3 +1,4 @@
+import { additionalTemplates } from "./additional-templates.js";
 import {
   executeProgram,
   parseExpression,
@@ -109,6 +110,16 @@ const reference = rows(
 );
 const encode = (actions) =>
   JSON.stringify({ name: "学習フロー", actions }, null, 2);
+for (const r of reference) {
+  const sample = palette.find(p => p.name === r.name).sample;
+  const setup = [{action:"Set variable",target:"Count",value:0},{action:"Set variable",target:"Items",value:["A","B"]}];
+  let actions = [sample];
+  if (["If","Else","End"].includes(r.name)) actions = [{action:"If",condition:"%Count% > 0"},{action:"Display message",value:"正"},{action:"Else"},{action:"Display message",value:"0"},{action:"End"}];
+  if (["Loop","For each"].includes(r.name)) actions = [sample,{action:"Display message",value:r.name === "Loop" ? "%Index%" : "%Item%"},{action:"End"}];
+  if (r.name === "Loop condition") actions = [sample,{action:"Increase variable",target:"Count",value:1},{action:"End"}];
+  if (r.name === "Exit loop") actions = [{action:"Loop",target:"Index",from:1,to:3,step:1},sample,{action:"End"}];
+  r.example = encode([...setup,...actions]);
+}
 export const definition = {
   id: "powerautomate",
   name: "Power Automate",
@@ -438,3 +449,5 @@ function conditionAST(text, s) {
   let normalized = text.replace(/%([A-Za-z_]\w*)%/g, "$1");
   return parseExpression(normalized);
 }
+
+definition.templates.push(...additionalTemplates(definition.model.defaults));

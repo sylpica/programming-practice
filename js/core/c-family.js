@@ -38,7 +38,10 @@ function parse(source, language) {
     statement = p.statement.bind(p);
   p.simple = function () {
     let t = this.ts[this.i];
+    if (["let", "const", "auto", "var"].includes(t.v))
+      unsupported("この宣言・型推論はモデルで未対応です：" + t.v, t.line);
     if (t.v === "cout") {
+      if (language !== "cpp") unsupported("coutはC++専用です", t.line);
       this.take();
       let values = [];
       while (this.peek("<<")) {
@@ -137,6 +140,7 @@ function parse(source, language) {
     this.skip();
     let t = this.ts[this.i];
     if (["checked", "unchecked"].includes(t.v)) {
+      if (language !== "csharp") unsupported(t.v, t.line);
       this.take();
       return {
         k: "action",
@@ -147,6 +151,7 @@ function parse(source, language) {
       };
     }
     if (t.v === "class") {
+      if (language !== "csharp") unsupported("この言語のクラスは未対応です", t.line);
       this.take();
       let name = this.take().v;
       this.take("{");
@@ -328,6 +333,12 @@ export function createCFamily({ id, name, extensions, language }) {
       managed,
     ],
   ]);
+  const prelude = {pointer:"int values[3]={1,2,3};",if:"int n=2;",for:"int total=0;",while:"int n=0;",printf:"int n=3;",cout:"int n=3;","Console.WriteLine":"int total=3;",class:"class Counter { public int Value; }",checked:"int n=1;"};
+  for (const r of reference) if (prelude[r.name]) r.example = prelude[r.name] + "\n" + r.example;
+  if (managed) reference.find(r => r.name === "array").syntax = "int[] values = {1, 2, 3};";
+  reference = reference.filter(r => !managed
+    ? !["Console.WriteLine","Console.ReadLine","class","checked", ...(id === "c" ? ["cout"] : [])].includes(r.name)
+    : !["pointer","printf","cout"].includes(r.name));
   let codeArray = managed
     ? "int[] values = {1, 2, 3};\nint total = 0;\nfor (int i = 0; i < 3; i++) {\n    total += values[i];\n}\nConsole.WriteLine(total);"
     : `#include <${id === "cpp" ? "iostream" : "stdio.h"}>\nint main() {\n    int values[3] = {1, 2, 3};\n    int total = 0;\n    for (int i = 0; i < 3; i++) {\n        total += values[i];\n    }\n    ${id === "cpp" ? "std::cout << total << std::endl;" : 'printf("%d\\n", total);'}\n    return 0;\n}`;
@@ -419,7 +430,7 @@ export function createCFamily({ id, name, extensions, language }) {
         ? "C#のint32演算、配列範囲検査、単純クラス・参照共有をモデル化します。"
         : "C / C++の符号付き整数・配列・ポインタをモデルメモリ上で追跡し、範囲外・未初期化・オーバーフローは停止します。",
       support:
-        "mainまたは文の断片、単純宣言、代入、If / For / While、掲載出力。未対応：多次元配列、動的確保・解放、複雑な型・テンプレート・関数定義・多重宣言・スコープのシャドーイング。64ビット整数の安全な精度範囲外は未確認として停止。",
+        "mainまたは文の断片、単純宣言、代入、If / For / While、掲載出力。未対応：型推論（auto / var）、多次元配列、動的確保・解放、複雑な型・テンプレート・関数定義・多重宣言・スコープのシャドーイング。64ビット整数の安全な精度範囲外は未確認として停止。",
       sources: managed
         ? [
             {
@@ -495,6 +506,7 @@ export function createCFamily({ id, name, extensions, language }) {
             return Boolean(v);
           }
           if (["auto", "var"].includes(type)) return v;
+          if (!managed && typeof v === "boolean") v = Number(v);
           if (typeof v !== "number") api.fail("数値型が一致しません", node);
           if (["float", "double"].includes(type))
             return type === "float" ? Math.fround(v) : v;
@@ -604,17 +616,21 @@ export function createCFamily({ id, name, extensions, language }) {
                 if (length === null) api.fail("配列長を指定してください", n);
                 if (!Number.isInteger(length) || length < 0 || length > 10000)
                   api.fail("配列長が不正または上限を超えています", n);
+                const defaultValue = n.type === "bool" ? false : n.type === "string" || classes[n.type] ? null : 0;
                 if (v === uninitialized)
                   v = Array.from({ length }, () =>
-                    managed ? 0 : uninitialized,
+                    managed ? defaultValue : uninitialized,
                   );
                 else if (!Array.isArray(v))
                   api.fail("配列初期化子が必要です", n);
                 else if (v.length > length)
                   api.fail("配列初期化子が多すぎます", n);
-                else
+                else if (managed && n.value?.k === "var") {
+                  if (s.types[n.value.name] !== type) api.fail("配列型が一致しません", n, "CompileError");
+                  // Assignment copies an array reference, not its elements.
+                } else
                   v = Array.from({ length }, (_, i) =>
-                    i < v.length ? cast(v[i], n.type, s, n, api) : 0,
+                    i < v.length ? cast(v[i], n.type, s, n, api) : defaultValue,
                   );
                 if (managed) {
                   s.vars[n.name] = v;
@@ -638,9 +654,11 @@ export function createCFamily({ id, name, extensions, language }) {
             }
           },
           read(a, s, api) {
-            if (a.k === "var" && a.name === "nullptr")
+            if (!managed && a.k === "var" && a.name === "NULL")
+              return { handled:true,value:null };
+            if (language === "cpp" && a.k === "var" && a.name === "nullptr")
               return { handled: true, value: null };
-            if (a.k === "var" && a.name === "endl")
+            if (language === "cpp" && a.k === "var" && a.name === "endl")
               return { handled: true, value: "\n" };
             if (
               a.k === "var" &&
@@ -661,7 +679,8 @@ export function createCFamily({ id, name, extensions, language }) {
                 let n = api.read(a.args[0], s);
                 if (!Number.isInteger(n) || n < 0 || n > 10000)
                   api.fail("配列サイズが不正です", a);
-                return { handled: true, value: Array(n).fill(0) };
+                const type = a.name.slice(0, -2);
+                return { handled: true, value: Array(n).fill(type === "bool" ? false : type === "string" ? null : 0) };
               }
               if (!classes[a.name])
                 api.fail("クラス定義がありません：" + a.name, a);
@@ -776,7 +795,9 @@ export function createCFamily({ id, name, extensions, language }) {
                 index >= array.length
               )
                 api.fail("配列範囲外です", node, "IndexOutOfRangeException");
-              array[index] = v;
+              const type = s.types[callName(a.target)]?.replace(/\[\]$/, "");
+              if (!type) api.fail("この配列要素型の推定は未対応です", node, "未対応");
+              array[index] = cast(v, type, s, node, api);
               return true;
             }
             if (managed && a.k === "member") {
@@ -793,6 +814,10 @@ export function createCFamily({ id, name, extensions, language }) {
           },
           binary(op, a, b, node, s, api) {
             if (isUnknown(a) || isUnknown(b)) return baseBinary(op, a, b);
+            if (!managed) {
+              if (typeof a === "boolean") a = Number(a);
+              if (typeof b === "boolean") b = Number(b);
+            }
             if (isPtr(a) || isPtr(b)) {
               if (op === "+" || op === "-") {
                 let ptr = isPtr(a) ? a : b,
@@ -886,17 +911,14 @@ export function createCFamily({ id, name, extensions, language }) {
             let values = args.map((a) => api.read(a, s));
             if (name === "Console.ReadLine") {
               if (!managed) api.fail("未対応の関数です", node);
-              return unknown(
-                "標準入力またはストリーム終端",
-                `input-${node.line}`,
-              );
+              return api.freshUnknown("標準入力またはストリーム終端", s);
             }
             if (name === "Console.WriteLine") {
               if (!managed || values.length !== 1)
                 api.fail("Console.WriteLineは1引数のみ対応します", node);
               s.outputs.push({
                 channel: name,
-                text: formatValue(values[0]),
+                text: typeof values[0] === "boolean" ? (values[0] ? "True" : "False") : values[0] === null ? "" : formatValue(values[0]),
                 line: node.line,
               });
               api.note(
@@ -917,6 +939,7 @@ export function createCFamily({ id, name, extensions, language }) {
                 let sourceArg = args[i + 1],
                   sourceType = typeOf(sourceArg, s),
                   v = rest[i++];
+                if (typeof v === "boolean") v = Number(v);
                 if (
                   ((type === "d" || type === "i") &&
                     !["int", "char", "bool"].includes(sourceType)) ||
@@ -955,7 +978,7 @@ export function createCFamily({ id, name, extensions, language }) {
           action(n, s, api) {
             if (n.action === "cout") {
               let text = n.values
-                .map((v) => formatValue(api.read(v, s)))
+                .map((v) => { const value = api.read(v, s); return typeof value === "boolean" ? String(Number(value)) : formatValue(value); })
                 .join("");
               s.outputs.push({ channel: "cout", text, line: n.line });
               api.note(s, n, "標準出力へ出します：" + text);

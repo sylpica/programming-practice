@@ -4,6 +4,8 @@
 
 公開先：https://sylpica.github.io/programming-practice/
 
+学習モードは練習のみです。全13種類に基礎・実践・応用のテンプレートを計88件用意しています。「テンプレート集」のカードを選ぶと、そのコードを読み込んだ練習画面へ移ります。種類別の件数は[要件対応表](docs/audit/REQUIREMENTS.md)を参照してください。
+
 ## 対象の13種類
 
 | 言語・ツール              | 練習対象とモデル                                                               |
@@ -61,11 +63,17 @@ node scripts/precache.mjs --check
 # ローカルサーバー起動中、Python PlaywrightとChromiumがある環境で:
 python tests/browser.py
 python tests/browser-types.py
+python tests/browser-audit.py
+python tests/requirements-audit.py
+python tests/templates-audit.py
+python tests/storage-audit.py
+python tests/extension-audit.py
+node tests/fuzz-audit.mjs
 ```
 
 Node標準テストランナーを使うため、本体に `npm install` は不要です。ブラウザ試験のみPython PlaywrightとChromiumを別途必要とします。試験は使い捨てブラウザコンテキストで行います。
 
-本体開発の試験実績は [DEVELOPMENT.md](docs/DEVELOPMENT.md) に記録しています。**Muse／Codexの独立二重監査は、別途届く監査プロンプトに基づく後続フェーズです。本体開発試験の合格を、その監査の収束とは扱いません。**
+本体開発の試験実績は [DEVELOPMENT.md](docs/DEVELOPMENT.md) に記録しています。**Muse／Codexの独立二重監査を進行中です。** [Codex第1ラウンド](docs/audit/CODEX-R1.md)と[原文要件の対応表](docs/audit/REQUIREMENTS.md)に確認結果・未確認を記録しています。本体開発試験の合格を、二重監査の収束とは扱いません。
 
 ## 拡張と配信
 

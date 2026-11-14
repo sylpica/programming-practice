@@ -1,3 +1,4 @@
+import { additionalTemplates } from "./additional-templates.js";
 import { load, JSON_SCHEMA } from "../../vendor/yaml.js";
 import { parseJsonLocated, sourceFailure, rows } from "../../core/data.js";
 import { LIMITS, unknown, formatValue } from "../../core/contract.js";
@@ -62,6 +63,11 @@ const ref = rows([
     "モデルにない実値は未確定です。",
   ],
 ]);
+for (const r of ref) if (!["Transform","Fn::Transform"].includes(r.name)) r.example = identity;
+const pythonRefs = pythonDefinition.reference.filter(r => !ref.some(f => f.name === r.name)).map(r => ({
+  ...r,
+  example: 'def handler(event, context):\n' + r.example.split('\n').map(line => '    ' + line).join('\n') + '\n    return {"requestId":event["requestId"],"status":"success","fragment":event["fragment"]}',
+}));
 export const definition = {
   id: "cloudformation",
   name: "AWS CloudFormation Macros",
@@ -69,9 +75,7 @@ export const definition = {
   syntax: { name: "CloudFormation JSON / YAML・Python 3", caseSensitive: true },
   reference: [
     ...ref,
-    ...pythonDefinition.reference.filter(
-      (r) => !ref.some((f) => f.name === r.name),
-    ),
+    ...pythonRefs,
   ],
   templates: [
     {
@@ -283,6 +287,19 @@ export const definition = {
         truncated = false,
         start = performance.now(),
         ops = 0;
+      function cap(items) {
+        if (items.length > LIMITS.paths) truncated = true;
+        return items.slice(0, LIMITS.paths);
+      }
+      function combine(left, right, merge) {
+        if (left.length * right.length > LIMITS.paths) truncated = true;
+        const result = [];
+        for (const l of left) for (const r of right) {
+          if (result.length >= LIMITS.paths) return result;
+          result.push(merge(l, r));
+        }
+        return result;
+      }
       async function invoke(name, fragment, params, line, refs) {
         if (typeof name !== "string" || !model.macros?.[name])
           throw Object.assign(
@@ -296,6 +313,7 @@ export const definition = {
           transformId: name,
         });
         truncated ||= r.truncated;
+        if (r.error) throw Object.assign(Error(r.error.message), r.error);
         return r.paths.map((p) => ({
           ...p,
           trace: [
@@ -318,16 +336,12 @@ export const definition = {
           let states = [{ fragment: [], trace: [], outputs: [] }];
           for (let [i, v] of value.entries()) {
             let rs = await nested(v, path + "/" + i);
-            states = states
-              .flatMap((s) =>
-                rs.map((r) => ({
+            states = combine(states, rs, (s, r) => ({
                   fragment: [...s.fragment, r.fragment],
                   trace: [...s.trace, ...r.trace],
                   outputs: [...s.outputs, ...r.outputs],
                   error: s.error || r.error,
-                })),
-              )
-              .slice(0, LIMITS.paths);
+                }));
           }
           return states;
         }
@@ -336,22 +350,19 @@ export const definition = {
         let states = [{ fragment: base, trace: [], outputs: [] }];
         for (let [key, v] of Object.entries(base)) {
           let rs = await nested(v, path + "/" + key);
-          states = states
-            .flatMap((s) =>
-              rs.map((r) => ({
+          states = combine(states, rs, (s, r) => ({
                 ...s,
                 fragment: { ...s.fragment, [key]: r.fragment },
                 trace: [...s.trace, ...r.trace],
                 outputs: [...s.outputs, ...r.outputs],
                 error: s.error || r.error,
-              })),
-            )
-            .slice(0, LIMITS.paths);
+              }));
         }
         if (value["Fn::Transform"]) {
           let spec = value["Fn::Transform"],
             done = [];
           for (let s of states) {
+            if (s.error) { done.push(s); continue; }
             let rs = await invoke(
               spec.Name,
               s.fragment,
@@ -367,7 +378,7 @@ export const definition = {
               })),
             );
           }
-          states = done.slice(0, LIMITS.paths);
+          states = cap(done);
         }
         return states;
       }
@@ -436,3 +447,5 @@ export const definition = {
     }
   },
 };
+
+definition.templates.push(...additionalTemplates(definition.model.defaults));

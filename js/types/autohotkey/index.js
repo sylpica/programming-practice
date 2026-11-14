@@ -1,3 +1,4 @@
+import { additionalTemplates } from "./additional-templates.js";
 import {
   ScriptParser,
   executeProgram,
@@ -137,6 +138,16 @@ const reference = rows([
     "オプション付き・式・ブロック形式は未対応です。",
   ],
 ]);
+for (const r of reference) {
+  if (r.name === "Hotkey") continue;
+  if (r.name === "Hotstring") {
+    r.example += '\n^!n:: {\n MsgBox "モデルeventを::btwにすると置換を確認できます"\n}';
+    r.caution += " モデルeventを::btw、ウィンドウ末尾をbtwにして置換を確認します。";
+    continue;
+  }
+  const setup = r.name === "if" ? "x := 1\n" : r.name === "while" ? "n := 0\n" : "";
+  r.example = "^!n:: {\n" + setup + r.example + "\n}";
+}
 function parseAHK(code, event) {
   let lines = code.split("\n"),
     masked = lines.map((l) =>
@@ -323,8 +334,13 @@ export const definition = {
       let { nodes } = parseAHK(code, model.event);
       const semantics = {
         dialect: "ahk",
+        logicalOperands: true,
         read(a, s) {
           if (a.k === "var") {
+            if (["true","false"].includes(a.name.toLowerCase()))
+              return { handled:true, value:a.name.toLowerCase() === "true" ? 1 : 0 };
+            if (a.name.toLowerCase() === "a_index")
+              return { handled: true, value: s.loopIterations?.at(-1) || 0 };
             let key = Object.keys(s.vars).find(
               (k) => k.toLowerCase() === a.name.toLowerCase(),
             );
@@ -332,8 +348,10 @@ export const definition = {
           }
           return null;
         },
-        write(a, v, s) {
+        write(a, v, s, api, node) {
           if (a.k === "var") {
+            if (a.name.toLowerCase() === "a_index")
+              api.fail("A_Indexの変更によるループ制御は未対応です", node, "未対応");
             let key =
               Object.keys(s.vars).find(
                 (k) => k.toLowerCase() === a.name.toLowerCase(),
@@ -580,3 +598,6 @@ export const definition = {
     }
   },
 };
+
+definition.templates.push(...additionalTemplates(definition.model.defaults));
+definition.templates[0].model = structuredClone(definition.model.defaults);

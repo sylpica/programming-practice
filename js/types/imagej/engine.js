@@ -640,6 +640,7 @@ function simRunProgram(code, forkCtl, model){
   prog.forEach(function(st){ if (st.t === "funcdef") funcs[st.name] = st; });
   out.diags = simStaticChecks(prog, funcs);
   var S = {
+    files: structuredClone(model?.files || {}), directories: structuredClone(model?.directories || {}), runtime: structuredClone(model?.runtime || {}),
     funcs: funcs, steps: out.steps, diags: out.diags, log: out.log, logLines: out.logLines,
     images: model?.images ? model.images.map(x=>({...simDemoImage(),...structuredClone(x),buckets:x.buckets??null,pix:x.pix??{},mapOps:[]})) : [simDemoImage()], active: 0, results: [], roi: null, roiList: [],
     batch: false, scopes: [Object.create(null)], globals: Object.create(null), suppress: 0, depth: 0,
@@ -1013,12 +1014,12 @@ function simRunProgram(code, forkCtl, model){
         case "replace": return simReplaceStr(o, av[0], av[1]);
         case "split": return simSplitStr(o, av.length ? av[0] : undefined, e.line);
       }
-      if (Object.prototype.hasOwnProperty.call(SIM_OFFICIAL, m) || funcByName(m)){ step(e.line, "文字列のメソッド " + m + " を実行します（動きの説明は省略します）"); return SIM_UNK; }
+      if (Object.prototype.hasOwnProperty.call(SIM_OFFICIAL, m) || funcByName(m)) throw simErr(e.line, "未確認：文字列メソッド " + m + " はモデルで未対応です", "後続結果は生成しません。");
       throw simErr(e.line, "「" + m + "」は文字列に使えないメソッドです", "ImageJ にも存在しない名前です。綴り違いの可能性があります。");
     }
     if (Array.isArray(o)){
       if (m === "length") return o.length;
-      if (Object.prototype.hasOwnProperty.call(SIM_OFFICIAL, "Array." + m)){ step(e.line, "配列のメソッド Array." + m + " を実行します（動きの説明は省略します）"); return SIM_UNK; }
+      if (Object.prototype.hasOwnProperty.call(SIM_OFFICIAL, "Array." + m)) throw simErr(e.line, "未確認：配列メソッド Array." + m + " はモデルで未対応です", "変更後の配列を推測しません。");
       throw simErr(e.line, "「" + m + "」は配列に使えないメソッドです", "ImageJ にも存在しない名前です。綴り違いの可能性があります。");
     }
     return SIM_UNK;
@@ -1050,7 +1051,7 @@ function simRunProgram(code, forkCtl, model){
       var isRef = (Object.prototype.hasOwnProperty.call(REF_FNS, name) && i < REF_FNS[name]) ||
         (Object.prototype.hasOwnProperty.call(REF_FNS_SKIP, name) && i >= REF_FNS_SKIP[name]);
       if (isRef && a.t === "var"){ argRefs[i] = a.name; argVals[i] = null; }
-      else if (name === "print" || name === "log"){
+      else if (name === "print"){
         /* print の引数は文字列文脈（getStringExpression）。ユーザー関数の戻り値は Java の "" + value の全桁表示になる */
         var pv = evExpr(a, 1);
         if (a.t === "call" && Object.prototype.hasOwnProperty.call(S.funcs, a.name) && typeof pv === "number") pv = simJavaDoubleStr(pv);
@@ -1198,7 +1199,7 @@ function simRunProgram(code, forkCtl, model){
   var rtLines = {};
   out.diags.forEach(function(d){ if (d.runtime) rtLines[d.line + "|" + d.text] = 1; });
   out.diags = out.diags.filter(function(d){ return d.runtime || !rtLines[d.line + "|" + d.text]; });
-  out.modelState={images:S.images.map(x=>({...x,mapOps:undefined})),results:S.results,roi:S.roi};
+  out.modelState={images:S.images.map(x=>({...x,mapOps:undefined})),results:S.results,roi:S.roi,files:S.files};
   out.log = S.log;
   out.usedFns = S.used.slice();
   var g = {};
@@ -1323,6 +1324,8 @@ function simStats(img){
 }
 function simBuiltin(S, e, args, refs, H){
   var name = e.name, line = e.line, step = H.step, warn = H.warn;
+  if (["setPixel","setResult","setThreshold","setAutoThreshold","setSlice","Stack.setPosition","rename","makeRectangle","makeOval","makeLine","makePolygon","makeSelection","setMinAndMax","newImage","changeValues"].includes(name) && args.some(simIsUnk))
+    throw simErr(line, "未確認：" + name + " の状態変更引数が未確定です", "変更箇所や結果を推測して後続を実行しません。");
   var img = function(){ return H.img(); };
   var needImg = function(what){ return H.needImg(line, what); };
   var f0 = funcByName(name);
@@ -1330,7 +1333,7 @@ function simBuiltin(S, e, args, refs, H){
     step(line, name + "：" + (f0 ? f0.desc.split("。")[0] + "。" : "組み込みの処理を実行します。") + (extra || ""));
   }
   switch (name){
-    case "print": case "log": {
+    case "print": {
       var txt = args.map(function(a){ return simFmt(a); }).join(" ");
       if (S.log.length < 200){ S.log.push(txt); S.logLines.push(line); }
       else if (S.log.length === 200){ S.log.push("（Log 出力が200行を超えたため、以降は省略します）"); S.logLines.push(0); }
@@ -1369,10 +1372,12 @@ function simBuiltin(S, e, args, refs, H){
       S.active = ix; step(line, "ウィンドウ「" + args[0] + "」を前に出します"); return SIM_UNK;
     }
     case "open": {
-      var path = String(args[0]), base = path.split(/[\\/]/).pop();
-      var nim = { title: base, w: null, h: null, bit: 8, channels: 1, slices: 1, frames: 1, slice: 1, buckets: null, thr: null, mapOps: [], spatial: false, pix: {}, kind: "開いた画像" };
+      if (simIsUnk(args[0]) || !Object.prototype.hasOwnProperty.call(S.files, args[0])) throw simErr(line, "未確認：モデルに画像ファイルがありません", "存在・寸法・ビット深度は推測しません。");
+      var path = String(args[0]), base = path.split(/[\\/]/).pop(), file = S.files[path];
+      if (!file || ![file.w,file.h,file.bit,file.channels,file.slices,file.frames].every(Number.isFinite)) throw simErr(line, "未確認：モデル画像のメタデータが不足しています", "w / h / bit / channels / slices / frames を指定してください。");
+      var nim = { ...structuredClone(file), title:file.title || base, slice:1, buckets:file.buckets || null, thr:null, mapOps:[], spatial:false, pix:structuredClone(file.pix || {}), kind:"モデルファイルから開いた画像" };
       S.images.push(nim); S.active = S.images.length - 1;
-      step(line, "ファイル「" + base + "」を開きます（寸法や分布は実際のファイル依存のため、この先の数値は目安として扱います）");
+      step(line, "明示したモデルファイル「" + base + "」を開きます。実ファイルは操作しません");
       return SIM_UNK;
     }
     case "close": {
@@ -1386,19 +1391,23 @@ function simBuiltin(S, e, args, refs, H){
     case "saveAs": {
       if (String(args[0]).toLowerCase() === "results") step(line, "結果表（" + S.results.length + " 行）を「" + simFmt(args[1]) + "」に保存します");
       else step(line, "画像を " + simFmt(args[0]) + " 形式で「" + simFmt(args[1]) + "」に保存します（元の画像データは変わりません）");
+      if (simIsUnk(args[1]) || typeof args[1] !== "string") throw simErr(line, "未確認：保存先のパスが未確定です", "モデルに保存先を明示してください。");
+      if (String(args[0]).toLowerCase() === "results") S.files[args[1]] = {kind:"unknown",source:"測定表の保存内容（整形は未確認）"};
+      else { const image=needImg("saveAs"); S.files[args[1]]={...image,mapOps:[]}; }
       return SIM_UNK;
     }
     case "getDirectory": {
       var gk = typeof args[0] === "string" ? args[0] : "";
-      if (["home", "imagej", "plugins", "macros", "luts", "fonts", "temp", "current", "cwd"].indexOf(gk) >= 0){
-        step(line, "「" + gk + "」フォルダのパスを返します（この指定ではダイアログは出ません。実際のパスは実行環境で決まるため、モデルでは仮のパスで進みます）");
-        return "/（" + gk + "フォルダ）/";
-      }
-      step(line, "フォルダ選択ダイアログが開きます（モデルでは選択したものとして進みます）"); return "/（選択したフォルダ）/";
+      step(line, "フォルダのパスを取得します。モデルに明示していない選択結果は未確定です");
+      return Object.prototype.hasOwnProperty.call(S.directories,gk) ? S.directories[gk] : SIM_UNK;
     }
-    case "getFileList": step(line, "フォルダ内のファイル一覧を取得します（実際の件数と名前は実行時に決まります。モデルでは「（例）」付きの3件として進みます）"); return ["（例）image1.tif", "（例）image2.tif", "（例）memo.txt"];
-    case "getVersion": step(line, "ImageJ のバージョン文字列を取得します（モデルでは 1.54 系として扱います）"); return "1.54p";
-    case "getArgument": step(line, "マクロへの引数を取得します（この練習では引数なし＝空文字列です）"); return "";
+    case "getFileList": {
+      step(line, "明示したモデルフォルダの一覧を取得します。モデルにない実一覧は未確定です");
+      if (simIsUnk(args[0]) || !Object.values(S.directories).includes(args[0])) return SIM_UNK;
+      return Object.keys(S.files).filter(p=>p.startsWith(args[0])).map(p=>p.slice(args[0].length)).filter(p=>p&&!p.includes("/"));
+    }
+    case "getVersion": step(line, "モデルで指定したバージョンを読みます。未指定なら未確定です"); return S.runtime.version ?? SIM_UNK;
+    case "getArgument": step(line, "モデルで指定したマクロ引数を読みます。未指定なら未確定です"); return S.runtime.argument ?? SIM_UNK;
     case "requires": step(line, "ImageJ のバージョン要件 " + simFmt(args[0]) + " を確認します"); return SIM_UNK;
     case "exit": step(line, "マクロはここで終了します" + (args[0] ? "（メッセージ：" + simFmt(args[0]) + "）" : "")); S.halt = true; throw { __halt: 1 };
     case "eval": step(line, "渡された文字列をマクロとして実行します（中身の説明は省略します）"); return SIM_UNK;
@@ -1491,6 +1500,7 @@ function simBuiltin(S, e, args, refs, H){
     case "sqrt": return typeof args[0] === "number" ? Math.sqrt(args[0]) : SIM_UNK;
     case "pow": return typeof args[0] === "number" && typeof args[1] === "number" ? Math.pow(args[0], args[1]) : SIM_UNK;
     case "exp": return typeof args[0] === "number" ? Math.exp(args[0]) : SIM_UNK;
+    case "log": return typeof args[0] === "number" ? Math.log(args[0]) : SIM_UNK;
     case "atan2": return typeof args[0] === "number" && typeof args[1] === "number" ? Math.atan2(args[0], args[1]) : SIM_UNK;
     case "Math.min": case "Math.max": case "minOf": case "maxOf": {
       var ns = args.filter(function(x){ return typeof x === "number"; });
@@ -1770,7 +1780,12 @@ function simBuiltin(S, e, args, refs, H){
     }
     case "getResultLabel": { var rr = S.results[args[0]]; step(line, "結果表 " + simFmt(args[0]) + " 行目のラベルを取得します"); return rr ? rr.Label : SIM_UNK; }
     case "getProfile": needImg("getProfile"); step(line, "選択中の直線や ROI に沿った画素値の並び（プロファイル）を取得します（値は画像依存です）"); return SIM_UNK;
-    case "File.exists": step(line, "ファイル「" + simFmt(args[0]) + "」があるか調べます（結果は実行環境に依存します）"); return SIM_UNK;
+    case "File.exists": {
+      step(line, "明示したモデル内でファイルの有無を調べます。外部の存在は未確定です");
+      if (typeof args[0] !== "string") return SIM_UNK;
+      if (Object.prototype.hasOwnProperty.call(S.files,args[0])) return 1;
+      return Object.values(S.directories).some(dir=>args[0].startsWith(dir)) ? 0 : SIM_UNK;
+    }
     case "Color.getLut": { for (var ci = 0; ci < 3; ci++) if (refs[ci]) writeRef(S, refs[ci], new Array(256).fill(0).map(function(_, i){ return i; })); step(line, "現在の表示 LUT（色の対応表）を変数に入れます"); return SIM_UNK; }
   }
   if (name.indexOf("Dialog.") === 0){
@@ -1780,15 +1795,12 @@ function simBuiltin(S, e, args, refs, H){
     else step(line, "ダイアログに項目を追加します");
     return SIM_UNK;
   }
-  if (name.indexOf("File.") === 0){ step(line, "ファイル操作（" + name + "）を行います（内容は実行環境に依存します）"); return SIM_UNK; }
+  if (name.indexOf("File.") === 0) throw simErr(line, "未確認：" + name + " はモデルで未対応です", "ファイル状態を推測して後続を実行しません。");
   if (!f0 && !Object.prototype.hasOwnProperty.call(SIM_EXTRA, name)){
-    if (Object.prototype.hasOwnProperty.call(SIM_OFFICIAL, name)){ step(line, name + " を実行します（ImageJ に実在する関数ですが、このシミュレーションでは動きの説明を省略します）"); refs.forEach(function(r){ if (r) writeRef(S, r, SIM_UNK); }); return SIM_UNK; }
+    if (Object.prototype.hasOwnProperty.call(SIM_OFFICIAL, name)) throw simErr(line, "未確認：" + name + " はモデルで未対応です", "後続の状態・出力は生成しません。");
     throw simErr(line, "「" + name + "」は定義されていない関数です", "関数リファレンスにも、このコード内の function 定義にもありません。綴り違いか、定義のし忘れの可能性があります。");
   }
-  descStep();
-  /* 参照引数（結果を受け取る変数）は「実行時に決まる値」で初期化する（getRawStatistics 等の未実装関数でも変数が未定義にならないように） */
-  refs.forEach(function(r){ if (r) writeRef(S, r, SIM_UNK); });
-  return SIM_UNK;
+  throw simErr(line, "未確認：" + name + " はモデルで未対応です", "後続の状態・出力は生成しません。");
 }
 function writeRef(S, name, v){ if (S.writeVar) S.writeVar(name, v); else S.scopes[0][name] = v; }
 function simRoiManager(S, e, args, H){
@@ -1809,7 +1821,7 @@ function simRoiManager(S, e, args, H){
     S.roiList.forEach(function(r){ S.results.push(simResultRow(S, r)); });
     step(line, "登録された全 ROI（" + S.roiList.length + " 件）を測定し、結果表に行を追加します"); return SIM_UNK;
   }
-  step(line, "ROI Manager の操作「" + simFmt(args[0]) + "」を行います"); return SIM_UNK;
+  throw simErr(line, "未確認：ROI Manager の操作「" + simFmt(args[0]) + "」はモデルで未対応です", "後続の状態・出力は生成しません。");
 }
 /* ROI の面積：矩形は幅×高さ、楕円は画素数の近似（π×幅×高さ/4）。直線・多角形は外接矩形の面積ではないため確定しない */
 function simRoiArea(roi){
@@ -1849,8 +1861,18 @@ function simRunCmd(S, cmdRaw, opt, line, H){
   var step = H.step, warn = H.warn;
   function img(){ return H.img(); }
   function needImg(what){ return H.needImg(line, what); }
-  if (typeof cmdRaw !== "string"){ step(line, "run() のコマンドが実行時の値で決まります（説明は省略します）"); return SIM_UNK; }
+  if (typeof cmdRaw !== "string") throw simErr(line, "未確認：run()のコマンドが未確定です", "後続の画像状態を確定できないため停止します。");
+  if (simIsUnk(opt)) throw simErr(line, "未確認：run()のオプションが未確定です", "処理結果を推測しません。");
   var cmd = cmdRaw.trim(), base = cmd.replace(/\.\.\.$/, "").trim();
+  // A command can change pixels even when its high-level description is known.
+  // Never retain pre-command point samples as if they were its result.
+  var nonPixel = ["Measure", "Set Scale", "Set Measurements", "Select All", "Select None", "Restore Selection", "Create Selection", "Grays", "Fire", "Ice", "Spectrum", "Threshold", "Plot Profile", "Histogram", "Save", "Line Width", "Properties", "Close", "Close All"];
+  if (nonPixel.indexOf(base) < 0 && img()) {
+    img().pix = {};
+    step(line, "このコマンド後の個別画素値は未確認です。以前の画素値は引き継ぎません");
+    var spatialCommands = ["Gaussian Blur", "Median", "Mean", "Despeckle", "Sharpen", "Find Edges", "Remove Outliers", "Unsharp Mask", "Convolve", "Subtract Background", "Watershed", "Erode", "Dilate", "Fill Holes", "Skeletonize", "Outline", "Distance Map", "Scale Bar", "Draw", "Fill", "Clear", "Rotate", "Translate", "Canvas Size"];
+    if (spatialCommands.indexOf(base) >= 0) { img().buckets = null; img().mapOps = []; }
+  }
   opt = typeof opt === "string" ? opt : "";
   function optNum(key){ var m = new RegExp(key + "=(-?[0-9.]+(?:e[+-]?[0-9]+)?)", "i").exec(opt); return m ? parseFloat(m[1]) : null; }
   function mathOp(label, f, desc){
@@ -2076,9 +2098,7 @@ function simRunCmd(S, cmdRaw, opt, line, H){
   }
   var best = null, bestD = 3;
   SIM_CMD_KEYS.forEach(function(k){ var d = simLev(base.toLowerCase(), k.replace(/\.\.\.$/, "").toLowerCase()); if (d < bestD){ bestD = d; best = k; } });
-  if (best) warn(line, "コマンド「" + cmd + "」は見つかりませんでした", "もしかして「" + best + "」ですか。ImageJ では存在しないコマンド名だとエラーになります。");
-  step(line, "メニューコマンド「" + cmd + "」を実行します" + (opt ? "（オプション：" + opt + "）" : "") + "（このコマンドの詳しい説明は未収録のため、一般的な説明に留めます）");
-  return SIM_UNK;
+  throw simErr(line, "未確認：メニューコマンド「" + cmd + "」はモデルで未対応です", best ? "もしかして「" + best + "」ですか。後続結果は生成しません。" : "実在・効果を確認できないため、後続結果は生成しません。");
 }
 
 /* ---------- terms ---------- */

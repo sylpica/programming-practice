@@ -1,3 +1,4 @@
+import { additionalTemplates } from "./additional-templates.js";
 import {
   simulateScript,
   scanScript,
@@ -184,6 +185,11 @@ const reference = rows([
     "while (x < 3) { x <- x + 1 }",
   ],
 ]);
+for (const r of reference) {
+  if (["nrow","ncol","names"].includes(r.name)) r.example = "df <- data.frame(x=c(1,2),y=c(3,4))\n" + r.example;
+  if (["print","cat","if"].includes(r.name)) r.example = "x <- c(2,4,6)\n" + r.example;
+  if (r.name === "while") r.example = "x <- 0\n" + r.example;
+}
 function coerce(values) {
   if (values.some((v) => typeof v === "string"))
     return values.map((v) =>
@@ -213,12 +219,13 @@ function truth(v, line) {
   return Boolean(a[0]);
 }
 function subset(values, index) {
-  if (index === null) return structuredClone(values);
+  if (index === undefined) return structuredClone(values);
+  if (index === null) return [];
   let indexes = vec(index).map((v) =>
     typeof v === "number" ? Math.trunc(v) : v,
   );
   if (indexes.every((v) => typeof v === "boolean" || isNA(v))) {
-    return values.flatMap((v, i) =>
+    return Array.from({ length: Math.max(values.length, indexes.length) }, (_, i) => values[i] ?? NA).flatMap((v, i) =>
       isNA(indexes[i % indexes.length])
         ? [NA]
         : indexes[i % indexes.length]
@@ -319,6 +326,7 @@ export const definition = {
       model,
       {
         dialect: "r",
+        constants: {TRUE:true,FALSE:false,NULL:null,T:true,F:false},
         copyOnAssign: true,
         truth,
         literal(v, a) {
@@ -362,15 +370,15 @@ export const definition = {
           }
           if (a.k === "index") {
             let x = api.read(a.target, s),
-              indexes = a.indexes.map((i) => (i ? api.read(i, s) : null));
+              indexes = a.indexes.map((i) => (i ? api.read(i, s) : undefined));
             if (isUnknown(x) || indexes.some(isUnknown))
               return { handled: true, value: unknown("実行時の添字による") };
             if (x?.kind === "data.frame") {
               if (indexes.length === 1) {
                 let cols =
-                  indexes[0] === null
+                  indexes[0] === undefined
                     ? Object.keys(x.columns)
-                    : vec(indexes[0]).map((i) =>
+                    : indexes[0] === null ? [] : vec(indexes[0]).map((i) =>
                         typeof i === "string"
                           ? i
                           : Object.keys(x.columns)[i - 1],
@@ -390,9 +398,9 @@ export const definition = {
                 };
               }
               let colKeys =
-                indexes[1] === null
+                indexes[1] === undefined
                   ? Object.keys(x.columns)
-                  : vec(indexes[1]).map((i) =>
+                  : indexes[1] === null ? [] : vec(indexes[1]).map((i) =>
                       typeof i === "string" ? i : Object.keys(x.columns)[i - 1],
                     );
               let cols = Object.fromEntries(
@@ -684,3 +692,5 @@ export const definition = {
     );
   },
 };
+
+definition.templates.push(...additionalTemplates(definition.model.defaults));

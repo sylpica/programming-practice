@@ -70,12 +70,19 @@ export function tokenize(source, dialect = "js") {
         if (source[i] === "\\" && dialect !== "ahk" && dialect !== "fx") {
           i++;
           let e = source[i++];
-          text += { n: "\n", r: "\r", t: "\t", 0: "\0" }[e] ?? e;
+          if (e === "x" || e === "u" || e === "U" || /[1-7]/.test(e || ""))
+            unsupported("未確認の文字エスケープ（実際の文字を入力してください）", start);
+          const escapes = { n: "\n", r: "\r", t: "\t", b: "\b", f: "\f", v: "\v", 0: "\0", "\\": "\\", '"': '"', "'": "'" };
+          if (!Object.hasOwn(escapes, e))
+            unsupported("未確認の文字エスケープ", start);
+          text += escapes[e];
         } else if (source[i] === "`" && dialect === "ahk") {
           i++;
           text += { n: "\n", r: "\r", t: "\t" }[source[i]] ?? source[i];
           i++;
         } else {
+          if (source[i] === "\n" && dialect !== "r")
+            throw new PracticeError("文字列の途中で改行されています", start, "SyntaxError");
           if (source[i] === "\n") line++;
           text += source[i++];
         }
@@ -92,9 +99,9 @@ export function tokenize(source, dialect = "js") {
       i += m[0].length;
       continue;
     }
-    m = source
-      .slice(i)
-      .match(/^[A-Za-z_\u0080-\uFFFF][\w\u0080-\uFFFF]*(?:\.[A-Za-z_]\w*)*/);
+    m = source.slice(i).match(dialect === "js"
+      ? /^[$_\p{ID_Start}][$\p{ID_Continue}\u200C\u200D]*(?:\.[A-Za-z_]\w*)*/u
+      : /^[\p{ID_Start}_][\p{ID_Continue}_]*(?:\.[A-Za-z_]\w*)*/u);
     if (m) {
       let parts = dialect === "r" ? [m[0]] : m[0].split(".");
       parts.forEach((v, j) => {
@@ -154,6 +161,10 @@ const prec = {
   "%/%": 8,
   "^": 10,
 };
+const jsPrec = { "||": 1, "&&": 2, "|": 3, "^": 4, "&": 5,
+  "==": 6, "!=": 6, "===": 6, "!==": 6,
+  "<": 7, ">": 7, "<=": 7, ">=": 7,
+  "+": 8, "-": 8, "*": 9, "/": 9, "%": 9 };
 export class ScriptParser {
   constructor(source, dialect = "js") {
     if (source.length > LIMITS.source)
@@ -182,6 +193,8 @@ export class ScriptParser {
       a;
     if (!t) throw new PracticeError("式が必要です");
     let meta = { line: t.line };
+    if (t.k === "number" && this.dialect === "js" && /[LfF]$/.test(t.v))
+      throw new PracticeError("JavaScriptに数値の型接尾辞はありません", t.line, "SyntaxError");
     if (t.k === "number")
       a = {
         ...meta,
@@ -191,7 +204,7 @@ export class ScriptParser {
       };
     else if (t.k === "string") a = { ...meta, k: "literal", value: t.v };
     else if (["!", "not", "-", "+", "&", "*"].includes(t.v))
-      a = { ...meta, k: "unary", op: t.v, arg: this.expr(9) };
+      a = { ...meta, k: "unary", op: t.v, arg: this.expr(this.dialect === "js" ? 10 : 9) };
     else if (t.v === "(") {
       a = this.expr();
       this.take(")");
@@ -278,7 +291,7 @@ export class ScriptParser {
         a = { k: "post", target: a, op: v, line: a.line };
         continue;
       }
-      let p = prec[v];
+      let p = (this.dialect === "js" ? jsPrec : prec)[v];
       if (
         p === undefined ||
         p < min ||
@@ -337,12 +350,17 @@ export class ScriptParser {
     }
     if (v === "while") {
       this.take();
-      this.take("(");
-      let test = this.expr();
-      this.take(")");
+      let test;
+      if (this.dialect === "ahk" && !this.peek("(")) test = this.expr();
+      else {
+        this.take("(");
+        test = this.expr();
+        this.take(")");
+      }
       return { k: "while", test, body: this.body(), line, refs: ["while"] };
     }
     if (v === "repeat" || v === "Loop") {
+      if (this.dialect === "js") unsupported(v, line);
       this.take();
       let count =
         v === "Loop" && !this.peek("{") && !this.peek("\n")
@@ -391,6 +409,8 @@ export class ScriptParser {
       };
     }
     if (["break", "continue", "next", "return"].includes(v)) {
+      if (this.dialect === "js" && ["next", "return"].includes(v))
+        unsupported(v, line);
       this.take();
       let value = null;
       if (
@@ -411,6 +431,7 @@ export class ScriptParser {
       line = t.line,
       kind = this.dialect;
     if (
+      ["js", "c", "cpp", "csharp"].includes(kind) &&
       [
         "let",
         "const",
@@ -426,6 +447,8 @@ export class ScriptParser {
       ].includes(t.v)
     ) {
       let type = this.take().v;
+      if (kind === "js" && !["let", "const", "var"].includes(type))
+        unsupported(type, line);
       let pointer = false;
       if (this.peek("*")) {
         this.take();
@@ -454,6 +477,8 @@ export class ScriptParser {
           value = { k: "array", values: vals, line };
         } else value = this.expr();
       }
+      if (!["\n", ";", ")", "}", "<eof>"].includes(this.ts[this.i]?.v))
+        unsupported("宣言の区切りが必要です", line);
       return {
         k: "declare",
         name: name.v,
@@ -550,6 +575,17 @@ export function baseBinary(op, a, b, dialect = "js") {
       a,
       b,
     };
+  if (dialect === "js") {
+    if (op === "&&") return a && b;
+    if (op === "||") return a || b;
+    if (op === "-") return a - b;
+    if (op === "*") return a * b;
+    if (op === "/") return a / b;
+    if (op === "%") return a % b;
+    if (op === "^") return a ^ b;
+    if (op === "&") return a & b;
+    if (op === "|") return a | b;
+  }
   if (op === "==" || op === "=") return a == b;
   if (op === "===") return a === b;
   if (op === "!=" || op === "<>") return a != b;
@@ -644,20 +680,13 @@ export function executeProgram(nodes, model, semantics = {}, custom = {}) {
       case "literal":
         return semantics.literal ? semantics.literal(a.value, a, s) : a.value;
       case "var": {
-        if (a.name in s.vars) return s.vars[a.name];
-        let constants = {
+        if (Object.hasOwn(s.vars, a.name)) return s.vars[a.name];
+        let constants = semantics.constants || {
           true: true,
           false: false,
-          True: true,
-          False: false,
-          TRUE: true,
-          FALSE: false,
           null: null,
-          NULL: null,
-          None: null,
-          Blank: null,
         };
-        if (a.name in constants) return constants[a.name];
+        if (Object.hasOwn(constants, a.name)) return constants[a.name];
         throw new PracticeError(`未定義の名前：${a.name}`, a.line, "NameError");
       }
       case "array":
@@ -676,11 +705,23 @@ export function executeProgram(nodes, model, semantics = {}, custom = {}) {
       }
       case "binary": {
         let x = read(a.a, s);
+        if (isUnknown(x) && ["&&", "and", "||", "or"].includes(a.op)) {
+          function hasEffects(node) {
+            if (!node || typeof node !== "object") return false;
+            if (["call", "post"].includes(node.k)) return true;
+            return Object.values(node).some(v => Array.isArray(v) ? v.some(hasEffects) : hasEffects(v));
+          }
+          if (hasEffects(a.b)) unsupported("未確定の短絡評価に含まれる関数呼び出し・副作用", a.line);
+        }
         if (["&&", "and", "||", "or"].includes(a.op) && !isUnknown(x)) {
-          if (["&&", "and"].includes(a.op) && !truth(x, a.line)) return false;
-          if (["||", "or"].includes(a.op) && truth(x, a.line)) return true;
+          if (["&&", "and"].includes(a.op) && !truth(x, a.line))
+            return semantics.logicalOperands ? x : false;
+          if (["||", "or"].includes(a.op) && truth(x, a.line))
+            return semantics.logicalOperands ? x : true;
         }
         let y = read(a.b, s);
+        if (semantics.logicalOperands && ["&&", "and", "||", "or"].includes(a.op) && !isUnknown(x))
+          return y;
         return semantics.binary
           ? semantics.binary(a.op, x, y, a, s, api)
           : baseBinary(a.op, x, y, semantics.dialect);
@@ -718,6 +759,11 @@ export function executeProgram(nodes, model, semantics = {}, custom = {}) {
       }
       case "post": {
         let x = read(a.target, s);
+        if (semantics.increment) {
+          let value = semantics.increment(x, a, s, api);
+          write(a.target, value.next, s, a);
+          return value.previous;
+        }
         write(
           a.target,
           baseBinary(a.op === "++" ? "+" : "-", x, 1, semantics.dialect),
@@ -876,8 +922,10 @@ export function executeProgram(nodes, model, semantics = {}, custom = {}) {
           if (values) r.s.vars[n.name] = values[i];
           note(r.s, n, `繰り返し ${i + 1}回目`);
           r.s.loopDepth = (r.s.loopDepth || 0) + 1;
+          (r.s.loopIterations ??= []).push(i + 1);
           for (let out of scoped(n.body, [r.s], depth + 1)) {
             out.loopDepth--;
+            out.loopIterations.pop();
             if (out.signal === "break") {
               out.signal = null;
               done.push(out);
@@ -900,9 +948,10 @@ export function executeProgram(nodes, model, semantics = {}, custom = {}) {
     }
     return done;
   }
-  function enterScope(s) {
+  function enterScope(s, nodes = []) {
     s.scopeStack ??= [];
     s.scopeStack.push({ records: [] });
+    semantics.prepareScope?.(nodes, s, api);
   }
   function registerDeclaration(s, n) {
     if (
@@ -946,13 +995,13 @@ export function executeProgram(nodes, model, semantics = {}, custom = {}) {
   }
   function scoped(nodes, states, depth) {
     if (!semantics.blockScopes) return run(nodes, states, depth);
-    for (let s of states) enterScope(s);
+    for (let s of states) enterScope(s, nodes);
     let result = run(nodes, states, depth);
     for (let s of result) leaveScope(s);
     return result;
   }
   function step(n, s, depth) {
-    if (n.k === "declare") registerDeclaration(s, n);
+    if (n.k === "declare" && !semantics.prepareScope) registerDeclaration(s, n);
     if (semantics.step) {
       let special = semantics.step(n, s, api);
       if (special) return special;
@@ -1002,7 +1051,7 @@ export function executeProgram(nodes, model, semantics = {}, custom = {}) {
       case "while":
       case "each":
       case "repeat": {
-        if (semantics.blockScopes) enterScope(s);
+        if (semantics.blockScopes) enterScope(s, n.init ? [n.init] : []);
         let out = loop(n, s, depth);
         if (semantics.blockScopes) for (let state of out) leaveScope(state);
         return out;
@@ -1036,6 +1085,7 @@ export function executeProgram(nodes, model, semantics = {}, custom = {}) {
     choose,
     run,
     check,
+    registerDeclaration,
     unknown,
     freshUnknown: (source, s) =>
       unknown(source, source + "-" + (s.inputCount = (s.inputCount || 0) + 1)),
@@ -1046,8 +1096,8 @@ export function executeProgram(nodes, model, semantics = {}, custom = {}) {
   };
   let paths;
   try {
-    if (semantics.blockScopes) enterScope(state);
-    semantics.initialize?.(state, api);
+    semantics.initialize?.(state, api, nodes);
+    if (semantics.blockScopes) enterScope(state, nodes);
     paths = run(nodes, [state]);
   } catch (e) {
     return {

@@ -80,6 +80,42 @@
                 >
               </div>
             </section>
+            <details id="modelPanel" class="panel model-panel">
+              <summary class="panel-heading">
+                <h2 id="modelTitle">モデルシート</h2>
+                <button id="resetModel" title="モデル値を初期状態に戻す">
+                  リセット
+                </button>
+              </summary>
+              <div class="model-body">
+                <div id="sheetWrap" class="sheet-wrap">
+                  <table class="sheet">
+                    <caption>
+                      Sheet1 · A1:C5
+                    </caption>
+                    <thead>
+                      <tr>
+                        <th></th>
+                        <th>A</th>
+                        <th>B</th>
+                        <th>C</th>
+                      </tr>
+                    </thead>
+                    <tbody id="sheet"></tbody>
+                  </table>
+                </div>
+                <textarea
+                  id="modelJson"
+                  aria-label="モデル状態 JSON"
+                  spellcheck="false"
+                  hidden
+                ></textarea>
+                <p id="modelHint" class="hint">
+                  値を編集できます。「?」は未確定、空欄はEmpty。文字列を数値と区別するには先頭に
+                  ' を付けます。
+                </p>
+              </div>
+            </details>
             <section class="panel simulation">
               <div class="panel-heading">
                 <h2><span class="number">02</span> コードの動き</h2>
@@ -128,49 +164,8 @@
                 実行すると、変数とセルの変化がここに表示されます。
               </div>
             </section>
-            <section
-              id="templateExplanation"
-              class="panel explanation"
-              hidden
-            ></section>
           </div>
           <aside class="right-column">
-            <section class="panel model-panel">
-              <div class="panel-heading">
-                <h2 id="modelTitle">モデルシート</h2>
-                <button id="resetModel" title="モデル値を初期状態に戻す">
-                  リセット
-                </button>
-              </div>
-              <div class="model-body">
-                <div id="sheetWrap" class="sheet-wrap">
-                  <table class="sheet">
-                    <caption>
-                      Sheet1 · A1:C5
-                    </caption>
-                    <thead>
-                      <tr>
-                        <th></th>
-                        <th>A</th>
-                        <th>B</th>
-                        <th>C</th>
-                      </tr>
-                    </thead>
-                    <tbody id="sheet"></tbody>
-                  </table>
-                </div>
-                <textarea
-                  id="modelJson"
-                  aria-label="モデル状態 JSON"
-                  spellcheck="false"
-                  hidden
-                ></textarea>
-                <p id="modelHint" class="hint">
-                  値を編集できます。「?」は未確定、空欄はEmpty。文字列を数値と区別するには先頭に
-                  ' を付けます。
-                </p>
-              </div>
-            </section>
             <section class="panel used-panel">
               <div class="panel-heading">
                 <h2>使用中の項目</h2>
@@ -192,8 +187,13 @@
                 <article id="refDetail" class="ref-detail"></article>
               </div>
             </section>
+            <section class="panel glossary-panel">
+              <div class="panel-heading"><h2>用語集</h2></div>
+              <dl id="sideGlossary" class="side-glossary"></dl>
+            </section>
           </aside>
         </div>
+        <section id="templateExplanation" class="panel explanation" hidden></section>
       </section>
       <section id="reference" class="view" hidden>
         <h1>関数・アクションのリファレンス</h1>
