@@ -2,22 +2,46 @@ import { additionalTemplates } from "./additional-templates.js";
 import {
   simulateScript,
   scanScript,
+  tokenize,
   PracticeError,
   baseBinary,
   unsupported,
 } from "../../core/script.js";
 import { rows } from "../../core/data.js";
-import { unknown, isUnknown, formatModelValue as formatValue } from "../../core/contract.js";
+import { unknown, isUnknown, LIMITS, formatModelValue as formatValue } from "../../core/contract.js";
+// R15-N15 / RG-14: names that really are R functions. Used only when the name
+// is not bound as a variable, to stop honestly instead of "undefined name".
+const FUNCTION_NAMES = new Set(
+  "c sum mean median sd length seq seq_len rep data.frame nrow ncol names is.na as.numeric as.character print cat readline read.csv rnorm runif sample sqrt abs log log10 log2 exp sin cos tan asin acos atan atan2 round floor ceiling trunc min max range sort rev order unique paste paste0 sprintf substr nchar toupper tolower sapply lapply apply mapply tapply vapply replicate list factor matrix array dim rownames colnames head tail summary plot".split(" "),
+);
 const NA = { kind: "NA" },
   isNA = (v) => v?.kind === "NA",
-  vec = (v) => (Array.isArray(v) ? v : [v]),
-  flat = (v) => vec(v).flat();
+  // RG-03: NULL (JS null) is a length-0 object in R, never a length-1 zero.
+  vec = (v) => (v === null ? [] : Array.isArray(v) ? v : [v]),
+  flat = (v) => vec(v).flat(),
+  isNaNVal = (v) => typeof v === "number" && Number.isNaN(v),
+  isMissing = (v) => isNA(v) || isNaNVal(v),
+  namesOf = (v) => (Array.isArray(v) && Array.isArray(v.names) ? v.names : null),
+  withNames = (arr, names) => {
+    if (names && names.some((n) => n !== null && n !== undefined && n !== ""))
+      arr.names = [...names];
+    return arr;
+  };
 const show = (v) =>
   isNA(v)
     ? "NA"
-    : Array.isArray(v)
-      ? "c(" + v.map(show).join(", ") + ")"
-      : v?.kind === "data.frame"
+    : v === null
+      ? "NULL"
+      : Array.isArray(v)
+        ? "c(" +
+          v
+            .map((el, i) => {
+              const nm = v.names?.[i];
+              return (nm ? nm + " = " : "") + show(el);
+            })
+            .join(", ") +
+          ")"
+        : v?.kind === "data.frame"
         ? Object.entries(v.columns)
             .map(([k, x]) => k + ": " + show(x))
             .join("\n")
@@ -27,7 +51,15 @@ const show = (v) =>
             : "FALSE"
           : typeof v === "string"
             ? JSON.stringify(v)
-            : formatValue(v);
+            : typeof v === "number"
+              ? v === Infinity
+                ? "Inf"
+                : v === -Infinity
+                  ? "-Inf"
+                  : Number.isNaN(v)
+                    ? "NaN"
+                    : String(v)
+              : formatValue(v);
 const reference = rows([
   [
     "c",
@@ -71,7 +103,7 @@ const reference = rows([
   [
     "seq",
     "ベクトル",
-    "seq(from, to, by)",
+    "seq(from, to, by, length.out, along.with)",
     "等差数列を作ります。",
     "seq(1, 5, 2)",
   ],
@@ -85,7 +117,7 @@ const reference = rows([
   [
     "rep",
     "ベクトル",
-    "rep(x, times)",
+    "rep(x, times, length.out, each)",
     "ベクトルを繰り返します。",
     "rep(c(1,2), 2)",
   ],
@@ -221,17 +253,46 @@ function truth(v, line) {
 function subset(values, index) {
   if (index === undefined) return structuredClone(values);
   if (index === null) return [];
+  const srcNames = namesOf(values);
   let indexes = vec(index).map((v) =>
     typeof v === "number" ? Math.trunc(v) : v,
   );
+  // RG-38: character subscripts select by element name.
+  if (indexes.some((v) => typeof v === "string")) {
+    const out = [],
+      outNames = [];
+    for (const idx of indexes) {
+      if (isNA(idx)) {
+        out.push(NA);
+        outNames.push(null);
+      } else if (typeof idx === "string") {
+        const at = srcNames ? srcNames.indexOf(idx) : -1;
+        out.push(at >= 0 ? values[at] : NA);
+        outNames.push(idx);
+      } else if (typeof idx === "number" && idx > 0) {
+        out.push(values[idx - 1] ?? NA);
+        outNames.push(srcNames?.[idx - 1] ?? null);
+      } else if (idx !== 0) {
+        throw new PracticeError("only 0 may be mixed with negative subscripts");
+      }
+    }
+    return withNames(out, outNames);
+  }
   if (indexes.every((v) => typeof v === "boolean" || isNA(v))) {
-    return Array.from({ length: Math.max(values.length, indexes.length) }, (_, i) => values[i] ?? NA).flatMap((v, i) =>
-      isNA(indexes[i % indexes.length])
-        ? [NA]
-        : indexes[i % indexes.length]
-          ? [v]
-          : [],
-    );
+    const out = [],
+      outNames = [];
+    const total = Math.max(values.length, indexes.length);
+    for (let i = 0; i < total; i++) {
+      const flag = indexes[i % indexes.length];
+      if (isNA(flag)) {
+        out.push(NA);
+        outNames.push(srcNames?.[i] ?? null);
+      } else if (flag) {
+        out.push(values[i] ?? NA);
+        outNames.push(srcNames?.[i] ?? null);
+      }
+    }
+    return withNames(out, outNames);
   }
   if (indexes.some(isNA) && indexes.some((v) => typeof v === "number" && v < 0))
     throw new PracticeError("only 0 may be mixed with negative subscripts");
@@ -241,12 +302,36 @@ function subset(values, index) {
     throw new PracticeError("only 0 may be mixed with negative subscripts");
   if (negatives) {
     let omit = new Set(indexes.map((v) => -Math.trunc(v)));
-    return values.filter((_, i) => !omit.has(i + 1));
+    const out = [],
+      outNames = [];
+    values.forEach((v, i) => {
+      if (!omit.has(i + 1)) {
+        out.push(v);
+        outNames.push(srcNames?.[i] ?? null);
+      }
+    });
+    return withNames(out, outNames);
   }
-  return indexes
-    .filter((v) => v !== 0)
-    .map((v) => (isNA(v) ? NA : (values[Math.trunc(v) - 1] ?? NA)));
+  const out = [],
+    outNames = [];
+  for (const v of indexes) {
+    if (v === 0) continue;
+    if (isNA(v)) {
+      out.push(NA);
+      outNames.push(null);
+    } else {
+      out.push(values[Math.trunc(v) - 1] ?? NA);
+      outNames.push(srcNames?.[Math.trunc(v) - 1] ?? null);
+    }
+  }
+  return withNames(out, outNames);
 }
+const targetName = (a) =>
+  a?.k === "var"
+    ? a.name
+    : a?.k === "member"
+      ? targetName(a.target) + "." + a.name
+      : "";
 export const definition = {
   id: "r",
   name: "R",
@@ -321,6 +406,28 @@ export const definition = {
   },
   scan: (code) => scanScript(code, reference, "r"),
   async simulate(code, model, limits) {
+    // RG-14: the shared parser cannot represent `function` expressions and
+    // otherwise reports false causes (a parameter NameError, or a missing
+    // ")"). Detect the keyword on R tokens and stop honestly, naming it.
+    try {
+      const ft = tokenize(code, "r").find(
+        (t) => t.k === "id" && t.v === "function",
+      );
+      if (ft)
+        return {
+          paths: [],
+          error: {
+            line: ft.line,
+            message:
+              "この構文は説明に対応していません：ユーザー関数定義（function）",
+            category: "未対応",
+          },
+          truncated: false,
+          limits: { ...LIMITS, ...limits },
+        };
+    } catch {
+      // Tokenizer errors are reported by simulateScript itself.
+    }
     return simulateScript(
       code,
       model,
@@ -338,19 +445,41 @@ export const definition = {
           return v;
         },
         read(a, s, api) {
+          // RG-14: a function definition is unsupported, by that name.
+          if (a.k === "call" && a.target?.k === "var" && a.target.name === "function")
+            unsupported("ユーザー関数定義（function）", a.line);
+          if (
+            a.k === "var" &&
+            FUNCTION_NAMES.has(a.name) &&
+            !Object.hasOwn(s.vars, a.name)
+          )
+            unsupported(
+              `関数名 ${a.name} を値として使う形（apply系の関数名引数など）`,
+              a.line,
+            );
           if (a.k === "unary" && ["-", "+", "!"].includes(a.op)) {
             let x = api.read(a.arg, s);
             if (isUnknown(x)) return { handled: true, value: x };
+            if (vec(x).some((v) => typeof v === "string"))
+              api.fail(
+                a.op === "!"
+                  ? "invalid argument type"
+                  : "non-numeric argument to unary operator",
+                a,
+              );
             return {
               handled: true,
-              value: vec(x).map((v) =>
-                isNA(v)
-                  ? NA
-                  : a.op === "!"
-                    ? !Boolean(v)
-                    : a.op === "-"
-                      ? -Number(v)
-                      : Number(v),
+              value: withNames(
+                vec(x).map((v) =>
+                  isNA(v) || (a.op === "!" && isNaNVal(v))
+                    ? NA
+                    : a.op === "!"
+                      ? !Boolean(v)
+                      : a.op === "-"
+                        ? -Number(v)
+                        : Number(v),
+                ),
+                namesOf(x),
               ),
             };
           }
@@ -374,6 +503,22 @@ export const definition = {
             if (isUnknown(x) || indexes.some(isUnknown))
               return { handled: true, value: unknown("実行時の添字による") };
             if (x?.kind === "data.frame") {
+              // RG-47: [[ selects a single column as a vector, not a data.frame.
+              if (a.double) {
+                if (indexes.length !== 1)
+                  api.fail("subscript out of bounds", a);
+                const key0 = vec(indexes[0])[0];
+                const key =
+                  typeof key0 === "string"
+                    ? key0
+                    : typeof key0 === "number" &&
+                        Number.isInteger(key0)
+                      ? Object.keys(x.columns)[key0 - 1]
+                      : undefined;
+                if (key === undefined || !Object.hasOwn(x.columns, key))
+                  api.fail("subscript out of bounds", a);
+                return { handled: true, value: x.columns[key] };
+              }
               if (indexes.length === 1) {
                 let cols =
                   indexes[0] === undefined
@@ -418,7 +563,13 @@ export const definition = {
               };
             }
             if (a.double) {
-              let i = Number(vec(indexes[0])[0]);
+              const first = vec(indexes[0])[0];
+              if (typeof first === "string") {
+                const at = namesOf(x) ? namesOf(x).indexOf(first) : -1;
+                if (at < 0) api.fail("subscript out of bounds", a);
+                return { handled: true, value: vec(x)[at] };
+              }
+              let i = Number(first);
               if (!Number.isInteger(i) || i < 1 || i > vec(x).length)
                 api.fail("subscript out of bounds", a);
               return { handled: true, value: vec(x)[i - 1] };
@@ -466,6 +617,70 @@ export const definition = {
         },
         binary(op, a, b, node, s, api) {
           if (isUnknown(a) || isUnknown(b)) return baseBinary(op, a, b, "r");
+          // RG-70（R19-N6）：データフレームへの二項演算は列ごとの要素演算として
+          // 評価する。レコード（リスト相当）への演算は実 R どおりエラーにし、
+          // 数値化できない値を NaN／単一 FALSE に合成しない。
+          const isDF = (v) => v?.kind === "data.frame";
+          const isRec = (v) =>
+            v !== null &&
+            typeof v === "object" &&
+            !Array.isArray(v) &&
+            v.kind !== "data.frame" &&
+            !isNA(v);
+          if (isDF(a) || isDF(b) || isRec(a) || isRec(b)) {
+            if (isRec(a) || isRec(b))
+              api.fail("non-numeric argument to binary operator", node);
+            if (
+              ![
+                "+", "-", "*", "/", "^", "%%", "%/%",
+                "==", "!=", "<", ">", "<=", ">=", "&", "|",
+              ].includes(op)
+            )
+              api.fail(`この演算はデータフレームには対応していません：${op}`, node);
+            const self = this;
+            const applyCols = (d, other, flip) => {
+              const nrow = vec(Object.values(d.columns)[0] ?? []).length;
+              if (
+                Array.isArray(other) &&
+                other.length !== 1 &&
+                other.length !== nrow &&
+                nrow % other.length !== 0
+              )
+                api.fail(
+                  "データフレームに対するベクトルの長さが合いません（列の長さと同じか、1つだけ指定してください）",
+                  node,
+                );
+              return {
+                kind: "data.frame",
+                columns: Object.fromEntries(
+                  Object.entries(d.columns).map(([name, col]) => [
+                    name,
+                    flip
+                      ? self.binary(op, other, col, node, s, api)
+                      : self.binary(op, col, other, node, s, api),
+                  ]),
+                ),
+              };
+            };
+            if (isDF(a) && isDF(b)) {
+              const an = Object.keys(a.columns),
+                bn = Object.keys(b.columns);
+              const arows = vec(a.columns[an[0]] ?? []).length,
+                brows = vec(b.columns[bn[0]] ?? []).length;
+              if (an.length !== bn.length || arows !== brows)
+                api.fail("only defined for equally-sized data frames", node);
+              return {
+                kind: "data.frame",
+                columns: Object.fromEntries(
+                  an.map((name, i) => [
+                    name,
+                    self.binary(op, a.columns[name], b.columns[bn[i]], node, s, api),
+                  ]),
+                ),
+              };
+            }
+            return isDF(a) ? applyCols(a, b, false) : applyCols(b, a, true);
+          }
           if (op === ":") {
             let from = Number(vec(a)[0]),
               to = Number(vec(b)[0]);
@@ -482,6 +697,27 @@ export const definition = {
             return baseBinary(op, truth(a, node.line), truth(b, node.line));
           let x = vec(a),
             y = vec(b);
+          // RG-14: %in% is a match against the whole right-hand table,
+          // never NA and never a numeric-only type error.
+          if (op === "%in%") {
+            if (!x.length) return [];
+            const asText = [...x, ...y].some((v) => typeof v === "string");
+            const key = (v) => {
+              if (isMissing(v)) return "\u0000missing";
+              if (asText)
+                return typeof v === "boolean"
+                  ? v
+                    ? "TRUE"
+                    : "FALSE"
+                  : String(v);
+              return typeof v === "boolean" ? Number(v) : v;
+            };
+            const table = y.map(key);
+            return withNames(
+              x.map((u) => table.includes(key(u))),
+              namesOf(a),
+            );
+          }
           if (!x.length || !y.length) return [];
           let length = Math.max(x.length, y.length);
           if (length % Math.min(x.length, y.length))
@@ -494,7 +730,42 @@ export const definition = {
           let out = Array.from({ length }, (_, i) => {
             let u = x[i % x.length],
               v = y[i % y.length];
+            // RG-14: type checks come before every shortcut (NA propagation,
+            // ^ identities), exactly as real R rejects character operands.
+            if (
+              ["+", "-", "*", "/", "^", "%%", "%/%"].includes(op) &&
+              (typeof u === "string" || typeof v === "string")
+            )
+              api.fail("non-numeric argument to binary operator", node);
+            if (
+              (op === "&" || op === "|") &&
+              (typeof u === "string" || typeof v === "string")
+            )
+              api.fail(
+                "operations are possible only for numeric, logical or complex types",
+                node,
+              );
             if (op === "^" && (u === 1 || v === 0)) return 1;
+            // RG-45: NaN is treated as missing for comparisons and logic.
+            if (
+              (op === "&" || op === "|") &&
+              (isMissing(u) || isMissing(v)) &&
+              typeof u !== "string" &&
+              typeof v !== "string"
+            ) {
+              const tri = (w) =>
+                isMissing(w) ? null : w === false || w === 0 ? false : Boolean(w);
+              const tu = tri(u),
+                tv = tri(v);
+              if (op === "&") {
+                if (tu === false || tv === false) return false;
+                if (tu === null || tv === null) return NA;
+                return true;
+              }
+              if (tu === true || tv === true) return true;
+              if (tu === null || tv === null) return NA;
+              return false;
+            }
             if (
               op === "&" &&
               (u === false || v === false || u === 0 || v === 0)
@@ -505,6 +776,11 @@ export const definition = {
               ((!isNA(u) && Boolean(u)) || (!isNA(v) && Boolean(v)))
             )
               return true;
+            if (
+              ["==", "!=", "<", ">", "<=", ">="].includes(op) &&
+              (isMissing(u) || isMissing(v))
+            )
+              return NA;
             if (isNA(u) || isNA(v)) return NA;
             if (["+", "-", "*", "/", "^", "%%", "%/%"].includes(op)) {
               if (typeof u === "string" || typeof v === "string")
@@ -519,7 +795,13 @@ export const definition = {
             }
             return baseBinary(op, u, v, "r");
           });
-          return out;
+          const resultNames =
+            x.length === length && namesOf(a)
+              ? namesOf(a)
+              : y.length === length && namesOf(b)
+                ? namesOf(b)
+                : null;
+          return withNames(out, resultNames);
         },
         call(name, args, s, api, node) {
           let vals = args.map((a) => api.read(a, s)),
@@ -529,11 +811,43 @@ export const definition = {
             pos = vals.filter((_, i) => !args[i].argName);
           if (["readline", "rnorm", "runif", "sample"].includes(name))
             return api.freshUnknown(name + "の実行時の値", s);
-          if (pos.some(isUnknown)) return unknown(name + "の引数による");
+          // RG-80（R21-N4）: 出力系（print／cat）は未知値でも行自体を消さない。
+          // 未知の部分はプレースホルダで示し、行が存在すること自体は伝える。
+          if (pos.some(isUnknown) && !["print", "cat"].includes(name))
+            return unknown(name + "の引数による");
           let x = pos[0] ?? named.x ?? vals[0];
           switch (name) {
-            case "c":
-              return coerce(pos.flatMap((v) => (v === null ? [] : vec(v))));
+            case "c": {
+              // RG-03: NULL contributes no elements; c() / c(NULL) is NULL itself.
+              // RG-38: named arguments become element names, in argument order.
+              if (vals.some(isUnknown)) return unknown("cの引数による");
+              const rawValues = [],
+                rawNames = [];
+              args.forEach((a, i) => {
+                const v = vals[i];
+                if (v === null) return;
+                if (v?.kind === "data.frame")
+                  api.fail("c()ではデータフレームをベクトル化できません", node);
+                const elems = vec(v),
+                  existing = namesOf(v);
+                elems.forEach((el, j) => {
+                  rawValues.push(el);
+                  if (a.argName) {
+                    rawNames.push(
+                      elems.length === 1
+                        ? a.argName
+                        : existing?.[j]
+                          ? a.argName + existing[j]
+                          : a.argName + (j + 1),
+                    );
+                  } else rawNames.push(existing?.[j] ?? null);
+                });
+              });
+              const combined = coerce(rawValues);
+              return combined.length
+                ? withNames(combined, rawNames)
+                : null;
+            }
             case "length":
               return x?.kind === "data.frame"
                 ? Object.keys(x.columns).length
@@ -541,42 +855,76 @@ export const definition = {
                   ? 0
                   : vec(x).length;
             case "is.na":
-              return vec(x).map((v) => isNA(v) || Number.isNaN(v));
+              return withNames(
+                vec(x).map((v) => isNA(v) || Number.isNaN(v)),
+                namesOf(x),
+              );
             case "as.numeric": {
-              const result = vec(x).map((v) =>
-                isNA(v)
-                  ? NA
-                  : typeof v === "string" && v.trim() === ""
+              const result = withNames(
+                vec(x).map((v) =>
+                  isNA(v)
                     ? NA
-                    : Number.isNaN(Number(v))
+                    : typeof v === "string" && v.trim() === ""
                       ? NA
-                      : Number(v),
+                      : Number.isNaN(Number(v))
+                        ? NA
+                        : Number(v),
+                ),
+                namesOf(x),
               );
               if (result.some((v, i) => isNA(v) && !isNA(vec(x)[i]) && !Number.isNaN(vec(x)[i]))) api.note(s, node, "変換によりNAが生成されました（NAs introduced by coercion）", "warning");
               return result;
             }
             case "as.character":
-              return vec(x).map((v) =>
-                isNA(v)
-                  ? NA
-                  : typeof v === "boolean"
-                    ? v
-                      ? "TRUE"
-                      : "FALSE"
-                    : String(v),
+              return withNames(
+                vec(x).map((v) =>
+                  isNA(v)
+                    ? NA
+                    : typeof v === "boolean"
+                      ? v
+                        ? "TRUE"
+                        : "FALSE"
+                      : typeof v === "number" && !Number.isFinite(v)
+                        ? v === Infinity
+                          ? "Inf"
+                          : v === -Infinity
+                            ? "-Inf"
+                            : "NaN"
+                        : String(v),
+                ),
+                namesOf(x),
               );
-            case "print":
+            case "print": {
+              // RG-80: 値全体が未知でも出力行は出す（値は実行時に決まる旨を示す）。
+              const text = isUnknown(x) ? "（実行時に決まる値）" : show(x);
               s.outputs.push({
                 channel: "print",
-                text: show(x),
+                text,
                 line: node.line,
               });
-              api.note(s, node, "出力します：" + show(x));
+              api.note(s, node, "出力します：" + text);
               return x;
+            }
             case "cat": {
               let text = pos
                 .flatMap(vec)
-                .map((v) => (isNA(v) ? "NA" : String(v)))
+                .map((v) =>
+                  isUnknown(v)
+                    ? "（実行時に決まる値）"
+                    : isNA(v)
+                    ? "NA"
+                    : typeof v === "boolean"
+                      ? v
+                        ? "TRUE"
+                        : "FALSE"
+                      : typeof v === "number" && !Number.isFinite(v)
+                        ? v === Infinity
+                          ? "Inf"
+                          : v === -Infinity
+                            ? "-Inf"
+                            : "NaN"
+                        : String(v),
+                )
                 .join(named.sep ?? " ");
               s.outputs.push({ channel: "cat", text, line: node.line });
               return null;
@@ -658,7 +1006,10 @@ export const definition = {
                 ? Object.keys(x.columns).length
                 : null;
             case "names":
-              return x?.kind === "data.frame" ? Object.keys(x.columns) : null;
+              if (x?.kind === "data.frame") return Object.keys(x.columns);
+              return namesOf(x)
+                ? namesOf(x).map((n) => (n === null || n === undefined ? NA : n))
+                : null;
             case "seq_len": {
               let n = Number(x);
               if (!Number.isInteger(n) || n < 0 || n > 10000)
@@ -666,14 +1017,63 @@ export const definition = {
               return Array.from({ length: n }, (_, i) => i + 1);
             }
             case "seq": {
-              let from = Number(named.from ?? pos[0]),
-                to = Number(named.to ?? pos[1]),
-                by =
-                  named.by === undefined && pos[2] === undefined
-                    ? to >= from
-                      ? 1
-                      : -1
-                    : Number(named.by ?? pos[2]);
+              // RG-15: length.out / along.with are implemented, and any other
+              // named argument is refused by name instead of being dropped.
+              for (const k of Object.keys(named))
+                if (!["from", "to", "by", "length.out", "along.with"].includes(k))
+                  api.fail(`seqの引数 ${k} は説明に対応していません`, node);
+              const hasTo = named.to !== undefined || pos[1] !== undefined,
+                hasBy = named.by !== undefined || pos[2] !== undefined;
+              let lengthOut = named["length.out"] ?? pos[3];
+              const alongWith = named["along.with"] ?? pos[4];
+              if (alongWith !== undefined)
+                lengthOut = alongWith === null ? 0 : vec(alongWith).length;
+              let from = Number(named.from ?? pos[0] ?? 1);
+              if (
+                !hasTo &&
+                !hasBy &&
+                lengthOut === undefined &&
+                named.from === undefined &&
+                pos.length === 1 &&
+                !Array.isArray(pos[0])
+              ) {
+                // seq(n) is seq(1, n) in real R.
+                const n0 = Number(pos[0]);
+                if (!Number.isFinite(n0)) api.fail("NA/NaN argument", node);
+                if (n0 === 0) return [];
+                const by0 = n0 >= 1 ? 1 : -1,
+                  cnt = Math.floor(Math.abs(n0 - 1)) + 1;
+                if (cnt > 10000) api.fail("ベクトル長の上限です", node);
+                return Array.from({ length: cnt }, (_, i) => 1 + i * by0);
+              }
+              if (Array.isArray(pos[0]) && !hasTo && lengthOut === undefined && named.from === undefined)
+                return Array.from({ length: pos[0].length }, (_, i) => i + 1);
+              if (lengthOut !== undefined) {
+                const lo = Number(vec(lengthOut)[0]);
+                if (!Number.isInteger(lo) || lo < 0)
+                  api.fail("length.outは0以上の整数で指定してください", node);
+                if (lo > 10000) api.fail("ベクトル長の上限です", node);
+                if (lo === 0) return [];
+                let byVal;
+                if (hasBy) byVal = Number(named.by ?? pos[2]);
+                else if (hasTo)
+                  byVal = lo === 1 ? 0 : (Number(named.to ?? pos[1]) - from) / (lo - 1);
+                else byVal = 1;
+                if (!Number.isFinite(from) || !Number.isFinite(byVal))
+                  api.fail("NA/NaN argument", node);
+                return Array.from({ length: lo }, (_, i) => from + i * byVal);
+              }
+              if (!hasTo)
+                api.fail(
+                  "seqには to、length.out、along.with のいずれかが必要です",
+                  node,
+                );
+              let to = Number(named.to ?? pos[1]),
+                by = hasBy
+                  ? Number(named.by ?? pos[2])
+                  : to >= from
+                    ? 1
+                    : -1;
               if (
                 !by ||
                 ![from, to, by].every(Number.isFinite) ||
@@ -685,10 +1085,70 @@ export const definition = {
               return Array.from({ length: n }, (_, i) => from + i * by);
             }
             case "rep": {
-              let n = Number(named.times ?? pos[1]);
-              if (!Number.isInteger(n) || n < 0 || n * vec(x).length > 10000)
-                api.fail("invalid times", node);
-              return Array.from({ length: n }, () => vec(x)).flat();
+              // RG-15: each / length.out / vector times are implemented;
+              // unknown named arguments are refused by name.
+              for (const k of Object.keys(named))
+                if (!["x", "times", "length.out", "each"].includes(k))
+                  api.fail(`repの引数 ${k} は説明に対応していません`, node);
+              const base = vec(x),
+                baseNames = namesOf(x),
+                countArg = (raw, label) => {
+                  const n = Number(vec(raw)[0]);
+                  if (!Number.isInteger(n) || n < 0)
+                    api.fail(`${label}は0以上の整数で指定してください`, node);
+                  return n;
+                };
+              const eachRaw = named.each ?? pos[3];
+              const each = eachRaw === undefined ? 1 : countArg(eachRaw, "each");
+              let pairs = [];
+              base.forEach((v, i) => {
+                for (let j = 0; j < each; j++)
+                  pairs.push([v, baseNames?.[i] ?? null]);
+              });
+              const timesRaw = named.times ?? pos[1];
+              let outPairs = pairs;
+              if (timesRaw !== undefined) {
+                if (Array.isArray(timesRaw) && timesRaw.length !== 1) {
+                  if (timesRaw.length !== base.length)
+                    api.fail(
+                      "repの times（ベクトル）の長さが x の長さと一致しません",
+                      node,
+                    );
+                  if (each !== 1)
+                    api.fail(
+                      "repの times（ベクトル）と each の併用は説明に対応していません",
+                      node,
+                    );
+                  outPairs = [];
+                  base.forEach((v, i) => {
+                    const cnt = timesRaw[i];
+                    if (!Number.isInteger(cnt) || cnt < 0)
+                      api.fail("timesは0以上の整数で指定してください", node);
+                    for (let j = 0; j < cnt; j++)
+                      outPairs.push([v, baseNames?.[i] ?? null]);
+                  });
+                } else {
+                  const n = countArg(timesRaw, "times");
+                  outPairs = [];
+                  for (let j = 0; j < n; j++) outPairs.push(...pairs);
+                }
+              }
+              const lengthOutRaw = named["length.out"] ?? pos[2];
+              if (lengthOutRaw !== undefined) {
+                const lo = countArg(lengthOutRaw, "length.out");
+                if (lo > 10000) api.fail("ベクトル長の上限です", node);
+                if (!outPairs.length) return [];
+                outPairs = Array.from(
+                  { length: lo },
+                  (_, i) => outPairs[i % outPairs.length],
+                );
+              }
+              if (outPairs.length > 10000)
+                api.fail("ベクトル長の上限です", node);
+              return withNames(
+                outPairs.map((p) => p[0]),
+                outPairs.map((p) => p[1]),
+              );
             }
             case "read.csv":
               if (!Object.hasOwn(s.model.files || {}, x))
@@ -697,6 +1157,36 @@ export const definition = {
             default:
               api.fail("このR関数は説明に対応していません：" + name, node);
           }
+        },
+        // RG-04: assignment / bare-expression narration must use the same
+        // R notation as print output and the final state (show), not the
+        // shared JavaScript formatting. Compound assignments (+= etc.),
+        // which are not R syntax, keep the shared narration.
+        step(n, s, api) {
+          if (n.k === "assign" && !["+=", "-=", "*=", "/="].includes(n.op)) {
+            const v = api.read(n.value, s);
+            api.write(n.target, v, s, n);
+            api.note(
+              s,
+              n,
+              `${targetName(n.target) || "対象"} に ${show(v)} を代入します`,
+            );
+            return [s];
+          }
+          if (n.k === "expression" && n.value.k !== "post") {
+            const before = s.trace.length;
+            const v = api.read(n.value, s);
+            if (s.trace.length === before)
+              api.note(
+                s,
+                n,
+                v == null
+                  ? "処理を実行します（表示する戻り値はありません）"
+                  : `式を評価します：${show(v)}`,
+              );
+            return [s];
+          }
+          return undefined;
         },
         groups: (p) => [
           {

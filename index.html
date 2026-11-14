@@ -77,17 +77,21 @@
                   ><span id="fileHint"
                     >.bas / .txt をドロップして取り込み</span
                   ></span
+                ><span class="editor-keys"
+                  >Tab：インデント／Esc の次に Tab：エディタ外へ移動／Ctrl+Enter：実行</span
                 >
               </div>
             </section>
             <details id="modelPanel" class="panel model-panel">
               <summary class="panel-heading">
                 <h2 id="modelTitle">モデルシート</h2>
-                <button id="resetModel" title="モデル値を初期状態に戻す">
-                  リセット
-                </button>
               </summary>
               <div class="model-body">
+                <div class="model-actions">
+                  <button id="resetModel" title="モデル値を初期状態に戻す">
+                    リセット
+                  </button>
+                </div>
                 <div id="sheetWrap" class="sheet-wrap">
                   <table class="sheet">
                     <caption>
@@ -146,8 +150,8 @@
                   <label class="sort-label"
                     >並び順<select id="sort">
                       <option value="original">出現順</option>
-                      <option value="long">コードが長い順</option>
-                      <option value="short">処理が短い順</option>
+                      <option value="long">手順が多い順</option>
+                      <option value="short">手順が短い順</option>
                     </select></label
                   >
                 </div>

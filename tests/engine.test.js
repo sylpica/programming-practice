@@ -37,13 +37,14 @@ test("VBA Variant coercion, Empty and Null", () => {
     outputs(
       'Debug.Print "2" + "3"\na = "2"\nb = 3\nDebug.Print a + b\nDebug.Print Empty + 3\nDebug.Print Null + 3\nDebug.Print Null = Null\na = "2"\nb = 100\nDebug.Print a > b\nDebug.Print "2" < "10"',
     ),
-    ['"23"', "5", "3", "Null", "Null", "true", "false"],
+    // RG-04 統合裁定で期待値を実 VBA 表記へ是正（文字列は引用符なし、Boolean は True/False）
+    ["23", "5", "3", "Null", "Null", "True", "False"],
   );
   assert.deepEqual(
     outputs(
       'Debug.Print Null & "x"\nDebug.Print False And Null\nDebug.Print True Or Null',
     ),
-    ['"x"', "false", "true"],
+    ["x", "False", "True"],
   );
 });
 test("typed strings coerce at assignment and integer bank rounding", () =>
@@ -71,7 +72,7 @@ test("Select Case first matching, Is and To", () =>
     outputs(
       'n = 5\nSelect Case n\nCase 1 To 5\nDebug.Print "first"\nCase Is >= 5\nDebug.Print "second"\nEnd Select',
     ),
-    ['"first"'],
+    ["first"], // RG-04 統合裁定：実 VBA 表記（引用符なし）
   ));
 test("known branch pruning and runtime branch trace", () => {
   assert.equal(
@@ -245,7 +246,8 @@ test("typed and Variant addition differ per Microsoft specification", () => {
     outputs(
       'Dim s As String\ns = "2"\nv = 3\nDebug.Print s + v\nDebug.Print Empty + "abc"',
     ),
-    ['"23"', '"abc"'],
+    // RG-04 統合裁定で期待値を実 VBA 表記へ是正（引用符なし）
+    ["23", "abc"],
   );
 });
 test("typed numeric versus numeric Variant string and typed string vs Variant", () => {
@@ -253,7 +255,8 @@ test("typed numeric versus numeric Variant string and typed string vs Variant", 
     outputs(
       'Dim n As Long\nn = 10\nv = "2"\nDebug.Print n > v\nDim s As String\ns = "2"\nv = 100\nDebug.Print s > v',
     ),
-    ["true", "true"],
+    // RG-04 統合裁定で期待値を実 VBA 表記へ是正（True/False）
+    ["True", "True"],
   );
   assert.equal(
     sim('Dim n As Long\nv = "text"\nx = n > v').paths[0].error.code,
@@ -354,7 +357,7 @@ test("Select Case uses declared String comparison with a numeric Variant", () =>
     outputs(
       'Dim s As String\ns = "2"\nv = 100\nSelect Case s\nCase Is > v\nDebug.Print "string-order"\nCase Else\nDebug.Print "wrong"\nEnd Select',
     ),
-    ['"string-order"'],
+    ["string-order"], // RG-04 統合裁定：実 VBA 表記（引用符なし）
   );
 });
 test("default maximum is exactly 2000 paths", () => {

@@ -14,7 +14,35 @@ export function unsupported(text, line = 1) {
     "未対応",
   );
 }
+// RG-61（R18-N3）：不可視文字はそのまま原因表示に出すと空に見えるため、
+// 名称とコードポイントで可視化する。
+export function charLabel(c) {
+  const cp = c.codePointAt(0);
+  const hex = "U+" + cp.toString(16).toUpperCase().padStart(4, "0");
+  const names = {
+    0x3000: "全角スペース",
+    0x00a0: "ノーブレークスペース",
+    0x200b: "ゼロ幅スペース",
+    0x200c: "ゼロ幅非接合子",
+    0x200d: "ゼロ幅接合子",
+    0xfeff: "ゼロ幅ノーブレークスペース（BOM）",
+    0x00ad: "ソフトハイフン",
+    0x2060: "ワードジョイナー",
+  };
+  if (names[cp]) return `${names[cp]}（${hex}）`;
+  if (cp >= 0xff10 && cp <= 0xff19) return `全角数字（${hex}）`;
+  if (cp >= 0xff01 && cp <= 0xff5e) return `全角文字（${hex}）`;
+  return `文字（${hex}）`;
+}
+const INVISIBLE_CHAR = /[\u00A0\u1680\u2000-\u200A\u202F\u205F\u2060\u3000\u00AD\uFEFF\u200B-\u200D]/;
+// 行頭（空白・タブのみが前置）かどうか。RG-68 の AutoHotkey コメント規則で使う。
+export function atLineStart(source, i) {
+  const start = source.lastIndexOf("\n", i - 1) + 1;
+  return /^[ \t]*$/.test(source.slice(start, i));
+}
 export function tokenize(source, dialect = "js") {
+  // 先頭の BOM は取り込み経路と揃えて取り除く（文中では RG-61／RG-62 の扱い）。
+  if (source.charCodeAt(0) === 0xfeff) source = source.slice(1);
   let out = [],
     i = 0,
     line = 1;
@@ -28,21 +56,94 @@ export function tokenize(source, dialect = "js") {
       continue;
     }
     if (/\s/.test(c)) {
+      // RG-62（R18-N4）：R／C／C++ では非 ASCII の空白的文字は実言語でもエラーになる。
+      // 無言で空白として受理せず、文字を名指して停止する（JS は仕様どおり受理する）。
+      if (
+        ["r", "c", "cpp"].includes(dialect) &&
+        c.codePointAt(0) > 0x7f
+      )
+        throw new PracticeError(
+          `空白として扱えない文字があります：${charLabel(c)}`,
+          line,
+          "SyntaxError",
+        );
       i++;
       continue;
     }
+    // RG-68（R19-N2）：AutoHotkey v2 の ; は、行頭にあるか直前に空白／タブが
+    // あるときだけコメントになる。それ以外の ; はコメントとして受理しない。
+    if (dialect === "ahk" && c === ";") {
+      const prev = source[i - 1];
+      if (i === 0 || prev === "\n" || prev === " " || prev === "\t") {
+        while (i < source.length && source[i] !== "\n") i++;
+        continue;
+      }
+      unsupported(";", line);
+    }
     if (
       (c === "/" && next === "/" && !["r", "ahk"].includes(dialect)) ||
-      ((dialect === "r" || dialect === "python") && c === "#") ||
-      (dialect === "ahk" && c === ";")
+      ((dialect === "r" || dialect === "python") && c === "#")
     ) {
-      while (i < source.length && source[i] !== "\n") i++;
+      // RG-67（R19-N1）：C／C++ では行末のバックスラッシュは翻訳フェーズ2の
+      // 行スプライスとして働き、行コメントが次行も取り込む（C#／JS は対象外）。
+      for (;;) {
+        while (i < source.length && source[i] !== "\n") i++;
+        if (!["c", "cpp"].includes(dialect) || i >= source.length) break;
+        let j = i - 1;
+        if (source[j] === "\r") j--;
+        if (source[j] !== "\\") break;
+        i++; // スプライスされた改行を消費する
+        line++;
+      }
       continue;
     }
-    if (c === "/" && next === "*") {
+    // RG-43（R15-N6）：R にブロックコメントは無い。R では /* を演算子列として扱う。
+    // RG-68：AutoHotkey v2 の /* は行頭（空白・タブを除く）にあるときだけコメント。
+    if (
+      c === "/" &&
+      next === "*" &&
+      dialect !== "r" &&
+      !(dialect === "ahk" && !atLineStart(source, i))
+    ) {
+      if (["c", "cpp"].includes(dialect)) {
+        // RG-67：ブロックコメント内でもスプライスが先に働くため、
+        // 「* + バックスラッシュ + 改行 + /」の並びも終端になる。
+        let end = -1;
+        for (let j = i + 2; j < source.length; j++) {
+          if (source[j] !== "*") continue;
+          if (source[j + 1] === "/") {
+            end = j + 2;
+            break;
+          }
+          if (source[j + 1] === "\\") {
+            const nl =
+              source[j + 2] === "\r" && source[j + 3] === "\n"
+                ? 2
+                : source[j + 2] === "\n"
+                  ? 1
+                  : 0;
+            if (nl && source[j + 2 + nl] === "/") {
+              end = j + 2 + nl + 1;
+              break;
+            }
+          }
+        }
+        if (end < 0)
+          throw new PracticeError("コメントが閉じられていません", line);
+        line += source.slice(i, end).split("\n").length - 1;
+        i = end;
+        continue;
+      }
       let end = source.indexOf("*/", i + 2);
-      if (end < 0)
+      if (end < 0) {
+        // RG-68：AutoHotkey v2 では未閉じの /* はファイル末尾まで有効（エラーにしない）。
+        if (dialect === "ahk") {
+          line += source.slice(i).split("\n").length - 1;
+          i = source.length;
+          continue;
+        }
         throw new PracticeError("コメントが閉じられていません", line);
+      }
       line += source.slice(i, end + 2).split("\n").length - 1;
       i = end + 2;
       continue;
@@ -92,6 +193,61 @@ export function tokenize(source, dialect = "js") {
       continue;
     }
     if (dialect === "ahk" && source.slice(i, i + 2) === "//") unsupported("AutoHotkeyの整数除算 // は未対応です", line);
+    // RG-11 追加表面（R21-N12）: JavaScript の数値区切り（1_000 等）。
+    // 区切りは数字の間にだけ置ける。妥当な形は区切りを除去して通常の
+    // 数値／BigInt として扱い、不正な配置はリテラルを名指しして弾く
+    // （位置依存の虚偽の原因表示にしない）。
+    if (dialect === "js" && /\d/.test(source[i])) {
+      let sm = source
+        .slice(i)
+        .match(/^(?:0[xX][0-9a-fA-F_]+|0[bB][01_]+|0[oO][0-7_]+|\d[\d_]*(?:\.\d[\d_]*)?(?:[eE][+-]?\d[\d_]*)?n?)/);
+      if (sm && sm[0].includes("_")) {
+        const raw = sm[0],
+          big = raw.endsWith("n"),
+          body = big ? raw.slice(0, -1) : raw;
+        const valid =
+          /^0[xX]/.test(body)
+            ? /^0[xX][0-9a-fA-F](?:_?[0-9a-fA-F])*$/.test(body)
+            : /^0[bB]/.test(body)
+              ? /^0[bB][01](?:_?[01])*$/.test(body)
+              : /^0[oO]/.test(body)
+                ? /^0[oO][0-7](?:_?[0-7])*$/.test(body)
+                : big
+                  ? /^\d(?:_?\d)*$/.test(body)
+                  : /^\d(?:_?\d)*(?:\.\d(?:_?\d)*)?(?:[eE][+-]?\d(?:_?\d)*)?$/.test(body);
+        if (!valid)
+          throw new PracticeError(`数値リテラルの区切り（_）の位置が不正です：${raw}`, line, "SyntaxError");
+        out.push({ v: body.replaceAll("_", "") + (big ? "n" : ""), k: "number", line });
+        i += raw.length;
+        continue;
+      }
+    }
+    // RG-51：BigInt リテラル（末尾 n）は JavaScript のみ。通常の数値より先に認識する。
+    if (dialect === "js") {
+      let bm = source.slice(i).match(/^\d+n(?![\w$])/);
+      if (bm) {
+        out.push({ v: bm[0], k: "number", line });
+        i += bm[0].length;
+        continue;
+      }
+    }
+    // RG-11：基数リテラル（0x／0b／0o）。対応形式は言語ごとに異なるため、
+    // 存在しない形式は値を捏造せず名前を挙げて弾く。
+    let rm = source
+      .slice(i)
+      .match(/^0[xX][0-9a-fA-F]+|^0[bB][01]+|^0[oO][0-7]+/);
+    if (rm) {
+      let form = rm[0][1].toLowerCase();
+      if (dialect === "fx")
+        throw new PracticeError(`Power Fx に基数リテラルはありません：${rm[0]}`, line, "SyntaxError");
+      if ((dialect === "r" || dialect === "ahk") && form !== "x")
+        throw new PracticeError(`${dialect === "r" ? "R" : "AutoHotkey"} に 0${form} 形式の数値リテラルはありません：${rm[0]}`, line, "SyntaxError");
+      if (["c", "cpp", "csharp"].includes(dialect) && form === "o")
+        throw new PracticeError(`0o 形式の数値リテラルはこの言語では使えません（8進数は先行ゼロで表記します）：${rm[0]}`, line, "SyntaxError");
+      out.push({ v: rm[0], k: "number", line });
+      i += rm[0].length;
+      continue;
+    }
     let m = source
       .slice(i)
       .match(/^(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?(?:[LfF])?/);
@@ -115,9 +271,33 @@ export function tokenize(source, dialect = "js") {
     m = source
       .slice(i)
       .match(
-        /^(===|!==|%\/%|%%|%in%|<-|->|:=|==|!=|<=|>=|&&|\|\||\+\+|--|\+=|-=|\*=|\/=|<<|>>|::|=>|<>|\[\[|\]\]|[+\-*\/%^&|!<>=(){}\[\],;:.$?])/,
+        /^(===|!==|%\/%|%%|%in%|<-|->|:=|==|!=|<=|>=|&&|\|\||\+\+|--|\+=|-=|\*=|\/=|<<|>>>|>>|::|=>|<>|\[\[|\]\]|[+\-*\/%^&|!<>=(){}\[\],;:.$?])/,
       );
-    if (!m) unsupported(c, line);
+    if (!m) {
+      // RG-61：不可視文字・制御文字は、そのまま出すと原因表示が空に見えるため名指しする。
+      if (INVISIBLE_CHAR.test(c) || c.codePointAt(0) < 0x20 || c.codePointAt(0) === 0x7f)
+        unsupported(charLabel(c) + "という文字", line);
+      unsupported(c, line);
+    }
+    // RG-39: `[[` / `]]` を単一トークンにするのは R の抽出演算子だけ。
+    // 他の方言では `[` `]` 2つとして扱い、入れ子配列リテラルを壊さない。
+    if ((m[0] === "[[" || m[0] === "]]") && dialect !== "r") {
+      out.push({ v: m[0][0], line });
+      i += 1;
+      continue;
+    }
+    // RG-43: `<-`（R の代入）と `:=`（AutoHotkey の代入）を単一トークンにするのは
+    // 所有方言だけ。他の方言では `<` + `-`、`:` + `=` として解釈する。
+    if (m[0] === "<-" && dialect !== "r") {
+      out.push({ v: "<", line });
+      i += 1;
+      continue;
+    }
+    if (m[0] === ":=" && dialect !== "ahk") {
+      out.push({ v: ":", line });
+      i += 1;
+      continue;
+    }
     out.push({
       v:
         m[0] === "." &&
@@ -165,7 +345,36 @@ const prec = {
 const jsPrec = { "||": 1, "&&": 2, "|": 3, "^": 4, "&": 5,
   "==": 6, "!=": 6, "===": 6, "!==": 6,
   "<": 7, ">": 7, "<=": 7, ">=": 7,
-  "+": 8, "-": 8, "*": 9, "/": 9, "%": 9 };
+  // RG-51：シフト演算子は関係演算子より強く、加減算より弱く結合する（実 JavaScript の段付け）。
+  "<<": 8, ">>": 8, ">>>": 8,
+  "+": 9, "-": 9, "*": 10, "/": 10, "%": 10 };
+// RG-21／RG-49：R 公式（?Syntax）の段付け。高→低で ^、単項 - +、:、%any%、* /、+ -、
+// 比較、!、& &&、| ||。 RG-49 N3 の裁定：%any% は * / より上位（公式表どおり）。
+// したがって `2 * 5 %% 3` = 4、`10 %% 3 * 2` = 2 が実 R の値であり、後者は従来どおり正しい。
+const rPrec = {
+  "||": 2, or: 2,
+  "|": 4,
+  "&&": 6, and: 6, "&": 6,
+  "=": 8, "==": 8, "===": 8, "!=": 8, "!==": 8, "<>": 8,
+  "<": 8, ">": 8, "<=": 8, ">=": 8,
+  "+": 10, "-": 10,
+  "*": 12, "/": 12, "%": 12,
+  "%%": 14, "%/%": 14, "%in%": 14,
+  ":": 16,
+  ".": 17,
+  "^": 18,
+};
+// RG-49（R16-N1）：C 標準の段付け。高→低で * / %、+ -、関係、== !=、&、^、|、&&、||。
+// 数値の範囲は c-family 側の既存の前提（キャスト被演算子 expr(9) が二項演算子を
+// 吸収しないこと）に合わせ、最も緩い || を 0、最も強い * / % を 8 に収める。
+// `<<` / `>>` は式演算子として表に入れない：C++ の cout チェーン解析が
+// 区切りとして使うため。C系シフトの扱いは c-family 側の RG-06／RG-54 で決める。
+const cPrec = {
+  "||": 0, "&&": 1, "|": 2, "^": 3, "&": 4,
+  "==": 5, "!=": 5,
+  "<": 6, ">": 6, "<=": 6, ">=": 6,
+  "+": 7, "-": 7, "*": 8, "/": 8, "%": 8,
+};
 export class ScriptParser {
   constructor(source, dialect = "js") {
     if (source.length > LIMITS.source)
@@ -178,6 +387,22 @@ export class ScriptParser {
   peek(v) {
     return this.ts[this.i]?.v === v;
   }
+  precTable() {
+    if (this.dialect === "js") return jsPrec;
+    if (this.dialect === "r") return rPrec;
+    if (["c", "cpp", "csharp"].includes(this.dialect)) return cPrec;
+    return prec;
+  }
+  // 単項演算子の被演算子が吸収してよい二項演算子の下限（方言の段付け表に合わせる）。
+  unaryMin(op) {
+    if (this.dialect === "js") return 11;
+    if (this.dialect === "r") return op === "!" ? 8 : 17;
+    if (this.dialect === "ahk" && op === "not") return 4;
+    // C系は c-family.js の expr 上書き（表の最大は 9＝乗除）より上を指定し、
+    // 単項演算子の被演算子が二項演算子を吸収しないようにする。
+    if (["c", "cpp", "csharp"].includes(this.dialect)) return 10;
+    return 9;
+  }
   take(v) {
     let t = this.ts[this.i++];
     if (v && t?.v !== v)
@@ -185,60 +410,134 @@ export class ScriptParser {
     return t;
   }
   skip() {
-    while (this.peek("\n") || this.peek(";")) this.i++;
+    while (
+      (this.ts[this.i]?.v === "\n" && !this.ts[this.i]?.k) ||
+      this.peek(";")
+    )
+      this.i++;
   }
   expr(min = 0) {
+    // RG-07（R9-N9／R14B-N2）：被演算子の位置に来た改行は式の継続として読み飛ばす
+    // （行末演算子の後の継続、括弧・引数・添字の中の改行）。
+    // 区切りトークンは k を持たないことで、内容が改行の文字列トークンと区別する。
+    while (this.ts[this.i]?.v === "\n" && !this.ts[this.i]?.k) this.i++;
     if (++this.depth > LIMITS.depth)
       throw new PracticeError("式の入れ子が深すぎます", this.ts[this.i]?.line);
     let t = this.take(),
       a;
     if (!t) throw new PracticeError("式が必要です");
+    // RG-07（R11-N8）：スプレッド構文は対象を名指して停止する。
+    if (
+      t.v === "." &&
+      this.ts[this.i]?.v === "." &&
+      this.ts[this.i + 1]?.v === "."
+    )
+      unsupported("スプレッド構文（...）", t.line);
     let meta = { line: t.line };
-    if (t.k === "number" && this.dialect === "js" && /[LfF]$/.test(t.v))
+    if (t.k === "number" && this.dialect === "js" && /[LfF]$/.test(t.v) && !/^0[xXbBoO]/.test(t.v))
       throw new PracticeError("JavaScriptに数値の型接尾辞はありません", t.line, "SyntaxError");
-    if (t.k === "number")
-      a = {
-        ...meta,
-        k: "literal",
-        value: Number(t.v.replace(/[LfF]$/, "")),
-        raw: t.v,
-      };
+    if (t.k === "number") {
+      let raw = t.v,
+        value;
+      // RG-51：BigInt リテラルは BigInt 値として保持する。
+      if (this.dialect === "js" && /^\d+n$/.test(raw))
+        value = BigInt(raw.slice(0, -1));
+      // RG-11：C／C++ の先行ゼロは8進数。8・9 を含むものは不正な8進リテラルとして弾く。
+      else if (["c", "cpp"].includes(this.dialect) && /^0[0-7]+$/.test(raw))
+        value = parseInt(raw, 8);
+      else if (["c", "cpp"].includes(this.dialect) && /^0\d+$/.test(raw))
+        throw new PracticeError(`不正な8進数リテラルです：${raw}`, t.line, "SyntaxError");
+      else if (this.dialect === "js" && /^0\d/.test(raw))
+        throw new PracticeError(`先行ゼロの数値リテラルは JavaScript では使えません：${raw}`, t.line, "SyntaxError");
+      // 基数リテラルの末尾の英字は接尾辞ではないので削らない。
+      else value = Number(/^0[xXbBoO]/.test(raw) ? raw : raw.replace(/[LfF]$/, ""));
+      a = { ...meta, k: "literal", value, raw };
+    }
     else if (t.k === "string") a = { ...meta, k: "literal", value: t.v, quote: t.quote };
     else if (t.v === "sizeof" && this.parseSizeof?.()) a = this.parseSizeof(meta, true);
     else if (["!", "not", "-", "+", "&", "*", ...(this.dialect === "js" ? ["typeof"] : []), ...(["c", "cpp"].includes(this.dialect) ? ["sizeof"] : [])].includes(t.v))
-      a = { ...meta, k: "unary", op: t.v, arg: this.expr(this.dialect === "js" ? 10 : 9) };
+      a = { ...meta, k: "unary", op: t.v, arg: this.expr(this.unaryMin(t.v)) };
     else if (t.v === "(") {
       a = this.parseCast?.(meta);
-      if (!a) { a = this.expr(); this.take(")"); }
+      if (!a) { a = this.expr(); this.skipLines(); this.take(")"); }
     } else if (t.v === "[") {
+      // RG-07（R14B-N2）：括弧の中の改行は継続として読み飛ばす。
       let values = [];
+      this.skipLines();
       while (!this.peek("]")) {
         values.push(this.expr());
+        this.skipLines();
         if (!this.peek(",")) break;
         this.take();
+        this.skipLines();
       }
       this.take("]");
       a = { ...meta, k: "array", values };
     } else if (t.v === "{") {
       let entries = [];
+      this.skipLines();
       while (!this.peek("}")) {
         let key = this.take();
         if (!["id", "string"].includes(key.k))
           throw new PracticeError("レコードのフィールド名が必要です", key.line);
         this.take(":");
         entries.push([key.v, this.expr()]);
+        this.skipLines();
         if (!this.peek(",")) break;
         this.take();
+        this.skipLines();
       }
       this.take("}");
       a = { ...meta, k: "record", entries };
+    } else if (t.v === "if") {
+      // RG-07（R13-N12）：R の if は値を返す式として使える。他方言の式位置の if は名指しで停止する。
+      if (this.dialect !== "r") unsupported("式の位置の if", t.line);
+      this.take("(");
+      let test = this.expr();
+      this.take(")");
+      let branch = () => {
+        this.skipLines();
+        if (this.peek("{")) {
+          this.take();
+          this.skipLines();
+          let inner = this.expr();
+          this.skipLines();
+          if (!this.peek("}"))
+            unsupported("値としての if 式の複数文ブロック", t.line);
+          this.take("}");
+          return inner;
+        }
+        return this.expr();
+      };
+      let then = branch(),
+        save = this.i;
+      this.skipLines();
+      let otherwise = null;
+      if (this.peek("else")) {
+        this.take();
+        otherwise = branch();
+      } else this.i = save;
+      a = { ...meta, k: "ifexpr", test, then, otherwise };
     } else if (t.k === "id") a = { ...meta, k: "var", name: t.v };
     else throw new PracticeError(`式を解釈できません：${t.v}`, t.line);
     while (true) {
+      // RG-07 追加表面（R21-N10 同根）：行頭の二項演算子は式の継続として扱う
+      // （JS／C系の実物どおり）。改行の後ろに二項演算子か ? が続く場合だけ
+      // 改行を消費する。R は改行自体が文の区切りなので対象外。
+      if (
+        ["js", "c", "cpp", "csharp"].includes(this.dialect) &&
+        this.ts[this.i]?.v === "\n"
+      ) {
+        let j = this.i;
+        while (this.ts[j]?.v === "\n") j++;
+        const nv = this.ts[j]?.v;
+        if (nv === "?" || this.precTable()[nv] !== undefined) this.i = j;
+      }
       let next = this.ts[this.i],
         v = next?.v;
       if (v === "(") {
-        if (min > 12) break;
+        // 呼び出しは後置演算として全方言で最も強く結合する。二項演算子の
+        // 被演算子の文脈（min が大きい場合）でも束縛を妨げない。
         this.take();
         let args = [];
         this.skipLines();
@@ -268,9 +567,11 @@ export class ScriptParser {
         let indexes = [];
         if (this.peek(",")) indexes.push(null);
         else if (!this.peek(v === "[[" ? "]]" : "]")) indexes.push(this.expr());
+        this.skipLines();
         while (this.peek(",")) {
           this.take();
           indexes.push(this.peek("]") ? null : this.expr());
+          this.skipLines();
         }
         this.take(v === "[[" ? "]]" : "]");
         a = {
@@ -293,7 +594,51 @@ export class ScriptParser {
         a = { k: "post", target: a, op: v, line: a.line };
         continue;
       }
-      let p = (this.dialect === "js" ? jsPrec : prec)[v];
+      // RG-50（R16-N7）：Power Fx の And／Or は大文字始まりの綴りでも演算子として扱う。
+      if (this.dialect === "fx" && next?.k === "id" && /^(and|or)$/i.test(v))
+        v = v.toLowerCase();
+      // RG-50（R16-N8）：Power Fx の % は後置のパーセント演算子（50% = 0.5）。
+      if (this.dialect === "fx" && v === "%") {
+        this.take();
+        a = { k: "percent", arg: a, line: a.line };
+        continue;
+      }
+      // RG-07（R8-N6）：Power Fx の in／exactin は二項演算子として解析する（評価は種類側）。
+      if (this.dialect === "fx" && next?.k === "id" && /^(in|exactin)$/i.test(v)) {
+        if (4 < min) break;
+        this.take();
+        let b = this.expr(5);
+        a = { k: "binary", op: v.toLowerCase(), a, b, line: a.line };
+        continue;
+      }
+      if (v === "?") {
+        // RG-51／RG-06：null 合体（??）は JS／C# の演算子として評価する。
+        if (
+          ["js", "csharp"].includes(this.dialect) &&
+          this.ts[this.i + 1]?.v === "?"
+        ) {
+          if (min > 1) break;
+          this.take();
+          this.take();
+          let b = this.expr(1);
+          a = { k: "nullish", a, b, line: a.line };
+          continue;
+        }
+        if (this.ts[this.i + 1]?.v === ".")
+          unsupported("オプショナルチェーン（?.）", next.line);
+        // RG-06：条件演算子（?:）は JS／C系で評価する。他方言では ? を名指しで弾く経路に落とす。
+        if (!["js", "c", "cpp", "csharp"].includes(this.dialect)) break;
+        if (min > 0) break;
+        this.take();
+        let then = this.expr(0);
+        this.take(":");
+        let otherwise = this.expr(0);
+        a = { k: "cond", test: a, then, otherwise, line: a.line };
+        continue;
+      }
+      // RG-07（R9-N5）：アロー関数は対象を名指して停止する。
+      if (v === "=>") unsupported("アロー関数（=>）", next.line);
+      let p = this.precTable()[v];
       if (
         p === undefined ||
         p < min ||
@@ -308,7 +653,7 @@ export class ScriptParser {
     return a;
   }
   skipLines() {
-    while (this.peek("\n")) this.take();
+    while (this.ts[this.i]?.v === "\n" && !this.ts[this.i]?.k) this.take();
   }
   program(end = "<eof>") {
     let out = [];
@@ -350,6 +695,22 @@ export class ScriptParser {
       }
       return { k: "if", test, body, otherwise, line, refs: ["if"] };
     }
+    if (v === "do") {
+      // RG-06：do-while は末尾条件のループ（postTest）として実行する。対応しない方言では名指しで停止する。
+      if (!["js", "c", "cpp", "csharp"].includes(this.dialect))
+        unsupported("do-while", line);
+      this.take();
+      let body = this.body();
+      this.skipLines();
+      this.take("while");
+      this.take("(");
+      let test = this.expr();
+      this.take(")");
+      if (this.peek(";")) this.take();
+      return { k: "while", test, body, line, postTest: true, refs: ["while"] };
+    }
+    // RG-06：switch は対象を名指して正直に停止する（無言の無視や誤った実行をしない）。
+    if (v === "switch") unsupported("switch 文", line);
     if (v === "while") {
       this.take();
       let test;
@@ -362,7 +723,9 @@ export class ScriptParser {
       return { k: "while", test, body: this.body(), line, refs: ["while"] };
     }
     if (v === "repeat" || v === "Loop") {
-      if (this.dialect === "js") unsupported(v, line);
+      // RG-43（R15-N3）：repeat は R、Loop は AutoHotkey の構文。他方言では正直に停止する。
+      if (v === "repeat" && this.dialect !== "r") unsupported("repeat", line);
+      if (v === "Loop" && this.dialect !== "ahk") unsupported("Loop", line);
       this.take();
       let count =
         v === "Loop" && !this.peek("{") && !this.peek("\n")
@@ -411,8 +774,10 @@ export class ScriptParser {
       };
     }
     if (["break", "continue", "next", "return"].includes(v)) {
-      if (this.dialect === "js" && ["next", "return"].includes(v))
-        unsupported(v, line);
+      // RG-43（R15-N3）：next は R の構文。return は JavaScript／Power Fx の文としては存在しない。
+      if (v === "next" && this.dialect !== "r") unsupported("next", line);
+      if (v === "return" && ["js", "fx"].includes(this.dialect))
+        unsupported("return", line);
       this.take();
       let value = null;
       if (
@@ -457,6 +822,8 @@ export class ScriptParser {
         pointer = true;
       }
       let name = this.take();
+      // RG-07：分割代入は対象を名指して停止する（汎用の「変数名が必要です」に化けさせない）。
+      if (name.v === "[" || name.v === "{") unsupported("分割代入", line);
       if (name.k !== "id") throw new PracticeError("変数名が必要です", line);
       let size = null;
       if (this.peek("[")) {
@@ -467,7 +834,9 @@ export class ScriptParser {
       let value = null;
       if (this.peek("=") || this.peek(":=")) {
         this.take();
-        if (this.peek("{")) {
+        // RG-07（R12-N6）：{ } の初期化子は C系の配列初期化だけ。他方言（JS）の
+        // レコードリテラルは通常の式として読む。
+        if (this.peek("{") && ["c", "cpp", "csharp"].includes(kind)) {
           this.take();
           let vals = [];
           while (!this.peek("}")) {
@@ -493,11 +862,24 @@ export class ScriptParser {
       };
     }
     let target = this.expr();
-    if (
-      ["=", "<-", ":=", "+=", "-=", "*=", "/="].includes(this.ts[this.i]?.v)
-    ) {
+    // RG-43：代入演算子は方言ごとに限定する（他方言の演算子の無言受理を防ぐ）。
+    const assignOps = {
+      js: ["=", "+=", "-=", "*=", "/="],
+      r: ["=", "<-", "+=", "-=", "*=", "/="],
+      ahk: [":=", "=", "+=", "-=", "*=", "/="],
+      fx: ["=", "+=", "-=", "*=", "/="],
+      c: ["=", "+=", "-=", "*=", "/="],
+      cpp: ["=", "+=", "-=", "*=", "/="],
+      csharp: ["=", "+=", "-=", "*=", "/="],
+    }[this.dialect] || ["=", "+=", "-=", "*=", "/="];
+    if (assignOps.includes(this.ts[this.i]?.v)) {
       let op = this.take().v,
         value = this.expr();
+      // RG-79（R21-N11）：代入文の直後も宣言・式文と同じく終端を検査する。
+      // 同一行に区切りなく次の文が続く形（x <- 1 y <- 2）を無言で実行しない。
+      // 波形なし if の代入体に続く else は終端として認める。
+      if (!["\n", ";", "}", ")", "<eof>", "else"].includes(this.ts[this.i]?.v))
+        unsupported("代入の区切りが必要です", line);
       return { k: "assign", target, value, op, line };
     }
     if (
@@ -584,6 +966,10 @@ export function baseBinary(op, a, b, dialect = "js") {
     if (op === "*") return a * b;
     if (op === "/") return a / b;
     if (op === "%") return a % b;
+    // RG-51：シフト演算子は実 JavaScript の演算で評価する（BigInt 同士のシフトも含む）。
+    if (op === "<<") return a << b;
+    if (op === ">>") return a >> b;
+    if (op === ">>>") return a >>> b;
     if (op === "^") return a ^ b;
     if (op === "&") return a & b;
     if (op === "|") return a | b;
@@ -624,6 +1010,8 @@ export function executeProgram(nodes, model, semantics = {}, custom = {}) {
     operations = 0,
     truncated = false,
     reasons = new Set();
+  // RG-04：表示形式は種類側が semantics.format で差し替えられる（言語の正規表記に合わせる）。
+  const fmt = semantics.format || formatValue;
   const state = {
     vars: structuredClone(model.variables || {}),
     types: {},
@@ -671,13 +1059,7 @@ export function executeProgram(nodes, model, semantics = {}, custom = {}) {
       if (name && !s.pendingRefs.includes(name)) s.pendingRefs.push(name);
     }
     let answer = semantics.read?.(a, s, api);
-    if (answer?.handled) {
-      if (a.k === "member") {
-        s.pendingRefs ??= [];
-        s.pendingRefs.push(a.name);
-      }
-      return answer.value;
-    }
+    if (answer?.handled) return answer.value;
     switch (a.k) {
       case "literal":
         return semantics.literal ? semantics.literal(a.value, a, s) : a.value;
@@ -699,7 +1081,7 @@ export function executeProgram(nodes, model, semantics = {}, custom = {}) {
         let x = read(a.arg, s);
         if (isUnknown(x))
           return { ...unknown(a.op + formatValue(x)), op: a.op, a: x };
-        if (a.op === "!" || a.op === "not") return !truth(x, a.line);
+        if (a.op === "!" || a.op === "not") return !truth(x, a.line, a.arg, s);
         if (a.op === "-") return -x;
         if (a.op === "+") return +x;
         unsupported(a.op, a.line);
@@ -716,9 +1098,9 @@ export function executeProgram(nodes, model, semantics = {}, custom = {}) {
           if (hasEffects(a.b)) unsupported("未確定の短絡評価に含まれる関数呼び出し・副作用", a.line);
         }
         if (["&&", "and", "||", "or"].includes(a.op) && !isUnknown(x)) {
-          if (["&&", "and"].includes(a.op) && !truth(x, a.line))
+          if (["&&", "and"].includes(a.op) && !truth(x, a.line, a.a, s))
             return semantics.logicalOperands ? x : false;
-          if (["||", "or"].includes(a.op) && truth(x, a.line))
+          if (["||", "or"].includes(a.op) && truth(x, a.line, a.a, s))
             return semantics.logicalOperands ? x : true;
         }
         let y = read(a.b, s);
@@ -728,10 +1110,36 @@ export function executeProgram(nodes, model, semantics = {}, custom = {}) {
           ? semantics.binary(a.op, x, y, a, s, api)
           : baseBinary(a.op, x, y, semantics.dialect);
       }
+      case "cond": {
+        // RG-06：条件演算子は選ばれた側だけを評価する。
+        let t = read(a.test, s);
+        if (isUnknown(t)) return unknown("条件演算子の結果による");
+        return truth(t, a.line, a.test, s) ? read(a.then, s) : read(a.otherwise, s);
+      }
+      case "nullish": {
+        let x = read(a.a, s);
+        if (isUnknown(x)) return x;
+        return x ?? read(a.b, s);
+      }
+      case "percent": {
+        // RG-50：Power Fx の後置 % は値を 100 で割る。
+        let x = read(a.arg, s);
+        if (isUnknown(x))
+          return { ...unknown(formatValue(x) + "%"), op: "%", a: x };
+        return x / 100;
+      }
+      case "ifexpr": {
+        // RG-07：R の if 式。else が無く条件不成立の場合は NULL を返す。
+        let t = read(a.test, s);
+        if (isUnknown(t)) return unknown("if 式の条件による");
+        if (truth(t, a.line, a.test, s)) return read(a.then, s);
+        return a.otherwise ? read(a.otherwise, s) : null;
+      }
       case "member": {
+        // RG-59：メンバ名（プロパティ名・列名などのデータ名）はリファレンス語彙では
+        // ないため refs に入れない。呼び出された名前は call 経由で callName が記録する。
+        // メンバ名を refs に出したい種類は semantics.read の中で明示的に追加すること。
         let x = read(a.target, s);
-        s.pendingRefs ??= [];
-        s.pendingRefs.push(a.name);
         if (isUnknown(x))
           return unknown(`${x.source}.${a.name}`, `${x.id}.${a.name}`);
         if (x == null)
@@ -801,12 +1209,15 @@ export function executeProgram(nodes, model, semantics = {}, custom = {}) {
     }
     unsupported("代入先", target.line);
   }
-  function truth(v, line) {
-    if (semantics.truth) return semantics.truth(v, line);
+  function truth(v, line, node, s) {
+    // RG-76：条件の式ノードと状態も渡し、型に依存する条件可否（C++ の
+    // std::string 等）を種類側が判定できるようにする。既存の truth 実装は
+    // 追加引数を無視する。
+    if (semantics.truth) return semantics.truth(v, line, node, s);
     return Boolean(v);
   }
   function choose(s, v, n) {
-    if (!isUnknown(v)) return [{ s, yes: truth(v, n.line) }];
+    if (!isUnknown(v)) return [{ s, yes: truth(v, n.line, n.test ?? n, s) }];
     let out = [];
     for (let yes of [true, false]) {
       let domains = refineCondition(v, yes, s.domains || [{}], check);
@@ -825,8 +1236,12 @@ export function executeProgram(nodes, model, semantics = {}, custom = {}) {
   }
 
   function run(list, states, depth = 0) {
-    if (depth > limits.depth)
-      throw new PracticeError("ブロックの入れ子が深すぎます");
+    if (depth > limits.depth) {
+      // RG-01：深さ超過は「パス内のエラー」ではなく打ち切りとして必ず記録する。
+      truncated = true;
+      reasons.add("ブロックの入れ子の深さ上限");
+      throw new PracticeError("ブロックの入れ子が深すぎます", 1, "limit");
+    }
     for (let n of list) {
       let next = [];
       for (let s of states) {
@@ -839,10 +1254,12 @@ export function executeProgram(nodes, model, semantics = {}, custom = {}) {
           next.push(...step(n, s, depth));
         } catch (e) {
           let line = e.line > 1 ? e.line : n.line;
+          // RG-81（R21-N8）: カテゴリは category 欄が持つ。メッセージ側へ
+          // 接頭辞を焼き込むと「カテゴリ：メッセージ」の合成で二重表示に
+          // なるため、ここでは前置しない。
           s.error = {
             line,
-            message:
-              (e.category === "未定義動作" ? "未定義動作：" : "") + e.message,
+            message: e.message,
             category: e.category || "エラー",
           };
           noteError(s, n, s.error);
@@ -900,7 +1317,10 @@ export function executeProgram(nodes, model, semantics = {}, custom = {}) {
           ? i < values.length
           : countLimit !== null
             ? i < countLimit
-            : read(n.test, st);
+            : // RG-06：do-while（postTest）は1回目は無条件に実行する。
+              n.postTest && i === 0
+              ? true
+              : read(n.test, st);
         for (let r of choose(st, cond, n)) {
           if (!r.yes) {
             note(r.s, n, `${i}回実行してループを終了します`);
@@ -970,6 +1390,23 @@ export function executeProgram(nodes, model, semantics = {}, custom = {}) {
         n.line,
         "SyntaxError",
       );
+    // RG-77（R20-N8）: C# では、ローカル変数の宣言スペースと入れ子の宣言
+    // スペースが同じ名前を含むことは CS0136 のコンパイルエラー（順序不問）。
+    // 兄弟ブロック同士の同名は合法なので、外側の自スコープ宣言と、自スコープ
+    // 内で既に閉じた子スコープの宣言（extent）だけを衝突対象にする。
+    if (semantics.nestedShadowError) {
+      scope.extent ??= new Set();
+      const inAncestor = s.scopeStack
+        .slice(0, -1)
+        .some((f) => f.records.some((r) => r.name === n.name));
+      if (inAncestor || scope.extent.has(n.name))
+        throw new PracticeError(
+          `ローカル変数 '${n.name}' は、このスコープを含む宣言スペースで既に宣言されています（CS0136）`,
+          n.line,
+          "CompileError",
+        );
+      scope.extent.add(n.name);
+    }
     scope.records.push({
       name: n.name,
       hadVar: Object.hasOwn(s.vars, n.name),
@@ -984,6 +1421,15 @@ export function executeProgram(nodes, model, semantics = {}, custom = {}) {
   }
   function leaveScope(s) {
     let scope = s.scopeStack.pop();
+    // RG-77: 閉じた子スコープの宣言名は外側スコープの extent へ引き継ぐ
+    // （内側が先・外側の宣言が後の順序でも CS0136 を検出するため）。
+    if (semantics.nestedShadowError && scope?.extent) {
+      const parent = s.scopeStack.at(-1);
+      if (parent) {
+        parent.extent ??= new Set();
+        for (const name of scope.extent) parent.extent.add(name);
+      }
+    }
     for (let r of scope.records.reverse()) {
       let id = s.addresses?.[r.name];
       if (semantics.manualLifetime && id && s.model.memory?.[id]?.name === r.name)
@@ -1025,7 +1471,7 @@ export function executeProgram(nodes, model, semantics = {}, custom = {}) {
           throw new PracticeError("同名の変数が宣言済みです", n.line);
         s.types[n.name] = n.type;
         s.vars[n.name] = n.value ? read(n.value, s) : undefined;
-        note(s, n, `${n.name} を用意します：${formatValue(s.vars[n.name])}`);
+        note(s, n, `${n.name} を用意します：${fmt(s.vars[n.name])}`);
         return [s];
       }
       case "assign": {
@@ -1038,7 +1484,7 @@ export function executeProgram(nodes, model, semantics = {}, custom = {}) {
         note(
           s,
           n,
-          `${callName(n.target) || "対象"} に ${formatValue(v)} を代入します`,
+          `${callName(n.target) || "対象"} に ${fmt(v)} を代入します`,
         );
         return [s];
       }
@@ -1047,8 +1493,8 @@ export function executeProgram(nodes, model, semantics = {}, custom = {}) {
         let v = read(n.value, s);
         if (s.trace.length === before) {
           const text = n.value.k === "post"
-            ? `${callName(n.value.target) || "対象"} を${n.value.op === "++" ? "増やし" : "減らし"}ます（後置式の値は変更前の ${formatValue(v)}）`
-            : v == null ? "処理を実行します（表示する戻り値はありません）" : `式を評価します：${formatValue(v)}`;
+            ? `${callName(n.value.target) || "対象"} を${n.value.op === "++" ? "増やし" : "減らし"}ます（後置式の値は変更前の ${fmt(v)}）`
+            : v == null ? "処理を実行します（表示する戻り値はありません）" : `式を評価します：${fmt(v)}`;
           note(s, n, text);
         }
         return [s];
@@ -1058,7 +1504,13 @@ export function executeProgram(nodes, model, semantics = {}, custom = {}) {
           done = [];
         for (let r of choose(s, v, n)) {
           note(r.s, n, r.yes ? "条件が成立します" : "条件が成立しません");
-          done.push(...scoped(r.yes ? n.body : n.otherwise, [r.s], depth + 1));
+          // RG-01：else-if の継ぎ目は入れ子ではないので深さを消費しない。
+          let branch = r.yes ? n.body : n.otherwise,
+            d =
+              !r.yes && branch.length === 1 && branch[0].k === "if"
+                ? depth
+                : depth + 1;
+          done.push(...scoped(branch, [r.s], d));
         }
         return done;
       }
@@ -1085,7 +1537,7 @@ export function executeProgram(nodes, model, semantics = {}, custom = {}) {
       case "return":
         s.returnValue = read(n.value, s);
         s.signal = "return";
-        note(s, n, `値を返して終了します：${formatValue(s.returnValue)}`);
+        note(s, n, `値を返して終了します：${fmt(s.returnValue)}`);
         return [s];
       case "action":
         return semantics.action(n, s, api) || [s];
@@ -1104,7 +1556,7 @@ export function executeProgram(nodes, model, semantics = {}, custom = {}) {
     unknown,
     freshUnknown: (source, s) =>
       unknown(source, source + "-" + (s.inputCount = (s.inputCount || 0) + 1)),
-    format: formatValue,
+    format: fmt,
     fail: (message, n, category) => {
       throw new PracticeError(message, n?.line || 1, category);
     },
@@ -1130,17 +1582,11 @@ export function executeProgram(nodes, model, semantics = {}, custom = {}) {
       : [
           {
             title: "変数",
-            entries: Object.entries(p.vars).map(([k, v]) => [
-              k,
-              formatValue(v),
-            ]),
+            entries: Object.entries(p.vars).map(([k, v]) => [k, fmt(v)]),
           },
           {
             title: "モデル状態",
-            entries: Object.entries(p.model).map(([k, v]) => [
-              k,
-              formatValue(v),
-            ]),
+            entries: Object.entries(p.model).map(([k, v]) => [k, fmt(v)]),
           },
         ];
   }

@@ -5,7 +5,9 @@ export function actionProgram(
   { key = "actions", command = "action", classify },
 ) {
   let { data, locations } = parseJsonLocated(code);
-  if (!Array.isArray(data[key]))
+  // RG-10（R19-N4）: 入力が null の場合も、生の TypeError ではなく
+  // 他の不正な形と同じ「配列が必要です」で停止する。
+  if (!Array.isArray(data?.[key]))
     throw new PracticeError(key + " 配列が必要です", 1);
   let i = 0;
   function block(stops = []) {
@@ -81,6 +83,14 @@ export function actionProgram(
         nodes.push({ ...base, k: "action-loop", mode: type, body });
         continue;
       }
+      if (type === "unsupported-block") {
+        let body = block(["end"]);
+        if (i >= data[key].length || classify(data[key][i][command]) !== "end")
+          throw new PracticeError(tag + " に対応するEndがありません", line);
+        i++;
+        nodes.push({ ...base, body });
+        continue;
+      }
       if (["end", "else", "elseif"].includes(type))
         throw new PracticeError("対応する開始アクションがありません", line);
       nodes.push(base);
@@ -100,8 +110,10 @@ export function interpolate(text, s) {
   let unknownValue;
   let value = text.replace(/\$\{([^}]+)\}|%([A-Za-z_]\w*)%/g, (_, a, b) => {
     let key = a || b;
-    if (!Object.hasOwn(s.vars, key))
+    if (!Object.hasOwn(s.vars, key)) {
+      if (b && (key === "True" || key === "False")) return key;
       throw new PracticeError("変数がありません：" + key);
+    }
     let v = s.vars[key];
     if (v?.kind === "unknown") {
       unknownValue = v;
@@ -118,16 +130,28 @@ export function uiCondition(text, s, api) {
   if (typeof text !== "string")
     throw new PracticeError("条件は式で指定してください");
   let vars = {};
+  let put = (key, percentStyle, asString) => {
+    if (!Object.hasOwn(s.vars, key)) {
+      if (percentStyle && (key === "True" || key === "False"))
+        return key === "True" ? "true" : "false";
+      throw new PracticeError("変数がありません：" + key);
+    }
+    let id = "__condition_" + Object.keys(vars).length;
+    let v = s.vars[key];
+    vars[id] =
+      !asString &&
+      typeof v === "string" &&
+      v.trim() !== "" &&
+      !Number.isNaN(Number(v))
+        ? Number(v)
+        : v;
+    return id;
+  };
   text = text
-    .replace(/(["'])\$\{([^}]+)\}\1/g, "${$2}")
-    .replace(/\$\{([^}]+)\}|%([A-Za-z_]\w*)%/g, (_, a, b) => {
-      let key = a || b;
-      if (!Object.hasOwn(s.vars, key))
-        throw new PracticeError("変数がありません：" + key);
-      let id = "__condition_" + Object.keys(vars).length;
-      vars[id] = s.vars[key];
-      return id;
-    });
+    .replace(/(["'])\$\{([^}]+)\}\1/g, (_, q, name) => put(name, false, true))
+    .replace(/\$\{([^}]+)\}|%([A-Za-z_]\w*)%/g, (_, a, b) =>
+      put(a || b, Boolean(b), false),
+    );
   let previous = {};
   for (let [k, v] of Object.entries(vars)) {
     previous[k] = s.vars[k];

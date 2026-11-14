@@ -302,7 +302,7 @@ function simParse(code){
     if (e.t === "var" && (funcByName(e.name) || Object.prototype.hasOwnProperty.call(SIM_OFFICIAL, e.name) || Object.prototype.hasOwnProperty.call(SIM_EXTRA, e.name))){
       var nt = peek();
       var blocked = nt.k === "op" && (nt.v === "(" || nt.v === "." || nt.v === "[" || nt.v === "++" || nt.v === "--" || nt.v === "=" || nt.v === "+=" || nt.v === "-=" || nt.v === "*=" || nt.v === "/=");
-      if (!blocked) e = { t: "call", name: e.name, args: [], line: e.line };
+      if (!blocked) e = { t: "call", name: e.name, args: [], line: e.line, bare: 1 };
     }
     for (;;){
       var t = peek();
@@ -578,7 +578,7 @@ function simStaticChecks(prog, funcs){
   function walkStmt(st, inFunc, inLoop){
     switch (st.t){
       case "funcdef": break; /* 本体は呼び出し時に動的に見る */
-      case "macroblock": st.body.forEach(function(s){ walkStmt(s, inFunc, inLoop); }); break;
+      case "macroblock": break; /* 定義のみで本文は実行されないため、静的チェックも本体には踏み込まない（funcdef と同じ扱い） */
       case "expr": walkExpr(st.e, st.line); break;
       case "vardecl": st.decls.forEach(function(d){ walkExpr(d.init, st.line); }); break;
       case "block": st.body.forEach(function(s){ walkStmt(s, inFunc, inLoop); }); break;
@@ -617,7 +617,7 @@ function simExprStr(e){
     case "un": return e.op + simExprStr(e.e);
     case "pre": case "post": return e.op + simExprStr(e.e);
     case "assign": return simExprStr(e.target) + " " + e.op + " " + simExprStr(e.v);
-    case "call": return e.name + "(" + e.args.map(simExprStr).join(", ") + ")";
+    case "call": return e.bare && !e.args.length ? e.name : e.name + "(" + e.args.map(simExprStr).join(", ") + ")";
     case "tern": return simExprStr(e.c) + " ? … : …";
   }
   return "…";
@@ -1025,7 +1025,7 @@ function simRunProgram(code, forkCtl, model){
     return SIM_UNK;
   }
   /* 変数名で値を受け取る組み込み関数 */
-  var REF_FNS = { getThreshold: 99, getMinAndMax: 99, getStatistics: 99, getHistogram: 2, getDimensions: 99, getVoxelSize: 99, getSelectionBounds: 99, "Stack.getDimensions": 99, "Stack.getPosition": 99, "Color.getLut": 99, getRawStatistics: 99, getPixelSize: 99, getCursorLoc: 99, getLine: 99, getSelectionCoordinates: 99, getLut: 99, getDateAndTime: 99, getLocationAndSize: 99, getDisplayedArea: 99, "Roi.getBounds": 99, "Roi.getCoordinates": 99, "Roi.getPosition": 99, "Stack.getStatistics": 99 };
+  var REF_FNS = { getThreshold: 99, getMinAndMax: 99, getStatistics: 99, getHistogram: 2, getDimensions: 99, getVoxelSize: 99, getSelectionBounds: 99, getBoundingRect: 99, "Stack.getDimensions": 99, "Stack.getPosition": 99, "Color.getLut": 99, getRawStatistics: 99, getPixelSize: 99, getCursorLoc: 99, getLine: 99, getSelectionCoordinates: 99, getLut: 99, getDateAndTime: 99, getLocationAndSize: 99, getDisplayedArea: 99, "Roi.getBounds": 99, "Roi.getCoordinates": 99, "Roi.getPosition": 99, "Stack.getStatistics": 99 };
   var REF_FNS_SKIP = { "Array.getStatistics": 1 };
   function evCall(e){
     var name = e.name;
@@ -1075,7 +1075,7 @@ function simRunProgram(code, forkCtl, model){
     if (S.halt) return;
     switch (st.t){
       case "funcdef": return;
-      case "macroblock": step(st.line, "マクロ「" + (st.name || "（名前なし）") + "」を実行します"); execBlock(st.body); return;
+      case "macroblock": step(st.line, "マクロ「" + (st.name || "（名前なし）") + "」を定義として登録します（本文は実行されません。メニュー等から選ばれたときに実行されます）"); return;
       case "vardecl": execVarDecl(st); return;
       case "block": execBlock(st.body); return;
       case "expr": {
@@ -1164,7 +1164,7 @@ function simRunProgram(code, forkCtl, model){
       return Object.keys(e).some(function(k){ var v = e[k]; return Array.isArray(v) ? v.some(hasCall) : hasCall(v); });
     }
     stmts.forEach(function(st){
-      if (!st || st.t === "funcdef") return;
+      if (!st || st.t === "funcdef" || st.t === "macroblock") return;
       if (st.t === "vardecl") st.decls.forEach(function(d){
         if (!Object.prototype.hasOwnProperty.call(S.globals, d.name)){
           /* ImageJ は var の初期化式を本体の実行前に評価する（saveGlobals2）。呼び出しを含まない式はここで先に評価する */
@@ -1473,7 +1473,7 @@ function simBuiltin(S, e, args, refs, H){
       return sb.substring(bi, bj);
     }
     case "startsWith": return typeof args[0] === "string" && args[0].indexOf(String(args[1])) === 0 ? 1 : 0;
-    case "endsWith": return typeof args[0] === "string" && args[0].slice(-String(args[1]).length) === String(args[1]) ? 1 : 0;
+    case "endsWith": return typeof args[0] === "string" && (String(args[1]) === "" || args[0].slice(-String(args[1]).length) === String(args[1])) ? 1 : 0;
     case "replace": return simReplaceStr(args[0], args[1], args[2]);
     case "split": return simSplitStr(args[0], args.length > 1 ? args[1] : undefined, line);
     case "parseInt": {
@@ -1489,6 +1489,8 @@ function simBuiltin(S, e, args, refs, H){
     case "parseFloat": return simParseDouble(args[0]);
     case "d2s": {
       if (typeof args[0] !== "number") return SIM_UNK;
+      if (args[0] !== args[0]) return "NaN";
+      if (!isFinite(args[0])) return args[0] > 0 ? "Infinity" : "-Infinity";
       var dpc = typeof args[1] === "number" ? Math.trunc(args[1]) : 0;
       if (dpc < 0) return simSci2(args[0], Math.min(9, -dpc)); /* 負の桁数は指数表記（sf[|dpc|]、上限9桁）になる（IJ.d2s） */
       dpc = Math.min(9, dpc); /* 小数部の上限は9桁 */
@@ -1623,12 +1625,14 @@ function simBuiltin(S, e, args, refs, H){
       return SIM_UNK;
     }
     case "resetThreshold": { var im9 = needImg("resetThreshold"); im9.thr = null; step(line, "閾値の設定を解除します"); return SIM_UNK; }
-    case "setMinAndMax": { needImg("setMinAndMax"); step(line, "表示の明るさ範囲を " + simFmt(args[0]) + "〜" + simFmt(args[1]) + " にします（見た目だけの変更で、画素値は変わりません）"); return SIM_UNK; }
+    case "setMinAndMax": { var imSM = needImg("setMinAndMax"); imSM.dispMin = args[0]; imSM.dispMax = args[1]; step(line, "表示の明るさ範囲を " + simFmt(args[0]) + "〜" + simFmt(args[1]) + " にします（見た目だけの変更で、画素値は変わりません）"); return SIM_UNK; }
     case "getMinAndMax": {
-      var imA = needImg("getMinAndMax"); var rg = simImgRangeNow(imA);
+      var imA = needImg("getMinAndMax");
+      var hasDisp = typeof imA.dispMin === "number" && typeof imA.dispMax === "number";
+      var rg = hasDisp ? [imA.dispMin, imA.dispMax] : simImgRangeNow(imA);
       if (refs[0]) writeRef(S, refs[0], rg ? rg[0] : SIM_UNK);
       if (refs[1]) writeRef(S, refs[1], rg ? rg[1] : SIM_UNK);
-      step(line, "画素値の範囲 " + (rg ? rg[0] + "〜" + rg[1] : "（不明）") + " を変数に入れます"); return SIM_UNK;
+      step(line, "現在の表示範囲 " + (rg ? rg[0] + "〜" + rg[1] : "（不明）") + " を変数に入れます（画素値そのものの最小・最大ではありません）"); return SIM_UNK;
     }
     case "getStatistics": {
       var imB = needImg("getStatistics"); var st = simStats(imB);
@@ -1706,14 +1710,49 @@ function simBuiltin(S, e, args, refs, H){
       step(line, "位置 (" + simFmt(args[0]) + ", " + simFmt(args[1]) + ") に " + simFmt(args[2]) + "×" + simFmt(args[3]) + " の" + (name === "makeRectangle" ? "矩形" : "楕円") + " ROI を作成します");
       return SIM_UNK;
     }
-    case "makeLine": needImg(name); S.roi = { type: "line", x: args[0], y: args[1], w: Math.abs(args[2] - args[0]), h: Math.abs(args[3] - args[1]) }; step(line, "(" + simFmt(args[0]) + ", " + simFmt(args[1]) + ") から (" + simFmt(args[2]) + ", " + simFmt(args[3]) + ") へ直線 ROI を作成します"); return SIM_UNK;
+    case "makeLine": {
+      needImg(name);
+      if (args.length >= 6 && args.length % 2 === 0){
+        var xsL = [], ysL = [];
+        for (var li = 0; li < args.length; li += 2){ xsL.push(args[li]); ysL.push(args[li + 1]); }
+        if (xsL.every(function(v){ return typeof v === "number"; }) && ysL.every(function(v){ return typeof v === "number"; })){
+          S.roi = { type: "polyline", x: Math.min.apply(null, xsL), y: Math.min.apply(null, ysL), w: Math.max.apply(null, xsL) - Math.min.apply(null, xsL), h: Math.max.apply(null, ysL) - Math.min.apply(null, ysL) };
+          step(line, "頂点 " + xsL.length + " 個の折れ線 ROI を作成します");
+          return SIM_UNK;
+        }
+      }
+      S.roi = { type: "line", x: args[0], y: args[1], w: Math.abs(args[2] - args[0]), h: Math.abs(args[3] - args[1]) };
+      step(line, "(" + simFmt(args[0]) + ", " + simFmt(args[1]) + ") から (" + simFmt(args[2]) + ", " + simFmt(args[3]) + ") へ直線 ROI を作成します");
+      return SIM_UNK;
+    }
     case "makePolygon": needImg(name); S.roi = { type: "polygon", x: args[0], y: args[1], w: SIM_UNK, h: SIM_UNK }; step(line, "頂点 " + Math.floor(args.length / 2) + " 個の多角形 ROI を作成します"); return SIM_UNK;
-    case "makeSelection": needImg(name); S.roi = { type: "selection", x: 0, y: 0, w: SIM_UNK, h: SIM_UNK }; step(line, "点の集まりから ROI を作成します"); return SIM_UNK;
+    case "makeSelection": {
+      needImg(name);
+      var selKind = typeof args[0] === "string" ? args[0].trim().toLowerCase() : "";
+      var selMap = { rectangle: "rectangle", rect: "rectangle", oval: "oval", ellipse: "oval", polygon: "polygon", freehand: "freehand", traced: "traced", line: "line", polyline: "polyline", freeline: "freeline", angle: "angle", composite: "composite", point: "point" };
+      var selTypeName = selMap[selKind];
+      if (!selTypeName){ S.roi = { type: "selection", x: 0, y: 0, w: SIM_UNK, h: SIM_UNK }; step(line, "点の集まりから ROI を作成します（種類「" + simFmt(args[0]) + "」の種別コードはモデルでは確定できません）"); return SIM_UNK; }
+      var bx = 0, by = 0, bw = SIM_UNK, bh = SIM_UNK;
+      if (Array.isArray(args[1]) && Array.isArray(args[2]) && args[1].length && args[1].every(function(v){ return typeof v === "number"; }) && args[2].every(function(v){ return typeof v === "number"; })){
+        bx = Math.min.apply(null, args[1]); by = Math.min.apply(null, args[2]);
+        bw = Math.max.apply(null, args[1]) - bx; bh = Math.max.apply(null, args[2]) - by;
+      }
+      S.roi = { type: selTypeName, x: bx, y: by, w: bw, h: bh };
+      step(line, "種類「" + args[0] + "」の ROI を点の集まりから作成します");
+      return SIM_UNK;
+    }
     case "selectionType": {
       if (!S.roi){ step(line, "ROI は選択されていません（-1 が返ります）"); return -1; }
-      var codes = { rectangle: 0, oval: 1, polygon: 2, point: 9 };
+      var codes = { rectangle: 0, oval: 1, polygon: 2, freehand: 3, traced: 4, line: 5, polyline: 6, freeline: 7, angle: 8, composite: 9, point: 10 };
       if (codes[S.roi.type] === undefined){ step(line, "選択中の ROI の種類コードを取得します"); return SIM_UNK; }
       step(line, "選択中の ROI は " + S.roi.type + "（コード " + codes[S.roi.type] + "）です"); return codes[S.roi.type];
+    }
+    case "getBoundingRect": {
+      var imBR = needImg(name);
+      var br = S.roi ? [S.roi.x, S.roi.y, S.roi.w, S.roi.h] : [0, 0, imBR.w, imBR.h];
+      for (var bri = 0; bri < 4; bri++) if (refs[bri]) writeRef(S, refs[bri], br[bri]);
+      step(line, S.roi ? "選択の外接矩形（x " + simFmt(br[0]) + "、y " + simFmt(br[1]) + "、幅 " + simFmt(br[2]) + "、高さ " + simFmt(br[3]) + "）を変数に入れます" : "選択がないため、画像全体の範囲（x 0、y 0、幅 " + simFmt(br[2]) + "、高さ " + simFmt(br[3]) + "）を変数に入れます");
+      return SIM_UNK;
     }
     case "getSelectionBounds": {
       var imF = needImg(name);
@@ -1754,6 +1793,7 @@ function simBuiltin(S, e, args, refs, H){
     case "changeValues": {
       var imM = needImg("changeValues");
       simPushOp(imM, function(v){ return v >= args[0] && v <= args[1] ? args[2] : v; });
+      if (imM.pix) Object.keys(imM.pix).forEach(function(k){ var pv = imM.pix[k]; if (typeof pv === "number" && pv >= args[0] && pv <= args[1]) imM.pix[k] = args[2]; });
       step(line, "画素値が " + simFmt(args[0]) + "〜" + simFmt(args[1]) + " の画素を、すべて " + simFmt(args[2]) + " に置き換えます");
       return SIM_UNK;
     }

@@ -187,7 +187,10 @@ export const definition = {
   },
 };
 
-["基礎", "基礎", "基礎", "実践", "基礎", "応用", "応用", "実践", "応用", "応用"].forEach((level, i) => { definition.templates[i].level = level; });
+// RG-84（R21-N15）: ij-3「関数の定義」のレベルは名前側の分類どおり基礎。
+// （以前は実践になっており、名前の【基礎】表記と矛盾していた。名前側の
+// 【基礎】は RG-84 で除去済みで、レベルはこの配列が唯一の保持場所。）
+["基礎", "基礎", "基礎", "基礎", "基礎", "応用", "応用", "実践", "応用", "応用"].forEach((level, i) => { definition.templates[i].level = level; });
 
 import { referenceDetails } from "./reference-details.js";
 for (const r of definition.reference) if (referenceDetails[r.name]) Object.assign(r, referenceDetails[r.name]);

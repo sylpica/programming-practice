@@ -7054,5 +7054,89 @@
     "description": "照合済",
     "returns": "照合済",
     "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+  },
+  {
+    "kind": "javascript",
+    "name": "let",
+    "supported": true,
+    "fields": {
+      "description": "再代入できる変数を宣言します。ブロックの内側だけで有効で、初期化前に参照するとエラーになります。",
+      "returns": "戻り値なし（宣言または制御文）",
+      "caution": "",
+      "example": "let total = 0;",
+      "source": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/let"
+    }
+  },
+  {
+    "kind": "javascript",
+    "name": "const",
+    "supported": true,
+    "fields": {
+      "description": "再代入できない変数を宣言します。宣言と同時に初期化が必要です。",
+      "returns": "戻り値なし（宣言または制御文）",
+      "caution": "",
+      "example": "const limit = 3;",
+      "source": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/const"
+    }
+  },
+  {
+    "kind": "javascript",
+    "name": "var",
+    "supported": true,
+    "fields": {
+      "description": "関数または全体の範囲で有効な変数を宣言します。宣言は巻き上げられます。",
+      "returns": "戻り値なし（宣言または制御文）",
+      "caution": "",
+      "example": "var count = 0;",
+      "source": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/var"
+    }
+  },
+  {
+    "kind": "c",
+    "name": "return",
+    "supported": true,
+    "fields": {
+      "description": "関数から値を返して実行を終えます。",
+      "returns": "戻り値なし（宣言または制御文）",
+      "caution": "main の終了にも使います。",
+      "example": "#include <stdio.h>\nint main() {\nreturn 0;\nreturn 0;\n}",
+      "source": "https://en.cppreference.com/w/c/language/return"
+    }
+  },
+  {
+    "kind": "cpp",
+    "name": "return",
+    "supported": true,
+    "fields": {
+      "description": "関数から値を返して実行を終えます。",
+      "returns": "戻り値なし（宣言または制御文）",
+      "caution": "main の終了にも使います。",
+      "example": "#include <iostream>\n#include <cstdio>\nint main() {\nreturn 0;\nreturn 0;\n}",
+      "source": "https://en.cppreference.com/w/cpp/language/return"
+    }
+  },
+  {
+    "kind": "csharp",
+    "name": "return",
+    "supported": true,
+    "fields": {
+      "description": "関数から値を返して実行を終えます。",
+      "returns": "戻り値なし（宣言または制御文）",
+      "caution": "main の終了にも使います。",
+      "example": "using System;\nclass Program {\n    static void Main() {\nreturn 0;\n    }\n}",
+      "source": "https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/keywords/return"
+    }
+  },
+  {
+    "kind": "uivision",
+    "name": "Number",
+    "supported": true,
+    "fields": {
+      "description": "式の中で文字列などを数値へ変換します（JavaScriptのNumber関数）。executeScript_Sandboxのreturn式などで使います。",
+      "returns": "変換した数値（変換できない場合は NaN）",
+      "caution": "数値に変換できない文字列では NaN になります。",
+      "example": "{\n  \"Name\": \"練習マクロ\",\n  \"CreationDate\": \"モデル\",\n  \"Commands\": [\n    {\n      \"Command\": \"open\",\n      \"Target\": \"https://example.test/form\",\n      \"Value\": \"\"\n    },\n    {\n      \"Command\": \"store\",\n      \"Target\": \"0\",\n      \"Value\": \"count\"\n    },\n    {\n      \"Command\": \"executeScript_Sandbox\",\n      \"Target\": \"return Number(${count}) + 1;\",\n      \"Value\": \"count\"\n    },\n    {\n      \"Command\": \"echo\",\n      \"Target\": \"${count}\",\n      \"Value\": \"\"\n    }\n  ]\n}",
+      "source": "https://developer.mozilla.org/ja/docs/Web/JavaScript/Reference/Global_Objects/Number"
+    }
   }
 ]

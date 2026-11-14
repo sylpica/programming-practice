@@ -1,6 +1,7 @@
 import { additionalTemplates } from "./additional-templates.js";
 import { load, JSON_SCHEMA } from "../../vendor/yaml.js";
 import { parseJsonLocated, sourceFailure, rows } from "../../core/data.js";
+import { PracticeError, charLabel } from "../../core/script.js";
 import { LIMITS, unknown, formatValue } from "../../core/contract.js";
 import { normalize, definition as pythonDefinition } from "../python/index.js";
 const identity = `def handler(event, context):
@@ -68,6 +69,16 @@ const pythonRefs = pythonDefinition.reference.filter(r => !ref.some(f => f.name 
   ...r,
   example: 'def handler(event, context):\n' + r.example.split('\n').map(line => '    ' + line).join('\n') + '\n    return {"requestId":event["requestId"],"status":"success","fragment":event["fragment"]}',
 }));
+// RG-69（R19-N3）：ハンドラ判定が先頭行の # コメントに引きずられないよう、
+// 空行と # コメント行を除いた最初の実質行を返す。
+function firstCodeLine(code) {
+  for (const line of code.split("\n")) {
+    const t = line.trim();
+    if (t === "" || t.startsWith("#")) continue;
+    return line;
+  }
+  return "";
+}
 export const definition = {
   id: "cloudformation",
   name: "AWS CloudFormation Macros",
@@ -164,14 +175,14 @@ export const definition = {
     ],
   },
   fileExtension(code) {
-    return /^\s*(def |import |from |#)/.test(code)
+    return /^\s*(def |import |from )/.test(firstCodeLine(code))
       ? ".py"
       : code.trim().startsWith("{")
         ? ".json"
         : ".yaml";
   },
   scan(code) {
-    if (/^\s*(def |import |from |#)/.test(code))
+    if (/^\s*(def |import |from )/.test(firstCodeLine(code)))
       return ref.filter((r) => code.includes(r.name)).map((r) => r.name);
     try {
       let doc = load(code, { schema: JSON_SCHEMA });
@@ -192,6 +203,17 @@ export const definition = {
   },
   async simulate(code, model) {
     try {
+      // RG-63: 先頭の BOM は取り除く。先頭の不可視文字は JSON／YAML の判定を
+      // すり抜けてライブラリの生エラーを露出させるため、文字を名指して止める。
+      if (code.charCodeAt(0) === 0xfeff) code = code.slice(1);
+      if (
+        code.length &&
+        /^[\u00A0\u1680\u2000-\u200D\u202F\u205F\u2060\u3000\uFEFF]$/.test(code[0])
+      )
+        throw new PracticeError(
+          `テンプレートの先頭に、読み取りを妨げる文字があります：${charLabel(code[0])}。取り除いてください`,
+          1,
+        );
       const py = await import("../python/engine.js");
       const lines = code.split("\n").length;
       async function runHandler(source, event) {
@@ -213,7 +235,19 @@ export const definition = {
             t.line = Math.min(source.split("\n").length, t.line);
           let response = p.response;
           if (!p.error) {
-            if (!response || typeof response !== "object")
+            // RG-66: レスポンスが捕捉されていないのに探索が打ち切られている場合は、
+            // 辞書でないという虚偽の原因ではなく打ち切りを原因として示す。
+            if (
+              response === undefined &&
+              raw.truncated &&
+              p.captures?.__macro_response === undefined
+            )
+              p.error = {
+                line: 1,
+                message:
+                  "ハンドラの処理が上限に達して打ち切られたため、レスポンスを返せませんでした",
+              };
+            else if (!response || typeof response !== "object")
               p.error = {
                 line: 1,
                 message: "ハンドラは辞書形式のレスポンスを返す必要があります",
@@ -228,10 +262,16 @@ export const definition = {
                 line: 1,
                 message: "レスポンスのrequestIdが入力と一致しません",
               };
-            else if (
-              typeof response.status !== "string" ||
-              response.status.toLowerCase() !== "success"
-            )
+            else if (typeof response.status !== "string")
+              p.error = {
+                line: 1,
+                message:
+                  "レスポンスにstatusが含まれていません" +
+                  (typeof response.errorMessage === "string"
+                    ? "（errorMessage：" + response.errorMessage + "）"
+                    : ""),
+              };
+            else if (response.status.toLowerCase() !== "success")
               p.error = {
                 line: 1,
                 message:
@@ -264,14 +304,35 @@ export const definition = {
       event.requestId ??= unknown("AWSからのrequestId");
       event.params ??= {};
       event.templateParameterValues ??= {};
-      if (/^\s*(def |import |from |#)/.test(code))
+      if (/^\s*(def |import |from )/.test(firstCodeLine(code)))
         return await runHandler(code, event);
       let doc,
         locations = new Map();
       if (code.trim().startsWith("{"))
         ({ data: doc, locations } = parseJsonLocated(code));
       else {
-        doc = load(code, { schema: JSON_SCHEMA, json: false });
+        try {
+          doc = load(code, { schema: JSON_SCHEMA, json: false });
+        } catch (e) {
+          let tag = /unknown tag\s*!<([^>]+)>/.exec(e?.message || "");
+          if (tag) {
+            let name = tag[1].replace(/^!/, "");
+            throw new PracticeError(
+              "未対応：YAML短縮タグ !" +
+                name +
+                " はこのモデルでは未対応です（Fn::" +
+                name +
+                " のような完全な表記で書いてください）",
+              (e.mark?.line ?? 0) + 1,
+            );
+          }
+          // RG-63／R19-N5: ライブラリの生エラー（英語・入力ダンプ）は出さず、
+          // アプリ自身の言葉で位置だけを示す。
+          throw new PracticeError(
+            `YAMLとして読み取れませんでした（${(e.mark?.line ?? 0) + 1}行目付近の書き方を確認してください）`,
+            (e.mark?.line ?? 0) + 1,
+          );
+        }
       }
       if (!doc || typeof doc !== "object" || Array.isArray(doc))
         throw Error("テンプレートはオブジェクトで指定してください");
@@ -301,9 +362,14 @@ export const definition = {
         return result;
       }
       async function invoke(name, fragment, params, line, refs) {
+        if (typeof name !== "string" || name === "")
+          throw Object.assign(
+            Error("マクロ名が指定されていません（呼び出しにNameが含まれていません）"),
+            { line },
+          );
         if (["AWS::Include", "AWS::Serverless", "AWS::Serverless-2016-10-31"].includes(name))
           throw Object.assign(Error("未対応：組込みTransformの実際の変換・外部サービスへの接続は実装していません：" + name), {line, category: "未対応"});
-        if (typeof name !== "string" || !model.macros?.[name])
+        if (!model.macros?.[name])
           throw Object.assign(
             Error("未確認：モデルにマクロ定義がありません：" + name),
             { line },
@@ -361,24 +427,54 @@ export const definition = {
               }));
         }
         if (value["Fn::Transform"]) {
-          let spec = value["Fn::Transform"],
-            done = [];
+          let specs = Array.isArray(value["Fn::Transform"])
+              ? value["Fn::Transform"]
+              : [value["Fn::Transform"]],
+            line = locations.get(path + "/Fn::Transform") || 1;
+          for (let spec of specs) {
+            if (
+              !spec ||
+              typeof spec !== "object" ||
+              Array.isArray(spec) ||
+              typeof spec.Name !== "string" ||
+              (spec.Parameters !== undefined &&
+                (!spec.Parameters ||
+                  typeof spec.Parameters !== "object" ||
+                  Array.isArray(spec.Parameters)))
+            )
+              throw Object.assign(
+                Error(
+                  "Fn::Transformの指定にマクロ名（Name）が含まれていません（NameとParametersのオブジェクト、またはその配列で指定してください）",
+                ),
+                { line },
+              );
+          }
+          let done = [];
           for (let s of states) {
             if (s.error) { done.push(s); continue; }
-            let rs = await invoke(
-              spec.Name,
-              s.fragment,
-              spec.Parameters || {},
-              locations.get(path + "/Fn::Transform") || 1,
-              ["Fn::Transform"],
-            );
-            done.push(
-              ...rs.map((r) => ({
-                ...r,
-                trace: [...s.trace, ...r.trace],
-                outputs: [...s.outputs, ...r.outputs],
-              })),
-            );
+            let chain = [s];
+            for (let spec of specs) {
+              let next = [];
+              for (let cur of chain) {
+                if (cur.error) { next.push(cur); continue; }
+                let rs = await invoke(
+                  spec.Name,
+                  cur.fragment,
+                  spec.Parameters || {},
+                  line,
+                  ["Fn::Transform"],
+                );
+                next.push(
+                  ...rs.map((r) => ({
+                    ...r,
+                    trace: [...cur.trace, ...r.trace],
+                    outputs: [...cur.outputs, ...r.outputs],
+                  })),
+                );
+              }
+              chain = next;
+            }
+            done.push(...chain);
           }
           states = cap(done);
         }

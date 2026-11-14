@@ -18,6 +18,41 @@ const unknown = (source, extra = {}) => ({
   ...extra,
 });
 const isU = (v) => v?.kind === "unknown";
+// RG-04 (一部): VBA の数値の文字列変換は有効数字15桁が既定
+// （例: 0.1 + 0.2 は JS の全桁 "0.30000000000000004" でなく "0.3" と表示される）
+function vbaNumberString(n) {
+  if (!Number.isFinite(n)) return String(n);
+  if (Number.isInteger(n) && Math.abs(n) < 1e15) return String(n);
+  const toScientific = (s) => {
+    let [mantissa, exp] = s.split(/e/i);
+    mantissa = mantissa.replace(/\.?0+$/, "");
+    let e = parseInt(exp, 10);
+    return `${mantissa}E${e < 0 ? "-" : "+"}${String(Math.abs(e)).padStart(2, "0")}`;
+  };
+  // VBA の変換は絶対値が 0.0001 未満では指数表記になる
+  if (n !== 0 && Math.abs(n) < 0.0001) return toScientific(n.toExponential(14));
+  let s = n.toPrecision(15);
+  if (/e/i.test(s)) return toScientific(s);
+  return String(Number(s));
+}
+// 型名は VBA の正規表記（先頭大文字）で表示する。内部の型名は小文字のまま保持する
+export function typeLabel(type) {
+  return (
+    {
+      variant: "Variant",
+      integer: "Integer",
+      long: "Long",
+      double: "Double",
+      single: "Single",
+      string: "String",
+      boolean: "Boolean",
+      object: "Object",
+      range: "Range",
+      worksheet: "Worksheet",
+      workbook: "Workbook",
+    }[type] || type
+  );
+}
 export function display(v) {
   if (v?.kind === "unknown") return unknownLabel(v);
   if (v?.kind === "empty") return "Empty";
@@ -26,7 +61,14 @@ export function display(v) {
   if (v?.kind === "range") return `Range("${v.cells.join(":")}")`;
   if (v?.kind === "array")
     return `[${v.values.map(display).join(", ")}]（${v.low}～${v.low + v.values.length - 1}）`;
-  return typeof v === "string" ? `"${v}"` : String(v);
+  if (typeof v === "number") return vbaNumberString(v);
+  // RG-04（R5-N4／R6-N5・統合裁定）: 実 VBA の表示は Boolean が True／False、
+  // 文字列は引用符なし。旧表示（小文字 true／false、引用符つき文字列）は
+  // 既存テストが固定していたが、台帳の受け入れ条件（実物表記の一致）を
+  // 優先して是正した。
+  if (typeof v === "string") return v;
+  if (typeof v === "boolean") return v ? "True" : "False";
+  return String(v);
 }
 class VBAError extends Error {
   constructor(message, code = 0) {
@@ -37,14 +79,49 @@ class VBAError extends Error {
 const fail = (m, c = 0) => {
   throw new VBAError(m, c);
 };
+// 字句解析のエラーは行番号をメッセージ本文に埋め込まず、line フィールドに分離する
+// （UI 側が「N行：」を前置するため、本文に埋め込むと二重表示になる。他エンジンと同設計）
+const lexFail = (m, lineNo) => {
+  let e = new VBAError(m, 0);
+  e.line = lineNo;
+  throw e;
+};
 const unsupported = (s) => fail(`この構文は説明に対応していません：${s}`);
+// RG-60（R18-N1）：識別子に取り込んではいけない文字（空白的文字・不可視文字・
+// スマートクォート・CJK 句読点・全角英数字記号）。貼り付けで混入しやすく、
+// 取り込むと幻の変数になって無言の誤値を生むため、文字を名指して停止する。
+const ID_EXCLUDED = /[\u00A0\u1680\u2000-\u200D\u2018-\u201D\u202F\u205F\u2060\u3000-\u303F\uFEFF\uFF01-\uFF5E]/;
+export function charLabel(c) {
+  const cp = c.codePointAt(0);
+  const hex = "U+" + cp.toString(16).toUpperCase().padStart(4, "0");
+  const names = {
+    0x3000: "全角スペース",
+    0x00a0: "ノーブレークスペース",
+    0x200b: "ゼロ幅スペース",
+    0xfeff: "ゼロ幅ノーブレークスペース（BOM）",
+    0x201c: "スマートクォート",
+    0x201d: "スマートクォート",
+    0x2018: "スマートクォート",
+    0x2019: "スマートクォート",
+  };
+  if (names[cp]) return `${names[cp]}（${hex}）`;
+  if (cp >= 0xff10 && cp <= 0xff19) return `全角数字（${hex}）`;
+  if (cp >= 0xff01 && cp <= 0xff5e) return `全角文字（${hex}）`;
+  return `文字（${hex}）`;
+}
 export function lex(source) {
+  // 先頭の BOM は取り込み経路（import）と揃えて取り除く
+  if (source.charCodeAt(0) === 0xfeff) source = source.slice(1);
   let result = [],
     i = 0,
     line = 1;
   while (i < source.length) {
     let c = source[i];
     if (c === "\r") {
+      // RG-60（R18-N2）：CR も行境界として扱う（CRLF は1つの境界）。
+      if (source[i + 1] === "\n") i++;
+      result.push({ v: "\n", line });
+      line++;
       i++;
       continue;
     }
@@ -59,7 +136,7 @@ export function lex(source) {
       continue;
     }
     if (c === "'") {
-      while (i < source.length && source[i] !== "\n") i++;
+      while (i < source.length && source[i] !== "\n" && source[i] !== "\r") i++;
       continue;
     }
     if (c === '"') {
@@ -68,7 +145,7 @@ export function lex(source) {
       i++;
       let closed = false;
       while (i < source.length) {
-        if (source[i] === "\n") fail(`${start}行：文字列が閉じられていません`);
+        if (source[i] === "\n") lexFail("文字列が閉じられていません", start);
         if (source[i] === '"') {
           i++;
           if (source[i] === '"') {
@@ -80,7 +157,7 @@ export function lex(source) {
           }
         } else value += source[i++];
       }
-      if (!closed) fail(`${start}行：文字列が閉じられていません`);
+      if (!closed) lexFail("文字列が閉じられていません", start);
       result.push({ v: value, type: "string", line: start });
       continue;
     }
@@ -92,8 +169,14 @@ export function lex(source) {
     }
     m = source.slice(i).match(/^[A-Za-z_\u0080-\uFFFF][\w\u0080-\uFFFF]*/);
     if (m) {
-      result.push({ v: m[0], type: "id", line });
-      i += m[0].length;
+      // RG-60：除外文字が混ざっていたら、そこで識別子を打ち切る（先頭なら即停止）。
+      // 除外文字そのものは次の周回で名指しのエラーになる。
+      const bad = m[0].search(ID_EXCLUDED);
+      if (bad === 0)
+        lexFail(`識別子に使えない文字があります：${charLabel(c)}`, line);
+      const name = bad > 0 ? m[0].slice(0, bad) : m[0];
+      result.push({ v: name, type: "id", line });
+      i += name.length;
       continue;
     }
     m = source.slice(i).match(/^(<=|>=|<>|[+\-*/\\^&=<>(),.:])/);
@@ -102,7 +185,9 @@ export function lex(source) {
       i += m[0].length;
       continue;
     }
-    fail(`${line}行：この構文は説明に対応していません：${c}`);
+    if (ID_EXCLUDED.test(c) || c.codePointAt(0) < 0x20)
+      lexFail(`識別子や記号として扱えない文字があります：${charLabel(c)}`, line);
+    lexFail(`この構文は説明に対応していません：${c}`, line);
   }
   return result;
 }
@@ -207,11 +292,14 @@ function split(ts, delimiter = ",") {
     out = [],
     start = 0;
   ts.forEach((t, i) => {
-    if (t.v === "(") depth++;
-    if (t.v === ")") depth--;
-    if (depth === 0 && lower(t) === delimiter) {
-      out.push(ts.slice(start, i));
-      start = i + 1;
+    // 文字列リテラルの中身（":" "," "(" ")" など）を区切り・括弧と混同しない
+    if (t.type !== "string") {
+      if (t.v === "(") depth++;
+      if (t.v === ")") depth--;
+      if (depth === 0 && lower(t) === delimiter) {
+        out.push(ts.slice(start, i));
+        start = i + 1;
+      }
     }
   });
   out.push(ts.slice(start));
@@ -220,6 +308,7 @@ function split(ts, delimiter = ",") {
 function topIndex(ts, v) {
   let d = 0;
   return ts.findIndex((t) => {
+    if (t.type === "string") return false;
     if (t.v === "(") d++;
     if (t.v === ")") d--;
     return d === 0 && lower(t) === v;
@@ -228,11 +317,23 @@ function topIndex(ts, v) {
 export function parse(source) {
   if (source.length > LIMITS.source)
     fail(`コードは${LIMITS.source}文字以内にしてください`);
-  const ts = lex(source),
-    lines = [];
+  // 行継続 "_"：行末の単独 "_" トークンと直後の改行を取り除き、論理行を連結する。
+  // 文字列リテラル "_"（type: "string"）や識別子の一部（my_var 等）は対象にしない。
+  const rawTokens = lex(source),
+    ts = [];
+  for (let k = 0; k < rawTokens.length; k++) {
+    let t = rawTokens[k];
+    if (t.type === "id" && t.v === "_" && rawTokens[k + 1]?.v === "\n") {
+      k++; // "_" と改行を両方落とす
+      continue;
+    }
+    ts.push(t);
+  }
+  const lines = [];
   let cur = [];
   for (let t of ts) {
-    if (t.v === "\n" || t.v === ":") {
+    // 文の区切り ":" は演算子トークンのときだけ。中身が ":" の文字列リテラルは文を区切らない
+    if ((t.v === "\n" || t.v === ":") && t.type !== "string") {
       if (cur.length) lines.push(cur);
       cur = [];
     } else cur.push(t);
@@ -248,7 +349,15 @@ export function parse(source) {
   function block(stops = [], depth = 0) {
     if (depth > LIMITS.depth) fail("ブロックの入れ子が深すぎます");
     let out = [];
-    while (i < lines.length && !stops.some(starts)) {
+    // 入れ子ブロックの解析中に外側ブロックの終端（End Sub 等）に当たったら、
+    // その終端を消費せずに呼び出し元へ戻す。呼び出し元が「End If が必要です」等、
+    // 欠けている終端そのものを名指して停止する（終端側を責めない）。
+    const foreignTerminator = () =>
+      depth > 0 &&
+      ["end if", "end select", "end sub", "next", "loop", "else", "elseif", "case"].some(
+        (t) => !stops.includes(t) && starts(t),
+      );
+    while (i < lines.length && !stops.some(starts) && !foreignTerminator()) {
       let row = lines[i++],
         words = row.map(lower),
         line = row[0].line,
@@ -435,6 +544,8 @@ export function parse(source) {
             let as = topIndex(part, "as"),
               left = as < 0 ? part : part.slice(0, as),
               type = as < 0 ? "variant" : lower(part[as + 1]);
+            if (as >= 0 && as + 1 >= part.length)
+              fail("As の後に型名が必要です");
             if (as >= 0 && part.length !== as + 2)
               unsupported("As New / 固定長文字列");
             if (
@@ -454,24 +565,38 @@ export function parse(source) {
             )
               unsupported(`型 ${type}`);
             if (left[0]?.type !== "id") fail("変数名が必要です");
-            let bounds = null;
+            let bounds = null,
+              dynamic = false;
             if (left.length > 1) {
               if (left[1].v !== "(" || left.at(-1).v !== ")")
                 fail("配列宣言が不正です");
               let inside = left.slice(2, -1),
                 to = topIndex(inside, "to");
-              bounds =
-                to < 0
-                  ? [{ k: "lit", v: base }, expression(inside)]
-                  : [
-                      expression(inside.slice(0, to)),
-                      expression(inside.slice(to + 1)),
-                    ];
+              if (!inside.length) {
+                // Dim a() は動的配列の宣言そのものは受理する（要素は未割当）。
+                // サイズの割当は ReDim で行うが、本エンジンでは ReDim を未対応として名指す。
+                dynamic = true;
+              } else
+                bounds =
+                  to < 0
+                    ? [{ k: "lit", v: base }, expression(inside)]
+                    : [
+                        expression(inside.slice(0, to)),
+                        expression(inside.slice(to + 1)),
+                      ];
             }
-            return { name: lower(left[0]), type, bounds };
+            return { name: lower(left[0]), type, bounds, dynamic };
           });
           out.push({ ...node, k: "dim", declarations });
           continue;
+        }
+        if (w === "redim") {
+          // 動的配列は宣言済み未対応。汎用文でなく構文名を挙げて停止する
+          unsupported(
+            words[1] === "preserve"
+              ? "ReDim Preserve（動的配列）"
+              : "ReDim（動的配列）",
+          );
         }
         if (w === "on" && words.join(" ") === "on error resume next") {
           out.push({ ...node, k: "onerror", resume: true });
@@ -554,14 +679,22 @@ const str = (v) =>
       : v === false
         ? "False"
         : String(v);
-const bool = (v) =>
-  v?.kind === "null"
+const bool = (v) => {
+  // RG-74（R20-N4）: 実 VBA の条件変換（CBool と同じ規則）では、文字列
+  // "True"／"False" は大小を区別せず真偽値に変換される。
+  if (typeof v === "string") {
+    const t = v.trim().toLowerCase();
+    if (t === "true") return true;
+    if (t === "false") return false;
+  }
+  return v?.kind === "null"
     ? false
     : v?.kind === "empty"
       ? false
       : typeof v === "boolean"
         ? v
         : num(v) !== 0;
+};
 function binary(op, a, b) {
   if (a?.kind === "null" || b?.kind === "null") {
     if (op === "&") {
@@ -618,7 +751,10 @@ function binary(op, a, b) {
   let x = num(a),
     y = num(b);
   if (["/", "\\", "mod"].includes(op) && y === 0) fail("0 で除算しました", 11);
-  if (op === "\\" && roundEven(y) === 0) fail("0 で除算しました", 11);
+  // RG-31: \ と Mod は被演算子を丸めてから除算する。丸めた後の除数が 0 なら
+  // どちらもエラー11（0除算）であり、Mod だけオーバーフロー(6)にしない。
+  if (["\\", "mod"].includes(op) && roundEven(y) === 0)
+    fail("0 で除算しました", 11);
   let v =
     op === "+"
       ? x + y
@@ -732,6 +868,14 @@ function expressionType(a, s) {
     let x = expressionType(a.a, s),
       y = expressionType(a.b, s);
     if (x === "variant" && y === "variant") return "variant";
+    // RG-12: 文字列リテラル＋数値型の + は数値演算（結果は Double 扱い）
+    if (a.op === "+") {
+      const numericT = (t) => !["string", "variant"].includes(t),
+        aStrLit = a.a.k === "lit" && typeof a.a.v === "string",
+        bStrLit = a.b.k === "lit" && typeof a.b.v === "string";
+      if ((aStrLit && numericT(y)) || (bStrLit && numericT(x)))
+        return "double";
+    }
     if (a.op === "+" && (x === "string" || y === "string")) return "string";
     if (a.op === "/" || a.op === "^") return "double";
     if (x === "double" || y === "double" || x === "single" || y === "single")
@@ -767,6 +911,23 @@ function expressionBinary(a, s) {
   if (x?.kind === "null" || y?.kind === "null") return binary(op, x, y);
   const numeric = (t) => !["string", "variant"].includes(t);
   if (op === "+") {
+    // RG-12: 文字列リテラルと数値の + は VBA の古典規則で数値化して加算する
+    // （"5" + 3 = 8、"a" + 3 は型エラー13）。宣言された String 型変数と数値型の
+    // 組み合わせ（従来テストで確定した仕様）は対象外で、従来どおりエラー13／連結になる。
+    const aStrLit = a.a.k === "lit" && typeof a.a.v === "string",
+      bStrLit = a.b.k === "lit" && typeof a.b.v === "string";
+    if ((aStrLit && typeof y === "number") || (bStrLit && typeof x === "number"))
+      return binary(op, x, y);
+    if (
+      (aStrLit && isU(y) && numeric(yt)) ||
+      (bStrLit && isU(x) && numeric(xt))
+    )
+      return unknown(`${display(x)} + ${display(y)}`, {
+        op,
+        a: x,
+        b: y,
+        valueType: "double",
+      });
     if ((xt === "string" && numeric(yt)) || (yt === "string" && numeric(xt)))
       fail("型が一致しません", 13);
     if (xt === "string" || yt === "string") {
@@ -810,6 +971,27 @@ function evalExpr(a, s) {
       if (a.name === "err") return { kind: "err" };
       if (a.name === "date") return unknown("実行時の現在日付（時刻なし）");
       if (a.name === "now") return unknown("実行時の現在日時（日付と時刻）");
+      // RG-24: 括弧なしで参照される引数なし組み込み関数は、暗黙変数（Empty）に
+      // 落とさず、組み込み関数として「実行時に決まる値」で扱う（Date／Now と同じ扱い）。
+      // 呼び出すたびに値が変わり得るものは評価ごとに独立した未確定値にする。
+      const bareBuiltins = {
+        time: ["実行時の現在時刻", "double"],
+        rnd: ["Rnd による乱数（0以上1未満）", "double"],
+        timer: ["実行時の午前0時からの経過秒数（Timer）", "double"],
+        command: ["起動時に渡された引数文字列（Command）", "string"],
+        curdir: ["現在のフォルダー（CurDir）", "string"],
+        freefile: ["使用可能な次のファイル番号（FreeFile）", "long"],
+        doevents: ["DoEvents の戻り値", "long"],
+        imestatus: ["IME の状態（IMEStatus）", "long"],
+      };
+      if (a.name in bareBuiltins) {
+        let [source, valueType] = bareBuiltins[a.name];
+        let changing = ["rnd", "timer", "freefile", "doevents"].includes(a.name);
+        return unknown(source, {
+          valueType,
+          ...(changing ? { symbol: `${a.name}-${s.inputId++}` } : {}),
+        });
+      }
       if (!(a.name in s.vars)) {
         if (s.explicit) fail(`変数が定義されていません：${a.name}`);
         s.vars[a.name] = EMPTY;
@@ -954,6 +1136,8 @@ function evalExpr(a, s) {
       if (name === "isempty") return args[0]?.kind === "empty";
       if (["lbound", "ubound"].includes(name)) {
         if (args[0]?.kind !== "array") fail("型が一致しません", 13);
+        if (args[0].dynamic && !args[0].values.length)
+          fail("インデックスが有効範囲にありません", 9);
         return (
           args[0].low + (name === "ubound" ? args[0].values.length - 1 : 0)
         );
@@ -981,7 +1165,7 @@ function evalExpr(a, s) {
         val: [1, 1],
         isnumeric: [1, 1],
         round: [1, 2],
-        replace: [3, 3],
+        replace: [3, 6],
         instr: [2, 2],
       };
       if (!arity[name]) unsupported(`関数 ${name}`);
@@ -1037,8 +1221,41 @@ function evalExpr(a, s) {
           fail("プロシージャの呼び出し、または引数が不正です", 5);
         return roundEven(num(x) * 10 ** dp) / 10 ** dp;
       }
-      if (name === "replace")
-        return str(y) === "" ? str(x) : str(x).split(str(y)).join(str(z));
+      if (name === "replace") {
+        // Replace(対象, 検索, 置換, [start], [count], [compare])（Microsoft 仕様）
+        // start: 検索・返却の開始位置（1始まり）。戻り値は start 位置から始まる。
+        // count: 置換回数の上限（-1 = 全部、0 = 置換なし）。compare: 0 = 大文字小文字を区別、1 = 区別しない。
+        let source = str(x),
+          findText = str(y),
+          replacement = str(z);
+        let start = args[3] === undefined ? 1 : num(args[3]),
+          count = args[4] === undefined ? -1 : num(args[4]),
+          compare = args[5] === undefined ? 0 : num(args[5]);
+        if (!Number.isInteger(start) || start < 1)
+          fail("プロシージャの呼び出し、または引数が不正です", 5);
+        if (!Number.isInteger(count) || count < -1)
+          fail("プロシージャの呼び出し、または引数が不正です", 5);
+        if (compare === -1)
+          unsupported("Replace の compare 引数 -1（Option Compare 依存）");
+        if (compare !== 0 && compare !== 1)
+          fail("プロシージャの呼び出し、または引数が不正です", 5);
+        if (start > source.length) return "";
+        let working = source.slice(start - 1);
+        if (findText === "" || count === 0) return working;
+        let haystack = compare === 1 ? working.toLowerCase() : working,
+          needle = compare === 1 ? findText.toLowerCase() : findText,
+          out = "",
+          pos = 0,
+          done = 0;
+        while (count === -1 || done < count) {
+          let at = haystack.indexOf(needle, pos);
+          if (at < 0) break;
+          out += working.slice(pos, at) + replacement;
+          pos = at + findText.length;
+          done++;
+        }
+        return out + working.slice(pos);
+      }
       if (name === "instr") return str(x).indexOf(str(y)) + 1;
       break;
     }
@@ -1412,7 +1629,9 @@ export function simulate(source, model = {}, custom = {}) {
             note(
               s,
               n,
-              `${d.name} は ${d.type} の変数です：${display(s.vars[d.name])}`,
+              d.dynamic
+                ? `${d.name} は ${typeLabel(d.type)} の動的配列です（要素はまだ割り当てられていません）`
+                : `${d.name} は ${typeLabel(d.type)} の変数です：${display(s.vars[d.name])}`,
             );
             continue;
           }
@@ -1451,11 +1670,25 @@ export function simulate(source, model = {}, custom = {}) {
               type: d.type,
               values: Array.from({ length: high - low + 1 }, () => initial),
             };
+          } else if (d.dynamic) {
+            s.vars[d.name] = {
+              kind: "array",
+              low: s.base,
+              type: d.type,
+              values: [],
+              dynamic: true,
+            };
+            note(
+              s,
+              n,
+              `${d.name} を ${typeLabel(d.type)} の動的配列として用意します（要素はまだ割り当てられていません）`,
+            );
+            continue;
           } else s.vars[d.name] = initial;
           note(
             s,
             n,
-            `${d.name} を ${d.type} として用意します：${display(s.vars[d.name])}`,
+            `${d.name} を ${typeLabel(d.type)} として用意します：${display(s.vars[d.name])}`,
           );
         }
         return [s];
@@ -1556,7 +1789,13 @@ export function simulate(source, model = {}, custom = {}) {
                         expressionType(n.test, st),
                         expressionType(x.value, st),
                       );
-                result = binary("or", result, r);
+                // RG-27: 蓄積の初期値 false との or を合成すると、未確定値の説明に
+                // 内部表現 "false or …" が漏れる。恒等元（false）との or は相手そのもので
+                // 置き換え、false が相手側の場合も合成しない。
+                if (result === false) result = r;
+                else if (r === true) result = true;
+                else if (r !== false && result !== true)
+                  result = binary("or", result, r);
                 if (result === true) break;
               }
             } else result = true;

@@ -16,6 +16,8 @@ export const unknown = (source, id = source) => ({
   id,
 });
 export function formatValue(v) {
+  // RG-51：BigInt は実 JavaScript の表記（末尾 n）で表示する。
+  if (typeof v === "bigint") return v.toString() + "n";
   if (isUnknown(v)) return unknownLabel(v);
   if (v?.kind === "NA") return "NA（欠損値）";
   if (v?.kind === "uninitialized" || v?.kind === "js-uninitialized") return "未初期化";
@@ -30,6 +32,7 @@ export function refsInTrace(path) {
 }
 
 function safe(v, seen = new Map(), path = "$") {
+  if (typeof v === "bigint") return v.toString() + "n";
   if (isUnknown(v)) return unknownLabel(v);
   if (v?.kind === "NA") return "NA（欠損値）";
   if (v?.kind === "uninitialized" || v?.kind === "js-uninitialized") return "未初期化";

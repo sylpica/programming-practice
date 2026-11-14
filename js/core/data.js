@@ -12,8 +12,17 @@ export function parseJsonLocated(source) {
     if (depth > 64) throw new PracticeError("JSONの入れ子が深すぎます", line);
     ws();
     locations.set(path, line);
+    if (i >= source.length)
+      throw new PracticeError("JSONが途中で終わっています", line);
     let start = i,
       c = source[i];
+    if (c === "}" || c === "]" || c === ",")
+      throw new PracticeError(
+        "JSONの値が抜けています（値の位置に「" +
+          c +
+          "」があります。末尾のカンマの可能性があります）",
+        line,
+      );
     if (c === "{") {
       i++;
       let out = {};
@@ -24,6 +33,13 @@ export function parseJsonLocated(source) {
       }
       while (true) {
         ws();
+        if (i >= source.length)
+          throw new PracticeError("JSONが途中で終わっています", line);
+        if (source[i] === "}")
+          throw new PracticeError(
+            "JSONに末尾のカンマがあります（ , の直後に } があります）",
+            line,
+          );
         if (source[i] !== '"')
           throw new PracticeError("JSONのキーは文字列で指定してください", line);
         let key = string();
@@ -33,12 +49,16 @@ export function parseJsonLocated(source) {
             line,
           );
         ws();
+        if (i >= source.length)
+          throw new PracticeError("JSONが途中で終わっています", line);
         if (source[i++] !== ":")
           throw new PracticeError("JSONに : が必要です", line);
         if (Object.hasOwn(out, key))
           throw new PracticeError("JSONのキーが重複しています：" + key, line);
         out[key] = value(path + "/" + key, depth + 1);
         ws();
+        if (i >= source.length)
+          throw new PracticeError("JSONが途中で終わっています", line);
         let end = source[i++];
         if (end === "}") return out;
         if (end !== ",")
@@ -56,6 +76,8 @@ export function parseJsonLocated(source) {
       while (true) {
         out.push(value(path + "/" + out.length, depth + 1));
         ws();
+        if (i >= source.length)
+          throw new PracticeError("JSONが途中で終わっています", line);
         let end = source[i++];
         if (end === "]") return out;
         if (end !== ",")
@@ -64,10 +86,14 @@ export function parseJsonLocated(source) {
     }
     if (c === '"') return string();
     while (i < source.length && !/[\s,\]}]/.test(source[i])) i++;
+    let token = source.slice(start, i);
     try {
-      return JSON.parse(source.slice(start, i));
+      return JSON.parse(token);
     } catch {
-      throw new PracticeError("JSONの値が不正です", line);
+      throw new PracticeError(
+        "JSONの値が不正です：" + (token.length > 24 ? token.slice(0, 24) + "…" : token),
+        line,
+      );
     }
   }
   function string() {
@@ -82,12 +108,12 @@ export function parseJsonLocated(source) {
         try {
           return JSON.parse(source.slice(start, i));
         } catch {
-          break;
+          throw new PracticeError("JSONの文字列が不正です", line);
         }
       }
       if (c === "\n") line++;
     }
-    throw new PracticeError("JSONの文字列が不正です", line);
+    throw new PracticeError("JSONの文字列が閉じられていません", line);
   }
   let data = value("");
   ws();

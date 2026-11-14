@@ -70,6 +70,11 @@ export const referenceDetails = {
     "returns": "変数に保存した値",
     "source": "https://ui.vision/rpa/docs/selenium-ide/executescript"
   },
+  "Number": {
+    "description": "式の中で文字列などを数値へ変換します（JavaScriptのNumber関数）。executeScript_Sandboxのreturn式などで使います。",
+    "returns": "変換した数値（変換できない場合は NaN）",
+    "source": "https://developer.mozilla.org/ja/docs/Web/JavaScript/Reference/Global_Objects/Number"
+  },
   "break": {
     "description": "最も内側のループを終了します。",
     "returns": "式の戻り値なし（コマンド）",

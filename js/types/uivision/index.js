@@ -62,6 +62,23 @@ for (const r of reference) {
   if (["break","continue"].includes(r.name)) commands = [cmd("times","2"),sample,cmd("end")];
   r.example = encode([...setup,...commands]);
 }
+// RG-59（統合）: executeScript_Sandbox の式で使う JavaScript の Number 関数は、
+// コマンドではないが式の語彙としてリファレンスに載せる（trace refs の Number に対応）。
+reference.push({
+  name: "Number",
+  category: "式の関数",
+  syntax: "Number(値)",
+  description:
+    "式の中で文字列などを数値へ変換します（JavaScriptのNumber関数）。executeScript_Sandboxのreturn式などで使います。",
+  example: encode([
+    cmd("open", "https://example.test/form"),
+    cmd("store", "0", "count"),
+    cmd("executeScript_Sandbox", "return Number(${count}) + 1;", "count"),
+    cmd("echo", "${count}"),
+  ]),
+  caution: "数値に変換できない文字列では NaN になります。",
+  supported: true,
+});
 export const definition = {
   id: "uivision",
   name: "UI.Vision RPA",
@@ -196,12 +213,21 @@ export const definition = {
             endWhile: "end",
             while: "while",
             times: "loop",
+            forEach: "unsupported-block",
           })[n] || "action",
       });
       const semantics = {
         dialect: "js",
         initialize(s) {
           s.vars["!statusOK"] = true;
+        },
+        read(a, s) {
+          if (a?.k === "var" && typeof s.vars[a.name] === "string") {
+            let text = s.vars[a.name].trim();
+            if (text !== "" && !Number.isNaN(Number(text)))
+              return { handled: true, value: Number(text) };
+          }
+          return undefined;
         },
         call(name, args, s, api, node) {
           if (name === "Number") {

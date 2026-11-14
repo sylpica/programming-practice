@@ -53,6 +53,11 @@ if (!drafts.vba) {
     if (legacy) drafts.vba = legacy;
   } catch {}
 }
+// RG-86: 起動時点の下書きスナップショット。save() はこれを基準に
+// 「このタブが変更した種類」だけを自分の版で確定し、未変更の種類は
+// 保存済み（他タブが書いた）版を採用する。複数タブで開いても、他タブの
+// 下書きが丸ごと上書きで無言消失しないようにするための基準点。
+let baseDrafts = structuredClone(drafts);
 import { decodeFile } from "./import.js";
 const $ = (id) => document.getElementById(id);
 const el = (tag, text, cls) => {
@@ -65,6 +70,9 @@ let result = null,
   paths = [],
   current = 0,
   templateId = "",
+  // RG-57: 下書きの由来テンプレート。編集で templateId が "" に切り離されても
+  // draftKey は由来を保持し、下書きをテンプレート別に振り分ける。
+  draftKey = "",
   timer,
   worker,
   request = 0,
@@ -136,26 +144,44 @@ function save() {
       model = JSON.parse(modelText);
     } catch {}
   }
-  drafts[active.id] = {
-    ...previous,
-    code: $("editor").value,
-    templateId,
-    auto: $("auto").checked,
-    sort: $("sort").value,
-    pathId: paths[current]?.id ?? previous.pathId,
-    model,
-    modelText,
-  };
-  if (!templateId || !previous.freeDraft || typeof previous.freeDraft.code !== "string") {
-    const { freeDraft: ignored, ...snapshot } = drafts[active.id];
-    drafts[active.id].freeDraft = snapshot;
-  }
+  // RG-86: 保存直前に保存済み下書きを読み直し、他タブの変更とマージする。
+  // 読み直しに失敗した場合は従来どおりメモリ内だけで保存する。
+  let storedDrafts = null;
+  try {
+    let saved = JSON.parse(localStorage.getItem("programming-practice-v3"));
+    if (
+      saved &&
+      saved.drafts &&
+      typeof saved.drafts === "object" &&
+      !Array.isArray(saved.drafts)
+    )
+      storedDrafts = saved.drafts;
+  } catch {}
+  // RG-57: 下書きは由来テンプレートごとに保持する（自由編集は freeDraft）。
+  // 単一枠だった freeDraft へ最新編集を上書きする旧規則は廃止した。
+  // RG-86: 土台は他タブの同種下書きとマージしたものを使う。
+  drafts[active.id] = fileDraft(
+    mergeActivePrevious(baseDrafts[active.id], previous, storedDrafts?.[active.id]),
+    {
+      code: $("editor").value,
+      templateId,
+      auto: $("auto").checked,
+      sort: $("sort").value,
+      pathId: paths[current]?.id ?? previous.pathId,
+      model,
+      modelText,
+      draftOrigin: draftKey,
+    },
+    draftKey,
+  );
+  drafts = mergeDraftsForSave(baseDrafts, drafts, storedDrafts, active.id);
   try {
     if (storageBlocked) throw Error("保存データを保護しています");
     localStorage.setItem(
       "programming-practice-v3",
       JSON.stringify({ active: active.id, drafts }),
     );
+    baseDrafts = structuredClone(drafts);
   } catch {
     $("storageNotice").hidden = false;
   }
@@ -215,10 +241,20 @@ function loadTemplate(id) {
   save();
   const freeDraft = drafts[active.id]?.freeDraft;
   templateId = id;
+  draftKey = id || "";
   $("template").value = id;
   if (t) {
-    $("editor").value = t.code;
-    if (t.model) fillSheet(t.model);
+    // RG-57: そのテンプレートの下書きがあれば元のコードではなく下書きを復元する。
+    const draft = pickTemplateDraft(drafts[active.id], id);
+    if (draft) {
+      $("editor").value = draft.code;
+      fillSheet(draft.model || active.model.defaults);
+      if (active.model.kind !== "sheet" && typeof draft.modelText === "string")
+        $("modelJson").value = draft.modelText;
+    } else {
+      $("editor").value = t.code;
+      if (t.model) fillSheet(t.model);
+    }
   } else if (freeDraft && typeof freeDraft.code === "string") {
     $("editor").value = freeDraft.code;
     fillSheet(freeDraft.model || active.model.defaults);
@@ -229,24 +265,151 @@ function loadTemplate(id) {
   changed();
   if (t) run();
 }
+// Pure helpers for reference-name matching and input normalization.
+// They are unit-tested in tests/muse-fix-ui.test.js by evaluating this block.
+// RG-57: 下書きを由来テンプレートごとに振り分ける純関数。draftKey が
+// テンプレートIDなら byTemplate へ、"" なら freeDraft へ保存する。
+function fileDraft(previous, snapshot, draftKey) {
+  let entry = { ...(previous || {}), ...snapshot };
+  let { freeDraft, byTemplate, ...clean } = snapshot;
+  if (draftKey) {
+    entry.byTemplate = {
+      ...(previous?.byTemplate || {}),
+      [draftKey]: clean,
+    };
+  } else {
+    entry.freeDraft = clean;
+  }
+  return entry;
+}
+function pickTemplateDraft(entry, id) {
+  let draft = entry?.byTemplate?.[id];
+  return draft && typeof draft.code === "string" ? draft : null;
+}
+// RG-86: 複数タブ保存競合のマージ（純関数）。base はこのタブが起動時に
+// 読み込んだ下書き、mine はこのタブのメモリ内下書き、stored は保存直前に
+// 読み直した保存済み下書き。自分が base から変更した種類は自分の版、
+// 未変更の種類は stored（他タブ）の版を採用する。アクティブな種類は
+// このタブの最新版をそのまま使う（スロット単位の競合は後勝ち）。
+function mergeDraftsForSave(base, mine, stored, activeId) {
+  let out = {};
+  let ids = new Set([
+    ...Object.keys(base || {}),
+    ...Object.keys(mine || {}),
+    ...Object.keys(stored || {}),
+  ]);
+  for (const id of ids) {
+    if (id === activeId) {
+      if (mine?.[id] !== undefined) out[id] = mine[id];
+      continue;
+    }
+    let changed =
+      JSON.stringify(mine?.[id] ?? null) !== JSON.stringify(base?.[id] ?? null);
+    let v = changed ? mine?.[id] : stored?.[id] !== undefined ? stored[id] : mine?.[id];
+    if (v !== undefined) out[id] = v;
+  }
+  return out;
+}
+// RG-86: アクティブ種類の下書き土台のマージ（純関数）。他タブが同じ種類の
+// 別テンプレート下書きを増やしていても消えないよう、byTemplate は和集合に
+// し、freeDraft はこのタブが base から変更した場合だけ自分の版を使う。
+function mergeActivePrevious(baseEntry, mineEntry, storedEntry) {
+  if (!storedEntry) return mineEntry || {};
+  if (!mineEntry) return storedEntry;
+  if (JSON.stringify(mineEntry) === JSON.stringify(storedEntry)) return mineEntry;
+  return {
+    ...storedEntry,
+    ...mineEntry,
+    byTemplate: {
+      ...(storedEntry.byTemplate || {}),
+      ...(mineEntry.byTemplate || {}),
+    },
+    freeDraft:
+      JSON.stringify(mineEntry.freeDraft ?? null) !==
+      JSON.stringify(baseEntry?.freeDraft ?? null)
+        ? mineEntry.freeDraft
+        : storedEntry.freeDraft,
+  };
+}
+function resolveReferenceName(name, referenceNames) {
+  if (referenceNames.indexOf(name) >= 0) return name;
+  let parts = name.split(".");
+  for (let i = 1; i < parts.length; i++) {
+    let candidate = parts.slice(i).join(".");
+    if (referenceNames.indexOf(candidate) >= 0) return candidate;
+  }
+  return null;
+}
+function usedTraceNames(refs, referenceNames) {
+  let out = [];
+  for (let name of refs) {
+    let resolved = resolveReferenceName(name, referenceNames);
+    if (resolved && out.indexOf(resolved) < 0) out.push(resolved);
+  }
+  return out;
+}
+function isWordChar(ch) {
+  return (
+    !!ch &&
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_$".indexOf(
+      ch,
+    ) >= 0
+  );
+}
+function linkSegments(text, names) {
+  let segments = [];
+  if (!text) return segments;
+  let sorted = [...names]
+    .filter(Boolean)
+    .sort((a, b) => b.length - a.length);
+  let pos = 0;
+  while (pos < text.length) {
+    let best = null;
+    for (let name of sorted) {
+      let from = pos;
+      while (from + name.length <= text.length) {
+        let index = text.indexOf(name, from);
+        if (index < 0) break;
+        let before = index > 0 ? text[index - 1] : "",
+          after =
+            index + name.length < text.length
+              ? text[index + name.length]
+              : "";
+        if (!isWordChar(before) && !isWordChar(after)) {
+          if (
+            !best ||
+            index < best.index ||
+            (index === best.index && name.length > best.name.length)
+          )
+            best = { name, index };
+          break;
+        }
+        from = index + 1;
+      }
+    }
+    if (!best) break;
+    if (best.index > pos)
+      segments.push({ text: text.slice(pos, best.index) });
+    segments.push({ name: best.name });
+    pos = best.index + best.name.length;
+  }
+  if (pos < text.length) segments.push({ text: text.slice(pos) });
+  if (!segments.length) segments.push({ text });
+  return segments;
+}
+function normalizeLineEndings(code) {
+  return code.replace(/\r\n?/g, "\n");
+}
+// End of pure helpers.
 function linkedText(text) {
   let fragment = document.createDocumentFragment();
-  let names = reference.map((r) => r.name).sort((a, b) => b.length - a.length);
-  while (text) {
-    let matches = names
-      .map((name) => ({ name, index: text.indexOf(name) }))
-      .filter((x) => x.index >= 0)
-      .sort((a, b) => a.index - b.index || b.name.length - a.name.length);
-    if (!matches.length) {
-      fragment.append(document.createTextNode(text));
-      break;
-    }
-    let m = matches[0];
-    fragment.append(document.createTextNode(text.slice(0, m.index)));
-    let link = el("button", m.name, "inline-link");
-    link.onclick = () => showRef(m.name);
-    fragment.append(link);
-    text = text.slice(m.index + m.name.length);
+  let names = reference.map((r) => r.name);
+  for (let segment of linkSegments(text, names)) {
+    if (segment.name) {
+      let link = el("button", segment.name, "inline-link");
+      link.onclick = () => showRef(segment.name);
+      fragment.append(link);
+    } else fragment.append(document.createTextNode(segment.text));
   }
   return fragment;
 }
@@ -300,7 +463,7 @@ function renderTemplates() {
   }
 }
 $("template").onchange = (e) => loadTemplate(e.target.value);
-function refArticle(r, expanded = false) {
+function refArticle(r, expanded = false, heading = "h3") {
   let article = el("article", undefined, expanded ? "" : "ref-card");
   article.append(
     el(
@@ -308,7 +471,7 @@ function refArticle(r, expanded = false) {
       r.supported ? "シミュレーション対応" : "参照用 · 操作は未対応",
       "badge" + (r.supported ? "" : " unsupported"),
     ),
-    el("h3", r.name),
+    el(heading, r.name),
     el("pre", r.syntax),
     el("p", r.description),
     ...(r.returns ? [el("p", "戻り値：" + r.returns)] : []),
@@ -350,7 +513,7 @@ function fullRefs() {
   for (let r of reference.filter((r) =>
     (r.name + " " + r.category + " " + r.description).toLowerCase().includes(q),
   ))
-    $("fullReferences").append(refArticle(r));
+    $("fullReferences").append(refArticle(r, false, "h2"));
   if (!$("fullReferences").childElementCount)
     $("fullReferences").append(el("p", "該当する項目はありません。"));
 }
@@ -371,9 +534,16 @@ function renderGlossary() {
 function updateUsed() {
   let names = [];
   if (result) {
-    names = refsInTrace(paths[current]).filter((n) =>
-      reference.some((r) => r.name === n),
+    let referenceNames = reference.map((r) => r.name),
+      rawNames = refsInTrace(paths[current]);
+    names = usedTraceNames(rawNames, referenceNames);
+    let dropped = rawNames.filter(
+      (n) => !resolveReferenceName(n, referenceNames),
     );
+    if (dropped.length)
+      console.info(
+        "使用中チップに表示できない参照：" + dropped.join(", "),
+      );
     $("usedScope").textContent = "表示中のパス";
   } else {
     names = active.scan($("editor").value);
@@ -457,7 +627,7 @@ function run() {
   let id = ++request;
   $("run").disabled = true;
   $("resultStatus").textContent = "コードを解析しています…";
-  let code = $("editor").value,
+  let code = normalizeLineEndings($("editor").value),
     model;
   try {
     model = getModel();
@@ -650,6 +820,7 @@ async function importFile(file) {
     )
       return;
     templateId = "";
+    draftKey = "";
     $("template").value = "";
     renderExplanation(null);
     $("editor").value = text;
@@ -742,6 +913,7 @@ function switchType(id, savePrevious = true) {
   $("editor").value = saved?.code ?? first?.code ?? "";
   if (templateId && templates.find(t => t.id === templateId)?.code !== $("editor").value)
     templateId = $("template").value = "";
+  draftKey = saved?.draftOrigin ?? saved?.templateId ?? "";
   $("auto").checked = !!saved?.auto;
   $("sort").value = saved?.sort || "original";
   fillSheet(saved?.model || first?.model || active.model.defaults);

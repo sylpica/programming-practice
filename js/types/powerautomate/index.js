@@ -4,6 +4,7 @@ import {
   parseExpression,
   astRefs,
   PracticeError,
+  baseBinary,
 } from "../../core/script.js";
 import { rows, sourceFailure } from "../../core/data.js";
 import {
@@ -254,6 +255,20 @@ export const definition = {
       let semantics = {
         dialect: "js",
         copyOnAssign: true,
+        constants: { true: true, false: false, null: null, True: true, False: false },
+        binary(op, x, y, node) {
+          if (isUnknown(x) || isUnknown(y)) return baseBinary(op, x, y, "js");
+          if (
+            (op === "/" || op === "%") &&
+            ((typeof y === "number" && y === 0) ||
+              (typeof y === "string" && y.trim() !== "" && Number(y) === 0))
+          )
+            throw new PracticeError(
+              "0 で除算しました（Power Automate Desktop では 0 除算は実行時エラーになります）",
+              node?.line || 1,
+            );
+          return baseBinary(op, x, y, "js");
+        },
         step(n, s, api) {
           let item = n.item;
           if (n.k === "action-if") {

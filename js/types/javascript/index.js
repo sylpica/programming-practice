@@ -139,6 +139,27 @@ const reference = rows([
     "for (let i=0; i<3; i++) { total += i; }",
   ],
   [
+    "let",
+    "宣言",
+    "let 名前 = 値;",
+    "再代入できる変数を宣言します。ブロックの内側だけで有効で、初期化前に参照するとエラーになります。",
+    "let total = 0;",
+  ],
+  [
+    "const",
+    "宣言",
+    "const 名前 = 値;",
+    "再代入できない変数を宣言します。宣言と同時に初期化が必要です。",
+    "const limit = 3;",
+  ],
+  [
+    "var",
+    "宣言",
+    "var 名前 = 値;",
+    "関数または全体の範囲で有効な変数を宣言します。宣言は巻き上げられます。",
+    "var count = 0;",
+  ],
+  [
     "addEventListener",
     "DOM",
     'node.addEventListener("click", handler)',
@@ -148,6 +169,7 @@ const reference = rows([
     false,
   ],
 ]);
+const referenceNames = new Set(reference.map((r) => r.name));
 const exampleSetup = {"console.log":"let total=3;",appendChild:'const p=document.createElement("p");',push:"const values=[1,2,3];",pop:"const values=[1,2,3]; let last;",if:"let score=2;",for:"let total=0;"};
 for (const r of reference) if (exampleSetup[r.name]) r.example = exampleSetup[r.name] + "\n" + r.example;
 function convertedUnknown(value, conversion) {
@@ -160,6 +182,91 @@ function containsUnknown(value, seen = new Set()) {
   if (!value || typeof value !== "object" || seen.has(value)) return false;
   seen.add(value);
   return Object.values(value).some(v => containsUnknown(v, seen));
+}
+// A record written as a declaration initializer (let o = {}; o.a = 1) is
+// currently modelled as a zero-length array carrying named fields, because
+// the shared parser reads {…} in a declaration as an array initializer.
+// Such a value is a record, not an array: display and JSON conversion in
+// this type treat it as a plain object. Genuine arrays (any elements, or
+// no named fields) are returned unchanged.
+function isRecordLikeArray(value) {
+  return (
+    Array.isArray(value) &&
+    value.length === 0 &&
+    Object.keys(value).length > 0
+  );
+}
+function containsBigInt(value, seen = new Set()) {
+  if (typeof value === "bigint") return true;
+  if (!value || typeof value !== "object" || seen.has(value)) return false;
+  seen.add(value);
+  return Object.values(value).some((v) => containsBigInt(v, seen));
+}
+function needsDisplayValue(value, seen = new Set()) {
+  if (typeof value === "bigint") return true;
+  if (!value || typeof value !== "object" || seen.has(value)) return false;
+  if (isRecordLikeArray(value)) return true;
+  seen.add(value);
+  return Object.values(value).some((v) => needsDisplayValue(v, seen));
+}
+function displayValue(value, seen = new Map()) {
+  // BigInt values display with the trailing n of real JavaScript notation.
+  // (JSON.stringify never reaches this: it rejects BigInt before converting.)
+  if (typeof value === "bigint") return value.toString() + "n";
+  if (!needsDisplayValue(value)) return value;
+  if (!value || typeof value !== "object") return value;
+  if (seen.has(value)) return seen.get(value);
+  if (isRecordLikeArray(value)) {
+    let out = {};
+    seen.set(value, out);
+    for (let [k, v] of Object.entries(value))
+      out[k] = displayValue(v, seen);
+    return out;
+  }
+  if (Array.isArray(value)) {
+    let out = [];
+    seen.set(value, out);
+    for (let v of value) out.push(displayValue(v, seen));
+    return out;
+  }
+  let out = {};
+  seen.set(value, out);
+  for (let [k, v] of Object.entries(value)) out[k] = displayValue(v, seen);
+  return out;
+}
+// RG-04 追加表面（R21-N5／N7）: console.log の表記を実 JavaScript に
+// 合わせる。スカラーの -0 は "-0"（String(-0) は "0" になる）、配列・
+// オブジェクト内の undefined は「未設定」ではなく undefined、-0 も -0。
+// formatValue（JSON 整形）は undefined を「未設定」へ写し -0 を 0 に
+// 潰すため、表示値へ番兵文字列を埋め、整形後に素の表記へ戻す。
+// モデル値（kind／__class を持つもの）は formatValue 側の表記に委ねる。
+const UNDEF_MARK = "\u0001undefined\u0001",
+  NEGZERO_MARK = "\u0001-0\u0001";
+function markForLog(v, seen = new Map()) {
+  if (v === undefined) return UNDEF_MARK;
+  if (typeof v === "number" && Object.is(v, -0)) return NEGZERO_MARK;
+  if (!v || typeof v !== "object") return v;
+  if (v.kind || v.__class) return v;
+  if (seen.has(v)) return seen.get(v);
+  if (Array.isArray(v)) {
+    const out = [];
+    seen.set(v, out);
+    for (const x of v) out.push(markForLog(x, seen));
+    return out;
+  }
+  const out = {};
+  seen.set(v, out);
+  for (const [k, x] of Object.entries(v)) out[k] = markForLog(x, seen);
+  return out;
+}
+function logText(x) {
+  if (typeof x === "bigint") return x.toString() + "n";
+  if (typeof x === "number" && Object.is(x, -0)) return "-0";
+  if (x && typeof x === "object")
+    return formatValue(markForLog(displayValue(x)))
+      .replaceAll(JSON.stringify(UNDEF_MARK), "undefined")
+      .replaceAll(JSON.stringify(NEGZERO_MARK), "-0");
+  return String(x);
 }
 export const definition = {
   id: "javascript",
@@ -280,7 +387,7 @@ export const definition = {
           if (n.k !== "declare") return;
           const v = n.value ? api.read(n.value, s) : undefined;
           if (n.type !== "var" || n.value) s.vars[n.name] = v;
-          api.note(s, n, `${n.name} を用意します：${formatValue(s.vars[n.name])}`);
+          api.note(s, n, `${n.name} を用意します：${formatValue(displayValue(s.vars[n.name]))}`);
           return [s];
         },
         increment(value, node, s, api) {
@@ -327,7 +434,8 @@ export const definition = {
             const value = api.read(a.arg, s);
             return { handled: true, value: isUnknown(value) ? unknown("typeof の対象の型") : typeof value };
           }
-          if (a.k === "literal" && a.raw && /[LfF]$/.test(a.raw))
+          // RG-11 統合対応：基数リテラル（0x…等）の末尾の英字は型接尾辞ではない。
+          if (a.k === "literal" && a.raw && /[LfF]$/.test(a.raw) && !/^0[xXbBoO]/.test(a.raw))
             api.fail("JavaScriptに数値の型接尾辞はありません", a, "SyntaxError");
           if (a.k === "var" && s.vars[a.name]?.kind === "js-uninitialized")
             api.fail("初期化前のlet / constは参照できません", a, "ReferenceError");
@@ -342,6 +450,13 @@ export const definition = {
           if (a.k === "var" && a.name === "Infinity")
             return { handled: true, value: Infinity };
           if (a.k === "member") {
+            // RG-59 統合対応：リファレンス語彙にあるメンバ名（textContent／value 等の
+            // DOM プロパティ）は使用チップの対象として refs に戻す。語彙に無い
+            // データ名は refs に入れない（コア側の混入防止と対）。
+            if (referenceNames.has(a.name)) {
+              s.pendingRefs ??= [];
+              if (!s.pendingRefs.includes(a.name)) s.pendingRefs.push(a.name);
+            }
             if (["__proto__","constructor","prototype"].includes(a.name))
               api.fail("このプロパティはモデルでは未対応です", a, "未対応");
             let value = api.read(a.target, s);
@@ -399,11 +514,7 @@ export const definition = {
               let v = values();
               s.outputs.push({
                 channel: "console.log",
-                text: v
-                  .map((x) =>
-                    typeof x === "object" ? formatValue(x) : String(x),
-                  )
-                  .join(" "),
+                text: v.map(logText).join(" "),
                 line: node.line,
               });
               return undefined;
@@ -411,7 +522,7 @@ export const definition = {
             case "alert":
               s.outputs.push({
                 channel: "alert",
-                text: formatValue(api.read(args[0], s)),
+                text: formatValue(displayValue(api.read(args[0], s))),
                 line: node.line,
               });
               return undefined;
@@ -470,8 +581,10 @@ export const definition = {
             case "JSON.stringify": {
               let v = api.read(args[0], s);
               if (containsUnknown(v)) return unknown("JSON.stringifyの入力に未確定値があります");
+              if (containsBigInt(v))
+                api.fail("BigIntはJSONへ変換できません", node, "TypeError");
               try {
-                return JSON.stringify(v);
+                return JSON.stringify(displayValue(v));
               } catch {
                 api.fail("循環参照はJSONへ変換できません", node, "TypeError");
               }
@@ -503,13 +616,13 @@ export const definition = {
             title: "変数・オブジェクト",
             entries: Object.entries(p.vars)
               .filter(([k]) => k !== "document")
-              .map(([k, v]) => [k, formatValue(v)]),
+              .map(([k, v]) => [k, formatValue(displayValue(v))]),
           },
           {
             title: "モデルDOM",
             entries: [
-              ["要素", formatValue(p.model.dom.elements)],
-              ["body", formatValue(p.model.dom.body)],
+              ["要素", formatValue(displayValue(p.model.dom.elements))],
+              ["body", formatValue(displayValue(p.model.dom.body))],
             ],
           },
         ],

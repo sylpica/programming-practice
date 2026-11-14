@@ -16,7 +16,7 @@
     "name": "string concat",
     "code": "Debug.Print \"合計\" & 7",
     "outputs": [
-      "\"合計7\""
+      "合計7"
     ],
     "paths": 1,
     "error": null,

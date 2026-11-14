@@ -15,7 +15,7 @@
     "name": "known branch",
     "code": "If 2 > 1 Then\nDebug.Print \"yes\"\nElse\nDebug.Print \"no\"\nEnd If",
     "outputs": [
-      "\"yes\""
+      "yes"
     ],
     "paths": 1,
     "error": null,
@@ -539,7 +539,7 @@
     "code": "int a[1] = {1};\nprintf(\"%d\", a[1]);",
     "outputs": null,
     "paths": 1,
-    "error": "未定義",
+    "error": "有効範囲外",
     "model": null
   },
   {
@@ -594,7 +594,7 @@
     "code": "int a[1] = {1};\ncout << a[1];",
     "outputs": null,
     "paths": 1,
-    "error": "未定義",
+    "error": "有効範囲外",
     "model": null
   },
   {

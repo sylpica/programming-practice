@@ -87,5 +87,17 @@ export const referenceDetails = {
   "addEventListener": {
     "returns": "undefined",
     "source": "https://developer.mozilla.org/en-US/docs/Web/API/EventTarget/addEventListener"
+  },
+  "let": {
+    "returns": "戻り値なし（宣言または制御文）",
+    "source": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/let"
+  },
+  "const": {
+    "returns": "戻り値なし（宣言または制御文）",
+    "source": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/const"
+  },
+  "var": {
+    "returns": "戻り値なし（宣言または制御文）",
+    "source": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/var"
   }
 };

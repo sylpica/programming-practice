@@ -271,6 +271,21 @@ function lowerBehavior(expr, line = expr.line || 1) {
     },
   ];
 }
+// RG-75（R20-N5）: テキストから Boolean への変換は "true"／"false" のみ
+// （大小不区別）で、空テキストは Blank として偽。それ以外のテキストは
+// 変換エラーとして停止する（Microsoft Learn「Boolean function」の規則）。
+function fxTruth(v, line) {
+  if (typeof v === "string") {
+    const t = v.toLowerCase();
+    if (t === "true") return true;
+    if (t === "false" || t === "") return false;
+    throw new PracticeError(
+      `テキスト "${v}" を Boolean に変換できません（"true"／"false" のみ変換できます）`,
+      line,
+    );
+  }
+  return Boolean(v);
+}
 export const definition = {
   id: "powerapps",
   name: "Power Apps",
@@ -354,6 +369,133 @@ export const definition = {
   scan: (code) => scanScript(code, reference, "fx"),
   async simulate(code, model, limits) {
     try {
+      // RG-18: record / table values are shown with the app's human-readable
+      // formatter instead of JavaScript's String(), which leaks
+      // "[object Object]" for records.
+      function fxTextOf(v) {
+        if (v === null || v === undefined) return "";
+        return typeof v === "object" ? formatValue(v) : String(v);
+      }
+      // RG-15: numeric custom formats for Text(Value, Format), following the
+      // number placeholders documented by Microsoft (0, #, ".", grouping ",",
+      // scaling ",", and "%"). Anything outside that subset (date/time
+      // placeholders, format sections, other languages) stops honestly
+      // through fail() instead of being silently ignored.
+      function fxFormatNumber(value, format, fail) {
+        let fmt = format.replace(/\[\$-[^\]]*\]/g, (m) => {
+          let tag = m.slice(3, -1).toLowerCase();
+          if (tag === "en-us" || tag === "en") return "";
+          fail(
+            "Text の書式の言語プレースホルダ " +
+              m +
+              " は未対応です（このモデルは en-US のみ対応）：" +
+              format,
+          );
+          return "";
+        });
+        if (fmt.includes(";"))
+          fail(
+            "Text の書式のセクション区切り（;）は未対応です：" + format,
+          );
+        let tokens = [];
+        for (let i = 0; i < fmt.length; i++) {
+          let c = fmt[i];
+          if (c === '"') {
+            let j = fmt.indexOf('"', i + 1);
+            if (j < 0)
+              fail("Text の書式の引用符が閉じていません：" + format);
+            tokens.push({ t: "lit", v: fmt.slice(i + 1, j) });
+            i = j;
+          } else if (c === "\\") {
+            if (i + 1 >= fmt.length)
+              fail("Text の書式のエスケープが不完全です：" + format);
+            tokens.push({ t: "lit", v: fmt[i + 1] });
+            i++;
+          } else if (c === "0" || c === "#") tokens.push({ t: "ph", v: c });
+          else if (c === ".") tokens.push({ t: "dot" });
+          else if (c === ",") tokens.push({ t: "comma" });
+          else if (c === "%") tokens.push({ t: "pct" });
+          else if (
+            "$€£¥¢+-():'{}<=>/&~ ".includes(c) ||
+            /[^\x00-\x7F]/.test(c)
+          )
+            tokens.push({ t: "lit", v: c });
+          else
+            fail(
+              "Text の書式引数に未対応のプレースホルダ「" +
+                c +
+                "」が含まれています：" +
+                format,
+            );
+        }
+        let dotAt = tokens.findIndex((t) => t.t === "dot");
+        if (tokens.filter((t) => t.t === "dot").length > 1)
+          fail("Text の書式に小数点が複数あります：" + format);
+        let intTokens = dotAt < 0 ? tokens : tokens.slice(0, dotAt),
+          fracTokens = dotAt < 0 ? [] : tokens.slice(dotAt + 1);
+        let fracPh = fracTokens.filter((t) => t.t === "ph"),
+          fracCount = fracPh.length,
+          mandatoryFrac = fracPh.reduce(
+            (acc, t, i) => (t.v === "0" ? i + 1 : acc),
+            0,
+          );
+        let intPh = intTokens.filter((t) => t.t === "ph"),
+          minInt = intPh.filter((t) => t.v === "0").length;
+        let lastPhAt = intTokens.map((t) => t.t).lastIndexOf("ph"),
+          scaling = intTokens.filter(
+            (t, i) => t.t === "comma" && i > lastPhAt,
+          ).length,
+          grouping = intTokens.some(
+            (t, i) =>
+              t.t === "comma" &&
+              i < lastPhAt &&
+              intTokens.slice(0, i).some((x) => x.t === "ph"),
+          );
+        let pctCount = tokens.filter((t) => t.t === "pct").length,
+          scaled =
+            (value * Math.pow(100, pctCount)) / Math.pow(1000, scaling);
+        if (!Number.isFinite(scaled) || Math.abs(scaled) >= 1e21)
+          fail("Text の書式：大きすぎる数値は未対応です：" + format);
+        let negative = scaled < 0,
+          fixed = Math.abs(scaled).toFixed(fracCount),
+          [intDigits, fracRaw = ""] = fixed.split(".");
+        let fracDigits = fracRaw;
+        while (
+          fracDigits.length > mandatoryFrac &&
+          fracDigits.endsWith("0")
+        )
+          fracDigits = fracDigits.slice(0, -1);
+        intDigits = intDigits.padStart(Math.max(minInt, 1), "0");
+        if (
+          minInt === 0 &&
+          intDigits === "0" &&
+          fracDigits &&
+          /[1-9]/.test(fracDigits)
+        )
+          intDigits = "";
+        if (grouping && intDigits.length > 3)
+          intDigits = intDigits.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+        let out = "",
+          intDone = false,
+          fracDone = false;
+        for (let t of tokens) {
+          if (t.t === "ph") {
+            let inFrac = dotAt >= 0 && tokens.indexOf(t) > dotAt;
+            if (!inFrac && !intDone) {
+              out += intDigits;
+              intDone = true;
+            } else if (inFrac && !fracDone) {
+              out += fracDigits;
+              fracDone = true;
+            }
+          } else if (t.t === "dot") out += ".";
+          else if (t.t === "pct") out += "%";
+          else if (t.t === "comma") continue;
+          else out += t.v;
+        }
+        if (!intDone && intDigits) out = intDigits + out;
+        return (negative ? "-" : "") + out;
+      }
       let parser = new ScriptParser(code, "fx"),
         source = parser.program();
       let nodes = source.flatMap((n) =>
@@ -400,18 +542,68 @@ export const definition = {
         },
         read(a, s, api) {
           if (a.k === "var") {
+            let lower = a.name.toLowerCase();
+            // Power Fx identifiers and literals are case-insensitive in
+            // this model (see syntax.caseSensitive): True / False in any
+            // casing are the Boolean literals.
+            if (lower === "true") return { handled: true, value: true };
+            if (lower === "false") return { handled: true, value: false };
             let key = Object.keys(s.vars).find(
               (k) => k.toLowerCase() === a.name.toLowerCase(),
             );
             if (key !== undefined) return { handled: true, value: s.vars[key] };
             if (Object.hasOwn(s.model.screens || {}, a.name))
               return { handled: true, value: { screen: a.name } };
-            if (a.name === "ThisRecord")
-              return { handled: true, value: s.record };
+            if (lower === "thisrecord") {
+              // RG-16: ThisRecord only exists inside a record scope
+              // (ForAll / Filter / Sum / LookUp formulas). At the top level
+              // it must stop by name instead of silently storing an
+              // "unset" value.
+              if (s.record !== undefined)
+                return { handled: true, value: s.record };
+              api.fail(
+                "ThisRecord はレコードスコープ（ForAll / Filter / Sum / LookUp の数式内）でのみ使えます",
+                a,
+              );
+            }
           }
           return null;
         },
+        truth(v, line) {
+          // RG-75（R20-N5）: 条件位置のテキスト変換は fxTruth に統一する。
+          return fxTruth(v, line);
+        },
         binary(op, a, b, node, s, api) {
+          // RG-07（統合）: Power Fx の in／exactin を評価する。
+          // 文字列では部分文字列（含む側・含まれる側とも文字列のとき）、
+          // テーブルでは要素の包含を判定する。in はテキスト比較で大文字小文字を
+          // 区別せず、exactin は区別する（Microsoft 公式ドキュメント準拠）。
+          if (op === "in" || op === "exactin") {
+            if (isUnknown(a) || isUnknown(b))
+              return isUnknown(a) ? a : b;
+            const fold = (v) =>
+              op === "in" && typeof v === "string" ? v.toLowerCase() : v;
+            if (typeof a === "string" && typeof b === "string")
+              return fold(b).includes(fold(a));
+            if (Array.isArray(b)) {
+              const hit = (row) => {
+                if (row !== null && typeof row === "object" && !Array.isArray(row)) {
+                  if (a !== null && typeof a === "object" && !Array.isArray(a))
+                    return Object.entries(a).every(
+                      ([k, v]) => fold(row[k]) === fold(v),
+                    );
+                  const keys = Object.keys(row);
+                  return keys.length === 1 && fold(row[keys[0]]) === fold(a);
+                }
+                return fold(row) === fold(a);
+              };
+              return b.some(hit);
+            }
+            api.fail(
+              `${op} の右辺は文字列またはテーブルである必要があります`,
+              node,
+            );
+          }
           if (op === "=")
             return isUnknown(a) || isUnknown(b)
               ? baseBinary(op, a, b)
@@ -423,9 +615,22 @@ export const definition = {
           if (op === "&")
             return isUnknown(a) || isUnknown(b)
               ? baseBinary(op, a, b, "fx")
-              : String(a ?? "") + String(b ?? "");
+              : fxTextOf(a) + fxTextOf(b);
           if (a === null) a = 0;
           if (b === null) b = 0;
+          // RG-02: in Power Fx, division (or remainder) by zero is an
+          // error value, never Infinity / NaN. Stop explicitly so the
+          // trace, Notify output and final state cannot disagree, and a
+          // string such as "Infinity" is never stored by Set.
+          if (
+            (op === "/" || op === "%") &&
+            typeof a === "number" &&
+            b === 0
+          )
+            api.fail(
+              "0 で割ることはできません（Power Fx ではエラー値になります）",
+              node,
+            );
           return baseBinary(op, a, b, "fx");
         },
         call(name, args, s, api, node) {
@@ -446,6 +651,47 @@ export const definition = {
               "ForAllまたは表示数式内の副作用はこのモデルでは未対応です",
               node,
             );
+          // RG-16: argument-count validation. The shared parser drops a
+          // trailing empty argument, so Set(x, ) arrives here with one
+          // argument and Notify() with none; both must stop as formula
+          // errors instead of silently running (Set previously erased an
+          // existing value to Blank, Notify printed "null").
+          const arity = {
+            blank: [0, 0],
+            isblank: [1, 1],
+            not: [1, 1],
+            and: [1, Infinity],
+            or: [1, Infinity],
+            if: [2, Infinity],
+            switch: [3, Infinity],
+            set: [2, 2],
+            updatecontext: [1, 1],
+            table: [0, Infinity],
+            sequence: [1, 3],
+            forall: [2, 2],
+            countrows: [1, 1],
+            sum: [2, 2],
+            filter: [2, 2],
+            lookup: [2, 3],
+            clear: [1, 1],
+            collect: [2, Infinity],
+            clearcollect: [2, Infinity],
+            defaults: [1, 1],
+            patch: [3, 3],
+            navigate: [1, 1],
+            reset: [1, 1],
+            notify: [1, 1],
+            text: [1, 3],
+            value: [1, 1],
+          };
+          if (arity[fn]) {
+            let [min, max] = arity[fn];
+            if (args.length < min || args.length > max)
+              api.fail(
+                `${name} の引数の数が正しくありません（${min === max ? min + " 個" : max === Infinity ? min + " 個以上" : min + "〜" + max + " 個"}が必要です。空の引数は書けません）`,
+                node,
+              );
+          }
           function get(i) {
             return api.read(args[i], s);
           }
@@ -482,6 +728,29 @@ export const definition = {
                 ? unknown("IsBlankの引数による", v.id)
                 : v === null || v === "";
             }
+            // RG-50 (R16-N7): the function forms And / Or / Not are part
+            // of Power Fx, and function names are case-insensitive, so
+            // Not(false), And(...), Or(...) in any casing must work here
+            // (the lower-case operator keywords are handled by the
+            // parser; a capitalised call reaches this switch instead).
+            case "not": {
+              let v = get(0);
+              return isUnknown(v) ? v : !fxTruth(v, node.line);
+            }
+            case "and": {
+              let vals = args.map((_, i) => get(i)),
+                unk = vals.find(isUnknown);
+              return unk !== undefined
+                ? unk
+                : vals.every((v) => fxTruth(v, node.line));
+            }
+            case "or": {
+              let vals = args.map((_, i) => get(i)),
+                unk = vals.find(isUnknown);
+              return unk !== undefined
+                ? unk
+                : vals.some((v) => fxTruth(v, node.line));
+            }
             case "if": {
               for (let i = 0; i + 1 < args.length; i += 2) {
                 let cond = get(i);
@@ -490,7 +759,7 @@ export const definition = {
                     "値の式に含まれる未確定Ifは、Setの直下または動作数式として記述してください",
                     node,
                   );
-                if (cond) return get(i + 1);
+                if (fxTruth(cond, node.line)) return get(i + 1);
               }
               return args.length % 2 ? get(args.length - 1) : null;
             }
@@ -525,8 +794,17 @@ export const definition = {
             }
             case "updatecontext": {
               let fields = get(0);
-              s.model.screens[s.model.screen].context ??= {};
-              Object.assign(s.model.screens[s.model.screen].context, fields);
+              // RG-10 追加表面（R21-N17）: 現在の画面がモデルに無い場合は
+              // 生の TypeError ではなく、画面名を挙げて日本語で停止する
+              // （Navigate 側のガードと同水準に揃える）。
+              const screen = s.model.screens[s.model.screen];
+              if (!screen)
+                api.fail(
+                  `現在の画面『${s.model.screen}』がモデルにありません`,
+                  node,
+                );
+              screen.context ??= {};
+              Object.assign(screen.context, fields);
               Object.assign(s.vars, fields);
               recalc(s, api);
               return null;
@@ -563,7 +841,28 @@ export const definition = {
               if (results.some(isUnknown))
                 api.fail("未確定のFilter / LookUp条件は未対応です", node);
               let selected = table.filter((_, i) => results[i]);
-              return fn === "filter" ? selected : (selected[0] ?? null);
+              if (fn === "filter") return selected;
+              let found = selected[0] ?? null;
+              // RG-18: LookUp's third argument (the reduction formula)
+              // is evaluated in the found record's scope and its value
+              // is returned, instead of being silently ignored and
+              // returning the whole record.
+              if (found === null || !args[2]) return found;
+              let previous = s.vars,
+                old = s.record;
+              s.record = found;
+              s.vars = {
+                ...previous,
+                ...(typeof found === "object" ? found : {}),
+                ThisRecord: found,
+              };
+              try {
+                api.check();
+                return api.read(args[2], s);
+              } finally {
+                s.vars = previous;
+                s.record = old;
+              }
             }
             case "clear":
             case "clearcollect":
@@ -655,7 +954,39 @@ export const definition = {
               return true;
             case "text": {
               let v = get(0);
-              return isUnknown(v) ? v : v === null ? "" : String(v);
+              if (isUnknown(v)) return v;
+              // RG-15: the optional format argument is honoured for
+              // numbers (see fxFormatNumber) instead of being accepted
+              // and silently discarded. Formats outside the supported
+              // numeric subset stop inside fxFormatNumber, naming the
+              // format argument.
+              if (args.length >= 2) {
+                let format = get(1);
+                if (typeof format !== "string")
+                  api.fail("Text の書式は文字列で指定してください", node);
+                if (args.length >= 3) {
+                  let tag = get(2);
+                  if (typeof tag !== "string")
+                    api.fail(
+                      "Text の結果言語タグは文字列で指定してください",
+                      node,
+                    );
+                  if (tag.toLowerCase() !== "en-us")
+                    api.fail(
+                      "Text の結果言語タグは未対応です（このモデルは en-US のみ対応）：" +
+                        tag,
+                      node,
+                    );
+                }
+                if (v === null) return "";
+                if (typeof v !== "number")
+                  api.fail(
+                    "Text の書式指定はこのモデルでは数値に対してのみ対応しています",
+                    node,
+                  );
+                return fxFormatNumber(v, format, (m) => api.fail(m, node));
+              }
+              return v === null ? "" : fxTextOf(v);
             }
             case "value": {
               let v = get(0);

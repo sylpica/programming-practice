@@ -24,6 +24,10 @@ export const referenceDetails = {
     "returns": "戻り値なし（宣言または制御文）",
     "source": "https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/statements/iteration-statements"
   },
+  "return": {
+    "returns": "戻り値なし（宣言または制御文）",
+    "source": "https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/keywords/return"
+  },
   "Console.WriteLine": {
     "returns": "void（戻り値なし）",
     "source": "https://learn.microsoft.com/en-us/dotnet/api/system.console.writeline"

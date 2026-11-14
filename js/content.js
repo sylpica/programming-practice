@@ -1,7 +1,7 @@
 export const templates = [
   {
     id: "cells",
-    title: "基礎 · セルに値を入れる",
+    title: "セルに値を入れる",
     code: `Sub はじめてのマクロ()
     Dim price As Long
     price = 100
@@ -15,7 +15,7 @@ End Sub`,
   },
   {
     id: "if",
-    title: "基礎 · 点数で条件分岐",
+    title: "点数で条件分岐",
     code: `Sub 合否判定()
     Dim score As Long
     score = Range("B2").Value

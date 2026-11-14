@@ -433,6 +433,11 @@ main {
 .model-body {
   padding: 9px 14px 12px;
 }
+.model-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 10px;
+}
 .sheet-wrap {
   overflow: auto;
 }

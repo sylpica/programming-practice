@@ -151,6 +151,17 @@ function roundUpHalfEven(head, rest) {
   if (/[1-9]/.test(rest.slice(1))) return true;
   return (head.charCodeAt(head.length - 1) - 48) % 2 === 1;
 }
+// |x| の正確な10進値を、10^(-p) の位（p は負）へ「偶数丸め」した結果の
+// 桁文字列（符号なし・末尾の 0 は位取り分を含む）を返す。round の負の ndigits 用。
+function decRoundPlace(ax, p) {
+  const { digits, scale } = exactDecimal(ax);
+  const total = digits.length + scale + p; // round(|x| × 10^p) の桁数（捨てる位置）
+  let kept;
+  if (total >= digits.length) kept = digits + '0'.repeat(total - digits.length);
+  else if (total <= 0) kept = total === 0 && roundUpHalfEven('0', digits) ? '1' : '0';
+  else { const head = digits.slice(0, total); kept = roundUpHalfEven(head, digits.slice(total)) ? incDigits(head) : head; }
+  return kept === '0' ? '0' : kept + '0'.repeat(-p);
+}
 // x の正確な10進値を、小数 p 桁に「偶数丸め」する（Python の round / 書式 f と同じ規則）。文字列を返す
 function decFixed(x, p) {
   const neg = x < 0 || Object.is(x, -0); const ax = Math.abs(x);
@@ -476,7 +487,7 @@ function splitLines(src) {
     if (!buf) {
       let ind = 0, j = 0;
       while (j < code.length && (code[j] === ' ' || code[j] === '\t')) { ind += code[j] === '\t' ? 4 : 1; j++; }
-      buf = { line: li + 1, indent: ind, parts: [] };
+      buf = { line: li + 1, indent: ind, indentStr: code.slice(0, j), parts: [] };
     }
     let piece = startedInTriple || startedInStr ? code : code.replace(/^\s+/, '');
     if (!triple && !inStr) piece = piece.replace(/\s+$/, '');
@@ -486,12 +497,12 @@ function splitLines(src) {
     if (contLine) pendingGlue = '';
     if (depth <= 0 && !triple && !contLine) {
       const text = joinParts(buf.parts);
-      if (text.trim()) out.push({ line: buf.line, indent: buf.indent, text });
+      if (text.trim()) out.push({ line: buf.line, indent: buf.indent, indentStr: buf.indentStr, text });
       buf = null; depth = 0;
     }
   }
   if (carry && buf) diags.push({ line: buf.line, level: 'error', kind: 'SyntaxError', msg: '三連引用符の文字列が閉じられていません', fix: '""" または \'\'\' で閉じてください' });
-  else if (buf && joinParts(buf.parts).trim()) out.push({ line: buf.line, indent: buf.indent, text: joinParts(buf.parts) });
+  else if (buf && joinParts(buf.parts).trim()) out.push({ line: buf.line, indent: buf.indent, indentStr: buf.indentStr, text: joinParts(buf.parts) });
   if (stack.length) { const b = stack[stack.length - 1]; diags.push({ line: b.line, level: 'error', kind: 'SyntaxError', msg: '括弧「' + b.c + '」が閉じられていません', fix: '対応する閉じ括弧を足してください' }); }
   return { lines: out, diags };
 }
@@ -600,11 +611,14 @@ function lexText(text, lineNo) {
     if (isDigit(c) || (c === '.' && isDigit(text[i + 1] || ''))) {
       let j = i, isF = false;
       while (j < text.length && (isDigit(text[j]) || text[j] === '_')) j++;
+      const intPartEnd = j;
       if (text[j] === '.') { isF = true; j++; while (j < text.length && isDigit(text[j])) j++; }
       if (text[j] === 'e' || text[j] === 'E') { isF = true; j++; if (text[j] === '+' || text[j] === '-') j++; while (j < text.length && isDigit(text[j])) j++; }
       const raw = text.slice(i, j).replace(/_/g, '');
       let cx = false;
       if (text[j] === 'j' || text[j] === 'J') { cx = true; j++; }
+      // RG-11（Python 分）：先行ゼロのある10進整数リテラルは CPython では SyntaxError（0 だけが並ぶ場合と小数・指数・複素数は対象外）
+      if (!isF && !cx) { const stripped = text.slice(i, intPartEnd).replace(/_/g, ''); if (stripped.length > 1 && stripped[0] === '0' && /[1-9]/.test(stripped)) throw new SimDiag(lineNo, 'SyntaxError', '先行ゼロのある整数リテラル「' + text.slice(i, j) + '」は Python では使えません（leading zeros in decimal integer literals are not permitted）', '8進数として書くなら 0o' + stripped.slice(1) + ' のように 0o を付けてください'); }
       toks.push({ t: 'NUM', v: parseFloat(raw), f: isF || cx, cx, line: lineNo });
       i = j; continue;
     }
@@ -648,12 +662,18 @@ function parseBlock(lines, start, parentIndent) {
   const stmts = [];
   let i = start;
   let myIndent = null;
+  let blockHasTab = false, blockHasSpace = false; // RG-36：同一ブロック内のタブ・空白混在（実 Python は TabError／IndentationError）
   while (i < lines.length) {
     const L = lines[i];
     if (L.indent <= parentIndent) break;
     if (myIndent === null) myIndent = L.indent;
     if (L.indent < myIndent) break;
     if (L.indent > myIndent) throw new SimDiag(L.line, 'IndentationError', 'インデントが想定より深くなっています', '行頭の空白の数を、周りの行と揃えてください');
+    { const istr = L.indentStr || '';
+      const hasT = istr.includes('\t'), hasS = istr.includes(' ');
+      if (hasT && hasS) throw new SimDiag(L.line, 'IndentationError', 'インデントにタブと空白が混ざっています（実 Python では TabError になります）', 'インデントはタブだけか空白だけかに揃えてください');
+      if ((hasT && blockHasSpace) || (hasS && blockHasTab)) throw new SimDiag(L.line, 'IndentationError', '同じブロックのインデントにタブと空白が混ざっています（実 Python では TabError になります）', 'インデントはタブだけか空白だけかに揃えてください');
+      blockHasTab = blockHasTab || hasT; blockHasSpace = blockHasSpace || hasS; }
     const s = parseStatement(lines, i, myIndent);
     stmts.push(...s.stmts);
     i = s.next;
@@ -930,7 +950,7 @@ function parseSimple(tc, line) {
           try {
             const t2 = parseTarget(tc, line);
             if (tc.isOp('=')) { tc.next(); targets.push(t2); continue; }
-          } catch (e) { /* ターゲットではない */ }
+          } catch (e) { if (e instanceof RangeError) throw e; /* ターゲットではない */ }
           tc.i = sv;
           break;
         }
@@ -941,7 +961,7 @@ function parseSimple(tc, line) {
       const rhs = parseExprList(tc, line);
       return { k: 'aug', target: tgt, op: op.slice(0, -1), expr: rhs, line };
     }
-  } catch (e) { /* 式として読み直す */ }
+  } catch (e) { if (e instanceof RangeError) throw e; /* 式として読み直す（深さ超過は解析の失敗ではないので飲み込まない：RG-56） */ }
   tc.i = save;
   const e = parseExpr(tc, line);
   return { k: 'expr', expr: e, line };
@@ -1373,6 +1393,30 @@ class Interp {
   // パス列挙モードで、繰り返しの対象が実行時に決まる for を進める。
   // 「入らない（対象が空）」か「入る（要素は実行時に決まる値として、本体を1回分だけ代表して実行）」のどちらかを仮定する。
   execForcedFor(s,env,ctx){const bid=this.bidOf(s);let broke=false,count=0;for(;;){let taken=this.branchChoice('for:'+bid,{line:s.line,kind:'for',textT:'次の要素がある',textF:'ここで終了する'},occ=>occ<=1);if(!taken)break;this.step(s.line,'実行時の対象による繰り返し '+(++count)+'回目');this.assignTo(s.target,UNK('実行時の繰り返し要素'),env,s.line,false);try{this.execBlock(s.body,env,{...ctx,inLoop:true});}catch(e){if(e instanceof Flow&&e.kind==='break'){broke=true;break;}if(!(e instanceof Flow&&e.kind==='continue'))throw e;}}if(!broke&&s.elseBody)this.execBlock(s.elseBody,env,ctx);}
+  // RG-65（R18-N7）：回数が静的に確定しているが大きすぎて展開できない for。
+  // 対象が未知の場合の代表パス（0回／途中で終了）は到達不可能なので作らない。
+  // 実物の先頭要素で代表回数だけ実行し、残りは打ち切りとして正直に告知する。
+  execKnownCountFor(s, env, ctx, known) {
+    const total = known.count;
+    this.step(s.line, '「' + exprSrc(s.iter) + '」は ' + total + ' 回繰り返すことが決まっていますが、回数が多いため、はじめの数回だけを示します');
+    let broke = false, n = 0;
+    while (n < 2) {
+      this.assignTo(s.target, NUM(known.start + n * known.step, false), env, s.line, false);
+      this.step(s.line, '繰り返し ' + (n + 1) + '回目');
+      n++;
+      try { this.execBlock(s.body, env, { ...ctx, inLoop: true }); }
+      catch (e) {
+        if (e instanceof Flow && e.kind === 'break') { this.step(s.line, 'break で繰り返しを抜けます'); broke = true; break; }
+        if (!(e instanceof Flow && e.kind === 'continue')) throw e;
+      }
+    }
+    if (broke) return;
+    // まだ回数が残っていることが静的に分かっているので、打ち切りとして告知する
+    this.truncated = true;
+    if (this.pathCtx) this.pathCtx.capped = true;
+    this.step(s.line, '全 ' + total + ' 回のうち、ここでは ' + n + ' 回分だけを示しました。後続状態は未確定です');
+    throw new Flow('budget');
+  }
 
   diag(line, level, kind, msg, fix) {
     if (level === 'note' && kind === '対応外') throw new SimDiag(line, '未対応', msg, fix);
@@ -1440,7 +1484,7 @@ class Interp {
     }
     if (curOut !== '') { outArr.push(curOut); outLineMap.push(curOutLine); }
     this.output = outArr; this.outputLines = outLineMap;
-    return { diags: this.diags, steps: this.steps, output: this.output, outputLines: this.outputLines, vars, dynCalls: this.dynCalls,captures:Object.fromEntries((this.pathCtx?.capture||[]).map(k=>[k,toModel(this.globals.get(k))])) };
+    return { diags: this.diags, steps: this.steps, output: this.output, outputLines: this.outputLines, vars, dynCalls: this.dynCalls, truncated: this.truncated, captures:Object.fromEntries((this.pathCtx?.capture||[]).map(k=>[k,toModel(this.globals.get(k))])) };
   }
   execBlock(stmts, env, ctx) { for (const s of stmts) this.execStmt(s, env, ctx); }
 
@@ -1681,7 +1725,7 @@ class Interp {
           return;
         }
         const seq = this.iterable(it, s.line);
-        if (seq === null) { if (this.pathCtx && this.bidOf(s) >= 0) { this.execForcedFor(s, env, ctx); return; } this.step(s.line, '繰り返しの対象が実行時に決まるため、回数は分かりません（中で代入される変数は「実行時に決まる値」とします）'); this.unknownBlock([[{ k: 'for', target: s.target, body: [] }], s.body, s.elseBody], env, '実行時の繰り返し', s.line); this.maybeReturnUnknown([s.body], ctx); return; }
+        if (seq === null) { if (it && it.__knownRange) { this.execKnownCountFor(s, env, ctx, it.__knownRange); return; } if (this.pathCtx && this.bidOf(s) >= 0) { this.execForcedFor(s, env, ctx); return; } this.step(s.line, '繰り返しの対象が実行時に決まるため、回数は分かりません（中で代入される変数は「実行時に決まる値」とします）'); this.unknownBlock([[{ k: 'for', target: s.target, body: [] }], s.body, s.elseBody], env, '実行時の繰り返し', s.line); this.maybeReturnUnknown([s.body], ctx); return; }
         this.step(s.line, '「' + exprSrc(s.iter) + '」の要素を1つずつ「' + targetName(s.target) + '」に入れて、' + seq.length + '回繰り返します');
         let broke = false;
         const live = isList(it) ? it.__list : null;
@@ -2240,8 +2284,10 @@ Interp.prototype.compare = function (op, l, r, line) {
     if (res === null) return UNK();
     return BOOL(op === 'in' ? res : !res);
   }
-  if (op === '==') { const e = eqVal(l, r); return e === null ? UNK() : BOOL(e); }
-  if (op === '!=') { const e = eqVal(l, r); return e === null ? UNK() : BOOL(!e); }
+  // RG-46：NaN は自分自身とも等しくない（CPython の float 比較は同一オブジェクトでも値比較）。
+  // eqVal の同一性ショートカットはコンテナ要素・in の同一性規則（[n] == [n] や n in [n] は True）用に残し、ここでのみ先行させる。
+  if (op === '==') { if ((isNum(l) && Number.isNaN(l.v)) || (isNum(r) && Number.isNaN(r.v))) return BOOL(false); const e = eqVal(l, r); return e === null ? UNK() : BOOL(e); }
+  if (op === '!=') { if ((isNum(l) && Number.isNaN(l.v)) || (isNum(r) && Number.isNaN(r.v))) return BOOL(true); const e = eqVal(l, r); return e === null ? UNK() : BOOL(!e); }
   if (op === 'is' || op === 'is not') {
     let res = null;
     if (isNone(l) || isNone(r)) res = isNone(l) && isNone(r);
@@ -2260,6 +2306,7 @@ Interp.prototype.compare = function (op, l, r, line) {
   if (isUnk(l) || isUnk(r)) return UNK();
   const ln = isBool(l) ? NUM(l.v ? 1 : 0, false) : l, rn = isBool(r) ? NUM(r.v ? 1 : 0, false) : r;
   let c = null;
+  if (isNum(ln) && isNum(rn) && (Number.isNaN(ln.v) || Number.isNaN(rn.v))) return BOOL(false); // RG-46：NaN との順序比較は全て False
   if (isNum(ln) && isNum(rn)) c = ln.v < rn.v ? -1 : ln.v > rn.v ? 1 : 0;
   else if (typeof l === 'string' && typeof r === 'string') { const a = Array.from(l), b = Array.from(r); c = 0; for (let i = 0; i < Math.min(a.length, b.length) && !c; i++) { const x = a[i].codePointAt(0), y = b[i].codePointAt(0); c = x < y ? -1 : x > y ? 1 : 0; } if (!c) c = a.length < b.length ? -1 : a.length > b.length ? 1 : 0; }
   else if ((isList(l) && isList(r)) || (isTuple(l) && isTuple(r))) {
@@ -2479,12 +2526,25 @@ Interp.prototype.callBuiltin = function (name, args, kwargs, env, line, node) {
   try { return this.callBuiltin0(name, args, kwargs, env, line, node); } finally { this.orderFree = prev; }
 };
 Interp.prototype.callBuiltin0 = function (name, args, kwargs, env, line, node) {
+  const kw = {};
+  for (const k of Object.keys(kwargs || {})) kw[k] = this.eval(kwargs[k], env);
+  // RG-15：宣言範囲外のキーワード引数を無言で無視しない。対応する名前だけを許可し、それ以外は名前を挙げて TypeError で止める
+  const KW_ALLOWED = { print: ['sep', 'end', 'file', 'flush'], int: ['base'], float: [], bool: [], str: ['object', 'encoding', 'errors'], list: [], tuple: [], set: [], repr: [], iter: [], next: [], format: [], hex: [], bin: [], oct: [], map: [], filter: [], input: [], range: [], len: [], sum: ['start'], min: ['key', 'default'], max: ['key', 'default'], abs: [], round: ['number', 'ndigits'], sorted: ['key', 'reverse'], reversed: [], enumerate: ['start'], zip: ['strict'], type: [], isinstance: [], ord: [], chr: [], divmod: [], pow: ['base', 'exp', 'mod'], any: [], all: [] };
+  if (Object.prototype.hasOwnProperty.call(KW_ALLOWED, name)) {
+    for (const k of Object.keys(kw)) if (!KW_ALLOWED[name].includes(k)) this.err(line, 'TypeError', name + '() にキーワード引数「' + k + '」はありません', 'キーワード引数「' + k + '」は ' + name + '() では使えません。引数名を確認してください');
+  }
+  if (name === 'print' && kw.file !== undefined && !isNone(kw.file)) this.diag(line, 'note', '対応外', 'print() の file 引数（出力先の指定）はこの説明では対応していません', '出力先を指定しない形で試してください');
+  if (name === 'str' && (kw.encoding !== undefined || kw.errors !== undefined)) this.diag(line, 'note', '対応外', 'str() のキーワード引数「' + (kw.encoding !== undefined ? 'encoding' : 'errors') + '」（バイト列の変換）はこの説明では対応していません', '');
+  // キーワードで渡せる位置引数（CPython で実測確認済み：int の base、round の number、pow の base/exp/mod、str の object）を位置引数へ寄せる
+  const fillKw = (slots) => { const out = []; for (let i = 0; i < slots.length; i++) { if (i < args.length && kw[slots[i]] !== undefined) this.err(line, 'TypeError', name + '() の引数「' + slots[i] + '」に値が2つ渡されています', ''); const v = i < args.length ? args[i] : kw[slots[i]]; if (v === undefined) break; out.push(v); } args = out; };
+  if (name === 'int' && kw.base !== undefined && args.length <= 1) args = [args[0], kw.base];
+  if (name === 'round') fillKw(['number', 'ndigits']);
+  if (name === 'pow') fillKw(['base', 'exp', 'mod']);
+  if (name === 'str' && kw.object !== undefined) { if (args.length) this.err(line, 'TypeError', 'str() の引数「object」に値が2つ渡されています', ''); args = [kw.object]; }
   const ar = ARITY[name];
   if (ar && (args.length < ar[0] || args.length > ar[1])) {
     this.err(line, 'TypeError', name + '() の引数の数が合いません（' + (ar[0] === ar[1] ? ar[0] + ' 個' : ar[0] + '〜' + ar[1] + ' 個') + '必要ですが、' + args.length + ' 個渡しています）', 'リファレンスで ' + name + ' の使い方を確認してください');
   }
-  const kw = {};
-  for (const k of Object.keys(kwargs || {})) kw[k] = this.eval(kwargs[k], env);
   switch (name) {
     case 'print': {
       let sep = ' ', end = '\n';
@@ -2541,7 +2601,7 @@ Interp.prototype.callBuiltin0 = function (name, args, kwargs, env, line, node) {
       if (ns.length === 1) stop = ns[0]; else if (ns.length === 2) { start = ns[0]; stop = ns[1]; } else { start = ns[0]; stop = ns[1]; step = ns[2]; }
       if (step === 0) this.err(line, 'ValueError', 'range() の3つ目（間隔）を 0 にはできません', '');
       const count = step > 0 ? Math.max(0, Math.ceil((stop - start) / step)) : Math.max(0, Math.ceil((start - stop) / -step));
-      if (count > MAX_RANGE) return UNK('要素がとても多い range・この説明では展開しません');
+      if (count > MAX_RANGE) { const u = UNK('要素がとても多い range・この説明では展開しません'); u.__knownRange = { start, step, count }; return u; }
       const arr = [];
       for (let k = 0; k < count; k++) arr.push(NUM(start + k * step, false));
       const r = RANGE(arr); r.rng = [start, stop, step]; return r;
@@ -2631,9 +2691,18 @@ Interp.prototype.callBuiltin0 = function (name, args, kwargs, env, line, node) {
         if (isUnk(nd)) return UNK();
         if (!isNum(nd) || nd.f) this.err(line, 'TypeError', 'round() の2つ目（桁数）には整数を使ってください', '');
         const p = nd.v;
-        if (!v.f) { if (p >= 0) return v; return UNK('round の結果'); }
+        // RG-82（R21-N13）: 負の ndigits も CPython で定義された決定的な丸め
+        // （10 の冪の位への偶数丸め）。未知化せず正確な10進値で計算する。
+        if (!v.f) {
+          if (p >= 0) return v;
+          const body = decRoundPlace(Math.abs(v.v), p);
+          if (body === '0') return NUM(0, false);
+          const n = Number(body);
+          return Number.isSafeInteger(n) ? NUM(v.v < 0 ? -n : n, false) : BIG();
+        }
         if (!Number.isFinite(v.v)) return v;
-        if (p < 0 || p > 30) return UNK('round の結果');
+        if (p > 30) return UNK('round の結果');
+        if (p < 0) return NUM(parseFloat((v.v < 0 || Object.is(v.v, -0) ? '-' : '') + decRoundPlace(Math.abs(v.v), p)), true);
         return NUM(parseFloat(decFixed(v.v, p)), true); // 2進数の正確な値を偶数丸め（round(2.675, 2) は 2.67）
       }
       if (!v.f) return v;
@@ -2742,10 +2811,25 @@ Interp.prototype.callMethod = function (obj, name, args, kwargs, env, line) {
     if (method === undefined) this.err(line, 'AttributeError', '属性がありません：' + name, '');
     return this.callFn(method, args, env, line);
   }
-  if (isUnk(obj) && obj.mod === 'math') return this.mathCall(name, args, line);
+  if (isUnk(obj) && obj.mod === 'math') { const mk = Object.keys(kwargs || {}); if (mk.length) this.err(line, 'TypeError', 'math.' + name + '() にキーワード引数「' + mk[0] + '」はありません', 'キーワード引数「' + mk[0] + '」は math.' + name + '() では使えません'); return this.mathCall(name, args, line); }
   if (isUnk(obj)) return UNK();
   if (isNone(obj)) this.err(line, 'AttributeError', 'None にはメソッド「' + name + '」がありません（値が None になっていないか確認してください）', 'return を書き忘れた関数の戻り値などで None になっていないか確認してください');
   const arityErr = (need) => this.err(line, 'TypeError', 'メソッド「' + name + '」の引数の数が合いません（' + need + '）', 'リファレンスで使い方を確認してください');
+  // RG-15：組み込み型メソッドのキーワード引数を無言で無視しない（dict.get 等は位置専用で実 Python は TypeError）
+  { const kwKeys = Object.keys(kwargs || {});
+    if (kwKeys.length) {
+      const STR_KNOWN = ['upper', 'lower', 'title', 'capitalize', 'strip', 'lstrip', 'rstrip', 'split', 'rsplit', 'join', 'replace', 'find', 'index', 'rfind', 'rindex', 'count', 'startswith', 'endswith', 'isdigit', 'isdecimal', 'isnumeric', 'isalpha', 'isalnum', 'isspace', 'isascii', 'isidentifier', 'islower', 'isupper'];
+      const LIST_KNOWN = ['append', 'extend', 'insert', 'pop', 'remove', 'index', 'count', 'sort', 'reverse', 'copy', 'clear'];
+      const DICT_KNOWN = ['get', 'keys', 'values', 'items', 'update', 'pop', 'setdefault', 'popitem', 'copy', 'clear'];
+      const SET_KNOWN = ['add', 'remove', 'discard', 'update', 'clear', 'pop', 'intersection_update', 'difference_update', 'symmetric_difference_update', 'union', 'intersection', 'difference', 'symmetric_difference', 'copy'];
+      let allowed = null;
+      if (typeof obj === 'string' && STR_KNOWN.includes(name)) allowed = (name === 'split' || name === 'rsplit') ? ['sep', 'maxsplit'] : [];
+      else if (isList(obj) && LIST_KNOWN.includes(name)) allowed = name === 'sort' ? ['key', 'reverse'] : [];
+      else if (isDict(obj) && DICT_KNOWN.includes(name)) allowed = name === 'update' ? null : []; // update のキーワードはキーとして取り込む正規の使い方
+      else if (isSet(obj) && SET_KNOWN.includes(name)) allowed = [];
+      else if ((isTuple(obj) || (obj && obj.__range)) && (name === 'count' || name === 'index')) allowed = [];
+      if (allowed) for (const k of kwKeys) if (!allowed.includes(k)) this.err(line, 'TypeError', typeName(obj) + ' のメソッド「' + name + '」にキーワード引数「' + k + '」はありません', 'キーワード引数「' + k + '」は ' + name + '() では使えません。値は位置で渡してください');
+    } }
   if (typeof obj === 'string') {
     const S = (f, min, max) => { if (args.length < min || args.length > max) arityErr(min === max ? min + ' 個必要' : min + '〜' + max + ' 個'); return f(); };
     switch (name) {
@@ -2821,12 +2905,12 @@ Interp.prototype.callMethod = function (obj, name, args, kwargs, env, line) {
   if (isList(obj)) {
     switch (name) {
       case 'append': if (args.length !== 1) arityErr('1 個必要'); obj.__list.push(args[0]); this.step(line, 'リストの末尾に ' + reprVal(args[0]) + ' を追加します（要素は ' + obj.__list.length + ' 個になりました）'); return NONE;
-      case 'extend': { const seq = this.iterable(args[0], line, true); if (seq === null) { poison(obj, '書き換えられたかもしれないリスト'); return NONE; } if (obj.__list.length + seq.length > 200000) { poison(obj, 'とても長いリスト'); return NONE; } for (const x of seq) obj.__list.push(x); this.step(line, 'リストに ' + seq.length + ' 個の要素を追加します（要素は ' + obj.__list.length + ' 個になりました）'); return NONE; }
+      case 'extend': { if (args.length !== 1) arityErr('1 個必要'); const seq = this.iterable(args[0], line, true); if (seq === null) { poison(obj, '書き換えられたかもしれないリスト'); return NONE; } if (obj.__list.length + seq.length > 200000) { poison(obj, 'とても長いリスト'); return NONE; } for (const x of seq) obj.__list.push(x); this.step(line, 'リストに ' + seq.length + ' 個の要素を追加します（要素は ' + obj.__list.length + ' 個になりました）'); return NONE; }
       case 'insert': { if (args.length !== 2) arityErr('番号と値の2個必要'); if (isUnk(args[0])) { poison(obj, '書き換えられたかもしれないリスト'); return NONE; } if (!isNum(args[0]) && !isBool(args[0])) arityErr('番号と値の2個必要'); let i = Math.trunc(args[0].v); if (i < 0) i = Math.max(0, obj.__list.length + i); if (i > obj.__list.length) i = obj.__list.length; obj.__list.splice(i, 0, args[1]); this.step(line, 'リストの ' + i + ' 番目に ' + reprVal(args[1]) + ' を入れます'); return NONE; }
       case 'pop': { if (args.length > 1) arityErr('0〜1 個'); if (args.length && isUnk(args[0])) { if (!obj.__list.length) this.err(line, 'IndexError', '空のリストから pop() はできません', ''); obj.__list.pop(); for (let k = 0; k < obj.__list.length; k++) obj.__list[k] = UNK('取り出し後の要素'); return UNK('取り出した要素'); } const pi = args.length ? this.intIndex(args[0], line, 'pop() の番号') : null; if (!obj.__list.length) this.err(line, 'IndexError', '空のリストから pop() はできません', ''); let i = pi !== null ? pi : obj.__list.length - 1; if (i < 0) i += obj.__list.length; if (i < 0 || i >= obj.__list.length) this.err(line, 'IndexError', 'pop() の番号が範囲外です', ''); const v = obj.__list.splice(i, 1)[0]; this.step(line, 'リストから ' + reprVal(v) + ' を取り出して消します'); return v; }
-      case 'remove': { if (isUnk(args[0])) { poison(obj, '書き換えられたかもしれないリスト'); return NONE; } const at = obj.__list.findIndex(x => eqVal(x, args[0]) === true); if (at < 0) this.err(line, 'ValueError', reprVal(args[0]) + ' はリストにありません', ''); obj.__list.splice(at, 1); this.step(line, 'リストから ' + reprVal(args[0]) + ' を消します'); return NONE; }
+      case 'remove': { if (args.length !== 1) arityErr('1 個必要'); if (isUnk(args[0])) { poison(obj, '書き換えられたかもしれないリスト'); return NONE; } const at = obj.__list.findIndex(x => eqVal(x, args[0]) === true); if (at < 0) this.err(line, 'ValueError', reprVal(args[0]) + ' はリストにありません', ''); obj.__list.splice(at, 1); this.step(line, 'リストから ' + reprVal(args[0]) + ' を消します'); return NONE; }
       case 'index': { if (!args.length || args.length > 3) arityErr('1〜3 個'); if (args.some(isUnk) || obj.__list.some(isUnk)) return UNK(); const L = obj.__list.length; const bd = (v, d) => { if (v === undefined) return d; let k = this.intIndex(v, line, '開始・終了位置'); if (k < 0) { k += L; if (k < 0) k = 0; } return Math.min(k, L); }; const st = bd(args[1], 0), en = bd(args[2], L); let at = -1; for (let k = st; k < en; k++) if (eqVal(obj.__list[k], args[0]) === true) { at = k; break; } if (at < 0) this.err(line, 'ValueError', reprVal(args[0]) + ' はリストにありません', ''); return NUM(at, false); }
-      case 'count': if (isUnk(args[0])) return UNK(); return NUM(obj.__list.filter(x => eqVal(x, args[0]) === true).length, false);
+      case 'count': if (args.length !== 1) arityErr('1 個必要'); if (isUnk(args[0])) return UNK(); return NUM(obj.__list.filter(x => eqVal(x, args[0]) === true).length, false);
       case 'sort': {
         const rev = kwargs && kwargs.reverse !== undefined ? truthy(this.eval(kwargs.reverse, env)) === true : false;
         const keyFn = kwargs && kwargs.key ? this.eval(kwargs.key, env) : null;
@@ -2837,17 +2921,17 @@ Interp.prototype.callMethod = function (obj, name, args, kwargs, env, line) {
         obj.__list.length = 0; idx.forEach(i => obj.__list.push(vals[i]));
         this.step(line, 'リストを並べ替えます → ' + reprVal(obj)); return NONE;
       }
-      case 'reverse': obj.__list.reverse(); this.step(line, 'リストの並びを逆にします → ' + reprVal(obj)); return NONE;
-      case 'copy': return LIST(obj.__list.slice());
-      case 'clear': obj.__list.length = 0; this.step(line, 'リストを空にします'); return NONE;
+      case 'reverse': if (args.length) arityErr('0 個'); obj.__list.reverse(); this.step(line, 'リストの並びを逆にします → ' + reprVal(obj)); return NONE;
+      case 'copy': if (args.length) arityErr('0 個'); return LIST(obj.__list.slice());
+      case 'clear': if (args.length) arityErr('0 個'); obj.__list.length = 0; this.step(line, 'リストを空にします'); return NONE;
     }
   }
   if (isDict(obj)) {
     switch (name) {
-      case 'get': { if (isUnk(args[0])) return UNK(); this.needHash(args[0], line); const v = dictGet(obj, args[0]); if (v !== undefined) return v; if ([...obj.__dict.values()].some(e => eqVal(e.k, args[0]) === true)) return obj.__dict.get(dictKeyId(args[0])).v; return args.length > 1 ? args[1] : NONE; }
-      case 'keys': return VIEW(obj, 'keys');
-      case 'values': return VIEW(obj, 'values');
-      case 'items': return VIEW(obj, 'items');
+      case 'get': { if (args.length < 1 || args.length > 2) arityErr('1〜2 個'); if (isUnk(args[0])) return UNK(); this.needHash(args[0], line); const v = dictGet(obj, args[0]); if (v !== undefined) return v; if ([...obj.__dict.values()].some(e => eqVal(e.k, args[0]) === true)) return obj.__dict.get(dictKeyId(args[0])).v; return args.length > 1 ? args[1] : NONE; }
+      case 'keys': if (args.length) arityErr('0 個'); return VIEW(obj, 'keys');
+      case 'values': if (args.length) arityErr('0 個'); return VIEW(obj, 'values');
+      case 'items': if (args.length) arityErr('0 個'); return VIEW(obj, 'items');
       case 'update': {
         if (args.length > 1) arityErr('0〜1 個');
         if (args.length) {
@@ -2858,11 +2942,11 @@ Interp.prototype.callMethod = function (obj, name, args, kwargs, env, line) {
         for (const k of Object.keys(kwargs || {})) dictSet(obj, k, this.eval(kwargs[k], env));
         this.step(line, '辞書をまとめて更新します → ' + reprVal(obj)); return NONE;
       }
-      case 'pop': { if (isUnk(args[0])) { poison(obj, '書き換えられたかもしれない辞書'); return UNK('取り出した値'); } const id = dictKeyId(args[0]); if (id === null || !obj.__dict.has(id)) { if (args.length > 1) return args[1]; this.err(line, 'KeyError', 'キー ' + reprVal(args[0]) + ' は辞書にありません', ''); } const v = obj.__dict.get(id).v; obj.__dict.delete(id); this.step(line, '辞書からキー ' + reprVal(args[0]) + ' を消します'); return v; }
-      case 'setdefault': { if (isUnk(args[0])) { poison(obj, '書き換えられたかもしれない辞書'); return UNK('辞書の値'); } this.needHash(args[0], line); const cur = dictGet(obj, args[0]); if (cur !== undefined) return cur; dictSet(obj, args[0], args.length > 1 ? args[1] : NONE); return args.length > 1 ? args[1] : NONE; }
-      case 'popitem': { if (!obj.__dict.size) this.err(line, 'KeyError', 'popitem(): 辞書が空です', ''); const entries = [...obj.__dict.entries()]; const last = entries[entries.length - 1]; obj.__dict.delete(last[0]); this.step(line, '辞書から最後の組を取り出します'); return TUPLE([last[1].k, last[1].v]); }
-      case 'copy': { const d = DICT(); for (const [id, e] of obj.__dict) d.__dict.set(id, e); return d; }
-      case 'clear': obj.__dict.clear(); this.step(line, '辞書を空にします'); return NONE;
+      case 'pop': { if (args.length < 1 || args.length > 2) arityErr('1〜2 個'); if (isUnk(args[0])) { poison(obj, '書き換えられたかもしれない辞書'); return UNK('取り出した値'); } const id = dictKeyId(args[0]); if (id === null || !obj.__dict.has(id)) { if (args.length > 1) return args[1]; this.err(line, 'KeyError', 'キー ' + reprVal(args[0]) + ' は辞書にありません', ''); } const v = obj.__dict.get(id).v; obj.__dict.delete(id); this.step(line, '辞書からキー ' + reprVal(args[0]) + ' を消します'); return v; }
+      case 'setdefault': { if (args.length < 1 || args.length > 2) arityErr('1〜2 個'); if (isUnk(args[0])) { poison(obj, '書き換えられたかもしれない辞書'); return UNK('辞書の値'); } this.needHash(args[0], line); const cur = dictGet(obj, args[0]); if (cur !== undefined) return cur; dictSet(obj, args[0], args.length > 1 ? args[1] : NONE); return args.length > 1 ? args[1] : NONE; }
+      case 'popitem': { if (args.length) arityErr('0 個'); if (!obj.__dict.size) this.err(line, 'KeyError', 'popitem(): 辞書が空です', ''); const entries = [...obj.__dict.entries()]; const last = entries[entries.length - 1]; obj.__dict.delete(last[0]); this.step(line, '辞書から最後の組を取り出します'); return TUPLE([last[1].k, last[1].v]); }
+      case 'copy': { if (args.length) arityErr('0 個'); const d = DICT(); for (const [id, e] of obj.__dict) d.__dict.set(id, e); return d; }
+      case 'clear': if (args.length) arityErr('0 個'); obj.__dict.clear(); this.step(line, '辞書を空にします'); return NONE;
     }
   }
   if (isSet(obj)) {
@@ -3109,6 +3193,8 @@ function simulatePythonPaths(code, options={}) {
     const result = { captures:r.captures, diags: allDiags.concat(r.diags), steps: r.steps, output: r.output, outputLines: r.outputLines || [], vars: r.vars, dynCalls: r.dynCalls || [], lineEnds, usedCalls: used.usedCalls, defLines: used.defLines };
     if (ctx.log.length) hasBranches = true;
     if (ctx.capped) truncated = true;
+    // RG-65（R18-N8）：解釈側で打ち切られた（予算超過など）ことも列挙結果の打ち切りに反映する。
+    if (r.truncated) truncated = true;
     const sig = visibleSig(result);
     if (!ctx.infeasible && !seen.has(sig)) {
       seen.add(sig);
