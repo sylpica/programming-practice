@@ -146,6 +146,10 @@ function save() {
     model,
     modelText,
   };
+  if (!templateId || !previous.freeDraft || typeof previous.freeDraft.code !== "string") {
+    const { freeDraft: ignored, ...snapshot } = drafts[active.id];
+    drafts[active.id].freeDraft = snapshot;
+  }
   try {
     if (storageBlocked) throw Error("保存データを保護しています");
     localStorage.setItem(
@@ -169,6 +173,12 @@ function syncScroll() {
   $("lineNumbers").scrollTop = $("editor").scrollTop;
 }
 function changed() {
+  const selected = templates.find(t => t.id === templateId);
+  if (selected && $("editor").value !== selected.code) {
+    templateId = "";
+    $("template").value = "";
+    renderExplanation(null);
+  }
   editorPlugin?.refresh?.();
   result = null;
   paths = [];
@@ -200,22 +210,20 @@ function showView(name) {
 document
   .querySelectorAll("[data-view]")
   .forEach((b) => b.addEventListener("click", () => showView(b.dataset.view)));
-function loadTemplate(id, confirm = true) {
+function loadTemplate(id) {
   let t = templates.find((t) => t.id === id);
-  if (
-    t &&
-    confirm &&
-    $("editor").value !== t.code &&
-    !window.confirm(`「${t.title}」でコードを上書きしますか？`)
-  ) {
-    $("template").value = templateId;
-    return;
-  }
+  save();
+  const freeDraft = drafts[active.id]?.freeDraft;
   templateId = id;
   $("template").value = id;
   if (t) {
     $("editor").value = t.code;
     if (t.model) fillSheet(t.model);
+  } else if (freeDraft && typeof freeDraft.code === "string") {
+    $("editor").value = freeDraft.code;
+    fillSheet(freeDraft.model || active.model.defaults);
+    if (active.model.kind !== "sheet" && typeof freeDraft.modelText === "string")
+      $("modelJson").value = freeDraft.modelText;
   }
   renderExplanation(t);
   changed();
@@ -303,9 +311,17 @@ function refArticle(r, expanded = false) {
     el("h3", r.name),
     el("pre", r.syntax),
     el("p", r.description),
+    ...(r.returns ? [el("p", "戻り値：" + r.returns)] : []),
     el("pre", r.example),
     el("p", r.caution, "caution"),
   );
+  if (r.source) {
+    const source = el("a", "公式資料");
+    source.href = r.source;
+    source.target = "_blank";
+    source.rel = "noopener noreferrer";
+    article.append(source);
+  }
   return article;
 }
 function showRef(name) {
@@ -389,6 +405,10 @@ function jumpLine(line, nodeId) {
   syncScroll();
   editor.scrollIntoView({ behavior: "smooth", block: "center" });
 }
+function errorDescription(error) {
+  const { category, message } = error;
+  return category && category !== "エラー" && !message.startsWith(category + "：") ? category + "：" + message : message;
+}
 function applyResult(r) {
   result = r;
   paths = [...r.paths];
@@ -401,7 +421,7 @@ function applyResult(r) {
   }
   $("run").disabled = false;
   if (r.error) {
-    $("resultStatus").textContent = `${r.error.line}行：${r.error.message}`;
+    $("resultStatus").textContent = `${r.error.line}行：${errorDescription(r.error)}`;
     $("trace").replaceChildren();
     let li = el("li", undefined, "error"),
       b = el("button", `${r.error.line}行へ移動`);
@@ -503,7 +523,7 @@ function renderPath() {
   for (let t of p.trace) {
     let li = el("li", undefined, t.kind),
       b = el("button");
-    b.append(el("span", `L${t.line}`, "line"), el("span", t.text));
+    b.append(el("span", `L${t.line}`, "line"), el("span", t.category ? errorDescription({ category: t.category, message: t.text }) : t.text));
     b.onclick = () => jumpLine(t.line, t.nodeId);
     li.append(b);
     $("trace").append(li);
@@ -526,7 +546,7 @@ function renderPath() {
   $("final").replaceChildren();
   if (p.error)
     $("final").append(
-      el("p", `${p.error.line}行で停止：${p.error.message}`, "notice"),
+      el("p", `${p.error.line}行で停止：${errorDescription(p.error)}`, "notice"),
     );
   if (p.trace.some((t) => t.kind === "limit"))
     $("final").append(
@@ -720,6 +740,8 @@ function switchType(id, savePrevious = true) {
   templateId = saved?.templateId ?? first?.id ?? "";
   $("template").value = templateId;
   $("editor").value = saved?.code ?? first?.code ?? "";
+  if (templateId && templates.find(t => t.id === templateId)?.code !== $("editor").value)
+    templateId = $("template").value = "";
   $("auto").checked = !!saved?.auto;
   $("sort").value = saved?.sort || "original";
   fillSheet(saved?.model || first?.model || active.model.defaults);

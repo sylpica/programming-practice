@@ -542,8 +542,8 @@ export const definition = {
                   : vec(x).length;
             case "is.na":
               return vec(x).map((v) => isNA(v) || Number.isNaN(v));
-            case "as.numeric":
-              return vec(x).map((v) =>
+            case "as.numeric": {
+              const result = vec(x).map((v) =>
                 isNA(v)
                   ? NA
                   : typeof v === "string" && v.trim() === ""
@@ -552,6 +552,9 @@ export const definition = {
                       ? NA
                       : Number(v),
               );
+              if (result.some((v, i) => isNA(v) && !isNA(vec(x)[i]) && !Number.isNaN(vec(x)[i]))) api.note(s, node, "変換によりNAが生成されました（NAs introduced by coercion）", "warning");
+              return result;
+            }
             case "as.character":
               return vec(x).map((v) =>
                 isNA(v)
@@ -590,6 +593,10 @@ export const definition = {
               let a = name === "sum" ? pos.flatMap(vec) : vec(x);
               if (named["na.rm"] === true)
                 a = a.filter((v) => !isNA(v) && !Number.isNaN(v));
+              if (name === "mean" && a.some(v => typeof v === "string")) {
+                api.note(s, node, "引数は数値でも論理値でもありません。NAを返します（argument is not numeric or logical: returning NA）", "warning");
+                return NA;
+              }
               if (a.some(isNA)) return NA;
               if (
                 a.some((v) => typeof v !== "number" && typeof v !== "boolean")
@@ -598,7 +605,17 @@ export const definition = {
               let nums = a.map(Number),
                 sum = nums.reduce((a, b) => a + b, 0);
               if (name === "sum") return sum;
-              if (name === "mean") return nums.length ? sum / nums.length : NaN;
+              if (name === "mean") {
+                const trim = named.trim ?? 0;
+                if (typeof trim !== "number" || !Number.isFinite(trim)) api.fail("trimは有限の数値で指定してください", node);
+                if (trim > 0 && nums.length) {
+                  const sorted = [...nums].sort((a,b) => a-b);
+                  if (trim >= 0.5) { const m = Math.floor(sorted.length / 2); return sorted.length % 2 ? sorted[m] : (sorted[m-1]+sorted[m])/2; }
+                  const cut = Math.floor(nums.length * trim), remaining = sorted.slice(cut, nums.length-cut);
+                  return remaining.reduce((a,b) => a+b,0)/remaining.length;
+                }
+                return nums.length ? sum / nums.length : NaN;
+              }
               if (name === "median") {
                 if (!nums.length) return NA;
                 nums.sort((a, b) => a - b);
@@ -694,3 +711,6 @@ export const definition = {
 };
 
 definition.templates.push(...additionalTemplates(definition.model.defaults));
+
+import { referenceDetails } from "./reference-details.js";
+for (const r of definition.reference) if (referenceDetails[r.name]) Object.assign(r, referenceDetails[r.name]);

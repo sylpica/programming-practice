@@ -1550,8 +1550,8 @@ class Interp {
       case 'assert': {
         const t = truthy(this.eval(s.e, env));
         if (t === null) { this.step(s.line, 'assert の条件は実行時に決まります'); return; }
-        if (!t) { const mv = s.msg ? this.eval(s.msg, env) : null; const known = mv !== null && !isUnk(mv); this.err(s.line, 'AssertionError', known ? strVal(mv) : 'assert の条件がうそ（False）でした', '', known ? strVal(mv) : undefined, known ? reprVal(mv) : undefined); }
-        this.step(s.line, 'assert の条件を確かめます（本当（True）なので続けます）');
+        if (!t) { const mv = s.msg ? this.eval(s.msg, env) : null; const known = mv !== null && !isUnk(mv); this.err(s.line, 'AssertionError', known ? strVal(mv) : 'assert の条件が不成立（False）でした', '', known ? strVal(mv) : undefined, known ? reprVal(mv) : undefined); }
+        this.step(s.line, 'assert の条件を確かめます（成立（True）なので続けます）');
         return;
       }
       case 'raise': {
@@ -1585,8 +1585,12 @@ class Interp {
         return;
       }
       case 'assign': {
+        const start = this.steps.length;
         const v = this.eval(s.expr, env);
         this.assignTo(s.target, v, env, s.line, true);
+        const notes = this.steps.slice(start);
+        if (notes.length > 1 && notes.every(n => n.line === s.line && n.depth === notes[0].depth))
+          this.steps.splice(start, notes.length, {...notes[0], text: notes.map(n => n.text).join('。')});
         return;
       }
       case 'assignmulti': {
@@ -1630,17 +1634,17 @@ class Interp {
             }
             // パス列挙モード：このパスでは真／偽のどちらだったかを仮定して進む（値は捏造せず、条件の成否だけを分岐として数える）
             const ai = s.arms.indexOf(arm);
-            const taken = this.branchChoice('if:' + bid + ':' + ai, { value:c, line: arm.line || s.line, kind: 'if', textT: '条件「' + shortSrcOf(arm.cond) + '」が本当', textF: '条件「' + shortSrcOf(arm.cond) + '」がうそ' }, true);
+            const taken = this.branchChoice('if:' + bid + ':' + ai, { value:c, line: arm.line || s.line, kind: 'if', textT: '条件「' + shortSrcOf(arm.cond) + '」が成立', textF: '条件「' + shortSrcOf(arm.cond) + '」が不成立' }, true);
             if (taken) {
-              this.step(arm.line, '条件「' + exprSrc(arm.cond) + '」は実行時に決まる値を含むため断定はできませんが、このパスでは「本当だった」として中身を実行します');
+              this.step(arm.line, '条件「' + exprSrc(arm.cond) + '」は実行時に決まる値を含むため断定はできませんが、このパスでは「条件が成立した」として中身を実行します');
               this.execBlock(arm.body, env, ctx);
               return;
             }
             forcedFalse = true;
-            this.step(arm.line, '条件「' + exprSrc(arm.cond) + '」は実行時に決まる値を含むため断定はできませんが、このパスでは「うそだった」として、この中身は飛ばします');
+            this.step(arm.line, '条件「' + exprSrc(arm.cond) + '」は実行時に決まる値を含むため断定はできませんが、このパスでは「条件が成立しなかった」として、この中身は飛ばします');
             continue;
           }
-          this.step(arm.line, '条件「' + exprSrc(arm.cond) + '」は ' + (t ? '本当（True）' : 'うそ（False）') + (t ? ' なので、この中身を実行します' : ' なので、この中身は飛ばします'));
+          this.step(arm.line, '条件「' + exprSrc(arm.cond) + '」は ' + (t ? '成立（True）' : '不成立（False）') + (t ? ' なので、この中身を実行します' : ' なので、この中身は飛ばします'));
           if (t) { this.execBlock(arm.body, env, ctx); return; }
         }
         if (s.elseBody) { this.step(s.line, forcedFalse ? 'このパスでは、どの条件にも当てはまらなかったとして、else の中身を実行します' : 'どの条件にも当てはまらないため、else の中身を実行します'); this.execBlock(s.elseBody, env, ctx); }
@@ -1726,20 +1730,20 @@ class Interp {
               return;
             }
             // パス列挙モード：このパスでは条件が本当／うそのどちらだったかを仮定して進む
-            const taken = this.branchChoice('while:' + bid, { value:c, line: s.line, kind: 'while', cap: 6, textT: 'while の条件「' + shortSrcOf(s.cond) + '」が本当（繰り返す）', textF: 'while の条件「' + shortSrcOf(s.cond) + '」がうそ（終わる）' }, (occ) => occ <= 1);
+            const taken = this.branchChoice('while:' + bid, { value:c, line: s.line, kind: 'while', cap: 6, textT: 'while の条件「' + shortSrcOf(s.cond) + '」が成立（繰り返す）', textF: 'while の条件「' + shortSrcOf(s.cond) + '」が不成立（終わる）' }, (occ) => occ <= 1);
             if (!taken) {
-              this.step(s.line, 'while の条件「' + exprSrc(s.cond) + '」は実行時に決まります。このパスでは「うそになった」として、繰り返しを終わります' + (count > 0 ? '（合計 ' + count + ' 回繰り返しました）' : '（1回も繰り返しません）'));
+              this.step(s.line, 'while の条件「' + exprSrc(s.cond) + '」は実行時に決まります。このパスでは「条件が成立しなくなった」として、繰り返しを終わります' + (count > 0 ? '（合計 ' + count + ' 回繰り返しました）' : '（1回も繰り返しません）'));
               break;
             }
-            this.step(s.line, 'while の条件「' + exprSrc(s.cond) + '」は実行時に決まります。このパスでは「本当だった」として繰り返します');
+            this.step(s.line, 'while の条件「' + exprSrc(s.cond) + '」は実行時に決まります。このパスでは「条件が成立した」として繰り返します');
             prevSnap = null; stallCount = 0; // 仮定で回した回は、停滞（無限ループの疑い）の判定に数えない
             assumed = true;
           }
-          if (!t && !assumed) { if (count > 0) this.step(s.line, '条件「' + exprSrc(s.cond) + '」がうそ（False）になったので、繰り返しを終わります（合計 ' + count + ' 回）'); break; }
+          if (!t && !assumed) { if (count > 0) this.step(s.line, '条件「' + exprSrc(s.cond) + '」が不成立（False）になったので、繰り返しを終わります（合計 ' + count + ' 回）'); break; }
           if (canStall) {
             // 監視対象の値が5回続けてまったく変わらないときだけ「無限ループの疑い」とする（1回だけ変わらない正しいループは多い）
             const snap = watchList.map(n => { const v = env.get(n); return v === undefined ? '∅' : reprVal(v); }).join('\u0001');
-            if (prevSnap !== null && snap === prevSnap) { if (++stallCount >= 5) this.err(s.line, '無限ループの疑い', 'while の条件「' + exprSrc(s.cond) + '」に関わる値が繰り返しの中で変わらないため、条件がずっと本当（True）のままで終わりません', 'ループの中で条件に関わる変数を変えているか、break があるか確認してください'); }
+            if (prevSnap !== null && snap === prevSnap) { if (++stallCount >= 5) this.err(s.line, '無限ループの疑い', 'while の条件「' + exprSrc(s.cond) + '」に関わる値が繰り返しの中で変わらないため、条件がずっと成立（True）のままで終わりません', 'ループの中で条件に関わる変数を変えているか、break があるか確認してください'); }
             else stallCount = 0;
             prevSnap = snap;
           }
@@ -1748,7 +1752,7 @@ class Interp {
           count++;
           const showSteps = count <= 1;
           if (!showSteps) this.quiet++;
-          if (count === 1 && !assumed) this.step(s.line, '条件「' + exprSrc(s.cond) + '」が本当（True）の間、繰り返します');
+          if (count === 1 && !assumed) this.step(s.line, '条件「' + exprSrc(s.cond) + '」が成立（True）の間、繰り返します');
           try { this.execBlock(s.body, env, { ...ctx, inLoop: true }); }
           catch (e) {
             if (e instanceof Flow && e.kind === 'break') { this.step(s.line, 'break で繰り返しを抜けます'); if (!showSteps) this.quiet--; broke = true; break; }

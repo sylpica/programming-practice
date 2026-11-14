@@ -1,0 +1,1224 @@
+[
+  {
+    "key": "vba-Dim",
+    "url": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/dim-statement.md",
+    "sha256": "ea7fc7a1b8554b5f9da62b98f235bf75e821761d0db26e29c991efb4cf1d0562",
+    "bytes": 6901,
+    "ok": true
+  },
+  {
+    "key": "vba-Long",
+    "url": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/long-data-type.md",
+    "sha256": "85248b3e8c757ab27a5817ddad7505ecedde574a0d741b8e5ab109a3685ce76a",
+    "bytes": 650,
+    "ok": true
+  },
+  {
+    "key": "vba-Integer",
+    "url": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/integer-data-type.md",
+    "sha256": "74a59c50672892fbe6c3d8d6e55aede9cb2c2789f80d83234fd3a29d0a1f9cb5",
+    "bytes": 1156,
+    "ok": true
+  },
+  {
+    "key": "vba-Variant",
+    "url": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/variant-data-type.md",
+    "sha256": "130250874b7c9207725d1827650f6a7b554a2975f0451f3ccd5e34668a05a08c",
+    "bytes": 4495,
+    "ok": true
+  },
+  {
+    "key": "vba-String",
+    "url": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/string-data-type.md",
+    "sha256": "07973ba2a44f260df5795dd9599dac4563adacb9f14552ee76641774b9fd7097",
+    "bytes": 2258,
+    "ok": true
+  },
+  {
+    "key": "vba-Boolean",
+    "url": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/boolean-data-type.md",
+    "sha256": "b01328aa753adac1c8f39bb984d67302aa328fbecb5f609578d226fdd1eaf6c6",
+    "bytes": 1105,
+    "ok": true
+  },
+  {
+    "key": "vba-Double",
+    "url": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/double-data-type.md",
+    "sha256": "c3b515e85c8e104770a31147d60b3f06b33e2f09664303d4f8a30aae3e9d6d46",
+    "bytes": 802,
+    "ok": true
+  },
+  {
+    "key": "vba-Range",
+    "url": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/api/Excel.Range(object).md",
+    "ok": true,
+    "error": "HTTP Error 404: Not Found",
+    "sha256": "476c04633e26758b0116c3b825b3570eaa56a818b75b6b4ae780f1a1f2cd018f",
+    "bytes": 20372
+  },
+  {
+    "key": "vba-Cells",
+    "url": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/api/Excel.Application.Cells.md",
+    "ok": true,
+    "sha256": "9aebae6fae36f920da112e622e4a8b9f3d2deed5a03ec2020d1d59c2d9a4c491",
+    "bytes": 1554
+  },
+  {
+    "key": "vba-Value",
+    "url": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/api/Excel.Range.Value.md",
+    "ok": true,
+    "sha256": "5d0efe35ce7e807ad9adfaa7b022c8fe50212c3702d6b56466d5e64b0ac57500",
+    "bytes": 2957
+  },
+  {
+    "key": "vba-Value2",
+    "url": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/api/Excel.Range.Value2.md",
+    "ok": true,
+    "sha256": "c6af8f9ea31d361f031a7ea170539a1f71501f46f5161ae836dc439f80a93b03",
+    "bytes": 969
+  },
+  {
+    "key": "vba-Row",
+    "url": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/api/Excel.Range.Row.md",
+    "ok": true,
+    "sha256": "1afa1b23a5f046fe49191438c6ee64d67054e2550bf463df85bde4233770eaaa",
+    "bytes": 3995
+  },
+  {
+    "key": "vba-Column",
+    "url": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/api/Excel.Range.Column.md",
+    "ok": true,
+    "sha256": "ebf5bd54ab3891fbee7347bb744f22f9b95d25b6abe492c2438199e250c034e2",
+    "bytes": 2584
+  },
+  {
+    "key": "vba-Count",
+    "url": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/api/Excel.Range.Count.md",
+    "ok": true,
+    "sha256": "42e9b5dac4747387b8e2a7ac3fb7c286040c04aec98c42ce77727fcb5f72177f",
+    "bytes": 1651
+  },
+  {
+    "key": "vba-Set",
+    "url": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/set-statement.md",
+    "sha256": "47087b25bff146d5f44163626be403db26fe2c1d125c5d315e88d85b5e1c9e82",
+    "bytes": 3908,
+    "ok": true
+  },
+  {
+    "key": "vba-Worksheet",
+    "url": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/api/Excel.Worksheet.md",
+    "ok": true,
+    "sha256": "579b2be719c1115a8ed053e654dd618e3236a0f93193537b529b24c59896f39a",
+    "bytes": 9494
+  },
+  {
+    "key": "vba-Worksheets",
+    "url": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/api/Excel.Worksheets.md",
+    "ok": true,
+    "sha256": "427998fe2f1b4a5b7b31457e9209ebf63101a681782fadebf6818692f5735886",
+    "bytes": 2239
+  },
+  {
+    "key": "vba-Workbook",
+    "url": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/api/Excel.Workbook.md",
+    "ok": true,
+    "sha256": "a2c76debbd8f415a6ec3cc7c716efc27dcdcbc5c1d3c6252a5b88a1c9bafe064",
+    "bytes": 15640
+  },
+  {
+    "key": "vba-Workbooks",
+    "url": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/api/Excel.Workbooks.md",
+    "ok": true,
+    "sha256": "9817ec6b63f3aec9c729961f4064a9ae30e7846244588e9ad20ddc8a38b88de5",
+    "bytes": 1844
+  },
+  {
+    "key": "vba-ThisWorkbook",
+    "url": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/api/Excel.Application.ThisWorkbook.md",
+    "ok": true,
+    "error": "HTTP Error 404: Not Found",
+    "sha256": "31777192271e53557aa925366a8f9d85b0bfaf70e3e57dbe70064f902087264d",
+    "bytes": 1583
+  },
+  {
+    "key": "vba-ActiveWorkbook",
+    "url": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/api/Excel.Application.ActiveWorkbook.md",
+    "ok": true,
+    "error": "HTTP Error 404: Not Found",
+    "sha256": "2d30958c41ac4a90552dbf35cb91ad300e193c48d2584656b9e920d32cf59cb2",
+    "bytes": 1163
+  },
+  {
+    "key": "vba-Offset",
+    "url": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/api/Excel.Range.Offset.md",
+    "ok": true,
+    "sha256": "4f1d4ffb74c24e6b6b2ccec5848395d53903d491d6a816951ca1cb54a4e3cb84",
+    "bytes": 1918
+  },
+  {
+    "key": "vba-ClearContents",
+    "url": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/api/Excel.Range.ClearContents.md",
+    "ok": true,
+    "error": "HTTP Error 404: Not Found",
+    "sha256": "673064d4f077f6cface253a5cfd8b58ce9f4aeb8023a12af693713a2e66c2635",
+    "bytes": 772
+  },
+  {
+    "key": "vba-If",
+    "url": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/ifthenelse-statement.md",
+    "sha256": "b9cef251497f767f93990d4c10e459fc4a85663dfe36901c6f3c6dba7c026d83",
+    "bytes": 5435,
+    "ok": true
+  },
+  {
+    "key": "vba-Select_Case",
+    "url": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/select-case-statement.md",
+    "sha256": "a0ec9fcc6994ed652039919f433f867170a1b9004aac9245299d49cd28531751",
+    "bytes": 4429,
+    "ok": true
+  },
+  {
+    "key": "vba-For",
+    "url": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/fornext-statement.md",
+    "sha256": "e8336a697394b93a4d52312cc9fe8e46a2cd755eff4d043f9828cb57521b9887",
+    "bytes": 3677,
+    "ok": true
+  },
+  {
+    "key": "vba-Next",
+    "url": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/fornext-statement.md",
+    "sha256": "e8336a697394b93a4d52312cc9fe8e46a2cd755eff4d043f9828cb57521b9887",
+    "bytes": 3677,
+    "ok": true
+  },
+  {
+    "key": "vba-For_Each",
+    "url": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/for-eachnext-statement.md",
+    "sha256": "420a2a9fba1eb8171b625f437a1922c441a7e1016c17a237e025f15ee496444e",
+    "bytes": 3497,
+    "ok": true
+  },
+  {
+    "key": "vba-Do",
+    "url": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/doloop-statement.md",
+    "sha256": "9e24778e41d9ef15e90188bfb3ffa68f2c5eb031fcc8fd49b92a58b0073124e8",
+    "bytes": 2962,
+    "ok": true
+  },
+  {
+    "key": "vba-Exit_For",
+    "url": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/exit-statement.md",
+    "sha256": "09a4c4302b393a7cdaeb41e839ba714d1236f2e379cd8356cbecb39419d176c6",
+    "bytes": 2794,
+    "ok": true
+  },
+  {
+    "key": "vba-Exit_Do",
+    "url": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/exit-statement.md",
+    "sha256": "09a4c4302b393a7cdaeb41e839ba714d1236f2e379cd8356cbecb39419d176c6",
+    "bytes": 2794,
+    "ok": true
+  },
+  {
+    "key": "vba-Exit_Sub",
+    "url": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/exit-statement.md",
+    "sha256": "09a4c4302b393a7cdaeb41e839ba714d1236f2e379cd8356cbecb39419d176c6",
+    "bytes": 2794,
+    "ok": true
+  },
+  {
+    "key": "vba-Sub",
+    "url": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/sub-statement.md",
+    "sha256": "f2eaedc75f353e4f1384dceb4ff8a6dad05892e87ae29234fad2e12294a07468",
+    "bytes": 8624,
+    "ok": true
+  },
+  {
+    "key": "vba-Debug_Print",
+    "url": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/print-method.md",
+    "sha256": "68eb1be7727b4b92777237a1ba8ec7833c49f271a723aa2d230e25ed0f1b7cbd",
+    "bytes": 4720,
+    "ok": true
+  },
+  {
+    "key": "vba-MsgBox",
+    "url": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/msgbox-function.md",
+    "sha256": "0680977d0cefd03c1a45a06cb403d1393f5920d8e308ae40b4748f3fed9ae3bb",
+    "bytes": 6604,
+    "ok": true
+  },
+  {
+    "key": "vba-InputBox",
+    "url": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/inputbox-function.md",
+    "sha256": "ff37a5bc6e35da3411af0f01544b69eec157cc3a1f525cea1773c1f7f815c0ca",
+    "bytes": 4684,
+    "ok": true
+  },
+  {
+    "key": "vba-On_Error",
+    "url": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/on-error-statement.md",
+    "sha256": "06c82dcc9929f5c8a07f6495a6c4c2567bdf8b553ea8092ac19db38980bd644b",
+    "bytes": 9169,
+    "ok": true
+  },
+  {
+    "key": "vba-Err_Number",
+    "url": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/number-property-visual-basic-for-applications.md",
+    "ok": true,
+    "sha256": "09bfc016b4678d64a036fb5e54c2fe25d2c5c5a656b7650f33b40e6d7056bd8d",
+    "bytes": 3082
+  },
+  {
+    "key": "vba-Option_Explicit",
+    "url": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/option-explicit-statement.md",
+    "sha256": "4c09ac762a1fde833ce29bb6361e146cfe564a9d2167562ad3f4f1126b16b711",
+    "bytes": 1952,
+    "ok": true
+  },
+  {
+    "key": "vba-Option_Base",
+    "url": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/option-base-statement.md",
+    "sha256": "102db89fba0d765318ed615298eca705b2d28dce97d0df6b5c13a5a649d99776",
+    "bytes": 2423,
+    "ok": true
+  },
+  {
+    "key": "vba-Array",
+    "url": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/array-function.md",
+    "sha256": "9992ef8fb35a2b0bd0f5dc263e1d8ed2a12170223fe2dfdba2b3d109bfe50a38",
+    "bytes": 2879,
+    "ok": true
+  },
+  {
+    "key": "vba-LBound",
+    "url": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/lbound-function.md",
+    "sha256": "5f01e4a971958bf72f2d32c4fd87ad25f8b10638f3da5abcc55c444433d457e5",
+    "bytes": 2645,
+    "ok": true
+  },
+  {
+    "key": "vba-UBound",
+    "url": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/ubound-function.md",
+    "sha256": "4b5cb7f7b3a313397521812d85380f64d8f4d568e4ea9a7f8fa34c10c8355394",
+    "bytes": 1888,
+    "ok": true
+  },
+  {
+    "key": "vba-Len",
+    "url": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/len-function.md",
+    "sha256": "854235a3c02b2f163b72fc80556bd9d918cddbdebfa3a9107754fa3b1f0e2211",
+    "bytes": 3554,
+    "ok": true
+  },
+  {
+    "key": "vba-Left",
+    "url": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/left-function.md",
+    "sha256": "30d548179fbc27914002daf59714bffba59cc17a90b1908285f53c0df1ceee8b",
+    "bytes": 1863,
+    "ok": true
+  },
+  {
+    "key": "vba-Right",
+    "url": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/right-function.md",
+    "sha256": "19c411766265f53ff047d08ea2b3e8f4a2663b6a5a1e9eb5b9a4ea4177f941ca",
+    "bytes": 1896,
+    "ok": true
+  },
+  {
+    "key": "vba-Mid",
+    "url": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/mid-function.md",
+    "sha256": "e78de4e567c9ac74c07b5a90ac42e55057a5817bfd095007fe2416c345732d97",
+    "bytes": 2867,
+    "ok": true
+  },
+  {
+    "key": "vba-Trim",
+    "url": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/ltrim-rtrim-and-trim-functions.md",
+    "ok": true,
+    "sha256": "28a9fb386a5f19dda03a98c0b5cdff62c1544d03976f6433012575f1203338e7",
+    "bytes": 1580
+  },
+  {
+    "key": "vba-UCase",
+    "url": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/ucase-function.md",
+    "sha256": "63bec3c5c337d4a3d2188ae90a8845b33882f95e8b545b850e5c889281737fb0",
+    "bytes": 1209,
+    "ok": true
+  },
+  {
+    "key": "vba-LCase",
+    "url": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/lcase-function.md",
+    "sha256": "01b666005e5dfe36ef45ca77d73e9f8831025702d878b16603fbe2c4206201eb",
+    "bytes": 1223,
+    "ok": true
+  },
+  {
+    "key": "vba-Replace",
+    "url": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/replace-function.md",
+    "sha256": "75d298a645917fa2cc4150667ea17676f955721970cdb3321366d8624bf770d2",
+    "bytes": 2724,
+    "ok": true
+  },
+  {
+    "key": "vba-InStr",
+    "url": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/instr-function.md",
+    "sha256": "010ce0ccb534db7654ae635aba1fe656837dc1ac5e24fe4aacf43e061c604cf3",
+    "bytes": 3271,
+    "ok": true
+  },
+  {
+    "key": "vba-CStr",
+    "url": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Concepts/Getting-Started/type-conversion-functions.md",
+    "ok": true,
+    "sha256": "56122c80b4eb139155a3c3a3c0f70b39ee477a3e7d9a210d0ac6b5a5717aa1bf",
+    "bytes": 10569
+  },
+  {
+    "key": "vba-CInt",
+    "url": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Concepts/Getting-Started/type-conversion-functions.md",
+    "ok": true,
+    "sha256": "56122c80b4eb139155a3c3a3c0f70b39ee477a3e7d9a210d0ac6b5a5717aa1bf",
+    "bytes": 10569
+  },
+  {
+    "key": "vba-CLng",
+    "url": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Concepts/Getting-Started/type-conversion-functions.md",
+    "ok": true,
+    "sha256": "56122c80b4eb139155a3c3a3c0f70b39ee477a3e7d9a210d0ac6b5a5717aa1bf",
+    "bytes": 10569
+  },
+  {
+    "key": "vba-CDbl",
+    "url": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Concepts/Getting-Started/type-conversion-functions.md",
+    "ok": true,
+    "sha256": "56122c80b4eb139155a3c3a3c0f70b39ee477a3e7d9a210d0ac6b5a5717aa1bf",
+    "bytes": 10569
+  },
+  {
+    "key": "vba-Val",
+    "url": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/val-function.md",
+    "sha256": "f8261b937fb6686d44009e207b9e03d7f8b6afb885db5d779b364fa2e9b1f022",
+    "bytes": 2376,
+    "ok": true
+  },
+  {
+    "key": "vba-IsNumeric",
+    "url": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/isnumeric-function.md",
+    "sha256": "d18969ed965fd94ba8332c54b15c565764751929f1a3f284d5e49d76a19192eb",
+    "bytes": 1555,
+    "ok": true
+  },
+  {
+    "key": "vba-IsEmpty",
+    "url": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/isempty-function.md",
+    "sha256": "1ae33d2a80a9590c08ad775d9c2581c6d11719fe39664e449b9ea7801a67f85b",
+    "bytes": 1743,
+    "ok": true
+  },
+  {
+    "key": "vba-IsNull",
+    "url": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/isnull-function.md",
+    "sha256": "ccf03f2fd28c7fc034f0126e60eb37048391f5096bea709dccb07dd0449190c9",
+    "bytes": 2208,
+    "ok": true
+  },
+  {
+    "key": "vba-Abs",
+    "url": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/abs-function.md",
+    "sha256": "9680b6537459df1e7ac6119cdafab110e973fadb19339b4806f91c27bdc456be",
+    "bytes": 1218,
+    "ok": true
+  },
+  {
+    "key": "vba-Int",
+    "url": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/int-fix-functions.md",
+    "sha256": "30b9d94ff2c93de544af90256e8bf7cee647d5df4e482274b424e5e44cac609b",
+    "bytes": 1837,
+    "ok": true
+  },
+  {
+    "key": "vba-Fix",
+    "url": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/int-fix-functions.md",
+    "sha256": "30b9d94ff2c93de544af90256e8bf7cee647d5df4e482274b424e5e44cac609b",
+    "bytes": 1837,
+    "ok": true
+  },
+  {
+    "key": "vba-Round",
+    "url": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/round-function.md",
+    "sha256": "2692594facf2c0b8bce8b1a82f5aa8680b2d9efd1a1f047e1a609f12b033d70b",
+    "bytes": 1605,
+    "ok": true
+  },
+  {
+    "key": "vba-Date",
+    "url": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/date-function.md",
+    "sha256": "5fd3bc87ea603d32230f58cd44a21387b263168edc853f15239e7e2692f9cf0e",
+    "bytes": 1130,
+    "ok": true
+  },
+  {
+    "key": "vba-Now",
+    "url": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/now-function.md",
+    "sha256": "2a592d0e9d45ece27a2072ed94a8fee21371e12986ab04c3be31d3698f87fccf",
+    "bytes": 728,
+    "ok": true
+  },
+  {
+    "key": "python-functions",
+    "url": "https://raw.githubusercontent.com/python/cpython/3.12/Doc/library/functions.rst",
+    "sha256": "963d7143ba762daba0675a6cb3b2b470fd374f2110e92a678f4f28ee85bd7048",
+    "bytes": 91745,
+    "ok": true
+  },
+  {
+    "key": "python-stdtypes",
+    "url": "https://raw.githubusercontent.com/python/cpython/3.12/Doc/library/stdtypes.rst",
+    "sha256": "3c61e89ca96738cba12cd45632b2728e4fcb3637c340996f59f97fa4eb8614b0",
+    "bytes": 215324,
+    "ok": true
+  },
+  {
+    "key": "python-math",
+    "url": "https://raw.githubusercontent.com/python/cpython/3.12/Doc/library/math.rst",
+    "sha256": "f80f48cc8b80294a42745edc49da8a69c7ac7ce8240c1adda8ce9f83fdd3ccee",
+    "bytes": 22623,
+    "ok": true
+  },
+  {
+    "key": "python-random",
+    "url": "https://raw.githubusercontent.com/python/cpython/3.12/Doc/library/random.rst",
+    "sha256": "2dfaa10c82a5dc0c5107a25e47dfa8e402711b14dbe26cd1f9fad16e6fe1b881",
+    "bytes": 26095,
+    "ok": true
+  },
+  {
+    "key": "python-json",
+    "url": "https://raw.githubusercontent.com/python/cpython/3.12/Doc/library/json.rst",
+    "sha256": "939f692d13cad1c22417edb8704664991f73dfa064f1eec5f59532de99fa93ef",
+    "bytes": 29859,
+    "ok": true
+  },
+  {
+    "key": "python-os",
+    "url": "https://raw.githubusercontent.com/python/cpython/3.12/Doc/library/os.rst",
+    "sha256": "72ad4331b490fe71c62dca52f7ddd3fac4b24d10e5670d1a9091b87f496669c6",
+    "bytes": 192201,
+    "ok": true
+  },
+  {
+    "key": "python-os.path",
+    "url": "https://raw.githubusercontent.com/python/cpython/3.12/Doc/library/os.path.rst",
+    "sha256": "40bb75baf76522a1b0352820f7c1c06d4ff2fb63b5e1f420127ec1a423c30ecc",
+    "bytes": 21039,
+    "ok": true
+  },
+  {
+    "key": "python-datetime",
+    "url": "https://raw.githubusercontent.com/python/cpython/3.12/Doc/library/datetime.rst",
+    "sha256": "d9ce3438a01bb6c44a62210a10113db59e5336968b9bb792093609dcdef2a2f1",
+    "bytes": 107989,
+    "ok": true
+  },
+  {
+    "key": "python-compound_stmts",
+    "url": "https://raw.githubusercontent.com/python/cpython/3.12/Doc/reference/compound_stmts.rst",
+    "sha256": "94dcaa6dc20a3876c9139cbf7049f6e95ddeb7e45088c59b3acbb0633e0aabf4",
+    "bytes": 66453,
+    "ok": true
+  },
+  {
+    "key": "python-simple_stmts",
+    "url": "https://raw.githubusercontent.com/python/cpython/3.12/Doc/reference/simple_stmts.rst",
+    "sha256": "a9740934a527d2dd5114d5906fd1ff4c86b247bbf478b46bddfb0186bc4c6483",
+    "bytes": 40936,
+    "ok": true
+  },
+  {
+    "key": "pa-variables",
+    "url": "https://raw.githubusercontent.com/MicrosoftDocs/power-automate-docs/main/articles/desktop-flows/actions-reference/variables.md",
+    "sha256": "8b310711ff85e5f4e334da37c06be448a40a62840cc2dc2d8238cc02649f9f30",
+    "bytes": 41552,
+    "ok": true
+  },
+  {
+    "key": "pa-conditionals",
+    "url": "https://raw.githubusercontent.com/MicrosoftDocs/power-automate-docs/main/articles/desktop-flows/actions-reference/conditionals.md",
+    "sha256": "cdf6f6ed0d37a41a657e33f8eeed3a46efd1eab0fe58a1fa9ff744bb2dda4972",
+    "bytes": 5350,
+    "ok": true
+  },
+  {
+    "key": "pa-loops",
+    "url": "https://raw.githubusercontent.com/MicrosoftDocs/power-automate-docs/main/articles/desktop-flows/actions-reference/loops.md",
+    "sha256": "d8fe1fe475c5db7d788c19a62cf8bb99d1d4684bd7e5618afbb8d2b28d387ef8",
+    "bytes": 4140,
+    "ok": true
+  },
+  {
+    "key": "pa-file",
+    "url": "https://raw.githubusercontent.com/MicrosoftDocs/power-automate-docs/main/articles/desktop-flows/actions-reference/file.md",
+    "sha256": "00329adef9cf19c0e8516f96e1cdc8dd4f793b58eb8d8976467038981d4aa566",
+    "bytes": 25059,
+    "ok": true
+  },
+  {
+    "key": "pa-text",
+    "url": "https://raw.githubusercontent.com/MicrosoftDocs/power-automate-docs/main/articles/desktop-flows/actions-reference/text.md",
+    "sha256": "732e1bfe99c6b6dcc7597a78e5a138ed458afcfcb326e56e27ec39fe037f8727",
+    "bytes": 32906,
+    "ok": true
+  },
+  {
+    "key": "pa-messageboxes",
+    "url": "https://raw.githubusercontent.com/MicrosoftDocs/power-automate-docs/main/articles/desktop-flows/actions-reference/display.md",
+    "ok": true,
+    "sha256": "ca7f756f70b7f03bc45aebd61163f65d24decb2c000506745cdeded531e21621",
+    "bytes": 17087
+  },
+  {
+    "key": "pa-email",
+    "url": "https://raw.githubusercontent.com/MicrosoftDocs/power-automate-docs/main/articles/desktop-flows/actions-reference/email.md",
+    "sha256": "0f0b8bd2e0e2404e0d38a96a2221290c79daeb318448579f99439d092b53597f",
+    "bytes": 11170,
+    "ok": true
+  },
+  {
+    "key": "ahk-Send",
+    "url": "https://raw.githubusercontent.com/AutoHotkey/AutoHotkeyDocs/v2/docs/lib/Send.htm",
+    "sha256": "797128fb062fc31fe96b94c5f0e8785b31e1d974397cf52002303f7d393aae64",
+    "bytes": 36089,
+    "ok": true
+  },
+  {
+    "key": "ahk-SendText",
+    "url": "https://raw.githubusercontent.com/AutoHotkey/AutoHotkeyDocs/v2/docs/lib/Send.htm",
+    "ok": true,
+    "sha256": "797128fb062fc31fe96b94c5f0e8785b31e1d974397cf52002303f7d393aae64",
+    "bytes": 36089
+  },
+  {
+    "key": "ahk-MsgBox",
+    "url": "https://raw.githubusercontent.com/AutoHotkey/AutoHotkeyDocs/v2/docs/lib/MsgBox.htm",
+    "sha256": "eafde6ad9c41e9fb97ad412f886094b3d25c9bfb8e2f3c56e2c89f6f580fe985",
+    "bytes": 16933,
+    "ok": true
+  },
+  {
+    "key": "ahk-WinActivate",
+    "url": "https://raw.githubusercontent.com/AutoHotkey/AutoHotkeyDocs/v2/docs/lib/WinActivate.htm",
+    "sha256": "cb156b65bbb1f9492bf8a5f242c7e3268fb90b48a6c8664de0225e09fd813099",
+    "bytes": 6951,
+    "ok": true
+  },
+  {
+    "key": "ahk-WinExist",
+    "url": "https://raw.githubusercontent.com/AutoHotkey/AutoHotkeyDocs/v2/docs/lib/WinExist.htm",
+    "sha256": "d7298d8dd24ef269ea7d6696a0927540405000558be5790c13c5d94a2186633b",
+    "bytes": 4780,
+    "ok": true
+  },
+  {
+    "key": "ahk-WinWait",
+    "url": "https://raw.githubusercontent.com/AutoHotkey/AutoHotkeyDocs/v2/docs/lib/WinWait.htm",
+    "sha256": "996ddaf18a8036b796aee442c651abb4eeada48c17e7cc9c0b6ff3c389d46f93",
+    "bytes": 5603,
+    "ok": true
+  },
+  {
+    "key": "ahk-Sleep",
+    "url": "https://raw.githubusercontent.com/AutoHotkey/AutoHotkeyDocs/v2/docs/lib/Sleep.htm",
+    "sha256": "fa6a983cf2b11bbb4edaf66b4feead9d4aa60bf2301c2ac71662a5cb7cf6f7ca",
+    "bytes": 4510,
+    "ok": true
+  },
+  {
+    "key": "ahk-StrLen",
+    "url": "https://raw.githubusercontent.com/AutoHotkey/AutoHotkeyDocs/v2/docs/lib/StrLen.htm",
+    "sha256": "7bbdce4b4027e0e6aca81afd0d8aa132b4bb1607364993f45659d8b777b49936",
+    "bytes": 1826,
+    "ok": true
+  },
+  {
+    "key": "ahk-SubStr",
+    "url": "https://raw.githubusercontent.com/AutoHotkey/AutoHotkeyDocs/v2/docs/lib/SubStr.htm",
+    "sha256": "96887ddc6616c0ed2bce1d1d303e305ab7735e8c56ec2c92377bc43ff0acdebe",
+    "bytes": 3022,
+    "ok": true
+  },
+  {
+    "key": "ahk-InputBox",
+    "url": "https://raw.githubusercontent.com/AutoHotkey/AutoHotkeyDocs/v2/docs/lib/InputBox.htm",
+    "sha256": "9eefc8eface2cb07694bce98e75989eefb98c4b62b44ea10c6619dc242c47c30",
+    "bytes": 5713,
+    "ok": true
+  },
+  {
+    "key": "ahk-Loop",
+    "url": "https://raw.githubusercontent.com/AutoHotkey/AutoHotkeyDocs/v2/docs/lib/Loop.htm",
+    "sha256": "3200b3cb703a9a352afb2a1aa7797b174f5189deb366a905a5b8bd850ab3e34b",
+    "bytes": 5676,
+    "ok": true
+  },
+  {
+    "key": "ahk-Hotkey",
+    "url": "https://raw.githubusercontent.com/AutoHotkey/AutoHotkeyDocs/v2/docs/lib/Hotkey.htm",
+    "sha256": "fab1757530e88b1dceea925893f752a8d2772be5dec3a5666d919eaa1e19cf5e",
+    "bytes": 16907,
+    "ok": true
+  },
+  {
+    "key": "ahk-Hotstring",
+    "url": "https://raw.githubusercontent.com/AutoHotkey/AutoHotkeyDocs/v2/docs/lib/Hotstring.htm",
+    "sha256": "9cf76d4dc725d6005ce2048672aabc38870df0a0cd128a8e2fc0d8976ae93a08",
+    "bytes": 15096,
+    "ok": true
+  },
+  {
+    "key": "fx-set",
+    "url": "https://raw.githubusercontent.com/MicrosoftDocs/power-platform/main/power-platform/power-fx/reference/function-set.md",
+    "sha256": "deb14568587158b7898500b5f25dfe0c84af2874a55a923507e8401d588aef32",
+    "bytes": 8381,
+    "ok": true
+  },
+  {
+    "key": "fx-updatecontext",
+    "url": "https://raw.githubusercontent.com/MicrosoftDocs/power-platform/main/power-platform/power-fx/reference/function-updatecontext.md",
+    "sha256": "dc11a5334cea2a89e92df4a2ceeec4243689895a1876d1f54decc82c72764c15",
+    "bytes": 11890,
+    "ok": true
+  },
+  {
+    "key": "fx-if",
+    "url": "https://raw.githubusercontent.com/MicrosoftDocs/power-platform/main/power-platform/power-fx/reference/function-if.md",
+    "sha256": "87c62dd93618846b4fbd5b0074002cbb58b53e07639b275bc73c88473c6cd4f5",
+    "bytes": 12305,
+    "ok": true
+  },
+  {
+    "key": "fx-collect",
+    "url": "https://raw.githubusercontent.com/MicrosoftDocs/power-platform/main/power-platform/power-fx/reference/function-clear-collect-clearcollect.md",
+    "ok": true,
+    "sha256": "df300a41593bc1288a9a324b927f38908d24d289ed0d13c852d9cea025a1947b",
+    "bytes": 10291
+  },
+  {
+    "key": "fx-table",
+    "url": "https://raw.githubusercontent.com/MicrosoftDocs/power-platform/main/power-platform/power-fx/reference/function-table.md",
+    "sha256": "4d0c5d7a8bf6377f2ad40adc9b2c1d2f51433498c687d232a6d61b35a8625e74",
+    "bytes": 3235,
+    "ok": true
+  },
+  {
+    "key": "fx-sequence",
+    "url": "https://raw.githubusercontent.com/MicrosoftDocs/power-platform/main/power-platform/power-fx/reference/function-sequence.md",
+    "sha256": "62b6df7570f8c9bafaab8e109fbb0cec0e424dd810dcc16a558792622706a287",
+    "bytes": 5092,
+    "ok": true
+  },
+  {
+    "key": "fx-forall",
+    "url": "https://raw.githubusercontent.com/MicrosoftDocs/power-platform/main/power-platform/power-fx/reference/function-forall.md",
+    "sha256": "d22b649cf23d76b508a72706264cbc0eeb163208562697ded0238504ad6e7b6e",
+    "bytes": 14477,
+    "ok": true
+  },
+  {
+    "key": "fx-aggregates",
+    "url": "https://raw.githubusercontent.com/MicrosoftDocs/power-platform/main/power-platform/power-fx/reference/function-aggregates.md",
+    "sha256": "714e4c5a8dd482186fee64e8e3aafdde5d1a0eec616ba48de4ba55c3a5cc84a9",
+    "bytes": 5238,
+    "ok": true
+  },
+  {
+    "key": "fx-filter-lookup",
+    "url": "https://raw.githubusercontent.com/MicrosoftDocs/power-platform/main/power-platform/power-fx/reference/function-filter-lookup.md",
+    "sha256": "2f0c1b0b0a8ca67fc216bb076cf37e85ccbd753b971ba0f8a844ca507488c38d",
+    "bytes": 21016,
+    "ok": true
+  },
+  {
+    "key": "fx-patch",
+    "url": "https://raw.githubusercontent.com/MicrosoftDocs/power-platform/main/power-platform/power-fx/reference/function-patch.md",
+    "sha256": "e73d9446097fc7e2d7ab9f60b2bd77bb7a9c52a5e67cef1703d122cc452ae7d9",
+    "bytes": 23179,
+    "ok": true
+  },
+  {
+    "key": "fx-defaults",
+    "url": "https://raw.githubusercontent.com/MicrosoftDocs/power-platform/main/power-platform/power-fx/reference/function-defaults.md",
+    "sha256": "0eca135433bc51dca741a44683c211b25d2cc2a0152e6c6b2d0125e8c3f0cf6e",
+    "bytes": 2203,
+    "ok": true
+  },
+  {
+    "key": "fx-navigate",
+    "url": "https://raw.githubusercontent.com/MicrosoftDocs/power-platform/main/power-platform/power-fx/reference/function-navigate.md",
+    "sha256": "0e300e02b558e120825a551b923712eb0d633ed09cfa9aa53c192c5e4189c4f6",
+    "bytes": 13528,
+    "ok": true
+  },
+  {
+    "key": "fx-reset",
+    "url": "https://raw.githubusercontent.com/MicrosoftDocs/power-platform/main/power-platform/power-fx/reference/function-reset.md",
+    "sha256": "0bd1937a534aeca740845ba92e5c69674f79b65f2b0960b1fa24cfb46d9e9e7b",
+    "bytes": 2640,
+    "ok": true
+  },
+  {
+    "key": "fx-text",
+    "url": "https://raw.githubusercontent.com/MicrosoftDocs/power-platform/main/power-platform/power-fx/reference/function-text.md",
+    "sha256": "c67168ff151bfe25dd193e31d05a3e23b5c8ced5e82791f200b7ecbcf93f2272",
+    "bytes": 29701,
+    "ok": true
+  },
+  {
+    "key": "fx-value",
+    "url": "https://raw.githubusercontent.com/MicrosoftDocs/power-platform/main/power-platform/power-fx/reference/function-value.md",
+    "sha256": "70bc5a1e04412a4d7f56be2f11efc5fec371e8fdacb4e846eb1aadf798137595",
+    "bytes": 7414,
+    "ok": true
+  },
+  {
+    "key": "fx-isblank",
+    "url": "https://raw.githubusercontent.com/MicrosoftDocs/power-platform/main/power-platform/power-fx/reference/function-isblank-isempty.md",
+    "ok": true,
+    "sha256": "e48549e9ca9e1234638d5b8cf8011cf4f22d1275753430bd590cb76462db56ee",
+    "bytes": 15996
+  },
+  {
+    "key": "fx-showerror",
+    "url": "https://raw.githubusercontent.com/MicrosoftDocs/power-platform/main/power-platform/power-fx/reference/function-showerror.md",
+    "sha256": "d0fe7818ef7018ac425a79d7483185f968c1f06c860ee3a860d4ca1eaa320987",
+    "bytes": 6013,
+    "ok": true
+  },
+  {
+    "key": "r-c",
+    "url": "https://raw.githubusercontent.com/wch/r-source/trunk/src/library/base/man/c.Rd",
+    "sha256": "cc791c4531610368e9c3723df5fa696bf39c65a75e076e4bf8c53edb6300d11a",
+    "bytes": 3242,
+    "ok": true
+  },
+  {
+    "key": "r-sum",
+    "url": "https://raw.githubusercontent.com/wch/r-source/trunk/src/library/base/man/sum.Rd",
+    "sha256": "80a6ffbceab9cd1455e54e982cf9cbf12d8c7285fa647cce15386def719401f0",
+    "bytes": 2724,
+    "ok": true
+  },
+  {
+    "key": "r-mean",
+    "url": "https://raw.githubusercontent.com/wch/r-source/trunk/src/library/base/man/mean.Rd",
+    "sha256": "631e621e61348eece39581ac13226eb4279ebd523dd692b550e25087a2253a38",
+    "bytes": 1793,
+    "ok": true
+  },
+  {
+    "key": "r-median",
+    "url": "https://raw.githubusercontent.com/wch/r-source/trunk/src/library/stats/man/median.Rd",
+    "sha256": "4896d40be961d64d9d6770099191d2bc885199f243e53b98dab0ed78e828c54c",
+    "bytes": 1724,
+    "ok": true
+  },
+  {
+    "key": "r-sd",
+    "url": "https://raw.githubusercontent.com/wch/r-source/trunk/src/library/stats/man/sd.Rd",
+    "sha256": "e10427e7317811544cb6d520a202fc55b06d0c95e5e7ab467cd70e7612028138",
+    "bytes": 917,
+    "ok": true
+  },
+  {
+    "key": "r-length",
+    "url": "https://raw.githubusercontent.com/wch/r-source/trunk/src/library/base/man/length.Rd",
+    "sha256": "b1242cc9a555f24ac2d6f4f2d50df8619038a161a1d223ee769160c96642f2c5",
+    "bytes": 3110,
+    "ok": true
+  },
+  {
+    "key": "r-seq",
+    "url": "https://raw.githubusercontent.com/wch/r-source/trunk/src/library/base/man/seq.Rd",
+    "sha256": "001430bc57ca564c3692e86c0ca960098e463d3b81b0a91f0bf9fb854f168713",
+    "bytes": 5289,
+    "ok": true
+  },
+  {
+    "key": "r-seq_len",
+    "url": "https://raw.githubusercontent.com/wch/r-source/trunk/src/library/base/man/seq.Rd",
+    "ok": true,
+    "sha256": "001430bc57ca564c3692e86c0ca960098e463d3b81b0a91f0bf9fb854f168713",
+    "bytes": 5289
+  },
+  {
+    "key": "r-rep",
+    "url": "https://raw.githubusercontent.com/wch/r-source/trunk/src/library/base/man/rep.Rd",
+    "sha256": "ee7e01d717f28d196771c087c4a7df5e4d1f5095ceb728912c040dc3055a8025",
+    "bytes": 5570,
+    "ok": true
+  },
+  {
+    "key": "r-dataframe",
+    "url": "https://raw.githubusercontent.com/wch/r-source/trunk/src/library/base/man/data.frame.Rd",
+    "ok": true,
+    "sha256": "c052ae5d015bfa39dd078b27198571b9fca450a8ed64300dfd26f1379a79b555",
+    "bytes": 6873
+  },
+  {
+    "key": "r-nrow",
+    "url": "https://raw.githubusercontent.com/wch/r-source/trunk/src/library/base/man/nrow.Rd",
+    "sha256": "d27e367156ffaf4a07c2ab6f7fd7bbb644eee7b7e5b71543a7473be406d53a38",
+    "bytes": 1707,
+    "ok": true
+  },
+  {
+    "key": "r-names",
+    "url": "https://raw.githubusercontent.com/wch/r-source/trunk/src/library/base/man/names.Rd",
+    "sha256": "2764e72833144fb8d4e4b7d1be54758f98205de8d6c986a7d7ae6856afc5b22b",
+    "bytes": 3434,
+    "ok": true
+  },
+  {
+    "key": "r-is.na",
+    "url": "https://raw.githubusercontent.com/wch/r-source/trunk/src/library/base/man/NA.Rd",
+    "ok": true,
+    "sha256": "788afc176cd5eb0dfece6927e2598413c625e080591c42702f1878fa57ef45d2",
+    "bytes": 5762
+  },
+  {
+    "key": "r-numeric",
+    "url": "https://raw.githubusercontent.com/wch/r-source/trunk/src/library/base/man/numeric.Rd",
+    "sha256": "d13a6dcaea42529036633d1786e32499d67ec127af2c37960689a511e790dec9",
+    "bytes": 4270,
+    "ok": true
+  },
+  {
+    "key": "r-character",
+    "url": "https://raw.githubusercontent.com/wch/r-source/trunk/src/library/base/man/character.Rd",
+    "sha256": "57581f64df44c034542fd14f5168dbec99fcd5d40a91bcae6ee54160cb3cee66",
+    "bytes": 3793,
+    "ok": true
+  },
+  {
+    "key": "r-print",
+    "url": "https://raw.githubusercontent.com/wch/r-source/trunk/src/library/base/man/print.Rd",
+    "sha256": "9d116223b9237dfc4572284bbd7586b69a93b81a65fcb14e18da9e97412c95f6",
+    "bytes": 4343,
+    "ok": true
+  },
+  {
+    "key": "r-cat",
+    "url": "https://raw.githubusercontent.com/wch/r-source/trunk/src/library/base/man/cat.Rd",
+    "sha256": "46b233359fed3dbfd4a1580a2b1234f73e3bcb01a60de627c3f0f6c183c4cf19",
+    "bytes": 4356,
+    "ok": true
+  },
+  {
+    "key": "r-readline",
+    "url": "https://raw.githubusercontent.com/wch/r-source/trunk/src/library/base/man/readline.Rd",
+    "sha256": "d1cce0e0de3ae897048d7094feb303ed24c4a137362271df8a2366acc391e084",
+    "bytes": 1391,
+    "ok": true
+  },
+  {
+    "key": "r-read.table",
+    "url": "https://raw.githubusercontent.com/wch/r-source/trunk/src/library/utils/man/read.table.Rd",
+    "sha256": "ec2b2ae0efa80b057d47baee84001f7a6c9db4c9985da81e2b1fd837f907fb89",
+    "bytes": 16020,
+    "ok": true
+  },
+  {
+    "key": "r-Control",
+    "url": "https://raw.githubusercontent.com/wch/r-source/trunk/src/library/base/man/Control.Rd",
+    "sha256": "f9838d610f0627f2366824e0746a878d1541051fe68d7c4af24d69fc57b8a94b",
+    "bytes": 4446,
+    "ok": true
+  },
+  {
+    "key": "ij-manual",
+    "url": "https://raw.githubusercontent.com/imagej/imagej-legacy/main/src/main/resources/doc/ij1macro/functions.html",
+    "ok": true,
+    "sha256": "d1165655c70be32b70a975ed38f126b158659846d815c646e847ca8aaa05571d",
+    "bytes": 178224
+  },
+  {
+    "key": "ahk-WinActive",
+    "url": "https://raw.githubusercontent.com/AutoHotkey/AutoHotkeyDocs/v2/docs/lib/WinActive.htm",
+    "ok": true,
+    "sha256": "63b80bff8c37d842d7238bd7a0306abdc50eab45de234e46cc965f8dae523f95",
+    "bytes": 4298
+  },
+  {
+    "key": "ahk-WinClose",
+    "url": "https://raw.githubusercontent.com/AutoHotkey/AutoHotkeyDocs/v2/docs/lib/WinClose.htm",
+    "ok": true,
+    "sha256": "a1394f99d0d2516bb942f1b76721cca6c1dad460fd49e8d8ffc47b9293d275f9",
+    "bytes": 5506
+  },
+  {
+    "key": "ahk-SetTitleMatchMode",
+    "url": "https://raw.githubusercontent.com/AutoHotkey/AutoHotkeyDocs/v2/docs/lib/SetTitleMatchMode.htm",
+    "ok": true,
+    "sha256": "47b458a696d799c9e36d716c9dff62ba2299b8e6ea12ac536bbcef65f3fbb057",
+    "bytes": 7841
+  },
+  {
+    "key": "ahk-Click",
+    "url": "https://raw.githubusercontent.com/AutoHotkey/AutoHotkeyDocs/v2/docs/lib/Click.htm",
+    "ok": true,
+    "sha256": "7a84cca820ce42f91b82fb8fe0e493e0cce384021287035bcb028a2879caf4ef",
+    "bytes": 8511
+  },
+  {
+    "key": "ahk-MouseMove",
+    "url": "https://raw.githubusercontent.com/AutoHotkey/AutoHotkeyDocs/v2/docs/lib/MouseMove.htm",
+    "ok": true,
+    "sha256": "16ae2f45457cae8553b9ef0c29032a83c330c704d5379f6a1462662012fa3ff9",
+    "bytes": 5054
+  },
+  {
+    "key": "ahk-If",
+    "url": "https://raw.githubusercontent.com/AutoHotkey/AutoHotkeyDocs/v2/docs/lib/If.htm",
+    "ok": true,
+    "sha256": "7f2711ff0d22909edd9c3be0f2b16628e31e1efc0be1909279a9642972c8336c",
+    "bytes": 7558
+  },
+  {
+    "key": "ahk-While",
+    "url": "https://raw.githubusercontent.com/AutoHotkey/AutoHotkeyDocs/v2/docs/lib/While.htm",
+    "ok": true,
+    "sha256": "f4141d5602191e0bcb7c5fd93454c9fcf648e6eab560709a3d805160adae193e",
+    "bytes": 4357
+  },
+  {
+    "key": "ij-newimage",
+    "url": "https://raw.githubusercontent.com/imagej/ImageJ/master/ij/gui/NewImage.java",
+    "ok": true,
+    "sha256": "dfb17de6cbb83807e768d7bb30b1dc22ebbf6fbab881b545cb8b68ed6c9aca57",
+    "bytes": 14575
+  },
+  {
+    "key": "ij-roi",
+    "url": "https://raw.githubusercontent.com/imagej/ImageJ/master/ij/gui/Roi.java",
+    "ok": true,
+    "sha256": "3af80d3a60cd43c2871f90549018bbc1bb6fa1b5eeaf6049469cf4c2d8344ba9",
+    "bytes": 91828
+  },
+  {
+    "key": "ij-IJ",
+    "url": "https://raw.githubusercontent.com/imagej/ImageJ/master/ij/IJ.java",
+    "ok": true,
+    "sha256": "8c620842fedd63392268b4fee191e4f6e9ef749ce96bf14a3e9f936e7cea06b4",
+    "bytes": 88477
+  },
+  {
+    "key": "aws-transform-section-structure",
+    "url": "https://raw.githubusercontent.com/awsdocs/aws-cloudformation-user-guide/main/doc_source/transform-section-structure.md",
+    "ok": true,
+    "sha256": "ad0b389a48180b4a48d9aca9dc280b28f17dd5219a1b21261b3d5e52bb4ea0c4",
+    "bytes": 1852
+  },
+  {
+    "key": "fx-tabcounts",
+    "url": "https://raw.githubusercontent.com/MicrosoftDocs/power-platform/main/power-platform/power-fx/reference/function-table-counts.md",
+    "ok": true,
+    "sha256": "2439f42fc6465187ce5ca987ff6b3deda1c0b8f0ccbdb24da6f2bdfd0b60eb6b",
+    "bytes": 3771
+  },
+  {
+    "key": "cs-integral-numeric-types",
+    "url": "https://raw.githubusercontent.com/dotnet/docs/main/docs/csharp/language-reference/builtin-types/integral-numeric-types.md",
+    "ok": true,
+    "sha256": "00e8c2d0f6b1eab87678e1da1417d24d8f2a1b1076fa5808f96db081bdc0b282",
+    "bytes": 10000
+  },
+  {
+    "key": "cs-floating-point-numeric-types",
+    "url": "https://raw.githubusercontent.com/dotnet/docs/main/docs/csharp/language-reference/builtin-types/floating-point-numeric-types.md",
+    "ok": true,
+    "sha256": "175fca635e3b5160b4ee274a7ed355e74eb0b3ce95fa2961f036fd396215fa1f",
+    "bytes": 7768
+  },
+  {
+    "key": "cs-class",
+    "url": "https://raw.githubusercontent.com/dotnet/docs/main/docs/csharp/language-reference/keywords/class.md",
+    "ok": true,
+    "sha256": "9ab1286f5b36b1c989b4a8b659555e0cdb5f16a8203e68a05019c36f6f4246ce",
+    "bytes": 3828
+  },
+  {
+    "key": "cs-selection-statements",
+    "url": "https://raw.githubusercontent.com/dotnet/docs/main/docs/csharp/language-reference/statements/selection-statements.md",
+    "ok": true,
+    "sha256": "86eef42531dfc7c76f9bb31a3e8de0f3fa8e9b1db834b00596dc69eba37fb097",
+    "bytes": 7422
+  },
+  {
+    "key": "cs-iteration-statements",
+    "url": "https://raw.githubusercontent.com/dotnet/docs/main/docs/csharp/language-reference/statements/iteration-statements.md",
+    "ok": true,
+    "sha256": "be3c11b771b62df6a7e18a66b47020b3fb2c9e13038e46ccc1f0990b5bc04744",
+    "bytes": 11299
+  },
+  {
+    "key": "cs-checked-and-unchecked",
+    "url": "https://raw.githubusercontent.com/dotnet/docs/main/docs/csharp/language-reference/statements/checked-and-unchecked.md",
+    "ok": true,
+    "sha256": "4ab570468b5c8fc0483f3ad54a9ceda685bc5d162f10296d4d0d48d99ab04daf",
+    "bytes": 6947
+  },
+  {
+    "key": "js-console.log",
+    "url": "https://raw.githubusercontent.com/mdn/content/main/files/en-us/web/api/console/log_static/index.md",
+    "ok": true,
+    "sha256": "519057cd831e33daacbb1b989074f20b125c2498f2da05a02270bad9d2f8610b",
+    "bytes": 2054
+  },
+  {
+    "key": "js-document.getElementById",
+    "url": "https://raw.githubusercontent.com/mdn/content/main/files/en-us/web/api/document/getelementbyid/index.md",
+    "ok": true,
+    "sha256": "67fde136a0b36145d40e74ad0cf07bd91ff7e81bdeabed383427cbcd2ed0a180",
+    "bytes": 4252
+  },
+  {
+    "key": "js-document.querySelector",
+    "url": "https://raw.githubusercontent.com/mdn/content/main/files/en-us/web/api/document/queryselector/index.md",
+    "ok": true,
+    "sha256": "d9cc8fefb8960f241065efc4dd05c739b2a211905ef639d21c4a7b56d1284f1a",
+    "bytes": 5923
+  },
+  {
+    "key": "js-document.createElement",
+    "url": "https://raw.githubusercontent.com/mdn/content/main/files/en-us/web/api/document/createelement/index.md",
+    "ok": true,
+    "sha256": "34decec1fcb8048865b8184ee0a03a2276d0809800664a2b4d0cc6dc7aeb9332",
+    "bytes": 5820
+  },
+  {
+    "key": "js-appendChild",
+    "url": "https://raw.githubusercontent.com/mdn/content/main/files/en-us/web/api/node/appendchild/index.md",
+    "ok": true,
+    "sha256": "525f463c8925a5b212cb05f7c0f5169c57d0cc49d4cefbee0857f788a53f4d62",
+    "bytes": 4831
+  },
+  {
+    "key": "js-textContent",
+    "url": "https://raw.githubusercontent.com/mdn/content/main/files/en-us/web/api/node/textcontent/index.md",
+    "ok": true,
+    "sha256": "50ed7d4dad738a09d5ad8f16d74d7741f81384e71cbfc08c610eab58db7ea260",
+    "bytes": 3627
+  },
+  {
+    "key": "js-value",
+    "url": "https://raw.githubusercontent.com/mdn/content/main/files/en-us/web/api/htmlinputelement/value/index.md",
+    "ok": true,
+    "sha256": "4833dba29a49ded396b162692d5abb767646dbc0e6e7d5d8fa3fa37376d57ffc",
+    "bytes": 2814
+  },
+  {
+    "key": "js-push",
+    "url": "https://raw.githubusercontent.com/mdn/content/main/files/en-us/web/javascript/reference/global_objects/array/push/index.md",
+    "ok": true,
+    "sha256": "961bf8af117c4e7858472ffc3d83cdbe839f6fafa2f7fe48cc5918576466c1e1",
+    "bytes": 5819
+  },
+  {
+    "key": "js-pop",
+    "url": "https://raw.githubusercontent.com/mdn/content/main/files/en-us/web/javascript/reference/global_objects/array/pop/index.md",
+    "ok": true,
+    "sha256": "488643579c8fe14d704875f09f94c10a739784472fde7fce88981e912776b6f2",
+    "bytes": 4519
+  },
+  {
+    "key": "js-Number",
+    "url": "https://raw.githubusercontent.com/mdn/content/main/files/en-us/web/javascript/reference/global_objects/number/index.md",
+    "ok": true,
+    "sha256": "33c6f2eea0a6e2e23f9a41ff9b062e50cf77ffe8dc57fe12f09e80f117d330bf",
+    "bytes": 13959
+  },
+  {
+    "key": "js-String",
+    "url": "https://raw.githubusercontent.com/mdn/content/main/files/en-us/web/javascript/reference/global_objects/string/index.md",
+    "ok": true,
+    "sha256": "7a8edf0716f3b6707c8c2f2c68e38c1e6cb00b46249de7b29d54c80006437dd3",
+    "bytes": 24224
+  },
+  {
+    "key": "js-Boolean",
+    "url": "https://raw.githubusercontent.com/mdn/content/main/files/en-us/web/javascript/reference/global_objects/boolean/index.md",
+    "ok": true,
+    "sha256": "648cce26ca0908fe98384d2701050670e65ca8f58fdb3e954fcf2a26bfd46013",
+    "bytes": 8643
+  },
+  {
+    "key": "js-parseInt",
+    "url": "https://raw.githubusercontent.com/mdn/content/main/files/en-us/web/javascript/reference/global_objects/parseint/index.md",
+    "ok": true,
+    "sha256": "23eee3bc77e5252b9d95335515d7de9d02a2f56e6ce0e2682a04f437750b89dd",
+    "bytes": 10426
+  },
+  {
+    "key": "js-Math.abs",
+    "url": "https://raw.githubusercontent.com/mdn/content/main/files/en-us/web/javascript/reference/global_objects/math/abs/index.md",
+    "ok": true,
+    "sha256": "328a561e48e217279df9de17864bc8614a8bd44c1ec0b95ebb0da8987ac508bd",
+    "bytes": 1963
+  },
+  {
+    "key": "js-Math.floor",
+    "url": "https://raw.githubusercontent.com/mdn/content/main/files/en-us/web/javascript/reference/global_objects/math/floor/index.md",
+    "ok": true,
+    "sha256": "20c0ca08bd55cb810fe45e81ec2d5f038f99597d2083b68fb49d4c85e174bdc8",
+    "bytes": 4315
+  },
+  {
+    "key": "js-Math.round",
+    "url": "https://raw.githubusercontent.com/mdn/content/main/files/en-us/web/javascript/reference/global_objects/math/round/index.md",
+    "ok": true,
+    "sha256": "5cd4d2d874c42d3ce1cb7da59ea580c74fd493a007fd16f06661f2c2cce8c9c8",
+    "bytes": 2507
+  },
+  {
+    "key": "js-JSON.stringify",
+    "url": "https://raw.githubusercontent.com/mdn/content/main/files/en-us/web/javascript/reference/global_objects/json/stringify/index.md",
+    "ok": true,
+    "sha256": "90c245376b62b9306844de483d4267e9fed4f4d37e3cc636fb3c06c22d5c58a8",
+    "bytes": 17165
+  },
+  {
+    "key": "js-prompt",
+    "url": "https://raw.githubusercontent.com/mdn/content/main/files/en-us/web/api/window/prompt/index.md",
+    "ok": true,
+    "sha256": "3e9c0c264e8dbe145ae4a09bfa686fc6ce97c0a9f9497cba1a5406894abad9c8",
+    "bytes": 3646
+  },
+  {
+    "key": "js-alert",
+    "url": "https://raw.githubusercontent.com/mdn/content/main/files/en-us/web/api/window/alert/index.md",
+    "ok": true,
+    "sha256": "a0667ceae6c19b80a02e66af98449c0c61c39f25b4da7d9e44a25eccb5994b6d",
+    "bytes": 1852
+  },
+  {
+    "key": "js-if",
+    "url": "https://raw.githubusercontent.com/mdn/content/main/files/en-us/web/javascript/reference/statements/if...else/index.md",
+    "ok": true,
+    "sha256": "5e75a8ac7a8aaf56593a0502c6907cf83a98644b6d837a363f0917432607d0ef",
+    "bytes": 5400
+  },
+  {
+    "key": "js-for",
+    "url": "https://raw.githubusercontent.com/mdn/content/main/files/en-us/web/javascript/reference/statements/for/index.md",
+    "ok": true,
+    "sha256": "65dbca36f8f3b18e808fb308b24d646b349fee615c1998ba9ad0d5ead29a5f33",
+    "bytes": 11175
+  },
+  {
+    "key": "js-addEventListener",
+    "url": "https://raw.githubusercontent.com/mdn/content/main/files/en-us/web/api/eventtarget/addeventlistener/index.md",
+    "ok": true,
+    "sha256": "8c75b011cf1e4e9ee6286d5d099fc1850c2a54b964201fe0996a610aa95735d3",
+    "bytes": 28099
+  }
+]

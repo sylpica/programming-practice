@@ -436,11 +436,13 @@ export const definition = {
               );
               return null;
             }
-            case "settitlematchmode":
+            case "settitlematchmode": {
               if (![1, 2, 3].includes(vals[0]))
-                api.fail("一致モードは1 / 2 / 3のみ対応です", node);
+                api.fail("未対応：一致モードは1 / 2 / 3のみ対応です", node, "未対応");
+              const previous = s.model.titleMatchMode ?? 2;
               s.model.titleMatchMode = vals[0];
-              return null;
+              return previous;
+            }
             case "sendtext":
             case "send": {
               let w = active(),
@@ -601,3 +603,6 @@ export const definition = {
 
 definition.templates.push(...additionalTemplates(definition.model.defaults));
 definition.templates[0].model = structuredClone(definition.model.defaults);
+
+import { referenceDetails } from "./reference-details.js";
+for (const r of definition.reference) if (referenceDetails[r.name]) Object.assign(r, referenceDetails[r.name]);

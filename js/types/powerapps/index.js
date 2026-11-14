@@ -105,6 +105,7 @@ const reference = rows([
     "Filter(Table, Condition)",
     "条件を満たす行を抽出します。",
     "Filter(Items, Value > 1)",
+    "委任できる条件はデータソースと演算子に依存します。委任できないクエリは既定500件（設定で最大2,000件）の取得範囲で評価され、結果が欠ける場合があります。このモデルは明示したローカルデータだけを評価します。",
   ],
   [
     "LookUp",
@@ -226,6 +227,7 @@ function lowerBehavior(expr, line = expr.line || 1) {
         k: "assign",
         op: "=",
         target: temp,
+        internalSwitch: true,
         value: args[0],
         line,
         refs: ["Switch"],
@@ -379,6 +381,13 @@ export const definition = {
       let semantics = {
         dialect: "fx",
         copyOnAssign: true,
+        step(n, s, api) {
+          if (n.internalSwitch) {
+            s.vars[n.target.name] = api.read(n.value, s);
+            api.note(s, n, "Switchの比較値を一度評価します：" + formatValue(s.vars[n.target.name]));
+            return [s];
+          }
+        },
         initialize(s, api) {
           s.vars = {
             ...s.model.variables,
@@ -693,3 +702,6 @@ export const definition = {
 };
 
 definition.templates.push(...additionalTemplates(definition.model.defaults));
+
+import { referenceDetails } from "./reference-details.js";
+for (const r of definition.reference) if (referenceDetails[r.name]) Object.assign(r, referenceDetails[r.name]);

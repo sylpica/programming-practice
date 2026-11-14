@@ -65,7 +65,8 @@ function parse(source, language) {
       let type = this.take().v,
         array = false,
         size = null,
-        pointer = false;
+        pointer = false, referenceAlias = false;
+      if (language === "c" && type === "string") unsupported("Cには組込みstring型がありません。char配列を使ってください", t.line);
       if (this.peek("[")) {
         this.take();
         this.take("]");
@@ -74,6 +75,10 @@ function parse(source, language) {
       if (this.peek("*")) {
         this.take();
         pointer = true;
+      }
+      if (this.peek("&")) {
+        if (language !== "cpp") unsupported("参照宣言はC++専用です", t.line);
+        this.take(); referenceAlias = true;
       }
       let name = this.take();
       if (name.k !== "id") throw new PracticeError("変数名が必要です", t.line);
@@ -129,6 +134,7 @@ function parse(source, language) {
         array,
         size,
         pointer,
+        referenceAlias,
         value,
         line: t.line,
         refs: [pointer ? "pointer" : array ? "array" : type],
@@ -284,7 +290,7 @@ export function createCFamily({ id, name, extensions, language }) {
       'printf("%d\\n", n);',
       "書式と引数を対応させて出力を説明します。",
       'printf("%d\\n", n);',
-      "%d / %i / %f / %s / %%のみ。書式と型の不一致は停止します。",
+      "%d / %i / %f / %s / %c / %%のみ。書式と型の不一致は停止します。",
       !managed,
     ],
     [
@@ -339,6 +345,10 @@ export function createCFamily({ id, name, extensions, language }) {
   reference = reference.filter(r => !managed
     ? !["Console.WriteLine","Console.ReadLine","class","checked", ...(id === "c" ? ["cout"] : [])].includes(r.name)
     : !["pointer","printf","cout"].includes(r.name));
+  if (!managed) for (const r of reference) {
+    if (id === "cpp") r.example = r.example.replace(/\b(cout|endl|printf)\b/g, "std::$1");
+    r.example = `#include <${id === "cpp" ? "iostream>\n#include <cstdio" : "stdio.h"}>\nint main() {\n${r.example}\nreturn 0;\n}`;
+  }
   let codeArray = managed
     ? "int[] values = {1, 2, 3};\nint total = 0;\nfor (int i = 0; i < 3; i++) {\n    total += values[i];\n}\nConsole.WriteLine(total);"
     : `#include <${id === "cpp" ? "iostream" : "stdio.h"}>\nint main() {\n    int values[3] = {1, 2, 3};\n    int total = 0;\n    for (int i = 0; i < 3; i++) {\n        total += values[i];\n    }\n    ${id === "cpp" ? "std::cout << total << std::endl;" : 'printf("%d\\n", total);'}\n    return 0;\n}`;
@@ -368,7 +378,7 @@ export function createCFamily({ id, name, extensions, language }) {
       : {
           id: id + "-pointer",
           title: "ポインタと配列の更新",
-          code: `int main() {\n    int values[3] = {10, 20, 30};\n    int *p = &values[0];\n    *(p + 1) = 99;\n    ${id === "cpp" ? "cout << values[1] << endl;" : 'printf("%d\\n", values[1]);'}\n    return 0;\n}`,
+          code: `#include <${id === "cpp" ? "iostream" : "stdio.h"}>\nint main() {\n    int values[3] = {10, 20, 30};\n    int *p = &values[0];\n    *(p + 1) = 99;\n    ${id === "cpp" ? "std::cout << values[1] << std::endl;" : 'printf("%d\\n", values[1]);'}\n    return 0;\n}`,
           intro:
             "ポインタはモデルオブジェクトとオフセットで表します。配列の一つ先は作れますが、読み書きはできません。",
           refs: ["pointer", "array", id === "cpp" ? "cout" : "printf"],
@@ -455,18 +465,22 @@ export function createCFamily({ id, name, extensions, language }) {
         let { nodes, classes } = parse(code, language);
         function typeOf(a, s) {
           if (!a) return "int";
-          if (a.k === "literal")
+          if (a.k === "literal") {
+            if (typeof a.value === "boolean") return language === "c" ? "int" : "bool";
             return typeof a.value === "string"
-              ? "string"
+              ? (managed ? "string" : a.quote === "'" ? (language === "c" ? "int" : "char") : "char[]")
               : /[.eEfF]/.test(a.raw || "")
                 ? "double"
                 : a.raw?.endsWith("L") || Math.abs(a.value) > 2147483647
                   ? "long"
                   : "int";
-          if (a.k === "var") return s.types[a.name] || "int";
+          }
+          if (a.k === "var") return s.types[a.name] || (["true", "false"].includes(a.name) && language !== "c" ? "bool" : "int");
           if (a.k === "binary") {
+            if (["==", "!=", "<", ">", "<=", ">=", "&&", "||"].includes(a.op)) return language === "c" ? "int" : "bool";
             let l = typeOf(a.a, s),
               r = typeOf(a.b, s);
+            if (language === "cpp" && a.op === "+" && [l, r].includes("string")) return "string";
             return [l, r].includes("double") || [l, r].includes("float")
               ? "double"
               : [l, r].includes("long")
@@ -477,7 +491,12 @@ export function createCFamily({ id, name, extensions, language }) {
             return (
               s.types[callName(a.target)]?.replace(/\[\]|\*/g, "") || "int"
             );
-          if (a.k === "unary") return typeOf(a.arg, s);
+          if (a.k === "unary") {
+            if (a.op === "!") return language === "c" ? "int" : "bool";
+            if (a.op === "&") return typeOf(a.arg, s) + "*";
+            if (a.op === "*") return typeOf(a.arg, s).replace(/\*$/, "");
+            return typeOf(a.arg, s);
+          }
           return "int";
         }
         function width(type, s) {
@@ -574,6 +593,20 @@ export function createCFamily({ id, name, extensions, language }) {
             );
           return mem;
         }
+        function cString(value, s, api, node) {
+          if (typeof value === "string") return value;
+          if (!isPtr(value)) api.fail("文字列へのポインタが必要です", node, "未定義動作");
+          const mem = deref(value, s, api, node);
+          if (mem.type !== "char") api.fail("char配列が必要です", node, "未定義動作");
+          let text = "";
+          for (let i = value.offset; i < mem.values.length; i++) {
+            const c = mem.values[i];
+            if (c === 0) return text;
+            if (typeof c !== "number") api.fail("未初期化の文字です", node, "未定義動作");
+            text += String.fromCharCode(c);
+          }
+          api.fail("終端のヌル文字がない文字列の読み取り", node, "未定義動作");
+        }
         const semantics = {
           dialect: language,
           blockScopes: true,
@@ -583,6 +616,7 @@ export function createCFamily({ id, name, extensions, language }) {
               api.fail("このモデルのintは32ビットのみ対応です", { line: 1 });
             s.vars = {};
             s.addresses = {};
+            s.references = {};
           },
           truth(v, line) {
             if (isUnknown(v)) return v;
@@ -605,9 +639,28 @@ export function createCFamily({ id, name, extensions, language }) {
               }
               if (managed && n.pointer)
                 api.fail("C#のunsafeポインタは未対応です", n);
+              if (n.referenceAlias) {
+                if (!n.value || n.value.k !== "var" || s.types[n.value.name] !== n.type || n.array || n.pointer)
+                  api.fail("未対応：参照は同じ型の宣言済み変数で初期化してください", n, "未対応");
+                const ptr = targetPointer(n.value, s, api, n);
+                s.references[n.name] = ptr;
+                s.addresses[n.name] = ptr.object;
+                s.types[n.name] = n.type;
+                s.vars[n.name] = api.read(n.value, s);
+                api.note(s, n, `${n.name} は ${n.value.name} の別名です`);
+                return [s];
+              }
+              delete s.references[n.name];
               let type = n.type + (n.pointer ? "*" : n.array ? "[]" : "");
               let v = n.value ? api.read(n.value, s) : uninitialized;
               if (n.array) {
+                if (!managed && n.type === "char" && typeof v === "string") {
+                  if ([...v].some(c => c.codePointAt(0) > 127)) api.fail("未対応：このモデルのchar文字列はASCIIに限定します", n, "未対応");
+                  const bytes = [...v].map(c => c.charCodeAt(0));
+                  const size = n.size ? api.read(n.size, s) : bytes.length + 1;
+                  if (language === "cpp" && size <= bytes.length) api.fail("C++の文字配列には終端ヌル文字の領域も必要です", n, "CompileError");
+                  v = size === bytes.length ? bytes : [...bytes, 0];
+                }
                 let length = n.size
                   ? api.read(n.size, s)
                   : Array.isArray(v)
@@ -654,6 +707,39 @@ export function createCFamily({ id, name, extensions, language }) {
             }
           },
           read(a, s, api) {
+            if (!managed && a.k === "literal" && a.quote === "'") {
+              if (a.value.length !== 1 || a.value.charCodeAt(0) > 127)
+                api.fail("未対応：単一ASCII文字以外の文字定数", a, "未対応");
+              return { handled: true, value: a.value.charCodeAt(0) };
+            }
+            if (!managed && a.k === "unary" && a.op === "sizeof") {
+              const arg = a.arg;
+              function checkSizeOperand(expr) {
+                if (!["var", "literal", "index", "unary", "binary"].includes(expr.k) || (expr.k === "unary" && expr.op === "sizeof")) api.fail("未対応：このsizeofオペランドの型はモデルで確定できません", a, "未対応");
+                if (expr.k === "var" && !builtinTypes.includes(expr.name) && !["true", "false"].includes(expr.name) && !Object.hasOwn(s.types, expr.name)) api.fail("宣言されていないsizeof対象です", a, "CompileError");
+                if (expr.k === "index" && builtinTypes.includes(expr.target.name)) api.fail("未対応：sizeofの配列型指定。宣言済み配列の変数名を指定してください", a, "未対応");
+                for (const child of [expr.arg, expr.a, expr.b, expr.target]) if (child) checkSizeOperand(child);
+              }
+              checkSizeOperand(arg);
+              if (arg.k === "var" && !builtinTypes.includes(arg.name) && !["true", "false"].includes(arg.name) && !Object.hasOwn(s.types, arg.name)) api.fail("宣言されていないsizeof対象です", a, "CompileError");
+              let type = arg.k === "var" && builtinTypes.includes(arg.name) ? arg.name : typeOf(arg, s);
+              if (arg.k === "literal" && typeof arg.value === "string" && arg.quote !== "'") return { handled: true, value: new TextEncoder().encode(arg.value).length + 1 };
+              const sizes = { char: 1, bool: 1, int: 4, long: (s.model.longBits || 64) / 8, float: 4, double: 8 };
+              if (type.endsWith("[]") && arg.k === "var") {
+                const mem = s.model.memory[s.addresses[arg.name]];
+                return { handled: true, value: mem.values.length * sizes[mem.type] };
+              }
+              if (type.endsWith("*")) api.fail("未対応：ポインタのsizeofはABIにより異なります", a, "未対応");
+              if (!sizes[type]) api.fail("未対応のsizeof対象です", a, "未対応");
+              return { handled: true, value: sizes[type] };
+            }
+            if (a.k === "var" && Object.hasOwn(s.types, a.name) && s.references[a.name]) {
+              const ptr = s.references[a.name], mem = deref(ptr, s, api, a);
+              const value = mem.values[ptr.offset];
+              if (value?.kind === "uninitialized") api.fail("未初期化の値です", a, "未定義動作");
+              s.vars[a.name] = value;
+              return { handled: true, value };
+            }
             if (!managed && a.k === "var" && a.name === "NULL")
               return { handled:true,value:null };
             if (language === "cpp" && a.k === "var" && a.name === "nullptr")
@@ -760,9 +846,21 @@ export function createCFamily({ id, name, extensions, language }) {
                   "CompileError",
                 );
               let type = s.types[a.name];
+              if (!managed && type.endsWith("[]")) api.fail("配列へは代入できません", node, "CompileError");
+              if (s.references[a.name]) {
+                const ptr = s.references[a.name], mem = deref(ptr, s, api, node);
+                const value = cast(v, type, s, node, api);
+                mem.values[ptr.offset] = value;
+                for (const [name, id] of Object.entries(s.addresses))
+                  if (id === ptr.object && !s.types[name]?.endsWith("[]")) s.vars[name] = value;
+                return true;
+              }
               s.vars[a.name] = cast(v, type, s, node, api);
               let id = s.addresses[a.name];
-              if (id) s.model.memory[id].values[0] = s.vars[a.name];
+              if (id) {
+                s.model.memory[id].values[0] = s.vars[a.name];
+                for (const [name, ptr] of Object.entries(s.references)) if (ptr.object === id) s.vars[name] = s.vars[a.name];
+              }
               return true;
             }
             if (
@@ -783,6 +881,7 @@ export function createCFamily({ id, name, extensions, language }) {
                 ptr.offset === 0
               )
                 s.vars[variable] = value;
+              for (const [name, alias] of Object.entries(s.references)) if (alias.object === ptr.object && alias.offset === ptr.offset) s.vars[name] = value;
               return true;
             }
             if (managed && a.k === "index") {
@@ -840,7 +939,7 @@ export function createCFamily({ id, name, extensions, language }) {
               api.fail("このポインタ比較・演算は未対応です", node);
             }
             if (
-              managed &&
+              (managed || (language === "cpp" && typeof a === "string" && typeof b === "string" && (node.k === "assign" ? s.types[callName(node.target)] === "string" : [typeOf(node.a, s), typeOf(node.b, s)].includes("string")))) &&
               op === "+" &&
               (typeof a === "string" || typeof b === "string")
             )
@@ -933,15 +1032,17 @@ export function createCFamily({ id, name, extensions, language }) {
               let [fmt, ...rest] = values;
               if (typeof fmt !== "string")
                 api.fail("printfの書式文字列が必要です", node);
+              if (fmt.replace(/%[%disfc]/g, "").includes("%")) api.fail("未対応：このprintf書式はモデルで扱えません", node, "未対応");
               let i = 0;
-              let text = fmt.replace(/%([%disf])/g, (_, type) => {
+              let text = fmt.replace(/%([%disfc])/g, (_, type) => {
                 if (type === "%") return "%";
                 let sourceArg = args[i + 1],
                   sourceType = typeOf(sourceArg, s),
                   v = rest[i++];
                 if (typeof v === "boolean") v = Number(v);
+                if (type === "s") v = cString(v, s, api, node);
                 if (
-                  ((type === "d" || type === "i") &&
+                  ((type === "d" || type === "i" || type === "c") &&
                     !["int", "char", "bool"].includes(sourceType)) ||
                   (type === "f" && !["float", "double"].includes(sourceType))
                 )
@@ -959,13 +1060,13 @@ export function createCFamily({ id, name, extensions, language }) {
                     node,
                     "未定義動作",
                   );
-                return type === "f" ? Number(v).toFixed(6) : String(v);
+                return type === "f" ? Number(v).toFixed(6) : type === "c" ? String.fromCharCode(v) : String(v);
               });
-              if (i !== rest.length || /%/.test(text.replaceAll("%%", "")))
+              if (i !== rest.length)
                 api.fail("printfの書式または引数の数は未対応です", node);
               s.outputs.push({ channel: "printf", text, line: node.line });
               api.note(s, node, "標準出力へ出します：" + text);
-              return text.length;
+              return new TextEncoder().encode(text).length;
             }
             if (name === "abs") {
               let v = values[0];
@@ -978,7 +1079,7 @@ export function createCFamily({ id, name, extensions, language }) {
           action(n, s, api) {
             if (n.action === "cout") {
               let text = n.values
-                .map((v) => { const value = api.read(v, s); return typeof value === "boolean" ? String(Number(value)) : formatValue(value); })
+                .map((v) => { const value = api.read(v, s); return typeof value === "boolean" ? String(Number(value)) : typeOf(v, s) === "char" ? String.fromCharCode(value) : isPtr(value) && s.model.memory[value.object]?.type === "char" ? cString(value, s, api, n) : formatValue(value); })
                 .join("");
               s.outputs.push({ channel: "cout", text, line: n.line });
               api.note(s, n, "標準出力へ出します：" + text);
@@ -1007,7 +1108,7 @@ export function createCFamily({ id, name, extensions, language }) {
                 : "モデルメモリ（実アドレスではありません）",
               entries: Object.entries(p.model.memory).map(([k, v]) => [
                 k,
-                formatValue(v),
+                `${v.name}（${v.type}、${v.alive ? "有効" : "寿命終了"}）：${formatValue(v.values)}`,
               ]),
             },
           ],

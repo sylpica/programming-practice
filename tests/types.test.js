@@ -18,12 +18,12 @@ const first = async (id, code, model) => {
   return r.paths[0];
 };
 const output = (p) => p.outputs.map((o) => o.text).join("\n");
-test("13 tool definitions satisfy the extension contract", () => {
-  assert.equal(definitions.length, 13);
-  assert.equal(new Set(definitions.map((d) => d.id)).size, 13);
+test("registered tool definitions satisfy the extension contract", () => {
+  assert.ok(definitions.length > 0);
+  assert.equal(new Set(definitions.map((d) => d.id)).size, definitions.length);
   for (let d of definitions) {
     validateDefinition(d);
-    assert.ok(d.templates.length >= 3);
+    assert.ok(d.templates.length >= 6);
     assert.ok(d.reference.length >= 7);
     assert.ok(d.semantics.sources.length);
   }

@@ -316,6 +316,17 @@ export const definition = {
           return baseBinary(op, a, b, "js");
         },
         read(a, s, api) {
+          if (a.k === "unary" && a.op === "typeof") {
+            const name = callName(a.arg), root = name?.split(".")[0];
+            if (name && !Object.hasOwn(s.vars, root)) {
+              if (["Number", "String", "Boolean", "parseInt", "prompt", "alert", "console.log", "Math.abs", "Math.floor", "Math.round", "JSON.stringify", "document.getElementById", "document.querySelector", "document.createElement"].includes(name)) return { handled: true, value: "function" };
+              if (["console", "Math", "JSON", "document"].includes(name)) return { handled: true, value: "object" };
+            }
+            if (a.arg.k === "var" && !Object.hasOwn(s.vars, a.arg.name) && !["undefined", "NaN", "Infinity", "true", "false", "null"].includes(a.arg.name))
+              return { handled: true, value: "undefined" };
+            const value = api.read(a.arg, s);
+            return { handled: true, value: isUnknown(value) ? unknown("typeof の対象の型") : typeof value };
+          }
           if (a.k === "literal" && a.raw && /[LfF]$/.test(a.raw))
             api.fail("JavaScriptに数値の型接尾辞はありません", a, "SyntaxError");
           if (a.k === "var" && s.vars[a.name]?.kind === "js-uninitialized")
@@ -509,3 +520,6 @@ export const definition = {
 };
 
 definition.templates.push(...additionalTemplates(definition.model.defaults));
+
+import { referenceDetails } from "./reference-details.js";
+for (const r of definition.reference) if (referenceDetails[r.name]) Object.assign(r, referenceDetails[r.name]);

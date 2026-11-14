@@ -37,7 +37,7 @@ const ref = rows([
     'event["params"]',
     "Fn::Transformで指定したマクロパラメーターです。",
     'event["params"].get("Stage", "dev")',
-    "トップレベルTransformのparamsは空です。",
+    "カスタムLambdaマクロのトップレベルTransformではparamsは空です。Parametersを受け取るFn::Transformと区別します。AWS::Include等の組込みTransformは専用仕様で、本モデルでは未対応です。",
   ],
   [
     "requestId",
@@ -301,6 +301,8 @@ export const definition = {
         return result;
       }
       async function invoke(name, fragment, params, line, refs) {
+        if (["AWS::Include", "AWS::Serverless", "AWS::Serverless-2016-10-31"].includes(name))
+          throw Object.assign(Error("未対応：組込みTransformの実際の変換・外部サービスへの接続は実装していません：" + name), {line, category: "未対応"});
         if (typeof name !== "string" || !model.macros?.[name])
           throw Object.assign(
             Error("未確認：モデルにマクロ定義がありません：" + name),
@@ -392,15 +394,16 @@ export const definition = {
       states = await nested(doc);
       for (let transform of transforms) {
         let done = [];
-        if (typeof transform !== "string")
-          throw Error("トップレベルTransformにはマクロ名を指定してください");
+        const spec = typeof transform === "string" ? { Name: transform, Parameters: {} } : transform;
+        if (!spec || typeof spec.Name !== "string" || (spec.Parameters !== undefined && (!spec.Parameters || typeof spec.Parameters !== "object" || Array.isArray(spec.Parameters))))
+          throw Error("Transformにはマクロ名またはNameとParametersのオブジェクトを指定してください");
         for (let s of states) {
           if (s.error) {
             done.push(s);
             continue;
           }
           let rs = await invoke(
-            transform,
+            spec.Name,
             s.fragment,
             {},
             locations.get("/Transform") || 1,
@@ -409,7 +412,7 @@ export const definition = {
           done.push(
             ...rs.map((r) => ({
               ...r,
-              trace: [...s.trace, ...r.trace],
+              trace: [...s.trace, ...(Object.keys(spec.Parameters || {}).length ? [{line: locations.get("/Transform") || 1, text: "トップレベルのカスタムLambdaマクロではparamsは空です。ParametersはFn::Transformの入力と区別します。", kind: "step", refs: ["Transform", "params"]}] : []), ...r.trace],
               outputs: [...s.outputs, ...r.outputs],
             })),
           );
@@ -449,3 +452,6 @@ export const definition = {
 };
 
 definition.templates.push(...additionalTemplates(definition.model.defaults));
+
+import { referenceDetails } from "./reference-details.js";
+for (const r of definition.reference) if (referenceDetails[r.name]) Object.assign(r, referenceDetails[r.name]);

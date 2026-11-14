@@ -19,6 +19,8 @@ jobs:
         with:
           node-version: "22"
       - run: npm test
+      - name: Compile teaching examples with native runtimes
+        run: python3 tests/native-audit.py
       - run: node scripts/precache.mjs --check
       - name: Check Pages configuration
         id: pages

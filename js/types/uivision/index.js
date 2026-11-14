@@ -249,11 +249,11 @@ export const definition = {
         action(n, s, api) {
           let target = interpolate(n.item.Target ?? "", s),
             value = interpolate(n.item.Value ?? "", s);
-          function element() {
+          function element(optional = false) {
             if (isUnknown(target))
               api.fail("未確定ロケーターの要素は説明できません", n);
             let e = s.model.pages?.[s.model.url]?.elements?.[target];
-            if (!e) api.fail("モデルに要素がありません：" + target, n);
+            if (!e && !optional) api.fail("モデルに要素がありません：" + target, n);
             return e;
           }
           try {
@@ -312,13 +312,12 @@ export const definition = {
                 );
                 break;
               case "storeText":
-                s.vars[String(value)] = element().text ?? "";
-                api.note(s, n, `${value} にモデル要素のテキストを保存します`);
+              case "storeValue": {
+                const e = element(true);
+                s.vars[String(value)] = !e ? "#LNF" : n.action === "storeValue" ? (e.value ?? "") : ["input", "select", "textarea"].includes(e.tag?.toLowerCase()) ? "" : (e.text ?? "");
+                api.note(s, n, `${value} に ${e ? "モデル要素の値" : "#LNF（ロケーター不一致）"}を保存します`);
                 break;
-              case "storeValue":
-                s.vars[String(value)] = element().value ?? "";
-                api.note(s, n, `${value} にモデル入力値を保存します`);
-                break;
+              }
               case "echo":
                 s.outputs.push({
                   channel: "echo",
@@ -401,3 +400,6 @@ export const definition = {
 };
 
 definition.templates.push(...additionalTemplates(definition.model.defaults));
+
+import { referenceDetails } from "./reference-details.js";
+for (const r of definition.reference) if (referenceDetails[r.name]) Object.assign(r, referenceDetails[r.name]);

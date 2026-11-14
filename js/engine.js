@@ -807,7 +807,8 @@ function evalExpr(a, s) {
       if (a.name === "vbcrlf") return "\r\n";
       if (a.name === "vbtab") return "\t";
       if (a.name === "err") return { kind: "err" };
-      if (a.name === "date" || a.name === "now") return unknown("実行時の日時");
+      if (a.name === "date") return unknown("実行時の現在日付（時刻なし）");
+      if (a.name === "now") return unknown("実行時の現在日時（日付と時刻）");
       if (!(a.name in s.vars)) {
         if (s.explicit) fail(`変数が定義されていません：${a.name}`);
         s.vars[a.name] = EMPTY;
@@ -1151,7 +1152,7 @@ export function simulate(source, model = {}, custom = {}) {
         note(
           copy,
           n,
-          `条件が${yes ? "成立する" : "成立しない"}場合（${display(v)}）`,
+          `条件が${yes ? "成立する" : "成立しない"}場合：${display(v)}`,
         );
         out.push({ s: copy, yes, uncertain: true });
       }

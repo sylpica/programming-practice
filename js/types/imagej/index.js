@@ -6,6 +6,7 @@ const reference = functions.map((r) => ({
   category: functionCats[r.cat] || r.cat,
   syntax: r.sig,
   description: r.desc,
+  returns: r.ret || "戻り値なし（処理または引数の変数への書き込み）",
   example: r.ex || "",
   caution: r.note || "",
   supported: true,
@@ -187,3 +188,6 @@ export const definition = {
 };
 
 ["基礎", "基礎", "基礎", "実践", "基礎", "応用", "応用", "実践", "応用", "応用"].forEach((level, i) => { definition.templates[i].level = level; });
+
+import { referenceDetails } from "./reference-details.js";
+for (const r of definition.reference) if (referenceDetails[r.name]) Object.assign(r, referenceDetails[r.name]);

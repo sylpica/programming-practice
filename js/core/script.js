@@ -88,7 +88,7 @@ export function tokenize(source, dialect = "js") {
         }
       }
       if (!closed) throw new PracticeError("文字列が閉じられていません", start);
-      out.push({ v: text, k: "string", line: start });
+      out.push({ v: text, k: "string", quote, line: start });
       continue;
     }
     let m = source
@@ -202,8 +202,8 @@ export class ScriptParser {
         value: Number(t.v.replace(/[LfF]$/, "")),
         raw: t.v,
       };
-    else if (t.k === "string") a = { ...meta, k: "literal", value: t.v };
-    else if (["!", "not", "-", "+", "&", "*"].includes(t.v))
+    else if (t.k === "string") a = { ...meta, k: "literal", value: t.v, quote: t.quote };
+    else if (["!", "not", "-", "+", "&", "*", ...(this.dialect === "js" ? ["typeof"] : []), ...(["c", "cpp"].includes(this.dialect) ? ["sizeof"] : [])].includes(t.v))
       a = { ...meta, k: "unary", op: t.v, arg: this.expr(this.dialect === "js" ? 10 : 9) };
     else if (t.v === "(") {
       a = this.expr();
@@ -392,11 +392,11 @@ export class ScriptParser {
           refs: ["for"],
         };
       }
-      let init = this.simple();
+      let init = this.peek(";") ? null : this.simple();
       this.take(";");
-      let test = this.expr();
+      let test = this.peek(";") ? { k: "literal", value: true, line } : this.expr();
       this.take(";");
-      let update = this.simple();
+      let update = this.peek(")") ? null : this.simple();
       this.take(")");
       return {
         k: "for",
@@ -687,7 +687,7 @@ export function executeProgram(nodes, model, semantics = {}, custom = {}) {
           null: null,
         };
         if (Object.hasOwn(constants, a.name)) return constants[a.name];
-        throw new PracticeError(`未定義の名前：${a.name}`, a.line, "NameError");
+        throw new PracticeError(`未定義の名前：${a.name}`, a.line, semantics.dialect === "js" ? "ReferenceError" : "NameError");
       }
       case "array":
         return a.values.map((x) => read(x, s));
@@ -862,6 +862,7 @@ export function executeProgram(nodes, model, semantics = {}, custom = {}) {
       line: e.line || n.line,
       nodeId: n.nodeId,
       text: e.message,
+      category: e.category,
       kind: e.category === "limit" ? "limit" : "error",
       refs: n.refs || astRefs(n),
     });
@@ -871,7 +872,7 @@ export function executeProgram(nodes, model, semantics = {}, custom = {}) {
       done = [],
       values = null,
       countLimit = null;
-    if (n.k === "for") active = run([n.init], active, depth + 1);
+    if (n.k === "for" && n.init) active = run([n.init], active, depth + 1);
     if (n.k === "each") {
       values = read(n.collection, s);
       if (!Array.isArray(values))
@@ -973,6 +974,7 @@ export function executeProgram(nodes, model, semantics = {}, custom = {}) {
       hadType: Object.hasOwn(s.types, n.name),
       type: s.types[n.name],
       address: s.addresses?.[n.name],
+      reference: s.references?.[n.name],
     });
     delete s.vars[n.name];
     delete s.types[n.name];
@@ -981,12 +983,16 @@ export function executeProgram(nodes, model, semantics = {}, custom = {}) {
     let scope = s.scopeStack.pop();
     for (let r of scope.records.reverse()) {
       let id = s.addresses?.[r.name];
-      if (semantics.manualLifetime && id && s.model.memory?.[id])
+      if (semantics.manualLifetime && id && s.model.memory?.[id]?.name === r.name)
         s.model.memory[id].alive = false;
       if (r.hadVar) s.vars[r.name] = r.value;
       else delete s.vars[r.name];
       if (r.hadType) s.types[r.name] = r.type;
       else delete s.types[r.name];
+      if (s.references) {
+        if (r.reference) s.references[r.name] = r.reference;
+        else delete s.references[r.name];
+      }
       if (s.addresses) {
         if (r.address) s.addresses[r.name] = r.address;
         else delete s.addresses[r.name];
@@ -1034,8 +1040,10 @@ export function executeProgram(nodes, model, semantics = {}, custom = {}) {
         return [s];
       }
       case "expression": {
+        const before = s.trace.length;
         let v = read(n.value, s);
-        note(s, n, `式を評価します：${formatValue(v)}`);
+        if (s.trace.length === before)
+          note(s, n, v == null ? "処理を実行します（表示する戻り値はありません）" : `式を評価します：${formatValue(v)}`);
         return [s];
       }
       case "if": {
@@ -1102,7 +1110,7 @@ export function executeProgram(nodes, model, semantics = {}, custom = {}) {
   } catch (e) {
     return {
       paths: [],
-      error: { line: e.line || 1, message: e.message },
+      error: { line: e.line || 1, message: e.message, category: e.category },
       limits,
       truncated,
       operations,

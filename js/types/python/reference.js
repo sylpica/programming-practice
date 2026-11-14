@@ -387,7 +387,7 @@ export const REFERENCE = [
   "returns": "ファイルオブジェクト",
   "example": "with open(\"memo.txt\", \"w\", encoding=\"utf-8\") as f:\n    f.write(\"hello\")\nwith open(\"memo.txt\", encoding=\"utf-8\") as f:\n    print(f.read())",
   "expected": "hello",
-  "pitfalls": "Python 3.14 以前では encoding を省略すると環境依存（Windows では UTF-8 以外）になり文字化けの原因になる（3.15 から既定は UTF-8）。常に明示すると確実。with を使わないと閉じ忘れることがある。",
+  "pitfalls": "Python 3.14以前ではencodingの既定値がロケールとUTF-8モードの設定に依存します。3.15からUTF-8モードが既定です。常に明示すると確実。with を使わないと閉じ忘れることがある。",
   "related": [
    "with",
    "input"
@@ -407,7 +407,7 @@ export const REFERENCE = [
   "returns": "str: 入力された文字列（改行は除く）",
   "example": "name = input(\"名前: \")\nprint(f\"こんにちは、{name}さん\")",
   "expected": "名前: タロウ\nこんにちは、タロウさん",
-  "pitfalls": "戻り値は常に文字列。数値として使うには int() や float() で変換する。入力が無いと EOFError。このアプリでは実行前に「標準入力」欄へ1行ずつ値を書いておき、読み込んだ値はターミナルと同じようにプロンプトの後ろに表示される（この例では「タロウ」を入力済みとして実行する）。",
+  "pitfalls": "戻り値は常に文字列。数値として使うには int() や float() で変換する。入力ストリームの終端では EOFError。このアプリでは実際の標準入力を読まず、入力値は実行時に決まる未確定値として扱います。",
   "related": [
    "int",
    "str",
@@ -798,7 +798,7 @@ export const REFERENCE = [
   "returns": "モジュール",
   "example": "import os\nprint(os.path.join(\"data\", \"result.csv\"))",
   "expected": "data/result.csv",
-  "pitfalls": "ブラウザ版Python（Pyodide）では実際のOS機能の多くが使えず、パス区切りも環境に依存する（例の出力は Linux・macOS・ブラウザ版のもので、Windows では data\\result.csv になる）。パスの結合は文字列連結ではなく os.path.join / pathlib を使う。",
+  "pitfalls": "パス区切りや利用可能なOS機能は実行環境に依存します。パスの結合は文字列連結ではなく os.path.join / pathlib を使う。",
   "related": [
    "open",
    "json"
@@ -838,7 +838,7 @@ export const REFERENCE = [
   "returns": "ndarray",
   "example": "import numpy as np\na = np.array([1, 2, 3])\nprint(a.sum())",
   "expected": "6",
-  "pitfalls": "通常のリストと違い、配列同士の演算は要素ごとに行われる。環境によっては NumPy が未導入の場合がある（ブラウザではPyodide同梱版を利用）。",
+  "pitfalls": "通常のリストと違い、配列同士の演算は要素ごとに行われる。環境によっては NumPy が未導入の場合がある（本アプリはNumPyを実行しません）。",
   "related": [
    "pandas.DataFrame",
    "list",
@@ -859,7 +859,7 @@ export const REFERENCE = [
   "returns": "DataFrame",
   "example": "import pandas as pd\ndf = pd.DataFrame({\"x\": [1, 2], \"y\": [10, 20]})\nprint(df[\"y\"].sum())",
   "expected": "30",
-  "pitfalls": "列名の綴りミスで KeyError になる。ブラウザではPyodide同梱のpandasを利用するが、バージョンは環境により異なる。",
+  "pitfalls": "列名の綴りミスで KeyError になる。実行にはpandasのインストールが必要です。本アプリはpandasを実行しません。",
   "related": [
    "numpy.array",
    "dict",

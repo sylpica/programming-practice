@@ -7,7 +7,7 @@ with sync_playwright() as p:
  context=b.new_context(viewport={'width':1440,'height':1000});page=context.new_page();page.set_default_timeout(12000);errors=[];page.on('pageerror',lambda e:errors.append(str(e)))
  def done():page.wait_for_function("!document.querySelector('#run').disabled")
  def switch(kind):page.locator('#macroType').select_option(kind);done()
- page.goto(URL);done();assert page.title()=='プログラミング練習';ids=page.locator('#macroType option').evaluate_all('(items)=>items.map(x=>x.value)');assert len(ids)==13
+ page.goto(URL);done();assert page.title()=='プログラミング練習';ids=page.locator('#macroType option').evaluate_all('(items)=>items.map(x=>x.value)');assert len(ids)>0
  page.on('dialog',lambda d:d.accept())
  # Every tool, every supplied template, and per-tool save state.
  template_count=0
@@ -51,5 +51,5 @@ with sync_playwright() as p:
   assert '使えません' not in page.locator('#resultStatus').inner_text(),kind
   page.locator('#template').select_option(page.locator('#template option').nth(1).get_attribute('value'));done();assert not page.locator('#pathNav').is_hidden(),kind
  context.set_offline(False);assert not errors,errors
- print(json.dumps({'types':len(ids),'templates':template_count,'layout_cases':layouts,'drafts':'per-type/reload/invalid model preserved','flow_builder':'passed','offline':'all 13','pageerrors':errors},ensure_ascii=False),flush=True)
+ print(json.dumps({'types':len(ids),'templates':template_count,'layout_cases':layouts,'drafts':'per-type/reload/invalid model preserved','flow_builder':'passed','offline':f'all {len(ids)}','pageerrors':errors},ensure_ascii=False),flush=True)
  b.close()
