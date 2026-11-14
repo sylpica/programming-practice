@@ -1,5 +1,54 @@
-import { lex, display, LIMITS } from "./engine.js";
-import { templates, reference, glossary, usedReferences } from "./content.js";
+import { LIMITS, formatValue, refsInTrace } from "./core/contract.js";
+import { definitions, getDefinition } from "./types/registry.js";
+let active = getDefinition("vba"),
+  templates = active.templates,
+  reference = active.reference,
+  glossary = active.glossary || [];
+let drafts = {},
+  editorPlugin = null,
+  storageBlocked = false;
+try {
+  let raw = localStorage.getItem("programming-practice-v3");
+  if (raw) {
+    try {
+      let saved = JSON.parse(raw);
+      if (
+        !saved ||
+        typeof saved !== "object" ||
+        !saved.drafts ||
+        Array.isArray(saved.drafts) ||
+        typeof saved.drafts !== "object"
+      )
+        throw Error("保存形式が不正です");
+      drafts = saved.drafts;
+      active = getDefinition(saved.active);
+    } catch {
+      try {
+        localStorage.setItem("programming-practice-recovery-v3", raw);
+      } catch {
+        storageBlocked = true;
+      }
+    }
+  }
+} catch {
+  storageBlocked = true;
+}
+
+if (!Object.keys(drafts).length) {
+  try {
+    let interim = JSON.parse(localStorage.getItem("macro-practice-v2"));
+    if (interim) {
+      drafts = interim.drafts || {};
+      active = getDefinition(interim.active);
+    }
+  } catch {}
+}
+if (!drafts.vba) {
+  try {
+    let legacy = JSON.parse(localStorage.getItem("vba-practice-v1"));
+    if (legacy) drafts.vba = legacy;
+  } catch {}
+}
 import { decodeFile } from "./import.js";
 const $ = (id) => document.getElementById(id);
 const el = (tag, text, cls) => {
@@ -16,18 +65,14 @@ let result = null,
   worker,
   request = 0,
   watchdog;
-const defaultModel = {
-  A1: "商品",
-  B1: "点数",
-  C1: "判定",
-  A2: "りんご",
-  B2: 85,
-  A3: "みかん",
-  B3: 60,
-  A4: "ぶどう",
-  B4: 45,
-};
 function getModel() {
+  if (active.model.kind !== "sheet") {
+    try {
+      return JSON.parse($("modelJson").value);
+    } catch {
+      throw Error("モデル状態のJSONが不正です");
+    }
+  }
   let model = {};
   for (let input of $("sheet").querySelectorAll("input")) {
     let t = input.value;
@@ -44,7 +89,16 @@ function getModel() {
   }
   return model;
 }
-function fillSheet(model = defaultModel) {
+function fillSheet(model = active.model.defaults) {
+  $("modelTitle").textContent = active.model.title;
+  $("modelHint").textContent =
+    active.model.hint || "モデルだけを変更します。外部サービスは操作しません。";
+  $("sheetWrap").hidden = active.model.kind !== "sheet";
+  $("modelJson").hidden = active.model.kind === "sheet";
+  if (active.model.kind !== "sheet") {
+    $("modelJson").value = JSON.stringify(model, null, 2);
+    return;
+  }
   $("sheet").replaceChildren();
   for (let row = 1; row <= 5; row++) {
     let tr = el("tr");
@@ -63,22 +117,40 @@ function fillSheet(model = defaultModel) {
   }
 }
 function save() {
-  try {
-    localStorage.setItem(
-      "vba-practice-v1",
-      JSON.stringify({
-        code: $("editor").value,
-        templateId,
-        auto: $("auto").checked,
-        model: Object.fromEntries(
-          [...$("sheet").querySelectorAll("input")].map((x) => [
-            x.dataset.cell,
-            x.value,
-          ]),
-        ),
-      }),
+  let previous = drafts[active.id] || {},
+    model = previous.model || active.model.defaults,
+    modelText = active.model.kind === "sheet" ? null : $("modelJson").value;
+  if (active.model.kind === "sheet")
+    model = Object.fromEntries(
+      [...$("sheet").querySelectorAll("input")].map((x) => [
+        x.dataset.cell,
+        x.value,
+      ]),
     );
-  } catch {}
+  else {
+    try {
+      model = JSON.parse(modelText);
+    } catch {}
+  }
+  drafts[active.id] = {
+    ...previous,
+    code: $("editor").value,
+    templateId,
+    auto: $("auto").checked,
+    sort: $("sort").value,
+    pathId: paths[current]?.id ?? previous.pathId,
+    model,
+    modelText,
+  };
+  try {
+    if (storageBlocked) throw Error("保存データを保護しています");
+    localStorage.setItem(
+      "programming-practice-v3",
+      JSON.stringify({ active: active.id, drafts }),
+    );
+  } catch {
+    $("storageNotice").hidden = false;
+  }
 }
 function updateLines() {
   let lines = $("editor").value.split("\n").length;
@@ -93,13 +165,14 @@ function syncScroll() {
   $("lineNumbers").scrollTop = $("editor").scrollTop;
 }
 function changed() {
+  editorPlugin?.refresh?.();
   result = null;
   paths = [];
   $("pathNav").hidden = true;
   $("trace").replaceChildren();
   $("outputs").replaceChildren();
   $("final").textContent =
-    "コードまたはモデルシートが変わりました。実行して状態を確認してください。";
+    "コード・フローまたはモデルが変わりました。実行して状態を確認してください。";
   $("resultStatus").textContent = "更新後のコードは未実行です";
   $("limit").hidden = true;
   updateLines();
@@ -136,7 +209,10 @@ function loadTemplate(id, confirm = true) {
   }
   templateId = id;
   $("template").value = id;
-  if (t) $("editor").value = t.code;
+  if (t) {
+    $("editor").value = t.code;
+    if (t.model) fillSheet(t.model);
+  }
   renderExplanation(t);
   changed();
   if (t) run();
@@ -182,27 +258,34 @@ function renderExplanation(t) {
     if (r) box.append(refArticle(r, true));
   }
 }
-for (let t of templates) {
-  let o = el("option", t.title);
-  o.value = t.id;
-  $("template").append(o);
-  let card = el("article", undefined, "template-card");
-  card.append(
-    el(
-      "span",
-      "TEMPLATE " + String(templates.indexOf(t) + 1).padStart(2, "0"),
-      "eyebrow",
-    ),
-    el("h2", t.title),
-    el("p", t.intro),
-  );
-  let b = el("button", "このテンプレートで練習する", "primary");
-  b.onclick = () => {
-    loadTemplate(t.id);
-    showView("practice");
-  };
-  card.append(b);
-  $("templateCards").append(card);
+function renderTemplates() {
+  $("template").replaceChildren();
+  let none = el("option", "なし（自由に練習）");
+  none.value = "";
+  $("template").append(none);
+  $("templateCards").replaceChildren();
+  for (let t of templates) {
+    let o = el("option", t.title);
+    o.value = t.id;
+    $("template").append(o);
+    let card = el("article", undefined, "template-card");
+    card.append(
+      el(
+        "span",
+        "TEMPLATE " + String(templates.indexOf(t) + 1).padStart(2, "0"),
+        "eyebrow",
+      ),
+      el("h2", t.title),
+      el("p", t.intro),
+    );
+    let b = el("button", "このテンプレートで練習する", "primary");
+    b.onclick = () => {
+      loadTemplate(t.id);
+      showView("practice");
+    };
+    card.append(b);
+    $("templateCards").append(card);
+  }
 }
 $("template").onchange = (e) => loadTemplate(e.target.value);
 function refArticle(r, expanded = false) {
@@ -253,23 +336,25 @@ function fullRefs() {
 }
 $("referenceSearch").oninput = renderRefs;
 $("fullSearch").oninput = fullRefs;
-for (let [word, definition] of glossary) {
-  let box = el("div");
-  box.append(el("dt", word), el("dd", definition));
-  $("glossaryList").append(box);
+function renderGlossary() {
+  $("glossaryList").replaceChildren();
+  for (let [word, definition] of glossary) {
+    let box = el("div");
+    box.append(el("dt", word), el("dd", definition));
+    $("glossaryList").append(box);
+  }
 }
 function updateUsed() {
-  let tokens = [];
+  let names = [];
   if (result) {
-    tokens = paths[current]?.trace.flatMap((t) => t.tokens) || [];
+    names = refsInTrace(paths[current]).filter((n) =>
+      reference.some((r) => r.name === n),
+    );
     $("usedScope").textContent = "表示中のパス";
   } else {
-    try {
-      tokens = lex($("editor").value);
-    } catch {}
+    names = active.scan($("editor").value);
     $("usedScope").textContent = "コード全体";
   }
-  let names = usedReferences(tokens);
   $("used").replaceChildren();
   for (let name of names) {
     let b = el("button", name, "chip");
@@ -279,7 +364,11 @@ function updateUsed() {
   if (!names.length)
     $("used").append(el("span", "該当する項目はありません", "muted"));
 }
-function jumpLine(line) {
+function jumpLine(line, nodeId) {
+  if (nodeId && editorPlugin?.highlight) {
+    editorPlugin.highlight(nodeId);
+    return;
+  }
   let editor = $("editor"),
     lines = editor.value.split("\n"),
     start = lines.slice(0, line - 1).reduce((n, s) => n + s.length + 1, 0);
@@ -295,6 +384,11 @@ function applyResult(r) {
   paths = [...r.paths];
   current = 0;
   sortPaths();
+  const previousId = drafts[active.id]?.pathId;
+  if (previousId !== undefined) {
+    let at = paths.findIndex((p) => p.id === previousId);
+    if (at >= 0) current = at;
+  }
   $("run").disabled = false;
   if (r.error) {
     $("resultStatus").textContent = `${r.error.line}行：${r.error.message}`;
@@ -311,9 +405,15 @@ function applyResult(r) {
     updateUsed();
     return;
   }
+  if (!paths.length) {
+    $("trace").replaceChildren();
+    $("outputs").replaceChildren();
+    $("final").textContent =
+      "説明する処理がありません。コードまたはフローを入力してください。";
+  }
   $("pathNav").hidden = !paths.length;
   $("resultStatus").textContent =
-    `${paths.length}件のパス · モデルシートに基づく説明`;
+    `${paths.length}件のパス · ${active.model.title}に基づく説明`;
   $("limit").hidden = !r.truncated;
   if (r.truncated)
     $("limit").textContent =
@@ -328,7 +428,14 @@ function run() {
   $("run").disabled = true;
   $("resultStatus").textContent = "コードを解析しています…";
   let code = $("editor").value,
+    model;
+  try {
     model = getModel();
+  } catch (e) {
+    $("run").disabled = false;
+    $("resultStatus").textContent = e.message;
+    return;
+  }
   try {
     worker = new Worker(new URL("./worker.js", import.meta.url), {
       type: "module",
@@ -346,7 +453,7 @@ function run() {
       $("resultStatus").textContent =
         "解析用Workerを開始できません。HTTP(S)でアプリを開き直してください。";
     };
-    worker.postMessage({ id, code, model });
+    worker.postMessage({ id, code, model, typeId: active.id });
     watchdog = setTimeout(() => {
       worker.terminate();
       $("run").disabled = false;
@@ -387,7 +494,7 @@ function renderPath() {
     let li = el("li", undefined, t.kind),
       b = el("button");
     b.append(el("span", `L${t.line}`, "line"), el("span", t.text));
-    b.onclick = () => jumpLine(t.line);
+    b.onclick = () => jumpLine(t.line, t.nodeId);
     li.append(b);
     $("trace").append(li);
   }
@@ -412,16 +519,13 @@ function renderPath() {
       ),
     );
   let grid = el("div", undefined, "state-grid");
-  for (let [title, entries] of [
-    ["変数", Object.entries(p.vars)],
-    ["セルの変化", p.changes],
-  ]) {
+  for (let { title, entries } of p.groups || []) {
     let group = el("div");
     group.append(el("h3", title));
     let dl = el("dl");
     for (let [name, v] of entries) {
       let row = el("div", undefined, "state-row");
-      row.append(el("dt", name), el("dd", display(v)));
+      row.append(el("dt", name), el("dd", formatValue(v)));
       dl.append(row);
     }
     if (!entries.length) group.append(el("p", "なし", "muted"));
@@ -430,6 +534,7 @@ function renderPath() {
   }
   $("final").append(grid);
   updateUsed();
+  save();
 }
 function navigate(n) {
   if (!paths.length) return;
@@ -444,7 +549,7 @@ $("jump").onclick = () => {
   let text = $("pathNumber").value.trim();
   if (!text || !/^[-+]?\d+(?:\.\d+)?$/.test(text)) return;
   let n = Number(text);
-  if (Number.isFinite(n)) navigate(Math.trunc(n) - 1);
+  if (!Number.isNaN(n)) navigate(Math.trunc(n) - 1);
 };
 $("pathNumber").onkeydown = (e) => {
   if (e.key === "Enter") $("jump").click();
@@ -457,10 +562,19 @@ $("run").onclick = run;
 $("auto").onchange = () => {
   save();
   if ($("auto").checked) run();
+  else clearTimeout(timer);
 };
 $("editor").oninput = changed;
 $("editor").onscroll = syncScroll;
 $("editor").onkeydown = (e) => {
+  if (e.key === "Escape") {
+    e.target.dataset.tabEscape = "1";
+    return;
+  }
+  if (e.key === "Tab" && e.target.dataset.tabEscape === "1") {
+    delete e.target.dataset.tabEscape;
+    return;
+  }
   if (e.key === "Tab") {
     e.preventDefault();
     let a = e.target.selectionStart,
@@ -479,9 +593,18 @@ $("resetModel").onclick = () => {
 };
 async function importFile(file) {
   if (!file) return;
+  const targetId = active.id,
+    editVersion = request,
+    extensions = [...active.extensions];
   try {
     if (file.size > 300000) throw Error("ファイルは300KB以内にしてください。");
-    let { text, encoding } = decodeFile(await file.arrayBuffer(), file.name);
+    let buffer = await file.arrayBuffer();
+    if (active.id !== targetId || request !== editVersion) {
+      $("resultStatus").textContent =
+        "取込中に言語・ツールまたは下書きが変わりました。もう一度取り込んでください。";
+      return;
+    }
+    let { text, encoding } = decodeFile(buffer, file.name, extensions);
     if (
       !window.confirm(
         `ファイル：${file.name}\n文字コード：${encoding}\n${text.split("\n").length}行\n現在のコードを上書きして取り込みますか？`,
@@ -525,36 +648,97 @@ $("download").onclick = () => {
     url = URL.createObjectURL(blob),
     a = el("a");
   a.href = url;
-  a.download = "practice.bas";
+  a.download =
+    "practice" +
+    (active.fileExtension?.($("editor").value) || active.extensions[0]);
   a.click();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 };
-fillSheet();
-renderRefs();
-fullRefs();
-$("refDetail").replaceChildren(
-  ...refArticle(
-    reference.find((r) => r.name === "Range"),
-    true,
-  ).childNodes,
-);
-let saved;
-try {
-  saved = JSON.parse(localStorage.getItem("vba-practice-v1"));
-} catch {}
-if (saved && typeof saved.code === "string") {
-  $("editor").value = saved.code;
-  templateId = templates.some((t) => t.id === saved.templateId)
-    ? saved.templateId
-    : "";
+function switchType(id, savePrevious = true) {
+  if (savePrevious) save();
+  worker?.terminate();
+  clearTimeout(timer);
+  clearTimeout(watchdog);
+  request++;
+  active = getDefinition(id);
+  templates = active.templates;
+  reference = active.reference;
+  glossary = active.glossary || [];
+  result = null;
+  paths = [];
+  current = 0;
+  $("trace").replaceChildren();
+  $("outputs").replaceChildren();
+  $("final").textContent = "実行すると状態を表示します";
+  $("pathNav").hidden = true;
+  $("limit").hidden = true;
+  editorPlugin?.destroy?.();
+  editorPlugin = null;
+  $("macroType").value = active.id;
+  $("file").accept = active.extensions.join(",");
+  $("fileHint").textContent =
+    active.extensions.join(" / ") + " をドロップして取り込み";
+  $("editor").setAttribute("aria-label", active.name + " コード / フロー");
+  $("syntaxName").textContent = active.syntax.name;
+  $("supportText").textContent =
+    active.semantics.description + " " + active.semantics.support;
+  $("sourceLinks").replaceChildren();
+  for (let source of active.semantics.sources || []) {
+    let a = el("a", source.title);
+    a.href = source.url;
+    a.target = "_blank";
+    a.rel = "noopener";
+    $("sourceLinks").append(a, document.createTextNode(" "));
+  }
+  renderTemplates();
+  renderGlossary();
+  $("referenceSearch").value = "";
+  $("fullSearch").value = "";
+  renderRefs();
+  fullRefs();
+  $("refDetail").replaceChildren(...refArticle(reference[0], true).childNodes);
+  let saved = drafts[active.id],
+    first = templates[0];
+  templateId = saved?.templateId ?? first?.id ?? "";
   $("template").value = templateId;
-  $("auto").checked = !!saved.auto;
-  if (saved.model) fillSheet(saved.model);
+  $("editor").value = saved?.code ?? first?.code ?? "";
+  $("auto").checked = !!saved?.auto;
+  $("sort").value = saved?.sort || "original";
+  fillSheet(saved?.model || first?.model || active.model.defaults);
+  if (
+    saved?.modelText !== undefined &&
+    saved.modelText !== null &&
+    active.model.kind !== "sheet"
+  )
+    $("modelJson").value = saved.modelText;
   renderExplanation(templates.find((t) => t.id === templateId));
+  $("builder").replaceChildren();
+  $("builder").hidden = !active.editor?.mount;
+  if (active.editor?.mount)
+    editorPlugin = active.editor.mount({
+      root: $("builder"),
+      getCode: () => $("editor").value,
+      setCode: (code) => {
+        $("editor").value = code;
+        changed();
+      },
+      onError: (message) => {
+        $("resultStatus").textContent = message;
+      },
+    });
   updateLines();
   updateUsed();
+  save();
   run();
-} else loadTemplate("cells", false);
+}
+for (let type of definitions) {
+  let option = el("option", type.name);
+  option.value = type.id;
+  $("macroType").append(option);
+}
+$("macroType").onchange = (e) => switchType(e.target.value);
+$("modelJson").oninput = changed;
+switchType(active.id, false);
 if ("serviceWorker" in navigator)
   navigator.serviceWorker
     .register("./sw.js")

@@ -1,7 +1,10 @@
-import { simulate } from "./engine.js";
-self.onmessage = ({ data }) => {
+import { getDefinition } from "./types/registry.js";
+self.onmessage = async ({ data }) => {
   try {
-    self.postMessage({ id: data.id, result: simulate(data.code, data.model) });
+    self.postMessage({
+      id: data.id,
+      result: await getDefinition(data.typeId).simulate(data.code, data.model),
+    });
   } catch (e) {
     self.postMessage({
       id: data.id,

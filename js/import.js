@@ -1,6 +1,6 @@
-export function decodeFile(buffer, name) {
-  if (!/\.(bas|txt)$/i.test(name))
-    throw Error(".bas または .txt ファイルを選んでください。");
+export function decodeFile(buffer, name, extensions = [".bas", ".txt"]) {
+  if (!extensions.some((ext) => name.toLowerCase().endsWith(ext.toLowerCase())))
+    throw Error(extensions.join(" / ") + " ファイルを選んでください。");
   if (buffer.byteLength > 300000)
     throw Error("ファイルは300KB以内にしてください。");
   let bytes = new Uint8Array(buffer),

@@ -6,30 +6,38 @@
     <meta name="theme-color" content="#197655" />
     <meta
       name="description"
-      content="ExcelなしでVBAの動きを学べる、オフライン対応のコード練習アプリ。"
+      content="コードとフローの動きをモデルで学べる、オフライン対応のコード練習アプリ。"
     />
     <link rel="manifest" href="manifest.webmanifest" />
     <link rel="icon" href="icons/icon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
     <link rel="stylesheet" href="style.css" />
-    <title>VBA練習アプリ</title>
+    <title>プログラミング練習</title>
   </head>
   <body>
     <header class="site-header">
       <a class="brand" href="./"
         ><img src="icons/icon.svg" width="38" height="38" alt="" /><span
-          >VBA練習アプリ<small>Excelの「動き」を、コードから。</small></span
+          >プログラミング練習<small>コードとフローの動きを学ぶ。</small></span
         ></a
       ><span id="offline" class="status">ローカルで学習</span>
     </header>
     <nav class="main-nav" aria-label="メインメニュー">
       <button data-view="practice" aria-current="page">コード練習</button
-      ><button data-view="reference">関数リファレンス</button
+      ><button data-view="reference">リファレンス</button
       ><button data-view="templates">テンプレート集</button
       ><button data-view="glossary">用語集</button>
     </nav>
     <main>
+      <p id="storageNotice" class="notice" hidden>
+        ブラウザへの保存ができませんでした。保存ボタンで下書きをファイルへ保存してください。
+      </p>
       <section id="practice" class="view">
+        <div class="type-selector">
+          <label for="macroType">言語・ツール</label
+          ><select id="macroType"></select
+          ><span id="syntaxName" class="badge"></span>
+        </div>
         <div class="practice-heading">
           <div>
             <h1>書いて、動きを確かめよう</h1>
@@ -51,6 +59,7 @@
                 </div>
               </div>
               <input id="file" type="file" accept=".bas,.txt" hidden />
+              <div id="builder" hidden></div>
               <div class="editor-wrap">
                 <pre id="lineNumbers" aria-hidden="true"></pre>
                 <textarea
@@ -64,7 +73,11 @@
               </div>
               <div class="editor-footer">
                 <span id="cursor">1行</span
-                ><span>.bas / .txt をドロップして取り込み</span>
+                ><span
+                  ><span id="fileHint"
+                    >.bas / .txt をドロップして取り込み</span
+                  ></span
+                >
               </div>
             </section>
             <section class="panel simulation">
@@ -124,13 +137,13 @@
           <aside class="right-column">
             <section class="panel model-panel">
               <div class="panel-heading">
-                <h2>モデルシート</h2>
+                <h2 id="modelTitle">モデルシート</h2>
                 <button id="resetModel" title="モデル値を初期状態に戻す">
                   リセット
                 </button>
               </div>
               <div class="model-body">
-                <div class="sheet-wrap">
+                <div id="sheetWrap" class="sheet-wrap">
                   <table class="sheet">
                     <caption>
                       Sheet1 · A1:C5
@@ -146,7 +159,13 @@
                     <tbody id="sheet"></tbody>
                   </table>
                 </div>
-                <p class="hint">
+                <textarea
+                  id="modelJson"
+                  aria-label="モデル状態 JSON"
+                  spellcheck="false"
+                  hidden
+                ></textarea>
+                <p id="modelHint" class="hint">
                   値を編集できます。「?」は未確定、空欄はEmpty。文字列を数値と区別するには先頭に
                   ' を付けます。
                 </p>
@@ -154,13 +173,13 @@
             </section>
             <section class="panel used-panel">
               <div class="panel-heading">
-                <h2>使用中の関数</h2>
+                <h2>使用中の項目</h2>
                 <span id="usedScope" class="muted">コード全体</span>
               </div>
               <div id="used" class="chips"></div>
             </section>
             <section class="panel reference-panel">
-              <div class="panel-heading"><h2>関数リファレンス</h2></div>
+              <div class="panel-heading"><h2>リファレンス</h2></div>
               <div class="reference-body">
                 <label class="search"
                   ><span>検索</span
@@ -177,7 +196,7 @@
         </div>
       </section>
       <section id="reference" class="view" hidden>
-        <h1>関数・ステートメント</h1>
+        <h1>関数・アクションのリファレンス</h1>
         <p>書式、使い方、注意点を調べる。</p>
         <label class="search"
           ><span>検索</span
@@ -194,37 +213,30 @@
         <div id="templateCards" class="template-grid"></div>
       </section>
       <section id="glossary" class="view" hidden>
-        <h1>VBAの用語集</h1>
+        <h1>用語集</h1>
         <p>
-          プログラミングの言葉を知ろう。関数の書式は「関数リファレンス」で調べられます。
+          プログラミングの言葉を知ろう。関数の書式は「リファレンス」で調べられます。
         </p>
         <dl id="glossaryList" class="glossary-grid"></dl>
       </section>
       <details class="panel support">
-        <summary>シミュレーションの対応範囲・使い方</summary>
+        <summary>対応範囲・仕様の出典</summary>
+        <p id="supportText"></p>
+        <p id="sourceLinks"></p>
         <p>
-          単一の引数なしSub、変数宣言、代入、1次元配列、複数行If、Select
-          Case、For / For Each、Do While / Until（前判定・後判定）、Exit、On
-          Error Resume Next / GoTo 0、A1:C5のRange /
-          Cellsに対応します。関数ごとの対応状況はリファレンスに表示します。
+          未確定のループは到達可能な0～2回の経路と継続可能性を表示します。最大2,000パス、探索100,000回、解析1.2秒の制限があります。実際のアプリ・AWS・Windows・ファイル・メールは操作しません。
         </p>
         <p>
-          実際のExcelを実行する環境ではありません。外部ブック、複数シート、ファイル操作、イベント、ユーザー定義関数、With、GoTo、動的・多次元配列、1行Ifは未対応です。未対応構文は説明を停止して明示します。String型と数値型の直接比較、未確定Step、複数の未確定値を組み合わせた比較・非線形条件も未対応です。比較前にCStrやCDblで型をそろえてください。
-        </p>
-        <p>
-          未確定のループは0～2回と継続可能性を表示します。最大2,000パス、探索100,000回、1.2秒、各パス600手順、確定ループ100回の制限があります。上限に達した説明は完了した実行結果ではありません。
-        </p>
-        <p>
-          コードはこのブラウザ内に自動保存します。ファイルはサーバーへ送信しません。初回にオンラインで開くと、次回からオフラインでも使えます。
+          コード・フロー・モデル状態は種類別にこのブラウザへ保存します。初回オンライン表示後はオフラインでも利用できます。
         </p>
       </details>
     </main>
     <footer>
-      <span>VBA練習アプリ</span>
+      <span>プログラミング練習</span>
       <p>
-        学習用のモデルに基づく説明です。実務で使う前には、Excel上の検証用ブックで動作を確認してください。
+        学習用モデルに基づく説明です。実務で使う前には、各ツールの検証環境で動作を確認してください。
       </p>
-      <a href="https://github.com/sylpica/VBA">GitHub</a>
+      <a href="https://github.com/sylpica/programming-practice">GitHub</a>
     </footer>
     <script type="module" src="js/app.js"></script>
   </body>
