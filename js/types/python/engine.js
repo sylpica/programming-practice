@@ -1,3 +1,4 @@
+import { unknownLabel } from '../../core/presentation.js';
 import{refineCondition}from'../../core/conditions.js';
 /* sim.js — Python コード説明エンジン（実行シミュレーション）
    コードを実行せず、字句解析→構文解析→部分評価で「何が起きるか」を日本語で説明する。
@@ -252,7 +253,7 @@ function decExp(x, p) {
 }
 function reprVal(v, depth) {
   depth = depth || 0;
-  if (isUnk(v)) return '（' + v.desc + '）';
+  if (isUnk(v)) return unknownLabel({kind:'unknown', source:v.desc});
   if (isNum(v)) return fmtNum(v);
   if (isBool(v)) return v.v ? 'True' : 'False';
   if (isNone(v)) return 'None';
@@ -340,7 +341,7 @@ function pyStrRepr(v) {
 // print / str() 用の完全な表示（入れ子の深さで省略しない。循環参照は CPython と同じく [...] 等で示す）
 function reprFull(v, seen) {
   seen = seen || new Set();
-  if (isUnk(v)) return '（' + v.desc + '）';
+  if (isUnk(v)) return unknownLabel({kind:'unknown', source:v.desc});
   if (isNum(v)) return fmtNum(v);
   if (isBool(v)) return v.v ? 'True' : 'False';
   if (isNone(v)) return 'None';
@@ -362,7 +363,7 @@ function reprFull(v, seen) {
 }
 function strVal(v) { // print / str() 用：文字列はそのまま、それ以外は repr とほぼ同じ
   if (typeof v === 'string') return v;
-  if (isUnk(v)) return '（' + v.desc + '）';
+  if (isUnk(v)) return unknownLabel({kind:'unknown', source:v.desc});
   if (v && v.__exc) return v.text; // 例外の str() はメッセージそのもの
   return reprFull(v);
 }

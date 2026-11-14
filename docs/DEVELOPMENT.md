@@ -21,7 +21,7 @@
 | Power Apps     | en-US Power Fx、Set・UpdateContext・If／Switch、Collect、純粋ForAll、テーブル集計、Patch、画面遷移、Reset、表示数式再計算  | 一般の型推論・委任、実Dataverse、採番、非同期、画面イベント、順序依存のForAll副作用                                         |
 | Python         | 既存アプリの部分評価器、型・コンテナ・関数・クラス・例外、42リファレンス・10テンプレート、モデルglobals                    | 完全なCPythonではない。外部モジュール・実ファイル・ネットワーク等。対応外は停止。未知の短絡評価に関数呼び出しを含む式は停止 |
 | R              | numeric / logical / characterのベクトル、NA、リサイクル、添字、データフレーム、集計、If / For / While                      | パッケージ、因子、S3/S4、複素数・raw、integer型上限、ユーザー関数、一般のデータフレーム添字代入                             |
-| C              | モデルABI、宣言・配列・ポインタ・スコープ寿命、If / For / While、printf、整数演算                                          | 動的確保、構造体、ユーザー関数、多次元、unsigned、複雑な宣言。精度外の64ビット計算と処理系依存変換は停止                    |
+| C              | モデルABI、宣言・配列・ポインタ・スコープ寿命、If / For / While、printf、整数演算                                          | 動的確保、構造体、ユーザー関数、多次元、unsignedの変数宣言、複雑な宣言。精度外の64ビット計算と処理系依存変換は停止                    |
 | C++            | 上記の基礎C系構文、cout、ポインタ／配列、同じ型の変数へのint&参照、std::stringの基本連結                                                                                    | STL、一般のクラス・テンプレート、オーバーロード、RAII、動的確保等                                                           |
 | C#             | int演算、unchecked／checked、配列例外、単純フィールドのクラス・参照共有、Console                                           | LINQ、一般のコンストラクタ・継承・プロパティ、unsafe、ユーザー関数、一般の.NET API                                          |
 | JavaScript     | 基本宣言・If / For / While、typeof、型変換、配列・参照、モデルDOM読書き・要素作成                                                  | 関数定義、コールバック／イベント、非同期、fetch、一般のDOM API、BigInt・Symbol等                                            |
@@ -70,4 +70,19 @@
 - CloudFormation：TransformのName/Parametersオブジェクトと配列内オブジェクトを解析する。カスタムLambdaのトップレベルparamsは公式のevent仕様に従い空にする。AWS::IncludeのトップレベルParametersは専用の組込み仕様であり、このモデルでは実装しない。Fn::Transformのparamsとは混同しない。
 - 全441リファレンスで説明・戻り値・注意点を一次資料へ対応付けた。戻り値と公式資料リンクも表示する。対応380件／参照専用61件の区別は維持。静的説明文の照合と、任意コード・全引数の実環境互換性は別である。個票はdocs/audit/REFERENCE-R2.mdを参照。
 
-新アイコンは指定URLから5ファイルとも取得を再試行したが、許可先追加後もCONNECT 403のため未反映。既存PNG（apple-touch-iconは180×180）を保持する。Muse側の別経路での反映待ち。
+新アイコンはMuse側の25e40db以降で反映済み。636f8d0でmanifest変更後のprecache再生成も完了し、Codex第3ラウンドではPNGの実体・寸法を確認して保持する。
+
+## 第3ラウンドで追加・修正した範囲
+
+- 全種類の不確定値は「実行時に決まる：条件／由来」の形で表示する。VBA・共通エンジン・Pythonの表記だけを整え、未知値の識別子・制約用データは変えない。内部のmodelトークンや同じ接頭辞の入れ子を出さない。
+- モデルDOM・クラス・ポインタ・NA・画像等の状態は人間向けに整形する。通常の配列・レコードと明示的なJSON.stringify、CloudFormationの変換断片JSONは用途を保つ。モデルレコードの内部キーを生JSONとして表示しない。
+- C/C++：C形式の単項キャスト `(型)式` を解析する。int、long、short、char、signed char、unsigned char、unsigned int、unsigned short、unsigned long、float、double、C++のboolと、掲載した標準的なsigned/unsigned複合表記を扱う。`(int)sizeof(...)`、入れ子、式中の優先順位、sizeof内で副作用を評価しないことを扱う。unsignedキャストに伴う整数昇格・通常の算術変換とmodulo演算、printfの%uを追加した。
+- キャストの未対応：ポインタ・参照・const/volatile修飾・構造体/クラス・独自型・long long/long double/void・C++名前付き/関数形式。認識した形式は「キャストのこの形式は未対応」と明示して停止する。未対応の型宣言まで受理するという意味ではない。unsignedの変数宣言は引き続き未対応。
+- C/C++のモデルABIはchar 8、short 16、int 32、long 32/64ビット、float IEEE 754 binary32、double binary64。plain charの符号が決まらない変換は0〜127の共通範囲だけ計算し、範囲外は環境依存として停止する。安全整数を超える64ビット結果は未確認で停止。C17/C++17の符号付き範囲外整数変換は処理系依存、範囲外の浮動小数点→整数・double→float変換と符号付き単項マイナスのオーバーフローは未定義動作として停止する。float演算はbinary32に丸めてからdoubleへ拡張する。float演算の非有限結果は未確認停止。
+- sizeofの結果型は、このモデルのlongBits=64ではunsigned long、32ではunsigned intとする（LP64/ILP32に限るモデル上のsize_t）。任意の実機ABIを推定しない。shortのサイズも2バイトと明示する。既存のポインタ・VLA等の未対応は維持する。
+- 後置インクリメントの式の値は変更前である。traceには値の更新と「後置式の値は変更前」を併記する。
+- AutoHotkey：0除算はZeroDivisionError、非数値の算術演算はTypeError。数値文字列の算術とASCIIの大文字小文字を無視する= / !=を扱う。64ビットのビット演算（^ / & / |）と整数除算 // は未対応と明示して停止し、他言語の意味やコメントとして処理しない。StrLen等の非掲載関数は引き続き未対応。整数リテラル・数値文字列・モデル変数・演算結果・インクリメントの安全整数範囲外と非有限数は未確認で停止する。64ビット整数をNumberへ丸めて実行値として提示しない。
+- UI.Vision：times内の${!times}を1始まりで用意し、入れ子終了時に外側へ戻す。break/continueも検証した。timesの外にある!timesの値は今回の対応範囲外で、値を推測して残さない。
+- 第3ラウンドの新規指摘、一次資料、全37項目・全13種類の再検証範囲はdocs/audit/CODEX-R3.mdに記録する。有限の検証を完全互換性や二重監査の収束に読み替えない。
+
+- C#：double等のフィールド・配列要素の複合代入は宣言型から演算型を求め、結果を左辺へ変換する。C系共通のfloatリテラル・float演算はbinary32で丸めてからdoubleへ拡張する。新しいC#3例をSDKのあるCIでも実検証する。

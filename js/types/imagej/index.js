@@ -1,6 +1,6 @@
 import { functions, functionCats } from "./reference-data.js";
 import { sourceTemplates } from "./templates-data.js";
-import { LIMITS, formatValue } from "../../core/contract.js";
+import { LIMITS, formatModelValue as formatValue } from "../../core/contract.js";
 const reference = functions.map((r) => ({
   name: r.name,
   category: functionCats[r.cat] || r.cat,

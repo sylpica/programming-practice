@@ -1,0 +1,193 @@
+{
+  "baseline_commit": "636f8d0",
+  "findings": [
+    {
+      "id": "R3-F12",
+      "kind": "csharp",
+      "code": "class Box {public double D;} Box b=new Box(); b.D=2; b.D/=3; Console.WriteLine(b.D);",
+      "outputs": [
+        "0"
+      ],
+      "trace": [
+        "b を Box として用意します：{\n  \"クラス\": \"Box\",\n  \"フィールド\": {\n    \"D\": 0\n  }\n}",
+        "b.D に 2 を代入します",
+        "b.D に 0 を代入します",
+        "標準出力へ出します：0"
+      ]
+    },
+    {
+      "id": "R3-F10b",
+      "kind": "csharp",
+      "code": "float a=16777216; float b=1; double n=a+b; Console.WriteLine(n);",
+      "outputs": [
+        "16777217"
+      ],
+      "trace": [
+        "a を float として用意します：16777216",
+        "b を float として用意します：1",
+        "n を double として用意します：16777217",
+        "標準出力へ出します：16777217"
+      ]
+    },
+    {
+      "id": "R3-F11",
+      "kind": "autohotkey",
+      "code": "MsgBox 9007199254740993",
+      "outputs": [
+        "9007199254740992"
+      ],
+      "trace": [
+        "メッセージを表示します"
+      ]
+    },
+    {
+      "id": "R3-F10",
+      "kind": "c",
+      "code": "float a=16777216; float b=1; double n=a+b; printf(\"%f\",n);",
+      "outputs": [
+        "16777217.000000"
+      ],
+      "trace": [
+        "a を float として用意します：16777216",
+        "b を float として用意します：1",
+        "n を double として用意します：16777217",
+        "標準出力へ出します：16777217.000000"
+      ]
+    },
+    {
+      "id": "R3-F9",
+      "kind": "uivision",
+      "code": "{\"Commands\": [{\"Command\": \"times\", \"Target\": \"2\"}, {\"Command\": \"echo\", \"Target\": \"${!times}\"}, {\"Command\": \"end\"}]}",
+      "error": {
+        "line": 1,
+        "message": "変数がありません：!times",
+        "category": "エラー"
+      },
+      "outputs": [],
+      "trace": [
+        "繰り返し 1回目",
+        "変数がありません：!times"
+      ]
+    },
+    {
+      "id": "R3-F1",
+      "kind": "autohotkey",
+      "code": "x := 1/0",
+      "outputs": [],
+      "trace": [
+        "x に Infinity を代入します"
+      ]
+    },
+    {
+      "id": "R3-F2",
+      "kind": "autohotkey",
+      "code": "MsgBox \"2\"+\"3\"",
+      "outputs": [
+        "23"
+      ],
+      "trace": [
+        "メッセージを表示します"
+      ]
+    },
+    {
+      "id": "R3-F3",
+      "kind": "autohotkey",
+      "code": "if \"Ab\" != \"ab\" {\nMsgBox \"bad\"\n} else {\nMsgBox \"ok\"\n}",
+      "outputs": [
+        "bad"
+      ],
+      "trace": [
+        "条件が成立します",
+        "メッセージを表示します"
+      ]
+    },
+    {
+      "id": "R3-F4a",
+      "kind": "autohotkey",
+      "code": "x := 7//2\nMsgBox x",
+      "outputs": [
+        "7"
+      ],
+      "trace": [
+        "x に 7 を代入します",
+        "メッセージを表示します"
+      ]
+    },
+    {
+      "id": "R3-F4b",
+      "kind": "autohotkey",
+      "code": "MsgBox 2^3",
+      "outputs": [
+        "8"
+      ],
+      "trace": [
+        "メッセージを表示します"
+      ]
+    },
+    {
+      "id": "R3-F5",
+      "kind": "c",
+      "code": "char n=256; printf(\"%d\",n);",
+      "outputs": [
+        "256"
+      ],
+      "trace": [
+        "n を char として用意します：256",
+        "標準出力へ出します：256"
+      ]
+    },
+    {
+      "id": "R3-F6a",
+      "kind": "c",
+      "code": "float n=1e100; printf(\"%f\",n);",
+      "outputs": [
+        "Infinity"
+      ],
+      "trace": [
+        "n を float として用意します：Infinity",
+        "標準出力へ出します：Infinity"
+      ]
+    },
+    {
+      "id": "R3-F6b",
+      "kind": "c",
+      "code": "int n=1e30;",
+      "error": {
+        "line": 1,
+        "message": "未確認：この64ビット整数は安全に計算できる範囲外です",
+        "category": "未確認"
+      },
+      "outputs": [],
+      "trace": [
+        "未確認：この64ビット整数は安全に計算できる範囲外です"
+      ]
+    },
+    {
+      "id": "R3-F7",
+      "kind": "c",
+      "code": "double x=2; double n=sizeof x/3; printf(\"%f\",n);",
+      "outputs": [
+        "2.666667"
+      ],
+      "trace": [
+        "x を double として用意します：2",
+        "n を double として用意します：2.6666666666666665",
+        "標準出力へ出します：2.666667"
+      ]
+    },
+    {
+      "id": "R3-F8",
+      "kind": "c",
+      "code": "int n=-(-2147483647-1);",
+      "error": {
+        "line": 1,
+        "message": "整数への変換結果は処理系依存です",
+        "category": "環境依存"
+      },
+      "outputs": [],
+      "trace": [
+        "整数への変換結果は処理系依存です"
+      ]
+    }
+  ]
+}

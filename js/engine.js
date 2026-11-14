@@ -1,3 +1,4 @@
+import { unknownLabel } from "./core/presentation.js";
 /* Buildless, deterministic VBA teaching interpreter. Never evaluates user JavaScript. */
 export const LIMITS = Object.freeze({
   paths: 2000,
@@ -18,7 +19,7 @@ const unknown = (source, extra = {}) => ({
 });
 const isU = (v) => v?.kind === "unknown";
 export function display(v) {
-  if (v?.kind === "unknown") return `実行時に決まる（${v.source}）`;
+  if (v?.kind === "unknown") return unknownLabel(v);
   if (v?.kind === "empty") return "Empty";
   if (v?.kind === "null") return "Null";
   if (v?.kind === "nothing") return "Nothing";

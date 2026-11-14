@@ -10,7 +10,7 @@ import {
   unsupported,
 } from "../../core/script.js";
 import { rows, sourceFailure } from "../../core/data.js";
-import { formatValue, isUnknown, unknown } from "../../core/contract.js";
+import { formatModelValue as formatValue, isUnknown, unknown } from "../../core/contract.js";
 const reference = rows([
   [
     "Set",

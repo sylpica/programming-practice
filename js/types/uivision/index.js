@@ -7,7 +7,7 @@ import {
 import { rows, sourceFailure } from "../../core/data.js";
 import { actionProgram, interpolate, uiCondition } from "../../core/actions.js";
 import { createActionEditor } from "../../core/action-editor.js";
-import { formatValue, isUnknown, unknown } from "../../core/contract.js";
+import { formatModelValue as formatValue, isUnknown, unknown } from "../../core/contract.js";
 const samples = [
   ["open", "https://example.test/form", ""],
   ["click", "id=submit", ""],
@@ -240,10 +240,16 @@ export const definition = {
             let count = Number(interpolate(n.item.Target, s));
             if (!Number.isInteger(count) || count < 0)
               api.fail("timesの回数が不正です", n);
-            return api.run(
-              [{ ...n, k: "repeat", count: { k: "literal", value: count } }],
+            const hadCounter = Object.hasOwn(s.vars, "!times"), previousCounter = s.vars["!times"];
+            const results = api.run(
+              [{ ...n, k: "repeat", counterName: "!times", count: { k: "literal", value: count } }],
               [s],
             );
+            for (const out of results) {
+              if (hadCounter) out.vars["!times"] = previousCounter;
+              else delete out.vars["!times"];
+            }
+            return results;
           }
         },
         action(n, s, api) {

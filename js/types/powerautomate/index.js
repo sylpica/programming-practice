@@ -13,7 +13,7 @@ import {
   uiCondition,
 } from "../../core/actions.js";
 import { createActionEditor } from "../../core/action-editor.js";
-import { formatValue, isUnknown, unknown } from "../../core/contract.js";
+import { formatModelValue as formatValue, isUnknown, unknown } from "../../core/contract.js";
 const palette = [
   {
     name: "Set variable",

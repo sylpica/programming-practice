@@ -1,0 +1,776 @@
+[
+  {
+    "kind": "vba",
+    "name": "banker integer conversion",
+    "code": "Debug.Print CInt(2.5)\nDebug.Print CInt(3.5)",
+    "outputs": [
+      "2",
+      "4"
+    ],
+    "paths": 1,
+    "error": null,
+    "model": null
+  },
+  {
+    "kind": "vba",
+    "name": "string concat",
+    "code": "Debug.Print \"合計\" & 7",
+    "outputs": [
+      "\"合計7\""
+    ],
+    "paths": 1,
+    "error": null,
+    "model": null
+  },
+  {
+    "kind": "vba",
+    "name": "step two total",
+    "code": "s=0\nFor i=2 To 6 Step 2\ns=s+i\nNext i\nDebug.Print s",
+    "outputs": [
+      "12"
+    ],
+    "paths": 1,
+    "error": null,
+    "model": null
+  },
+  {
+    "kind": "vba",
+    "name": "explicit missing",
+    "code": "Option Explicit\nx=3",
+    "outputs": null,
+    "paths": 1,
+    "error": "定義されていません",
+    "model": null
+  },
+  {
+    "kind": "vba",
+    "name": "unknown sheet condition",
+    "code": "If Range(\"B2\").Value >= 80 Then\nDebug.Print 1\nElse\nDebug.Print 0\nEnd If",
+    "outputs": null,
+    "paths": 2,
+    "error": null,
+    "model": {
+      "B2": {
+        "kind": "unknown",
+        "source": "model"
+      }
+    },
+    "allOutputs": [
+      [
+        "1"
+      ],
+      [
+        "0"
+      ]
+    ]
+  },
+  {
+    "kind": "imagej",
+    "name": "substring boundaries",
+    "code": "print(substring(\"abcde\",1,4));",
+    "outputs": [
+      "bcd"
+    ],
+    "paths": 1,
+    "error": null,
+    "model": null
+  },
+  {
+    "kind": "imagej",
+    "name": "sum loop",
+    "code": "a=newArray(2,4,6); s=0; for(i=0;i<3;i++){s+=a[i];} print(s);",
+    "outputs": [
+      "12"
+    ],
+    "paths": 1,
+    "error": null,
+    "model": null
+  },
+  {
+    "kind": "imagej",
+    "name": "lazy known branch",
+    "code": "if(0){print(9);}else{print(abs(-3));}",
+    "outputs": [
+      "3"
+    ],
+    "paths": 1,
+    "error": null,
+    "model": null
+  },
+  {
+    "kind": "imagej",
+    "name": "negative index",
+    "code": "a=newArray(2,4,6); print(a[-1]);",
+    "outputs": null,
+    "paths": 1,
+    "error": "範囲|添字|index",
+    "model": null
+  },
+  {
+    "kind": "imagej",
+    "name": "unknown number branch",
+    "code": "n=getNumber(\"入力\",3); if(n<0){print(-1);}else{print(1);}",
+    "outputs": null,
+    "paths": 2,
+    "error": null,
+    "model": null,
+    "allOutputs": [
+      [
+        "-1"
+      ],
+      [
+        "1"
+      ]
+    ]
+  },
+  {
+    "kind": "cloudformation",
+    "name": "identity fragment",
+    "code": "{\"Metadata\":{\"Note\":\"日本語🙂\"},\"Resources\":{}}",
+    "outputs": null,
+    "paths": 1,
+    "error": null,
+    "model": null,
+    "fragment": {
+      "Metadata": {
+        "Note": "日本語🙂"
+      },
+      "Resources": {}
+    }
+  },
+  {
+    "kind": "cloudformation",
+    "name": "object transform",
+    "code": "{\"Transform\":[{\"Name\":\"AddMetadata\",\"Parameters\":{\"Stage\":\"ignored-at-top-level\"}}],\"Resources\":{}}",
+    "outputs": null,
+    "paths": 1,
+    "error": null,
+    "model": null,
+    "fragment": {
+      "Resources": {},
+      "Metadata": {
+        "Stage": "dev"
+      }
+    }
+  },
+  {
+    "kind": "cloudformation",
+    "name": "handler step loop",
+    "code": "def handler(event, context):\n    n=0\n    for i in range(2,7,2):\n        n+=i\n    return {\"requestId\":event[\"requestId\"],\"status\":\"success\",\"fragment\":{\"total\":n}}",
+    "outputs": null,
+    "paths": 1,
+    "error": null,
+    "model": null,
+    "fragment": {
+      "total": 12
+    }
+  },
+  {
+    "kind": "cloudformation",
+    "name": "invalid return",
+    "code": "def handler(event, context):\n    return 3",
+    "outputs": null,
+    "paths": 1,
+    "error": "応答|辞書|requestId|形式",
+    "model": null
+  },
+  {
+    "kind": "cloudformation",
+    "name": "unknown handler branch",
+    "code": "def handler(event, context):\n    n=input()\n    if n==\"yes\":\n        f={\"yes\":True}\n    else:\n        f={\"yes\":False}\n    return {\"requestId\":event[\"requestId\"],\"status\":\"success\",\"fragment\":f}",
+    "outputs": null,
+    "paths": 2,
+    "error": null,
+    "model": null,
+    "allFragments": [
+      {
+        "yes": true
+      },
+      {
+        "yes": false
+      }
+    ]
+  },
+  {
+    "kind": "powerautomate",
+    "name": "foreach accumulation",
+    "code": "{\"actions\": [{\"action\": \"Set variable\", \"target\": \"Items\", \"value\": [2, 4, 6]}, {\"action\": \"Set variable\", \"target\": \"S\", \"value\": 0}, {\"action\": \"For each\", \"target\": \"I\", \"value\": \"%Items%\"}, {\"action\": \"Increase variable\", \"target\": \"S\", \"value\": \"%I%\"}, {\"action\": \"End\"}, {\"action\": \"Display message\", \"value\": \"%S%\"}]}",
+    "outputs": [
+      "12"
+    ],
+    "paths": 1,
+    "error": null,
+    "model": null
+  },
+  {
+    "kind": "powerautomate",
+    "name": "false branch",
+    "code": "{\"actions\": [{\"action\": \"If\", \"condition\": \"2 > 3\"}, {\"action\": \"Display message\", \"value\": \"bad\"}, {\"action\": \"Else\"}, {\"action\": \"Display message\", \"value\": \"ok\"}, {\"action\": \"End\"}]}",
+    "outputs": [
+      "ok"
+    ],
+    "paths": 1,
+    "error": null,
+    "model": null
+  },
+  {
+    "kind": "powerautomate",
+    "name": "append file",
+    "code": "{\"actions\": [{\"action\": \"Write text to file\", \"target\": \"C:/model/r3.txt\", \"value\": \"A\", \"append\": false}, {\"action\": \"Write text to file\", \"target\": \"C:/model/r3.txt\", \"value\": \"B\", \"append\": true}, {\"action\": \"Read text from file\", \"target\": \"T\", \"value\": \"C:/model/r3.txt\"}, {\"action\": \"Display message\", \"value\": \"%T%\"}]}",
+    "outputs": [
+      "AB"
+    ],
+    "paths": 1,
+    "error": null,
+    "model": null
+  },
+  {
+    "kind": "powerautomate",
+    "name": "unsupported action",
+    "code": "{\"actions\": [{\"action\": \"Pretend action\"}]}",
+    "outputs": null,
+    "paths": 1,
+    "error": "対応|Pretend",
+    "model": null
+  },
+  {
+    "kind": "powerautomate",
+    "name": "input branch length",
+    "code": "{\"actions\": [{\"action\": \"Display input dialog\", \"target\": \"X\"}, {\"action\": \"If\", \"condition\": \"%X% == \\\"ok\\\"\"}, {\"action\": \"Display message\", \"value\": \"1\"}, {\"action\": \"Else\"}, {\"action\": \"Display message\", \"value\": \"0\"}, {\"action\": \"End\"}]}",
+    "outputs": null,
+    "paths": 2,
+    "error": null,
+    "model": null,
+    "allOutputs": [
+      [
+        "1"
+      ],
+      [
+        "0"
+      ]
+    ]
+  },
+  {
+    "kind": "autohotkey",
+    "name": "string length",
+    "code": "MsgBox StrLen(\"abcde\")",
+    "outputs": null,
+    "paths": 1,
+    "error": "未対応.*StrLen",
+    "model": {
+      "variables": {},
+      "event": null,
+      "windows": []
+    },
+    "scopeNote": "StrLen is outside the published supported function list; stop explicitly."
+  },
+  {
+    "kind": "autohotkey",
+    "name": "nested A_Index restore",
+    "code": "Loop 2 {\nLoop 2 {\n}\nMsgBox A_Index\n}",
+    "outputs": [
+      "1",
+      "2"
+    ],
+    "paths": 1,
+    "error": null,
+    "model": {
+      "variables": {},
+      "event": null,
+      "windows": []
+    }
+  },
+  {
+    "kind": "autohotkey",
+    "name": "case-sensitive false",
+    "code": "if \"Ab\" == \"ab\" {\nMsgBox \"bad\"\n} else {\nMsgBox \"ok\"\n}",
+    "outputs": [
+      "ok"
+    ],
+    "paths": 1,
+    "error": null,
+    "model": {
+      "variables": {},
+      "event": null,
+      "windows": []
+    }
+  },
+  {
+    "kind": "autohotkey",
+    "name": "division zero",
+    "code": "x := 1/0",
+    "outputs": null,
+    "paths": 1,
+    "error": "0|ゼロ",
+    "model": {
+      "variables": {},
+      "event": null,
+      "windows": []
+    }
+  },
+  {
+    "kind": "autohotkey",
+    "name": "unknown inequality",
+    "code": "x := InputBox(\"入力\").Value\nif x != \"yes\" {\nMsgBox 0\n} else {\nMsgBox 1\n}",
+    "outputs": null,
+    "paths": 2,
+    "error": null,
+    "model": {
+      "variables": {},
+      "event": null,
+      "windows": []
+    },
+    "allOutputs": [
+      [
+        "0"
+      ],
+      [
+        "1"
+      ]
+    ]
+  },
+  {
+    "kind": "uivision",
+    "name": "variable concat",
+    "code": "{\"Commands\": [{\"Command\": \"store\", \"Target\": \"日本語🙂\", \"Value\": \"x\"}, {\"Command\": \"echo\", \"Target\": \"[${x}]\", \"Value\": \"\"}]}",
+    "outputs": [
+      "[日本語🙂]"
+    ],
+    "paths": 1,
+    "error": null,
+    "model": null
+  },
+  {
+    "kind": "uivision",
+    "name": "false if",
+    "code": "{\"Commands\": [{\"Command\": \"if\", \"Target\": \"4 < 1\", \"Value\": \"\"}, {\"Command\": \"echo\", \"Target\": \"bad\", \"Value\": \"\"}, {\"Command\": \"else\", \"Target\": \"\", \"Value\": \"\"}, {\"Command\": \"echo\", \"Target\": \"ok\", \"Value\": \"\"}, {\"Command\": \"end\", \"Target\": \"\", \"Value\": \"\"}]}",
+    "outputs": [
+      "ok"
+    ],
+    "paths": 1,
+    "error": null,
+    "model": null
+  },
+  {
+    "kind": "uivision",
+    "name": "repeat two",
+    "code": "{\"Commands\": [{\"Command\": \"times\", \"Target\": \"2\", \"Value\": \"\"}, {\"Command\": \"echo\", \"Target\": \"repeat\", \"Value\": \"\"}, {\"Command\": \"end\", \"Target\": \"\", \"Value\": \"\"}]}",
+    "outputs": [
+      "repeat",
+      "repeat"
+    ],
+    "paths": 1,
+    "error": null,
+    "model": null
+  },
+  {
+    "kind": "uivision",
+    "name": "unsupported DOM script",
+    "code": "{\"Commands\": [{\"Command\": \"executeScript\", \"Target\": \"return window.secret;\", \"Value\": \"X\"}]}",
+    "outputs": null,
+    "paths": 1,
+    "error": "対応|executeScript",
+    "model": null
+  },
+  {
+    "kind": "uivision",
+    "name": "sandbox multiplication",
+    "code": "{\"Commands\": [{\"Command\": \"executeScript_Sandbox\", \"Target\": \"return 7 * 6;\", \"Value\": \"N\"}, {\"Command\": \"echo\", \"Target\": \"${N}\", \"Value\": \"\"}]}",
+    "outputs": [
+      "42"
+    ],
+    "paths": 1,
+    "error": null,
+    "model": null
+  },
+  {
+    "kind": "powerapps",
+    "name": "filter aggregate",
+    "code": "ClearCollect(A, {N:2}, {N:4}, {N:6}); Notify(Text(Sum(Filter(A, N>2), N)))",
+    "outputs": [
+      "10"
+    ],
+    "paths": 1,
+    "error": null,
+    "model": null
+  },
+  {
+    "kind": "powerapps",
+    "name": "lazy branch unsupported",
+    "code": "If(false, Launch(\"unused\"), Notify(\"ok\"))",
+    "outputs": [
+      "ok"
+    ],
+    "paths": 1,
+    "error": null,
+    "model": null
+  },
+  {
+    "kind": "powerapps",
+    "name": "sequence count",
+    "code": "Notify(Text(CountRows(Sequence(4))))",
+    "outputs": [
+      "4"
+    ],
+    "paths": 1,
+    "error": null,
+    "model": null
+  },
+  {
+    "kind": "powerapps",
+    "name": "unsupported data operation",
+    "code": "Remove(A, {N:1})",
+    "outputs": null,
+    "paths": 1,
+    "error": "対応|Remove",
+    "model": null
+  },
+  {
+    "kind": "powerapps",
+    "name": "clear collection",
+    "code": "ClearCollect(A, {N:2}); Clear(A); Notify(Text(CountRows(A)))",
+    "outputs": [
+      "0"
+    ],
+    "paths": 1,
+    "error": null,
+    "model": null
+  },
+  {
+    "kind": "python",
+    "name": "negative floor modulo",
+    "code": "print(-7//3, -7%3)",
+    "outputs": [
+      "-3 2"
+    ],
+    "paths": 1,
+    "error": null,
+    "model": null
+  },
+  {
+    "kind": "python",
+    "name": "aliased append",
+    "code": "a=[1]\nb=a\nb.append(2)\nprint(a)",
+    "outputs": [
+      "[1, 2]"
+    ],
+    "paths": 1,
+    "error": null,
+    "model": null
+  },
+  {
+    "kind": "python",
+    "name": "global loop",
+    "code": "n=0\ndef f():\n    global n\n    for i in range(1,4):\n        n+=i\nf()\nprint(n)",
+    "outputs": [
+      "6"
+    ],
+    "paths": 1,
+    "error": null,
+    "model": null
+  },
+  {
+    "kind": "python",
+    "name": "index failure",
+    "code": "a=[1]\nprint(a[2])",
+    "outputs": null,
+    "paths": 1,
+    "error": "IndexError",
+    "model": null
+  },
+  {
+    "kind": "python",
+    "name": "two independent inputs",
+    "code": "a=input()\nb=input()\nif a==\"y\":\n    print(1)\nelse:\n    print(0)\nif b==\"y\":\n    print(2)\nelse:\n    print(3)",
+    "outputs": null,
+    "paths": 4,
+    "error": null,
+    "model": null,
+    "allOutputs": [
+      [
+        "1",
+        "2"
+      ],
+      [
+        "1",
+        "3"
+      ],
+      [
+        "0",
+        "2"
+      ],
+      [
+        "0",
+        "3"
+      ]
+    ]
+  },
+  {
+    "kind": "r",
+    "name": "sum vector",
+    "code": "print(sum(c(2,4,6)))",
+    "outputs": [
+      "12"
+    ],
+    "paths": 1,
+    "error": null,
+    "model": null
+  },
+  {
+    "kind": "r",
+    "name": "false branch",
+    "code": "if(FALSE){print(9)}else{print(3)}",
+    "outputs": [
+      "3"
+    ],
+    "paths": 1,
+    "error": null,
+    "model": null
+  },
+  {
+    "kind": "r",
+    "name": "loop product",
+    "code": "s <- 1\nfor(i in c(2,3,4)){s <- s*i}\nprint(s)",
+    "outputs": [
+      "c(24)"
+    ],
+    "paths": 1,
+    "error": null,
+    "model": null,
+    "presentationNote": "R scalar is a length-one numeric vector; application uses c(value) notation, not console [1] prefix."
+  },
+  {
+    "kind": "r",
+    "name": "missing function",
+    "code": "not_a_function(1)",
+    "outputs": null,
+    "paths": 1,
+    "error": "対応|not_a_function",
+    "model": null
+  },
+  {
+    "kind": "r",
+    "name": "missing mean warning",
+    "code": "print(mean(c(\"x\",\"y\")))",
+    "outputs": [
+      "NA"
+    ],
+    "paths": 1,
+    "error": null,
+    "model": null
+  },
+  {
+    "kind": "c",
+    "name": "cast sizeof",
+    "code": "int a[3]={2,4,6}; int n=(int)sizeof(a); printf(\"%d\",n);",
+    "outputs": [
+      "12"
+    ],
+    "paths": 1,
+    "error": null,
+    "model": null
+  },
+  {
+    "kind": "c",
+    "name": "cast precedence",
+    "code": "int n=(int)3.9+2; printf(\"%d\",n);",
+    "outputs": [
+      "5"
+    ],
+    "paths": 1,
+    "error": null,
+    "model": null
+  },
+  {
+    "kind": "c",
+    "name": "cast loop total",
+    "code": "int s=0; for(int i=0;i<3;i++){s+=(int)((double)i+0.9);} printf(\"%d\",s);",
+    "outputs": [
+      "3"
+    ],
+    "paths": 1,
+    "error": null,
+    "model": null
+  },
+  {
+    "kind": "c",
+    "name": "float cast outside int",
+    "code": "int n=(int)1e30;",
+    "outputs": null,
+    "paths": 1,
+    "error": "範囲外",
+    "model": null
+  },
+  {
+    "kind": "c",
+    "name": "cast unsigned char",
+    "code": "int n=(int)(unsigned char)257; printf(\"%d\",n);",
+    "outputs": [
+      "1"
+    ],
+    "paths": 1,
+    "error": null,
+    "model": null
+  },
+  {
+    "kind": "cpp",
+    "name": "cast sizeof",
+    "code": "int a[3]={2,4,6}; int n=(int)sizeof(a); printf(\"%d\",n);",
+    "outputs": [
+      "12"
+    ],
+    "paths": 1,
+    "error": null,
+    "model": null
+  },
+  {
+    "kind": "cpp",
+    "name": "cast precedence",
+    "code": "int n=(int)3.9+2; printf(\"%d\",n);",
+    "outputs": [
+      "5"
+    ],
+    "paths": 1,
+    "error": null,
+    "model": null
+  },
+  {
+    "kind": "cpp",
+    "name": "cast loop total",
+    "code": "int s=0; for(int i=0;i<3;i++){s+=(int)((double)i+0.9);} printf(\"%d\",s);",
+    "outputs": [
+      "3"
+    ],
+    "paths": 1,
+    "error": null,
+    "model": null
+  },
+  {
+    "kind": "cpp",
+    "name": "float cast outside int",
+    "code": "int n=(int)1e30;",
+    "outputs": null,
+    "paths": 1,
+    "error": "範囲外",
+    "model": null
+  },
+  {
+    "kind": "cpp",
+    "name": "cast unsigned char",
+    "code": "int n=(int)(unsigned char)257; printf(\"%d\",n);",
+    "outputs": [
+      "1"
+    ],
+    "paths": 1,
+    "error": null,
+    "model": null
+  },
+  {
+    "kind": "csharp",
+    "name": "integer trunc division",
+    "code": "Console.WriteLine(-7/3);",
+    "outputs": [
+      "-2"
+    ],
+    "paths": 1,
+    "error": null,
+    "model": null
+  },
+  {
+    "kind": "csharp",
+    "name": "false lazy branch",
+    "code": "if(false){Console.WriteLine(9);}else{Console.WriteLine(4);}",
+    "outputs": [
+      "4"
+    ],
+    "paths": 1,
+    "error": null,
+    "model": null
+  },
+  {
+    "kind": "csharp",
+    "name": "loop sum",
+    "code": "int s=0; for(int i=1;i<=3;i++){s+=i;} Console.WriteLine(s);",
+    "outputs": [
+      "6"
+    ],
+    "paths": 1,
+    "error": null,
+    "model": null
+  },
+  {
+    "kind": "csharp",
+    "name": "array bound failure",
+    "code": "int[] a={1}; Console.WriteLine(a[2]);",
+    "outputs": null,
+    "paths": 1,
+    "error": "範囲|IndexOutOfRange",
+    "model": null
+  },
+  {
+    "kind": "csharp",
+    "name": "reference alias",
+    "code": "class Box {public int N;} Box a=new Box(); Box b=a; b.N=8; Console.WriteLine(a.N);",
+    "outputs": [
+      "8"
+    ],
+    "paths": 1,
+    "error": null,
+    "model": null
+  },
+  {
+    "kind": "javascript",
+    "name": "coercion strictness",
+    "code": "console.log(null==undefined); console.log(null===undefined); console.log(\"8\"-3);",
+    "outputs": [
+      "true",
+      "false",
+      "5"
+    ],
+    "paths": 1,
+    "error": null,
+    "model": null
+  },
+  {
+    "kind": "javascript",
+    "name": "alias array",
+    "code": "let a=[1]; let b=a; b.push(2); console.log(a.length);",
+    "outputs": [
+      "2"
+    ],
+    "paths": 1,
+    "error": null,
+    "model": null
+  },
+  {
+    "kind": "javascript",
+    "name": "post increment loop",
+    "code": "let s=0; for(let i=0;i<4;i++){s+=i;} console.log(s);",
+    "outputs": [
+      "6"
+    ],
+    "paths": 1,
+    "error": null,
+    "model": null
+  },
+  {
+    "kind": "javascript",
+    "name": "TDZ nested block",
+    "code": "let x=1; {console.log(x); let x=2;}",
+    "outputs": null,
+    "paths": 1,
+    "error": "宣言前|初期化|ReferenceError",
+    "model": null
+  },
+  {
+    "kind": "javascript",
+    "name": "DOM write and alias",
+    "code": "let e=document.getElementById(\"result\"); e.textContent=\"日本語🙂\"; let a=e; console.log(a.textContent);",
+    "outputs": [
+      "日本語🙂"
+    ],
+    "paths": 1,
+    "error": null,
+    "model": null
+  }
+]

@@ -7,7 +7,7 @@ import {
   unsupported,
 } from "../../core/script.js";
 import { rows } from "../../core/data.js";
-import { unknown, isUnknown, formatValue } from "../../core/contract.js";
+import { unknown, isUnknown, formatModelValue as formatValue } from "../../core/contract.js";
 const NA = { kind: "NA" },
   isNA = (v) => v?.kind === "NA",
   vec = (v) => (Array.isArray(v) ? v : [v]),

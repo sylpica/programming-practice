@@ -8,7 +8,7 @@ import {
   unsupported,
 } from "./script.js";
 import { sourceFailure, rows } from "./data.js";
-import { formatValue, isUnknown, unknown } from "./contract.js";
+import { formatModelValue as formatValue, isUnknown, unknown } from "./contract.js";
 const uninitialized = { kind: "uninitialized" },
   isPtr = (v) => v?.kind === "pointer",
   builtinTypes = [
@@ -36,6 +36,43 @@ function parse(source, language) {
   let p = new ScriptParser(code, language),
     simple = p.simple.bind(p),
     statement = p.statement.bind(p);
+  if (["c", "cpp"].includes(language)) p.parseCast = function(meta) {
+    const start = this.i;
+    const first = this.ts[start]?.v;
+    if (classes[first]) unsupported("キャストのこの形式は未対応です（クラス型）", meta.line);
+    const typeWords = ["int", "double", "float", "char", "long", "unsigned", "signed", "short", "bool", "void", "const", "volatile", "struct"];
+    if (!typeWords.includes(first)) {
+      const after = this.ts[start + 1]?.v, operand = this.ts[start + 2];
+      if (this.ts[start]?.k === "id" && ((after === ")" && (operand?.k === "id" || operand?.k === "number" || operand?.v === "(")) || (after === "*" && this.ts[start + 2]?.v === ")"))) unsupported("キャストのこの形式は未対応です（独自型・ポインタ型）", meta.line);
+      return null;
+    }
+    const words = [];
+    while (this.ts[this.i]?.k === "id" && typeWords.includes(this.ts[this.i].v)) words.push(this.take().v);
+    if (!this.peek(")")) unsupported("キャストのこの形式は未対応です（ポインタ・参照・修飾型等）", meta.line);
+    this.take(")");
+    const forms = {
+      int:"int", signed:"int", "signed int":"int", unsigned:"unsigned int", "unsigned int":"unsigned int",
+      short:"short", "short int":"short", "signed short":"short", "signed short int":"short", "unsigned short":"unsigned short", "unsigned short int":"unsigned short",
+      long:"long", "long int":"long", "signed long":"long", "signed long int":"long", "unsigned long":"unsigned long", "unsigned long int":"unsigned long",
+      char:"char", "signed char":"signed char", "unsigned char":"unsigned char", float:"float", double:"double", bool:"bool"
+    };
+    const type = forms[words.join(" ")];
+    if (!type || (language === "c" && type === "bool")) unsupported("キャストのこの形式は未対応です：" + words.join(" "), meta.line);
+    return {...meta, k:"cast", type, arg:this.expr(9)};
+  };
+  if (["c", "cpp"].includes(language)) p.parseSizeof = function(meta, consume = false) {
+    if (!this.peek("(")) return false;
+    let end = this.i + 1;
+    const words = [];
+    while (["int", "double", "float", "char", "long", "unsigned", "signed", "short", "bool"].includes(this.ts[end]?.v)) words.push(this.ts[end++].v);
+    if (!words.length || this.ts[end]?.v !== ")") return false;
+    if (!consume) return true;
+    this.i = end + 1;
+    let type = words.join(" ").replace(/^signed (?!char)/, "").replace(/^(unsigned|signed)$/, "$1 int").replace(/ (short|long) int$/, " $1");
+    if (type === "long int") type = "long";
+    if (type === "short int") type = "short";
+    return {...meta,k:"unary",op:"sizeof",arg:{...meta,k:"type",type}};
+  };
   p.simple = function () {
     let t = this.ts[this.i];
     if (["let", "const", "auto", "var"].includes(t.v))
@@ -465,7 +502,10 @@ export function createCFamily({ id, name, extensions, language }) {
         let { nodes, classes } = parse(code, language);
         function typeOf(a, s) {
           if (!a) return "int";
+          if (a.k === "cast" || a.k === "type") return a.type;
+          if (a.k === "post") return typeOf(a.target, s);
           if (a.k === "literal") {
+            if (/[fF]$/.test(a.raw || "")) return "float";
             if (typeof a.value === "boolean") return language === "c" ? "int" : "bool";
             return typeof a.value === "string"
               ? (managed ? "string" : a.quote === "'" ? (language === "c" ? "int" : "char") : "char[]")
@@ -475,23 +515,21 @@ export function createCFamily({ id, name, extensions, language }) {
                   ? "long"
                   : "int";
           }
+          if (managed && a.k === "member") return classes[typeOf(a.target, s)]?.[a.name]?.type || "int";
           if (a.k === "var") return s.types[a.name] || (["true", "false"].includes(a.name) && language !== "c" ? "bool" : "int");
           if (a.k === "binary") {
             if (["==", "!=", "<", ">", "<=", ">=", "&&", "||"].includes(a.op)) return language === "c" ? "int" : "bool";
             let l = typeOf(a.a, s),
               r = typeOf(a.b, s);
             if (language === "cpp" && a.op === "+" && [l, r].includes("string")) return "string";
-            return [l, r].includes("double") || [l, r].includes("float")
-              ? "double"
-              : [l, r].includes("long")
-                ? "long"
-                : "int";
+            return arithmeticType(l, r, s);
           }
           if (a.k === "index")
             return (
               s.types[callName(a.target)]?.replace(/\[\]|\*/g, "") || "int"
             );
           if (a.k === "unary") {
+            if (a.op === "sizeof") return (s.model.longBits || 64) === 64 ? "unsigned long" : "unsigned int";
             if (a.op === "!") return language === "c" ? "int" : "bool";
             if (a.op === "&") return typeOf(a.arg, s) + "*";
             if (a.op === "*") return typeOf(a.arg, s).replace(/\*$/, "");
@@ -499,8 +537,19 @@ export function createCFamily({ id, name, extensions, language }) {
           }
           return "int";
         }
+        function arithmeticType(l, r, s) {
+          if ([l,r].includes("double")) return "double";
+          if ([l,r].includes("float")) return "float";
+          l = /char|short|bool/.test(l) ? "int" : l;
+          r = /char|short|bool/.test(r) ? "int" : r;
+          const hasLong = l.includes("long") || r.includes("long"), unsigned = l.startsWith("unsigned") || r.startsWith("unsigned");
+          if (!unsigned) return hasLong ? "long" : "int";
+          if ([l,r].includes("unsigned long")) return "unsigned long";
+          if (hasLong) return (s.model.longBits || 64) > 32 ? "long" : "unsigned long";
+          return "unsigned int";
+        }
         function width(type, s) {
-          return type === "long" ? (managed ? 64 : s.model.longBits || 64) : 32;
+          return String(type || "int").includes("long") ? (managed ? 64 : s.model.longBits || 64) : type === "char" && !managed ? 8 : 32;
         }
         function cast(v, type, s, node, api) {
           if (isUnknown(v)) return v;
@@ -527,27 +576,32 @@ export function createCFamily({ id, name, extensions, language }) {
           if (["auto", "var"].includes(type)) return v;
           if (!managed && typeof v === "boolean") v = Number(v);
           if (typeof v !== "number") api.fail("数値型が一致しません", node);
-          if (["float", "double"].includes(type))
-            return type === "float" ? Math.fround(v) : v;
+          if (["float", "double"].includes(type)) {
+            const converted = type === "float" ? Math.fround(v) : v;
+            if (!managed && Number.isFinite(v) && !Number.isFinite(converted)) api.fail("浮動小数点変換が型の範囲外です", node, "未定義動作");
+            return converted;
+          }
           let bits = width(type, s),
             value = Math.trunc(v);
-          if (!Number.isSafeInteger(value))
-            api.fail(
-              "未確認：この64ビット整数は安全に計算できる範囲外です",
-              node,
-              "未確認",
-            );
+          if (!managed && type === "char" && ["float", "double"].includes(typeOf(node.value, s)) && (value < -128 || value > 255)) api.fail("浮動小数点からcharへの変換が範囲外です", node, "未定義動作");
+          if (!managed && type === "char" && (value < 0 || value > 127)) api.fail("charの範囲外変換は符号と処理系により異なります（未確認）", node, "環境依存");
           let min = -(2 ** (bits - 1)),
             max = 2 ** (bits - 1) - 1;
           if (value < min || value > max) {
             api.fail(
               managed
                 ? "整数への変換が範囲外です"
-                : "整数への変換結果は処理系依存です",
+                : ["float", "double"].includes(typeOf(node.value, s)) ? "浮動小数点から整数への変換が範囲外です" : "整数への変換結果は処理系依存です",
               node,
-              managed ? "OverflowException" : "環境依存",
+              managed ? "OverflowException" : ["float", "double"].includes(typeOf(node.value, s)) ? "未定義動作" : "環境依存",
             );
           }
+          if (!Number.isSafeInteger(value))
+            api.fail(
+              "未確認：この64ビット整数は安全に計算できる範囲外です",
+              node,
+              "未確認",
+            );
           return value;
         }
         function allocate(s, name, values, type) {
@@ -707,6 +761,53 @@ export function createCFamily({ id, name, extensions, language }) {
             }
           },
           read(a, s, api) {
+            if (a.k === "literal" && /[fF]$/.test(a.raw || "")) {
+              const value = Math.fround(a.value);
+              if (!Number.isFinite(value)) api.fail("未確認：floatリテラルがモデルの有限範囲外です", a, "未確認");
+              return {handled:true,value};
+            }
+            if (!managed && a.k === "var" && ["static_cast", "dynamic_cast", "reinterpret_cast", "const_cast"].includes(a.name)) api.fail("キャストのこの形式は未対応です（C++名前付きキャスト）", a, "未対応");
+            if (!managed && a.k === "unary" && a.op === "-" && !["double", "float"].includes(typeOf(a.arg, s)) && !typeOf(a.arg, s).startsWith("unsigned")) {
+              const v = api.read(a.arg, s), bits = typeOf(a.arg, s) === "long" ? width("long", s) : 32;
+              if (isUnknown(v)) return {handled:true,value:unknown("- " + formatValue(v))};
+              if (v === -(2 ** (bits - 1))) api.fail("符号付き整数の単項マイナスがオーバーフローします", a, "未定義動作");
+              return {handled:true,value:-v};
+            }
+            if (!managed && a.k === "unary" && ["+", "-"].includes(a.op) && typeOf(a.arg, s).startsWith("unsigned")) {
+              const v = api.read(a.arg, s);
+              if (isUnknown(v)) return {handled:true,value:unknown(a.op + formatValue(v))};
+              if (!Number.isSafeInteger(v)) api.fail("未確認：unsigned単項演算の安全整数範囲外です", a, "未確認");
+              const result = Number(BigInt.asUintN(width(typeOf(a.arg, s), s), a.op === "-" ? -BigInt(v) : BigInt(v)));
+              if (!Number.isSafeInteger(result)) api.fail("未確認：unsigned単項演算の安全整数範囲外です", a, "未確認");
+              return {handled:true,value:result};
+            }
+            if (!managed && a.k === "cast") {
+              let v = api.read(a.arg, s);
+              if (isUnknown(v)) return {handled:true, value: unknown(`(${a.type}) ${formatValue(v)}`, v.id + ":cast:" + a.type)};
+              if (typeof v === "boolean") v = Number(v);
+              if (typeof v !== "number") api.fail("キャストのこの形式は未対応です（数値以外）", a, "未対応");
+              if (["float", "double", "bool"].includes(a.type)) {
+                const value = a.type === "bool" ? v !== 0 : a.type === "float" ? Math.fround(v) : v;
+                if (a.type === "float" && Number.isFinite(v) && !Number.isFinite(value)) api.fail("floatへのキャストが範囲外です", a, "未定義動作");
+                return {handled:true,value};
+              }
+              const bits = a.type.includes("char") ? 8 : a.type.includes("short") ? 16 : a.type.includes("long") ? (s.model.longBits || 64) : 32;
+              const unsigned = a.type.startsWith("unsigned");
+              const integral = !["float", "double"].includes(typeOf(a.arg, s));
+              const n = Math.trunc(v), min = unsigned ? 0 : -(2 ** (bits - 1)), max = unsigned ? 2 ** bits - 1 : 2 ** (bits - 1) - 1;
+              if (unsigned && integral) {
+                if (!Number.isSafeInteger(n)) api.fail("未確認：このキャストは安全に計算できる数値範囲外です", a, "未確認");
+                const modulus = 1n << BigInt(bits);
+                const value = Number((BigInt(n) % modulus + modulus) % modulus);
+                if (!Number.isSafeInteger(value)) api.fail("未確認：このunsigned変換の値は安全整数範囲外です", a, "未確認");
+                return {handled:true,value};
+              }
+              if (a.type === "char" && !integral && (n < -128 || n > 255)) api.fail("浮動小数点からcharへのキャストが範囲外です", a, "未定義動作");
+              if (a.type === "char" && (n < 0 || n > 127)) api.fail("charキャストの符号と範囲は処理系に依存します（未確認）", a, "環境依存");
+              if (n < min || n > max) api.fail(integral ? "整数キャストの範囲外変換は処理系依存です（このモデルでは未確認）" : "浮動小数点から整数へのキャストが範囲外です", a, integral ? "環境依存" : "未定義動作");
+              if (!Number.isSafeInteger(n)) api.fail("未確認：このキャストは安全に計算できる数値範囲外です", a, "未確認");
+              return {handled:true,value:n};
+            }
             if (!managed && a.k === "literal" && a.quote === "'") {
               if (a.value.length !== 1 || a.value.charCodeAt(0) > 127)
                 api.fail("未対応：単一ASCII文字以外の文字定数", a, "未対応");
@@ -715,16 +816,18 @@ export function createCFamily({ id, name, extensions, language }) {
             if (!managed && a.k === "unary" && a.op === "sizeof") {
               const arg = a.arg;
               function checkSizeOperand(expr) {
-                if (!["var", "literal", "index", "unary", "binary"].includes(expr.k) || (expr.k === "unary" && expr.op === "sizeof")) api.fail("未対応：このsizeofオペランドの型はモデルで確定できません", a, "未対応");
+                if (!["var", "literal", "index", "unary", "binary", "cast", "post"].includes(expr.k) || (expr.k === "unary" && expr.op === "sizeof")) api.fail("未対応：このsizeofオペランドの型はモデルで確定できません", a, "未対応");
                 if (expr.k === "var" && !builtinTypes.includes(expr.name) && !["true", "false"].includes(expr.name) && !Object.hasOwn(s.types, expr.name)) api.fail("宣言されていないsizeof対象です", a, "CompileError");
                 if (expr.k === "index" && builtinTypes.includes(expr.target.name)) api.fail("未対応：sizeofの配列型指定。宣言済み配列の変数名を指定してください", a, "未対応");
                 for (const child of [expr.arg, expr.a, expr.b, expr.target]) if (child) checkSizeOperand(child);
               }
-              checkSizeOperand(arg);
+              if (arg.k !== "type") checkSizeOperand(arg);
               if (arg.k === "var" && !builtinTypes.includes(arg.name) && !["true", "false"].includes(arg.name) && !Object.hasOwn(s.types, arg.name)) api.fail("宣言されていないsizeof対象です", a, "CompileError");
               let type = arg.k === "var" && builtinTypes.includes(arg.name) ? arg.name : typeOf(arg, s);
               if (arg.k === "literal" && typeof arg.value === "string" && arg.quote !== "'") return { handled: true, value: new TextEncoder().encode(arg.value).length + 1 };
               const sizes = { char: 1, bool: 1, int: 4, long: (s.model.longBits || 64) / 8, float: 4, double: 8 };
+              if (type.startsWith("unsigned ") || type.startsWith("signed ")) type = type.replace(/^(unsigned|signed) /, "");
+              if (type === "short") return {handled:true,value:2};
               if (type.endsWith("[]") && arg.k === "var") {
                 const mem = s.model.memory[s.addresses[arg.name]];
                 return { handled: true, value: mem.values.length * sizes[mem.type] };
@@ -944,14 +1047,23 @@ export function createCFamily({ id, name, extensions, language }) {
               (typeof a === "string" || typeof b === "string")
             )
               return String(a ?? "") + String(b ?? "");
+            const arithmetic = arithmeticType(typeOf(node.k === "assign" ? node.target : node.a, s), typeOf(node.k === "assign" ? node.value : node.b, s), s);
+            if (!managed && arithmetic.startsWith("unsigned") && !["&&", "||"].includes(op)) {
+              if (!Number.isSafeInteger(a) || !Number.isSafeInteger(b)) api.fail("未確認：unsigned演算の安全整数範囲外です", node, "未確認");
+              const bits = width(arithmetic, s), x = BigInt.asUintN(bits, BigInt(a)), y = BigInt.asUintN(bits, BigInt(b));
+              if (["==", "!=", "<", ">", "<=", ">="].includes(op)) return baseBinary(op, x, y);
+              if (["/", "%"].includes(op) && y === 0n) api.fail("整数の0除算です", node, "未定義動作");
+              if (!["+", "-", "*", "/", "%"].includes(op)) api.fail("未対応：このunsigned演算", node, "未対応");
+              const result = BigInt.asUintN(bits, op === "+" ? x+y : op === "-" ? x-y : op === "*" ? x*y : op === "/" ? x/y : x%y);
+              if (result > BigInt(Number.MAX_SAFE_INTEGER)) api.fail("未確認：unsigned演算の結果が安全整数範囲外です", node, "未確認");
+              return Number(result);
+            }
             if (["==", "!=", "<", ">", "<=", ">=", "&&", "||"].includes(op))
               return baseBinary(op, a, b);
             if (typeof a !== "number" || typeof b !== "number")
               api.fail("演算する型が一致しません", node, "CompileError");
             let type =
-                node.k === "assign"
-                  ? s.types[callName(node.target)]
-                  : typeOf(node, s),
+                arithmetic,
               integer = !["double", "float"].includes(type);
             if ((op === "/" || op === "%") && b === 0 && integer)
               api.fail(
@@ -1004,9 +1116,14 @@ export function createCFamily({ id, name, extensions, language }) {
                 node,
                 managed ? "OverflowException" : "未定義動作",
               );
+            if (type === "float") {
+              result = Math.fround(result);
+              if (!managed && !Number.isFinite(result)) api.fail("未確認：float演算結果が有限のモデル範囲外です", node, "未確認");
+            }
             return result;
           },
           call(name, args, s, api, node) {
+            if (!managed && builtinTypes.includes(name)) api.fail("キャストのこの形式は未対応です（関数形式ではなく (型)式 を使用してください）", node, "未対応");
             let values = args.map((a) => api.read(a, s));
             if (name === "Console.ReadLine") {
               if (!managed) api.fail("未対応の関数です", node);
@@ -1032,9 +1149,9 @@ export function createCFamily({ id, name, extensions, language }) {
               let [fmt, ...rest] = values;
               if (typeof fmt !== "string")
                 api.fail("printfの書式文字列が必要です", node);
-              if (fmt.replace(/%[%disfc]/g, "").includes("%")) api.fail("未対応：このprintf書式はモデルで扱えません", node, "未対応");
+              if (fmt.replace(/%[%disfcu]/g, "").includes("%")) api.fail("未対応：このprintf書式はモデルで扱えません", node, "未対応");
               let i = 0;
-              let text = fmt.replace(/%([%disfc])/g, (_, type) => {
+              let text = fmt.replace(/%([%disfcu])/g, (_, type) => {
                 if (type === "%") return "%";
                 let sourceArg = args[i + 1],
                   sourceType = typeOf(sourceArg, s),
@@ -1043,7 +1160,8 @@ export function createCFamily({ id, name, extensions, language }) {
                 if (type === "s") v = cString(v, s, api, node);
                 if (
                   ((type === "d" || type === "i" || type === "c") &&
-                    !["int", "char", "bool"].includes(sourceType)) ||
+                    !["int", "char", "signed char", "unsigned char", "short", "unsigned short", "bool"].includes(sourceType)) ||
+                  (type === "u" && sourceType !== "unsigned int") ||
                   (type === "f" && !["float", "double"].includes(sourceType))
                 )
                   api.fail(

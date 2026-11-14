@@ -8,7 +8,7 @@ import {
   baseBinary,
 } from "../../core/script.js";
 import { rows, sourceFailure } from "../../core/data.js";
-import { formatValue, isUnknown, unknown } from "../../core/contract.js";
+import { formatModelValue as formatValue, isUnknown, unknown } from "../../core/contract.js";
 const reference = rows([
   [
     "Send",
@@ -311,7 +311,7 @@ export const definition = {
     description:
       "AutoHotkey v2の起動部分とイベント本体を分離し、モデルのアクティブウィンドウ・送信キー・マウスを更新します。",
     support:
-      "ホットキーの単一イベント、単純ホットストリング、代入、If、Loop、While、掲載関数に対応。#HotIf、タイマー、複雑なSend記法、CoordMode変更、ユーザー関数等は未対応です。",
+      "ホットキーの単一イベント、単純ホットストリング、代入、If、Loop、While、掲載関数に対応。整数は安全整数範囲内のモデル。整数除算 //・64ビットビット演算は未対応として停止します。#HotIf、タイマー、複雑なSend記法、CoordMode変更、ユーザー関数等は未対応です。",
     sources: [
       {
         title: "AutoHotkey公式 v2ドキュメント",
@@ -332,10 +332,30 @@ export const definition = {
   async simulate(code, model, limits) {
     try {
       let { nodes } = parseAHK(code, model.event);
+      function numeric(value, node, api) {
+        let v = value;
+        if (typeof v === "boolean") v = Number(v);
+        if (typeof v === "string") {
+          const text = v.trim();
+          if (/^[+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?$/.test(text)) v = Number(text);
+          else if (/^[+-]?0x[0-9a-f]+$/i.test(text)) v = parseInt(text, 16);
+          else api.fail("数値または数値文字列が必要です", node, "TypeError");
+        }
+        if (typeof v !== "number") api.fail("数値または数値文字列が必要です", node, "TypeError");
+        if (!Number.isFinite(v) || (Number.isInteger(v) && !Number.isSafeInteger(v))) api.fail("未確認：AutoHotkeyの数値がこのモデルの安全整数・有限数の範囲外です", node, "未確認");
+        return v;
+      }
       const semantics = {
         dialect: "ahk",
         logicalOperands: true,
-        read(a, s) {
+        initialize(s, api) { for (const v of Object.values(s.vars)) if (typeof v === "number") numeric(v,{line:1},api); },
+        read(a, s, api) {
+          if (a.k === "literal" && typeof a.value === "number") return {handled:true,value:numeric(a.value,a,api)};
+          if (a.k === "unary" && ["+", "-"].includes(a.op)) {
+            const value = api.read(a.arg, s);
+            if (isUnknown(value)) return {handled:true,value:{...unknown(a.op + formatValue(value)),op:a.op,a:value}};
+            return {handled:true,value:(a.op === "-" ? -1 : 1) * numeric(value,a,api)};
+          }
           if (a.k === "var") {
             if (["true","false"].includes(a.name.toLowerCase()))
               return { handled:true, value:a.name.toLowerCase() === "true" ? 1 : 0 };
@@ -344,7 +364,7 @@ export const definition = {
             let key = Object.keys(s.vars).find(
               (k) => k.toLowerCase() === a.name.toLowerCase(),
             );
-            if (key !== undefined) return { handled: true, value: s.vars[key] };
+            if (key !== undefined) return { handled: true, value: typeof s.vars[key] === "number" ? numeric(s.vars[key],a,api) : s.vars[key] };
           }
           return null;
         },
@@ -364,11 +384,28 @@ export const definition = {
         truth(v) {
           return v !== false && v !== 0 && v !== "" && v !== null;
         },
-        binary(op, a, b) {
-          if (op === "=") {
-            if (typeof a === "string") a = a.toLowerCase();
-            if (typeof b === "string") b = b.toLowerCase();
-            op = "==";
+        increment(x, node, s, api) {
+          if (isUnknown(x)) api.fail("未確認：不確定な値のインクリメント", node, "未確認");
+          const previous = numeric(x,node,api), next = numeric(previous + (node.op === "++" ? 1 : -1),node,api);
+          return {previous,next};
+        },
+        binary(op, a, b, node, s, api) {
+          if (isUnknown(a) || isUnknown(b)) return baseBinary(op, a, b, "ahk");
+          if (["^", "&", "|"].includes(op)) api.fail("未対応：AutoHotkeyの64ビットビット演算", node, "未対応");
+          if (["+", "-", "*", "/", "<", ">", "<=", ">="].includes(op)) {
+            a = numeric(a,node,api); b = numeric(b,node,api);
+            if (op === "/" && b === 0) api.fail("0による除算です", node, "ZeroDivisionError");
+            const value = baseBinary(op, a, b, "ahk");
+            return typeof value === "number" ? numeric(value,node,api) : value;
+          }
+          if (["=", "==", "!=", "!=="].includes(op)) {
+            if (typeof a === "string" && typeof b === "string") {
+              // AHK's default string comparison folds ASCII A-Z only.
+              const fold = x => x.replace(/[A-Z]/g, c => c.toLowerCase());
+              if (["=", "!="].includes(op)) {a=fold(a);b=fold(b);}
+            }
+            const equal = a == b;
+            return ["!=", "!=="].includes(op) ? !equal : equal;
           }
           return baseBinary(op, a, b, "ahk");
         },

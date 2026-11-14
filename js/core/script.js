@@ -1,4 +1,4 @@
-import { LIMITS, isUnknown, unknown, formatValue } from "./contract.js";
+import { LIMITS, isUnknown, unknown, formatModelValue as formatValue } from "./contract.js";
 import { refineCondition } from "./conditions.js";
 export class PracticeError extends Error {
   constructor(message, line = 1, category = "エラー") {
@@ -32,7 +32,7 @@ export function tokenize(source, dialect = "js") {
       continue;
     }
     if (
-      (c === "/" && next === "/" && dialect !== "r") ||
+      (c === "/" && next === "/" && !["r", "ahk"].includes(dialect)) ||
       ((dialect === "r" || dialect === "python") && c === "#") ||
       (dialect === "ahk" && c === ";")
     ) {
@@ -91,6 +91,7 @@ export function tokenize(source, dialect = "js") {
       out.push({ v: text, k: "string", quote, line: start });
       continue;
     }
+    if (dialect === "ahk" && source.slice(i, i + 2) === "//") unsupported("AutoHotkeyの整数除算 // は未対応です", line);
     let m = source
       .slice(i)
       .match(/^(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?(?:[LfF])?/);
@@ -203,11 +204,12 @@ export class ScriptParser {
         raw: t.v,
       };
     else if (t.k === "string") a = { ...meta, k: "literal", value: t.v, quote: t.quote };
+    else if (t.v === "sizeof" && this.parseSizeof?.()) a = this.parseSizeof(meta, true);
     else if (["!", "not", "-", "+", "&", "*", ...(this.dialect === "js" ? ["typeof"] : []), ...(["c", "cpp"].includes(this.dialect) ? ["sizeof"] : [])].includes(t.v))
       a = { ...meta, k: "unary", op: t.v, arg: this.expr(this.dialect === "js" ? 10 : 9) };
     else if (t.v === "(") {
-      a = this.expr();
-      this.take(")");
+      a = this.parseCast?.(meta);
+      if (!a) { a = this.expr(); this.take(")"); }
     } else if (t.v === "[") {
       let values = [];
       while (!this.peek("]")) {
@@ -921,6 +923,7 @@ export function executeProgram(nodes, model, semantics = {}, custom = {}) {
             continue;
           }
           if (values) r.s.vars[n.name] = values[i];
+          if (n.counterName) r.s.vars[n.counterName] = i + 1;
           note(r.s, n, `繰り返し ${i + 1}回目`);
           r.s.loopDepth = (r.s.loopDepth || 0) + 1;
           (r.s.loopIterations ??= []).push(i + 1);
@@ -1042,8 +1045,12 @@ export function executeProgram(nodes, model, semantics = {}, custom = {}) {
       case "expression": {
         const before = s.trace.length;
         let v = read(n.value, s);
-        if (s.trace.length === before)
-          note(s, n, v == null ? "処理を実行します（表示する戻り値はありません）" : `式を評価します：${formatValue(v)}`);
+        if (s.trace.length === before) {
+          const text = n.value.k === "post"
+            ? `${callName(n.value.target) || "対象"} を${n.value.op === "++" ? "増やし" : "減らし"}ます（後置式の値は変更前の ${formatValue(v)}）`
+            : v == null ? "処理を実行します（表示する戻り値はありません）" : `式を評価します：${formatValue(v)}`;
+          note(s, n, text);
+        }
         return [s];
       }
       case "if": {

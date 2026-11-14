@@ -6,7 +6,7 @@ import {
   callName,
 } from "../../core/script.js";
 import { rows } from "../../core/data.js";
-import { formatValue, unknown, isUnknown } from "../../core/contract.js";
+import { formatModelValue as formatValue, unknown, isUnknown } from "../../core/contract.js";
 const reference = rows([
   [
     "console.log",

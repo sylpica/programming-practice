@@ -44,3 +44,6 @@ with tempfile.TemporaryDirectory() as tmp:
 Path('work/audit').mkdir(parents=True,exist_ok=True)
 Path('work/audit/native-r2.json').write_text(json.dumps(checks,ensure_ascii=False,indent=2))
 print(json.dumps({'checks':len(checks),'C_CPP_stdout_matches_simulator':True,'Csharp_native_execution':sum(x[0]=='csharp' for x in checks),'Csharp_compiler_available':bool(dotnet),'python_execution':sum('compile and run' in x[3] and x[0]=='python' for x in checks)},ensure_ascii=False))
+
+# Round 3 exercises casts with separately derived values and native runtimes.
+subprocess.run(["python3",str(root/"tests/native-r3.py")],cwd=root,check=True)
