@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#197655" />
+    <meta
+      name="description"
+      content="ExcelなしでVBAの動きを学べる、オフライン対応のコード練習アプリ。"
+    />
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="icon" href="icons/icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+    <link rel="stylesheet" href="style.css" />
+    <title>VBA練習アプリ</title>
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="./"
+        ><img src="icons/icon.svg" width="38" height="38" alt="" /><span
+          >VBA練習アプリ<small>Excelの「動き」を、コードから。</small></span
+        ></a
+      ><span id="offline" class="status">ローカルで学習</span>
+    </header>
+    <nav class="main-nav" aria-label="メインメニュー">
+      <button data-view="practice" aria-current="page">コード練習</button
+      ><button data-view="reference">関数リファレンス</button
+      ><button data-view="templates">テンプレート集</button
+      ><button data-view="glossary">用語集</button>
+    </nav>
+    <main>
+      <section id="practice" class="view">
+        <div class="practice-heading">
+          <div>
+            <h1>書いて、動きを確かめよう</h1>
+          </div>
+          <label class="template-picker"
+            >テンプレート<select id="template">
+              <option value="">なし（自由に練習）</option>
+            </select></label
+          >
+        </div>
+        <div class="workspace">
+          <div class="left-column">
+            <section class="panel editor-panel" id="dropzone">
+              <div class="panel-heading">
+                <h2><span class="number">01</span> コード</h2>
+                <div class="actions">
+                  <button id="import">取り込む</button
+                  ><button id="download">保存</button>
+                </div>
+              </div>
+              <input id="file" type="file" accept=".bas,.txt" hidden />
+              <div class="editor-wrap">
+                <pre id="lineNumbers" aria-hidden="true"></pre>
+                <textarea
+                  id="editor"
+                  aria-label="VBAコード"
+                  spellcheck="false"
+                  autocapitalize="off"
+                  autocomplete="off"
+                  wrap="off"
+                ></textarea>
+              </div>
+              <div class="editor-footer">
+                <span id="cursor">1行</span
+                ><span>.bas / .txt をドロップして取り込み</span>
+              </div>
+            </section>
+            <section class="panel simulation">
+              <div class="panel-heading">
+                <h2><span class="number">02</span> コードの動き</h2>
+                <div class="actions">
+                  <label class="auto-label"
+                    ><input id="auto" type="checkbox" />自動実行</label
+                  ><button id="run" class="primary">▶ 実行</button>
+                </div>
+              </div>
+              <div class="simulation-body">
+                <div id="resultStatus" role="status" aria-live="polite"></div>
+                <div id="pathNav" class="path-nav" hidden>
+                  <div class="path-controls">
+                    <button id="first" aria-label="先頭へ">|◀</button
+                    ><button id="prev" aria-label="前のパス">◀</button
+                    ><strong id="counter"></strong
+                    ><button id="next" aria-label="次のパス">▶</button
+                    ><button id="last" aria-label="末尾へ">▶|</button
+                    ><label
+                      >番号<input
+                        id="pathNumber"
+                        type="text"
+                        inputmode="numeric"
+                        size="4"
+                        aria-label="パス番号" /></label
+                    ><button id="jump">移動</button>
+                  </div>
+                  <label class="sort-label"
+                    >並び順<select id="sort">
+                      <option value="original">出現順</option>
+                      <option value="long">コードが長い順</option>
+                      <option value="short">処理が短い順</option>
+                    </select></label
+                  >
+                </div>
+                <p id="limit" class="notice" hidden></p>
+                <ol id="trace" class="trace"></ol>
+                <div id="outputs"></div>
+              </div>
+            </section>
+            <section class="panel final-panel">
+              <div class="panel-heading">
+                <h2><span class="number">03</span> 終わったときの状態</h2>
+              </div>
+              <div id="final" class="final-body">
+                実行すると、変数とセルの変化がここに表示されます。
+              </div>
+            </section>
+            <section
+              id="templateExplanation"
+              class="panel explanation"
+              hidden
+            ></section>
+          </div>
+          <aside class="right-column">
+            <section class="panel model-panel">
+              <div class="panel-heading">
+                <h2>モデルシート</h2>
+                <button id="resetModel" title="モデル値を初期状態に戻す">
+                  リセット
+                </button>
+              </div>
+              <div class="model-body">
+                <div class="sheet-wrap">
+                  <table class="sheet">
+                    <caption>
+                      Sheet1 · A1:C5
+                    </caption>
+                    <thead>
+                      <tr>
+                        <th></th>
+                        <th>A</th>
+                        <th>B</th>
+                        <th>C</th>
+                      </tr>
+                    </thead>
+                    <tbody id="sheet"></tbody>
+                  </table>
+                </div>
+                <p class="hint">
+                  値を編集できます。「?」は未確定、空欄はEmpty。文字列を数値と区別するには先頭に
+                  ' を付けます。
+                </p>
+              </div>
+            </section>
+            <section class="panel used-panel">
+              <div class="panel-heading">
+                <h2>使用中の関数</h2>
+                <span id="usedScope" class="muted">コード全体</span>
+              </div>
+              <div id="used" class="chips"></div>
+            </section>
+            <section class="panel reference-panel">
+              <div class="panel-heading"><h2>関数リファレンス</h2></div>
+              <div class="reference-body">
+                <label class="search"
+                  ><span>検索</span
+                  ><input
+                    id="referenceSearch"
+                    type="search"
+                    placeholder="Range、文字列、繰り返し…"
+                /></label>
+                <div id="refList" class="ref-list"></div>
+                <article id="refDetail" class="ref-detail"></article>
+              </div>
+            </section>
+          </aside>
+        </div>
+      </section>
+      <section id="reference" class="view" hidden>
+        <h1>関数・ステートメント</h1>
+        <p>書式、使い方、注意点を調べる。</p>
+        <label class="search"
+          ><span>検索</span
+          ><input
+            id="fullSearch"
+            type="search"
+            placeholder="名前・分類・説明から探す"
+        /></label>
+        <div id="fullReferences" class="reference-grid"></div>
+      </section>
+      <section id="templates" class="view" hidden>
+        <h1>解説付きテンプレート</h1>
+        <p>小さなマクロから、ひとつずつ。</p>
+        <div id="templateCards" class="template-grid"></div>
+      </section>
+      <section id="glossary" class="view" hidden>
+        <h1>VBAの用語集</h1>
+        <p>
+          プログラミングの言葉を知ろう。関数の書式は「関数リファレンス」で調べられます。
+        </p>
+        <dl id="glossaryList" class="glossary-grid"></dl>
+      </section>
+      <details class="panel support">
+        <summary>シミュレーションの対応範囲・使い方</summary>
+        <p>
+          単一の引数なしSub、変数宣言、代入、1次元配列、複数行If、Select
+          Case、For / For Each、Do While / Until（前判定・後判定）、Exit、On
+          Error Resume Next / GoTo 0、A1:C5のRange /
+          Cellsに対応します。関数ごとの対応状況はリファレンスに表示します。
+        </p>
+        <p>
+          実際のExcelを実行する環境ではありません。外部ブック、複数シート、ファイル操作、イベント、ユーザー定義関数、With、GoTo、動的・多次元配列、1行Ifは未対応です。未対応構文は説明を停止して明示します。String型と数値型の直接比較、未確定Step、複数の未確定値を組み合わせた比較・非線形条件も未対応です。比較前にCStrやCDblで型をそろえてください。
+        </p>
+        <p>
+          未確定のループは0～2回と継続可能性を表示します。最大2,000パス、探索100,000回、1.2秒、各パス600手順、確定ループ100回の制限があります。上限に達した説明は完了した実行結果ではありません。
+        </p>
+        <p>
+          コードはこのブラウザ内に自動保存します。ファイルはサーバーへ送信しません。初回にオンラインで開くと、次回からオフラインでも使えます。
+        </p>
+      </details>
+    </main>
+    <footer>
+      <span>VBA練習アプリ</span>
+      <p>
+        学習用のモデルに基づく説明です。実務で使う前には、Excel上の検証用ブックで動作を確認してください。
+      </p>
+      <a href="https://github.com/sylpica/VBA">GitHub</a>
+    </footer>
+    <script type="module" src="js/app.js"></script>
+  </body>
+</html>

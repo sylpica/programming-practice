@@ -1,0 +1,53 @@
+name: Validate and deploy GitHub Pages
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: pages
+  cancel-in-progress: false
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    outputs:
+      pages_enabled: ${{ steps.pages.outputs.enabled }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm test
+      - name: Check Pages configuration
+        id: pages
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const {data} = await github.rest.repos.get(context.repo);
+            core.setOutput('enabled', String(data.has_pages));
+            if (!data.has_pages) core.warning('GitHub Pages is disabled. Select Settings > Pages > Source: GitHub Actions, then run this workflow again.');
+  deploy:
+    needs: validate
+    if: needs.validate.outputs.pages_enabled == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/configure-pages@v5
+      - run: |
+          mkdir -p work/site
+          cp index.html style.css sw.js manifest.webmanifest work/site/
+          cp -r js icons work/site/
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: work/site
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4
