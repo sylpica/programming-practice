@@ -62,3 +62,5 @@ test('round2 sizeof C++ boolean expression uses its bool type',async()=>{const r
 test('round2 C++ concatenation requires a std::string operand',async()=>{const r=await run('cpp','cout << ("a" + "b");');assert.ok(errors(r).length);const good=await run('cpp','std::string s="b"; cout << ("a"+s);');assert.deepEqual(errors(good),[]);assert.deepEqual(out(good),['ab']);});
 
 test('round2 C++ string initialization reserves the terminator',async()=>{const r=await run('cpp','char s[3]="abc"; cout << s;');assert.equal(errors(r)[0].category,'CompileError');});
+
+test('round2 all C# teaching classes stay outside the entry method',()=>{const d=getDefinition('csharp');for(const code of [...d.templates.map(t=>t.code),...d.reference.map(r=>r.example)]){const body=code.split('static void Main() {')[1];assert.ok(body);assert.doesNotMatch(body,/\bclass\s+/);}});

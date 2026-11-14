@@ -11,7 +11,7 @@ definition.templates.push(...additionalTemplates(definition.model.defaults));
 
 // Complete console programs can be copied into an actual C# project.
 function consoleProgram(code) {
-  const declaration = code.match(/^class Counter \{ public int Value; \}\n?/);
+  const declaration = code.match(/^class\s+[^\s{]+\s*\{[^{}]*\}\s*/);
   if (declaration) code = code.slice(declaration[0].length);
   return "using System;\n" + (declaration ? declaration[0] + "\n" : "") + "class Program {\n    static void Main() {\n" + code + "\n    }\n}";
 }
