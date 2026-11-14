@@ -7123,7 +7123,7 @@
       "description": "関数から値を返して実行を終えます。",
       "returns": "戻り値なし（宣言または制御文）",
       "caution": "main の終了にも使います。",
-      "example": "using System;\nclass Program {\n    static void Main() {\nreturn 0;\n    }\n}",
+      "example": "using System;\nclass Program {\n    static void Main() {\nreturn;\n    }\n}",
       "source": "https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/keywords/return"
     }
   },

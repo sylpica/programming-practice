@@ -1152,7 +1152,7 @@ export function createCFamily({ id, name, extensions, language }) {
       "制御",
       "return value;",
       "関数から値を返して実行を終えます。",
-      "return 0;",
+      managed ? "return;" : "return 0;",
       "main の終了にも使います。",
     ],
     [
