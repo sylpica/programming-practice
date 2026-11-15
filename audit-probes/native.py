@@ -27,7 +27,11 @@ with tempfile.TemporaryDirectory() as t:
  for code in json.loads((root/'audit-probes/ps-cases.json').read_text(encoding='utf-8')):
   script="$ErrorActionPreference='Stop'; try {$v=@(& {"+code+"}); ConvertTo-Json -InputObject @{values=$v;error=$null} -Depth 20 -Compress} catch {ConvertTo-Json -InputObject @{values=@();error=$_.Exception.Message} -Compress}"
   start=time.perf_counter()
-  v=subprocess.run([pwsh,'-NoLogo','-NoProfile','-NonInteractive','-EncodedCommand',base64.b64encode(script.encode('utf-16le')).decode()],cwd=p,capture_output=True,text=True,encoding='utf-8',timeout=10)
+  try:
+   v=subprocess.run([pwsh,'-NoLogo','-NoProfile','-NonInteractive','-EncodedCommand',base64.b64encode(script.encode('utf-16le')).decode()],cwd=p,capture_output=True,text=True,encoding='utf-8',timeout=30)
+  except subprocess.TimeoutExpired:
+   rows.append(dict(kind='powershell',code=code,timeout=True,ms=(time.perf_counter()-start)*1000))
+   continue
   rows.append(dict(kind='powershell',code=code,stdout=v.stdout,stderr=v.stderr,returncode=v.returncode,ms=(time.perf_counter()-start)*1000))
  # Run model probes in child processes so an inner loop cannot block the audit.
  for code in ['@() * 2147483648','@() * 100000000',"'' * 2147483648"]:
