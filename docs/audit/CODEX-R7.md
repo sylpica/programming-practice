@@ -1,4 +1,19 @@
-# Codex R7 独立監査 — ee01f07（節目5・未完了）
+# Codex R7 独立監査 — ee01f07（節目6・未完了）
+
+対象は引き続き **ee01f07402b404c7b9dbcd83935b4be3bc4de187、全15種類・104テンプレート・978リファレンス**。配信日：2026-11-16 JST。Muse側の指摘一覧・個票を参照せず、固定対象の実装・公式資料・実ランタイムから独立に確認した。
+
+節目6の追加は **17件（P2：15、P3：2）**。累計 **151件（P1：0、P2：136、P3：15）**。Museとの重複を除いた件数ではない。同じ原因の入力違い、過去の補強、判定を保留した差分を件数へ加算していない。[節目6の追加指摘](#節目6の追加指摘)と[残作業](#節目6の残作業)を参照。
+
+**使った書き込みコール数：1件（この節目）。累計15件。** 報告書だけをmainへまとめて配信するgit push 1回。過去の節目は5件、4件、2件、2件、1件。GitHubへのgit pushを数え、ローカル作業・読取り・CI内の保存は含めない。製品コード・教材・既存テスト・DEVELOPMENT.mdは変更していない。監査用ブランチの追加pushもマージもない。
+
+配信準備時のmainは前回報告の `329085b47a801518c9029079a3f6ce992d1b3c93`。各指摘はee01f07で再現する。その後のmainの修正状況を再監査したものではない。
+
+**観点1〜8の監査は未完了。** 今回はPythonとCloudFormationの委譲Pythonの型・引数・イテレータ・未知値・例外階層・文字分類、およびリファレンスへの解決・教材の説明を進めた。全15種類・全104教材・978参照項目・111用語・全ビューの未了対象を維持する。サブエージェント・リセット権は使用していない。依頼モデル／推論設定をこの会話のツールから変更・確認できない制約も継続し、設定を検証したと偽らない。
+
+## 節目5までの記録
+
+以下は前回内容を保持した履歴。件数・書き込み回数・未実施の記述は当時の値であり、今回の状況は末尾の節目6で更新する。
+
 
 対象は引き続き **ee01f07402b404c7b9dbcd83935b4be3bc4de187、全15種類・104テンプレート・978リファレンス**。配信日：2026-11-16 JST。Muse側の指摘一覧・個票を参照せず、固定対象の実装、公式資料、実ランタイムから独立に確認した。
 
@@ -2648,3 +2663,336 @@ PowerShellのモデルvariablesへ`{"AuditModelValue":98765}`を設定し、`Wri
 VBA・ImageJ・CloudFormation・PAD・AHK・UI.Vision・Power Apps・Python・R・C・C++・C#・JavaScript・cmd・PowerShellの残作業を全て継続する。実Excel／Canvas／PAD／AWS／UI.Vision製品セッション、実スクリーンリーダー、Safari／Firefox／iOS実機、ImageJのGUI全経路は環境・接続がなく未実施。Windows CIで追加可能な検証・性能測定は「不可能」ではなく未実施として残す。今回のLinuxブラウザ試験からWindowsの時間を推測していない。
 
 使用量・回数制限の通知は受けておらず、リセット権も使っていない。出力が長いツール応答は文脈上限で切られたため、必要な結果を小分けに読み直した。利用枠のリセット時刻の通知はないので推測しない。これも未完了の節目報告であり、全範囲完了や欠陥収束の宣言ではない。
+
+
+## 節目6の検証範囲・一次情報・判定
+
+CPython **3.12.14**、Unicodeデータ **15.0.0**、Node **24.22.1**、Chromium **156**を使用。固定対象ee01f07のエンジンと公式Python 3.12資料・CPythonソース・実CPythonを照合した。新規のWindows CI実行・pushは行っていない。CloudFormationはアプリの委譲Pythonでの再現であり、実AWS Lambdaの実測ではない。
+
+### 境界・異常値・組合せ
+
+| 入力集合 | 実施数 | 結果・適用範囲 |
+|---|---:|---|
+| 組込み関数と文字列／list／dictメソッドの境界・型・個数、重点コード | 739 | CPythonと比較。0／1／−1、bool、None、空文字列、空コンテナ、小数、inf／nan等。各実装の全入力域を終えたという意味ではない |
+| Unicode代表コード・複数文字・追加境界 | 175 | 7メソッドの具体的な誤値、ジェネレータの副作用、非有限和等を再確認 |
+| any／all × list／iter × 長さ0〜3 × 要素False／True／同じ未知x | 160 | 定義した有限集合を全列挙。到達集合が32組で不足（R7-135） |
+| startswith／endswith × 本文3種 × 候補3種 × start7種 × end7種 | 882 | start／endは−5、−1、0、1、2、3、5。定義した有限集合を全列挙し22組不一致（R7-147） |
+| 集合8メソッド × ハッシュ不能要素list／dict | 16 | 6メソッドの12入力で不正継続。updateとsymmetric_difference_updateの4入力は正しくTypeError（R7-145） |
+| 掲載25例外型 × 掲載25ハンドラ | 625 | 定義した全組合せをCPythonと照合し12組不一致（R7-150） |
+
+計**延べ2597入力**。異なる検査群で重複するコードを含み、2597個の異なる欠陥や全関数の完全網羅とは数えない。引数を無視する差があっても既報R7-17〜20等に該当するもの、正直な未確定表示だけのもの、実物と一致するものは新規指摘から除外した。たとえばsortedのreverseへ文字列や小数を渡す2例は、このCPythonでは真偽変換されアプリと一致したため「TypeErrorを出さない欠陥」とはしていない。
+
+Unicodeについては、0〜0x10FFFFを列挙し、Unicode 15.0で未割当の文字とサロゲートを除いた**286719コードポイント×10判定、2867190判定**を比較した。アプリから抽出した実際の判定式を評価した検査であり、2867190回アプリの全構文解析・画面操作をしたものではない。抽出した一般カテゴリの式がPythonの各メソッドの規則と異なる候補を得てから、古くから存在する代表7文字をアプリの完全なsimulate経路と実CPythonで再現した。
+
+候補差分数はisdigit 787、isnumeric 81、isalpha 1694、isalnum 1458、isidentifier 26、islower 312、isupper 151。**4509候補を4509件の確定欠陥としない**。Node側のUnicode版差に依存する候補を含み得るため、R7-148へ確実な代表例を集約した。同じ単一コードポイント集合ではisdecimal／isspace／isasciiの差は0、**確認済み・なし**。空文字列・複数文字・将来Unicode版・任意の文字列全体の正しさまで保証しない。
+
+### リファレンスの完全性・正確性と全ビュー
+
+Pythonの明示ディスパッチ名を、組込み39、str29、list11、dict10、set14、tuple2、range2、具体値を返すmath4の計**111名**として抽出し、全て参照項目へ対応することを確認した。この集合の項目名漏れは**確認済み・なし**。open／str.formatの未対応停止も含めた名前対応の検査であり、111関数すべてを完全に実装しているという意味ではない。属性の既報R7-59、汎用モジュール受付、別名、型の属性、構文、例外等をこの111名で置き換えていない。
+
+一方、項目が存在する組込み型メソッド67項目の掲載例を全件実行し、自身の参照名がscanとtraceに載るか調べたところ、**67件すべてで欠落**した（R7-151）。使用中チップが存在する参照へ誘導できない問題を、項目そのものがない問題と区別している。math.sqrtも同じ画面でリンク欠落を確認したが、残るmath全項目についてこの指摘の67件へ混ぜていない。
+
+Python160項目のうち「対応」とされる**151項目の例を全て実CPythonで実行**し、全151件が終了コード0。期待値の記載は150件で標準出力と一致した。inputの1件は、期待表示に端末で入力した「タロウ」のエコーも含み、stdinパイプによる標準出力だけとは異なる。これを「値の捏造」や誤った期待出力の新規欠陥に数えていない。この151例の実行可能性と掲載値について、新たに確定した誤りは**確認済み・なし**。全書式・全説明・全注意書き・未対応9項目の逐文照合の完了ではない。
+
+参照一覧・教材一覧・用語集を全15種類分再抽出し、用語定義111項目を通読した。追加で確定した用語定義の誤りはない。既報のAHK自動実行（R7-51）と教材語の漏れ（R7-56）は維持する。「111項目を全て一次情報へ逐文照合済み・問題なし」とはしない。今回の一次照合は特にPythonの数値・文字列・イテレータ・例外の記述を進めたもので、他言語の残る定義照合も継続する。
+
+### 教材・画面再現
+
+Python全10教材のタイトル・intro・コードを通読し、全10コードを実CPythonとアプリで再実行した。全10件の出力は一致し、実行エラーなし。**掲載コードの既定実行結果の差は確認済み・なし**。文章中のsplitの戻り値と、関連参照の誤検出は別にR7-149／151として報告する。これにより前節のAHK／UI.Vision／PAD／Power Appsの24教材に加えて、Python10教材の今回確認を追加した。残る教材を省略して104件全ての公式照合が済んだとはしない。
+
+追加17指摘の代表コードをPythonと、CloudFormationの委譲Pythonでも再確認した。共通のCloudFormation手順は、掲載コードを次のhandlerの本文へ4空白でインデントし、モデルは既定のまま実行する。R7-149はPython教材の文面だけを対象とする。
+
+```python
+def handler(event, context):
+    # ここへ掲載コードを入れる
+    return {"requestId": event["requestId"], "status": "success", "fragment": event["fragment"]}
+```
+
+代表コードのAPI再実行は計33操作。Chromiumでも同じ33操作と教材2ビューの文面を確認し、pageerror 0。実出力・誤停止の画面とAPIの間に新たな取り違えはなく、**この再現集合での表示一致は確認済み・なし**。画面が示す計算結果や分類が正しいという合格ではない。後から追加したケースのため監査スクリプトがCloudFormation表示のままPython教材を選ぼうとして一度停止したが、種類を戻す手順へ直し、全体を再実行した。古い結果ファイルを再実行成功の証拠にしていない。
+
+ローカル証跡は`/workspace/work/r7f/`の`python-results.json`、`python-more-results.json`、`python-unknown-results.json`、`python-boundary-results.json`、`python-hash-results.json`、`python-exception-results.json`、`unicode-summary.json`、`unicode-differences.json`、`python-name-map.json`、`method-links.json`、`material-native.json`、`template-comparison.json`、`recheck-results.json`、`browser-results.json`。mainへの配信は本報告書だけとし、必要な再現コード・条件・実出力・一次情報を各指摘へ記載する。
+
+## 節目6の追加指摘
+
+
+### R7-135（P2）any／allが未知要素を既知の真偽へ潰し、到達可能な分岐を落とす
+
+対象：Python／CloudFormationの委譲Python。再現：ee01f07でPythonを選び、既定モデルで次を入力して実行する。CloudFormationの委譲部分は、コードをhandler(event, context)の本文へインデントして入れ、最後に正常応答を返す手順も後述の共通条件で再確認した。R7-149は文面の再現を実際欄に記載する。
+
+```python
+x=input()
+if any([False,x]):
+    print("T")
+else:
+    print("F")
+```
+
+実際：アプリはFの1パスのみ。all([True,x])はTのみ。長さ0〜3、要素False／True／同じ未知x、list／iter、any／allの全160組で32組の到達集合が不足する。
+
+期待：入力が空文字列ならF、非空ならTなので両方を到達可能とするか、正直に未確定として停止する。既知の非決定要素が1つあることは結果確定の根拠にならない。
+
+根拠：[公式any／all](https://docs.python.org/3.12/library/functions.html#any)、[真偽判定](https://docs.python.org/3.12/library/stdtypes.html#truth-value-testing)。同じ未知xを空文字列／非空文字列のinput戻り値へ具体化してCPythonで求めた真偽集合と比較。実装は未知を飛ばした後、known=trueなら全体を既知扱いする。
+
+### R7-136（P2）イテレータを先取り・複写して副作用・消費位置・後続変更を誤る
+
+対象：Python／CloudFormationの委譲Python。再現：ee01f07でPythonを選び、既定モデルで次を入力して実行する。CloudFormationの委譲部分は、コードをhandler(event, context)の本文へインデントして入れ、最後に正常応答を返す手順も後述の共通条件で再確認した。R7-149は文面の再現を実際欄に記載する。
+
+```python
+def f(x):
+    print(x)
+    return x
+it=map(f,[1,2])
+print("made")
+print(next(it))
+```
+
+実際：実CPythonは made→1→1、アプリは1→2→made→1。filterも同じ。iter／enumerate／reversed／zipをa=[1,2]から作った後a[1]=9にすると、実物は9を読むがアプリは古い2を読む。zip([1],[2,3],strict=True)は実物で最初のnextが(1,2)を返せるのに作成時にValueError。ジェネレータ式をanyへ渡す場合も、最初の真値で終わらず後続の副作用が出る。
+
+期待：遅延消費と元オブジェクトへの参照を保持するか、その意味論を再現できない組合せで明示停止する。作成時に全要素を確定・消費しない。各関数の別入力を独立欠陥として水増しせず、イテレータの先取りモデルの問題として集約する。
+
+根拠：[公式map／filter／enumerate／zip](https://docs.python.org/3.12/library/functions.html#map)、[共通シーケンスのiterator](https://docs.python.org/3.12/library/stdtypes.html#common-sequence-operations)、[ジェネレータ式](https://docs.python.org/3.12/reference/expressions.html#generator-expressions)。実CPythonとアプリを同一コードで照合。
+
+### R7-137（P2）enumerateのstartがTrueなら0、小数なら切捨て、文字列なら0になる
+
+対象：Python／CloudFormationの委譲Python。再現：ee01f07でPythonを選び、既定モデルで次を入力して実行する。CloudFormationの委譲部分は、コードをhandler(event, context)の本文へインデントして入れ、最後に正常応答を返す手順も後述の共通条件で再確認した。R7-149は文面の再現を実際欄に記載する。
+
+```python
+print(list(enumerate(["a"], True)))
+```
+
+実際：アプリ[(0, 'a')]、実CPython[(1, 'a')]。start=1.5はアプリ1に丸め、start="3"は0に置換するが、どちらも実物はTypeError。
+
+期待：整数として使える値だけをstartとし、boolは整数1／0として扱う。不正型から黙って連番を捏造しない。
+
+根拠：[公式enumerate](https://docs.python.org/3.12/library/functions.html#enumerate)、[整数インデックス契約](https://docs.python.org/3.12/reference/datamodel.html#object.__index__)。CPython実測。実装はisNumならMath.trunc、それ以外0。
+
+### R7-138（P2）roundのbool早期返却とndigitsの型判定が丸め・エラーを誤る
+
+対象：Python／CloudFormationの委譲Python。再現：ee01f07でPythonを選び、既定モデルで次を入力して実行する。CloudFormationの委譲部分は、コードをhandler(event, context)の本文へインデントして入れ、最後に正常応答を返す手順も後述の共通条件で再確認した。R7-149は文面の再現を実際欄に記載する。
+
+```python
+print(round(True,-1))
+```
+
+実際：アプリ1、実CPython0。round(False,"bad")はアプリ0だが実物TypeError。反対にround(1,True)は実物1なのにアプリは桁数が整数でないとしてTypeError。
+
+期待：boolをintの派生型として数値1／0へ扱い、指定桁の丸めと桁数検証を行う。既報R7-17の過剰引数切捨てとは別の、正しい引数個数での型・値の誤り。
+
+根拠：[公式round](https://docs.python.org/3.12/library/functions.html#round)、[boolとint](https://docs.python.org/3.12/library/stdtypes.html#boolean-type-bool)。CPython実測。
+
+### R7-139（P2）sumの補償加算が無限大をnanへ変える
+
+対象：Python／CloudFormationの委譲Python。再現：ee01f07でPythonを選び、既定モデルで次を入力して実行する。CloudFormationの委譲部分は、コードをhandler(event, context)の本文へインデントして入れ、最後に正常応答を返す手順も後述の共通条件で再確認した。R7-149は文面の再現を実際欄に記載する。
+
+```python
+print(sum([float("inf")]))
+```
+
+実際：アプリnan、実CPython inf。[-inf]もnan対-inf、[inf,1]もnan対inf、[1e308,1e308]もnan対inf。
+
+期待：NaNでない無限大の合計を適切に保持するか非有限値が未対応と停止する。補償項のInfinity-Infinityで元の合計を壊さない。
+
+根拠：[公式sum](https://docs.python.org/3.12/library/functions.html#sum)、[float](https://docs.python.org/3.12/library/functions.html#float)。CPython 3.12の実出力を照合。精度改善の補償加算は実装されているが非有限値の分岐がない。
+
+### R7-140（P2）位置引数と同名キーワードの重複を黙って捨てる
+
+対象：Python／CloudFormationの委譲Python。再現：ee01f07でPythonを選び、既定モデルで次を入力して実行する。CloudFormationの委譲部分は、コードをhandler(event, context)の本文へインデントして入れ、最後に正常応答を返す手順も後述の共通条件で再確認した。R7-149は文面の再現を実際欄に記載する。
+
+```python
+print(sum([1],2,start=3))
+```
+
+実際：アプリ3、実CPythonはTypeError。同じ問題はint("10",2,base=8)（アプリ2）、"a,b".split(",",sep=";")、rsplit(",",1,maxsplit=2)にもある。
+
+期待：同じパラメーターを二重に渡した呼出しはTypeErrorまたは未対応停止とし、片方を選んで正常値を作らない。
+
+根拠：[呼出しの引数束縛](https://docs.python.org/3.12/reference/expressions.html#calls)、[sum／int](https://docs.python.org/3.12/library/functions.html#sum)、[split](https://docs.python.org/3.12/library/stdtypes.html#str.split)。実CPythonの4例すべてTypeErrorを確認。
+
+### R7-141（P2）min／maxの複数位置引数形式で禁止されたdefaultを無視する
+
+対象：Python／CloudFormationの委譲Python。再現：ee01f07でPythonを選び、既定モデルで次を入力して実行する。CloudFormationの委譲部分は、コードをhandler(event, context)の本文へインデントして入れ、最後に正常応答を返す手順も後述の共通条件で再確認した。R7-149は文面の再現を実際欄に記載する。
+
+```python
+print(min(1,2,default=9))
+```
+
+実際：アプリ1、実CPythonはCannot specify a default for min() with multiple positional argumentsのTypeError。maxでもアプリ2、実物TypeError。
+
+期待：defaultを受け付けるイテラブル1引数形式と複数値形式を区別する。
+
+根拠：[公式min](https://docs.python.org/3.12/library/functions.html#min)、[max](https://docs.python.org/3.12/library/functions.html#max)。リファレンスの3つの書式にはこの区別があるが、実装はdefaultを空集合の時しか見ない。
+
+### R7-142（P2）list.sortが禁止された位置引数を何個渡しても無視する
+
+対象：Python／CloudFormationの委譲Python。再現：ee01f07でPythonを選び、既定モデルで次を入力して実行する。CloudFormationの委譲部分は、コードをhandler(event, context)の本文へインデントして入れ、最後に正常応答を返す手順も後述の共通条件で再確認した。R7-149は文面の再現を実際欄に記載する。
+
+```python
+a=[2,1]
+a.sort(9)
+print(a)
+```
+
+実際：アプリ[1, 2]、実CPythonはsort() takes no positional argumentsのTypeError。0〜4個の位置引数を検査し、1〜4個がアプリで通った。
+
+期待：key／reverseをキーワード専用として検証し、位置引数があれば停止する。R7-18のset／tuple／rangeとは別の、list.sort固有の漏れ。
+
+根拠：[公式list.sort](https://docs.python.org/3.12/library/stdtypes.html#list.sort)。CPython実測と160項目内のlist.sort書式を照合。
+
+### R7-143（P2）list.insertが小数の位置を丸め、型違いにも個数エラーを案内する
+
+対象：Python／CloudFormationの委譲Python。再現：ee01f07でPythonを選び、既定モデルで次を入力して実行する。CloudFormationの委譲部分は、コードをhandler(event, context)の本文へインデントして入れ、最後に正常応答を返す手順も後述の共通条件で再確認した。R7-149は文面の再現を実際欄に記載する。
+
+```python
+a=[10,20]
+a.insert(1.5,99)
+print(a)
+```
+
+実際：アプリ[10, 99, 20]、実CPythonはfloat object cannot be interpreted as an integerのTypeError。ソースは小数をMath.truncする。a.insert("1",99)でも、正しく2引数を渡しているのに「引数の数が合いません（番号と値の2個必要）」と案内する。
+
+期待：位置は整数インデックスとして検証し、小数を黙って切り捨てない。型違いは個数でなく位置の型を示す。boolの位置True／Falseは実物・アプリとも正しく1／0になるため、この正常例を欠陥に数えていない。
+
+根拠：[可変シーケンスのinsert](https://docs.python.org/3.12/library/stdtypes.html#mutable-sequence-types)、[__index__](https://docs.python.org/3.12/reference/datamodel.html#object.__index__)。CPython実測。
+
+### R7-144（P2）reversedが逆順走査できないsetやiteratorを正常な列にする
+
+対象：Python／CloudFormationの委譲Python。再現：ee01f07でPythonを選び、既定モデルで次を入力して実行する。CloudFormationの委譲部分は、コードをhandler(event, context)の本文へインデントして入れ、最後に正常応答を返す手順も後述の共通条件で再確認した。R7-149は文面の再現を実際欄に記載する。
+
+```python
+print(list(reversed(iter([1,2]))))
+```
+
+実際：アプリ[2, 1]、実CPythonはlist_iterator object is not reversibleのTypeError。set()もアプリ[]だが実物TypeError。非空setもアプリが内部順序を逆転して値を返す。
+
+期待：任意のiterableを逆順化せず、reversibleな対象を検証する。順序を持たない集合から確定した順序を作らない。
+
+根拠：[公式reversed](https://docs.python.org/3.12/library/functions.html#reversed)。reversedは__reversed__またはシーケンスプロトコルを要求する。今回のlist_iterator／setはいずれも満たさない。
+
+### R7-145（P2）集合演算がハッシュ不能な要素を集合へ入れるか正常に無視する
+
+対象：Python／CloudFormationの委譲Python。再現：ee01f07でPythonを選び、既定モデルで次を入力して実行する。CloudFormationの委譲部分は、コードをhandler(event, context)の本文へインデントして入れ、最後に正常応答を返す手順も後述の共通条件で再確認した。R7-149は文面の再現を実際欄に記載する。
+
+```python
+print({1}.intersection([[1]]))
+```
+
+実際：アプリset()、実CPythonはunhashable type: listのTypeError。union／symmetric_differenceでは{1,[1]}という存在できない集合を作る。difference／intersection_update／difference_updateでも正常結果を作る。8メソッド×list／dictの16入力を比較し、この6メソッドの12入力で不正に継続。update／symmetric_difference_updateの4入力は正しくTypeErrorで停止。
+
+期待：すべての入力要素のハッシュ可能性を検証してから集合演算するか、明示未対応停止とする。集合の表示順が不明という注記では、要素自体が存在できない問題を解消しない。
+
+根拠：[公式集合型](https://docs.python.org/3.12/library/stdtypes.html#set-types-set-frozenset)。実CPython実測。既報R7-19の非iterable引数とは別で、外側は正当なlist、内側要素がハッシュ不能なケース。
+
+### R7-146（P2）startswith／endswithがタプル候補の一致後まで型検査して誤停止する
+
+対象：Python／CloudFormationの委譲Python。再現：ee01f07でPythonを選び、既定モデルで次を入力して実行する。CloudFormationの委譲部分は、コードをhandler(event, context)の本文へインデントして入れ、最後に正常応答を返す手順も後述の共通条件で再確認した。R7-149は文面の再現を実際欄に記載する。
+
+```python
+print("a".startswith(("a",1)))
+```
+
+実際：実CPython True、アプリは2番目候補intのTypeError。endswithも同じ。
+
+期待：先の候補が一致したらTrueを返し、到達しない後続候補の不正型で正しい呼出しを止めない。タプル先頭が不正型なら実物もTypeErrorであり、候補の全不正型を許可すべきという意味ではない。
+
+根拠：[公式startswith](https://docs.python.org/3.12/library/stdtypes.html#str.startswith)、[endswith](https://docs.python.org/3.12/library/stdtypes.html#str.endswith)、[CPython unicodeobject.c](https://github.com/python/cpython/blob/v3.12.0/Objects/unicodeobject.c)のunicode_startswith_impl／unicode_endswith_impl。実CPython実測。
+
+### R7-147（P2）startswith／endswithが逆転した空範囲で空文字列に一致する
+
+対象：Python／CloudFormationの委譲Python。再現：ee01f07でPythonを選び、既定モデルで次を入力して実行する。CloudFormationの委譲部分は、コードをhandler(event, context)の本文へインデントして入れ、最後に正常応答を返す手順も後述の共通条件で再確認した。R7-149は文面の再現を実際欄に記載する。
+
+```python
+print("a".startswith("",1,0))
+```
+
+実際：アプリTrue、実CPython False。endswithも同じ。文字列3種×候補3種×開始7種×終了7種×2メソッドの882組では22組が不一致。
+
+期待：開始・終了を含む範囲指定の意味を保持し、逆転した範囲を空文字列の通常スライスとして一致させない。
+
+根拠：[公式startswith／endswith](https://docs.python.org/3.12/library/stdtypes.html#str.startswith)、[CPythonのtailmatch](https://github.com/python/cpython/blob/v3.12.0/Objects/unicodeobject.c)。実CPython実測。
+
+### R7-148（P2）Unicode分類を一般カテゴリで代用し、7メソッドの真偽を誤る
+
+対象：Python／CloudFormationの委譲Python。再現：ee01f07でPythonを選び、既定モデルで次を入力して実行する。CloudFormationの委譲部分は、コードをhandler(event, context)の本文へインデントして入れ、最後に正常応答を返す手順も後述の共通条件で再確認した。R7-149は文面の再現を実際欄に記載する。
+
+```python
+print("\u00bc".isdigit())
+print("一".isnumeric())
+print("\u0345".isalpha())
+print("\u0345".isalnum())
+print("\u037a".isidentifier())
+print("\u00aa".islower())
+print("\u01c5".isupper())
+```
+
+実際：実CPythonは順にFalse／True／False／False／False／True／False、アプリは全行で逆。分数をdigitにし、漢数字をnumericから外し、結合文字をalpha／alnumにし、NFKC後に識別子にならない文字を許し、Other_LowercaseやTitlecaseの分類も誤る。
+
+期待：Numeric_Type、Pythonの文字カテゴリ、XID／NFKC、cased文字等の各メソッド固有規則を適用する。対応できなければ未確定・未対応停止とし、具体的な逆のBooleanを教えない。
+
+根拠：[公式文字列分類](https://docs.python.org/3.12/library/stdtypes.html#str.isdigit)、[識別子の規則](https://docs.python.org/3.12/reference/lexical_analysis.html#identifiers)。代表7行はアプリAPIと実CPythonで再現。Unicodeバージョン差だけの候補は欠陥件数へ加算していない。
+
+### R7-149（P3）文字列教材がsplitの戻り値を新しい文字列とも説明する
+
+対象：Pythonのテンプレート／リファレンス。再現：ee01f07でPythonを選び、既定モデルで次を入力して実行する。CloudFormationの委譲部分は、コードをhandler(event, context)の本文へインデントして入れ、最後に正常応答を返す手順も後述の共通条件で再確認した。R7-149は文面の再現を実際欄に記載する。
+
+```python
+print(type("2026-11-10".split("-")).__name__)
+```
+
+実際：Python教材tpl-stringsのintroは「splitの結果はリスト」と正しく説明した後、掲載したメソッドについて「新しい文字列を戻り値として返します」と一律に述べる。アプリ・実CPythonとも掲載確認コードはlist、教材のpartsもlist。リファレンスstr.splitのreturnsは正しくlistであり、ビュー間で説明が矛盾する。
+
+期待：不変性の説明と戻り値の型を分け、strip／join／replaceはstr、splitはlistと説明する。教材のコード実行自体の誤りとはしない。
+
+根拠：[公式str.split](https://docs.python.org/3.12/library/stdtypes.html#str.split)、[str.join](https://docs.python.org/3.12/library/stdtypes.html#str.join)、固定対象のtpl-stringsとstr.splitリファレンス。
+
+### R7-150（P2）例外の継承関係を見ず、親型exceptの見逃しとExceptionの過剰捕捉が起きる
+
+対象：Python／CloudFormationの委譲Python。再現：ee01f07でPythonを選び、既定モデルで次を入力して実行する。CloudFormationの委譲部分は、コードをhandler(event, context)の本文へインデントして入れ、最後に正常応答を返す手順も後述の共通条件で再確認した。R7-149は文面の再現を実際欄に記載する。
+
+```python
+try:
+    raise KeyError("x")
+except LookupError:
+    print("caught")
+print("after")
+```
+
+実際：実CPythonはcaught→after、アプリはKeyErrorで停止。参照される25例外型×25ハンドラの625組を照合し12組が不一致。LookupErrorのKeyError／IndexError、ArithmeticErrorのZeroDivisionError／OverflowError、ImportErrorのModuleNotFoundError、OSErrorのFileNotFoundError、RuntimeErrorのNotImplementedError／RecursionError、ValueErrorのUnicodeErrorを捕まえない。反対にexcept ExceptionはBaseException／KeyboardInterrupt／SystemExitまで捕まえて正常継続する。
+
+期待：宣言した例外階層に従って、派生型を親型ハンドラへ一致させる。Exceptionに派生しない終了・割込み等をExceptionで消さない。
+
+根拠：[公式例外階層](https://docs.python.org/3.12/library/exceptions.html#exception-hierarchy)、[exceptの照合](https://docs.python.org/3.12/reference/compound_stmts.html#except-clause)。CPython 3.12.14の全625組と比較。実装は型名の完全一致とException／BaseExceptionの無条件一致だけで判定している。
+
+### R7-151（P3）メソッドの参照リンクを全て落とし、教材ではprintからintを誤検出する
+
+対象：Pythonの実行・リファレンス・教材の対応。再現：ee01f07でPythonを選び、既定モデルで次を入力して実行する。CloudFormationの委譲部分は、コードをhandler(event, context)の本文へインデントして入れ、最後に正常応答を返す手順も後述の共通条件で再確認した。R7-149は文面の再現を実際欄に記載する。
+
+```python
+print("a,b".split(","))
+```
+
+実際：リファレンスにstr.splitがあるのに、コード全体のscanも実行後の使用中チップもprintだけ。対応する組込み型メソッド67項目の掲載例を全件検査し、67件すべてで自身の参照名がscan・traceから欠ける。tpl-stringsの関連項目はprint／intのみで、strip／split／join／replaceが出ず、呼んでいないintが現れる。Python10教材中、実際にintを呼ぶのはCSV教材だけだが、全10教材の関連項目にintが入る。
+
+期待：実際の呼出し対象を型付きの参照名へ解決し、使用したメソッドへの参照を表示する。printの部分文字列intを呼出しとして数えない。項目自体が存在しないR7-59とは別の、存在する項目へ各ビューから到達するための対応の欠陥。
+
+根拠：[公式str.split](https://docs.python.org/3.12/library/stdtypes.html#str.split)、固定対象のPythonリファレンス67項目・scan／normalize／templates.refs。属性名splitをstr.splitへ解決せず完全名一致で落とし、教材側はcode.includes("int(")でprint(を一致させる。API全67例、実画面の使用中・教材説明で照合。
+
+## 節目6の残作業
+
+**観点1〜8は引き続き未完了。** 既存の種類別台帳・全15種類・104教材・978参照項目・111用語・全ビューを維持する。Pythonを深く確認した節目であり、他の種類を監査対象から外したものではない。
+
+| 観点 | 今回の進捗 | 残作業 |
+|---|---|---|
+| 1 一次情報 | CPythonと2597入力、文字分類の全単一コードポイント集合、例外階層、Python公式資料 | 全15種類の残る関数・構文・型・書式と実製品差。外部ランタイムのない領域は公式資料・SDK・ソースの判定と区別 |
+| 2 宣言 | 対応する例外型・メソッドと誤挙動、名前111件の項目対応、対応151例の実行 | DEVELOPMENT.md全宣言の双方向対応表、汎用受理・型属性・既知の範囲外入力の正直な停止 |
+| 3 パス・状態・表示 | 未知の真偽の全160組、イテレータの副作用・参照・消費、親例外型と到達分岐 | 他言語を含む全分岐制約、前節の保存・旧版データ移行・交差編集の未確認経路 |
+| 4 cmd／PowerShell | 既報の実Windows連結echo等を保持 | 残る全引数・展開段階・パイプライン・表示書式・停止理由。今回追加のWindows試験は行っていない |
+| 5 完全性・正確性 | Python111名の対応、67メソッドの全ビュー解決漏れ、151例、111用語の通読 | 全978項目の逐文・期待値・範囲宣言、全実装名／属性／変数／別名の完全対応、用語の一次逐文照合・教材語・ビュー間矛盾 |
+| 6 全関数の境界等 | 例外625全組、prefix882全組、未知真偽160全組、型・引数・非有限値・イテレータ等 | 各関数の各引数位置・全型・空集合・大値・null相当・過不足・副作用・入れ子・連鎖・パイプライン。今回の有限集合で代替しない |
+| 7 104教材・全停止理由 | Python10教材の文面と両ランタイム全実行、insertの偽の個数エラー、誤った例外停止 | 前節までの未照合教材・全エンジンの全停止理由、期待される未対応停止の再現 |
+| 8 文面・a11y・劣化・性能 | 説明の戻り値矛盾、関連／使用中リンク、33画面実行＋教材2ビュー | 全文面・aria・ラベル・全フォーカス経路、実容量枯渇、キャッシュ世代、最重入力探索とWindows UI性能。以前のWindows性能実測は保持 |
+
+Excel VBA、ImageJ、CloudFormation、PAD、AutoHotkey、UI.Vision、Power Apps、Python、R、C、C++、C#、JavaScript、cmd、PowerShellの未了事項は全て継続する。Pythonについても、関数／クラス／例外の残る構文・特殊メソッド・キーワード束縛・未知値・巨大値・可変オブジェクト・全エラー理由は未了。正しく動いた具体例の数から、これらを合格へ変えていない。
+
+実Excel／Canvas／PAD／AWS／UI.Visionの製品セッション、実スクリーンリーダー、Safari／Firefox／iOS実機、ImageJのGUI全経路は環境・接続がなく未実施。Windows CIで追加可能な作業は未実施として残し、不可能と書き換えていない。Linux実測からWindowsの実時間を捏造しない。
+
+使用量・回数制限の通知は受けていない。リセット権は使っておらず、リセット時刻の通知もないので推測しない。この節目は未完了報告であり、全範囲完了や欠陥収束の宣言ではない。
