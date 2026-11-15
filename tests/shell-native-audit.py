@@ -7,7 +7,7 @@ pwsh=os.environ.get('PWSH_PATH') or shutil.which('pwsh')
 if "--require-both" in sys.argv:
  assert pwsh and shutil.which("cmd.exe"), "Both native shells must be installed"
 materials=json.loads(subprocess.check_output(['node','--input-type=module','-e',"import {definitions} from './js/types/registry.js';console.log(JSON.stringify(definitions.filter(d=>['cmd','powershell'].includes(d.id)).flatMap(d=>[...d.templates.map(t=>({kind:d.id,name:t.id,code:t.code})),...d.reference.map(r=>({kind:d.id,name:r.name,code:r.example}))])));"],cwd=root,text=True,encoding='utf-8'))
-records=[]
+records=[];failures=[]
 with tempfile.TemporaryDirectory(prefix='practice-shell-native-') as temp:
  sandbox=Path(temp);cases=sandbox/'cases.json';cases.write_text(json.dumps([{'name':n,'code':c,'index':i}for i,(n,c,e)in enumerate(fixtures)],ensure_ascii=False),encoding='utf-8')
  if pwsh:
@@ -24,6 +24,8 @@ foreach($row in $rows){
  [IO.File]::WriteAllText((Join-Path $dir 'data.csv'),"Name,Score`r`nAlice,80`r`n",[Text.UTF8Encoding]::new($false))
  [IO.File]::WriteAllText((Join-Path $dir 'readme.txt'),"Practice`r`n",[Text.UTF8Encoding]::new($false))
  Set-Location -LiteralPath $dir
+ # Resolve Windows TEMP 8.3 aliases through the same provider as Get-Location.
+ $dir=(Get-Location).Path
  try {
   $values=@(& ([scriptblock]::Create($row.code)) 6>$null)
   $strings=@($values|ForEach-Object {if($null -ne $_){[string]$_}})
@@ -37,7 +39,8 @@ ConvertTo-Json -InputObject $result -Depth 14 -Compress
   assert proc.returncode==0,proc.stderr
   native=json.loads(proc.stdout)
   for (name,code,expected),row in zip(fixtures,native):
-   assert 'error' not in row,(name,row)
+   if 'error' in row:
+    failures.append((name,row));continue
    def text(v):
     if isinstance(v,bool):return 'True' if v else 'False'
     if isinstance(v,str):
@@ -45,8 +48,9 @@ ConvertTo-Json -InputObject $result -Depth 14 -Compress
      return v
     return str(v)
    actual=[text(v)for v in row['strings'] if v is not None]
-   assert actual==expected[0],(name,actual,expected[0])
-   records.append({'kind':'powershell','name':name,'passed':True})
+   matched=actual==expected[0]
+   if not matched:failures.append((name,actual,expected[0]))
+   records.append({'kind':'powershell','name':name,'passed':matched})
  else:print('PowerShell runtime unavailable: native PowerShell probes skipped')
  cmd=shutil.which('cmd.exe')
  if cmd:
@@ -68,8 +72,9 @@ ConvertTo-Json -InputObject $result -Depth 14 -Compress
   for name,body,expected in cases:
    bat=sandbox/'probe.cmd';bat.write_bytes(('@echo off\r\n'+body.replace('\n','\r\n')+'\r\n').encode('ascii'))
    proc=subprocess.run([cmd,'/d','/q','/c',bat.name],cwd=sandbox,capture_output=True,text=True,timeout=10)
-   assert proc.stdout.splitlines()==expected,(name,proc.stdout,proc.stderr,expected)
-   records.append({'kind':'cmd','name':name,'passed':True})
+   matched=proc.stdout.splitlines()==expected
+   if not matched:failures.append((name,proc.stdout,proc.stderr,expected))
+   records.append({'kind':'cmd','name':name,'passed':matched})
  else:print('cmd.exe unavailable: native cmd probes skipped')
  # All exact teaching material also runs in fresh native directories. This is
  # a native validity check, separate from the expected-value comparisons above.
@@ -90,8 +95,10 @@ ConvertTo-Json -InputObject $result -Depth 14 -Compress
    command=[runtime,'/d','/q','/c',path.name]
   proc=subprocess.run(command,cwd=case_dir,env=env if entry['kind']=='powershell' else None,input='yes\n',capture_output=True,text=True,encoding='utf-8',errors='replace',timeout=20)
   allowed=[0,3]if entry['kind']=='cmd' and entry['name']=='exit' else [0]
-  assert proc.returncode in allowed,(entry['kind'],entry['name'],proc.returncode,proc.stdout,proc.stderr)
-  records.append({'kind':entry['kind'],'name':'material:'+entry['name'],'passed':True})
+  matched=proc.returncode in allowed
+  if not matched:failures.append((entry['kind'],entry['name'],proc.returncode,proc.stdout,proc.stderr))
+  records.append({'kind':entry['kind'],'name':'material:'+entry['name'],'passed':matched})
 Path('work/audit').mkdir(parents=True,exist_ok=True)
 Path('work/audit/shell-native-results.json').write_text(json.dumps(records,ensure_ascii=False,indent=2),encoding='utf-8')
-print(json.dumps({'native_shell_checks':len(records),'powershell':sum(r['kind']=='powershell'for r in records),'cmd':sum(r['kind']=='cmd'for r in records),'passed':True}))
+print(json.dumps({'native_shell_checks':len(records),'powershell':sum(r['kind']=='powershell'for r in records),'cmd':sum(r['kind']=='cmd'for r in records),'passed':not failures}))
+assert not failures,json.dumps(failures,ensure_ascii=True)

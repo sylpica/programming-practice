@@ -87,7 +87,7 @@ GoogleChrome公式 `modern-web-guidance@4dd968349e54ca45a05dd5c818fb035c9054b022
 
 ## 配信と次工程
 
-全変更・PROGRESS・本報告を同じ節目コミットにまとめ、git pushで配信した後、Windows試験のUTF-8読込是正を追補する。push-filesツールがないためGitを使用。PR作成・マージ・コメント・workflow手動起動は不要。**使った書き込みコール数：2件（初回0d264e1＋追補。実際の最終SHA、CIとPages成否は最終回答で確定）**。
+全変更・PROGRESS・本報告を同じ節目コミットにまとめ、git pushで配信した後、Windows試験のUTF-8読込是正を追補する。push-filesツールがないためGitを使用。PR作成・マージ・コメント・workflow手動起動は不要。**使った書き込みコール数：3件（初回0d264e1＋e1bcac9＋Windows短縮パス追補。実際の最終SHA、CIとPages成否は最終回答で確定）**。
 
 cmd.exeのローカル不在は未確認として隠さず、Windows CIの必須検証が成功するまでPagesを配信しない構成にした。CI失敗は成功と報告しない。最終配信後は待機し、Museによる新種類の監査・公開確認を受ける。二重監査の収束済みとは宣言しない。
 
@@ -96,6 +96,10 @@ cmd.exeのローカル不在は未確認として隠さず、Windows CIの必須
 
 `0d264e1`／Actions `43669512497`：Linux validateは全件成功。Windows validate-shellsは、試験コードのNode JSON読込にUTF-8指定がなく、Windows既定cp1252でUnicodeDecodeErrorとなった（実シェルの照合前）。Pagesはskipで未配信。この失敗を成功扱いにしない。
 
-fixtureの読込・Node出力の読込・結果記録の書込でUTF-8を明示した。非UTF-8ロケールのローカル実行で同じ102件を再合格した。追加のpushはこの是正とPROGRESS／本報告をまとめた1件だけ。最終のWindows CIとPagesの実績は最終回答で確定し、それを埋めるだけの再pushはしない。
+fixtureの読込・Node出力の読込・結果記録の書込でUTF-8を明示した。非UTF-8ロケールのローカル実行で同じ102件を再合格した。追補はUTF-8是正と短縮パス正規化の2件で、各コミットへPROGRESS／本報告を同梱。最終のWindows CIとPagesの実績は最終回答で確定し、それを埋めるだけの再pushはしない。
 
 初回Linux CIの実測は既存ネイティブ100件（C#17実行）と追加オラクル64件（C#3件を含む）全合格。追補検証では`LC_ALL=C PYTHONUTF8=0 python3 -X utf8=0`で102件合格し、PowerShell試験コードの引数もEncodedCommandへ変更して非UTF-8のOS引数に依存しないようにした。
+
+### Windows短縮パスの追補
+
+`e1bcac9`／Actions `43669773241`ではUTF-8読込は解消し、実PSのget location照合で停止した。Windows TEMPが8.3短縮名なのにGet-Locationは完全名を返すため、試験のルート置換が成立しなかった。試験側のルートをSet-Location後のGet-Location.Pathから取得し、同じ表記を使うよう是正。Pagesはskip。アプリのFS実装を変更したとは扱わず、最終Windows成功は最終回答で確認する。

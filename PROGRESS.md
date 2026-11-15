@@ -1,6 +1,6 @@
 # 進捗・再開ガイド
 
-最終更新：2026-11-15 11:52:14 JST
+最終更新：2026-11-15 11:55:14 JST
 
 ## 全体目標と完了条件
 
@@ -168,10 +168,14 @@ Codex第3ラウンドのSHAは本更新を含むコミット自身。`git log -1
 - ローカル：新シェル単体118件、Node全1,308件合格。実PowerShell 7.4.6で代表57件＋全45教材・使用例＝102件合格。Linuxにはcmd.exeがなく、実cmdの13代表＋34教材はWindows CIで配信前検証を必須化。既存ネイティブ83件、追加オラクル61件合格（C# SDKなしのためローカルC#は0、既存CIで確認）。ファズ615件、15種類104教材120配置、保存9ケース＋SW更新後15下書き、追加2種類の32カード・16画面・10読込・4オフライン等が合格。
 - Modern Web Guidance公式スキルを導入・検索・参照。既存共通UIを再利用しCSSは変更なし。モデル設定変更なし、Reset usage未使用。
 - 未対応は明示停止する。cmdの詳細dir・外部プロセス・高度展開、PowerShellの一般.NET・非同期・複雑な変換・副作用のあるSelect-Object -Firstの途中停止等。完全互換や二重監査収束は宣言せず、Museの次工程待ち。
-- 配信は全ファイル＋本PROGRESS＋R6報告を同じコミットに同梱し一括push。使った書き込みコール数：2件（初回0d264e1＋Windows試験UTF-8読込是正の追補。配信実績は最終回答とActionsを参照）。自コミットのSHAを埋めるだけの追送はしない。
+- 配信は全ファイル＋本PROGRESS＋R6報告を同じコミットに同梱し一括push。使った書き込みコール数：3件（初回0d264e1＋UTF-8追補e1bcac9＋Windows短縮パス正規化追補。配信実績は最終回答とActionsを参照）。自コミットのSHAを埋めるだけの追送はしない。
 
 ### R6配信追補：Windows試験の文字コード
 
 初回 `0d264e1` のLinux validateは成功、Windows validate-shellsは試験側のNode JSON読込時のUTF-8指定漏れでUnicodeDecodeError（既定cp1252）、Pagesはskip。アプリの試験結果として成功扱いせず、fixture読込・Node出力読込・記録書込のUTF-8を明示した。ローカルを非UTF-8ロケールにして102件を再実行。追補に本PROGRESSとR6報告も同梱する。
 
 初回Linux CIでは既存教材100件（C#17実行を含む）と追加オラクル64件（C#3件を含む）が全合格した。UTF-8追補のローカル検証はLC_ALL=C・Python UTF-8 mode無効で102件合格。PowerShellへ渡す試験コードもEncodedCommandにしてOS引数文字コードに依存させない。
+
+### Windows短縮パスの追補
+
+`e1bcac9`／Actions `43669773241`ではUTF-8読込は解消し、実PSのget location照合で停止した。Windows TEMPが8.3短縮名なのにGet-Locationは完全名を返すため、試験のルート置換が成立しなかった。試験側のルートをSet-Location後のGet-Location.Pathから取得し、同じ表記を使うよう是正。Pagesはskip。アプリのFS実装を変更したとは扱わず、最終Windows成功は最終回答で確認する。
