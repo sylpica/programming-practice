@@ -1,0 +1,2826 @@
+[
+  {
+    "name": "$file=New-Item -Path \".hidden\" -ItemType File",
+    "code": "$file=New-Item -Path \".hidden\" -ItemType File\n$file.Extension",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "line1\r\nline2\r\n"
+        },
+        {
+          "path": "C:\\Practice\\empty.txt",
+          "type": "file",
+          "content": ""
+        },
+        {
+          "path": "C:\\Practice\\lines.txt",
+          "type": "file",
+          "content": "a\r\nb\r\nc\r\n"
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\logs\\nested.txt",
+          "type": "file",
+          "content": "nested\r\n"
+        }
+      ],
+      "inputs": {
+        "A": [
+          "a",
+          "other"
+        ]
+      },
+      "lastExitCode": null
+    },
+    "app": {
+      "truncated": false,
+      "reasons": [],
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "pipeline",
+              "text": "",
+              "line": 2
+            }
+          ],
+          "groups": [
+            {
+              "title": "変数",
+              "entries": [
+                [
+                  "$file",
+                  "Name : .hidden\nFullName : C:\\Practice\\.hidden\nPSIsContainer : False\nLength : 0\nExtension : "
+                ]
+              ]
+            },
+            {
+              "title": "最後に評価したパイプライン",
+              "entries": [
+                [
+                  "値",
+                  ""
+                ]
+              ]
+            },
+            {
+              "title": "モデルの終了状態",
+              "entries": [
+                [
+                  "現在フォルダ",
+                  "C:\\Practice"
+                ],
+                [
+                  "$?",
+                  "True"
+                ],
+                [
+                  "$LASTEXITCODE",
+                  "$null"
+                ],
+                [
+                  "仮想ファイル一覧",
+                  "[フォルダ] C:\\Practice\n[ファイル] C:\\Practice\\notes.txt\n[ファイル] C:\\Practice\\empty.txt\n[ファイル] C:\\Practice\\lines.txt\n[フォルダ] C:\\Practice\\logs\n[ファイル] C:\\Practice\\logs\\nested.txt\n[ファイル] C:\\Practice\\.hidden"
+                ]
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "Get-Alias sc -ErrorAction SilentlyContinue | Select-Object Name,Definition",
+    "code": "Get-Alias sc -ErrorAction SilentlyContinue | Select-Object Name,Definition",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "line1\r\nline2\r\n"
+        },
+        {
+          "path": "C:\\Practice\\empty.txt",
+          "type": "file",
+          "content": ""
+        },
+        {
+          "path": "C:\\Practice\\lines.txt",
+          "type": "file",
+          "content": "a\r\nb\r\nc\r\n"
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\logs\\nested.txt",
+          "type": "file",
+          "content": "nested\r\n"
+        }
+      ],
+      "inputs": {
+        "A": [
+          "a",
+          "other"
+        ]
+      },
+      "lastExitCode": null
+    },
+    "app": {
+      "truncated": false,
+      "reasons": [],
+      "paths": [
+        {
+          "error": {
+            "line": 1,
+            "message": "未対応のPowerShellコマンドレット／関数：Get-Alias",
+            "category": "未対応"
+          },
+          "outputs": [],
+          "groups": [
+            {
+              "title": "変数",
+              "entries": []
+            },
+            {
+              "title": "最後に評価したパイプライン",
+              "entries": [
+                [
+                  "値",
+                  "（出力なし）"
+                ]
+              ]
+            },
+            {
+              "title": "モデルの終了状態",
+              "entries": [
+                [
+                  "現在フォルダ",
+                  "C:\\Practice"
+                ],
+                [
+                  "$?",
+                  "False"
+                ],
+                [
+                  "$LASTEXITCODE",
+                  "$null"
+                ],
+                [
+                  "仮想ファイル一覧",
+                  "[フォルダ] C:\\Practice\n[ファイル] C:\\Practice\\notes.txt\n[ファイル] C:\\Practice\\empty.txt\n[ファイル] C:\\Practice\\lines.txt\n[フォルダ] C:\\Practice\\logs\n[ファイル] C:\\Practice\\logs\\nested.txt"
+                ]
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "New-Item -Path d -ItemType Directory",
+    "code": "New-Item -Path d -ItemType Directory\nCopy-Item notes.txt d\n(Get-ChildItem d).Name",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "line1\r\nline2\r\n"
+        },
+        {
+          "path": "C:\\Practice\\empty.txt",
+          "type": "file",
+          "content": ""
+        },
+        {
+          "path": "C:\\Practice\\lines.txt",
+          "type": "file",
+          "content": "a\r\nb\r\nc\r\n"
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\logs\\nested.txt",
+          "type": "file",
+          "content": "nested\r\n"
+        }
+      ],
+      "inputs": {
+        "A": [
+          "a",
+          "other"
+        ]
+      },
+      "lastExitCode": null
+    },
+    "app": {
+      "truncated": false,
+      "reasons": [],
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "pipeline",
+              "text": "Name : d\nFullName : C:\\Practice\\d\nPSIsContainer : True\nExtension : ",
+              "line": 1
+            },
+            {
+              "channel": "pipeline",
+              "text": "notes.txt",
+              "line": 3
+            }
+          ],
+          "groups": [
+            {
+              "title": "変数",
+              "entries": []
+            },
+            {
+              "title": "最後に評価したパイプライン",
+              "entries": [
+                [
+                  "値",
+                  "notes.txt"
+                ]
+              ]
+            },
+            {
+              "title": "モデルの終了状態",
+              "entries": [
+                [
+                  "現在フォルダ",
+                  "C:\\Practice"
+                ],
+                [
+                  "$?",
+                  "True"
+                ],
+                [
+                  "$LASTEXITCODE",
+                  "$null"
+                ],
+                [
+                  "仮想ファイル一覧",
+                  "[フォルダ] C:\\Practice\n[ファイル] C:\\Practice\\notes.txt\n[ファイル] C:\\Practice\\empty.txt\n[ファイル] C:\\Practice\\lines.txt\n[フォルダ] C:\\Practice\\logs\n[ファイル] C:\\Practice\\logs\\nested.txt\n[フォルダ] C:\\Practice\\d\n[ファイル] C:\\Practice\\d\\notes.txt"
+                ]
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "Copy-Item notes.txt copy.txt",
+    "code": "Copy-Item notes.txt copy.txt\nGet-Content copy.txt",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "line1\r\nline2\r\n"
+        },
+        {
+          "path": "C:\\Practice\\empty.txt",
+          "type": "file",
+          "content": ""
+        },
+        {
+          "path": "C:\\Practice\\lines.txt",
+          "type": "file",
+          "content": "a\r\nb\r\nc\r\n"
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\logs\\nested.txt",
+          "type": "file",
+          "content": "nested\r\n"
+        }
+      ],
+      "inputs": {
+        "A": [
+          "a",
+          "other"
+        ]
+      },
+      "lastExitCode": null
+    },
+    "app": {
+      "truncated": false,
+      "reasons": [],
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "pipeline",
+              "text": "line1",
+              "line": 2
+            },
+            {
+              "channel": "pipeline",
+              "text": "line2",
+              "line": 2
+            }
+          ],
+          "groups": [
+            {
+              "title": "変数",
+              "entries": []
+            },
+            {
+              "title": "最後に評価したパイプライン",
+              "entries": [
+                [
+                  "値",
+                  "line1\n\nline2"
+                ]
+              ]
+            },
+            {
+              "title": "モデルの終了状態",
+              "entries": [
+                [
+                  "現在フォルダ",
+                  "C:\\Practice"
+                ],
+                [
+                  "$?",
+                  "True"
+                ],
+                [
+                  "$LASTEXITCODE",
+                  "$null"
+                ],
+                [
+                  "仮想ファイル一覧",
+                  "[フォルダ] C:\\Practice\n[ファイル] C:\\Practice\\notes.txt\n[ファイル] C:\\Practice\\empty.txt\n[ファイル] C:\\Practice\\lines.txt\n[フォルダ] C:\\Practice\\logs\n[ファイル] C:\\Practice\\logs\\nested.txt\n[ファイル] C:\\Practice\\copy.txt"
+                ]
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "Move-Item notes.txt logs",
+    "code": "Move-Item notes.txt logs\nTest-Path notes.txt\nTest-Path logs/notes.txt",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "line1\r\nline2\r\n"
+        },
+        {
+          "path": "C:\\Practice\\empty.txt",
+          "type": "file",
+          "content": ""
+        },
+        {
+          "path": "C:\\Practice\\lines.txt",
+          "type": "file",
+          "content": "a\r\nb\r\nc\r\n"
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\logs\\nested.txt",
+          "type": "file",
+          "content": "nested\r\n"
+        }
+      ],
+      "inputs": {
+        "A": [
+          "a",
+          "other"
+        ]
+      },
+      "lastExitCode": null
+    },
+    "app": {
+      "truncated": false,
+      "reasons": [],
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "pipeline",
+              "text": "False",
+              "line": 2
+            },
+            {
+              "channel": "pipeline",
+              "text": "True",
+              "line": 3
+            }
+          ],
+          "groups": [
+            {
+              "title": "変数",
+              "entries": []
+            },
+            {
+              "title": "最後に評価したパイプライン",
+              "entries": [
+                [
+                  "値",
+                  "True"
+                ]
+              ]
+            },
+            {
+              "title": "モデルの終了状態",
+              "entries": [
+                [
+                  "現在フォルダ",
+                  "C:\\Practice"
+                ],
+                [
+                  "$?",
+                  "True"
+                ],
+                [
+                  "$LASTEXITCODE",
+                  "$null"
+                ],
+                [
+                  "仮想ファイル一覧",
+                  "[フォルダ] C:\\Practice\n[ファイル] C:\\Practice\\logs\\notes.txt\n[ファイル] C:\\Practice\\empty.txt\n[ファイル] C:\\Practice\\lines.txt\n[フォルダ] C:\\Practice\\logs\n[ファイル] C:\\Practice\\logs\\nested.txt"
+                ]
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "Rename-Item notes.txt renamed.txt",
+    "code": "Rename-Item notes.txt renamed.txt\nTest-Path notes.txt\nTest-Path renamed.txt",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "line1\r\nline2\r\n"
+        },
+        {
+          "path": "C:\\Practice\\empty.txt",
+          "type": "file",
+          "content": ""
+        },
+        {
+          "path": "C:\\Practice\\lines.txt",
+          "type": "file",
+          "content": "a\r\nb\r\nc\r\n"
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\logs\\nested.txt",
+          "type": "file",
+          "content": "nested\r\n"
+        }
+      ],
+      "inputs": {
+        "A": [
+          "a",
+          "other"
+        ]
+      },
+      "lastExitCode": null
+    },
+    "app": {
+      "truncated": false,
+      "reasons": [],
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "pipeline",
+              "text": "False",
+              "line": 2
+            },
+            {
+              "channel": "pipeline",
+              "text": "True",
+              "line": 3
+            }
+          ],
+          "groups": [
+            {
+              "title": "変数",
+              "entries": []
+            },
+            {
+              "title": "最後に評価したパイプライン",
+              "entries": [
+                [
+                  "値",
+                  "True"
+                ]
+              ]
+            },
+            {
+              "title": "モデルの終了状態",
+              "entries": [
+                [
+                  "現在フォルダ",
+                  "C:\\Practice"
+                ],
+                [
+                  "$?",
+                  "True"
+                ],
+                [
+                  "$LASTEXITCODE",
+                  "$null"
+                ],
+                [
+                  "仮想ファイル一覧",
+                  "[フォルダ] C:\\Practice\n[ファイル] C:\\Practice\\renamed.txt\n[ファイル] C:\\Practice\\empty.txt\n[ファイル] C:\\Practice\\lines.txt\n[フォルダ] C:\\Practice\\logs\n[ファイル] C:\\Practice\\logs\\nested.txt"
+                ]
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "Remove-Item notes.txt",
+    "code": "Remove-Item notes.txt\nTest-Path notes.txt",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "line1\r\nline2\r\n"
+        },
+        {
+          "path": "C:\\Practice\\empty.txt",
+          "type": "file",
+          "content": ""
+        },
+        {
+          "path": "C:\\Practice\\lines.txt",
+          "type": "file",
+          "content": "a\r\nb\r\nc\r\n"
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\logs\\nested.txt",
+          "type": "file",
+          "content": "nested\r\n"
+        }
+      ],
+      "inputs": {
+        "A": [
+          "a",
+          "other"
+        ]
+      },
+      "lastExitCode": null
+    },
+    "app": {
+      "truncated": false,
+      "reasons": [],
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "pipeline",
+              "text": "False",
+              "line": 2
+            }
+          ],
+          "groups": [
+            {
+              "title": "変数",
+              "entries": []
+            },
+            {
+              "title": "最後に評価したパイプライン",
+              "entries": [
+                [
+                  "値",
+                  "False"
+                ]
+              ]
+            },
+            {
+              "title": "モデルの終了状態",
+              "entries": [
+                [
+                  "現在フォルダ",
+                  "C:\\Practice"
+                ],
+                [
+                  "$?",
+                  "True"
+                ],
+                [
+                  "$LASTEXITCODE",
+                  "$null"
+                ],
+                [
+                  "仮想ファイル一覧",
+                  "[フォルダ] C:\\Practice\n[ファイル] C:\\Practice\\empty.txt\n[ファイル] C:\\Practice\\lines.txt\n[フォルダ] C:\\Practice\\logs\n[ファイル] C:\\Practice\\logs\\nested.txt"
+                ]
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "New-Item d -ItemType Directory",
+    "code": "New-Item d -ItemType Directory\nSet-Content d/a.txt \"one\"\nGet-ChildItem d -Recurse | Select-Object Name",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "line1\r\nline2\r\n"
+        },
+        {
+          "path": "C:\\Practice\\empty.txt",
+          "type": "file",
+          "content": ""
+        },
+        {
+          "path": "C:\\Practice\\lines.txt",
+          "type": "file",
+          "content": "a\r\nb\r\nc\r\n"
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\logs\\nested.txt",
+          "type": "file",
+          "content": "nested\r\n"
+        }
+      ],
+      "inputs": {
+        "A": [
+          "a",
+          "other"
+        ]
+      },
+      "lastExitCode": null
+    },
+    "app": {
+      "truncated": false,
+      "reasons": [],
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "pipeline",
+              "text": "Name : d\nFullName : C:\\Practice\\d\nPSIsContainer : True\nExtension : ",
+              "line": 1
+            },
+            {
+              "channel": "pipeline",
+              "text": "Name : a.txt",
+              "line": 3
+            }
+          ],
+          "groups": [
+            {
+              "title": "変数",
+              "entries": []
+            },
+            {
+              "title": "最後に評価したパイプライン",
+              "entries": [
+                [
+                  "値",
+                  "Name : a.txt"
+                ]
+              ]
+            },
+            {
+              "title": "モデルの終了状態",
+              "entries": [
+                [
+                  "現在フォルダ",
+                  "C:\\Practice"
+                ],
+                [
+                  "$?",
+                  "True"
+                ],
+                [
+                  "$LASTEXITCODE",
+                  "$null"
+                ],
+                [
+                  "仮想ファイル一覧",
+                  "[フォルダ] C:\\Practice\n[ファイル] C:\\Practice\\notes.txt\n[ファイル] C:\\Practice\\empty.txt\n[ファイル] C:\\Practice\\lines.txt\n[フォルダ] C:\\Practice\\logs\n[ファイル] C:\\Practice\\logs\\nested.txt\n[フォルダ] C:\\Practice\\d\n[ファイル] C:\\Practice\\d\\a.txt"
+                ]
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "Get-ChildItem -Path \"*.txt\" -Recurse | Select-Object Name",
+    "code": "Get-ChildItem -Path \"*.txt\" -Recurse | Select-Object Name",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "line1\r\nline2\r\n"
+        },
+        {
+          "path": "C:\\Practice\\empty.txt",
+          "type": "file",
+          "content": ""
+        },
+        {
+          "path": "C:\\Practice\\lines.txt",
+          "type": "file",
+          "content": "a\r\nb\r\nc\r\n"
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\logs\\nested.txt",
+          "type": "file",
+          "content": "nested\r\n"
+        }
+      ],
+      "inputs": {
+        "A": [
+          "a",
+          "other"
+        ]
+      },
+      "lastExitCode": null
+    },
+    "app": {
+      "truncated": false,
+      "reasons": [],
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "pipeline",
+              "text": "Name : notes.txt",
+              "line": 1
+            },
+            {
+              "channel": "pipeline",
+              "text": "Name : empty.txt",
+              "line": 1
+            },
+            {
+              "channel": "pipeline",
+              "text": "Name : lines.txt",
+              "line": 1
+            }
+          ],
+          "groups": [
+            {
+              "title": "変数",
+              "entries": []
+            },
+            {
+              "title": "最後に評価したパイプライン",
+              "entries": [
+                [
+                  "値",
+                  "Name : notes.txt\n\nName : empty.txt\n\nName : lines.txt"
+                ]
+              ]
+            },
+            {
+              "title": "モデルの終了状態",
+              "entries": [
+                [
+                  "現在フォルダ",
+                  "C:\\Practice"
+                ],
+                [
+                  "$?",
+                  "True"
+                ],
+                [
+                  "$LASTEXITCODE",
+                  "$null"
+                ],
+                [
+                  "仮想ファイル一覧",
+                  "[フォルダ] C:\\Practice\n[ファイル] C:\\Practice\\notes.txt\n[ファイル] C:\\Practice\\empty.txt\n[ファイル] C:\\Practice\\lines.txt\n[フォルダ] C:\\Practice\\logs\n[ファイル] C:\\Practice\\logs\\nested.txt"
+                ]
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "Get-ChildItem -Path \".\\*.txt\" -Recurse | Select-Object Name",
+    "code": "Get-ChildItem -Path \".\\*.txt\" -Recurse | Select-Object Name",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "line1\r\nline2\r\n"
+        },
+        {
+          "path": "C:\\Practice\\empty.txt",
+          "type": "file",
+          "content": ""
+        },
+        {
+          "path": "C:\\Practice\\lines.txt",
+          "type": "file",
+          "content": "a\r\nb\r\nc\r\n"
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\logs\\nested.txt",
+          "type": "file",
+          "content": "nested\r\n"
+        }
+      ],
+      "inputs": {
+        "A": [
+          "a",
+          "other"
+        ]
+      },
+      "lastExitCode": null
+    },
+    "app": {
+      "truncated": false,
+      "reasons": [],
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "pipeline",
+              "text": "Name : notes.txt",
+              "line": 1
+            },
+            {
+              "channel": "pipeline",
+              "text": "Name : empty.txt",
+              "line": 1
+            },
+            {
+              "channel": "pipeline",
+              "text": "Name : lines.txt",
+              "line": 1
+            }
+          ],
+          "groups": [
+            {
+              "title": "変数",
+              "entries": []
+            },
+            {
+              "title": "最後に評価したパイプライン",
+              "entries": [
+                [
+                  "値",
+                  "Name : notes.txt\n\nName : empty.txt\n\nName : lines.txt"
+                ]
+              ]
+            },
+            {
+              "title": "モデルの終了状態",
+              "entries": [
+                [
+                  "現在フォルダ",
+                  "C:\\Practice"
+                ],
+                [
+                  "$?",
+                  "True"
+                ],
+                [
+                  "$LASTEXITCODE",
+                  "$null"
+                ],
+                [
+                  "仮想ファイル一覧",
+                  "[フォルダ] C:\\Practice\n[ファイル] C:\\Practice\\notes.txt\n[ファイル] C:\\Practice\\empty.txt\n[ファイル] C:\\Practice\\lines.txt\n[フォルダ] C:\\Practice\\logs\n[ファイル] C:\\Practice\\logs\\nested.txt"
+                ]
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "Get-ChildItem -Path \"logs\\*.txt\" -Recurse | Select-Object Name",
+    "code": "Get-ChildItem -Path \"logs\\*.txt\" -Recurse | Select-Object Name",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "line1\r\nline2\r\n"
+        },
+        {
+          "path": "C:\\Practice\\empty.txt",
+          "type": "file",
+          "content": ""
+        },
+        {
+          "path": "C:\\Practice\\lines.txt",
+          "type": "file",
+          "content": "a\r\nb\r\nc\r\n"
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\logs\\nested.txt",
+          "type": "file",
+          "content": "nested\r\n"
+        }
+      ],
+      "inputs": {
+        "A": [
+          "a",
+          "other"
+        ]
+      },
+      "lastExitCode": null
+    },
+    "app": {
+      "truncated": false,
+      "reasons": [],
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "pipeline",
+              "text": "Name : nested.txt",
+              "line": 1
+            }
+          ],
+          "groups": [
+            {
+              "title": "変数",
+              "entries": []
+            },
+            {
+              "title": "最後に評価したパイプライン",
+              "entries": [
+                [
+                  "値",
+                  "Name : nested.txt"
+                ]
+              ]
+            },
+            {
+              "title": "モデルの終了状態",
+              "entries": [
+                [
+                  "現在フォルダ",
+                  "C:\\Practice"
+                ],
+                [
+                  "$?",
+                  "True"
+                ],
+                [
+                  "$LASTEXITCODE",
+                  "$null"
+                ],
+                [
+                  "仮想ファイル一覧",
+                  "[フォルダ] C:\\Practice\n[ファイル] C:\\Practice\\notes.txt\n[ファイル] C:\\Practice\\empty.txt\n[ファイル] C:\\Practice\\lines.txt\n[フォルダ] C:\\Practice\\logs\n[ファイル] C:\\Practice\\logs\\nested.txt"
+                ]
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "Set-Content out.txt \"A\" -NoNewline",
+    "code": "Set-Content out.txt \"A\" -NoNewline\nAdd-Content out.txt \"B\" -NoNewline\nGet-Content out.txt -Raw",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "line1\r\nline2\r\n"
+        },
+        {
+          "path": "C:\\Practice\\empty.txt",
+          "type": "file",
+          "content": ""
+        },
+        {
+          "path": "C:\\Practice\\lines.txt",
+          "type": "file",
+          "content": "a\r\nb\r\nc\r\n"
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\logs\\nested.txt",
+          "type": "file",
+          "content": "nested\r\n"
+        }
+      ],
+      "inputs": {
+        "A": [
+          "a",
+          "other"
+        ]
+      },
+      "lastExitCode": null
+    },
+    "app": {
+      "truncated": false,
+      "reasons": [],
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "pipeline",
+              "text": "AB",
+              "line": 3
+            }
+          ],
+          "groups": [
+            {
+              "title": "変数",
+              "entries": []
+            },
+            {
+              "title": "最後に評価したパイプライン",
+              "entries": [
+                [
+                  "値",
+                  "AB"
+                ]
+              ]
+            },
+            {
+              "title": "モデルの終了状態",
+              "entries": [
+                [
+                  "現在フォルダ",
+                  "C:\\Practice"
+                ],
+                [
+                  "$?",
+                  "True"
+                ],
+                [
+                  "$LASTEXITCODE",
+                  "$null"
+                ],
+                [
+                  "仮想ファイル一覧",
+                  "[フォルダ] C:\\Practice\n[ファイル] C:\\Practice\\notes.txt\n[ファイル] C:\\Practice\\empty.txt\n[ファイル] C:\\Practice\\lines.txt\n[フォルダ] C:\\Practice\\logs\n[ファイル] C:\\Practice\\logs\\nested.txt\n[ファイル] C:\\Practice\\out.txt"
+                ]
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "Set-Content out.txt $null",
+    "code": "Set-Content out.txt $null\n(Get-Content out.txt -Raw) -eq $null",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "line1\r\nline2\r\n"
+        },
+        {
+          "path": "C:\\Practice\\empty.txt",
+          "type": "file",
+          "content": ""
+        },
+        {
+          "path": "C:\\Practice\\lines.txt",
+          "type": "file",
+          "content": "a\r\nb\r\nc\r\n"
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\logs\\nested.txt",
+          "type": "file",
+          "content": "nested\r\n"
+        }
+      ],
+      "inputs": {
+        "A": [
+          "a",
+          "other"
+        ]
+      },
+      "lastExitCode": null
+    },
+    "app": {
+      "truncated": false,
+      "reasons": [],
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "pipeline",
+              "text": "False",
+              "line": 2
+            }
+          ],
+          "groups": [
+            {
+              "title": "変数",
+              "entries": []
+            },
+            {
+              "title": "最後に評価したパイプライン",
+              "entries": [
+                [
+                  "値",
+                  "False"
+                ]
+              ]
+            },
+            {
+              "title": "モデルの終了状態",
+              "entries": [
+                [
+                  "現在フォルダ",
+                  "C:\\Practice"
+                ],
+                [
+                  "$?",
+                  "True"
+                ],
+                [
+                  "$LASTEXITCODE",
+                  "$null"
+                ],
+                [
+                  "仮想ファイル一覧",
+                  "[フォルダ] C:\\Practice\n[ファイル] C:\\Practice\\notes.txt\n[ファイル] C:\\Practice\\empty.txt\n[ファイル] C:\\Practice\\lines.txt\n[フォルダ] C:\\Practice\\logs\n[ファイル] C:\\Practice\\logs\\nested.txt\n[ファイル] C:\\Practice\\out.txt"
+                ]
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "Set-Location",
+    "code": "Set-Location\n(Get-Location).Path",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "line1\r\nline2\r\n"
+        },
+        {
+          "path": "C:\\Practice\\empty.txt",
+          "type": "file",
+          "content": ""
+        },
+        {
+          "path": "C:\\Practice\\lines.txt",
+          "type": "file",
+          "content": "a\r\nb\r\nc\r\n"
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\logs\\nested.txt",
+          "type": "file",
+          "content": "nested\r\n"
+        }
+      ],
+      "inputs": {
+        "A": [
+          "a",
+          "other"
+        ]
+      },
+      "lastExitCode": null
+    },
+    "app": {
+      "truncated": false,
+      "reasons": [],
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "pipeline",
+              "text": "C:\\Practice",
+              "line": 2
+            }
+          ],
+          "groups": [
+            {
+              "title": "変数",
+              "entries": []
+            },
+            {
+              "title": "最後に評価したパイプライン",
+              "entries": [
+                [
+                  "値",
+                  "C:\\Practice"
+                ]
+              ]
+            },
+            {
+              "title": "モデルの終了状態",
+              "entries": [
+                [
+                  "現在フォルダ",
+                  "C:\\Practice"
+                ],
+                [
+                  "$?",
+                  "True"
+                ],
+                [
+                  "$LASTEXITCODE",
+                  "$null"
+                ],
+                [
+                  "仮想ファイル一覧",
+                  "[フォルダ] C:\\Practice\n[ファイル] C:\\Practice\\notes.txt\n[ファイル] C:\\Practice\\empty.txt\n[ファイル] C:\\Practice\\lines.txt\n[フォルダ] C:\\Practice\\logs\n[ファイル] C:\\Practice\\logs\\nested.txt"
+                ]
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "Test-Path -Path \"\"",
+    "code": "Test-Path -Path \"\"",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "line1\r\nline2\r\n"
+        },
+        {
+          "path": "C:\\Practice\\empty.txt",
+          "type": "file",
+          "content": ""
+        },
+        {
+          "path": "C:\\Practice\\lines.txt",
+          "type": "file",
+          "content": "a\r\nb\r\nc\r\n"
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\logs\\nested.txt",
+          "type": "file",
+          "content": "nested\r\n"
+        }
+      ],
+      "inputs": {
+        "A": [
+          "a",
+          "other"
+        ]
+      },
+      "lastExitCode": null
+    },
+    "app": {
+      "truncated": false,
+      "reasons": [],
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "pipeline",
+              "text": "False",
+              "line": 1
+            }
+          ],
+          "groups": [
+            {
+              "title": "変数",
+              "entries": []
+            },
+            {
+              "title": "最後に評価したパイプライン",
+              "entries": [
+                [
+                  "値",
+                  "False"
+                ]
+              ]
+            },
+            {
+              "title": "モデルの終了状態",
+              "entries": [
+                [
+                  "現在フォルダ",
+                  "C:\\Practice"
+                ],
+                [
+                  "$?",
+                  "True"
+                ],
+                [
+                  "$LASTEXITCODE",
+                  "$null"
+                ],
+                [
+                  "仮想ファイル一覧",
+                  "[フォルダ] C:\\Practice\n[ファイル] C:\\Practice\\notes.txt\n[ファイル] C:\\Practice\\empty.txt\n[ファイル] C:\\Practice\\lines.txt\n[フォルダ] C:\\Practice\\logs\n[ファイル] C:\\Practice\\logs\\nested.txt"
+                ]
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "@(Get-Content empty.txt).Count",
+    "code": "@(Get-Content empty.txt).Count",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "line1\r\nline2\r\n"
+        },
+        {
+          "path": "C:\\Practice\\empty.txt",
+          "type": "file",
+          "content": ""
+        },
+        {
+          "path": "C:\\Practice\\lines.txt",
+          "type": "file",
+          "content": "a\r\nb\r\nc\r\n"
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\logs\\nested.txt",
+          "type": "file",
+          "content": "nested\r\n"
+        }
+      ],
+      "inputs": {
+        "A": [
+          "a",
+          "other"
+        ]
+      },
+      "lastExitCode": null
+    },
+    "app": {
+      "truncated": false,
+      "reasons": [],
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "pipeline",
+              "text": "0",
+              "line": 1
+            }
+          ],
+          "groups": [
+            {
+              "title": "変数",
+              "entries": []
+            },
+            {
+              "title": "最後に評価したパイプライン",
+              "entries": [
+                [
+                  "値",
+                  "0"
+                ]
+              ]
+            },
+            {
+              "title": "モデルの終了状態",
+              "entries": [
+                [
+                  "現在フォルダ",
+                  "C:\\Practice"
+                ],
+                [
+                  "$?",
+                  "True"
+                ],
+                [
+                  "$LASTEXITCODE",
+                  "$null"
+                ],
+                [
+                  "仮想ファイル一覧",
+                  "[フォルダ] C:\\Practice\n[ファイル] C:\\Practice\\notes.txt\n[ファイル] C:\\Practice\\empty.txt\n[ファイル] C:\\Practice\\lines.txt\n[フォルダ] C:\\Practice\\logs\n[ファイル] C:\\Practice\\logs\\nested.txt"
+                ]
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "@(Get-Content lines.txt).Count",
+    "code": "@(Get-Content lines.txt).Count",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "line1\r\nline2\r\n"
+        },
+        {
+          "path": "C:\\Practice\\empty.txt",
+          "type": "file",
+          "content": ""
+        },
+        {
+          "path": "C:\\Practice\\lines.txt",
+          "type": "file",
+          "content": "a\r\nb\r\nc\r\n"
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\logs\\nested.txt",
+          "type": "file",
+          "content": "nested\r\n"
+        }
+      ],
+      "inputs": {
+        "A": [
+          "a",
+          "other"
+        ]
+      },
+      "lastExitCode": null
+    },
+    "app": {
+      "truncated": false,
+      "reasons": [],
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "pipeline",
+              "text": "3",
+              "line": 1
+            }
+          ],
+          "groups": [
+            {
+              "title": "変数",
+              "entries": []
+            },
+            {
+              "title": "最後に評価したパイプライン",
+              "entries": [
+                [
+                  "値",
+                  "3"
+                ]
+              ]
+            },
+            {
+              "title": "モデルの終了状態",
+              "entries": [
+                [
+                  "現在フォルダ",
+                  "C:\\Practice"
+                ],
+                [
+                  "$?",
+                  "True"
+                ],
+                [
+                  "$LASTEXITCODE",
+                  "$null"
+                ],
+                [
+                  "仮想ファイル一覧",
+                  "[フォルダ] C:\\Practice\n[ファイル] C:\\Practice\\notes.txt\n[ファイル] C:\\Practice\\empty.txt\n[ファイル] C:\\Practice\\lines.txt\n[フォルダ] C:\\Practice\\logs\n[ファイル] C:\\Practice\\logs\\nested.txt"
+                ]
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "\"a`rb`nc`r`nd\" | Set-Content out.txt",
+    "code": "\"a`rb`nc`r`nd\" | Set-Content out.txt\n@(Get-Content out.txt).Count",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "line1\r\nline2\r\n"
+        },
+        {
+          "path": "C:\\Practice\\empty.txt",
+          "type": "file",
+          "content": ""
+        },
+        {
+          "path": "C:\\Practice\\lines.txt",
+          "type": "file",
+          "content": "a\r\nb\r\nc\r\n"
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\logs\\nested.txt",
+          "type": "file",
+          "content": "nested\r\n"
+        }
+      ],
+      "inputs": {
+        "A": [
+          "a",
+          "other"
+        ]
+      },
+      "lastExitCode": null
+    },
+    "app": {
+      "truncated": false,
+      "reasons": [],
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "pipeline",
+              "text": "3",
+              "line": 2
+            }
+          ],
+          "groups": [
+            {
+              "title": "変数",
+              "entries": []
+            },
+            {
+              "title": "最後に評価したパイプライン",
+              "entries": [
+                [
+                  "値",
+                  "3"
+                ]
+              ]
+            },
+            {
+              "title": "モデルの終了状態",
+              "entries": [
+                [
+                  "現在フォルダ",
+                  "C:\\Practice"
+                ],
+                [
+                  "$?",
+                  "True"
+                ],
+                [
+                  "$LASTEXITCODE",
+                  "$null"
+                ],
+                [
+                  "仮想ファイル一覧",
+                  "[フォルダ] C:\\Practice\n[ファイル] C:\\Practice\\notes.txt\n[ファイル] C:\\Practice\\empty.txt\n[ファイル] C:\\Practice\\lines.txt\n[フォルダ] C:\\Practice\\logs\n[ファイル] C:\\Practice\\logs\\nested.txt\n[ファイル] C:\\Practice\\out.txt"
+                ]
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "Get-ChildItem -File | Sort-Object | Select-Object Name",
+    "code": "Get-ChildItem -File | Sort-Object | Select-Object Name",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "line1\r\nline2\r\n"
+        },
+        {
+          "path": "C:\\Practice\\empty.txt",
+          "type": "file",
+          "content": ""
+        },
+        {
+          "path": "C:\\Practice\\lines.txt",
+          "type": "file",
+          "content": "a\r\nb\r\nc\r\n"
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\logs\\nested.txt",
+          "type": "file",
+          "content": "nested\r\n"
+        }
+      ],
+      "inputs": {
+        "A": [
+          "a",
+          "other"
+        ]
+      },
+      "lastExitCode": null
+    },
+    "app": {
+      "truncated": false,
+      "reasons": [],
+      "paths": [
+        {
+          "error": {
+            "line": 1,
+            "message": "未対応：オブジェクトの文字列化。プロパティを部分式で指定してください",
+            "category": "未対応"
+          },
+          "outputs": [],
+          "groups": [
+            {
+              "title": "変数",
+              "entries": []
+            },
+            {
+              "title": "最後に評価したパイプライン",
+              "entries": [
+                [
+                  "値",
+                  "Name : notes.txt\nFullName : C:\\Practice\\notes.txt\nPSIsContainer : False\nLength : 14\nExtension : .txt\n\nName : empty.txt\nFullName : C:\\Practice\\empty.txt\nPSIsContainer : False\nLength : 0\nExtension : .txt\n\nName : lines.txt\nFullName : C:\\Practice\\lines.txt\nPSIsContainer : False\nLength : 9\nExtension : .txt"
+                ]
+              ]
+            },
+            {
+              "title": "モデルの終了状態",
+              "entries": [
+                [
+                  "現在フォルダ",
+                  "C:\\Practice"
+                ],
+                [
+                  "$?",
+                  "False"
+                ],
+                [
+                  "$LASTEXITCODE",
+                  "$null"
+                ],
+                [
+                  "仮想ファイル一覧",
+                  "[フォルダ] C:\\Practice\n[ファイル] C:\\Practice\\notes.txt\n[ファイル] C:\\Practice\\empty.txt\n[ファイル] C:\\Practice\\lines.txt\n[フォルダ] C:\\Practice\\logs\n[ファイル] C:\\Practice\\logs\\nested.txt"
+                ]
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "1,2,3 | Select-Object -Skip 1 -Last 1",
+    "code": "1,2,3 | Select-Object -Skip 1 -Last 1",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "line1\r\nline2\r\n"
+        },
+        {
+          "path": "C:\\Practice\\empty.txt",
+          "type": "file",
+          "content": ""
+        },
+        {
+          "path": "C:\\Practice\\lines.txt",
+          "type": "file",
+          "content": "a\r\nb\r\nc\r\n"
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\logs\\nested.txt",
+          "type": "file",
+          "content": "nested\r\n"
+        }
+      ],
+      "inputs": {
+        "A": [
+          "a",
+          "other"
+        ]
+      },
+      "lastExitCode": null
+    },
+    "app": {
+      "truncated": false,
+      "reasons": [],
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "pipeline",
+              "text": "3",
+              "line": 1
+            }
+          ],
+          "groups": [
+            {
+              "title": "変数",
+              "entries": []
+            },
+            {
+              "title": "最後に評価したパイプライン",
+              "entries": [
+                [
+                  "値",
+                  "3"
+                ]
+              ]
+            },
+            {
+              "title": "モデルの終了状態",
+              "entries": [
+                [
+                  "現在フォルダ",
+                  "C:\\Practice"
+                ],
+                [
+                  "$?",
+                  "True"
+                ],
+                [
+                  "$LASTEXITCODE",
+                  "$null"
+                ],
+                [
+                  "仮想ファイル一覧",
+                  "[フォルダ] C:\\Practice\n[ファイル] C:\\Practice\\notes.txt\n[ファイル] C:\\Practice\\empty.txt\n[ファイル] C:\\Practice\\lines.txt\n[フォルダ] C:\\Practice\\logs\n[ファイル] C:\\Practice\\logs\\nested.txt"
+                ]
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "1,2,3 | Measure-Object -Property NoSuchProperty -Sum",
+    "code": "1,2,3 | Measure-Object -Property NoSuchProperty -Sum",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "line1\r\nline2\r\n"
+        },
+        {
+          "path": "C:\\Practice\\empty.txt",
+          "type": "file",
+          "content": ""
+        },
+        {
+          "path": "C:\\Practice\\lines.txt",
+          "type": "file",
+          "content": "a\r\nb\r\nc\r\n"
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\logs\\nested.txt",
+          "type": "file",
+          "content": "nested\r\n"
+        }
+      ],
+      "inputs": {
+        "A": [
+          "a",
+          "other"
+        ]
+      },
+      "lastExitCode": null
+    },
+    "app": {
+      "truncated": false,
+      "reasons": [],
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "pipeline",
+              "text": "Count : 0\nAverage : $null\nSum : 0\nMaximum : $null\nMinimum : $null\nStandardDeviation : $null\nProperty : NoSuchProperty",
+              "line": 1
+            }
+          ],
+          "groups": [
+            {
+              "title": "変数",
+              "entries": []
+            },
+            {
+              "title": "最後に評価したパイプライン",
+              "entries": [
+                [
+                  "値",
+                  "Count : 0\nAverage : $null\nSum : 0\nMaximum : $null\nMinimum : $null\nStandardDeviation : $null\nProperty : NoSuchProperty"
+                ]
+              ]
+            },
+            {
+              "title": "モデルの終了状態",
+              "entries": [
+                [
+                  "現在フォルダ",
+                  "C:\\Practice"
+                ],
+                [
+                  "$?",
+                  "True"
+                ],
+                [
+                  "$LASTEXITCODE",
+                  "$null"
+                ],
+                [
+                  "仮想ファイル一覧",
+                  "[フォルダ] C:\\Practice\n[ファイル] C:\\Practice\\notes.txt\n[ファイル] C:\\Practice\\empty.txt\n[ファイル] C:\\Practice\\lines.txt\n[フォルダ] C:\\Practice\\logs\n[ファイル] C:\\Practice\\logs\\nested.txt"
+                ]
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "1,2 | Select-Object -Property \"NoSuch*\"",
+    "code": "1,2 | Select-Object -Property \"NoSuch*\"",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "line1\r\nline2\r\n"
+        },
+        {
+          "path": "C:\\Practice\\empty.txt",
+          "type": "file",
+          "content": ""
+        },
+        {
+          "path": "C:\\Practice\\lines.txt",
+          "type": "file",
+          "content": "a\r\nb\r\nc\r\n"
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\logs\\nested.txt",
+          "type": "file",
+          "content": "nested\r\n"
+        }
+      ],
+      "inputs": {
+        "A": [
+          "a",
+          "other"
+        ]
+      },
+      "lastExitCode": null
+    },
+    "app": {
+      "truncated": false,
+      "reasons": [],
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "pipeline",
+              "text": "NoSuch* : $null",
+              "line": 1
+            },
+            {
+              "channel": "pipeline",
+              "text": "NoSuch* : $null",
+              "line": 1
+            }
+          ],
+          "groups": [
+            {
+              "title": "変数",
+              "entries": []
+            },
+            {
+              "title": "最後に評価したパイプライン",
+              "entries": [
+                [
+                  "値",
+                  "NoSuch* : $null\n\nNoSuch* : $null"
+                ]
+              ]
+            },
+            {
+              "title": "モデルの終了状態",
+              "entries": [
+                [
+                  "現在フォルダ",
+                  "C:\\Practice"
+                ],
+                [
+                  "$?",
+                  "True"
+                ],
+                [
+                  "$LASTEXITCODE",
+                  "$null"
+                ],
+                [
+                  "仮想ファイル一覧",
+                  "[フォルダ] C:\\Practice\n[ファイル] C:\\Practice\\notes.txt\n[ファイル] C:\\Practice\\empty.txt\n[ファイル] C:\\Practice\\lines.txt\n[フォルダ] C:\\Practice\\logs\n[ファイル] C:\\Practice\\logs\\nested.txt"
+                ]
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "function f {param($x=1) $x}",
+    "code": "function f {param($x=1) $x}\nf -x $null",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "line1\r\nline2\r\n"
+        },
+        {
+          "path": "C:\\Practice\\empty.txt",
+          "type": "file",
+          "content": ""
+        },
+        {
+          "path": "C:\\Practice\\lines.txt",
+          "type": "file",
+          "content": "a\r\nb\r\nc\r\n"
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\logs\\nested.txt",
+          "type": "file",
+          "content": "nested\r\n"
+        }
+      ],
+      "inputs": {
+        "A": [
+          "a",
+          "other"
+        ]
+      },
+      "lastExitCode": null
+    },
+    "app": {
+      "truncated": false,
+      "reasons": [],
+      "paths": [
+        {
+          "outputs": [],
+          "groups": [
+            {
+              "title": "変数",
+              "entries": []
+            },
+            {
+              "title": "最後に評価したパイプライン",
+              "entries": [
+                [
+                  "値",
+                  "$null"
+                ]
+              ]
+            },
+            {
+              "title": "モデルの終了状態",
+              "entries": [
+                [
+                  "現在フォルダ",
+                  "C:\\Practice"
+                ],
+                [
+                  "$?",
+                  "True"
+                ],
+                [
+                  "$LASTEXITCODE",
+                  "$null"
+                ],
+                [
+                  "仮想ファイル一覧",
+                  "[フォルダ] C:\\Practice\n[ファイル] C:\\Practice\\notes.txt\n[ファイル] C:\\Practice\\empty.txt\n[ファイル] C:\\Practice\\lines.txt\n[フォルダ] C:\\Practice\\logs\n[ファイル] C:\\Practice\\logs\\nested.txt"
+                ]
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "$a=1,2; $b=$a; $b[0]=9; $a[0]",
+    "code": "$a=1,2; $b=$a; $b[0]=9; $a[0]",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "line1\r\nline2\r\n"
+        },
+        {
+          "path": "C:\\Practice\\empty.txt",
+          "type": "file",
+          "content": ""
+        },
+        {
+          "path": "C:\\Practice\\lines.txt",
+          "type": "file",
+          "content": "a\r\nb\r\nc\r\n"
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\logs\\nested.txt",
+          "type": "file",
+          "content": "nested\r\n"
+        }
+      ],
+      "inputs": {
+        "A": [
+          "a",
+          "other"
+        ]
+      },
+      "lastExitCode": null
+    },
+    "app": {
+      "truncated": false,
+      "reasons": [],
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "pipeline",
+              "text": "9",
+              "line": 1
+            }
+          ],
+          "groups": [
+            {
+              "title": "変数",
+              "entries": [
+                [
+                  "$a",
+                  "@(9, 2)"
+                ],
+                [
+                  "$b",
+                  "@(9, 2)"
+                ]
+              ]
+            },
+            {
+              "title": "最後に評価したパイプライン",
+              "entries": [
+                [
+                  "値",
+                  "9"
+                ]
+              ]
+            },
+            {
+              "title": "モデルの終了状態",
+              "entries": [
+                [
+                  "現在フォルダ",
+                  "C:\\Practice"
+                ],
+                [
+                  "$?",
+                  "True"
+                ],
+                [
+                  "$LASTEXITCODE",
+                  "$null"
+                ],
+                [
+                  "仮想ファイル一覧",
+                  "[フォルダ] C:\\Practice\n[ファイル] C:\\Practice\\notes.txt\n[ファイル] C:\\Practice\\empty.txt\n[ファイル] C:\\Practice\\lines.txt\n[フォルダ] C:\\Practice\\logs\n[ファイル] C:\\Practice\\logs\\nested.txt"
+                ]
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "$h=@{x=1}; $h[\"X\"]",
+    "code": "$h=@{x=1}; $h[\"X\"]",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "line1\r\nline2\r\n"
+        },
+        {
+          "path": "C:\\Practice\\empty.txt",
+          "type": "file",
+          "content": ""
+        },
+        {
+          "path": "C:\\Practice\\lines.txt",
+          "type": "file",
+          "content": "a\r\nb\r\nc\r\n"
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\logs\\nested.txt",
+          "type": "file",
+          "content": "nested\r\n"
+        }
+      ],
+      "inputs": {
+        "A": [
+          "a",
+          "other"
+        ]
+      },
+      "lastExitCode": null
+    },
+    "app": {
+      "truncated": false,
+      "reasons": [],
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "pipeline",
+              "text": "1",
+              "line": 1
+            }
+          ],
+          "groups": [
+            {
+              "title": "変数",
+              "entries": [
+                [
+                  "$h",
+                  "x : 1"
+                ]
+              ]
+            },
+            {
+              "title": "最後に評価したパイプライン",
+              "entries": [
+                [
+                  "値",
+                  "1"
+                ]
+              ]
+            },
+            {
+              "title": "モデルの終了状態",
+              "entries": [
+                [
+                  "現在フォルダ",
+                  "C:\\Practice"
+                ],
+                [
+                  "$?",
+                  "True"
+                ],
+                [
+                  "$LASTEXITCODE",
+                  "$null"
+                ],
+                [
+                  "仮想ファイル一覧",
+                  "[フォルダ] C:\\Practice\n[ファイル] C:\\Practice\\notes.txt\n[ファイル] C:\\Practice\\empty.txt\n[ファイル] C:\\Practice\\lines.txt\n[フォルダ] C:\\Practice\\logs\n[ファイル] C:\\Practice\\logs\\nested.txt"
+                ]
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "$a=Read-Host \"A\"",
+    "code": "$a=Read-Host \"A\"\nif($a -eq \"a\"){1}\nif($a -ne \"a\"){2}",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "line1\r\nline2\r\n"
+        },
+        {
+          "path": "C:\\Practice\\empty.txt",
+          "type": "file",
+          "content": ""
+        },
+        {
+          "path": "C:\\Practice\\lines.txt",
+          "type": "file",
+          "content": "a\r\nb\r\nc\r\n"
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\logs\\nested.txt",
+          "type": "file",
+          "content": "nested\r\n"
+        }
+      ],
+      "inputs": {
+        "A": [
+          "a",
+          "other"
+        ]
+      },
+      "lastExitCode": null
+    },
+    "app": {
+      "truncated": false,
+      "reasons": [],
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "pipeline",
+              "text": "1",
+              "line": 2
+            }
+          ],
+          "groups": [
+            {
+              "title": "変数",
+              "entries": [
+                [
+                  "$a",
+                  "a"
+                ]
+              ]
+            },
+            {
+              "title": "最後に評価したパイプライン",
+              "entries": [
+                [
+                  "値",
+                  "False"
+                ]
+              ]
+            },
+            {
+              "title": "モデルの終了状態",
+              "entries": [
+                [
+                  "現在フォルダ",
+                  "C:\\Practice"
+                ],
+                [
+                  "$?",
+                  "True"
+                ],
+                [
+                  "$LASTEXITCODE",
+                  "$null"
+                ],
+                [
+                  "仮想ファイル一覧",
+                  "[フォルダ] C:\\Practice\n[ファイル] C:\\Practice\\notes.txt\n[ファイル] C:\\Practice\\empty.txt\n[ファイル] C:\\Practice\\lines.txt\n[フォルダ] C:\\Practice\\logs\n[ファイル] C:\\Practice\\logs\\nested.txt"
+                ]
+              ]
+            }
+          ]
+        },
+        {
+          "outputs": [
+            {
+              "channel": "pipeline",
+              "text": "2",
+              "line": 3
+            }
+          ],
+          "groups": [
+            {
+              "title": "変数",
+              "entries": [
+                [
+                  "$a",
+                  "other"
+                ]
+              ]
+            },
+            {
+              "title": "最後に評価したパイプライン",
+              "entries": [
+                [
+                  "値",
+                  "2"
+                ]
+              ]
+            },
+            {
+              "title": "モデルの終了状態",
+              "entries": [
+                [
+                  "現在フォルダ",
+                  "C:\\Practice"
+                ],
+                [
+                  "$?",
+                  "True"
+                ],
+                [
+                  "$LASTEXITCODE",
+                  "$null"
+                ],
+                [
+                  "仮想ファイル一覧",
+                  "[フォルダ] C:\\Practice\n[ファイル] C:\\Practice\\notes.txt\n[ファイル] C:\\Practice\\empty.txt\n[ファイル] C:\\Practice\\lines.txt\n[フォルダ] C:\\Practice\\logs\n[ファイル] C:\\Practice\\logs\\nested.txt"
+                ]
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "material:template:ps-hello",
+    "code": "$name=\"Alice\"\nWrite-Host \"画面: $name\"\nWrite-Output \"Hello $name\""
+  },
+  {
+    "name": "material:template:ps-values",
+    "code": "$record=@{Name=\"Alice\"; Score=80}\n$numbers=@(2,4,6)\n$record[\"Name\"]\n$numbers[1]\n$numbers.Count"
+  },
+  {
+    "name": "material:template:ps-files",
+    "code": "Get-ChildItem -File | Where-Object { $_.Extension -eq \".txt\" } | Sort-Object Name | Select-Object Name,Length"
+  },
+  {
+    "name": "material:template:ps-total",
+    "code": "$values=@()\nfor ($i=1; $i -le 4; $i++) { $values += $i * 2 }\n$values | Measure-Object -Sum"
+  },
+  {
+    "name": "material:template:ps-function",
+    "code": "function Double {\n param($values)\n foreach ($v in $values) { $v * 2 }\n}\n$result=Double @(1,2,3)\n$result"
+  },
+  {
+    "name": "material:template:ps-input",
+    "code": "$answer=Read-Host \"Answer\"\nif ($answer -eq \"yes\") {\n Write-Output \"accepted\"\n} else {\n Write-Output \"other input\"\n}"
+  },
+  {
+    "name": "material:template:ps-transform",
+    "code": "$rows=@(\n [pscustomobject]@{Name=\"A\"; N=2}\n [pscustomobject]@{Name=\"B\"; N=4}\n)\n$rows | ForEach-Object { [pscustomobject]@{Name=$_.Name; N=$_.N*3} }"
+  },
+  {
+    "name": "material:template:ps-file-write",
+    "code": "New-Item -Path output -ItemType Directory\nSet-Content output\\result.txt \"first\"\nAdd-Content output\\result.txt \"second\"\nMove-Item output\\result.txt output\\moved.txt\nGet-Content output\\moved.txt"
+  },
+  {
+    "name": "material:reference:Write-Output",
+    "code": "Write-Output 1,2,3"
+  },
+  {
+    "name": "material:reference:Write-Host",
+    "code": "Write-Host \"画面のみ\"\nWrite-Output \"パイプライン\""
+  },
+  {
+    "name": "material:reference:Read-Host",
+    "code": "$name=Read-Host \"Name\"\nWrite-Output $name"
+  },
+  {
+    "name": "material:reference:Get-ChildItem",
+    "code": "Get-ChildItem -Filter \"*.txt\""
+  },
+  {
+    "name": "material:reference:Where-Object",
+    "code": "1..5 | Where-Object { $_ -gt 2 }"
+  },
+  {
+    "name": "material:reference:ForEach-Object",
+    "code": "1..3 | ForEach-Object { $_ * 2 }"
+  },
+  {
+    "name": "material:reference:Select-Object",
+    "code": "Get-ChildItem | Select-Object Name,FullName -First 2"
+  },
+  {
+    "name": "material:reference:Sort-Object",
+    "code": "@(3,1,2) | Sort-Object"
+  },
+  {
+    "name": "material:reference:Measure-Object",
+    "code": "1..3 | Measure-Object -Sum"
+  },
+  {
+    "name": "material:reference:Set-Location",
+    "code": "Set-Location logs\nGet-Location"
+  },
+  {
+    "name": "material:reference:Get-Location",
+    "code": "Get-Location"
+  },
+  {
+    "name": "material:reference:Get-Content",
+    "code": "Get-Content notes.txt"
+  },
+  {
+    "name": "material:reference:Set-Content",
+    "code": "Set-Content out.txt -Value \"Hello\"\nGet-Content out.txt"
+  },
+  {
+    "name": "material:reference:Add-Content",
+    "code": "Set-Content out.txt \"A\"\nAdd-Content out.txt \"B\"\nGet-Content out.txt"
+  },
+  {
+    "name": "material:reference:New-Item",
+    "code": "New-Item -Path extra -ItemType Directory"
+  },
+  {
+    "name": "material:reference:Remove-Item",
+    "code": "New-Item temp.txt -ItemType File\nRemove-Item temp.txt"
+  },
+  {
+    "name": "material:reference:Rename-Item",
+    "code": "Copy-Item notes.txt copy.txt\nRename-Item copy.txt renamed.txt"
+  },
+  {
+    "name": "material:reference:Copy-Item",
+    "code": "Copy-Item notes.txt copied.txt"
+  },
+  {
+    "name": "material:reference:Move-Item",
+    "code": "Copy-Item notes.txt copied.txt\nMove-Item copied.txt moved.txt"
+  },
+  {
+    "name": "material:reference:Test-Path",
+    "code": "Test-Path notes.txt"
+  },
+  {
+    "name": "material:reference:if",
+    "code": "if (2 -gt 1) { \"yes\" } else { \"no\" }"
+  },
+  {
+    "name": "material:reference:foreach",
+    "code": "foreach ($n in 1..3) { $n * 2 }"
+  },
+  {
+    "name": "material:reference:for",
+    "code": "for ($i=0; $i -lt 3; $i++) { $i }"
+  },
+  {
+    "name": "material:reference:while",
+    "code": "$i=0\nwhile ($i -lt 3) { $i; $i++ }"
+  },
+  {
+    "name": "material:reference:do-while",
+    "code": "$i=0\ndo { $i++; $i } while ($i -lt 2)"
+  },
+  {
+    "name": "material:reference:switch",
+    "code": "switch (2) { 1 { \"one\" } 2 { \"two\" } default { \"other\" } }"
+  },
+  {
+    "name": "material:reference:break",
+    "code": "foreach ($n in 1..5) { if ($n -gt 2) { break }; $n }"
+  },
+  {
+    "name": "material:reference:continue",
+    "code": "foreach ($n in 1..3) { if ($n -eq 2) { continue }; $n }"
+  },
+  {
+    "name": "material:reference:function",
+    "code": "function Add { param($a,$b) $a+$b }\nAdd 2 3"
+  },
+  {
+    "name": "material:reference:param",
+    "code": "function Say { param($name) \"Hello $name\" }\nSay Alice"
+  },
+  {
+    "name": "material:reference:return",
+    "code": "function Values { 1; return 2; 3 }\nValues"
+  },
+  {
+    "name": "material:reference:変数",
+    "code": "$Name=\"Alice\"\n$name"
+  },
+  {
+    "name": "material:reference:文字列",
+    "code": "$x=3\n\"value=$x; next=$($x+1)\"\n'$x'"
+  },
+  {
+    "name": "material:reference:配列",
+    "code": "$a=@(2,4,6)\n$a[1]\n$a.Count"
+  },
+  {
+    "name": "material:reference:ハッシュテーブル",
+    "code": "$h=@{Name=\"Alice\"; Score=80}\n$h[\"Name\"]"
+  },
+  {
+    "name": "material:reference:比較演算子",
+    "code": "\"Hello\" -eq \"hello\"\n\"abc.txt\" -like \"*.txt\"\n\"abc123\" -match \"[0-9]+\""
+  },
+  {
+    "name": "material:reference:パイプライン",
+    "code": "1..3 | ForEach-Object { $_ * 2 }"
+  },
+  {
+    "name": "material:reference:$_",
+    "code": "1..3 | ForEach-Object { $_ * 2 }"
+  },
+  {
+    "name": "material:reference:$PSItem",
+    "code": "1..3 | ForEach-Object { $PSItem + 1 }"
+  },
+  {
+    "name": "material:reference:$?",
+    "code": "Write-Output \"done\"\n$?"
+  },
+  {
+    "name": "material:reference:$LASTEXITCODE",
+    "code": "$LASTEXITCODE"
+  },
+  {
+    "name": "material:reference:$args",
+    "code": "function Show { $args[0] }\nShow \"extra\""
+  },
+  {
+    "name": "material:reference:型変換（キャスト）",
+    "code": "[int]\"42\" + 1\n[string]7\n[pscustomobject]@{Name=\"A\"}"
+  },
+  {
+    "name": "material:reference:論理演算子",
+    "code": "$true -and $false\n$true -or $false\n-not $true\n!$false"
+  },
+  {
+    "name": "material:reference:算術・代入演算子",
+    "code": "$x=10\n$x += 5\n$x\n$x++\n$x"
+  }
+]

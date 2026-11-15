@@ -1,0 +1,1627 @@
+[
+  {
+    "name": "template:csharp-array",
+    "code": "using System;\nclass Program {\n    static void Main() {\nint[] values = {1, 2, 3};\nint total = 0;\nfor (int i = 0; i < 3; i++) {\n    total += values[i];\n}\nConsole.WriteLine(total);\n    }\n}",
+    "app": {
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "Console.WriteLine",
+              "text": "6",
+              "line": 9
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "template:cs-object",
+    "code": "using System;\nclass Counter { public int Value; }\n\nclass Program {\n    static void Main() {\nCounter first = new Counter();\nCounter same = first;\nsame.Value = 5;\nConsole.WriteLine(first.Value);\n    }\n}",
+    "app": {
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "Console.WriteLine",
+              "text": "5",
+              "line": 9
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "template:csharp-error",
+    "code": "using System;\nclass Program {\n    static void Main() {\nint[] values = {1, 2};\nConsole.WriteLine(values[2]);\n    }\n}",
+    "app": {
+      "paths": [
+        {
+          "error": {
+            "line": 5,
+            "message": "配列範囲外です",
+            "category": "IndexOutOfRangeException"
+          },
+          "outputs": []
+        }
+      ]
+    }
+  },
+  {
+    "name": "template:csharp-price",
+    "code": "using System;\nclass Program {\n    static void Main() {\nint price = 120;\nint count = 3;\nint total = price * count;\nConsole.WriteLine(total);\n    }\n}",
+    "model": {
+      "variables": {},
+      "intBits": 32,
+      "longBits": 64,
+      "memory": {},
+      "input": {
+        "kind": "unknown",
+        "source": "実行時の標準入力",
+        "id": "実行時の標準入力"
+      }
+    },
+    "app": {
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "Console.WriteLine",
+              "text": "360",
+              "line": 7
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "template:csharp-positive-total",
+    "code": "using System;\nclass Program {\n    static void Main() {\nint[] values = {-2, 4, 0, 7};\nint total = 0;\nfor (int i = 0; i < 4; i++) {\n    if (values[i] > 0) { total += values[i]; }\n}\nConsole.WriteLine(total);\n    }\n}",
+    "model": {
+      "variables": {},
+      "intBits": 32,
+      "longBits": 64,
+      "memory": {},
+      "input": {
+        "kind": "unknown",
+        "source": "実行時の標準入力",
+        "id": "実行時の標準入力"
+      }
+    },
+    "app": {
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "Console.WriteLine",
+              "text": "11",
+              "line": 9
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "template:cs-shared-total",
+    "code": "using System;\nclass Counter { public int Total; }\n\nclass Program {\n    static void Main() {\nCounter first = new Counter();\nCounter same = first;\nint[] values = {1, 2, 3, 4, 5};\nchecked {\n    for (int i = 0; i < 5; i++) { same.Total += values[i]; }\n}\nConsole.WriteLine(first.Total);\n    }\n}",
+    "model": {
+      "variables": {},
+      "intBits": 32,
+      "longBits": 64,
+      "memory": {},
+      "input": {
+        "kind": "unknown",
+        "source": "実行時の標準入力",
+        "id": "実行時の標準入力"
+      }
+    },
+    "app": {
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "Console.WriteLine",
+              "text": "15",
+              "line": 12
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "reference:int",
+    "code": "using System;\nclass Program {\n    static void Main() {\nint n = 1;\n    }\n}",
+    "app": {
+      "paths": [
+        {
+          "outputs": []
+        }
+      ]
+    }
+  },
+  {
+    "name": "reference:double",
+    "code": "using System;\nclass Program {\n    static void Main() {\ndouble x = 1.5;\n    }\n}",
+    "app": {
+      "paths": [
+        {
+          "outputs": []
+        }
+      ]
+    }
+  },
+  {
+    "name": "reference:array",
+    "code": "using System;\nclass Program {\n    static void Main() {\nint[] values = {1,2,3};\n    }\n}",
+    "app": {
+      "paths": [
+        {
+          "outputs": []
+        }
+      ]
+    }
+  },
+  {
+    "name": "reference:if",
+    "code": "using System;\nclass Program {\n    static void Main() {\nint n=2;\nif (n > 0) { n = 1; }\n    }\n}",
+    "app": {
+      "paths": [
+        {
+          "outputs": []
+        }
+      ]
+    }
+  },
+  {
+    "name": "reference:for",
+    "code": "using System;\nclass Program {\n    static void Main() {\nint total=0;\nfor (int i=0; i<3; i++) { total += i; }\n    }\n}",
+    "app": {
+      "paths": [
+        {
+          "outputs": []
+        }
+      ]
+    }
+  },
+  {
+    "name": "reference:while",
+    "code": "using System;\nclass Program {\n    static void Main() {\nint n=0;\nwhile (n < 3) { n++; }\n    }\n}",
+    "app": {
+      "paths": [
+        {
+          "outputs": []
+        }
+      ]
+    }
+  },
+  {
+    "name": "reference:return",
+    "code": "using System;\nclass Program {\n    static void Main() {\nreturn;\n    }\n}",
+    "app": {
+      "paths": [
+        {
+          "outputs": []
+        }
+      ]
+    }
+  },
+  {
+    "name": "reference:Console.WriteLine",
+    "code": "using System;\nclass Program {\n    static void Main() {\nint total=3;\nConsole.WriteLine(total);\n    }\n}",
+    "app": {
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "Console.WriteLine",
+              "text": "3",
+              "line": 5
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "reference:Console.ReadLine",
+    "code": "using System;\nclass Program {\n    static void Main() {\nstring text = Console.ReadLine();\n    }\n}",
+    "app": {
+      "paths": [
+        {
+          "outputs": []
+        }
+      ]
+    }
+  },
+  {
+    "name": "reference:class",
+    "code": "using System;\nclass Counter { public int Value; }\n\nclass Program {\n    static void Main() {\nCounter c = new Counter();\nc.Value = 1;\n    }\n}",
+    "app": {
+      "paths": [
+        {
+          "outputs": []
+        }
+      ]
+    }
+  },
+  {
+    "name": "reference:checked",
+    "code": "using System;\nclass Program {\n    static void Main() {\nint n=1;\nchecked { n = n + 1; }\n    }\n}",
+    "app": {
+      "paths": [
+        {
+          "outputs": []
+        }
+      ]
+    }
+  },
+  {
+    "name": "reference:long",
+    "code": "using System;\nclass Program {\n    static void Main() {\nlong n = 1;\n    }\n}",
+    "app": {
+      "paths": [
+        {
+          "outputs": []
+        }
+      ]
+    }
+  },
+  {
+    "name": "reference:float",
+    "code": "using System;\nclass Program {\n    static void Main() {\nfloat x = 1.5f;\n    }\n}",
+    "app": {
+      "paths": [
+        {
+          "outputs": []
+        }
+      ]
+    }
+  },
+  {
+    "name": "reference:char",
+    "code": "using System;\nclass Program {\n    static void Main() {\nchar c = 'A';\n    }\n}",
+    "app": {
+      "paths": [
+        {
+          "outputs": []
+        }
+      ]
+    }
+  },
+  {
+    "name": "reference:short",
+    "code": "using System;\nclass Program {\n    static void Main() {\nshort n = 1;\n    }\n}",
+    "app": {
+      "paths": [
+        {
+          "outputs": []
+        }
+      ]
+    }
+  },
+  {
+    "name": "reference:bool",
+    "code": "using System;\nclass Program {\n    static void Main() {\nbool ok = true;\n    }\n}",
+    "app": {
+      "paths": [
+        {
+          "outputs": []
+        }
+      ]
+    }
+  },
+  {
+    "name": "reference:uint",
+    "code": "using System;\nclass Program {\n    static void Main() {\nuint n = 1;\n    }\n}",
+    "app": {
+      "paths": [
+        {
+          "outputs": []
+        }
+      ]
+    }
+  },
+  {
+    "name": "reference:ulong",
+    "code": "using System;\nclass Program {\n    static void Main() {\nulong n = 1;\n    }\n}",
+    "app": {
+      "paths": [
+        {
+          "outputs": []
+        }
+      ]
+    }
+  },
+  {
+    "name": "reference:ushort",
+    "code": "using System;\nclass Program {\n    static void Main() {\nushort n = 1;\n    }\n}",
+    "app": {
+      "paths": [
+        {
+          "outputs": []
+        }
+      ]
+    }
+  },
+  {
+    "name": "reference:byte",
+    "code": "using System;\nclass Program {\n    static void Main() {\nbyte n = 1;\n    }\n}",
+    "app": {
+      "paths": [
+        {
+          "outputs": []
+        }
+      ]
+    }
+  },
+  {
+    "name": "reference:sbyte",
+    "code": "using System;\nclass Program {\n    static void Main() {\nsbyte n = -1;\n    }\n}",
+    "app": {
+      "paths": [
+        {
+          "outputs": []
+        }
+      ]
+    }
+  },
+  {
+    "name": "reference:string",
+    "code": "using System;\nclass Program {\n    static void Main() {\nstring s = \"tea\";\n    }\n}",
+    "app": {
+      "paths": [
+        {
+          "outputs": []
+        }
+      ]
+    }
+  },
+  {
+    "name": "reference:do",
+    "code": "using System;\nclass Program {\n    static void Main() {\nint n = 0;\ndo { n++; } while (n < 3);\n    }\n}",
+    "app": {
+      "paths": [
+        {
+          "outputs": []
+        }
+      ]
+    }
+  },
+  {
+    "name": "reference:キャスト",
+    "code": "using System;\nclass Program {\n    static void Main() {\ndouble x = 1.5;\nint n = (int)x;\n    }\n}",
+    "app": {
+      "paths": [
+        {
+          "outputs": []
+        }
+      ]
+    }
+  },
+  {
+    "name": "reference:三項演算子",
+    "code": "using System;\nclass Program {\n    static void Main() {\nint n = 2;\nint label = n > 0 ? 1 : 0;\n    }\n}",
+    "app": {
+      "paths": [
+        {
+          "outputs": []
+        }
+      ]
+    }
+  },
+  {
+    "name": "reference:break",
+    "code": "using System;\nclass Program {\n    static void Main() {\nint total = 0;\nfor (int i = 0; i < 10; i++) { if (i == 3) { break; } total += i; }\n    }\n}",
+    "app": {
+      "paths": [
+        {
+          "outputs": []
+        }
+      ]
+    }
+  },
+  {
+    "name": "reference:continue",
+    "code": "using System;\nclass Program {\n    static void Main() {\nint total = 0;\nfor (int i = 0; i < 5; i++) { if (i == 2) { continue; } total += i; }\n    }\n}",
+    "app": {
+      "paths": [
+        {
+          "outputs": []
+        }
+      ]
+    }
+  },
+  {
+    "name": "reference:foreach",
+    "code": "using System;\nclass Program {\n    static void Main() {\nint[] values = {1, 2, 3};\nint total = 0;\nforeach (int v in values) { total += v; }\n    }\n}",
+    "app": {
+      "paths": [
+        {
+          "outputs": []
+        }
+      ]
+    }
+  },
+  {
+    "name": "reference:unchecked",
+    "code": "using System;\nclass Program {\n    static void Main() {\nint n = 2147483647;\nunchecked { n = n + 1; }\n    }\n}",
+    "app": {
+      "paths": [
+        {
+          "outputs": []
+        }
+      ]
+    }
+  },
+  {
+    "name": "reference:new",
+    "code": "using System;\nclass Program {\n    static void Main() {\nint[] values = new int[3];\nvalues[0] = 1;\n    }\n}",
+    "app": {
+      "paths": [
+        {
+          "outputs": []
+        }
+      ]
+    }
+  },
+  {
+    "name": "reference:文字列補間",
+    "code": "using System;\nclass Program {\n    static void Main() {\nint n = 3;\nstring s = $\"n={n}\";\nConsole.WriteLine(s);\n    }\n}",
+    "app": {
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "Console.WriteLine",
+              "text": "n=3",
+              "line": 6
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "reference:int.TryParse",
+    "code": "using System;\nclass Program {\n    static void Main() {\nint n;\nbool ok = int.TryParse(\"42\", out n);\nConsole.WriteLine(n);\n    }\n}",
+    "app": {
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "Console.WriteLine",
+              "text": "42",
+              "line": 6
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "reference:double.TryParse",
+    "code": "using System;\nclass Program {\n    static void Main() {\ndouble x;\nbool ok = double.TryParse(\"1.5\", out x);\nConsole.WriteLine(x);\n    }\n}",
+    "app": {
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "Console.WriteLine",
+              "text": "1.5",
+              "line": 6
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "reference:Length",
+    "code": "using System;\nclass Program {\n    static void Main() {\nint[] values = {1, 2, 3};\nstring s = \"tea\";\nint n = values.Length + s.Length;\n    }\n}",
+    "app": {
+      "paths": [
+        {
+          "outputs": []
+        }
+      ]
+    }
+  },
+  {
+    "name": "reference:int.MaxValue",
+    "code": "using System;\nclass Program {\n    static void Main() {\nConsole.WriteLine(int.MaxValue);\n    }\n}",
+    "app": {
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "Console.WriteLine",
+              "text": "2147483647",
+              "line": 4
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "reference:int.MinValue",
+    "code": "using System;\nclass Program {\n    static void Main() {\nConsole.WriteLine(int.MinValue);\n    }\n}",
+    "app": {
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "Console.WriteLine",
+              "text": "-2147483648",
+              "line": 4
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "reference:uint.MaxValue",
+    "code": "using System;\nclass Program {\n    static void Main() {\nConsole.WriteLine(uint.MaxValue);\n    }\n}",
+    "app": {
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "Console.WriteLine",
+              "text": "4294967295",
+              "line": 4
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "reference:uint.MinValue",
+    "code": "using System;\nclass Program {\n    static void Main() {\nConsole.WriteLine(uint.MinValue);\n    }\n}",
+    "app": {
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "Console.WriteLine",
+              "text": "0",
+              "line": 4
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "reference:short.MaxValue",
+    "code": "using System;\nclass Program {\n    static void Main() {\nConsole.WriteLine(short.MaxValue);\n    }\n}",
+    "app": {
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "Console.WriteLine",
+              "text": "32767",
+              "line": 4
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "reference:short.MinValue",
+    "code": "using System;\nclass Program {\n    static void Main() {\nConsole.WriteLine(short.MinValue);\n    }\n}",
+    "app": {
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "Console.WriteLine",
+              "text": "-32768",
+              "line": 4
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "reference:byte.MaxValue",
+    "code": "using System;\nclass Program {\n    static void Main() {\nConsole.WriteLine(byte.MaxValue);\n    }\n}",
+    "app": {
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "Console.WriteLine",
+              "text": "255",
+              "line": 4
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "reference:byte.MinValue",
+    "code": "using System;\nclass Program {\n    static void Main() {\nConsole.WriteLine(byte.MinValue);\n    }\n}",
+    "app": {
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "Console.WriteLine",
+              "text": "0",
+              "line": 4
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "reference:sbyte.MaxValue",
+    "code": "using System;\nclass Program {\n    static void Main() {\nConsole.WriteLine(sbyte.MaxValue);\n    }\n}",
+    "app": {
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "Console.WriteLine",
+              "text": "127",
+              "line": 4
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "reference:sbyte.MinValue",
+    "code": "using System;\nclass Program {\n    static void Main() {\nConsole.WriteLine(sbyte.MinValue);\n    }\n}",
+    "app": {
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "Console.WriteLine",
+              "text": "-128",
+              "line": 4
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "reference:char.MaxValue",
+    "code": "using System;\nclass Program {\n    static void Main() {\nConsole.WriteLine(char.MaxValue);\n    }\n}",
+    "app": {
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "Console.WriteLine",
+              "text": "￿",
+              "line": 4
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "reference:char.MinValue",
+    "code": "using System;\nclass Program {\n    static void Main() {\nConsole.WriteLine(char.MinValue);\n    }\n}",
+    "app": {
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "Console.WriteLine",
+              "text": "\u0000",
+              "line": 4
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "reference:Math.PI",
+    "code": "using System;\nclass Program {\n    static void Main() {\nConsole.WriteLine(Math.PI);\n    }\n}",
+    "app": {
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "Console.WriteLine",
+              "text": "3.141592653589793",
+              "line": 4
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "reference:Math.E",
+    "code": "using System;\nclass Program {\n    static void Main() {\nConsole.WriteLine(Math.E);\n    }\n}",
+    "app": {
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "Console.WriteLine",
+              "text": "2.718281828459045",
+              "line": 4
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "reference:String.Empty",
+    "code": "using System;\nclass Program {\n    static void Main() {\nConsole.WriteLine(String.Empty);\n    }\n}",
+    "app": {
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "Console.WriteLine",
+              "text": "",
+              "line": 4
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "reference:string.Empty",
+    "code": "using System;\nclass Program {\n    static void Main() {\nConsole.WriteLine(string.Empty);\n    }\n}",
+    "app": {
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "Console.WriteLine",
+              "text": "",
+              "line": 4
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "reference:long.MaxValue",
+    "code": "using System;\nclass Program {\n    static void Main() {\nConsole.WriteLine(long.MaxValue);\n    }\n}",
+    "app": {
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "Console.WriteLine",
+              "text": "実行時に決まる：long.MaxValue（64ビット境界値）",
+              "line": 4
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "reference:long.MinValue",
+    "code": "using System;\nclass Program {\n    static void Main() {\nConsole.WriteLine(long.MinValue);\n    }\n}",
+    "app": {
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "Console.WriteLine",
+              "text": "実行時に決まる：long.MinValue（64ビット境界値）",
+              "line": 4
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "reference:ulong.MaxValue",
+    "code": "using System;\nclass Program {\n    static void Main() {\nConsole.WriteLine(ulong.MaxValue);\n    }\n}",
+    "app": {
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "Console.WriteLine",
+              "text": "実行時に決まる：ulong.MaxValue（64ビット境界値）",
+              "line": 4
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "int.TryParse \"\"",
+    "code": "using System;\nclass Program {\nstatic void Main() {\nint n;\nConsole.WriteLine(int.TryParse(\"\",out n));\nConsole.WriteLine(n);\n}\n}",
+    "app": {
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "Console.WriteLine",
+              "text": "False",
+              "line": 5
+            },
+            {
+              "channel": "Console.WriteLine",
+              "text": "0",
+              "line": 6
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "int.TryParse \"0\"",
+    "code": "using System;\nclass Program {\nstatic void Main() {\nint n;\nConsole.WriteLine(int.TryParse(\"0\",out n));\nConsole.WriteLine(n);\n}\n}",
+    "app": {
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "Console.WriteLine",
+              "text": "True",
+              "line": 5
+            },
+            {
+              "channel": "Console.WriteLine",
+              "text": "0",
+              "line": 6
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "int.TryParse \"1\"",
+    "code": "using System;\nclass Program {\nstatic void Main() {\nint n;\nConsole.WriteLine(int.TryParse(\"1\",out n));\nConsole.WriteLine(n);\n}\n}",
+    "app": {
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "Console.WriteLine",
+              "text": "True",
+              "line": 5
+            },
+            {
+              "channel": "Console.WriteLine",
+              "text": "1",
+              "line": 6
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "int.TryParse \"-1\"",
+    "code": "using System;\nclass Program {\nstatic void Main() {\nint n;\nConsole.WriteLine(int.TryParse(\"-1\",out n));\nConsole.WriteLine(n);\n}\n}",
+    "app": {
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "Console.WriteLine",
+              "text": "True",
+              "line": 5
+            },
+            {
+              "channel": "Console.WriteLine",
+              "text": "-1",
+              "line": 6
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "int.TryParse \" 1 \"",
+    "code": "using System;\nclass Program {\nstatic void Main() {\nint n;\nConsole.WriteLine(int.TryParse(\" 1 \",out n));\nConsole.WriteLine(n);\n}\n}",
+    "app": {
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "Console.WriteLine",
+              "text": "True",
+              "line": 5
+            },
+            {
+              "channel": "Console.WriteLine",
+              "text": "1",
+              "line": 6
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "int.TryParse \"2147483648\"",
+    "code": "using System;\nclass Program {\nstatic void Main() {\nint n;\nConsole.WriteLine(int.TryParse(\"2147483648\",out n));\nConsole.WriteLine(n);\n}\n}",
+    "app": {
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "Console.WriteLine",
+              "text": "False",
+              "line": 5
+            },
+            {
+              "channel": "Console.WriteLine",
+              "text": "0",
+              "line": 6
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "int.TryParse \"-2147483649\"",
+    "code": "using System;\nclass Program {\nstatic void Main() {\nint n;\nConsole.WriteLine(int.TryParse(\"-2147483649\",out n));\nConsole.WriteLine(n);\n}\n}",
+    "app": {
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "Console.WriteLine",
+              "text": "False",
+              "line": 5
+            },
+            {
+              "channel": "Console.WriteLine",
+              "text": "0",
+              "line": 6
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "int.TryParse \"1.5\"",
+    "code": "using System;\nclass Program {\nstatic void Main() {\nint n;\nConsole.WriteLine(int.TryParse(\"1.5\",out n));\nConsole.WriteLine(n);\n}\n}",
+    "app": {
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "Console.WriteLine",
+              "text": "False",
+              "line": 5
+            },
+            {
+              "channel": "Console.WriteLine",
+              "text": "0",
+              "line": 6
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "int.TryParse \"0x10\"",
+    "code": "using System;\nclass Program {\nstatic void Main() {\nint n;\nConsole.WriteLine(int.TryParse(\"0x10\",out n));\nConsole.WriteLine(n);\n}\n}",
+    "app": {
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "Console.WriteLine",
+              "text": "False",
+              "line": 5
+            },
+            {
+              "channel": "Console.WriteLine",
+              "text": "0",
+              "line": 6
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "int.TryParse \"NaN\"",
+    "code": "using System;\nclass Program {\nstatic void Main() {\nint n;\nConsole.WriteLine(int.TryParse(\"NaN\",out n));\nConsole.WriteLine(n);\n}\n}",
+    "app": {
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "Console.WriteLine",
+              "text": "False",
+              "line": 5
+            },
+            {
+              "channel": "Console.WriteLine",
+              "text": "0",
+              "line": 6
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "int.TryParse \"Infinity\"",
+    "code": "using System;\nclass Program {\nstatic void Main() {\nint n;\nConsole.WriteLine(int.TryParse(\"Infinity\",out n));\nConsole.WriteLine(n);\n}\n}",
+    "app": {
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "Console.WriteLine",
+              "text": "False",
+              "line": 5
+            },
+            {
+              "channel": "Console.WriteLine",
+              "text": "0",
+              "line": 6
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "int.TryParse \"1e400\"",
+    "code": "using System;\nclass Program {\nstatic void Main() {\nint n;\nConsole.WriteLine(int.TryParse(\"1e400\",out n));\nConsole.WriteLine(n);\n}\n}",
+    "app": {
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "Console.WriteLine",
+              "text": "False",
+              "line": 5
+            },
+            {
+              "channel": "Console.WriteLine",
+              "text": "0",
+              "line": 6
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "int.TryParse \"1,000\"",
+    "code": "using System;\nclass Program {\nstatic void Main() {\nint n;\nConsole.WriteLine(int.TryParse(\"1,000\",out n));\nConsole.WriteLine(n);\n}\n}",
+    "app": {
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "Console.WriteLine",
+              "text": "False",
+              "line": 5
+            },
+            {
+              "channel": "Console.WriteLine",
+              "text": "0",
+              "line": 6
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "double.TryParse \"\"",
+    "code": "using System;\nclass Program {\nstatic void Main() {\ndouble n;\nConsole.WriteLine(double.TryParse(\"\",out n));\nConsole.WriteLine(n);\n}\n}",
+    "app": {
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "Console.WriteLine",
+              "text": "False",
+              "line": 5
+            },
+            {
+              "channel": "Console.WriteLine",
+              "text": "0",
+              "line": 6
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "double.TryParse \"0\"",
+    "code": "using System;\nclass Program {\nstatic void Main() {\ndouble n;\nConsole.WriteLine(double.TryParse(\"0\",out n));\nConsole.WriteLine(n);\n}\n}",
+    "app": {
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "Console.WriteLine",
+              "text": "True",
+              "line": 5
+            },
+            {
+              "channel": "Console.WriteLine",
+              "text": "0",
+              "line": 6
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "double.TryParse \"1\"",
+    "code": "using System;\nclass Program {\nstatic void Main() {\ndouble n;\nConsole.WriteLine(double.TryParse(\"1\",out n));\nConsole.WriteLine(n);\n}\n}",
+    "app": {
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "Console.WriteLine",
+              "text": "True",
+              "line": 5
+            },
+            {
+              "channel": "Console.WriteLine",
+              "text": "1",
+              "line": 6
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "double.TryParse \"-1\"",
+    "code": "using System;\nclass Program {\nstatic void Main() {\ndouble n;\nConsole.WriteLine(double.TryParse(\"-1\",out n));\nConsole.WriteLine(n);\n}\n}",
+    "app": {
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "Console.WriteLine",
+              "text": "True",
+              "line": 5
+            },
+            {
+              "channel": "Console.WriteLine",
+              "text": "-1",
+              "line": 6
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "double.TryParse \" 1 \"",
+    "code": "using System;\nclass Program {\nstatic void Main() {\ndouble n;\nConsole.WriteLine(double.TryParse(\" 1 \",out n));\nConsole.WriteLine(n);\n}\n}",
+    "app": {
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "Console.WriteLine",
+              "text": "True",
+              "line": 5
+            },
+            {
+              "channel": "Console.WriteLine",
+              "text": "1",
+              "line": 6
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "double.TryParse \"2147483648\"",
+    "code": "using System;\nclass Program {\nstatic void Main() {\ndouble n;\nConsole.WriteLine(double.TryParse(\"2147483648\",out n));\nConsole.WriteLine(n);\n}\n}",
+    "app": {
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "Console.WriteLine",
+              "text": "True",
+              "line": 5
+            },
+            {
+              "channel": "Console.WriteLine",
+              "text": "2147483648",
+              "line": 6
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "double.TryParse \"-2147483649\"",
+    "code": "using System;\nclass Program {\nstatic void Main() {\ndouble n;\nConsole.WriteLine(double.TryParse(\"-2147483649\",out n));\nConsole.WriteLine(n);\n}\n}",
+    "app": {
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "Console.WriteLine",
+              "text": "True",
+              "line": 5
+            },
+            {
+              "channel": "Console.WriteLine",
+              "text": "-2147483649",
+              "line": 6
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "double.TryParse \"1.5\"",
+    "code": "using System;\nclass Program {\nstatic void Main() {\ndouble n;\nConsole.WriteLine(double.TryParse(\"1.5\",out n));\nConsole.WriteLine(n);\n}\n}",
+    "app": {
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "Console.WriteLine",
+              "text": "True",
+              "line": 5
+            },
+            {
+              "channel": "Console.WriteLine",
+              "text": "1.5",
+              "line": 6
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "double.TryParse \"0x10\"",
+    "code": "using System;\nclass Program {\nstatic void Main() {\ndouble n;\nConsole.WriteLine(double.TryParse(\"0x10\",out n));\nConsole.WriteLine(n);\n}\n}",
+    "app": {
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "Console.WriteLine",
+              "text": "True",
+              "line": 5
+            },
+            {
+              "channel": "Console.WriteLine",
+              "text": "16",
+              "line": 6
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "double.TryParse \"NaN\"",
+    "code": "using System;\nclass Program {\nstatic void Main() {\ndouble n;\nConsole.WriteLine(double.TryParse(\"NaN\",out n));\nConsole.WriteLine(n);\n}\n}",
+    "app": {
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "Console.WriteLine",
+              "text": "False",
+              "line": 5
+            },
+            {
+              "channel": "Console.WriteLine",
+              "text": "0",
+              "line": 6
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "double.TryParse \"Infinity\"",
+    "code": "using System;\nclass Program {\nstatic void Main() {\ndouble n;\nConsole.WriteLine(double.TryParse(\"Infinity\",out n));\nConsole.WriteLine(n);\n}\n}",
+    "app": {
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "Console.WriteLine",
+              "text": "True",
+              "line": 5
+            },
+            {
+              "channel": "Console.WriteLine",
+              "text": "Infinity",
+              "line": 6
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "double.TryParse \"1e400\"",
+    "code": "using System;\nclass Program {\nstatic void Main() {\ndouble n;\nConsole.WriteLine(double.TryParse(\"1e400\",out n));\nConsole.WriteLine(n);\n}\n}",
+    "app": {
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "Console.WriteLine",
+              "text": "True",
+              "line": 5
+            },
+            {
+              "channel": "Console.WriteLine",
+              "text": "Infinity",
+              "line": 6
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "double.TryParse \"1,000\"",
+    "code": "using System;\nclass Program {\nstatic void Main() {\ndouble n;\nConsole.WriteLine(double.TryParse(\"1,000\",out n));\nConsole.WriteLine(n);\n}\n}",
+    "app": {
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "Console.WriteLine",
+              "text": "False",
+              "line": 5
+            },
+            {
+              "channel": "Console.WriteLine",
+              "text": "0",
+              "line": 6
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "typed null TryParse",
+    "code": "using System;\nclass Program {\nstatic void Main() {\nstring s=null;\nint n;\nConsole.WriteLine(int.TryParse(s,out n));\nConsole.WriteLine(n);\n}\n}",
+    "app": {
+      "paths": [
+        {
+          "error": {
+            "line": 6,
+            "message": "TryParse の第1引数は文字列です",
+            "category": "CompileError"
+          },
+          "outputs": []
+        }
+      ]
+    }
+  },
+  {
+    "name": "empty WriteLine",
+    "code": "using System;\nclass Program {\nstatic void Main() {\nConsole.WriteLine();\n}\n}",
+    "app": {
+      "paths": [
+        {
+          "error": {
+            "line": 4,
+            "message": "Console.WriteLineは1引数のみ対応します",
+            "category": "エラー"
+          },
+          "outputs": []
+        }
+      ]
+    }
+  },
+  {
+    "name": "string Length",
+    "code": "using System;\nclass Program {\nstatic void Main() {\nstring s=\"😀\";\nConsole.WriteLine(s.Length);\n}\n}",
+    "app": {
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "Console.WriteLine",
+              "text": "2",
+              "line": 5
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "null Length",
+    "code": "using System;\nclass Program {\nstatic void Main() {\nstring s=null;\nConsole.WriteLine(s.Length);\n}\n}",
+    "app": {
+      "paths": [
+        {
+          "error": {
+            "line": 5,
+            "message": "null参照です",
+            "category": "NullReferenceException"
+          },
+          "outputs": []
+        }
+      ]
+    }
+  },
+  {
+    "name": "zero array",
+    "code": "using System;\nclass Program {\nstatic void Main() {\nint[] a=new int[0];\nConsole.WriteLine(a.Length);\n}\n}",
+    "app": {
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "Console.WriteLine",
+              "text": "0",
+              "line": 5
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "negative array",
+    "code": "using System;\nclass Program {\nstatic void Main() {\nint[] a=new int[-1];\n}\n}",
+    "app": {
+      "paths": [
+        {
+          "error": {
+            "line": 4,
+            "message": "配列サイズが不正です",
+            "category": "エラー"
+          },
+          "outputs": []
+        }
+      ]
+    }
+  },
+  {
+    "name": "char numeric",
+    "code": "using System;\nclass Program {\nstatic void Main() {\nchar c=(char)65;\nConsole.WriteLine(c);\n}\n}",
+    "app": {
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "Console.WriteLine",
+              "text": "A",
+              "line": 5
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "bool array",
+    "code": "using System;\nclass Program {\nstatic void Main() {\nbool[] a=new bool[1];\nConsole.WriteLine(a[0]);\n}\n}",
+    "app": {
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "Console.WriteLine",
+              "text": "False",
+              "line": 5
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "int over",
+    "code": "using System;\nclass Program {\nstatic void Main() {\nint n=2147483647;\nConsole.WriteLine(n+1);\n}\n}",
+    "app": {
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "Console.WriteLine",
+              "text": "-2147483648",
+              "line": 5
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "checked over",
+    "code": "using System;\nclass Program {\nstatic void Main() {\nchecked { int n=2147483647;\nConsole.WriteLine(n+1); }\n}\n}",
+    "app": {
+      "paths": [
+        {
+          "error": {
+            "line": 5,
+            "message": "整数のオーバーフロー",
+            "category": "OverflowException"
+          },
+          "outputs": []
+        }
+      ]
+    }
+  },
+  {
+    "name": "short variable narrow",
+    "code": "using System;\nclass Program {\nstatic void Main() {\nint n=1;\nshort x=n;\nConsole.WriteLine(x);\n}\n}",
+    "app": {
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "Console.WriteLine",
+              "text": "1",
+              "line": 6
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "byte constant",
+    "code": "using System;\nclass Program {\nstatic void Main() {\nbyte b=255;\nConsole.WriteLine(b);\n}\n}",
+    "app": {
+      "paths": [
+        {
+          "error": {
+            "line": 4,
+            "message": "整数への変換が範囲外です",
+            "category": "OverflowException"
+          },
+          "outputs": []
+        }
+      ]
+    }
+  }
+]

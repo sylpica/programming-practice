@@ -1,0 +1,5127 @@
+[
+  {
+    "name": "arithmetic 0",
+    "code": "set /a \"N=0\"\necho %N%",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "line1\r\nline2\r\n"
+        },
+        {
+          "path": "C:\\Practice\\empty.txt",
+          "type": "file",
+          "content": ""
+        },
+        {
+          "path": "C:\\Practice\\lines.txt",
+          "type": "file",
+          "content": "a\r\nb\r\nc\r\n"
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\logs\\nested.txt",
+          "type": "file",
+          "content": "nested\r\n"
+        }
+      ],
+      "args": [],
+      "errorlevel": 0,
+      "inputs": {
+        "A": [
+          "a",
+          "other"
+        ]
+      }
+    },
+    "app": {
+      "truncated": false,
+      "reasons": [],
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "stdout",
+              "text": "0",
+              "uncertain": false,
+              "raw": false,
+              "line": 2
+            }
+          ],
+          "groups": [
+            {
+              "title": "環境変数",
+              "entries": [
+                [
+                  "N",
+                  "0"
+                ]
+              ]
+            },
+            {
+              "title": "バッチの終了状態",
+              "entries": [
+                [
+                  "ERRORLEVEL",
+                  "0"
+                ],
+                [
+                  "現在フォルダ",
+                  "C:\\Practice"
+                ],
+                [
+                  "コマンド表示",
+                  "off"
+                ],
+                [
+                  "遅延展開",
+                  "無効"
+                ]
+              ]
+            },
+            {
+              "title": "仮想ファイル一覧",
+              "entries": [
+                [
+                  "モデルのツリー",
+                  "[フォルダ] C:\\Practice\n[ファイル] C:\\Practice\\notes.txt\n[ファイル] C:\\Practice\\empty.txt\n[ファイル] C:\\Practice\\lines.txt\n[フォルダ] C:\\Practice\\logs\n[ファイル] C:\\Practice\\logs\\nested.txt"
+                ]
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "arithmetic 1",
+    "code": "set /a \"N=1\"\necho %N%",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "line1\r\nline2\r\n"
+        },
+        {
+          "path": "C:\\Practice\\empty.txt",
+          "type": "file",
+          "content": ""
+        },
+        {
+          "path": "C:\\Practice\\lines.txt",
+          "type": "file",
+          "content": "a\r\nb\r\nc\r\n"
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\logs\\nested.txt",
+          "type": "file",
+          "content": "nested\r\n"
+        }
+      ],
+      "args": [],
+      "errorlevel": 0,
+      "inputs": {
+        "A": [
+          "a",
+          "other"
+        ]
+      }
+    },
+    "app": {
+      "truncated": false,
+      "reasons": [],
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "stdout",
+              "text": "1",
+              "uncertain": false,
+              "raw": false,
+              "line": 2
+            }
+          ],
+          "groups": [
+            {
+              "title": "環境変数",
+              "entries": [
+                [
+                  "N",
+                  "1"
+                ]
+              ]
+            },
+            {
+              "title": "バッチの終了状態",
+              "entries": [
+                [
+                  "ERRORLEVEL",
+                  "0"
+                ],
+                [
+                  "現在フォルダ",
+                  "C:\\Practice"
+                ],
+                [
+                  "コマンド表示",
+                  "off"
+                ],
+                [
+                  "遅延展開",
+                  "無効"
+                ]
+              ]
+            },
+            {
+              "title": "仮想ファイル一覧",
+              "entries": [
+                [
+                  "モデルのツリー",
+                  "[フォルダ] C:\\Practice\n[ファイル] C:\\Practice\\notes.txt\n[ファイル] C:\\Practice\\empty.txt\n[ファイル] C:\\Practice\\lines.txt\n[フォルダ] C:\\Practice\\logs\n[ファイル] C:\\Practice\\logs\\nested.txt"
+                ]
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "arithmetic -1",
+    "code": "set /a \"N=-1\"\necho %N%",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "line1\r\nline2\r\n"
+        },
+        {
+          "path": "C:\\Practice\\empty.txt",
+          "type": "file",
+          "content": ""
+        },
+        {
+          "path": "C:\\Practice\\lines.txt",
+          "type": "file",
+          "content": "a\r\nb\r\nc\r\n"
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\logs\\nested.txt",
+          "type": "file",
+          "content": "nested\r\n"
+        }
+      ],
+      "args": [],
+      "errorlevel": 0,
+      "inputs": {
+        "A": [
+          "a",
+          "other"
+        ]
+      }
+    },
+    "app": {
+      "truncated": false,
+      "reasons": [],
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "stdout",
+              "text": "-1",
+              "uncertain": false,
+              "raw": false,
+              "line": 2
+            }
+          ],
+          "groups": [
+            {
+              "title": "環境変数",
+              "entries": [
+                [
+                  "N",
+                  "-1"
+                ]
+              ]
+            },
+            {
+              "title": "バッチの終了状態",
+              "entries": [
+                [
+                  "ERRORLEVEL",
+                  "0"
+                ],
+                [
+                  "現在フォルダ",
+                  "C:\\Practice"
+                ],
+                [
+                  "コマンド表示",
+                  "off"
+                ],
+                [
+                  "遅延展開",
+                  "無効"
+                ]
+              ]
+            },
+            {
+              "title": "仮想ファイル一覧",
+              "entries": [
+                [
+                  "モデルのツリー",
+                  "[フォルダ] C:\\Practice\n[ファイル] C:\\Practice\\notes.txt\n[ファイル] C:\\Practice\\empty.txt\n[ファイル] C:\\Practice\\lines.txt\n[フォルダ] C:\\Practice\\logs\n[ファイル] C:\\Practice\\logs\\nested.txt"
+                ]
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "arithmetic 2147483647+1",
+    "code": "set /a \"N=2147483647+1\"\necho %N%",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "line1\r\nline2\r\n"
+        },
+        {
+          "path": "C:\\Practice\\empty.txt",
+          "type": "file",
+          "content": ""
+        },
+        {
+          "path": "C:\\Practice\\lines.txt",
+          "type": "file",
+          "content": "a\r\nb\r\nc\r\n"
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\logs\\nested.txt",
+          "type": "file",
+          "content": "nested\r\n"
+        }
+      ],
+      "args": [],
+      "errorlevel": 0,
+      "inputs": {
+        "A": [
+          "a",
+          "other"
+        ]
+      }
+    },
+    "app": {
+      "truncated": false,
+      "reasons": [],
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "stdout",
+              "text": "-2147483648",
+              "uncertain": false,
+              "raw": false,
+              "line": 2
+            }
+          ],
+          "groups": [
+            {
+              "title": "環境変数",
+              "entries": [
+                [
+                  "N",
+                  "-2147483648"
+                ]
+              ]
+            },
+            {
+              "title": "バッチの終了状態",
+              "entries": [
+                [
+                  "ERRORLEVEL",
+                  "0"
+                ],
+                [
+                  "現在フォルダ",
+                  "C:\\Practice"
+                ],
+                [
+                  "コマンド表示",
+                  "off"
+                ],
+                [
+                  "遅延展開",
+                  "無効"
+                ]
+              ]
+            },
+            {
+              "title": "仮想ファイル一覧",
+              "entries": [
+                [
+                  "モデルのツリー",
+                  "[フォルダ] C:\\Practice\n[ファイル] C:\\Practice\\notes.txt\n[ファイル] C:\\Practice\\empty.txt\n[ファイル] C:\\Practice\\lines.txt\n[フォルダ] C:\\Practice\\logs\n[ファイル] C:\\Practice\\logs\\nested.txt"
+                ]
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "arithmetic 0xFFFFFFFF",
+    "code": "set /a \"N=0xFFFFFFFF\"\necho %N%",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "line1\r\nline2\r\n"
+        },
+        {
+          "path": "C:\\Practice\\empty.txt",
+          "type": "file",
+          "content": ""
+        },
+        {
+          "path": "C:\\Practice\\lines.txt",
+          "type": "file",
+          "content": "a\r\nb\r\nc\r\n"
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\logs\\nested.txt",
+          "type": "file",
+          "content": "nested\r\n"
+        }
+      ],
+      "args": [],
+      "errorlevel": 0,
+      "inputs": {
+        "A": [
+          "a",
+          "other"
+        ]
+      }
+    },
+    "app": {
+      "truncated": false,
+      "reasons": [],
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "stdout",
+              "text": "-1",
+              "uncertain": false,
+              "raw": false,
+              "line": 2
+            }
+          ],
+          "groups": [
+            {
+              "title": "環境変数",
+              "entries": [
+                [
+                  "N",
+                  "-1"
+                ]
+              ]
+            },
+            {
+              "title": "バッチの終了状態",
+              "entries": [
+                [
+                  "ERRORLEVEL",
+                  "0"
+                ],
+                [
+                  "現在フォルダ",
+                  "C:\\Practice"
+                ],
+                [
+                  "コマンド表示",
+                  "off"
+                ],
+                [
+                  "遅延展開",
+                  "無効"
+                ]
+              ]
+            },
+            {
+              "title": "仮想ファイル一覧",
+              "entries": [
+                [
+                  "モデルのツリー",
+                  "[フォルダ] C:\\Practice\n[ファイル] C:\\Practice\\notes.txt\n[ファイル] C:\\Practice\\empty.txt\n[ファイル] C:\\Practice\\lines.txt\n[フォルダ] C:\\Practice\\logs\n[ファイル] C:\\Practice\\logs\\nested.txt"
+                ]
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "arithmetic 010",
+    "code": "set /a \"N=010\"\necho %N%",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "line1\r\nline2\r\n"
+        },
+        {
+          "path": "C:\\Practice\\empty.txt",
+          "type": "file",
+          "content": ""
+        },
+        {
+          "path": "C:\\Practice\\lines.txt",
+          "type": "file",
+          "content": "a\r\nb\r\nc\r\n"
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\logs\\nested.txt",
+          "type": "file",
+          "content": "nested\r\n"
+        }
+      ],
+      "args": [],
+      "errorlevel": 0,
+      "inputs": {
+        "A": [
+          "a",
+          "other"
+        ]
+      }
+    },
+    "app": {
+      "truncated": false,
+      "reasons": [],
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "stdout",
+              "text": "8",
+              "uncertain": false,
+              "raw": false,
+              "line": 2
+            }
+          ],
+          "groups": [
+            {
+              "title": "環境変数",
+              "entries": [
+                [
+                  "N",
+                  "8"
+                ]
+              ]
+            },
+            {
+              "title": "バッチの終了状態",
+              "entries": [
+                [
+                  "ERRORLEVEL",
+                  "0"
+                ],
+                [
+                  "現在フォルダ",
+                  "C:\\Practice"
+                ],
+                [
+                  "コマンド表示",
+                  "off"
+                ],
+                [
+                  "遅延展開",
+                  "無効"
+                ]
+              ]
+            },
+            {
+              "title": "仮想ファイル一覧",
+              "entries": [
+                [
+                  "モデルのツリー",
+                  "[フォルダ] C:\\Practice\n[ファイル] C:\\Practice\\notes.txt\n[ファイル] C:\\Practice\\empty.txt\n[ファイル] C:\\Practice\\lines.txt\n[フォルダ] C:\\Practice\\logs\n[ファイル] C:\\Practice\\logs\\nested.txt"
+                ]
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "arithmetic 7%%3",
+    "code": "set /a \"N=7%%3\"\necho %N%",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "line1\r\nline2\r\n"
+        },
+        {
+          "path": "C:\\Practice\\empty.txt",
+          "type": "file",
+          "content": ""
+        },
+        {
+          "path": "C:\\Practice\\lines.txt",
+          "type": "file",
+          "content": "a\r\nb\r\nc\r\n"
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\logs\\nested.txt",
+          "type": "file",
+          "content": "nested\r\n"
+        }
+      ],
+      "args": [],
+      "errorlevel": 0,
+      "inputs": {
+        "A": [
+          "a",
+          "other"
+        ]
+      }
+    },
+    "app": {
+      "truncated": false,
+      "reasons": [],
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "stdout",
+              "text": "1",
+              "uncertain": false,
+              "raw": false,
+              "line": 2
+            }
+          ],
+          "groups": [
+            {
+              "title": "環境変数",
+              "entries": [
+                [
+                  "N",
+                  "1"
+                ]
+              ]
+            },
+            {
+              "title": "バッチの終了状態",
+              "entries": [
+                [
+                  "ERRORLEVEL",
+                  "0"
+                ],
+                [
+                  "現在フォルダ",
+                  "C:\\Practice"
+                ],
+                [
+                  "コマンド表示",
+                  "off"
+                ],
+                [
+                  "遅延展開",
+                  "無効"
+                ]
+              ]
+            },
+            {
+              "title": "仮想ファイル一覧",
+              "entries": [
+                [
+                  "モデルのツリー",
+                  "[フォルダ] C:\\Practice\n[ファイル] C:\\Practice\\notes.txt\n[ファイル] C:\\Practice\\empty.txt\n[ファイル] C:\\Practice\\lines.txt\n[フォルダ] C:\\Practice\\logs\n[ファイル] C:\\Practice\\logs\\nested.txt"
+                ]
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "arithmetic -7/3",
+    "code": "set /a \"N=-7/3\"\necho %N%",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "line1\r\nline2\r\n"
+        },
+        {
+          "path": "C:\\Practice\\empty.txt",
+          "type": "file",
+          "content": ""
+        },
+        {
+          "path": "C:\\Practice\\lines.txt",
+          "type": "file",
+          "content": "a\r\nb\r\nc\r\n"
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\logs\\nested.txt",
+          "type": "file",
+          "content": "nested\r\n"
+        }
+      ],
+      "args": [],
+      "errorlevel": 0,
+      "inputs": {
+        "A": [
+          "a",
+          "other"
+        ]
+      }
+    },
+    "app": {
+      "truncated": false,
+      "reasons": [],
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "stdout",
+              "text": "-2",
+              "uncertain": false,
+              "raw": false,
+              "line": 2
+            }
+          ],
+          "groups": [
+            {
+              "title": "環境変数",
+              "entries": [
+                [
+                  "N",
+                  "-2"
+                ]
+              ]
+            },
+            {
+              "title": "バッチの終了状態",
+              "entries": [
+                [
+                  "ERRORLEVEL",
+                  "0"
+                ],
+                [
+                  "現在フォルダ",
+                  "C:\\Practice"
+                ],
+                [
+                  "コマンド表示",
+                  "off"
+                ],
+                [
+                  "遅延展開",
+                  "無効"
+                ]
+              ]
+            },
+            {
+              "title": "仮想ファイル一覧",
+              "entries": [
+                [
+                  "モデルのツリー",
+                  "[フォルダ] C:\\Practice\n[ファイル] C:\\Practice\\notes.txt\n[ファイル] C:\\Practice\\empty.txt\n[ファイル] C:\\Practice\\lines.txt\n[フォルダ] C:\\Practice\\logs\n[ファイル] C:\\Practice\\logs\\nested.txt"
+                ]
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "arithmetic -7%%3",
+    "code": "set /a \"N=-7%%3\"\necho %N%",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "line1\r\nline2\r\n"
+        },
+        {
+          "path": "C:\\Practice\\empty.txt",
+          "type": "file",
+          "content": ""
+        },
+        {
+          "path": "C:\\Practice\\lines.txt",
+          "type": "file",
+          "content": "a\r\nb\r\nc\r\n"
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\logs\\nested.txt",
+          "type": "file",
+          "content": "nested\r\n"
+        }
+      ],
+      "args": [],
+      "errorlevel": 0,
+      "inputs": {
+        "A": [
+          "a",
+          "other"
+        ]
+      }
+    },
+    "app": {
+      "truncated": false,
+      "reasons": [],
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "stdout",
+              "text": "-1",
+              "uncertain": false,
+              "raw": false,
+              "line": 2
+            }
+          ],
+          "groups": [
+            {
+              "title": "環境変数",
+              "entries": [
+                [
+                  "N",
+                  "-1"
+                ]
+              ]
+            },
+            {
+              "title": "バッチの終了状態",
+              "entries": [
+                [
+                  "ERRORLEVEL",
+                  "0"
+                ],
+                [
+                  "現在フォルダ",
+                  "C:\\Practice"
+                ],
+                [
+                  "コマンド表示",
+                  "off"
+                ],
+                [
+                  "遅延展開",
+                  "無効"
+                ]
+              ]
+            },
+            {
+              "title": "仮想ファイル一覧",
+              "entries": [
+                [
+                  "モデルのツリー",
+                  "[フォルダ] C:\\Practice\n[ファイル] C:\\Practice\\notes.txt\n[ファイル] C:\\Practice\\empty.txt\n[ファイル] C:\\Practice\\lines.txt\n[フォルダ] C:\\Practice\\logs\n[ファイル] C:\\Practice\\logs\\nested.txt"
+                ]
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "arithmetic 1<<31",
+    "code": "set /a \"N=1<<31\"\necho %N%",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "line1\r\nline2\r\n"
+        },
+        {
+          "path": "C:\\Practice\\empty.txt",
+          "type": "file",
+          "content": ""
+        },
+        {
+          "path": "C:\\Practice\\lines.txt",
+          "type": "file",
+          "content": "a\r\nb\r\nc\r\n"
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\logs\\nested.txt",
+          "type": "file",
+          "content": "nested\r\n"
+        }
+      ],
+      "args": [],
+      "errorlevel": 0,
+      "inputs": {
+        "A": [
+          "a",
+          "other"
+        ]
+      }
+    },
+    "app": {
+      "truncated": false,
+      "reasons": [],
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "stdout",
+              "text": "-2147483648",
+              "uncertain": false,
+              "raw": false,
+              "line": 2
+            }
+          ],
+          "groups": [
+            {
+              "title": "環境変数",
+              "entries": [
+                [
+                  "N",
+                  "-2147483648"
+                ]
+              ]
+            },
+            {
+              "title": "バッチの終了状態",
+              "entries": [
+                [
+                  "ERRORLEVEL",
+                  "0"
+                ],
+                [
+                  "現在フォルダ",
+                  "C:\\Practice"
+                ],
+                [
+                  "コマンド表示",
+                  "off"
+                ],
+                [
+                  "遅延展開",
+                  "無効"
+                ]
+              ]
+            },
+            {
+              "title": "仮想ファイル一覧",
+              "entries": [
+                [
+                  "モデルのツリー",
+                  "[フォルダ] C:\\Practice\n[ファイル] C:\\Practice\\notes.txt\n[ファイル] C:\\Practice\\empty.txt\n[ファイル] C:\\Practice\\lines.txt\n[フォルダ] C:\\Practice\\logs\n[ファイル] C:\\Practice\\logs\\nested.txt"
+                ]
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "arithmetic -1>>1",
+    "code": "set /a \"N=-1>>1\"\necho %N%",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "line1\r\nline2\r\n"
+        },
+        {
+          "path": "C:\\Practice\\empty.txt",
+          "type": "file",
+          "content": ""
+        },
+        {
+          "path": "C:\\Practice\\lines.txt",
+          "type": "file",
+          "content": "a\r\nb\r\nc\r\n"
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\logs\\nested.txt",
+          "type": "file",
+          "content": "nested\r\n"
+        }
+      ],
+      "args": [],
+      "errorlevel": 0,
+      "inputs": {
+        "A": [
+          "a",
+          "other"
+        ]
+      }
+    },
+    "app": {
+      "truncated": false,
+      "reasons": [],
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "stdout",
+              "text": "-1",
+              "uncertain": false,
+              "raw": false,
+              "line": 2
+            }
+          ],
+          "groups": [
+            {
+              "title": "環境変数",
+              "entries": [
+                [
+                  "N",
+                  "-1"
+                ]
+              ]
+            },
+            {
+              "title": "バッチの終了状態",
+              "entries": [
+                [
+                  "ERRORLEVEL",
+                  "0"
+                ],
+                [
+                  "現在フォルダ",
+                  "C:\\Practice"
+                ],
+                [
+                  "コマンド表示",
+                  "off"
+                ],
+                [
+                  "遅延展開",
+                  "無効"
+                ]
+              ]
+            },
+            {
+              "title": "仮想ファイル一覧",
+              "entries": [
+                [
+                  "モデルのツリー",
+                  "[フォルダ] C:\\Practice\n[ファイル] C:\\Practice\\notes.txt\n[ファイル] C:\\Practice\\empty.txt\n[ファイル] C:\\Practice\\lines.txt\n[フォルダ] C:\\Practice\\logs\n[ファイル] C:\\Practice\\logs\\nested.txt"
+                ]
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "arithmetic !0",
+    "code": "set /a \"N=!0\"\necho %N%",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "line1\r\nline2\r\n"
+        },
+        {
+          "path": "C:\\Practice\\empty.txt",
+          "type": "file",
+          "content": ""
+        },
+        {
+          "path": "C:\\Practice\\lines.txt",
+          "type": "file",
+          "content": "a\r\nb\r\nc\r\n"
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\logs\\nested.txt",
+          "type": "file",
+          "content": "nested\r\n"
+        }
+      ],
+      "args": [],
+      "errorlevel": 0,
+      "inputs": {
+        "A": [
+          "a",
+          "other"
+        ]
+      }
+    },
+    "app": {
+      "truncated": false,
+      "reasons": [],
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "stdout",
+              "text": "1",
+              "uncertain": false,
+              "raw": false,
+              "line": 2
+            }
+          ],
+          "groups": [
+            {
+              "title": "環境変数",
+              "entries": [
+                [
+                  "N",
+                  "1"
+                ]
+              ]
+            },
+            {
+              "title": "バッチの終了状態",
+              "entries": [
+                [
+                  "ERRORLEVEL",
+                  "0"
+                ],
+                [
+                  "現在フォルダ",
+                  "C:\\Practice"
+                ],
+                [
+                  "コマンド表示",
+                  "off"
+                ],
+                [
+                  "遅延展開",
+                  "無効"
+                ]
+              ]
+            },
+            {
+              "title": "仮想ファイル一覧",
+              "entries": [
+                [
+                  "モデルのツリー",
+                  "[フォルダ] C:\\Practice\n[ファイル] C:\\Practice\\notes.txt\n[ファイル] C:\\Practice\\empty.txt\n[ファイル] C:\\Practice\\lines.txt\n[フォルダ] C:\\Practice\\logs\n[ファイル] C:\\Practice\\logs\\nested.txt"
+                ]
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "arithmetic ~0",
+    "code": "set /a \"N=~0\"\necho %N%",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "line1\r\nline2\r\n"
+        },
+        {
+          "path": "C:\\Practice\\empty.txt",
+          "type": "file",
+          "content": ""
+        },
+        {
+          "path": "C:\\Practice\\lines.txt",
+          "type": "file",
+          "content": "a\r\nb\r\nc\r\n"
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\logs\\nested.txt",
+          "type": "file",
+          "content": "nested\r\n"
+        }
+      ],
+      "args": [],
+      "errorlevel": 0,
+      "inputs": {
+        "A": [
+          "a",
+          "other"
+        ]
+      }
+    },
+    "app": {
+      "truncated": false,
+      "reasons": [],
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "stdout",
+              "text": "-1",
+              "uncertain": false,
+              "raw": false,
+              "line": 2
+            }
+          ],
+          "groups": [
+            {
+              "title": "環境変数",
+              "entries": [
+                [
+                  "N",
+                  "-1"
+                ]
+              ]
+            },
+            {
+              "title": "バッチの終了状態",
+              "entries": [
+                [
+                  "ERRORLEVEL",
+                  "0"
+                ],
+                [
+                  "現在フォルダ",
+                  "C:\\Practice"
+                ],
+                [
+                  "コマンド表示",
+                  "off"
+                ],
+                [
+                  "遅延展開",
+                  "無効"
+                ]
+              ]
+            },
+            {
+              "title": "仮想ファイル一覧",
+              "entries": [
+                [
+                  "モデルのツリー",
+                  "[フォルダ] C:\\Practice\n[ファイル] C:\\Practice\\notes.txt\n[ファイル] C:\\Practice\\empty.txt\n[ファイル] C:\\Practice\\lines.txt\n[フォルダ] C:\\Practice\\logs\n[ファイル] C:\\Practice\\logs\\nested.txt"
+                ]
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "arithmetic N=2,N+=3",
+    "code": "set /a \"N=N=2,N+=3\"\necho %N%",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "line1\r\nline2\r\n"
+        },
+        {
+          "path": "C:\\Practice\\empty.txt",
+          "type": "file",
+          "content": ""
+        },
+        {
+          "path": "C:\\Practice\\lines.txt",
+          "type": "file",
+          "content": "a\r\nb\r\nc\r\n"
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\logs\\nested.txt",
+          "type": "file",
+          "content": "nested\r\n"
+        }
+      ],
+      "args": [],
+      "errorlevel": 0,
+      "inputs": {
+        "A": [
+          "a",
+          "other"
+        ]
+      }
+    },
+    "app": {
+      "truncated": false,
+      "reasons": [],
+      "paths": [
+        {
+          "error": {
+            "line": 1,
+            "message": "未対応：set /a の演算子／代入形式 =",
+            "category": "未対応"
+          },
+          "outputs": [],
+          "groups": [
+            {
+              "title": "環境変数",
+              "entries": [
+                [
+                  "N",
+                  "0"
+                ]
+              ]
+            },
+            {
+              "title": "バッチの終了状態",
+              "entries": [
+                [
+                  "ERRORLEVEL",
+                  "0"
+                ],
+                [
+                  "現在フォルダ",
+                  "C:\\Practice"
+                ],
+                [
+                  "コマンド表示",
+                  "off"
+                ],
+                [
+                  "遅延展開",
+                  "無効"
+                ]
+              ]
+            },
+            {
+              "title": "仮想ファイル一覧",
+              "entries": [
+                [
+                  "モデルのツリー",
+                  "[フォルダ] C:\\Practice\n[ファイル] C:\\Practice\\notes.txt\n[ファイル] C:\\Practice\\empty.txt\n[ファイル] C:\\Practice\\lines.txt\n[フォルダ] C:\\Practice\\logs\n[ファイル] C:\\Practice\\logs\\nested.txt"
+                ]
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "arithmetic A=B=2",
+    "code": "set /a \"N=A=B=2\"\necho %N%",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "line1\r\nline2\r\n"
+        },
+        {
+          "path": "C:\\Practice\\empty.txt",
+          "type": "file",
+          "content": ""
+        },
+        {
+          "path": "C:\\Practice\\lines.txt",
+          "type": "file",
+          "content": "a\r\nb\r\nc\r\n"
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\logs\\nested.txt",
+          "type": "file",
+          "content": "nested\r\n"
+        }
+      ],
+      "args": [],
+      "errorlevel": 0,
+      "inputs": {
+        "A": [
+          "a",
+          "other"
+        ]
+      }
+    },
+    "app": {
+      "truncated": false,
+      "reasons": [],
+      "paths": [
+        {
+          "error": {
+            "line": 1,
+            "message": "未対応：set /a の演算子／代入形式 =",
+            "category": "未対応"
+          },
+          "outputs": [],
+          "groups": [
+            {
+              "title": "環境変数",
+              "entries": [
+                [
+                  "N",
+                  "0"
+                ]
+              ]
+            },
+            {
+              "title": "バッチの終了状態",
+              "entries": [
+                [
+                  "ERRORLEVEL",
+                  "0"
+                ],
+                [
+                  "現在フォルダ",
+                  "C:\\Practice"
+                ],
+                [
+                  "コマンド表示",
+                  "off"
+                ],
+                [
+                  "遅延展開",
+                  "無効"
+                ]
+              ]
+            },
+            {
+              "title": "仮想ファイル一覧",
+              "entries": [
+                [
+                  "モデルのツリー",
+                  "[フォルダ] C:\\Practice\n[ファイル] C:\\Practice\\notes.txt\n[ファイル] C:\\Practice\\empty.txt\n[ファイル] C:\\Practice\\lines.txt\n[フォルダ] C:\\Practice\\logs\n[ファイル] C:\\Practice\\logs\\nested.txt"
+                ]
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "echo.",
+    "code": "echo.\necho \"\"",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "line1\r\nline2\r\n"
+        },
+        {
+          "path": "C:\\Practice\\empty.txt",
+          "type": "file",
+          "content": ""
+        },
+        {
+          "path": "C:\\Practice\\lines.txt",
+          "type": "file",
+          "content": "a\r\nb\r\nc\r\n"
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\logs\\nested.txt",
+          "type": "file",
+          "content": "nested\r\n"
+        }
+      ],
+      "args": [],
+      "errorlevel": 0,
+      "inputs": {
+        "A": [
+          "a",
+          "other"
+        ]
+      }
+    },
+    "app": {
+      "truncated": false,
+      "reasons": [],
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "stdout",
+              "text": "",
+              "uncertain": false,
+              "raw": false,
+              "line": 1
+            },
+            {
+              "channel": "stdout",
+              "text": "\"\"",
+              "uncertain": false,
+              "raw": false,
+              "line": 2
+            }
+          ],
+          "groups": [
+            {
+              "title": "環境変数",
+              "entries": []
+            },
+            {
+              "title": "バッチの終了状態",
+              "entries": [
+                [
+                  "ERRORLEVEL",
+                  "0"
+                ],
+                [
+                  "現在フォルダ",
+                  "C:\\Practice"
+                ],
+                [
+                  "コマンド表示",
+                  "off"
+                ],
+                [
+                  "遅延展開",
+                  "無効"
+                ]
+              ]
+            },
+            {
+              "title": "仮想ファイル一覧",
+              "entries": [
+                [
+                  "モデルのツリー",
+                  "[フォルダ] C:\\Practice\n[ファイル] C:\\Practice\\notes.txt\n[ファイル] C:\\Practice\\empty.txt\n[ファイル] C:\\Practice\\lines.txt\n[フォルダ] C:\\Practice\\logs\n[ファイル] C:\\Practice\\logs\\nested.txt"
+                ]
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "set X=before",
+    "code": "set X=before\nsetlocal\nset X=inside\nendlocal\necho %X%",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "line1\r\nline2\r\n"
+        },
+        {
+          "path": "C:\\Practice\\empty.txt",
+          "type": "file",
+          "content": ""
+        },
+        {
+          "path": "C:\\Practice\\lines.txt",
+          "type": "file",
+          "content": "a\r\nb\r\nc\r\n"
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\logs\\nested.txt",
+          "type": "file",
+          "content": "nested\r\n"
+        }
+      ],
+      "args": [],
+      "errorlevel": 0,
+      "inputs": {
+        "A": [
+          "a",
+          "other"
+        ]
+      }
+    },
+    "app": {
+      "truncated": false,
+      "reasons": [],
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "stdout",
+              "text": "before",
+              "uncertain": false,
+              "raw": false,
+              "line": 5
+            }
+          ],
+          "groups": [
+            {
+              "title": "環境変数",
+              "entries": [
+                [
+                  "X",
+                  "before"
+                ]
+              ]
+            },
+            {
+              "title": "バッチの終了状態",
+              "entries": [
+                [
+                  "ERRORLEVEL",
+                  "1"
+                ],
+                [
+                  "現在フォルダ",
+                  "C:\\Practice"
+                ],
+                [
+                  "コマンド表示",
+                  "off"
+                ],
+                [
+                  "遅延展開",
+                  "無効"
+                ]
+              ]
+            },
+            {
+              "title": "仮想ファイル一覧",
+              "entries": [
+                [
+                  "モデルのツリー",
+                  "[フォルダ] C:\\Practice\n[ファイル] C:\\Practice\\notes.txt\n[ファイル] C:\\Practice\\empty.txt\n[ファイル] C:\\Practice\\lines.txt\n[フォルダ] C:\\Practice\\logs\n[ファイル] C:\\Practice\\logs\\nested.txt"
+                ]
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "setlocal EnableDelayedExpansion",
+    "code": "setlocal EnableDelayedExpansion\nfor /L %%i in (1,1,2) do echo !ERRORLEVEL! %%i",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "line1\r\nline2\r\n"
+        },
+        {
+          "path": "C:\\Practice\\empty.txt",
+          "type": "file",
+          "content": ""
+        },
+        {
+          "path": "C:\\Practice\\lines.txt",
+          "type": "file",
+          "content": "a\r\nb\r\nc\r\n"
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\logs\\nested.txt",
+          "type": "file",
+          "content": "nested\r\n"
+        }
+      ],
+      "args": [],
+      "errorlevel": 0,
+      "inputs": {
+        "A": [
+          "a",
+          "other"
+        ]
+      }
+    },
+    "app": {
+      "truncated": false,
+      "reasons": [],
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "stdout",
+              "text": "0 1",
+              "uncertain": false,
+              "raw": false,
+              "line": 2
+            },
+            {
+              "channel": "stdout",
+              "text": "0 2",
+              "uncertain": false,
+              "raw": false,
+              "line": 2
+            }
+          ],
+          "groups": [
+            {
+              "title": "環境変数",
+              "entries": []
+            },
+            {
+              "title": "バッチの終了状態",
+              "entries": [
+                [
+                  "ERRORLEVEL",
+                  "0"
+                ],
+                [
+                  "現在フォルダ",
+                  "C:\\Practice"
+                ],
+                [
+                  "コマンド表示",
+                  "off"
+                ],
+                [
+                  "遅延展開",
+                  "無効"
+                ]
+              ]
+            },
+            {
+              "title": "仮想ファイル一覧",
+              "entries": [
+                [
+                  "モデルのツリー",
+                  "[フォルダ] C:\\Practice\n[ファイル] C:\\Practice\\notes.txt\n[ファイル] C:\\Practice\\empty.txt\n[ファイル] C:\\Practice\\lines.txt\n[フォルダ] C:\\Practice\\logs\n[ファイル] C:\\Practice\\logs\\nested.txt"
+                ]
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "set X=1",
+    "code": "set X=1\nset X=\nif defined X (echo yes) else (echo no)",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "line1\r\nline2\r\n"
+        },
+        {
+          "path": "C:\\Practice\\empty.txt",
+          "type": "file",
+          "content": ""
+        },
+        {
+          "path": "C:\\Practice\\lines.txt",
+          "type": "file",
+          "content": "a\r\nb\r\nc\r\n"
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\logs\\nested.txt",
+          "type": "file",
+          "content": "nested\r\n"
+        }
+      ],
+      "args": [],
+      "errorlevel": 0,
+      "inputs": {
+        "A": [
+          "a",
+          "other"
+        ]
+      }
+    },
+    "app": {
+      "truncated": false,
+      "reasons": [],
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "stdout",
+              "text": "no",
+              "uncertain": false,
+              "raw": false,
+              "line": 3
+            }
+          ],
+          "groups": [
+            {
+              "title": "環境変数",
+              "entries": []
+            },
+            {
+              "title": "バッチの終了状態",
+              "entries": [
+                [
+                  "ERRORLEVEL",
+                  "0"
+                ],
+                [
+                  "現在フォルダ",
+                  "C:\\Practice"
+                ],
+                [
+                  "コマンド表示",
+                  "off"
+                ],
+                [
+                  "遅延展開",
+                  "無効"
+                ]
+              ]
+            },
+            {
+              "title": "仮想ファイル一覧",
+              "entries": [
+                [
+                  "モデルのツリー",
+                  "[フォルダ] C:\\Practice\n[ファイル] C:\\Practice\\notes.txt\n[ファイル] C:\\Practice\\empty.txt\n[ファイル] C:\\Practice\\lines.txt\n[フォルダ] C:\\Practice\\logs\n[ファイル] C:\\Practice\\logs\\nested.txt"
+                ]
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "if exist notes.txt (echo yes) else (echo no)",
+    "code": "if exist notes.txt (echo yes) else (echo no)",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "line1\r\nline2\r\n"
+        },
+        {
+          "path": "C:\\Practice\\empty.txt",
+          "type": "file",
+          "content": ""
+        },
+        {
+          "path": "C:\\Practice\\lines.txt",
+          "type": "file",
+          "content": "a\r\nb\r\nc\r\n"
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\logs\\nested.txt",
+          "type": "file",
+          "content": "nested\r\n"
+        }
+      ],
+      "args": [],
+      "errorlevel": 0,
+      "inputs": {
+        "A": [
+          "a",
+          "other"
+        ]
+      }
+    },
+    "app": {
+      "truncated": false,
+      "reasons": [],
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "stdout",
+              "text": "yes",
+              "uncertain": false,
+              "raw": false,
+              "line": 1
+            }
+          ],
+          "groups": [
+            {
+              "title": "環境変数",
+              "entries": []
+            },
+            {
+              "title": "バッチの終了状態",
+              "entries": [
+                [
+                  "ERRORLEVEL",
+                  "0"
+                ],
+                [
+                  "現在フォルダ",
+                  "C:\\Practice"
+                ],
+                [
+                  "コマンド表示",
+                  "off"
+                ],
+                [
+                  "遅延展開",
+                  "無効"
+                ]
+              ]
+            },
+            {
+              "title": "仮想ファイル一覧",
+              "entries": [
+                [
+                  "モデルのツリー",
+                  "[フォルダ] C:\\Practice\n[ファイル] C:\\Practice\\notes.txt\n[ファイル] C:\\Practice\\empty.txt\n[ファイル] C:\\Practice\\lines.txt\n[フォルダ] C:\\Practice\\logs\n[ファイル] C:\\Practice\\logs\\nested.txt"
+                ]
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "if exist logs (echo yes) else (echo no)",
+    "code": "if exist logs (echo yes) else (echo no)",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "line1\r\nline2\r\n"
+        },
+        {
+          "path": "C:\\Practice\\empty.txt",
+          "type": "file",
+          "content": ""
+        },
+        {
+          "path": "C:\\Practice\\lines.txt",
+          "type": "file",
+          "content": "a\r\nb\r\nc\r\n"
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\logs\\nested.txt",
+          "type": "file",
+          "content": "nested\r\n"
+        }
+      ],
+      "args": [],
+      "errorlevel": 0,
+      "inputs": {
+        "A": [
+          "a",
+          "other"
+        ]
+      }
+    },
+    "app": {
+      "truncated": false,
+      "reasons": [],
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "stdout",
+              "text": "yes",
+              "uncertain": false,
+              "raw": false,
+              "line": 1
+            }
+          ],
+          "groups": [
+            {
+              "title": "環境変数",
+              "entries": []
+            },
+            {
+              "title": "バッチの終了状態",
+              "entries": [
+                [
+                  "ERRORLEVEL",
+                  "0"
+                ],
+                [
+                  "現在フォルダ",
+                  "C:\\Practice"
+                ],
+                [
+                  "コマンド表示",
+                  "off"
+                ],
+                [
+                  "遅延展開",
+                  "無効"
+                ]
+              ]
+            },
+            {
+              "title": "仮想ファイル一覧",
+              "entries": [
+                [
+                  "モデルのツリー",
+                  "[フォルダ] C:\\Practice\n[ファイル] C:\\Practice\\notes.txt\n[ファイル] C:\\Practice\\empty.txt\n[ファイル] C:\\Practice\\lines.txt\n[フォルダ] C:\\Practice\\logs\n[ファイル] C:\\Practice\\logs\\nested.txt"
+                ]
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "if not exist missing (echo yes) else (echo no)",
+    "code": "if not exist missing (echo yes) else (echo no)",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "line1\r\nline2\r\n"
+        },
+        {
+          "path": "C:\\Practice\\empty.txt",
+          "type": "file",
+          "content": ""
+        },
+        {
+          "path": "C:\\Practice\\lines.txt",
+          "type": "file",
+          "content": "a\r\nb\r\nc\r\n"
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\logs\\nested.txt",
+          "type": "file",
+          "content": "nested\r\n"
+        }
+      ],
+      "args": [],
+      "errorlevel": 0,
+      "inputs": {
+        "A": [
+          "a",
+          "other"
+        ]
+      }
+    },
+    "app": {
+      "truncated": false,
+      "reasons": [],
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "stdout",
+              "text": "yes",
+              "uncertain": false,
+              "raw": false,
+              "line": 1
+            }
+          ],
+          "groups": [
+            {
+              "title": "環境変数",
+              "entries": []
+            },
+            {
+              "title": "バッチの終了状態",
+              "entries": [
+                [
+                  "ERRORLEVEL",
+                  "0"
+                ],
+                [
+                  "現在フォルダ",
+                  "C:\\Practice"
+                ],
+                [
+                  "コマンド表示",
+                  "off"
+                ],
+                [
+                  "遅延展開",
+                  "無効"
+                ]
+              ]
+            },
+            {
+              "title": "仮想ファイル一覧",
+              "entries": [
+                [
+                  "モデルのツリー",
+                  "[フォルダ] C:\\Practice\n[ファイル] C:\\Practice\\notes.txt\n[ファイル] C:\\Practice\\empty.txt\n[ファイル] C:\\Practice\\lines.txt\n[フォルダ] C:\\Practice\\logs\n[ファイル] C:\\Practice\\logs\\nested.txt"
+                ]
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "if /I \"Abc\"==\"ABC\" (echo yes) else (echo no)",
+    "code": "if /I \"Abc\"==\"ABC\" (echo yes) else (echo no)",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "line1\r\nline2\r\n"
+        },
+        {
+          "path": "C:\\Practice\\empty.txt",
+          "type": "file",
+          "content": ""
+        },
+        {
+          "path": "C:\\Practice\\lines.txt",
+          "type": "file",
+          "content": "a\r\nb\r\nc\r\n"
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\logs\\nested.txt",
+          "type": "file",
+          "content": "nested\r\n"
+        }
+      ],
+      "args": [],
+      "errorlevel": 0,
+      "inputs": {
+        "A": [
+          "a",
+          "other"
+        ]
+      }
+    },
+    "app": {
+      "truncated": false,
+      "reasons": [],
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "stdout",
+              "text": "yes",
+              "uncertain": false,
+              "raw": false,
+              "line": 1
+            }
+          ],
+          "groups": [
+            {
+              "title": "環境変数",
+              "entries": []
+            },
+            {
+              "title": "バッチの終了状態",
+              "entries": [
+                [
+                  "ERRORLEVEL",
+                  "0"
+                ],
+                [
+                  "現在フォルダ",
+                  "C:\\Practice"
+                ],
+                [
+                  "コマンド表示",
+                  "off"
+                ],
+                [
+                  "遅延展開",
+                  "無効"
+                ]
+              ]
+            },
+            {
+              "title": "仮想ファイル一覧",
+              "entries": [
+                [
+                  "モデルのツリー",
+                  "[フォルダ] C:\\Practice\n[ファイル] C:\\Practice\\notes.txt\n[ファイル] C:\\Practice\\empty.txt\n[ファイル] C:\\Practice\\lines.txt\n[フォルダ] C:\\Practice\\logs\n[ファイル] C:\\Practice\\logs\\nested.txt"
+                ]
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "if 01 EQU 1 (echo yes) else (echo no)",
+    "code": "if 01 EQU 1 (echo yes) else (echo no)",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "line1\r\nline2\r\n"
+        },
+        {
+          "path": "C:\\Practice\\empty.txt",
+          "type": "file",
+          "content": ""
+        },
+        {
+          "path": "C:\\Practice\\lines.txt",
+          "type": "file",
+          "content": "a\r\nb\r\nc\r\n"
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\logs\\nested.txt",
+          "type": "file",
+          "content": "nested\r\n"
+        }
+      ],
+      "args": [],
+      "errorlevel": 0,
+      "inputs": {
+        "A": [
+          "a",
+          "other"
+        ]
+      }
+    },
+    "app": {
+      "truncated": false,
+      "reasons": [],
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "stdout",
+              "text": "yes",
+              "uncertain": false,
+              "raw": false,
+              "line": 1
+            }
+          ],
+          "groups": [
+            {
+              "title": "環境変数",
+              "entries": []
+            },
+            {
+              "title": "バッチの終了状態",
+              "entries": [
+                [
+                  "ERRORLEVEL",
+                  "0"
+                ],
+                [
+                  "現在フォルダ",
+                  "C:\\Practice"
+                ],
+                [
+                  "コマンド表示",
+                  "off"
+                ],
+                [
+                  "遅延展開",
+                  "無効"
+                ]
+              ]
+            },
+            {
+              "title": "仮想ファイル一覧",
+              "entries": [
+                [
+                  "モデルのツリー",
+                  "[フォルダ] C:\\Practice\n[ファイル] C:\\Practice\\notes.txt\n[ファイル] C:\\Practice\\empty.txt\n[ファイル] C:\\Practice\\lines.txt\n[フォルダ] C:\\Practice\\logs\n[ファイル] C:\\Practice\\logs\\nested.txt"
+                ]
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "for %%i in (a,b;c=d) do echo %%i",
+    "code": "for %%i in (a,b;c=d) do echo %%i",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "line1\r\nline2\r\n"
+        },
+        {
+          "path": "C:\\Practice\\empty.txt",
+          "type": "file",
+          "content": ""
+        },
+        {
+          "path": "C:\\Practice\\lines.txt",
+          "type": "file",
+          "content": "a\r\nb\r\nc\r\n"
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\logs\\nested.txt",
+          "type": "file",
+          "content": "nested\r\n"
+        }
+      ],
+      "args": [],
+      "errorlevel": 0,
+      "inputs": {
+        "A": [
+          "a",
+          "other"
+        ]
+      }
+    },
+    "app": {
+      "truncated": false,
+      "reasons": [],
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "stdout",
+              "text": "a",
+              "uncertain": false,
+              "raw": false,
+              "line": 1
+            },
+            {
+              "channel": "stdout",
+              "text": "b",
+              "uncertain": false,
+              "raw": false,
+              "line": 1
+            },
+            {
+              "channel": "stdout",
+              "text": "c",
+              "uncertain": false,
+              "raw": false,
+              "line": 1
+            },
+            {
+              "channel": "stdout",
+              "text": "d",
+              "uncertain": false,
+              "raw": false,
+              "line": 1
+            }
+          ],
+          "groups": [
+            {
+              "title": "環境変数",
+              "entries": []
+            },
+            {
+              "title": "バッチの終了状態",
+              "entries": [
+                [
+                  "ERRORLEVEL",
+                  "0"
+                ],
+                [
+                  "現在フォルダ",
+                  "C:\\Practice"
+                ],
+                [
+                  "コマンド表示",
+                  "off"
+                ],
+                [
+                  "遅延展開",
+                  "無効"
+                ]
+              ]
+            },
+            {
+              "title": "仮想ファイル一覧",
+              "entries": [
+                [
+                  "モデルのツリー",
+                  "[フォルダ] C:\\Practice\n[ファイル] C:\\Practice\\notes.txt\n[ファイル] C:\\Practice\\empty.txt\n[ファイル] C:\\Practice\\lines.txt\n[フォルダ] C:\\Practice\\logs\n[ファイル] C:\\Practice\\logs\\nested.txt"
+                ]
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "for /L %%i in (3,-1,1) do echo %%i",
+    "code": "for /L %%i in (3,-1,1) do echo %%i",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "line1\r\nline2\r\n"
+        },
+        {
+          "path": "C:\\Practice\\empty.txt",
+          "type": "file",
+          "content": ""
+        },
+        {
+          "path": "C:\\Practice\\lines.txt",
+          "type": "file",
+          "content": "a\r\nb\r\nc\r\n"
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\logs\\nested.txt",
+          "type": "file",
+          "content": "nested\r\n"
+        }
+      ],
+      "args": [],
+      "errorlevel": 0,
+      "inputs": {
+        "A": [
+          "a",
+          "other"
+        ]
+      }
+    },
+    "app": {
+      "truncated": false,
+      "reasons": [],
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "stdout",
+              "text": "3",
+              "uncertain": false,
+              "raw": false,
+              "line": 1
+            },
+            {
+              "channel": "stdout",
+              "text": "2",
+              "uncertain": false,
+              "raw": false,
+              "line": 1
+            },
+            {
+              "channel": "stdout",
+              "text": "1",
+              "uncertain": false,
+              "raw": false,
+              "line": 1
+            }
+          ],
+          "groups": [
+            {
+              "title": "環境変数",
+              "entries": []
+            },
+            {
+              "title": "バッチの終了状態",
+              "entries": [
+                [
+                  "ERRORLEVEL",
+                  "0"
+                ],
+                [
+                  "現在フォルダ",
+                  "C:\\Practice"
+                ],
+                [
+                  "コマンド表示",
+                  "off"
+                ],
+                [
+                  "遅延展開",
+                  "無効"
+                ]
+              ]
+            },
+            {
+              "title": "仮想ファイル一覧",
+              "entries": [
+                [
+                  "モデルのツリー",
+                  "[フォルダ] C:\\Practice\n[ファイル] C:\\Practice\\notes.txt\n[ファイル] C:\\Practice\\empty.txt\n[ファイル] C:\\Practice\\lines.txt\n[フォルダ] C:\\Practice\\logs\n[ファイル] C:\\Practice\\logs\\nested.txt"
+                ]
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "for /L %%i in (1,1,0) do echo %%i",
+    "code": "for /L %%i in (1,1,0) do echo %%i",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "line1\r\nline2\r\n"
+        },
+        {
+          "path": "C:\\Practice\\empty.txt",
+          "type": "file",
+          "content": ""
+        },
+        {
+          "path": "C:\\Practice\\lines.txt",
+          "type": "file",
+          "content": "a\r\nb\r\nc\r\n"
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\logs\\nested.txt",
+          "type": "file",
+          "content": "nested\r\n"
+        }
+      ],
+      "args": [],
+      "errorlevel": 0,
+      "inputs": {
+        "A": [
+          "a",
+          "other"
+        ]
+      }
+    },
+    "app": {
+      "truncated": false,
+      "reasons": [],
+      "paths": [
+        {
+          "outputs": [],
+          "groups": [
+            {
+              "title": "環境変数",
+              "entries": []
+            },
+            {
+              "title": "バッチの終了状態",
+              "entries": [
+                [
+                  "ERRORLEVEL",
+                  "0"
+                ],
+                [
+                  "現在フォルダ",
+                  "C:\\Practice"
+                ],
+                [
+                  "コマンド表示",
+                  "off"
+                ],
+                [
+                  "遅延展開",
+                  "無効"
+                ]
+              ]
+            },
+            {
+              "title": "仮想ファイル一覧",
+              "entries": [
+                [
+                  "モデルのツリー",
+                  "[フォルダ] C:\\Practice\n[ファイル] C:\\Practice\\notes.txt\n[ファイル] C:\\Practice\\empty.txt\n[ファイル] C:\\Practice\\lines.txt\n[フォルダ] C:\\Practice\\logs\n[ファイル] C:\\Practice\\logs\\nested.txt"
+                ]
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "for %%i in (*.missing) do echo %%i",
+    "code": "for %%i in (*.missing) do echo %%i",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "line1\r\nline2\r\n"
+        },
+        {
+          "path": "C:\\Practice\\empty.txt",
+          "type": "file",
+          "content": ""
+        },
+        {
+          "path": "C:\\Practice\\lines.txt",
+          "type": "file",
+          "content": "a\r\nb\r\nc\r\n"
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\logs\\nested.txt",
+          "type": "file",
+          "content": "nested\r\n"
+        }
+      ],
+      "args": [],
+      "errorlevel": 0,
+      "inputs": {
+        "A": [
+          "a",
+          "other"
+        ]
+      }
+    },
+    "app": {
+      "truncated": false,
+      "reasons": [],
+      "paths": [
+        {
+          "outputs": [],
+          "groups": [
+            {
+              "title": "環境変数",
+              "entries": []
+            },
+            {
+              "title": "バッチの終了状態",
+              "entries": [
+                [
+                  "ERRORLEVEL",
+                  "0"
+                ],
+                [
+                  "現在フォルダ",
+                  "C:\\Practice"
+                ],
+                [
+                  "コマンド表示",
+                  "off"
+                ],
+                [
+                  "遅延展開",
+                  "無効"
+                ]
+              ]
+            },
+            {
+              "title": "仮想ファイル一覧",
+              "entries": [
+                [
+                  "モデルのツリー",
+                  "[フォルダ] C:\\Practice\n[ファイル] C:\\Practice\\notes.txt\n[ファイル] C:\\Practice\\empty.txt\n[ファイル] C:\\Practice\\lines.txt\n[フォルダ] C:\\Practice\\logs\n[ファイル] C:\\Practice\\logs\\nested.txt"
+                ]
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "call :f x y",
+    "code": "call :f x y\necho done\ngoto :eof\n:f\necho %1 %2\nexit /b 3",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "line1\r\nline2\r\n"
+        },
+        {
+          "path": "C:\\Practice\\empty.txt",
+          "type": "file",
+          "content": ""
+        },
+        {
+          "path": "C:\\Practice\\lines.txt",
+          "type": "file",
+          "content": "a\r\nb\r\nc\r\n"
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\logs\\nested.txt",
+          "type": "file",
+          "content": "nested\r\n"
+        }
+      ],
+      "args": [],
+      "errorlevel": 0,
+      "inputs": {
+        "A": [
+          "a",
+          "other"
+        ]
+      }
+    },
+    "app": {
+      "truncated": false,
+      "reasons": [],
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "stdout",
+              "text": "x y",
+              "uncertain": false,
+              "raw": false,
+              "line": 5
+            },
+            {
+              "channel": "stdout",
+              "text": "done",
+              "uncertain": false,
+              "raw": false,
+              "line": 2
+            }
+          ],
+          "groups": [
+            {
+              "title": "環境変数",
+              "entries": []
+            },
+            {
+              "title": "バッチの終了状態",
+              "entries": [
+                [
+                  "ERRORLEVEL",
+                  "3"
+                ],
+                [
+                  "現在フォルダ",
+                  "C:\\Practice"
+                ],
+                [
+                  "コマンド表示",
+                  "off"
+                ],
+                [
+                  "遅延展開",
+                  "無効"
+                ]
+              ]
+            },
+            {
+              "title": "仮想ファイル一覧",
+              "entries": [
+                [
+                  "モデルのツリー",
+                  "[フォルダ] C:\\Practice\n[ファイル] C:\\Practice\\notes.txt\n[ファイル] C:\\Practice\\empty.txt\n[ファイル] C:\\Practice\\lines.txt\n[フォルダ] C:\\Practice\\logs\n[ファイル] C:\\Practice\\logs\\nested.txt"
+                ]
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "setlocal EnableDelayedExpansion",
+    "code": "setlocal EnableDelayedExpansion\ncall :f\necho !ERRORLEVEL!\ngoto :eof\n:f\nexit /b 5",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "line1\r\nline2\r\n"
+        },
+        {
+          "path": "C:\\Practice\\empty.txt",
+          "type": "file",
+          "content": ""
+        },
+        {
+          "path": "C:\\Practice\\lines.txt",
+          "type": "file",
+          "content": "a\r\nb\r\nc\r\n"
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\logs\\nested.txt",
+          "type": "file",
+          "content": "nested\r\n"
+        }
+      ],
+      "args": [],
+      "errorlevel": 0,
+      "inputs": {
+        "A": [
+          "a",
+          "other"
+        ]
+      }
+    },
+    "app": {
+      "truncated": false,
+      "reasons": [],
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "stdout",
+              "text": "5",
+              "uncertain": false,
+              "raw": false,
+              "line": 3
+            }
+          ],
+          "groups": [
+            {
+              "title": "環境変数",
+              "entries": []
+            },
+            {
+              "title": "バッチの終了状態",
+              "entries": [
+                [
+                  "ERRORLEVEL",
+                  "5"
+                ],
+                [
+                  "現在フォルダ",
+                  "C:\\Practice"
+                ],
+                [
+                  "コマンド表示",
+                  "off"
+                ],
+                [
+                  "遅延展開",
+                  "無効"
+                ]
+              ]
+            },
+            {
+              "title": "仮想ファイル一覧",
+              "entries": [
+                [
+                  "モデルのツリー",
+                  "[フォルダ] C:\\Practice\n[ファイル] C:\\Practice\\notes.txt\n[ファイル] C:\\Practice\\empty.txt\n[ファイル] C:\\Practice\\lines.txt\n[フォルダ] C:\\Practice\\logs\n[ファイル] C:\\Practice\\logs\\nested.txt"
+                ]
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "rem hello",
+    "code": "rem hello\necho yes",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "line1\r\nline2\r\n"
+        },
+        {
+          "path": "C:\\Practice\\empty.txt",
+          "type": "file",
+          "content": ""
+        },
+        {
+          "path": "C:\\Practice\\lines.txt",
+          "type": "file",
+          "content": "a\r\nb\r\nc\r\n"
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\logs\\nested.txt",
+          "type": "file",
+          "content": "nested\r\n"
+        }
+      ],
+      "args": [],
+      "errorlevel": 0,
+      "inputs": {
+        "A": [
+          "a",
+          "other"
+        ]
+      }
+    },
+    "app": {
+      "truncated": false,
+      "reasons": [],
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "stdout",
+              "text": "yes",
+              "uncertain": false,
+              "raw": false,
+              "line": 2
+            }
+          ],
+          "groups": [
+            {
+              "title": "環境変数",
+              "entries": []
+            },
+            {
+              "title": "バッチの終了状態",
+              "entries": [
+                [
+                  "ERRORLEVEL",
+                  "0"
+                ],
+                [
+                  "現在フォルダ",
+                  "C:\\Practice"
+                ],
+                [
+                  "コマンド表示",
+                  "off"
+                ],
+                [
+                  "遅延展開",
+                  "無効"
+                ]
+              ]
+            },
+            {
+              "title": "仮想ファイル一覧",
+              "entries": [
+                [
+                  "モデルのツリー",
+                  "[フォルダ] C:\\Practice\n[ファイル] C:\\Practice\\notes.txt\n[ファイル] C:\\Practice\\empty.txt\n[ファイル] C:\\Practice\\lines.txt\n[フォルダ] C:\\Practice\\logs\n[ファイル] C:\\Practice\\logs\\nested.txt"
+                ]
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "cd logs",
+    "code": "cd logs\necho %CD%\ncd ..\necho %CD%",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "line1\r\nline2\r\n"
+        },
+        {
+          "path": "C:\\Practice\\empty.txt",
+          "type": "file",
+          "content": ""
+        },
+        {
+          "path": "C:\\Practice\\lines.txt",
+          "type": "file",
+          "content": "a\r\nb\r\nc\r\n"
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\logs\\nested.txt",
+          "type": "file",
+          "content": "nested\r\n"
+        }
+      ],
+      "args": [],
+      "errorlevel": 0,
+      "inputs": {
+        "A": [
+          "a",
+          "other"
+        ]
+      }
+    },
+    "app": {
+      "truncated": false,
+      "reasons": [],
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "stdout",
+              "text": "C:\\Practice\\logs",
+              "uncertain": false,
+              "raw": false,
+              "line": 2
+            },
+            {
+              "channel": "stdout",
+              "text": "C:\\Practice",
+              "uncertain": false,
+              "raw": false,
+              "line": 4
+            }
+          ],
+          "groups": [
+            {
+              "title": "環境変数",
+              "entries": []
+            },
+            {
+              "title": "バッチの終了状態",
+              "entries": [
+                [
+                  "ERRORLEVEL",
+                  "0"
+                ],
+                [
+                  "現在フォルダ",
+                  "C:\\Practice"
+                ],
+                [
+                  "コマンド表示",
+                  "off"
+                ],
+                [
+                  "遅延展開",
+                  "無効"
+                ]
+              ]
+            },
+            {
+              "title": "仮想ファイル一覧",
+              "entries": [
+                [
+                  "モデルのツリー",
+                  "[フォルダ] C:\\Practice\n[ファイル] C:\\Practice\\notes.txt\n[ファイル] C:\\Practice\\empty.txt\n[ファイル] C:\\Practice\\lines.txt\n[フォルダ] C:\\Practice\\logs\n[ファイル] C:\\Practice\\logs\\nested.txt"
+                ]
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "dir /b logs",
+    "code": "dir /b logs",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "line1\r\nline2\r\n"
+        },
+        {
+          "path": "C:\\Practice\\empty.txt",
+          "type": "file",
+          "content": ""
+        },
+        {
+          "path": "C:\\Practice\\lines.txt",
+          "type": "file",
+          "content": "a\r\nb\r\nc\r\n"
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\logs\\nested.txt",
+          "type": "file",
+          "content": "nested\r\n"
+        }
+      ],
+      "args": [],
+      "errorlevel": 0,
+      "inputs": {
+        "A": [
+          "a",
+          "other"
+        ]
+      }
+    },
+    "app": {
+      "truncated": false,
+      "reasons": [],
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "stdout",
+              "text": "nested.txt",
+              "uncertain": false,
+              "raw": false,
+              "line": 1
+            }
+          ],
+          "groups": [
+            {
+              "title": "環境変数",
+              "entries": []
+            },
+            {
+              "title": "バッチの終了状態",
+              "entries": [
+                [
+                  "ERRORLEVEL",
+                  "0"
+                ],
+                [
+                  "現在フォルダ",
+                  "C:\\Practice"
+                ],
+                [
+                  "コマンド表示",
+                  "off"
+                ],
+                [
+                  "遅延展開",
+                  "無効"
+                ]
+              ]
+            },
+            {
+              "title": "仮想ファイル一覧",
+              "entries": [
+                [
+                  "モデルのツリー",
+                  "[フォルダ] C:\\Practice\n[ファイル] C:\\Practice\\notes.txt\n[ファイル] C:\\Practice\\empty.txt\n[ファイル] C:\\Practice\\lines.txt\n[フォルダ] C:\\Practice\\logs\n[ファイル] C:\\Practice\\logs\\nested.txt"
+                ]
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "dir /b /s *.txt",
+    "code": "dir /b /s *.txt",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "line1\r\nline2\r\n"
+        },
+        {
+          "path": "C:\\Practice\\empty.txt",
+          "type": "file",
+          "content": ""
+        },
+        {
+          "path": "C:\\Practice\\lines.txt",
+          "type": "file",
+          "content": "a\r\nb\r\nc\r\n"
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\logs\\nested.txt",
+          "type": "file",
+          "content": "nested\r\n"
+        }
+      ],
+      "args": [],
+      "errorlevel": 0,
+      "inputs": {
+        "A": [
+          "a",
+          "other"
+        ]
+      }
+    },
+    "app": {
+      "truncated": false,
+      "reasons": [],
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "stdout",
+              "text": "C:\\Practice\\notes.txt",
+              "uncertain": false,
+              "raw": false,
+              "line": 1
+            },
+            {
+              "channel": "stdout",
+              "text": "C:\\Practice\\empty.txt",
+              "uncertain": false,
+              "raw": false,
+              "line": 1
+            },
+            {
+              "channel": "stdout",
+              "text": "C:\\Practice\\lines.txt",
+              "uncertain": false,
+              "raw": false,
+              "line": 1
+            },
+            {
+              "channel": "stdout",
+              "text": "C:\\Practice\\logs\\nested.txt",
+              "uncertain": false,
+              "raw": false,
+              "line": 1
+            }
+          ],
+          "groups": [
+            {
+              "title": "環境変数",
+              "entries": []
+            },
+            {
+              "title": "バッチの終了状態",
+              "entries": [
+                [
+                  "ERRORLEVEL",
+                  "0"
+                ],
+                [
+                  "現在フォルダ",
+                  "C:\\Practice"
+                ],
+                [
+                  "コマンド表示",
+                  "off"
+                ],
+                [
+                  "遅延展開",
+                  "無効"
+                ]
+              ]
+            },
+            {
+              "title": "仮想ファイル一覧",
+              "entries": [
+                [
+                  "モデルのツリー",
+                  "[フォルダ] C:\\Practice\n[ファイル] C:\\Practice\\notes.txt\n[ファイル] C:\\Practice\\empty.txt\n[ファイル] C:\\Practice\\lines.txt\n[フォルダ] C:\\Practice\\logs\n[ファイル] C:\\Practice\\logs\\nested.txt"
+                ]
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "type empty.txt",
+    "code": "type empty.txt\necho done",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "line1\r\nline2\r\n"
+        },
+        {
+          "path": "C:\\Practice\\empty.txt",
+          "type": "file",
+          "content": ""
+        },
+        {
+          "path": "C:\\Practice\\lines.txt",
+          "type": "file",
+          "content": "a\r\nb\r\nc\r\n"
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\logs\\nested.txt",
+          "type": "file",
+          "content": "nested\r\n"
+        }
+      ],
+      "args": [],
+      "errorlevel": 0,
+      "inputs": {
+        "A": [
+          "a",
+          "other"
+        ]
+      }
+    },
+    "app": {
+      "truncated": false,
+      "reasons": [],
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "stdout",
+              "text": "",
+              "uncertain": false,
+              "raw": true,
+              "line": 1
+            },
+            {
+              "channel": "stdout",
+              "text": "done",
+              "uncertain": false,
+              "raw": false,
+              "line": 2
+            }
+          ],
+          "groups": [
+            {
+              "title": "環境変数",
+              "entries": []
+            },
+            {
+              "title": "バッチの終了状態",
+              "entries": [
+                [
+                  "ERRORLEVEL",
+                  "0"
+                ],
+                [
+                  "現在フォルダ",
+                  "C:\\Practice"
+                ],
+                [
+                  "コマンド表示",
+                  "off"
+                ],
+                [
+                  "遅延展開",
+                  "無効"
+                ]
+              ]
+            },
+            {
+              "title": "仮想ファイル一覧",
+              "entries": [
+                [
+                  "モデルのツリー",
+                  "[フォルダ] C:\\Practice\n[ファイル] C:\\Practice\\notes.txt\n[ファイル] C:\\Practice\\empty.txt\n[ファイル] C:\\Practice\\lines.txt\n[フォルダ] C:\\Practice\\logs\n[ファイル] C:\\Practice\\logs\\nested.txt"
+                ]
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "md new",
+    "code": "md new\nif exist new echo yes",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "line1\r\nline2\r\n"
+        },
+        {
+          "path": "C:\\Practice\\empty.txt",
+          "type": "file",
+          "content": ""
+        },
+        {
+          "path": "C:\\Practice\\lines.txt",
+          "type": "file",
+          "content": "a\r\nb\r\nc\r\n"
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\logs\\nested.txt",
+          "type": "file",
+          "content": "nested\r\n"
+        }
+      ],
+      "args": [],
+      "errorlevel": 0,
+      "inputs": {
+        "A": [
+          "a",
+          "other"
+        ]
+      }
+    },
+    "app": {
+      "truncated": false,
+      "reasons": [],
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "stdout",
+              "text": "yes",
+              "uncertain": false,
+              "raw": false,
+              "line": 2
+            }
+          ],
+          "groups": [
+            {
+              "title": "環境変数",
+              "entries": []
+            },
+            {
+              "title": "バッチの終了状態",
+              "entries": [
+                [
+                  "ERRORLEVEL",
+                  "0"
+                ],
+                [
+                  "現在フォルダ",
+                  "C:\\Practice"
+                ],
+                [
+                  "コマンド表示",
+                  "off"
+                ],
+                [
+                  "遅延展開",
+                  "無効"
+                ]
+              ]
+            },
+            {
+              "title": "仮想ファイル一覧",
+              "entries": [
+                [
+                  "モデルのツリー",
+                  "[フォルダ] C:\\Practice\n[ファイル] C:\\Practice\\notes.txt\n[ファイル] C:\\Practice\\empty.txt\n[ファイル] C:\\Practice\\lines.txt\n[フォルダ] C:\\Practice\\logs\n[ファイル] C:\\Practice\\logs\\nested.txt\n[フォルダ] C:\\Practice\\new"
+                ]
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "md new",
+    "code": "md new\nrd new\nif not exist new echo yes",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "line1\r\nline2\r\n"
+        },
+        {
+          "path": "C:\\Practice\\empty.txt",
+          "type": "file",
+          "content": ""
+        },
+        {
+          "path": "C:\\Practice\\lines.txt",
+          "type": "file",
+          "content": "a\r\nb\r\nc\r\n"
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\logs\\nested.txt",
+          "type": "file",
+          "content": "nested\r\n"
+        }
+      ],
+      "args": [],
+      "errorlevel": 0,
+      "inputs": {
+        "A": [
+          "a",
+          "other"
+        ]
+      }
+    },
+    "app": {
+      "truncated": false,
+      "reasons": [],
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "stdout",
+              "text": "yes",
+              "uncertain": false,
+              "raw": false,
+              "line": 3
+            }
+          ],
+          "groups": [
+            {
+              "title": "環境変数",
+              "entries": []
+            },
+            {
+              "title": "バッチの終了状態",
+              "entries": [
+                [
+                  "ERRORLEVEL",
+                  "0"
+                ],
+                [
+                  "現在フォルダ",
+                  "C:\\Practice"
+                ],
+                [
+                  "コマンド表示",
+                  "off"
+                ],
+                [
+                  "遅延展開",
+                  "無効"
+                ]
+              ]
+            },
+            {
+              "title": "仮想ファイル一覧",
+              "entries": [
+                [
+                  "モデルのツリー",
+                  "[フォルダ] C:\\Practice\n[ファイル] C:\\Practice\\notes.txt\n[ファイル] C:\\Practice\\empty.txt\n[ファイル] C:\\Practice\\lines.txt\n[フォルダ] C:\\Practice\\logs\n[ファイル] C:\\Practice\\logs\\nested.txt"
+                ]
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "copy notes.txt copy.txt",
+    "code": "copy notes.txt copy.txt\ntype copy.txt",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "line1\r\nline2\r\n"
+        },
+        {
+          "path": "C:\\Practice\\empty.txt",
+          "type": "file",
+          "content": ""
+        },
+        {
+          "path": "C:\\Practice\\lines.txt",
+          "type": "file",
+          "content": "a\r\nb\r\nc\r\n"
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\logs\\nested.txt",
+          "type": "file",
+          "content": "nested\r\n"
+        }
+      ],
+      "args": [],
+      "errorlevel": 0,
+      "inputs": {
+        "A": [
+          "a",
+          "other"
+        ]
+      }
+    },
+    "app": {
+      "truncated": false,
+      "reasons": [],
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "stdout",
+              "text": "line1\r\nline2\r\n",
+              "uncertain": false,
+              "raw": true,
+              "line": 2
+            }
+          ],
+          "groups": [
+            {
+              "title": "環境変数",
+              "entries": []
+            },
+            {
+              "title": "バッチの終了状態",
+              "entries": [
+                [
+                  "ERRORLEVEL",
+                  "0"
+                ],
+                [
+                  "現在フォルダ",
+                  "C:\\Practice"
+                ],
+                [
+                  "コマンド表示",
+                  "off"
+                ],
+                [
+                  "遅延展開",
+                  "無効"
+                ]
+              ]
+            },
+            {
+              "title": "仮想ファイル一覧",
+              "entries": [
+                [
+                  "モデルのツリー",
+                  "[フォルダ] C:\\Practice\n[ファイル] C:\\Practice\\notes.txt\n[ファイル] C:\\Practice\\empty.txt\n[ファイル] C:\\Practice\\lines.txt\n[フォルダ] C:\\Practice\\logs\n[ファイル] C:\\Practice\\logs\\nested.txt\n[ファイル] C:\\Practice\\copy.txt"
+                ]
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "copy notes.txt copy.txt",
+    "code": "copy notes.txt copy.txt\ndel copy.txt\nif not exist copy.txt echo yes",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "line1\r\nline2\r\n"
+        },
+        {
+          "path": "C:\\Practice\\empty.txt",
+          "type": "file",
+          "content": ""
+        },
+        {
+          "path": "C:\\Practice\\lines.txt",
+          "type": "file",
+          "content": "a\r\nb\r\nc\r\n"
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\logs\\nested.txt",
+          "type": "file",
+          "content": "nested\r\n"
+        }
+      ],
+      "args": [],
+      "errorlevel": 0,
+      "inputs": {
+        "A": [
+          "a",
+          "other"
+        ]
+      }
+    },
+    "app": {
+      "truncated": false,
+      "reasons": [],
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "stdout",
+              "text": "yes",
+              "uncertain": false,
+              "raw": false,
+              "line": 3
+            }
+          ],
+          "groups": [
+            {
+              "title": "環境変数",
+              "entries": []
+            },
+            {
+              "title": "バッチの終了状態",
+              "entries": [
+                [
+                  "ERRORLEVEL",
+                  "0"
+                ],
+                [
+                  "現在フォルダ",
+                  "C:\\Practice"
+                ],
+                [
+                  "コマンド表示",
+                  "off"
+                ],
+                [
+                  "遅延展開",
+                  "無効"
+                ]
+              ]
+            },
+            {
+              "title": "仮想ファイル一覧",
+              "entries": [
+                [
+                  "モデルのツリー",
+                  "[フォルダ] C:\\Practice\n[ファイル] C:\\Practice\\notes.txt\n[ファイル] C:\\Practice\\empty.txt\n[ファイル] C:\\Practice\\lines.txt\n[フォルダ] C:\\Practice\\logs\n[ファイル] C:\\Practice\\logs\\nested.txt"
+                ]
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "copy notes.txt copy.txt",
+    "code": "copy notes.txt copy.txt\nren copy.txt moved.txt\ntype moved.txt",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "line1\r\nline2\r\n"
+        },
+        {
+          "path": "C:\\Practice\\empty.txt",
+          "type": "file",
+          "content": ""
+        },
+        {
+          "path": "C:\\Practice\\lines.txt",
+          "type": "file",
+          "content": "a\r\nb\r\nc\r\n"
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\logs\\nested.txt",
+          "type": "file",
+          "content": "nested\r\n"
+        }
+      ],
+      "args": [],
+      "errorlevel": 0,
+      "inputs": {
+        "A": [
+          "a",
+          "other"
+        ]
+      }
+    },
+    "app": {
+      "truncated": false,
+      "reasons": [],
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "stdout",
+              "text": "line1\r\nline2\r\n",
+              "uncertain": false,
+              "raw": true,
+              "line": 3
+            }
+          ],
+          "groups": [
+            {
+              "title": "環境変数",
+              "entries": []
+            },
+            {
+              "title": "バッチの終了状態",
+              "entries": [
+                [
+                  "ERRORLEVEL",
+                  "0"
+                ],
+                [
+                  "現在フォルダ",
+                  "C:\\Practice"
+                ],
+                [
+                  "コマンド表示",
+                  "off"
+                ],
+                [
+                  "遅延展開",
+                  "無効"
+                ]
+              ]
+            },
+            {
+              "title": "仮想ファイル一覧",
+              "entries": [
+                [
+                  "モデルのツリー",
+                  "[フォルダ] C:\\Practice\n[ファイル] C:\\Practice\\notes.txt\n[ファイル] C:\\Practice\\empty.txt\n[ファイル] C:\\Practice\\lines.txt\n[フォルダ] C:\\Practice\\logs\n[ファイル] C:\\Practice\\logs\\nested.txt\n[ファイル] C:\\Practice\\moved.txt"
+                ]
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "copy notes.txt copy.txt",
+    "code": "copy notes.txt copy.txt\nmove copy.txt logs\ntype logs\\copy.txt",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "line1\r\nline2\r\n"
+        },
+        {
+          "path": "C:\\Practice\\empty.txt",
+          "type": "file",
+          "content": ""
+        },
+        {
+          "path": "C:\\Practice\\lines.txt",
+          "type": "file",
+          "content": "a\r\nb\r\nc\r\n"
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\logs\\nested.txt",
+          "type": "file",
+          "content": "nested\r\n"
+        }
+      ],
+      "args": [],
+      "errorlevel": 0,
+      "inputs": {
+        "A": [
+          "a",
+          "other"
+        ]
+      }
+    },
+    "app": {
+      "truncated": false,
+      "reasons": [],
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "stdout",
+              "text": "line1\r\nline2\r\n",
+              "uncertain": false,
+              "raw": true,
+              "line": 3
+            }
+          ],
+          "groups": [
+            {
+              "title": "環境変数",
+              "entries": []
+            },
+            {
+              "title": "バッチの終了状態",
+              "entries": [
+                [
+                  "ERRORLEVEL",
+                  "0"
+                ],
+                [
+                  "現在フォルダ",
+                  "C:\\Practice"
+                ],
+                [
+                  "コマンド表示",
+                  "off"
+                ],
+                [
+                  "遅延展開",
+                  "無効"
+                ]
+              ]
+            },
+            {
+              "title": "仮想ファイル一覧",
+              "entries": [
+                [
+                  "モデルのツリー",
+                  "[フォルダ] C:\\Practice\n[ファイル] C:\\Practice\\notes.txt\n[ファイル] C:\\Practice\\empty.txt\n[ファイル] C:\\Practice\\lines.txt\n[フォルダ] C:\\Practice\\logs\n[ファイル] C:\\Practice\\logs\\nested.txt\n[ファイル] C:\\Practice\\logs\\copy.txt"
+                ]
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "echo before",
+    "code": "echo before\ncls\necho after",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "line1\r\nline2\r\n"
+        },
+        {
+          "path": "C:\\Practice\\empty.txt",
+          "type": "file",
+          "content": ""
+        },
+        {
+          "path": "C:\\Practice\\lines.txt",
+          "type": "file",
+          "content": "a\r\nb\r\nc\r\n"
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\logs\\nested.txt",
+          "type": "file",
+          "content": "nested\r\n"
+        }
+      ],
+      "args": [],
+      "errorlevel": 0,
+      "inputs": {
+        "A": [
+          "a",
+          "other"
+        ]
+      }
+    },
+    "app": {
+      "truncated": false,
+      "reasons": [],
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "stdout",
+              "text": "after",
+              "uncertain": false,
+              "raw": false,
+              "line": 3
+            }
+          ],
+          "groups": [
+            {
+              "title": "環境変数",
+              "entries": []
+            },
+            {
+              "title": "バッチの終了状態",
+              "entries": [
+                [
+                  "ERRORLEVEL",
+                  "0"
+                ],
+                [
+                  "現在フォルダ",
+                  "C:\\Practice"
+                ],
+                [
+                  "コマンド表示",
+                  "off"
+                ],
+                [
+                  "遅延展開",
+                  "無効"
+                ]
+              ]
+            },
+            {
+              "title": "仮想ファイル一覧",
+              "entries": [
+                [
+                  "モデルのツリー",
+                  "[フォルダ] C:\\Practice\n[ファイル] C:\\Practice\\notes.txt\n[ファイル] C:\\Practice\\empty.txt\n[ファイル] C:\\Practice\\lines.txt\n[フォルダ] C:\\Practice\\logs\n[ファイル] C:\\Practice\\logs\\nested.txt"
+                ]
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "type notes.txt|find \"line\"",
+    "code": "type notes.txt|find \"line\"\necho %ERRORLEVEL%",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "line1\r\nline2\r\n"
+        },
+        {
+          "path": "C:\\Practice\\empty.txt",
+          "type": "file",
+          "content": ""
+        },
+        {
+          "path": "C:\\Practice\\lines.txt",
+          "type": "file",
+          "content": "a\r\nb\r\nc\r\n"
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\logs\\nested.txt",
+          "type": "file",
+          "content": "nested\r\n"
+        }
+      ],
+      "args": [],
+      "errorlevel": 0,
+      "inputs": {
+        "A": [
+          "a",
+          "other"
+        ]
+      }
+    },
+    "app": {
+      "truncated": false,
+      "reasons": [],
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "stdout",
+              "text": "line1",
+              "uncertain": false,
+              "raw": false,
+              "line": 1
+            },
+            {
+              "channel": "stdout",
+              "text": "line2",
+              "uncertain": false,
+              "raw": false,
+              "line": 1
+            },
+            {
+              "channel": "stdout",
+              "text": "0",
+              "uncertain": false,
+              "raw": false,
+              "line": 2
+            }
+          ],
+          "groups": [
+            {
+              "title": "環境変数",
+              "entries": []
+            },
+            {
+              "title": "バッチの終了状態",
+              "entries": [
+                [
+                  "ERRORLEVEL",
+                  "0"
+                ],
+                [
+                  "現在フォルダ",
+                  "C:\\Practice"
+                ],
+                [
+                  "コマンド表示",
+                  "off"
+                ],
+                [
+                  "遅延展開",
+                  "無効"
+                ]
+              ]
+            },
+            {
+              "title": "仮想ファイル一覧",
+              "entries": [
+                [
+                  "モデルのツリー",
+                  "[フォルダ] C:\\Practice\n[ファイル] C:\\Practice\\notes.txt\n[ファイル] C:\\Practice\\empty.txt\n[ファイル] C:\\Practice\\lines.txt\n[フォルダ] C:\\Practice\\logs\n[ファイル] C:\\Practice\\logs\\nested.txt"
+                ]
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "echo alpha>out.txt",
+    "code": "echo alpha>out.txt\necho beta>>out.txt\ntype out.txt",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "line1\r\nline2\r\n"
+        },
+        {
+          "path": "C:\\Practice\\empty.txt",
+          "type": "file",
+          "content": ""
+        },
+        {
+          "path": "C:\\Practice\\lines.txt",
+          "type": "file",
+          "content": "a\r\nb\r\nc\r\n"
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\logs\\nested.txt",
+          "type": "file",
+          "content": "nested\r\n"
+        }
+      ],
+      "args": [],
+      "errorlevel": 0,
+      "inputs": {
+        "A": [
+          "a",
+          "other"
+        ]
+      }
+    },
+    "app": {
+      "truncated": false,
+      "reasons": [],
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "stdout",
+              "text": "alpha\r\nbeta\r\n",
+              "uncertain": false,
+              "raw": true,
+              "line": 3
+            }
+          ],
+          "groups": [
+            {
+              "title": "環境変数",
+              "entries": []
+            },
+            {
+              "title": "バッチの終了状態",
+              "entries": [
+                [
+                  "ERRORLEVEL",
+                  "0"
+                ],
+                [
+                  "現在フォルダ",
+                  "C:\\Practice"
+                ],
+                [
+                  "コマンド表示",
+                  "off"
+                ],
+                [
+                  "遅延展開",
+                  "無効"
+                ]
+              ]
+            },
+            {
+              "title": "仮想ファイル一覧",
+              "entries": [
+                [
+                  "モデルのツリー",
+                  "[フォルダ] C:\\Practice\n[ファイル] C:\\Practice\\notes.txt\n[ファイル] C:\\Practice\\empty.txt\n[ファイル] C:\\Practice\\lines.txt\n[フォルダ] C:\\Practice\\logs\n[ファイル] C:\\Practice\\logs\\nested.txt\n[ファイル] C:\\Practice\\out.txt"
+                ]
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "setlocal EnableDelayedExpansion",
+    "code": "setlocal EnableDelayedExpansion\nset X=a^!b\necho !X!",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "line1\r\nline2\r\n"
+        },
+        {
+          "path": "C:\\Practice\\empty.txt",
+          "type": "file",
+          "content": ""
+        },
+        {
+          "path": "C:\\Practice\\lines.txt",
+          "type": "file",
+          "content": "a\r\nb\r\nc\r\n"
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\logs\\nested.txt",
+          "type": "file",
+          "content": "nested\r\n"
+        }
+      ],
+      "args": [],
+      "errorlevel": 0,
+      "inputs": {
+        "A": [
+          "a",
+          "other"
+        ]
+      }
+    },
+    "app": {
+      "truncated": false,
+      "reasons": [],
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "stdout",
+              "text": "a!b",
+              "uncertain": false,
+              "raw": false,
+              "line": 3
+            }
+          ],
+          "groups": [
+            {
+              "title": "環境変数",
+              "entries": []
+            },
+            {
+              "title": "バッチの終了状態",
+              "entries": [
+                [
+                  "ERRORLEVEL",
+                  "0"
+                ],
+                [
+                  "現在フォルダ",
+                  "C:\\Practice"
+                ],
+                [
+                  "コマンド表示",
+                  "off"
+                ],
+                [
+                  "遅延展開",
+                  "無効"
+                ]
+              ]
+            },
+            {
+              "title": "仮想ファイル一覧",
+              "entries": [
+                [
+                  "モデルのツリー",
+                  "[フォルダ] C:\\Practice\n[ファイル] C:\\Practice\\notes.txt\n[ファイル] C:\\Practice\\empty.txt\n[ファイル] C:\\Practice\\lines.txt\n[フォルダ] C:\\Practice\\logs\n[ファイル] C:\\Practice\\logs\\nested.txt"
+                ]
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "setlocal EnableDelayedExpansion",
+    "code": "setlocal EnableDelayedExpansion\nset X=\"a!b\"\necho !X!",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "line1\r\nline2\r\n"
+        },
+        {
+          "path": "C:\\Practice\\empty.txt",
+          "type": "file",
+          "content": ""
+        },
+        {
+          "path": "C:\\Practice\\lines.txt",
+          "type": "file",
+          "content": "a\r\nb\r\nc\r\n"
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\logs\\nested.txt",
+          "type": "file",
+          "content": "nested\r\n"
+        }
+      ],
+      "args": [],
+      "errorlevel": 0,
+      "inputs": {
+        "A": [
+          "a",
+          "other"
+        ]
+      }
+    },
+    "app": {
+      "truncated": false,
+      "reasons": [],
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "stdout",
+              "text": "\"a!b\"",
+              "uncertain": false,
+              "raw": false,
+              "line": 3
+            }
+          ],
+          "groups": [
+            {
+              "title": "環境変数",
+              "entries": []
+            },
+            {
+              "title": "バッチの終了状態",
+              "entries": [
+                [
+                  "ERRORLEVEL",
+                  "0"
+                ],
+                [
+                  "現在フォルダ",
+                  "C:\\Practice"
+                ],
+                [
+                  "コマンド表示",
+                  "off"
+                ],
+                [
+                  "遅延展開",
+                  "無効"
+                ]
+              ]
+            },
+            {
+              "title": "仮想ファイル一覧",
+              "entries": [
+                [
+                  "モデルのツリー",
+                  "[フォルダ] C:\\Practice\n[ファイル] C:\\Practice\\notes.txt\n[ファイル] C:\\Practice\\empty.txt\n[ファイル] C:\\Practice\\lines.txt\n[フォルダ] C:\\Practice\\logs\n[ファイル] C:\\Practice\\logs\\nested.txt"
+                ]
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "set /a N=4",
+    "code": "set /a N=4\nset /a N-=1+2\necho %N%",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "line1\r\nline2\r\n"
+        },
+        {
+          "path": "C:\\Practice\\empty.txt",
+          "type": "file",
+          "content": ""
+        },
+        {
+          "path": "C:\\Practice\\lines.txt",
+          "type": "file",
+          "content": "a\r\nb\r\nc\r\n"
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\logs\\nested.txt",
+          "type": "file",
+          "content": "nested\r\n"
+        }
+      ],
+      "args": [],
+      "errorlevel": 0,
+      "inputs": {
+        "A": [
+          "a",
+          "other"
+        ]
+      }
+    },
+    "app": {
+      "truncated": false,
+      "reasons": [],
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "stdout",
+              "text": "1",
+              "uncertain": false,
+              "raw": false,
+              "line": 3
+            }
+          ],
+          "groups": [
+            {
+              "title": "環境変数",
+              "entries": [
+                [
+                  "N",
+                  "1"
+                ]
+              ]
+            },
+            {
+              "title": "バッチの終了状態",
+              "entries": [
+                [
+                  "ERRORLEVEL",
+                  "0"
+                ],
+                [
+                  "現在フォルダ",
+                  "C:\\Practice"
+                ],
+                [
+                  "コマンド表示",
+                  "off"
+                ],
+                [
+                  "遅延展開",
+                  "無効"
+                ]
+              ]
+            },
+            {
+              "title": "仮想ファイル一覧",
+              "entries": [
+                [
+                  "モデルのツリー",
+                  "[フォルダ] C:\\Practice\n[ファイル] C:\\Practice\\notes.txt\n[ファイル] C:\\Practice\\empty.txt\n[ファイル] C:\\Practice\\lines.txt\n[フォルダ] C:\\Practice\\logs\n[ファイル] C:\\Practice\\logs\\nested.txt"
+                ]
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "set /p \"A=prompt\"",
+    "code": "set /p \"A=prompt\"\necho %A%",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "line1\r\nline2\r\n"
+        },
+        {
+          "path": "C:\\Practice\\empty.txt",
+          "type": "file",
+          "content": ""
+        },
+        {
+          "path": "C:\\Practice\\lines.txt",
+          "type": "file",
+          "content": "a\r\nb\r\nc\r\n"
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\logs\\nested.txt",
+          "type": "file",
+          "content": "nested\r\n"
+        }
+      ],
+      "args": [],
+      "errorlevel": 0,
+      "inputs": {
+        "A": [
+          "a",
+          "other"
+        ]
+      }
+    },
+    "app": {
+      "truncated": false,
+      "reasons": [],
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "stdout",
+              "text": "a",
+              "uncertain": false,
+              "raw": false,
+              "line": 2
+            }
+          ],
+          "groups": [
+            {
+              "title": "環境変数",
+              "entries": [
+                [
+                  "A",
+                  "a"
+                ]
+              ]
+            },
+            {
+              "title": "バッチの終了状態",
+              "entries": [
+                [
+                  "ERRORLEVEL",
+                  "0"
+                ],
+                [
+                  "現在フォルダ",
+                  "C:\\Practice"
+                ],
+                [
+                  "コマンド表示",
+                  "off"
+                ],
+                [
+                  "遅延展開",
+                  "無効"
+                ]
+              ]
+            },
+            {
+              "title": "仮想ファイル一覧",
+              "entries": [
+                [
+                  "モデルのツリー",
+                  "[フォルダ] C:\\Practice\n[ファイル] C:\\Practice\\notes.txt\n[ファイル] C:\\Practice\\empty.txt\n[ファイル] C:\\Practice\\lines.txt\n[フォルダ] C:\\Practice\\logs\n[ファイル] C:\\Practice\\logs\\nested.txt"
+                ]
+              ]
+            }
+          ]
+        },
+        {
+          "outputs": [
+            {
+              "channel": "stdout",
+              "text": "other",
+              "uncertain": false,
+              "raw": false,
+              "line": 2
+            }
+          ],
+          "groups": [
+            {
+              "title": "環境変数",
+              "entries": [
+                [
+                  "A",
+                  "other"
+                ]
+              ]
+            },
+            {
+              "title": "バッチの終了状態",
+              "entries": [
+                [
+                  "ERRORLEVEL",
+                  "0"
+                ],
+                [
+                  "現在フォルダ",
+                  "C:\\Practice"
+                ],
+                [
+                  "コマンド表示",
+                  "off"
+                ],
+                [
+                  "遅延展開",
+                  "無効"
+                ]
+              ]
+            },
+            {
+              "title": "仮想ファイル一覧",
+              "entries": [
+                [
+                  "モデルのツリー",
+                  "[フォルダ] C:\\Practice\n[ファイル] C:\\Practice\\notes.txt\n[ファイル] C:\\Practice\\empty.txt\n[ファイル] C:\\Practice\\lines.txt\n[フォルダ] C:\\Practice\\logs\n[ファイル] C:\\Practice\\logs\\nested.txt"
+                ]
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "pause",
+    "code": "pause\necho resumed"
+  },
+  {
+    "name": "material:template:cmd-hello",
+    "code": "@echo off\nset \"NAME=Alice\"\necho Hello %NAME%\necho."
+  },
+  {
+    "name": "material:template:cmd-calculate",
+    "code": "@echo off\nset /a \"TOTAL=2+3*4\"\necho %TOTAL%"
+  },
+  {
+    "name": "material:template:cmd-delayed",
+    "code": "@echo off\nsetlocal EnableDelayedExpansion\nset COUNT=0\nfor /L %%i in (1,1,3) do (\n set /a \"COUNT=COUNT+1\"\n echo %COUNT% !COUNT!\n)\nendlocal"
+  },
+  {
+    "name": "material:template:cmd-files",
+    "code": "@echo off\nfor %%f in (*.txt) do (\n echo %%f\n)\nif exist notes.txt (\n type notes.txt\n)"
+  },
+  {
+    "name": "material:template:cmd-subroutine",
+    "code": "@echo off\ncall :show \"Alice Smith\"\necho returned\ngoto :eof\n:show\necho Hello %~1\nexit /b 0"
+  },
+  {
+    "name": "material:template:cmd-input",
+    "code": "@echo off\nset /p \"ANSWER=Continue? \"\nif \"%ANSWER%\"==\"yes\" (\n echo accepted\n) else (\n echo other input\n)"
+  },
+  {
+    "name": "material:template:cmd-write",
+    "code": "@echo off\nmd output\necho first>output\\result.txt\necho second>>output\\result.txt\nmove output\\result.txt output\\moved.txt\ntype output\\moved.txt"
+  },
+  {
+    "name": "material:template:cmd-pipe",
+    "code": "@echo off\ntype notes.txt|find \"学習\"\nif errorlevel 1 (\n echo not found\n) else (\n echo found\n)"
+  },
+  {
+    "name": "material:reference:echo",
+    "code": "@echo off\necho Hello\necho."
+  },
+  {
+    "name": "material:reference:set",
+    "code": "set \"NAME=Alice\"\necho %NAME%"
+  },
+  {
+    "name": "material:reference:set /a",
+    "code": "set /a \"N=2+3*4\"\necho %N%"
+  },
+  {
+    "name": "material:reference:set /p",
+    "code": "set /p \"ANSWER=Continue? \"\necho %ANSWER%"
+  },
+  {
+    "name": "material:reference:動的変数",
+    "code": "echo %ERRORLEVEL%\necho %CD%"
+  },
+  {
+    "name": "material:reference:変数展開",
+    "code": "set NAME=Alice\necho %NAME%"
+  },
+  {
+    "name": "material:reference:setlocal",
+    "code": "setlocal EnableDelayedExpansion\nset X=1\necho !X!\nendlocal"
+  },
+  {
+    "name": "material:reference:endlocal",
+    "code": "set X=outer\nsetlocal\nset X=inner\nendlocal\necho %X%"
+  },
+  {
+    "name": "material:reference:if",
+    "code": "if exist notes.txt (\n echo found\n) else (\n echo missing\n)"
+  },
+  {
+    "name": "material:reference:for",
+    "code": "for /L %%i in (1,1,3) do echo %%i"
+  },
+  {
+    "name": "material:reference:goto",
+    "code": "goto done\necho skipped\n:done\necho done"
+  },
+  {
+    "name": "material:reference:call",
+    "code": "call :show \"Alice\"\ngoto :eof\n:show\necho %~1\nexit /b"
+  },
+  {
+    "name": "material:reference:exit",
+    "code": "exit /b 3"
+  },
+  {
+    "name": "material:reference:rem",
+    "code": "rem 学習メモ\necho done"
+  },
+  {
+    "name": "material:reference:pause",
+    "code": "pause\necho resumed"
+  },
+  {
+    "name": "material:reference:cd",
+    "code": "cd logs\ncd"
+  },
+  {
+    "name": "material:reference:dir",
+    "code": "dir /b *.txt"
+  },
+  {
+    "name": "material:reference:type",
+    "code": "type notes.txt"
+  },
+  {
+    "name": "material:reference:md",
+    "code": "md extra"
+  },
+  {
+    "name": "material:reference:rd",
+    "code": "md extra\nrd extra"
+  },
+  {
+    "name": "material:reference:del",
+    "code": "copy notes.txt temp.txt\ndel temp.txt"
+  },
+  {
+    "name": "material:reference:ren",
+    "code": "copy notes.txt temp.txt\nren temp.txt renamed.txt"
+  },
+  {
+    "name": "material:reference:copy",
+    "code": "copy notes.txt copied.txt"
+  },
+  {
+    "name": "material:reference:move",
+    "code": "copy notes.txt temp.txt\nmove temp.txt moved.txt"
+  },
+  {
+    "name": "material:reference:cls",
+    "code": "echo old\ncls\necho new"
+  },
+  {
+    "name": "material:reference:find",
+    "code": "echo apple|find \"app\""
+  },
+  {
+    "name": "material:reference:リダイレクト",
+    "code": "echo first>out.txt\necho second>>out.txt\ntype out.txt"
+  },
+  {
+    "name": "material:reference:パイプ",
+    "code": "echo apple|find \"app\""
+  }
+]
