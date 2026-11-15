@@ -10111,10 +10111,10 @@
    "description": "int の絶対値を返します（<stdlib.h>／<cstdlib> の関数）。",
    "returns": "int（絶対値）",
    "caution": "最も小さい int（-2147483648）の絶対値は int で表せず、未定義動作として停止します。",
-   "example": "#include <stdio.h>\nint main() {\nint n = abs(-3);\nreturn 0;\n}",
+   "example": "#include <stdio.h>\n#include <stdlib.h>\nint main() {\nint n = abs(-3);\nreturn 0;\n}",
    "source": "https://en.cppreference.com/w/c/numeric/math/abs"
   },
-  "sha256": "9660f50bf363b7df7590440ec613904acb1de425d9575b56cefd90a393817a47"
+  "sha256": "b19b342562c033ff81c7512588bb1a740d4cfd2c295ee2cf9f6e7af1843df2cd"
  },
  {
   "kind": "c",
@@ -10358,10 +10358,10 @@
    "description": "int の絶対値を返します（<stdlib.h>／<cstdlib> の関数）。",
    "returns": "int（絶対値）",
    "caution": "最も小さい int（-2147483648）の絶対値は int で表せず、未定義動作として停止します。",
-   "example": "#include <iostream>\n#include <cstdio>\nint main() {\nint n = abs(-3);\nreturn 0;\n}",
+   "example": "#include <iostream>\n#include <cstdio>\n#include <cstdlib>\nint main() {\nint n = abs(-3);\nreturn 0;\n}",
    "source": "https://en.cppreference.com/w/cpp/numeric/math/abs"
   },
-  "sha256": "2f9071e7cac5bbf9d35caa86deb661b9ff0e6dbf09dcfded07a7426dd06a5a8d"
+  "sha256": "4ddb229e8ab3a83b952711b883952ad3c03fbb4e0ffbbc2b6636eb2deeb32ed5"
  },
  {
   "kind": "cpp",

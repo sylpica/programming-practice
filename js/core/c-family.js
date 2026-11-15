@@ -1597,12 +1597,16 @@ export function createCFamily({ id, name, extensions, language }) {
   if (!managed) for (const r of reference) {
     if (id === "cpp") r.example = r.example.replace(/\b(cout|endl|printf|string)\b/g, "std::$1");
     // The native examples must compile as written: C needs <stdbool.h> for
-    // bool/true/false (C17), and C++ needs <string> for std::string. Add only
-    // the headers each example actually uses.
+    // bool/true/false (C17), and C++ needs <string> for std::string. The
+    // integer abs family (abs/labs/llabs) is declared by <stdlib.h> /
+    // <cstdlib>; without that header the call is an implicit declaration,
+    // which GCC 14+ (CI) rejects even though older gcc only warns (RG-144).
+    // Add only the headers each example actually uses.
+    const usesAbs = /\b(abs|labs|llabs)\s*\(/.test(r.example);
     const headers =
       id === "cpp"
-        ? ["iostream", "cstdio", ...(r.example.includes("std::string") ? ["string"] : [])]
-        : ["stdio.h", ...(/\b(bool|true|false)\b/.test(r.example) ? ["stdbool.h"] : [])];
+        ? ["iostream", "cstdio", ...(r.example.includes("std::string") ? ["string"] : []), ...(usesAbs ? ["cstdlib"] : [])]
+        : ["stdio.h", ...(/\b(bool|true|false)\b/.test(r.example) ? ["stdbool.h"] : []), ...(usesAbs ? ["stdlib.h"] : [])];
     r.example = `${headers.map((h) => `#include <${h}>`).join("\n")}\nint main() {\n${r.example}\nreturn 0;\n}`;
   }
   let codeArray = managed

@@ -738,3 +738,17 @@
 ### CI 照合で新設された群（RG-143）
 
 - **RG-143 C／C++ リファレンス使用例の実コンパイル前提の是正**（3件）：`js/core/c-family.js` のラッパーは使用例を `int main()` に包む際、インクルードを C は `<stdio.h>`、C++ は `<iostream>`＋`<cstdio>` に一律固定し、C++ の std:: 修飾も cout／endl／printf のみだったため、(1) C の `bool` 項目の使用例 `bool ok = true;` が `<stdbool.h>` なしでは C17 の実 gcc でコンパイルできず（unknown type name 'bool'）、(2) C++ の `string` 項目と (3) `getline` 項目の使用例が、無修飾の `string` 宣言と `<string>` 欠如で実 g++ でコンパイルできなかった。ラッパーを是正し、C では bool／true／false を使う使用例にだけ `#include <stdbool.h>` を、C++ では `string` を `std::string` へ修飾し `std::string` を使う使用例にだけ `#include <string>` を追加するようにした（他の使用例の表示は不変）。照合個票 `docs/audit/reference-r2.json` の該当3行（c/bool、cpp/string、cpp/getline）の example 文面と sha256 も同期した（sha256 は fields の JSON からの再計算で自己整合化）。回帰として、npm test 側に「C の使用例で bool／true／false を使うものは `<stdbool.h>` 必須」「C++ の使用例は無修飾 string 宣言禁止・std::string 使用時は `<string>` 必須」の静的検査を追加し、修正前の配信内容に対して3件全てを検出できることを確認した。→ 実装＋文面同期
+
+## 2026-11-15 Muse 修正による処置結果（第7バッチ：CI 実コンパイル照合の再発是正・2件）
+
+是正配信（コミット 41cc179）の GitHub Actions ラン #20 の validate ジョブが、同じステップ「Compile teaching examples with native runtimes」（`tests/native-audit.py`）で再び失敗した。CI ログを実物で確認したところ AssertionError は `('c', 'reference', 'abs', ...)` で、C リファレンス `abs` の使用例が `<stdlib.h>` なしで `abs(-3)` を呼んでいた（暗黙の関数宣言は GCC 14 以降で既定エラー、ローカルの GCC 13 では警告止まりという世代差が根本原因クラス）。native-audit は最初の失敗で停止する設計のため、GCC 14 が既定エラー化した診断を `-Werror=` で明示した collect-all 収集（Pass A）と、宣言ヘッダーの自己充足監査＝推移的インクルード依存の洗い出し（Pass B）の2パスで C／C++ 全69件（テンプレート12＋リファレンス57）を照合し、影響は **2件のみ**（C／C++ の `abs` 項目）であることを確定した。新設は **RG-144 の1グループ**。
+
+- テスト：2,054件 → **2,055件**（CI 失敗クラスの静的回帰テスト1件を `tests/muse-fix-ci.test.js` に追加）。全件実行で **2,055件全件合格**。
+- native-audit.py（dotnet を含む全範囲、標準入力 EOF）の最終結果は修正報告書に記録（exit 0、C# 59件全件実行・スキップ0）。
+- precache は全変更の最後に再生成し `--check` 通過。
+- 累計：元項目 **729件**（727＋2）、統合 **144グループ**（RG-01〜RG-144）。
+- 修正報告書：`docs/audit/MUSE-FIX-CI2.md`。
+
+### CI 照合で新設された群（RG-144）
+
+- **RG-144 C／C++ リファレンス `abs` 使用例の宣言ヘッダー是正**（2件）：RG-143 で是正した `js/core/c-family.js` のラッパーの条件付きインクルードは bool／std::string の場合に限られ、基本ヘッダー（C は `<stdio.h>`、C++ は `<iostream>`＋`<cstdio>`）以外の宣言ヘッダーを必要とする関数の使用例をカバーしていなかった。(1) C の `abs` 項目の使用例は `#include <stdio.h>` のみで `abs(-3)` を呼び、CI の GCC 14 系では暗黙の関数宣言としてエラーになった（ローカル GCC 13 では警告止まりで再現しない）。(2) C++ の `abs` 項目の使用例も宣言ヘッダー `<cstdlib>` を欠き、ローカルでは libstdc++ 13 の推移的インクルードで偶然宣言されていた同根項目（世代が変われば同じ失敗になる）。ラッパーを拡張し、整数 abs 系（abs／labs／llabs）を呼ぶ使用例にだけ、C は `#include <stdlib.h>`、C++ は `#include <cstdlib>` を追加するようにした（項目自身の説明文「<stdlib.h>／<cstdlib> の関数」と一致し、他の使用例の表示は不変）。照合個票 `docs/audit/reference-r2.json` の該当2行（c/abs、cpp/abs）の example 文面と sha256 も同期した（sha256 は RG-143 で確立した fields の JSON からの再計算方式で自己整合を確認。同期前に C／C++ 全リファレンス行の定義文面との差分が abs の2行だけであることも機械確認した）。回帰として、npm test 側に「C／C++ の全教材例で、呼び出すライブラリ関数（約80種）の宣言ヘッダーを直接インクルードしていること」の静的検査を追加し、修正前は `c reference abs` で、C++ 側の追加だけを巻き戻した複製ツリーでは `cpp reference abs` で、それぞれ失敗することを確認した（2件とも独立に検出可能）。収集器の再実行では Pass A 失敗0件・Pass B 該当0件。→ 実装＋文面同期
