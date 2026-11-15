@@ -1,3 +1,5 @@
+import sys
+sys.stdout.reconfigure(encoding="utf-8")
 import base64,json,os,platform,subprocess,tempfile,time
 from pathlib import Path
 base=Path(__file__).resolve().parent;pwsh=os.environ.get('PWSH_AUDIT_PATH','pwsh');rows=[]

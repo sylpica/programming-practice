@@ -1,3 +1,5 @@
+import sys
+sys.stdout.reconfigure(encoding="utf-8")
 import json,os,subprocess,time,shutil
 from pathlib import Path
 p=Path(__file__).resolve().parent;project=p/'csharp-native';project.mkdir(exist_ok=True)
