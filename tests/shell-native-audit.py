@@ -1,12 +1,12 @@
 """Differential tests use real runtimes; the offline app never launches these."""
-import json,os,subprocess,tempfile,shutil,sys
+import json,os,subprocess,tempfile,shutil,sys,base64
 from pathlib import Path
 root=Path(__file__).resolve().parents[1]
-fixtures=json.loads((root/'tests/fixtures/powershell-cases.json').read_text())
+fixtures=json.loads((root/'tests/fixtures/powershell-cases.json').read_text(encoding='utf-8'))
 pwsh=os.environ.get('PWSH_PATH') or shutil.which('pwsh')
 if "--require-both" in sys.argv:
  assert pwsh and shutil.which("cmd.exe"), "Both native shells must be installed"
-materials=json.loads(subprocess.check_output(['node','--input-type=module','-e',"import {definitions} from './js/types/registry.js';console.log(JSON.stringify(definitions.filter(d=>['cmd','powershell'].includes(d.id)).flatMap(d=>[...d.templates.map(t=>({kind:d.id,name:t.id,code:t.code})),...d.reference.map(r=>({kind:d.id,name:r.name,code:r.example}))])));"],cwd=root,text=True))
+materials=json.loads(subprocess.check_output(['node','--input-type=module','-e',"import {definitions} from './js/types/registry.js';console.log(JSON.stringify(definitions.filter(d=>['cmd','powershell'].includes(d.id)).flatMap(d=>[...d.templates.map(t=>({kind:d.id,name:t.id,code:t.code})),...d.reference.map(r=>({kind:d.id,name:r.name,code:r.example}))])));"],cwd=root,text=True,encoding='utf-8'))
 records=[]
 with tempfile.TemporaryDirectory(prefix='practice-shell-native-') as temp:
  sandbox=Path(temp);cases=sandbox/'cases.json';cases.write_text(json.dumps([{'name':n,'code':c,'index':i}for i,(n,c,e)in enumerate(fixtures)],ensure_ascii=False),encoding='utf-8')
@@ -33,7 +33,7 @@ foreach($row in $rows){
 ConvertTo-Json -InputObject $result -Depth 14 -Compress
 '''
   env={**os.environ,'PRACTICE_SHELL_CASES':str(cases),'PRACTICE_SHELL_ROOT':str(sandbox),'XDG_CACHE_HOME':str(sandbox/'cache'),'XDG_CONFIG_HOME':str(sandbox/'config'),'XDG_DATA_HOME':str(sandbox/'data')}
-  proc=subprocess.run([pwsh,'-NoLogo','-NoProfile','-NonInteractive','-Command',script],env=env,capture_output=True,text=True,encoding='utf-8',timeout=60)
+  proc=subprocess.run([pwsh,'-NoLogo','-NoProfile','-NonInteractive','-EncodedCommand',base64.b64encode(script.encode('utf-16le')).decode('ascii')],env=env,capture_output=True,text=True,encoding='utf-8',timeout=60)
   assert proc.returncode==0,proc.stderr
   native=json.loads(proc.stdout)
   for (name,code,expected),row in zip(fixtures,native):
@@ -93,5 +93,5 @@ ConvertTo-Json -InputObject $result -Depth 14 -Compress
   assert proc.returncode in allowed,(entry['kind'],entry['name'],proc.returncode,proc.stdout,proc.stderr)
   records.append({'kind':entry['kind'],'name':'material:'+entry['name'],'passed':True})
 Path('work/audit').mkdir(parents=True,exist_ok=True)
-Path('work/audit/shell-native-results.json').write_text(json.dumps(records,ensure_ascii=False,indent=2))
+Path('work/audit/shell-native-results.json').write_text(json.dumps(records,ensure_ascii=False,indent=2),encoding='utf-8')
 print(json.dumps({'native_shell_checks':len(records),'powershell':sum(r['kind']=='powershell'for r in records),'cmd':sum(r['kind']=='cmd'for r in records),'passed':True}))
