@@ -91,11 +91,16 @@ test("batch3-psparser R24-N2 incomplete literals name the literal in every posit
     ["Write-Output (0b2)", /2進数リテラル（0b2）/],
     ["if (0x) { 1 }", /数値リテラル：0x/],
     ["$a = @(0x, 2)", /数値リテラル：0x/],
-    ["Write-Output 0x", /数値リテラル：0x/],
-    ["Write-Output 0b2", /2進数リテラル（0b2）/],
-    ["Write-Output 1_000", /数値リテラル：1_000/],
   ])
     expectErr(code, name, /\) が必要です|コマンドレット/);
+});
+test("batch3-psparser R24-N2 argument-mode incomplete literals are string arguments (R27-N5 re-adjudication)", () => {
+  // 修正バッチ6（R27-N5）で再裁定：引数モードでは不完全な数値リテラルで
+  // 始まる接着形は文法 B.1.7 の generic-token として単一の文字列引数に
+  // なる（RG-183／RG-195 の確立済み規則）。式モードの名指し停止は不変。
+  expectOut("Write-Output 0x", [["0x"]]);
+  expectOut("Write-Output 0b2", [["0b2"]]);
+  expectOut("Write-Output 1_000", [["1_000"]]);
 });
 test("batch3-psparser R24-N2 valid literal forms keep working", () => {
   expectOut("Write-Output 0x1F", [["31"]]);
@@ -103,8 +108,10 @@ test("batch3-psparser R24-N2 valid literal forms keep working", () => {
   expectOut("Write-Output 1.5KB", [["1536"]]);
   expectOut("Write-Output 0x10KB", [["16384"]]);
   expectOut("Write-Output 1e2", [["100"]]);
-  // R23-N2 で固定した 0b の名指しは維持する。
-  expectErr("Write-Output 0b101", /未対応：2進数リテラル（0b101）/);
+  // R23-N2 で固定した 0b の名指しは式モードで維持する。引数モードは
+  // 修正バッチ6（R27-N5）の再裁定で generic-token の文字列引数になる。
+  expectErr("$x = 0b101", /未対応：2進数リテラル（0b101）/);
+  expectOut("Write-Output 0b101", [["0b101"]]);
   // メンバーアクセス（1.Length）は末尾ドットとして消費しない。
   const r = run("$x = 1.Length");
   assert.doesNotMatch(

@@ -167,5 +167,16 @@
     "Copy-Item overwrites a normal existing file",
     "Copy-Item notes.txt copied.txt\nSet-Content copied.txt old\nCopy-Item notes.txt copied.txt\nGet-Content copied.txt",
     [["学習メモ"]]
-  ]
+  ],
+  ["member glued subtraction", "$h=@{k=10}\n$h.k-1", [["9"]]],
+  ["member glued postfix decrement", "$h=@{k=10}\n$x=$h.k--\n$x\n$h.k", [["10", "9"]]],
+  ["member glued comparison", "$h=@{k=10}\n$h.k-eq 10", [["True"]]],
+  ["string length glued subtraction", "$s='abc'\n$s.Length-1", [["2"]]],
+  ["array type cast", "$a=[int[]](1,2)\n$a", [["1", "2"]]],
+  ["qualified type cast", "$a=[System.String]7\n$a", [["7"]]],
+  ["param validateset attribute", "function f { param([ValidateSet('a','b')]$a='a') $a }\nf 'b'", [["b"]]],
+  ["param alias attribute", "function f { param([Alias('x')]$a=5) $a }\nf -x 7", [["7"]]],
+  ["argument mode incomplete numeric token", "Write-Output 123abc", [["123abc"]]],
+  ["argument mode incomplete real token", "Write-Output 1.5.2", [["1.5.2"]]],
+  ["argument mode incomplete hex token", "Write-Output 0x", [["0x"]]]
 ]

@@ -284,6 +284,40 @@ for (const r of reference) if (exampleSetup[r.name]) r.example = exampleSetup[r.
 // P-N1: 配列の総内容量の見積もり（上限超過時点で打ち切る）。状態
 // スナップショットの転送では同じ文字列への参照でも要素ごとに複製
 // されるため、要素数だけでは配列の実サイズを抑えられない。
+// R27-N11：分割代入パターンの葉（変数名）を集める。宣言位置のパターンは
+// checkPattern で変数以外が弾かれているため、葉は変数か入れ子パターン。
+function patternLeafNamesLocal(pattern, out = []) {
+  const els =
+    pattern.k === "arrayPattern" ? pattern.elements : pattern.props;
+  for (const el of els) {
+    if (!el) continue;
+    if (el.target?.k === "arrayPattern" || el.target?.k === "objectPattern")
+      patternLeafNamesLocal(el.target, out);
+    else if (el.target?.k === "var") out.push(el.target.name);
+  }
+  return out;
+}
+// R27-N10（RG-208 と同型）：非有限数を、その文字列表現（"Infinity"／
+// "-Infinity"／"NaN"）へ置き換えた表示用スナップショットを返す。
+// 最終状態（paths[].vars）は JSON として直列化される表示面であり、
+// そのままでは非有限数が null に化けて出力表示と矛盾していた。
+// 実行完了後のスナップショットに限り置き換え、実行中の数値としての
+// 働きは変えない。オブジェクト／配列にネストした非有限数も対象とし、
+// 循環は元の参照構造を保つ。
+function finiteSafeSnapshot(v, seen = new Map()) {
+  if (typeof v === "number") return Number.isFinite(v) ? v : String(v);
+  if (!v || typeof v !== "object") return v;
+  if (isUnknown(v)) return v;
+  if (seen.has(v)) return seen.get(v);
+  let out = Array.isArray(v) ? [] : {};
+  seen.set(v, out);
+  if (Array.isArray(v))
+    for (let x of v) out.push(finiteSafeSnapshot(x, seen));
+  else
+    for (let [k, x] of Object.entries(v))
+      out[k] = finiteSafeSnapshot(x, seen);
+  return out;
+}
 function arrayContentSize(v, budget = 200000, depth = 0) {
   if (typeof v === "string") return v.length;
   if (Array.isArray(v) && depth <= 4) {
@@ -470,7 +504,7 @@ export const definition = {
   },
   scan: (code) => scanScript(code, reference),
   async simulate(code, model, limits) {
-    return simulateScript(
+    const result = simulateScript(
       code,
       model,
       {
@@ -481,14 +515,32 @@ export const definition = {
           s.vars.document = { body: s.model.dom.body };
           function hoist(list, enclosing = new Set()) {
             const lexical = new Set();
-            for (const n of list) if (n.k === "declare") {
-              if (!["let", "const", "var"].includes(n.type) || n.pointer || n.size)
+            // R27-N11：複数宣言子（declareList）の各宣言子と、分割代入の
+            // 葉の名前も、単一宣言と同じ重複・const 初期化の検査対象にする。
+            const declaratorNames = (n) =>
+              n.k === "declareList"
+                ? n.declarators.flatMap((d) =>
+                    d.pattern ? patternLeafNamesLocal(d.pattern) : [d.name],
+                  )
+                : [n.name];
+            for (const n of list) if (n.k === "declare" || n.k === "declareList") {
+              if (!["let", "const", "var"].includes(n.type))
                 api.fail("このJavaScript宣言は未対応です", n, "未対応");
-              if (n.type === "const" && !n.value)
-                api.fail("constには初期化式が必要です", n, "SyntaxError");
+              const parts =
+                n.k === "declareList"
+                  ? n.declarators
+                  : [{ name: n.name, pointer: n.pointer, size: n.size, value: n.value }];
+              for (const d of parts) {
+                if (d.pointer || d.size)
+                  api.fail("このJavaScript宣言は未対応です", n, "未対応");
+                if (n.type === "const" && !d.value)
+                  api.fail("constには初期化式が必要です", n, "SyntaxError");
+              }
               if (n.type !== "var") {
-                if (lexical.has(n.name)) api.fail("同じスコープの宣言が重複しています", n, "SyntaxError");
-                lexical.add(n.name);
+                for (const nm of declaratorNames(n)) {
+                  if (lexical.has(nm)) api.fail("同じスコープの宣言が重複しています", n, "SyntaxError");
+                  lexical.add(nm);
+                }
               }
             }
             const visible = new Set([...enclosing, ...lexical]);
@@ -496,6 +548,12 @@ export const definition = {
               if (n.k === "declare" && n.type === "var") {
                 if (visible.has(n.name)) api.fail("varとlet / constの宣言が競合しています", n, "SyntaxError");
                 if (!Object.hasOwn(s.vars, n.name)) s.vars[n.name] = undefined;
+              }
+              if (n.k === "declareList" && n.type === "var") {
+                for (const nm of declaratorNames(n)) {
+                  if (visible.has(nm)) api.fail("varとlet / constの宣言が競合しています", n, "SyntaxError");
+                  if (!Object.hasOwn(s.vars, nm)) s.vars[nm] = undefined;
+                }
               }
               if (n.k === "for") hoist([n.init], visible);
               if (n.body) hoist(n.body, visible);
@@ -505,10 +563,24 @@ export const definition = {
           hoist(nodes);
         },
         prepareScope(nodes, s, api) {
-          for (const n of nodes) if (n.k === "declare" && n.type !== "var") {
-            api.registerDeclaration(s, n);
-            s.vars[n.name] = { kind: "js-uninitialized" };
-            s.types[n.name] = n.type;
+          for (const n of nodes) {
+            if (n.k === "declare" && n.type !== "var") {
+              api.registerDeclaration(s, n);
+              s.vars[n.name] = { kind: "js-uninitialized" };
+              s.types[n.name] = n.type;
+            }
+            // R27-N11：複数宣言子の各名前も単一宣言と同じくスコープへ
+            // 登録し、初期化前参照（TDZ）を効かせる。パターン宣言子の
+            // 葉は declarePattern と同じく実行時に登録する（ここで登録
+            // すると bindPattern の同名検査と衝突するため）。
+            if (n.k === "declareList" && n.type !== "var") {
+              for (const d of n.declarators) {
+                if (d.pattern) continue;
+                api.registerDeclaration(s, { name: d.name, type: n.type, line: n.line });
+                s.vars[d.name] = { kind: "js-uninitialized" };
+                s.types[d.name] = n.type;
+              }
+            }
           }
         },
         step(n, s, api) {
@@ -887,6 +959,11 @@ export const definition = {
       },
       limits,
     );
+    // R27-N10：実行完了後の最終状態スナップショットに限り、非有限数を
+    // 文字列表現へ置き換える（UI.Vision の RG-208 と同型の処置）。
+    // vars の JSON 往復が出力・groups の表示と一致することが判定基準。
+    for (let p of result.paths || []) p.vars = finiteSafeSnapshot(p.vars);
+    return result;
   },
 };
 

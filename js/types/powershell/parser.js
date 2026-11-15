@@ -120,8 +120,9 @@ export function tokenizePS(source) {
     // あわせて末尾検証を行う：リテラルの直後に英数字・_ が続く不完全形
     // （0x、1e、1.5e、1KBB、1_000 等）は接頭辞だけを切り取って別トークン
     // に化けさせず（代入位置の虚偽原因・括弧位置の「) が必要です」・
-    // 引数位置の黙った分割の根治）、リテラル自体を名指して止める。
-    // 字句解析段階で止めるため、全位置（引数モード含む）で一貫する。
+    // 引数位置の黙った分割の根治）、リテラル全体を1トークンとして切り取る。
+    // R27-N5: 停止は parser の式モード側で行い、引数モードでは
+    // generic-token の文字列引数になる（下の badnum 化を参照）。
     const numStart =
       /[0-9]/.test(c) || (c === "." && /[0-9]/.test(source[i + 1] ?? ""));
     if (numStart) {
@@ -132,7 +133,17 @@ export function tokenizePS(source) {
       // 0／1 以外の文字が続く形（0b2 等）も接頭辞として捕捉する
       // （従来は ^0b[01]+ を要求するため名指し経路をすり抜けていた）。
       const binary = rest.match(/^0[bB][0-9A-Za-z_]*/);
-      if (binary) fail("未対応：2進数リテラル（" + binary[0] + "）", line);
+      // R27-N5: 不完全な数値リテラルは字句段階ではエラーにせず badnum
+      // トークンとして残す。式モードでは parser 側が従来どおりリテラルを
+      // 名指して止め（RG-182）、引数モードでは oneArgument が generic-token
+      // として単一の文字列引数にする（文法 B.1.7、RG-183／RG-195 と同じ規則）。
+      // エラー文言はトークンに保持し、式位置での文面・カテゴリを不変に保つ。
+      if (binary) {
+        i += binary[0].length;
+        push("badnum", binary[0], start);
+        ts.at(-1).msg = "未対応：2進数リテラル（" + binary[0] + "）";
+        continue;
+      }
       // R23-N2: 16進接頭辞 0x と単位接尾辞（KB／MB／GB／TB／PB）も
       // 数値リテラルの一部として取り込む。取り込まないと "0" と "x1F" の
       // ように黙って分割され、誤値や虚偽原因になる。
@@ -144,11 +155,13 @@ export function tokenizePS(source) {
         let literal = rest.match(/^[0-9A-Za-z_.]+/)[0];
         if (/[eE]$/.test(literal) && /^[+-]/.test(rest.slice(literal.length)))
           literal += rest[literal.length];
-        fail(
-          "未対応または不正な数値リテラル：" + literal,
-          line,
-          "SyntaxError",
-        );
+        // R27-N5: 上の 2進形と同じく badnum トークン化する（字句段階で
+        // 止めると引数モードの generic-token 化に到達しないため）。
+        i += literal.length;
+        push("badnum", literal, start);
+        ts.at(-1).msg = "未対応または不正な数値リテラル：" + literal;
+        ts.at(-1).cat = "SyntaxError";
+        continue;
       }
       // R25-N10: 数値リテラルの直後に「.＋数字」が続く形（1.5.2／1.5e2.3／
       // 0x1F.2 等）は、リテラルの継続として不正である（言語仕様 B.1.9.2 の
@@ -160,11 +173,12 @@ export function tokenizePS(source) {
       // （5.ToString() の「.＋英字」）は対象外であり、従来どおり扱う。
       if (after === "." && /[0-9]/.test(rest[number[0].length + 1] ?? "")) {
         const literal = rest.match(/^[0-9A-Za-z_.]+/)[0];
-        fail(
-          "未対応または不正な数値リテラル：" + literal,
-          line,
-          "SyntaxError",
-        );
+        // R27-N5: 「.＋数字」継続形も badnum トークン化する。
+        i += literal.length;
+        push("badnum", literal, start);
+        ts.at(-1).msg = "未対応または不正な数値リテラル：" + literal;
+        ts.at(-1).cat = "SyntaxError";
+        continue;
       }
       i += number[0].length;
       push("number", number[0], start);
@@ -452,6 +466,8 @@ export class PSParser {
       const cases = [];
       while (!this.peek("}")) {
         const value = this.take();
+        // R27-N5: switch の条件値の位置も式モードとして扱う。
+        if (value.k === "badnum") fail(value.msg, value.line, value.cat);
         if (!["string", "number", "word"].includes(value.k))
           fail("未対応：switchの条件形式", value.line);
         cases.push({
@@ -489,6 +505,37 @@ export class PSParser {
           : null;
       return { k: name, value, line };
     }
+    // R27-N4: param の前に置く関数属性 [CmdletBinding()]／
+    // [OutputType([型])]（B.2.4 attribute。about_Functions_CmdletBindingAttribute／
+    // about_Functions_OutputTypeAttribute）は、後続が param のときに限り
+    // 属性として読み飛ばし、param 文として解釈する。どちらも実行モデル
+    // 上の意味（共通パラメータの追加・出力型の宣言）は持たない宣言であり、
+    // param を伴わない位置では従来どおりキャスト式として解釈させるため、
+    // 当てはまらない場合は読み位置を戻す。
+    if (t.v === "[") {
+      const saved = this.i;
+      let sawAttribute = false,
+        followedByParam = false;
+      while (this.peek("[")) {
+        const before = this.i,
+          bc = this.bracketContent();
+        if (!/^(CmdletBinding|OutputType)\s*\(/i.test(bc.text.trim())) {
+          this.i = before;
+          break;
+        }
+        sawAttribute = true;
+        if (this.ts[this.i]?.v.toLowerCase() === "param") {
+          followedByParam = true;
+          break;
+        }
+        if (!this.peek("[")) break;
+      }
+      if (sawAttribute && followedByParam) {
+        this.take();
+        return { k: "param", params: this.parameters(), line };
+      }
+      this.i = saved;
+    }
     const pipe = this.pipeline();
     const op = this.ts[this.i]?.v;
     if (["=", "+=", "-=", "*=", "/="].includes(op)) {
@@ -509,15 +556,100 @@ export class PSParser {
         ["post", "pre"].includes(pipe.stages[0].value?.k),
     };
   }
+  // R27-N4: 角括弧の内容全体を読む。文法（Appendix A）の type-literal は
+  // [ type-spec ] で、type-spec はドット連結の type-name、array-type-name
+  // （type-name [ dimension ] ]）、generic-type-name（type-name [
+  // generic-type-arguments ]）を含み、B.2.4 の attribute は
+  // [ attribute-name ( attribute-arguments ) ] の形を取る。従来は直後の
+  // 単一トークンだけを型名として読み、直後に ] を要求したため、[]・.・()
+  // を含む正当な内容が「] が必要です」という虚偽原因で止まっていた。
+  // 入れ子の [ ] と ( ) の対応を数えて対応する ] までを内容として返し、
+  // 内容の解釈（型名か属性か、対応可否）は呼び出し側が行う。
+  bracketContent(open = null) {
+    // open には、呼び出し側が既に消費した "[" トークンを渡せる
+    // （expr のキャスト分岐）。省略時は現在位置の "[" を消費する。
+    open ??= this.take("[");
+    const tokens = [];
+    let depth = 1,
+      parens = 0,
+      close = null;
+    while (true) {
+      const t = this.ts[this.i];
+      if (!t || t.k === "eof")
+        fail("] が必要です", open.line, "SyntaxError");
+      if (t.v === "]" && depth === 1 && parens === 0) {
+        close = this.take();
+        break;
+      }
+      if (t.v === "[") depth++;
+      else if (t.v === "]") depth--;
+      else if (t.v === "(" || t.v === "@(") parens++;
+      else if (t.v === ")") parens--;
+      tokens.push(this.take());
+    }
+    return {
+      text: this.source.slice(open.end, close.start),
+      tokens,
+      line: open.line,
+    };
+  }
   parameters() {
     this.take("(");
     const params = [];
     while (!this.peek(")")) {
-      let type = null;
-      if (this.peek("[")) {
-        this.take();
-        type = this.take().v;
-        this.take("]");
+      let type = null,
+        validateSet = null,
+        mandatory = false;
+      const aliases = [];
+      // R27-N4: 型制約とパラメータ属性（B.2.4 attribute）は複数並べて
+      // 書ける（例：[Parameter(Mandatory=$true)][ValidateSet('a','b')]
+      // [string]$a）。角括弧グループを繰り返し読み、括弧を含むものは
+      // 属性、含まないものは型名として解釈する。対応しない属性は
+      // 属性名を名指して止める。
+      while (this.peek("[")) {
+        const bc = this.bracketContent(),
+          text = bc.text.trim();
+        if (!text.includes("(")) {
+          type = text.replace(/\s+/g, "");
+          continue;
+        }
+        const attrName = text
+          .slice(0, text.indexOf("("))
+          .trim()
+          .split(".")
+          .at(-1)
+          .toLowerCase();
+        const inner = bc.tokens.slice(
+          bc.tokens.findIndex((x) => x.v === "(") + 1,
+        );
+        if (attrName === "validateset")
+          validateSet = inner
+            .filter((x) => ["string", "number", "word"].includes(x.k))
+            .map((x) => (x.k === "number" ? String(psNumber(x.v)) : x.v));
+        else if (attrName === "parameter") {
+          for (let j = 0; j < inner.length; j++) {
+            if (
+              inner[j].k === "word" &&
+              inner[j].v.toLowerCase() === "mandatory"
+            ) {
+              // [Parameter(Mandatory)] は $true の省略形（名前付き引数の
+              // 値省略は真として扱う）。= $false のときだけ偽にする。
+              mandatory = !(
+                inner[j + 1]?.v === "=" &&
+                ((inner[j + 2]?.k === "var" &&
+                  inner[j + 2].v.toLowerCase() === "false") ||
+                  (inner[j + 2]?.k === "word" &&
+                    inner[j + 2].v.toLowerCase() === "false"))
+              );
+            }
+          }
+        } else if (attrName === "alias")
+          aliases.push(
+            ...inner
+              .filter((x) => x.k === "string")
+              .map((x) => x.v),
+          );
+        else fail("未対応のパラメータ属性：[" + text + "]", bc.line);
       }
       const t = this.take();
       if (t.k !== "var")
@@ -534,7 +666,15 @@ export class PSParser {
           this.noComma--;
         }
       }
-      params.push({ name: t.v, type, value, line: t.line });
+      params.push({
+        name: t.v,
+        type,
+        value,
+        validateSet,
+        mandatory,
+        aliases,
+        line: t.line,
+      });
       if (!this.peek(",")) break;
       this.take();
     }
@@ -675,6 +815,26 @@ export class PSParser {
   oneArgument() {
     const t = this.ts[this.i];
     if (t.v === "{") return { k: "block", body: this.block(), line: t.line };
+    // R27-N5: 引数モードで不完全な数値リテラルで始まる入力は、式として
+    // 解釈できないため文法 B.1.7 の generic-token として単一の文字列
+    // 引数になる（RG-183／RG-195 の接着形と同じ規則）。接着した後続
+    // トークン列（0x--1 の --1 等）も含めて原文のまま取り込む。
+    if (t.k === "badnum") {
+      let end = t.end;
+      this.take();
+      while (
+        this.ts[this.i]?.start === end &&
+        ![";", "|", ")", "}", "<eof>", ","].includes(this.ts[this.i].v)
+      ) {
+        this.take();
+        end = this.ts[this.i - 1].end;
+      }
+      return {
+        k: "literal",
+        value: this.source.slice(t.start, end),
+        line: t.line,
+      };
+    }
     // 引数モードでは "."（現在フォルダ）と ".."（親フォルダ）はパス文字列。
     // ただし ".5" のような数値リテラルに隣接する場合は対象外（従来どおり式側へ）。
     if (
@@ -867,6 +1027,31 @@ export class PSParser {
     const t = this.take(),
       line = t.line;
     let a;
+    // R27-N5: 式モードでは不完全な数値リテラルを従来どおり名指して
+    // 止める（RG-182）。文面・カテゴリは字句解析時にトークンへ保持した
+    // ものをそのまま使う。引数モード（argGlued）では generic-token と
+    // して文字列化する。oneArgument の先頭分岐を通らない経路（カンマ
+    // 要素として expr のカンマ収集から読まれる場合等）でも同じ規則に
+    // 揃えるため、ここでも argGlued を見て分岐する。
+    if (t.k === "badnum") {
+      if (this.argGlued > 0) {
+        let end = t.end;
+        while (
+          this.ts[this.i]?.start === end &&
+          ![";", "|", ")", "}", "<eof>", ","].includes(this.ts[this.i].v)
+        ) {
+          this.take();
+          end = this.ts[this.i - 1].end;
+        }
+        this.depth--;
+        return {
+          k: "literal",
+          value: this.source.slice(t.start, end),
+          line,
+        };
+      }
+      fail(t.msg, line, t.cat);
+    }
     if (t.k === "number") {
       const v = psNumber(t.v);
       if (
@@ -1006,6 +1191,9 @@ export class PSParser {
         this.skip();
         while (!this.peek("}")) {
           const key = this.take();
+          // R27-N5: ハッシュキーの位置も式モードであり、不完全な数値
+          // リテラルはリテラル自体を名指して止める。
+          if (key.k === "badnum") fail(key.msg, key.line, key.cat);
           if (!["word", "string", "number"].includes(key.k))
             fail("未対応：ハッシュテーブルのキー", key.line);
           this.take("=");
@@ -1023,8 +1211,11 @@ export class PSParser {
       this.take("}");
       a = { k: "hashtable", entries, line };
     } else if (t.v === "[") {
-      const type = this.take().v;
-      this.take("]");
+      // R27-N4: 型名は単一トークンとは限らない（ドット連結・配列型・
+      // ジェネリック型）。角括弧の内容全体を bracketContent で読み、
+      // 型名文字列として評価側へ渡す（対応可否は評価側が型名を
+      // 名指して裁定する）。
+      const type = this.bracketContent(t).text.replace(/\s+/g, "");
       // R24-N3: キャストの被演算子もカンマ演算子を含まない（単項と同様）。
       // R25-N12: 被演算子は式モードのため接着判定を下ろす。
       // R26-N1: 被演算子の内側へ noComma を継承しない（単項と同じ）。
@@ -1048,8 +1239,29 @@ export class PSParser {
         const key = this.take();
         if (key.k !== "word")
           fail("プロパティ名が必要です", key.line, "SyntaxError");
-        a = { k: "member", target: a, name: key.v, line };
-        if (this.peek("(")) fail("未対応：.NETメソッド呼び出し " + key.v, line);
+        let name = key.v;
+        // R27-N1: メンバー名（文法 B.2 の member-name → simple-name、
+        // B.1.10）の構成文字に「-」は含まれない。字句解析の単語トークンは
+        // コマンド名（Write-Output 等）のために「-」を含むため、ドットの
+        // 後では最初の「-」以降を演算子側へ戻す。戻し分を再トークン化して
+        // 現在位置へ差し込むことで、接着した減算（$h.k-1）・後置 --・
+        // 比較（$h.k-eq 10）が実物どおり演算子として解釈される。
+        const dash = name.indexOf("-");
+        if (dash >= 0) {
+          const restTokens = tokenizePS(name.slice(dash)).filter(
+            (x) => x.k !== "eof",
+          );
+          const base = key.start + dash;
+          for (const x of restTokens) {
+            x.start += base;
+            x.end += base;
+            x.line = key.line;
+          }
+          this.ts.splice(this.i, 0, ...restTokens);
+          name = name.slice(0, dash);
+        }
+        a = { k: "member", target: a, name, line };
+        if (this.peek("(")) fail("未対応：.NETメソッド呼び出し " + name, line);
         continue;
       }
       if (this.peek("[")) {

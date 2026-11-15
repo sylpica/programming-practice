@@ -2948,6 +2948,66 @@ export const REFERENCE = [
   "doc": "https://docs.python.org/ja/3.12/library/math.html#math.nan"
  },
  {
+  "id": "Ellipsis",
+  "name": "Ellipsis",
+  "category": "組み込み関数",
+  "importance": "重要",
+  "level": "基礎",
+  "summary": "組み込み定数。省略記号 ... と同じ値（シングルトン）で、主に拡張スライスや型ヒントで使う。",
+  "syntax": "Ellipsis",
+  "args": "—",
+  "returns": "ellipsis: Ellipsis（シングルトン）",
+  "example": "print(Ellipsis)",
+  "expected": "Ellipsis",
+  "pitfalls": "... と書いても同じ値。組み込み名なので代入で別の値に変えることもできるが、通常は定数として扱う。辞書のキーや集合の要素にもできる（ハッシュ可能）。",
+  "related": [
+   "NotImplemented",
+   "__debug__"
+  ],
+  "lesson": "variables-types",
+  "doc": "https://docs.python.org/ja/3.12/library/constants.html#Ellipsis"
+ },
+ {
+  "id": "NotImplemented",
+  "name": "NotImplemented",
+  "category": "組み込み関数",
+  "importance": "重要",
+  "level": "基礎",
+  "summary": "組み込み定数。二項演算の特殊メソッドが「相手側の処理に任せる」ときに返すための値（シングルトン）。",
+  "syntax": "NotImplemented",
+  "args": "—",
+  "returns": "NotImplementedType: NotImplemented（シングルトン）",
+  "example": "print(NotImplemented)",
+  "expected": "NotImplemented",
+  "pitfalls": "例外の NotImplementedError とは別物。真偽判定に使う値ではない（bool(NotImplemented) は True になるが、その目的で使うものではない）。辞書のキーや集合の要素にもできる（ハッシュ可能）。",
+  "related": [
+   "Ellipsis",
+   "NotImplementedError"
+  ],
+  "lesson": "variables-types",
+  "doc": "https://docs.python.org/ja/3.12/library/constants.html#NotImplemented"
+ },
+ {
+  "id": "__debug__",
+  "name": "__debug__",
+  "category": "組み込み関数",
+  "importance": "重要",
+  "level": "基礎",
+  "summary": "組み込み定数。通常の実行では True、-O オプションで最適化した実行では False。assert 文が有効かどうかと連動する。",
+  "syntax": "__debug__",
+  "args": "—",
+  "returns": "bool: True（通常実行時）",
+  "example": "print(__debug__)",
+  "expected": "True",
+  "pitfalls": "この説明では通常実行をモデル化するため常に True。実 CPython でも通常実行は True で、False になるのは -O オプションのときだけ。__debug__ への代入は SyntaxError になる。",
+  "related": [
+   "Ellipsis",
+   "NotImplemented"
+  ],
+  "lesson": "variables-types",
+  "doc": "https://docs.python.org/ja/3.12/library/constants.html#__debug__"
+ },
+ {
   "id": "Exception",
   "name": "Exception",
   "category": "例外",

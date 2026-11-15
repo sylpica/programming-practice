@@ -573,11 +573,25 @@ export const definition = {
                 error: s.error || r.error,
               }));
         }
-        if (value["Fn::Transform"]) {
+        // R27-N6: Fn::Transform の有無も、トップレベル Transform（RG-205）と
+        // 同じく値の真偽ではなくキーの存在で判定する。""／null／0／false の
+        // falsy スカラーは「節なし」ではなく不正な指定であり、検証文言で
+        // 停止させる（従来は真偽 gate のため検証に届かず、キーだけが消えて
+        // 未変換のまま成功していた）。空配列 [] も、要素が無いため検証対象の
+        // マクロ指定が存在しない形として同じ文言で停止させる（トップレベル
+        // Transform の空配列受理は RG-205 の確立済み規則であり、そちらは維持）。
+        if (Object.hasOwn(value, "Fn::Transform")) {
           let specs = Array.isArray(value["Fn::Transform"])
               ? value["Fn::Transform"]
               : [value["Fn::Transform"]],
             line = locations.get(path + "/Fn::Transform") || 1;
+          if (specs.length === 0)
+            throw Object.assign(
+              Error(
+                "Fn::Transformの指定にマクロ名（Name）が含まれていません（NameとParametersのオブジェクト、またはその配列で指定してください）",
+              ),
+              { line },
+            );
           for (let spec of specs) {
             if (
               !spec ||

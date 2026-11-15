@@ -171,6 +171,18 @@ const isClassValue = (v) => !!v && typeof v === 'object' && (!!v.__union || !!v.
 const BIG = () => ({ __unk: true, desc: 'とても大きな整数・この説明では正確に計算しません' });
 const ELLIPSIS = { __ellipsis: true };
 const isEllipsis = (v) => v === ELLIPSIS;
+// R27-N20：組み込み定数 NotImplemented の値（シングルトン）。Ellipsis と
+// 同じく組み込み名前空間に常駐する定数で、型名は NotImplementedType。
+const NOTIMPLEMENTED = { __notimplemented: true };
+const isNotImplemented = (v) => v === NOTIMPLEMENTED;
+// R27-N20：組み込み定数3名（docs.python.org 3.12「組み込み定数」）。
+// Ellipsis／NotImplemented はシングルトンの値、__debug__ は通常実行では
+// True（-O 最適化時のみ False。この説明は通常実行をモデル化するため
+// 常に True）。いずれも従来は名前空間に無く、虚偽の NameError になっていた。
+// ユーザーが代入した場合は通常の変数が優先される（Ellipsis／
+// NotImplemented への代入は実 CPython でも合法。__debug__ への代入は
+// checkTarget で SyntaxError として別途名指す）。
+const BUILTIN_CONSTANTS = { Ellipsis: ELLIPSIS, NotImplemented: NOTIMPLEMENTED, __debug__: BOOL(true) };
 // 束縛メソッド参照（xs.append を変数に入れた形）。呼ぶと本物のメソッドとして動く
 const METHODREF = (obj, name) => ({ __method: true, obj, name });
 const isMethodRef = (v) => !!v && typeof v === 'object' && v.__method === true;
@@ -201,6 +213,7 @@ function typeName(v) {
   if (isView(v)) return 'dict_' + v.which;
   if (isMethodRef(v)) return 'builtin_function_or_method';
   if (isEllipsis(v)) return 'ellipsis';
+  if (isNotImplemented(v)) return 'NotImplementedType';
   if (v && v.__class) return 'type';
   if (v && v.__instance) return v.cls.cname;
   if (v && v.__exc) return v.kind;
@@ -391,6 +404,7 @@ function reprVal(v, depth) {
   if (v && v.__instance) return '（モデルの ' + v.cls.cname + ' インスタンス）';
   if (v && v.__exc) return v.kind + '(' + v.argRepr + ')';
   if (isEllipsis(v)) return 'Ellipsis';
+  if (isNotImplemented(v)) return 'NotImplemented';
   if (isMethodRef(v)) return '（組み込みメソッド ' + v.name + '）';
   if (isFunc(v)) return '関数 ' + v.def.name;
   if (v && v.__builtin) return '組み込み関数 ' + v.__builtin;
@@ -503,6 +517,13 @@ function eqVal(a, b) {
   if (isUnk(a) || isUnk(b)) return null;
   if (a === b) return true; // 同じオブジェクト同士は等しい（NaN が自分自身と等しくなるのもこのため）
   if ((a && a.__exc) || (b && b.__exc)) return false; // 例外の等しさは同一オブジェクトのときだけ（上で処理済み）
+  // R27-N19 兄弟表面：組み込み関数は名前が同じなら同一のオブジェクト
+  // （len == len は True で、集合では重複しない）。束縛メソッドは対象と
+  // 名前が同じなら等しい（xs.append == xs.append）。dictKeyId の ID 規則と
+  // 一致させる（等しい値同士は必ず同じキー ID になる）。
+  if (a && b && a.__builtin && b.__builtin) return a.__builtin === b.__builtin;
+  if (a && b && a.__method && b.__method) return a.name === b.name && (a.obj === b.obj || eqVal(a.obj, b.obj) === true);
+  if (a && b && a.__bound && b.__bound) return a.fn === b.fn && a.instance === b.instance;
   if (isNum(a) && isNum(b)) return a.v === b.v;
   if (a && b && a.__range && b.__range) {
     const ra = a.rng, rb = b.rng;
@@ -526,12 +547,55 @@ function eqVal(a, b) {
   if (tn(a) && tn(b)) return tn(a) === tn(b);
   return a === b;
 }
+// R27-N19：同一性（id）でハッシュされる値のための安定した ID 発番。
+// 関数・クラス・インスタンス・イテレータ・例外値など、CPython では
+// オブジェクトの同一性でハッシュされる値は、同じオブジェクトへの再評価で
+// 同じ ID が返らなければならない（辞書の読み戻し・in 判定のため）。
+let keySerial = 0;
+const keyIds = new WeakMap();
+function identityKeyId(v) {
+  let id = keyIds.get(v);
+  if (id === undefined) { id = ++keySerial; keyIds.set(v, id); }
+  return 'i:' + id;
+}
+// R27-N19：ハッシュ可能性を実 CPython 3.12 の規則に是正する。
+// 従来は数値・真偽・文字列・None・タプルしか ID を返さず、実 CPython では
+// ハッシュ可能な関数・型・インスタンス・range・Ellipsis 等まで一律に
+// 「ハッシュできない」と虚偽停止していた。実 CPython で機械突合した規則：
+//   値でハッシュ：数値・真偽・文字列・None・bytes 相当・frozenset 相当と、
+//     それらだけを含むタプル。range は列の値で、合併型（int | str 等）は
+//     構成型の集合で、type() の結果と組み込み関数・例外クラスは名前で、
+//     束縛メソッドは対象と名前で、それぞれ等しさ（eqVal）と一致させる。
+//   同一性でハッシュ：ユーザー関数・ユーザー定義クラスとそのインスタンス・
+//     イテレータ・例外の値・束縛済みメソッド。Ellipsis／NotImplemented は
+//     シングルトンなので固定 ID。
+//   ハッシュ不可（null のまま）：リスト・辞書・集合・それらを含むタプル・
+//     dict のビュー（dict_keys 等。実 CPython でも unhashable）。
 function dictKeyId(v) {
   if (isNum(v)) return 'n:' + (v.v === 0 ? 0 : v.v);
   if (isBool(v)) return 'n:' + (v.v ? 1 : 0);
   if (typeof v === 'string') return 's:' + v;
   if (isNone(v)) return 'z:';
-  if (isTuple(v)) { const ids = v.__tuple.map(dictKeyId); if (ids.some(x => x === null)) return null; return 't:' + ids.join('|'); }
+  if (isEllipsis(v)) return 'e:';
+  if (isNotImplemented(v)) return 'ni:';
+  if (isTuple(v)) { const ids = v.__tuple.map(dictKeyId); if (ids.some(x => x === null)) return null; return 't:' + ids.map(s => s.length + ':' + s).join(','); }
+  if (v && v.__range) { const ids = v.__range.map(dictKeyId); if (ids.some(x => x === null)) return null; return 'r:' + ids.map(s => s.length + ':' + s).join(','); }
+  if (v && v.__type) return 'ty:' + v.__type;
+  // 型・例外クラスの組み込み名は type() の結果（TYPEVAL）と同一のクラス
+  // そのものなので、ID 空間を 'ty:' に揃える（{int: 1}[type(1)] が引ける）。
+  if (v && v.__builtin) return (TYPE_BUILTINS.includes(v.__builtin) || EXC_NAMES.has(v.__builtin)) ? 'ty:' + v.__builtin : 'bf:' + v.__builtin;
+  if (v && v.__union) {
+    const names = v.__union.map(x => (x && x.__type) || (x && x.__builtin) || (x && x.__class ? x.cname : null));
+    if (names.some(x => x === null)) return null;
+    return 'u:' + names.sort().join('|');
+  }
+  if (isMethodRef(v)) {
+    const o = v.obj;
+    const oid = typeof o === 'string' ? 's:' + o : isNum(o) ? 'n:' + o.v : isBool(o) ? 'n:' + (o.v ? 1 : 0) : (o && typeof o === 'object') ? identityKeyId(o) : null;
+    return oid === null ? null : 'm:' + oid + ':' + v.name;
+  }
+  if (v && v.__bound) return 'b:' + identityKeyId(v.instance) + ':' + identityKeyId(v.fn);
+  if (isFunc(v) || (v && v.__class) || (v && v.__instance) || isIter(v) || (v && v.__exc)) return identityKeyId(v);
   return null; // ハッシュ化できない
 }
 function dictGet(d, k) { const id = dictKeyId(k); if (id === null) return undefined; return d.__dict.get(id)?.v; }
@@ -1076,7 +1140,12 @@ function parseTarget(tc, line) {
 function checkTarget(t, line, del) {
   if (!t) return;
   switch (t.k) {
-    case 'name': case 'sub': case 'slice': case 'attr': return;
+    // R27-N20 兄弟表面：__debug__ は実 CPython では代入・削除・for の
+    // ターゲットのいずれでも SyntaxError（cannot assign/delete __debug__）。
+    case 'name':
+      if (t.name === '__debug__') throw new SimDiag(line, 'SyntaxError', (del ? '「__debug__」は削除（del）できません（cannot delete __debug__）' : '「__debug__」には代入できません（cannot assign to __debug__）'), '__debug__ は Python が決める組み込み定数です');
+      return;
+    case 'sub': case 'slice': case 'attr': return;
     case 'ttuple': for (const it of t.items) checkTarget(it, line, del); return;
     case 'tuple': case 'list': for (const it of t.items) checkTarget(it.e, line, del); return;
     case 'starred': checkTarget(t.t, line, del); return;
@@ -2135,6 +2204,7 @@ class Interp {
     if (t.k === 'name') {
       const v = env.get(t.name);
       if (v === UNBOUND) this.err(line, 'UnboundLocalError', '関数の中で代入している変数「' + t.name + '」を、代入する前に使っています（関数の中で代入した名前は、その関数のローカル変数になります）', '外側の変数を書き換えたいなら global ' + t.name + ' と宣言するか、引数と戻り値で受け渡してください');
+      if (v === undefined && Object.hasOwn(BUILTIN_CONSTANTS, t.name)) return BUILTIN_CONSTANTS[t.name];
       if (v === undefined) this.err(line, 'NameError', '変数「' + t.name + '」はまだ作られていません（値が入っていません）', '使う前に「' + t.name + ' = 値」のように代入してください。綴りの違いにも注意してください');
       return v;
     }
@@ -2388,11 +2458,12 @@ Interp.prototype.eval = function (n, env) {
     case 'ellipsis': return ELLIPSIS;
     case 'byteslit': return UNK('バイト列（bytes）');
     case 'cxlit': return UNK('複素数');
-    case 'walrus': { const v = this.eval(n.e, env); this.assignTo({ k: 'name', name: n.name, line: n.line }, v, env, n.line, false); return v; }
+    case 'walrus': { if (n.name === '__debug__') this.err(n.line, 'SyntaxError', '「__debug__」には代入できません（cannot assign to __debug__）', '__debug__ は Python が決める組み込み定数です'); const v = this.eval(n.e, env); this.assignTo({ k: 'name', name: n.name, line: n.line }, v, env, n.line, false); return v; }
     case 'name': {
       const v = env.get(n.name);
       if (v === UNBOUND) this.err(n.line, 'UnboundLocalError', '関数の中で代入している変数「' + n.name + '」を、代入する前に使っています（関数の中で代入した名前は、その関数のローカル変数になります）', '外側の変数を使いたいなら global ' + n.name + ' と宣言するか、引数として渡してください');
       if (v !== undefined) return v;
+      if (Object.hasOwn(BUILTIN_CONSTANTS, n.name)) return BUILTIN_CONSTANTS[n.name];
       if (BUILTIN_NAMES.includes(n.name) || PY_BUILTINS.has(n.name)) return BUILTIN(n.name);
       this.err(n.line, 'NameError', '変数「' + n.name + '」はまだ作られていません（値が入っていません）', '使う前に代入してください。綴り（大文字・小文字）が合っているかも確認してください');
       return UNK();
@@ -2723,6 +2794,9 @@ Interp.prototype.compare = function (op, l, r, line) {
   if (op === 'is' || op === 'is not') {
     let res = null;
     if (isNone(l) || isNone(r)) res = isNone(l) && isNone(r);
+    // R27-N20 兄弟表面：Ellipsis／NotImplemented はシングルトンなので、
+    // is の結果は実装依存ではなく同一性で確定する（実 CPython でも同様）。
+    else if (isEllipsis(l) || isEllipsis(r) || isNotImplemented(l) || isNotImplemented(r)) res = l === r;
     else if (isBool(l) && isBool(r)) res = l.v === r.v;
     else if (isUnk(l) || isUnk(r)) res = null;
     else {

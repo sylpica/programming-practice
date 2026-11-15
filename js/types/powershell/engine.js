@@ -522,8 +522,30 @@ export function simulatePowerShell(source, model, limits) {
           if (frac > 0.5) return floor + 1;
           return floor % 2 === 0 ? floor : floor + 1;
         };
-        a = toRangeInt(a);
-        b = toRangeInt(b);
+        // R27-N2: [int] 変換は System.Int32 への変換であり、変換後の値が
+        // Int32 の範囲外であれば .NET の変換規則により Overflow で停止
+        // する（実物は "Cannot convert value ... to type System.Int32"）。
+        // 丸めで範囲外になる形（2147483647.5→2147483648）も含め、変換後の
+        // 値で検査し、端点の元の値を名指す。範囲外の値を黙って範囲として
+        // 生成してはならない（値の捏造）。
+        const convA = toRangeInt(a),
+          convB = toRangeInt(b);
+        if (convA < -2147483648 || convA > 2147483647)
+          fail(
+            "範囲の端点を System.Int32 へ変換できません（Int32 の範囲外です）：" +
+              String(a),
+            n.line,
+            "RuntimeException",
+          );
+        if (convB < -2147483648 || convB > 2147483647)
+          fail(
+            "範囲の端点を System.Int32 へ変換できません（Int32 の範囲外です）：" +
+              String(b),
+            n.line,
+            "RuntimeException",
+          );
+        a = convA;
+        b = convB;
         if (Math.abs(b - a) > 10000)
           fail("未対応：整数範囲のモデル上限", n.line);
         return Array.from(
@@ -1019,8 +1041,38 @@ export function simulatePowerShell(source, model, limits) {
         return h;
       }
       if (a.k === "cast") {
-        const v = read(a.arg, s, api),
-          type = a.type.toLowerCase();
+        const v = read(a.arg, s, api);
+        // R27-N4: 完全修飾型名（System.String 等）と配列型（int[] 等）を
+        // 解釈する。文法 B.1.11 の type-name はドット連結を許し、
+        // type-spec には array-type-name／generic-type-name がある。
+        // System. 接頭辞は外し、完全修飾の PSCustomObject も対応する。
+        // 配列型は対応する要素型の変換を要素ごとに適用する（実物の
+        // [int[]]／[string[]] の変換規則）。ジェネリック型・多次元配列型
+        // などモデル化できない型は、型名そのものを名指して止める。
+        let type = a.type.toLowerCase().replace(/\s+/g, "");
+        if (type.startsWith("system.")) type = type.slice("system.".length);
+        if (type === "management.automation.pscustomobject")
+          type = "pscustomobject";
+        if (type.endsWith("[]")) {
+          const base = type.slice(0, -2);
+          if (!["string", "int", "int32", "double", "bool", "boolean"].includes(base))
+            fail("未対応の型変換：[" + a.type + "]", a.line);
+          if (isUnknown(v))
+            fail("未確認：型変換の入力が確定していません", a.line, "未確認");
+          const items = Array.isArray(v) ? v : [v];
+          return items.map((x) =>
+            read(
+              {
+                k: "cast",
+                type: base,
+                arg: { k: "literal", value: x, line: a.line },
+                line: a.line,
+              },
+              s,
+              api,
+            ),
+          );
+        }
         if (type === "pscustomobject" && isObject(v))
           return object(
             v.psType === "Hashtable"
@@ -1079,6 +1131,18 @@ export function simulatePowerShell(source, model, limits) {
         return a.op === "-" ? -numeric(v, a) : numeric(v, a);
       }
       if (a.k === "post") {
+        // R27-N3: 代入先の検証を数値変換より先に行う。-- の経路だけが
+        // 先に binary（- 演算）の変換を試みたため、文字列リテラルへの
+        // 後置 -- が変換エラーを名指していた（++・数値リテラル形は
+        // set() の防御層で「代入先が不正です」になる非対称）。真因は
+        // リテラルが代入先にならないこと（実物は InvalidLeftHandSide：
+        // 代入演算子の入力は変数・プロパティ・添字でなければならない）。
+        if (!["var", "member", "index"].includes(a.target.k))
+          fail(
+            "代入先が不正です：++／--や代入の対象は変数・プロパティ・添字である必要があります",
+            a.line,
+            "RuntimeException",
+          );
         const v = read(a.target, s, api);
         if (isUnknown(v))
           fail("未確認：未確定値のインクリメント", a.line, "未確認");
@@ -1093,6 +1157,13 @@ export function simulatePowerShell(source, model, limits) {
       }
       if (a.k === "pre") {
         // R22-N16: 前置 ++／-- は更新後の値を返す。
+        // R27-N3: 後置と同じく、代入先の検証を変換より先に行う。
+        if (!["var", "member", "index"].includes(a.target.k))
+          fail(
+            "代入先が不正です：++／--や代入の対象は変数・プロパティ・添字である必要があります",
+            a.line,
+            "RuntimeException",
+          );
         const v = read(a.target, s, api);
         if (isUnknown(v))
           fail("未確認：未確定値のインクリメント", a.line, "未確認");
@@ -1271,13 +1342,32 @@ export function simulatePowerShell(source, model, limits) {
         s.ps.functions = { ...s.ps.functions };
         for (let i = 0; i < fn.params.length; i++) {
           const param = fn.params[i];
-          let v = Object.hasOwn(params, param.name.toLowerCase())
-            ? params[param.name.toLowerCase()]
-            : Object.hasOwn(args, i)
-              ? args[i]
-              : param.value
-                ? read(param.value, s, api)
-                : null;
+          // R27-N4: Alias 属性の別名でも名前付き引数を受け付ける
+          // （about_Functions_Advanced_Parameters）。
+          const namedKey = Object.keys(params).find(
+            (k) =>
+              k === param.name.toLowerCase() ||
+              (param.aliases ?? []).some((al) => al.toLowerCase() === k),
+          );
+          const supplied = namedKey !== undefined || Object.hasOwn(args, i);
+          // R27-N4: Mandatory のパラメータが与えられない場合、実物は
+          // 対話プロンプトで入力を求める。このモデルは対話入力を
+          // 持ちないため、既定値で黙って埋めず真因を名指して止める。
+          if (param.mandatory && !supplied)
+            fail(
+              "未対応：必須パラメータ（Mandatory）への対話入力はモデル化できません：$" +
+                param.name,
+              c.line,
+              "ParameterBindingException",
+            );
+          let v =
+            namedKey !== undefined
+              ? params[namedKey]
+              : Object.hasOwn(args, i)
+                ? args[i]
+                : param.value
+                  ? read(param.value, s, api)
+                  : null;
           if (param.type === "bool")
             fail("未対応：bool型の関数パラメータ変換", c.line);
           if (param.type)
@@ -1291,10 +1381,38 @@ export function simulatePowerShell(source, model, limits) {
               s,
               api,
             );
+          // R27-N4: ValidateSet 属性は、束縛された値（引数または既定値）
+          // が候補集合に含まれることを検証する（実物は
+          // ParameterBindingValidationException で停止する）。
+          if (param.validateSet && (supplied || param.value)) {
+            const values = Array.isArray(v) ? v : [v];
+            if (
+              !values.every((x) =>
+                param.validateSet.some(
+                  (cand) => String(cand).toLowerCase() === String(x).toLowerCase(),
+                ),
+              )
+            )
+              fail(
+                "パラメータの値が検証属性 ValidateSet に一致しません：" +
+                  String(v) +
+                  "（候補：" +
+                  param.validateSet.join(", ") +
+                  "）",
+                c.line,
+                "ParameterBindingValidationException",
+              );
+          }
           ciSet(s.vars, param.name, v);
         }
         for (const key of Object.keys(params))
-          if (!fn.params.some((x) => x.name.toLowerCase() === key))
+          if (
+            !fn.params.some(
+              (x) =>
+                x.name.toLowerCase() === key ||
+                (x.aliases ?? []).some((al) => al.toLowerCase() === key),
+            )
+          )
             fail(
               "関数のパラメータがありません：" + key,
               c.line,

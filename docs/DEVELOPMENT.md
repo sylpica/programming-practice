@@ -1,6 +1,6 @@
 # 本体開発の実装範囲（2026-11-15 JST）
 
-本体初版と監査修正後の対応範囲です。Muse／Codexの独立監査は第22ラウンド（CodexはR6）まで実施され、各修正バッチ（RG-87〜RG-144）を適用済みです。二重監査の収束は宣言していません。
+本体初版と監査修正後の対応範囲です。Muse／Codexの独立監査は第22ラウンド（CodexはR6）まで実施され、各修正バッチ（RG-87〜RG-239）を適用済みです。二重監査の収束は宣言していません。
 
 ## 共通基盤
 
@@ -13,13 +13,13 @@
 | 種類           | 本体で実装した範囲                                                                                                         | 主な未対応・未確認                                                                                                          |
 | -------------- | -------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
 | Excel VBA      | 従来のASTエンジン、モデルシート、宣言型／Variant、配列、If / Select Case / For / For Each / Do、Exit、On Error、出力       | 実Excel、複数シート・外部ブック、With、GoToラベル、動的配列の要素参照・ReDim（宣言のみ対応）、未知Step、複雑な未知値比較                                     |
-| ImageJ         | 既存アプリのパーサ・評価器・200リファレンス・10テンプレート、画像／画素／ROI／測定表モデル                                 | 実画像、プラグイン、実ファイル。画像フィルター等は自然言語の動作説明と明示したモデル上の近似で、実画素結果は捏造しない      |
+| ImageJ         | 既存アプリのパーサ・評価器・201リファレンス・10テンプレート、画像／画素／ROI／測定表モデル                                 | 実画像、プラグイン、実ファイル。画像フィルター等は自然言語の動作説明と明示したモデル上の近似で、実画素結果は捏造しない      |
 | CloudFormation | JSON / YAML、Transformの記載順、Fn::Transformの兄弟スコープ、Pythonハンドラ、requestId／status／fragmentの検査、前後比較   | 実AWS、SAM／Include、IAM、YAML短縮タグ、一般的なテンプレート妥当性・リソース検証                                            |
 | Power Automate | Desktopの変数・If / Else・Loop / For each / Loop condition・Exit loop、モデルファイル／メール、アクション編集              | 製品エクスポート形式ではない学習用JSON。コネクター、実送信、UI自動化、詳細な例外処理設定                                    |
 | AutoHotkey v2  | 起動部分と単一イベント、基本ホットキー／ホットストリング、If / Loop / While、ウィンドウ解決、SendTextと限定Send、マウス    | #HotIf、タイマー、複雑なSend・ホットストリング、CoordMode変更、ユーザー関数、アプリ固有の入力効果                           |
 | UI.Vision RPA  | Classic Commands JSON、アクション編集、open / click / type / storeText等、If / While / times、限定Sandbox式、モデルDOM効果 | 任意JS、実CSS／XPath探索、OCR／画像認識、実ネットワーク・非同期挙動。モデルのロケーターキーで解決                           |
 | Power Apps     | en-US Power Fx、Set・UpdateContext・If／Switch、Collect、純粋ForAll、テーブル集計、Patch、画面遷移、Reset、表示数式再計算  | 一般の型推論・委任、実Dataverse、採番、非同期、画面イベント、順序依存のForAll副作用                                         |
-| Python         | 既存アプリの部分評価器、型・コンテナ・関数・クラス・例外、160リファレンス・10テンプレート、モデルglobals                    | 完全なCPythonではない。外部モジュール・実ファイル・ネットワーク等。対応外は停止。未知の短絡評価に関数呼び出しを含む式は停止 |
+| Python         | 既存アプリの部分評価器、型・コンテナ・関数・クラス・例外、213リファレンス・10テンプレート、モデルglobals                    | 完全なCPythonではない。外部モジュール・実ファイル・ネットワーク等。対応外は停止。未知の短絡評価に関数呼び出しを含む式は停止 |
 | R              | numeric / logical / characterのベクトル、NA、リサイクル、添字、データフレーム、集計、If / For / While                      | パッケージ、因子、S3/S4、複素数・raw、integer型上限、ユーザー関数、一般のデータフレーム添字代入                             |
 | C              | モデルABI、宣言・配列・ポインタ・スコープ寿命、If / For / While、printf、整数演算                                          | 動的確保、構造体、ユーザー関数、多次元、複雑な宣言。精度外の64ビット計算と処理系依存変換は停止                    |
 | C++            | 上記の基礎C系構文、cout、ポインタ／配列、同じ型の変数へのint&参照、std::stringの基本連結                                                                                    | STL、一般のクラス・テンプレート、オーバーロード、RAII、動的確保等                                                           |
@@ -47,12 +47,12 @@
 本体初版の記録に続き、ユーザー指定の独立監査を開始した。結果・変更範囲・未確認は `docs/audit/CODEX-R1.md`、原文正本の項目別対応は `docs/audit/REQUIREMENTS.md` を参照する。二重監査の収束は未確認。
 
 - JavaScript：既知値の演算・巻き上げ・TDZを修正。未知値の型変換前後を混ぜる条件や、副作用を含む未知短絡評価等は未確認として停止する。未実装の文字エスケープは別の文字列に変換せず明示停止する。
-- ImageJ：directories / files / runtime をモデルに明示。モデルにない画像の寸法・ビット深度・一覧・バージョンを捏造しない。不明な画像処理後の個別画素を保持しない。34参照項目の未実装表示を訂正し、未確認の処理は停止する。200項目のリファレンスすべてがシミュレーション可能という意味ではない。
+- ImageJ：directories / files / runtime をモデルに明示。モデルにない画像の寸法・ビット深度・一覧・バージョンを捏造しない。不明な画像処理後の個別画素を保持しない。34参照項目の未実装表示を訂正し、未確認の処理は停止する。201項目のリファレンスすべてがシミュレーション可能という意味ではない。
 - Python：単純なインスタンスと属性・メソッドを追跡する。継承・メタクラス等は未対応。open / with・csv等の一般モジュールは実行せず、教材はメモリ内の明示辞書・表データで説明する。「仮想ファイル一覧」があるとは説明しない。
 - C/C++/C#：掲載APIを対象言語別に整理。C#配列の別名・要素型・初期値、C++のbool昇格・出力、実行入力の識別を修正した。
 - 共通UI：モデル入力はコード側で開閉。使用項目・リファレンス・用語集は右（375pxは下）、終了状態はコードの下。テンプレート解説はその下へ全展開し、内側スクロールを設けない。「なし」にすると非表示になる。
 
-対応表示リファレンスの使用例は、自立コードとして実行確認する対象である（現行1,024件の対応項目の使用例はテストで全件実行される）。説明文・実物仕様の照合は項目単位の個票（REFERENCE-R2.md、reference-r2.json／reference-r6.json、MUSE-REF-R22.md）で管理し、使用例試験と区別する。
+対応表示リファレンスの使用例は、自立コードとして実行確認する対象である（現行1,124件の対応項目の使用例はテストで全件実行される）。説明文・実物仕様の照合は項目単位の個票（REFERENCE-R2.md、reference-r2.json／reference-r6.json、MUSE-REF-R22.md）で管理し、使用例試験と区別する。
 
 ### 練習テンプレートの補充
 
@@ -68,7 +68,7 @@
 - JavaScript：typeof（未宣言名とTDZを区別）とReferenceError表示。戻り値のない出力文の重複説明を除去。
 - AutoHotkey：SetTitleMatchModeが変更前のモードを返す。UI.Vision：storeText/storeValueのロケーター不一致は#LNFを保存して継続する。
 - CloudFormation：TransformのName/Parametersオブジェクトと配列内オブジェクトを解析する。カスタムLambdaのトップレベルparamsは公式のevent仕様に従い空にする。AWS::IncludeのトップレベルParametersは専用の組込み仕様であり、このモデルでは実装しない。Fn::Transformのparamsとは混同しない。
-- リファレンスは説明・戻り値・注意点を一次資料へ対応付ける。戻り値と公式資料リンクも表示する。対応／参照専用の区別は維持（現行は対応1024件／参照専用62件）。静的説明文の照合と、任意コード・全引数の実環境互換性は別である。個票はdocs/audit/REFERENCE-R2.mdとMUSE-REF-R22.mdを参照。
+- リファレンスは説明・戻り値・注意点を一次資料へ対応付ける。戻り値と公式資料リンクも表示する。対応／参照専用の区別は維持（現行は対応1124件／参照専用62件）。静的説明文の照合と、任意コード・全引数の実環境互換性は別である。個票はdocs/audit/REFERENCE-R2.mdとMUSE-REF-R22.mdを参照。
 
 新アイコンはMuse側の25e40db以降で反映済み。636f8d0でmanifest変更後のprecache再生成も完了し、Codex第3ラウンドではPNGの実体・寸法を確認して保持する。
 
@@ -153,6 +153,8 @@ PowerShell 7.4を根拠にするWindowsパス・UTF-8／CRLFの部分モデル�
 その後の修正バッチ4（2026-11-15）で、Python 例外項目を全69名へ個別項目化（CloudFormation への伝播を含む）等を行い、現在の件数は次のとおり：Excel VBA 91、ImageJ 201、CloudFormation 221（固有11＋Python委譲210）、Power Automate 15、AutoHotkey 26、UI.Vision 22、Power Apps 28、Python 210、R 44、C 26、C++ 31、C# 53、JavaScript 39、cmd 28、PowerShell 51。合計 **1,086件（対応1,024／参照専用62）**。照合個票は `docs/audit/reference-r2.json` 1,007行／`docs/audit/reference-r6.json` 79行。詳細は `docs/audit/MUSE-FIX-BATCH4.md`。
 
 その後の修正バッチ5（2026-11-15）ではリファレンス件数に変更はなく、現行 **1,086件（対応1,024／参照専用62）** を維持している（同バッチで本ファイルの件数記述の陳腐化を是正した。R26-N8）。詳細は `docs/audit/MUSE-FIX-BATCH5.md`。
+
+その後の修正バッチ6（2026-11-15）で、VBA 組み込み定数94件の項目化（R27-N7：色・MsgBox・曜日・TriState・VarType 等の定数族84件の新規定義＋項目化と、RG-204 で定義済みだった10件の項目化）と、Python 組み込み定数3件（Ellipsis／NotImplemented／__debug__。CloudFormation 伝播を含む。R27-N20）の項目化を行い、現在の件数は次のとおり：Excel VBA 185、ImageJ 201、CloudFormation 224（固有11＋Python委譲213）、Power Automate 15、AutoHotkey 26、UI.Vision 22、Power Apps 28、Python 213、R 44、C 26、C++ 31、C# 53、JavaScript 39、cmd 28、PowerShell 51。合計 **1,186件（対応1,124／参照専用62）**。照合個票は `docs/audit/reference-r2.json` 1,107行／`docs/audit/reference-r6.json` 79行。詳細は `docs/audit/MUSE-FIX-BATCH6.md`。
 
 **F-02 の到達性基準（修正バッチ4で明文化、2026-11-15）**：束ね項目は「各名前から検索・チップで到達できる場合のみ項目あり」と数える。ここでいう検索による到達とは、アプリのリファレンス検索の述語そのもの（`js/app.js` の `renderRefs`／`fullRefs` が使う、name／category／description／syntax を対象とする小文字部分一致）で、その名前をクエリとして自項目がヒットすること（名前解決できること）を指す。**syntax 欄に綴りが列挙されているだけでは到達とはみなさない**（第25ラウンド R25-N7：述語が syntax を対象にしていなかったため、PowerShell「比較演算子」の基本形8綴り・「プロパティ」のドット付き9綴り・Python「数値の属性」のドット付き4綴りが検索で自項目に到達できなかった）。修正バッチ4で検索述語に syntax を含め、「比較演算子」の description にも基本形8綴りを列挙した。是正後の到達性は、syntax 欄の綴り一覧から抽出した全束ね項目の全名前について、名前単位の機械照合で未到達ゼロを回帰テスト（`tests/muse-fix-batch4-docs.test.js`）に固定する。
 

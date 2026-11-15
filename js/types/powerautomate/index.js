@@ -504,9 +504,26 @@ export const definition = {
   },
 };
 function resolve(v, s, api) {
-  if (typeof v === "string" && /^%[\s\S]*%$/.test(v))
+  if (typeof v === "string" && /^%[\s\S]*%$/.test(v)) {
+    // R27-N9: 先頭が %変数% 参照で始まる形（"%N% + 1%" 等）は包み形では
+    // ない。先頭の %…% は変数参照として消費されるため、末尾の % は式の
+    // 終端ではなく、包みを外すと閉じ % が剰余演算子に化けて黙って誤値に
+    // なる。実 PAD でも解釈エラーになる形なので、名前を挙げて停止する。
+    // 単独の %変数% 参照そのもの（"%N%"）は従来どおり変数の値として読む。
+    if (startsWithPercentVariable(v) && !/^%[A-Za-z_]\w*%$/.test(v.trim()))
+      throw new PracticeError(
+        "%変数% で始まる文字列は式として解釈できません（式全体を %…% で包む場合は、内側の変数名を % なしで書いてください）",
+        1,
+      );
     return api.read(parseExpression(v.slice(1, -1)), s);
+  }
   return interpolate(v, s);
+}
+// 文字列が完全な %変数% 参照で始まるか（R27-N9 の判定）。
+// "%N + 1%"（裸の変数名で始まる正規の包み形）や "%4 / 2%"（数値で始まる
+// 包み形）は、% の直後が変数名＋閉じ % の形にならないため一致しない。
+function startsWithPercentVariable(text) {
+  return /^%[A-Za-z_]\w*%/.test(text.trim());
 }
 function conditionAST(text, s) {
   let normalized = unwrapPercentWrapped(text).replace(
@@ -525,6 +542,13 @@ function unwrapPercentWrapped(text) {
   if (typeof text !== "string") return text;
   let t = text.trim();
   if (t.length < 2 || !t.startsWith("%") || !t.endsWith("%")) return text;
+  // R27-N9: 先頭が %変数% 参照で始まる形（"%N% + 1 > 3%" 等）は包み形
+  // ではない。先頭の %…% が変数参照として消費されるため、包みを外すと
+  // 変数参照の閉じ % が内側に残り、剰余演算子として偶然パースできて
+  // 黙って誤分岐する。包みを外さず通常の条件解釈（%変数% 置換）に委ね、
+  // 末尾に残る % は式の解釈エラーとして停止させる（実 PAD でも解釈
+  // エラーになる形）。"%A% == %B%" の非破壊もこの経路で維持される。
+  if (startsWithPercentVariable(t)) return text;
   let inner = t.slice(1, -1);
   if (!inner.trim()) return text;
   try {

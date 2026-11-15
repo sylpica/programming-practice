@@ -467,7 +467,7 @@ export function tokenize(source, dialect = "js") {
     m = source
       .slice(i)
       .match(
-        /^(===|!==|%\/%|%%|%in%|<-|->|:=|==|!=|<=|>=|&&|\|\||\+\+|--|\*\*|\+=|-=|\*=|\/=|<<|>>>|>>|::|=>|<>|\[\[|\]\]|[+\-*\/%^&|!<>=(){}\[\],;:.$?])/,
+        /^(===|!==|%\/%|%%|%in%|<-|->|:=|==|!=|<=|>=|&&|\|\||\+\+|--|\*\*=|>>>=|\*\*|\+=|-=|\*=|\/=|<<=|<<|>>=|>>>|>>|&=|\|=|\^=|::|=>|<>|\[\[|\]\]|[+\-*\/%^&|!<>=(){}\[\],;:.$?])/,
       );
     if (!m) {
       // RG-61：不可視文字・制御文字は、そのまま出すと原因表示が空に見えるため名指しする。
@@ -487,6 +487,19 @@ export function tokenize(source, dialect = "js") {
     if (m[0] === "**" && dialect !== "ahk") {
       out.push({ v: "*", line });
       i += 1;
+      continue;
+    }
+    // R27-N8：複合代入トークン（**= ／ &= ／ |= ／ ^= ／ <<= ／ >>= ／ >>>=）を
+    // 単一トークンにするのは AutoHotkey だけ。他方言では従来の構成トークン
+    // 列へ戻し（先頭の演算子だけを出し、残りは次の周回で字句化する）、
+    // トークン列を一切変えない。
+    const compoundHeads = {
+      "**=": "*", "&=": "&", "|=": "|", "^=": "^",
+      "<<=": "<<", ">>=": ">>", ">>>=": ">>>",
+    };
+    if (compoundHeads[m[0]] !== undefined && dialect !== "ahk") {
+      out.push({ v: compoundHeads[m[0]], line });
+      i += compoundHeads[m[0]].length;
       continue;
     }
     // RG-43: `<-`（R の代入）と `:=`（AutoHotkey の代入）を単一トークンにするのは
@@ -598,6 +611,44 @@ export class ScriptParser {
     this.i = 0;
     this.dialect = dialect;
     this.depth = 0;
+    // R27-N13／N12：式位置の代入式・カンマ演算子を受け付ける文脈かどうか。
+    // 文の先頭の対象式（従来どおり文レベルの代入として読む位置）では false
+    // のままにし、括弧内・引数・要素・宣言値・代入値などの「代入式が
+    // 置ける位置」でのみ exprCtx が true にする。noComma は、カンマが
+    // 区切りとして働く文脈（引数・要素・宣言子・代入の右辺）でカンマ
+    // 演算子の消費を抑えるカウンタ。
+    this.assignOk = false;
+    this.noComma = 0;
+  }
+  // 代入式が置ける文脈として式を読む。noCommaDelta=1 ではカンマを
+  // 区切りとして残し、0 では括弧内としてカンマ演算子を許可する。
+  exprCtx(noCommaDelta = 1) {
+    const sa = this.assignOk,
+      sc = this.noComma;
+    this.assignOk = true;
+    this.noComma = noCommaDelta === 0 ? 0 : sc + 1;
+    try {
+      return this.expr(0);
+    } finally {
+      this.assignOk = sa;
+      this.noComma = sc;
+    }
+  }
+  // R27-N14：`(` の直後から対応する `)` の直後が `=>` かどうかを先読みする。
+  // オブジェクトパターン引数 `({x}) => x` は、内側をオブジェクトリテラル
+  // として読み始めると「: が必要です」という虚偽原因になるため、引数
+  // リストとして読む前にアロー関数であることを名指しで止める。
+  arrowAhead() {
+    let depth = 1;
+    for (let j = this.i; j < this.ts.length; j++) {
+      const v = this.ts[j]?.v;
+      if (v === "(" || v === "[" || v === "{") depth++;
+      else if (v === ")" || v === "]" || v === "}") {
+        depth--;
+        if (depth === 0) return this.ts[j + 1]?.v === "=>";
+      } else if (v === "<eof>") return false;
+    }
+    return false;
   }
   peek(v) {
     return this.ts[this.i]?.v === v;
@@ -676,36 +727,104 @@ export class ScriptParser {
       a = { ...meta, k: "unary", op: t.v, arg: this.expr(this.unaryMin(t.v)) };
     else if (t.v === "(") {
       a = this.parseCast?.(meta);
-      if (!a) { a = this.expr(); this.skipLines(); this.take(")"); }
+      if (!a) {
+        // R27-N14：引数がオブジェクトパターン等のアロー関数は、内側を
+        // 読み始める前に先読みで名指しする（虚偽原因の回避）。
+        if (this.dialect === "js" && this.arrowAhead())
+          unsupported("アロー関数（=>）", t.line);
+        a = this.exprCtx(0);
+        this.skipLines();
+        this.take(")");
+      }
     } else if (t.v === "[") {
-      // RG-07（R14B-N2）：括弧の中の改行は継続として読み飛ばす。
-      let values = [];
-      this.skipLines();
-      while (!this.peek("]")) {
-        values.push(this.expr());
-        this.skipLines();
-        if (!this.peek(",")) break;
-        this.take();
-        this.skipLines();
+      // R27-N13：式位置の配列分割代入（[a] = [1] 等）。代入式が置ける
+      // 文脈では、配列リテラルとして読む前にパターンを投機的に読み、
+      // 直後が = の場合だけ分割代入式として採用する。不採用なら位置を
+      // 戻して従来どおり配列リテラルとして読む。
+      let destructure = null;
+      if (this.dialect === "js" && this.assignOk) {
+        const saveI = this.i,
+          saveD = this.depth;
+        let pattern = null;
+        try {
+          pattern = this.parseArrayPattern(t.line);
+        } catch {
+          pattern = null;
+        }
+        if (pattern && this.peek("=")) {
+          this.checkPattern(pattern, false, t.line);
+          this.take("=");
+          destructure = {
+            ...meta,
+            k: "destructureExpr",
+            pattern,
+            value: this.exprCtx(1),
+          };
+        } else {
+          this.i = saveI;
+          this.depth = saveD;
+        }
       }
-      this.take("]");
-      a = { ...meta, k: "array", values };
+      if (destructure) a = destructure;
+      else {
+        // RG-07（R14B-N2）：括弧の中の改行は継続として読み飛ばす。
+        let values = [];
+        this.skipLines();
+        while (!this.peek("]")) {
+          values.push(this.exprCtx(1));
+          this.skipLines();
+          if (!this.peek(",")) break;
+          this.take();
+          this.skipLines();
+        }
+        this.take("]");
+        a = { ...meta, k: "array", values };
+      }
     } else if (t.v === "{") {
-      let entries = [];
-      this.skipLines();
-      while (!this.peek("}")) {
-        let key = this.take();
-        if (!["id", "string"].includes(key.k))
-          throw new PracticeError("レコードのフィールド名が必要です", key.line);
-        this.take(":");
-        entries.push([key.v, this.expr()]);
-        this.skipLines();
-        if (!this.peek(",")) break;
-        this.take();
-        this.skipLines();
+      // R27-N13：式位置のオブジェクト分割代入（{a} = obj 等）。配列形と
+      // 同じく投機的にパターンを読み、直後が = の場合だけ採用する。
+      let destructure = null;
+      if (this.dialect === "js" && this.assignOk) {
+        const saveI = this.i,
+          saveD = this.depth;
+        let pattern = null;
+        try {
+          pattern = this.parseObjectPattern(t.line);
+        } catch {
+          pattern = null;
+        }
+        if (pattern && this.peek("=")) {
+          this.checkPattern(pattern, false, t.line);
+          this.take("=");
+          destructure = {
+            ...meta,
+            k: "destructureExpr",
+            pattern,
+            value: this.exprCtx(1),
+          };
+        } else {
+          this.i = saveI;
+          this.depth = saveD;
+        }
       }
-      this.take("}");
-      a = { ...meta, k: "record", entries };
+      if (destructure) a = destructure;
+      else {
+        let entries = [];
+        this.skipLines();
+        while (!this.peek("}")) {
+          let key = this.take();
+          if (!["id", "string"].includes(key.k))
+            throw new PracticeError("レコードのフィールド名が必要です", key.line);
+          this.take(":");
+          entries.push([key.v, this.exprCtx(1)]);
+          this.skipLines();
+          if (!this.peek(",")) break;
+          this.take();
+          this.skipLines();
+        }
+        this.take("}");
+        a = { ...meta, k: "record", entries };
+      }
     } else if (t.v === "if") {
       // RG-07（R13-N12）：R の if は値を返す式として使える。他方言の式位置の if は名指しで停止する。
       if (this.dialect !== "r") unsupported("式の位置の if", t.line);
@@ -768,7 +887,7 @@ export class ScriptParser {
             named = this.take().v;
             this.take("=");
           }
-          let arg = this.expr();
+          let arg = this.exprCtx(1);
           args.push(named ? { ...arg, argName: named } : arg);
           this.skipLines();
           if (!this.peek(",")) break;
@@ -850,9 +969,9 @@ export class ScriptParser {
         if (!["js", "c", "cpp", "csharp", "ahk"].includes(this.dialect)) break;
         if (min > 0) break;
         this.take();
-        let then = this.expr(0);
+        let then = this.exprCtx(1);
         this.take(":");
-        let otherwise = this.expr(0);
+        let otherwise = this.exprCtx(1);
         a = { k: "cond", test: a, then, otherwise, line: a.line };
         continue;
       }
@@ -879,6 +998,66 @@ export class ScriptParser {
       // R26-N16：`**`（AutoHotkey の累乗）は `^` と同じく右結合。
       let b = this.expr(p + (v === "^" || v === "**" ? 0 : 1));
       a = { k: "binary", op: v, a, b, line: a.line };
+    }
+    // R27-N13／N12／N8：代入式とカンマ演算子。代入は式としても置ける
+    // （JavaScript の代入式、AutoHotkey の右結合の連鎖代入 `x := y := 5`、
+    // 公式ドキュメントの代入演算子表）。文の先頭では従来どおり文レベル
+    // の代入として読むため、ここは exprCtx で開かれた文脈（assignOk）
+    // かつ最外の式（min=0）に限る。カンマ演算子は JavaScript の最も
+    // 弱い演算子として実装する（区切りのカンマと競合する文脈では
+    // noComma が消費を抑える）。
+    if (
+      min === 0 &&
+      this.assignOk &&
+      (this.dialect === "js" || this.dialect === "ahk")
+    ) {
+      const assignOpsHere =
+        this.dialect === "js"
+          ? ["=", "+=", "-=", "*=", "/="]
+          : [":=", "+=", "-=", "*=", "/=", "&=", "|=", "^=", "<<=", ">>=", ">>>="];
+      if (assignOpsHere.includes(this.ts[this.i]?.v)) {
+        const op = this.take().v;
+        if (!["var", "member", "index"].includes(a.k)) {
+          const form =
+            {
+              literal: "リテラル",
+              call: "関数呼び出しの結果",
+              binary: "演算の結果",
+              unary: "単項演算の結果",
+              cond: "条件式の結果",
+              array: "配列リテラル",
+              record: "オブジェクトリテラル",
+              post: "++ / -- の結果",
+              comma: "カンマ式の結果",
+              destructureExpr: "分割代入の結果",
+            }[a.k] || "この式";
+          throw new PracticeError(
+            `代入先が不正です：${form}には代入できません（Invalid left-hand side in assignment）`,
+            a.line,
+            "SyntaxError",
+          );
+        }
+        a = {
+          k: "assignExpr",
+          target: a,
+          op,
+          value: this.exprCtx(1),
+          line: a.line,
+        };
+      }
+      if (this.dialect === "js" && !this.noComma && this.peek(",")) {
+        let left = a;
+        while (this.peek(",")) {
+          this.take();
+          left = {
+            k: "comma",
+            a: left,
+            b: this.exprCtx(1),
+            line: left.line,
+          };
+        }
+        a = left;
+      }
     }
     this.depth--;
     return a;
@@ -940,7 +1119,23 @@ export class ScriptParser {
         this.take();
         this.take();
         this.take();
+        // R27-N14：裸の `...`（受け先が無い残余）は、汎用の式エラーでは
+        // なく残余要素そのものを名指して止める。
+        if ([",", "}", "<eof>"].includes(this.ts[this.i]?.v))
+          throw new PracticeError(
+            "分割代入の残余要素（...）には代入先が必要です",
+            line,
+            "SyntaxError",
+          );
         const target = this.parsePatternTarget(line, pattern);
+        // R27-N14：残余要素への既定値は文法上置けない（実 Node も
+        // SyntaxError）。「} が必要です」等の虚偽原因にしない。
+        if (this.peek("="))
+          throw new PracticeError(
+            "分割代入の残余要素（...）には既定値を指定できません",
+            line,
+            "SyntaxError",
+          );
         pattern.props.push({ rest: true, target });
       } else if (this.peek("[")) {
         // 計算済みキーは記録し、採用時に名前を挙げて停止する。
@@ -972,7 +1167,7 @@ export class ScriptParser {
           const prop = { key, target };
           if (this.peek("=")) {
             this.take();
-            prop.default = this.expr();
+            prop.default = this.exprCtx(1);
           }
           pattern.props.push(prop);
         }
@@ -995,6 +1190,15 @@ export class ScriptParser {
       this.take();
       this.take();
       this.take();
+      // R27-N14：裸の `...`（受け先が無い残余）は残余要素そのものを
+      // 名指して止める。残余への既定値も同様に名指す（実 Node は
+      // いずれも SyntaxError で、既定値は Rest 要素の文法に無い）。
+      if ([",", "]", "}", "<eof>"].includes(this.ts[this.i]?.v))
+        throw new PracticeError(
+          "分割代入の残余要素（...）には代入先が必要です",
+          line,
+          "SyntaxError",
+        );
       // 残余の受け先は識別子・プロパティ・添字のほか、入れ子のパターン
       // （...[a, b] / ...{x}）も実 JavaScript では合法（Node 実測）。
       let target;
@@ -1005,6 +1209,12 @@ export class ScriptParser {
         this.take();
         target = this.parseObjectPattern(line);
       } else target = this.parsePatternTarget(line, pattern);
+      if (this.peek("="))
+        throw new PracticeError(
+          "分割代入の残余要素（...）には既定値を指定できません",
+          line,
+          "SyntaxError",
+        );
       return { target, rest: true };
     }
     let target;
@@ -1017,13 +1227,22 @@ export class ScriptParser {
     } else target = this.parsePatternTarget(line, pattern);
     if (this.peek("=")) {
       this.take();
-      const def = this.expr();
+      const def = this.exprCtx(1);
       return { target, default: def };
     }
     return { target };
   }
   parsePatternTarget(line, pattern) {
-    const target = this.expr();
+    // R27-N13：パターンの代入先そのものは代入式として読まない（既定値の
+    // `=` を代入演算子と取り違えないため、assignOk を一時的に閉じる）。
+    const saveAssign = this.assignOk;
+    this.assignOk = false;
+    let target;
+    try {
+      target = this.expr();
+    } finally {
+      this.assignOk = saveAssign;
+    }
     if (
       !["var", "member", "index"].includes(target.k) &&
       !pattern.invalid
@@ -1114,9 +1333,9 @@ export class ScriptParser {
       let test;
       if (this.peek("(")) {
         this.take();
-        test = this.expr();
+        test = this.exprCtx(1);
         this.take(")");
-      } else test = this.expr();
+      } else test = this.exprCtx(1);
       let body = this.body();
       this.skipLines();
       let otherwise = [];
@@ -1135,7 +1354,7 @@ export class ScriptParser {
       this.skipLines();
       this.take("while");
       this.take("(");
-      let test = this.expr();
+      let test = this.exprCtx(1);
       this.take(")");
       if (this.peek(";")) this.take();
       return { k: "while", test, body, line, postTest: true, refs: ["while"] };
@@ -1145,10 +1364,10 @@ export class ScriptParser {
     if (v === "while") {
       this.take();
       let test;
-      if (this.dialect === "ahk" && !this.peek("(")) test = this.expr();
+      if (this.dialect === "ahk" && !this.peek("(")) test = this.exprCtx(1);
       else {
         this.take("(");
-        test = this.expr();
+        test = this.exprCtx(1);
         this.take(")");
       }
       return { k: "while", test, body: this.body(), line, refs: ["while"] };
@@ -1190,7 +1409,7 @@ export class ScriptParser {
       }
       let init = this.peek(";") ? null : this.simple();
       this.take(";");
-      let test = this.peek(";") ? { k: "literal", value: true, line } : this.expr();
+      let test = this.peek(";") ? { k: "literal", value: true, line } : this.exprCtx(1);
       this.take(";");
       let update = this.peek(")") ? null : this.simple();
       this.take(")");
@@ -1215,7 +1434,7 @@ export class ScriptParser {
         v === "return" &&
         ![";", "\n", "}", "<eof>"].includes(this.ts[this.i]?.v)
       )
-        value = this.expr();
+        value = this.exprCtx(1);
       return { k: v === "next" ? "continue" : v, value, line, refs: [v] };
     }
     if (v === "{") {
@@ -1247,80 +1466,100 @@ export class ScriptParser {
       let type = this.take().v;
       if (kind === "js" && !["let", "const", "var"].includes(type))
         unsupported(type, line);
-      let pointer = false;
-      if (this.peek("*")) {
-        this.take();
-        pointer = true;
+      // R27-N11：JavaScript の複数宣言子（let a = 1, b = 2; 等）。宣言
+      // パーサが宣言子を1つしか読まず、カンマを「宣言の区切りが必要
+      // です」という虚偽原因で止めていた。ECMAScript の LexicalDeclaration
+      // ／VariableDeclarationList はカンマ区切りの宣言子列が正規の文法
+      // であり、for 初期化部でも同じ列が使える。宣言子を列として読み、
+      // 1個だけの場合は従来の declare／declarePattern ノードをそのまま
+      // 返して既存の実行経路を変えない。他方言は従来どおり1個だけ。
+      const declarators = [];
+      while (true) {
+        let pointer = false;
+        if (this.peek("*")) {
+          this.take();
+          pointer = true;
+        }
+        let name = this.take();
+        // RG-07：分割代入は対象を名指して停止する（汎用の「変数名が必要です」に化けさせない）。
+        // R26-N7：JavaScript 方言では宣言の分割代入も文位置と同じ機構で実装する。
+        // 他方言では従来どおり対象を名指して停止する。
+        if (name.v === "[" || name.v === "{") {
+          if (kind !== "js") unsupported("分割代入", line);
+          const pattern =
+            name.v === "["
+              ? this.parseArrayPattern(line)
+              : this.parseObjectPattern(line);
+          this.checkPattern(pattern, true, line);
+          if (["of", "in"].includes(this.ts[this.i]?.v))
+            unsupported("分割代入（for-of / for-in の反復変数）", line);
+          if (!this.peek("="))
+            throw new PracticeError(
+              "分割代入の宣言には初期化式（= の右辺）が必要です",
+              line,
+              "SyntaxError",
+            );
+          this.take();
+          declarators.push({ pattern, value: this.exprCtx(1) });
+        } else {
+          if (name.k !== "id") throw new PracticeError("変数名が必要です", line);
+          let size = null;
+          if (this.peek("[")) {
+            this.take();
+            size = this.peek("]") ? null : this.expr();
+            this.take("]");
+          }
+          let value = null;
+          if (this.peek("=") || this.peek(":=")) {
+            this.take();
+            // RG-07（R12-N6）：{ } の初期化子は C系の配列初期化だけ。他方言（JS）の
+            // レコードリテラルは通常の式として読む。
+            if (this.peek("{") && ["c", "cpp", "csharp"].includes(kind)) {
+              this.take();
+              let vals = [];
+              while (!this.peek("}")) {
+                vals.push(this.expr());
+                if (!this.peek(",")) break;
+                this.take();
+              }
+              this.take("}");
+              value = { k: "array", values: vals, line };
+            } else value = this.exprCtx(1);
+          }
+          declarators.push({ name: name.v, pointer, size, value });
+        }
+        if (kind === "js" && this.peek(",")) {
+          this.take();
+          continue;
+        }
+        break;
       }
-      let name = this.take();
-      // RG-07：分割代入は対象を名指して停止する（汎用の「変数名が必要です」に化けさせない）。
-      // R26-N7：JavaScript 方言では宣言の分割代入も文位置と同じ機構で実装する。
-      // 他方言では従来どおり対象を名指して停止する。
-      if (name.v === "[" || name.v === "{") {
-        if (kind !== "js") unsupported("分割代入", line);
-        const pattern =
-          name.v === "["
-            ? this.parseArrayPattern(line)
-            : this.parseObjectPattern(line);
-        this.checkPattern(pattern, true, line);
-        if (["of", "in"].includes(this.ts[this.i]?.v))
-          unsupported("分割代入（for-of / for-in の反復変数）", line);
-        if (!this.peek("="))
-          throw new PracticeError(
-            "分割代入の宣言には初期化式（= の右辺）が必要です",
+      if (!["\n", ";", ")", "}", "<eof>"].includes(this.ts[this.i]?.v))
+        unsupported("宣言の区切りが必要です", line);
+      if (declarators.length === 1) {
+        const d = declarators[0];
+        if (d.pattern)
+          return {
+            k: "declarePattern",
+            name: null,
+            type,
+            pattern: d.pattern,
+            value: d.value,
             line,
-            "SyntaxError",
-          );
-        this.take();
-        const patternValue = this.expr();
-        if (!["\n", ";", ")", "}", "<eof>"].includes(this.ts[this.i]?.v))
-          unsupported("宣言の区切りが必要です", line);
+            refs: [type],
+          };
         return {
-          k: "declarePattern",
-          name: null,
+          k: "declare",
+          name: d.name,
           type,
-          pattern,
-          value: patternValue,
+          pointer: d.pointer,
+          size: d.size,
+          value: d.value,
           line,
           refs: [type],
         };
       }
-      if (name.k !== "id") throw new PracticeError("変数名が必要です", line);
-      let size = null;
-      if (this.peek("[")) {
-        this.take();
-        size = this.peek("]") ? null : this.expr();
-        this.take("]");
-      }
-      let value = null;
-      if (this.peek("=") || this.peek(":=")) {
-        this.take();
-        // RG-07（R12-N6）：{ } の初期化子は C系の配列初期化だけ。他方言（JS）の
-        // レコードリテラルは通常の式として読む。
-        if (this.peek("{") && ["c", "cpp", "csharp"].includes(kind)) {
-          this.take();
-          let vals = [];
-          while (!this.peek("}")) {
-            vals.push(this.expr());
-            if (!this.peek(",")) break;
-            this.take();
-          }
-          this.take("}");
-          value = { k: "array", values: vals, line };
-        } else value = this.expr();
-      }
-      if (!["\n", ";", ")", "}", "<eof>"].includes(this.ts[this.i]?.v))
-        unsupported("宣言の区切りが必要です", line);
-      return {
-        k: "declare",
-        name: name.v,
-        type,
-        pointer,
-        size,
-        value,
-        line,
-        refs: [type],
-      };
+      return { k: "declareList", type, declarators, line, refs: [type] };
     }
     // R26-N7：文位置の分割代入（JavaScript 方言のみ）。`[` で始まる文は
     // 式文の配列リテラルでもありうるため、パターンを投機的に読み、直後が
@@ -1345,8 +1584,21 @@ export class ScriptParser {
       if (pattern && this.peek("=")) {
         this.checkPattern(pattern, false, line);
         this.take();
-        const value = this.expr();
+        const value = this.exprCtx(1);
         if (paren) this.take(")");
+        // R27-N12：文頭のカンマ列はカンマ演算子（式文）として続ける。
+        if (this.dialect === "js" && this.peek(",")) {
+          let left = { k: "destructureExpr", pattern, value, line };
+          while (this.peek(",")) {
+            this.take();
+            left = { k: "comma", a: left, b: this.exprCtx(1), line };
+          }
+          if (
+            !["\n", ";", "}", ")", "<eof>", "else"].includes(this.ts[this.i]?.v)
+          )
+            unsupported("代入の区切りが必要です", line);
+          return { k: "expression", value: left, line };
+        }
         if (
           !["\n", ";", "}", ")", "<eof>", "else"].includes(this.ts[this.i]?.v)
         )
@@ -1361,7 +1613,10 @@ export class ScriptParser {
     const assignOps = {
       js: ["=", "+=", "-=", "*=", "/="],
       r: ["=", "<-", "+=", "-=", "*=", "/="],
-      ahk: [":=", "=", "+=", "-=", "*=", "/="],
+      // R27-N8：AutoHotkey v2 公式の代入演算子表にある複合代入を追加。
+      // **= は公式の代入演算子表に無いため含めない（式位置では ** の
+      // 二項演算として読まれ、代入先の検証で名前を挙げて止まる）。
+      ahk: [":=", "=", "+=", "-=", "*=", "/=", "&=", "|=", "^=", "<<=", ">>=", ">>>="],
       fx: ["=", "+=", "-=", "*=", "/="],
       c: ["=", "+=", "-=", "*=", "/="],
       cpp: ["=", "+=", "-=", "*=", "/="],
@@ -1369,7 +1624,23 @@ export class ScriptParser {
     }[this.dialect] || ["=", "+=", "-=", "*=", "/="];
     if (assignOps.includes(this.ts[this.i]?.v)) {
       let op = this.take().v,
-        value = this.expr();
+        value = this.exprCtx(1);
+      // R27-N12／AHK カンマ列：代入に続くカンマ列は、JavaScript では
+      // カンマ演算子の式文として、AutoHotkey v2 では公式の
+      // multi-statement（カンマ）として、順に評価する式文へ畳む。
+      if (
+        (this.dialect === "js" || this.dialect === "ahk") &&
+        this.peek(",")
+      ) {
+        let left = { k: "assignExpr", target, op, value, line };
+        while (this.peek(",")) {
+          this.take();
+          left = { k: "comma", a: left, b: this.exprCtx(1), line };
+        }
+        if (!["\n", ";", "}", ")", "<eof>", "else"].includes(this.ts[this.i]?.v))
+          unsupported("代入の区切りが必要です", line);
+        return { k: "expression", value: left, line };
+      }
       // RG-79（R21-N11）：代入文の直後も宣言・式文と同じく終端を検査する。
       // 同一行に区切りなく次の文が続く形（x <- 1 y <- 2）を無言で実行しない。
       // 波形なし if の代入体に続く else は終端として認める。
@@ -1388,6 +1659,23 @@ export class ScriptParser {
         args.push(this.expr());
       }
       target = { k: "call", target, args, line };
+    }
+    // R27-N12／AHK カンマ列：式文のカンマ列（JS のカンマ演算子、AHK v2
+    // の multi-statement）を順に評価する。コマンド形式の呼出の引数
+    // カンマは上の AHK 分岐で消費済みのため、ここに残るカンマは
+    // 文の区切りとしてのみ現れる。
+    if (
+      (this.dialect === "js" || this.dialect === "ahk") &&
+      this.peek(",")
+    ) {
+      let left = target;
+      while (this.peek(",")) {
+        this.take();
+        left = { k: "comma", a: left, b: this.exprCtx(1), line };
+      }
+      if (!["\n", ";", "}", ")", "<eof>"].includes(this.ts[this.i]?.v))
+        unsupported(this.ts[this.i].v, line);
+      return { k: "expression", value: left, line };
     }
     if (!["\n", ";", "}", ")", "<eof>"].includes(this.ts[this.i]?.v))
       unsupported(this.ts[this.i].v, line);
@@ -1661,6 +1949,54 @@ export function executeProgram(nodes, model, semantics = {}, custom = {}) {
         if (isUnknown(x))
           return { ...unknown(formatValue(x) + "%"), op: "%", a: x };
         return x / 100;
+      }
+      case "assignExpr": {
+        // R27-N13／N8：式位置の代入（JS の代入式、AHK の連鎖代入）。
+        // 代入先の検証は文レベルの代入と同じく評価より前に行い、
+        // 書き込みは write() を通すため const／TDZ 等の種類側検証が
+        // 文レベルと同一に効く。値は代入した値そのもの（右結合）。
+        if (
+          a.target?.k === "var" &&
+          semantics.dialect === "js" &&
+          ["true", "false", "null", "this"].includes(a.target.name)
+        )
+          throw new PracticeError(
+            `代入先が不正です：${a.target.name} には代入できません（Invalid left-hand side in assignment）`,
+            a.line,
+            "SyntaxError",
+          );
+        let v;
+        if (a.op === "=" || a.op === ":=")
+          v = read(a.value, s);
+        else {
+          const base = {
+            "+=": "+", "-=": "-", "*=": "*", "/=": "/", "**=": "**",
+          }[a.op];
+          if (!base)
+            throw new PracticeError(
+              `この構文は説明に対応していません：複合代入演算子 ${a.op}`,
+              a.line,
+              "未対応",
+            );
+          v = semantics.binary
+            ? semantics.binary(base, read(a.target, s), read(a.value, s), a, s, api)
+            : baseBinary(base, read(a.target, s), read(a.value, s), semantics.dialect);
+        }
+        write(a.target, v, s, a);
+        return v;
+      }
+      case "destructureExpr": {
+        // R27-N13：式位置の分割代入。右辺を評価してから束縛し、
+        // 式の値としては右辺の値を返す（実 JavaScript の意味論）。
+        let v = read(a.value, s);
+        bindPattern(a.pattern, v, s, a, null);
+        return v;
+      }
+      case "comma": {
+        // R27-N12：カンマ演算子／AHK の multi-statement。左から順に
+        // 評価し、最後の値を返す。
+        read(a.a, s);
+        return read(a.b, s);
       }
       case "ifexpr": {
         // RG-07：R の if 式。else が無く条件不成立の場合は NULL を返す。
@@ -2080,6 +2416,13 @@ export function executeProgram(nodes, model, semantics = {}, custom = {}) {
   }
   function step(n, s, depth) {
     if (n.k === "declare" && !semantics.prepareScope) registerDeclaration(s, n);
+    if (n.k === "declareList" && !semantics.prepareScope)
+      for (const d of n.declarators)
+        if (!d.pattern)
+          registerDeclaration(s, { name: d.name, type: n.type, line: n.line });
+        else
+          for (const nm of patternLeafNames(d.pattern))
+            registerDeclaration(s, { name: nm, type: n.type, line: n.line });
     if (semantics.step) {
       let special = semantics.step(n, s, api);
       if (special) return special;
@@ -2095,6 +2438,35 @@ export function executeProgram(nodes, model, semantics = {}, custom = {}) {
         s.types[n.name] = n.type;
         s.vars[n.name] = n.value ? read(n.value, s) : undefined;
         note(s, n, `${n.name} を用意します：${fmt(s.vars[n.name])}`);
+        return [s];
+      }
+      case "declareList": {
+        // R27-N11：複数宣言子。各宣言子を左から順に初期化する（後の
+        // 宣言子の初期化子は前の宣言子を参照できる。実 JavaScript の
+        // 意味論）。スコープ登録は declare と同じ経路（prepareScope
+        // がある種類ではそちら、無い場合は step 冒頭）で済んでいる。
+        const parts = [];
+        for (const d of n.declarators) {
+          if (d.pattern) {
+            // パターンの葉のスコープ登録は declarePattern と同じく
+            // この実行時点で行う（prepareScope では単純名だけを登録）。
+            if (
+              semantics.blockScopes &&
+              semantics.dialect === "js" &&
+              n.type !== "var"
+            )
+              for (const nm of patternLeafNames(d.pattern))
+                registerDeclaration(s, { name: nm, type: n.type, line: n.line });
+            let v = read(d.value, s);
+            const bound = bindPattern(d.pattern, v, s, n, n.type);
+            parts.push(...bound.map((nm) => `${nm}：${fmt(s.vars[nm])}`));
+          } else {
+            s.types[d.name] = n.type;
+            s.vars[d.name] = d.value ? read(d.value, s) : undefined;
+            parts.push(`${d.name}：${fmt(s.vars[d.name])}`);
+          }
+        }
+        note(s, n, `${parts.join("、")} を用意します`);
         return [s];
       }
       case "assign": {
@@ -2146,10 +2518,17 @@ export function executeProgram(nodes, model, semantics = {}, custom = {}) {
           );
         }
         let v = read(n.value, s);
-        if (["+=", "-=", "*=", "/="].includes(n.op))
+        // R27-N8：複合代入の基底演算子への対応表（従来の op[0] では
+        // **= ／ <<= 等の複数文字演算子を扱えない）。
+        const compoundBase = {
+          "+=": "+", "-=": "-", "*=": "*", "/=": "/", "**=": "**",
+          "&=": "&", "|=": "|", "^=": "^",
+          "<<=": "<<", ">>=": ">>", ">>>=": ">>>",
+        }[n.op];
+        if (compoundBase)
           v = semantics.binary
-            ? semantics.binary(n.op[0], read(n.target, s), v, n, s, api)
-            : baseBinary(n.op[0], read(n.target, s), v, semantics.dialect);
+            ? semantics.binary(compoundBase, read(n.target, s), v, n, s, api)
+            : baseBinary(compoundBase, read(n.target, s), v, semantics.dialect);
         write(n.target, v, s, n);
         note(
           s,

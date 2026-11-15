@@ -324,6 +324,382 @@ export const referenceDetails = {
     "returns": "Boolean（False）",
     "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/boolean-data-type.md"
   },
+  "vbBinaryCompare": {
+    "returns": "数値定数（0）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/miscellaneous-constants.md"
+  },
+  "vbTextCompare": {
+    "returns": "数値定数（1）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/miscellaneous-constants.md"
+  },
+  "vbDatabaseCompare": {
+    "returns": "数値定数（2）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/miscellaneous-constants.md"
+  },
+  "vbCr": {
+    "returns": "String（キャリッジリターン Chr(13)）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/miscellaneous-constants.md"
+  },
+  "vbLf": {
+    "returns": "String（ラインフィード Chr(10)）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/miscellaneous-constants.md"
+  },
+  "vbNewLine": {
+    "returns": "String（改行文字。Windows では Chr(13) + Chr(10)）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/miscellaneous-constants.md"
+  },
+  "vbNullChar": {
+    "returns": "String（値 0 の文字 Chr(0)）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/miscellaneous-constants.md"
+  },
+  "vbNullString": {
+    "returns": "String（値 0 の文字列）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/miscellaneous-constants.md"
+  },
+  "vbFormFeed": {
+    "returns": "String（フォームフィード Chr(12)）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/miscellaneous-constants.md"
+  },
+  "vbVerticalTab": {
+    "returns": "String（垂直タブ Chr(11)）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/miscellaneous-constants.md"
+  },
+  "vbBlack": {
+    "returns": "数値定数（0）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/color-constants.md"
+  },
+  "vbRed": {
+    "returns": "数値定数（255）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/color-constants.md"
+  },
+  "vbGreen": {
+    "returns": "数値定数（65280）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/color-constants.md"
+  },
+  "vbYellow": {
+    "returns": "数値定数（65535）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/color-constants.md"
+  },
+  "vbBlue": {
+    "returns": "数値定数（16711680）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/color-constants.md"
+  },
+  "vbMagenta": {
+    "returns": "数値定数（16711935）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/color-constants.md"
+  },
+  "vbCyan": {
+    "returns": "数値定数（16776960）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/color-constants.md"
+  },
+  "vbWhite": {
+    "returns": "数値定数（16777215）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/color-constants.md"
+  },
+  "vbOKOnly": {
+    "returns": "数値定数（0）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/msgbox-constants.md"
+  },
+  "vbOKCancel": {
+    "returns": "数値定数（1）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/msgbox-constants.md"
+  },
+  "vbAbortRetryIgnore": {
+    "returns": "数値定数（2）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/msgbox-constants.md"
+  },
+  "vbYesNoCancel": {
+    "returns": "数値定数（3）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/msgbox-constants.md"
+  },
+  "vbYesNo": {
+    "returns": "数値定数（4）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/msgbox-constants.md"
+  },
+  "vbRetryCancel": {
+    "returns": "数値定数（5）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/msgbox-constants.md"
+  },
+  "vbCritical": {
+    "returns": "数値定数（16）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/msgbox-constants.md"
+  },
+  "vbQuestion": {
+    "returns": "数値定数（32）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/msgbox-constants.md"
+  },
+  "vbExclamation": {
+    "returns": "数値定数（48）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/msgbox-constants.md"
+  },
+  "vbInformation": {
+    "returns": "数値定数（64）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/msgbox-constants.md"
+  },
+  "vbDefaultButton1": {
+    "returns": "数値定数（0）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/msgbox-constants.md"
+  },
+  "vbDefaultButton2": {
+    "returns": "数値定数（256）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/msgbox-constants.md"
+  },
+  "vbDefaultButton3": {
+    "returns": "数値定数（512）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/msgbox-constants.md"
+  },
+  "vbDefaultButton4": {
+    "returns": "数値定数（768）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/msgbox-constants.md"
+  },
+  "vbApplicationModal": {
+    "returns": "数値定数（0）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/msgbox-constants.md"
+  },
+  "vbSystemModal": {
+    "returns": "数値定数（4096）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/msgbox-constants.md"
+  },
+  "vbMsgBoxHelpButton": {
+    "returns": "数値定数（16384）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/msgbox-constants.md"
+  },
+  "vbMsgBoxSetForeground": {
+    "returns": "数値定数（65536）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/msgbox-constants.md"
+  },
+  "vbMsgBoxRight": {
+    "returns": "数値定数（524288）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/msgbox-constants.md"
+  },
+  "vbMsgBoxRtlReading": {
+    "returns": "数値定数（1048576）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/msgbox-constants.md"
+  },
+  "vbOK": {
+    "returns": "数値定数（1）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/msgbox-constants.md"
+  },
+  "vbCancel": {
+    "returns": "数値定数（2）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/msgbox-constants.md"
+  },
+  "vbAbort": {
+    "returns": "数値定数（3）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/msgbox-constants.md"
+  },
+  "vbRetry": {
+    "returns": "数値定数（4）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/msgbox-constants.md"
+  },
+  "vbIgnore": {
+    "returns": "数値定数（5）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/msgbox-constants.md"
+  },
+  "vbYes": {
+    "returns": "数値定数（6）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/msgbox-constants.md"
+  },
+  "vbNo": {
+    "returns": "数値定数（7）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/msgbox-constants.md"
+  },
+  "vbUseSystem": {
+    "returns": "数値定数（0）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/date-constants.md"
+  },
+  "vbUseSystemDayOfWeek": {
+    "returns": "数値定数（0）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/date-constants.md"
+  },
+  "vbSunday": {
+    "returns": "数値定数（1）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/date-constants.md"
+  },
+  "vbMonday": {
+    "returns": "数値定数（2）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/date-constants.md"
+  },
+  "vbTuesday": {
+    "returns": "数値定数（3）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/date-constants.md"
+  },
+  "vbWednesday": {
+    "returns": "数値定数（4）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/date-constants.md"
+  },
+  "vbThursday": {
+    "returns": "数値定数（5）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/date-constants.md"
+  },
+  "vbFriday": {
+    "returns": "数値定数（6）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/date-constants.md"
+  },
+  "vbSaturday": {
+    "returns": "数値定数（7）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/date-constants.md"
+  },
+  "vbFirstJan1": {
+    "returns": "数値定数（1）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/date-constants.md"
+  },
+  "vbFirstFourDays": {
+    "returns": "数値定数（2）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/date-constants.md"
+  },
+  "vbFirstFullWeek": {
+    "returns": "数値定数（3）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/date-constants.md"
+  },
+  "vbUseDefault": {
+    "returns": "数値定数（-2）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/tristate-constants.md"
+  },
+  "vbTrue": {
+    "returns": "数値定数（-1）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/tristate-constants.md"
+  },
+  "vbFalse": {
+    "returns": "数値定数（0）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/tristate-constants.md"
+  },
+  "vbEmpty": {
+    "returns": "数値定数（0）",
+    "source": "https://learn.microsoft.com/en-us/office/vba/language/concepts/getting-started/vartype-constants"
+  },
+  "vbNull": {
+    "returns": "数値定数（1）",
+    "source": "https://learn.microsoft.com/en-us/office/vba/language/concepts/getting-started/vartype-constants"
+  },
+  "vbInteger": {
+    "returns": "数値定数（2）",
+    "source": "https://learn.microsoft.com/en-us/office/vba/language/concepts/getting-started/vartype-constants"
+  },
+  "vbLong": {
+    "returns": "数値定数（3）",
+    "source": "https://learn.microsoft.com/en-us/office/vba/language/concepts/getting-started/vartype-constants"
+  },
+  "vbSingle": {
+    "returns": "数値定数（4）",
+    "source": "https://learn.microsoft.com/en-us/office/vba/language/concepts/getting-started/vartype-constants"
+  },
+  "vbDouble": {
+    "returns": "数値定数（5）",
+    "source": "https://learn.microsoft.com/en-us/office/vba/language/concepts/getting-started/vartype-constants"
+  },
+  "vbCurrency": {
+    "returns": "数値定数（6）",
+    "source": "https://learn.microsoft.com/en-us/office/vba/language/concepts/getting-started/vartype-constants"
+  },
+  "vbDate": {
+    "returns": "数値定数（7）",
+    "source": "https://learn.microsoft.com/en-us/office/vba/language/concepts/getting-started/vartype-constants"
+  },
+  "vbString": {
+    "returns": "数値定数（8）",
+    "source": "https://learn.microsoft.com/en-us/office/vba/language/concepts/getting-started/vartype-constants"
+  },
+  "vbObject": {
+    "returns": "数値定数（9）",
+    "source": "https://learn.microsoft.com/en-us/office/vba/language/concepts/getting-started/vartype-constants"
+  },
+  "vbError": {
+    "returns": "数値定数（10）",
+    "source": "https://learn.microsoft.com/en-us/office/vba/language/concepts/getting-started/vartype-constants"
+  },
+  "vbBoolean": {
+    "returns": "数値定数（11）",
+    "source": "https://learn.microsoft.com/en-us/office/vba/language/concepts/getting-started/vartype-constants"
+  },
+  "vbVariant": {
+    "returns": "数値定数（12）",
+    "source": "https://learn.microsoft.com/en-us/office/vba/language/concepts/getting-started/vartype-constants"
+  },
+  "vbDataObject": {
+    "returns": "数値定数（13）",
+    "source": "https://learn.microsoft.com/en-us/office/vba/language/concepts/getting-started/vartype-constants"
+  },
+  "vbDecimal": {
+    "returns": "数値定数（14）",
+    "source": "https://learn.microsoft.com/en-us/office/vba/language/concepts/getting-started/vartype-constants"
+  },
+  "vbByte": {
+    "returns": "数値定数（17）",
+    "source": "https://learn.microsoft.com/en-us/office/vba/language/concepts/getting-started/vartype-constants"
+  },
+  "vbLongLong": {
+    "returns": "数値定数（20）",
+    "source": "https://learn.microsoft.com/en-us/office/vba/language/concepts/getting-started/vartype-constants"
+  },
+  "vbUserDefinedType": {
+    "returns": "数値定数（36）",
+    "source": "https://learn.microsoft.com/en-us/office/vba/language/concepts/getting-started/vartype-constants"
+  },
+  "vbArray": {
+    "returns": "数値定数（8192）",
+    "source": "https://learn.microsoft.com/en-us/office/vba/language/concepts/getting-started/vartype-constants"
+  },
+  "vbObjectError": {
+    "returns": "数値定数（-2147221504）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/miscellaneous-constants.md"
+  },
+  "vbBack": {
+    "returns": "String（バックスペース文字 Chr(8)）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/miscellaneous-constants.md"
+  },
+  "vbGeneralDate": {
+    "returns": "数値定数（0）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/formatdatetime-function.md"
+  },
+  "vbLongDate": {
+    "returns": "数値定数（1）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/formatdatetime-function.md"
+  },
+  "vbShortDate": {
+    "returns": "数値定数（2）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/formatdatetime-function.md"
+  },
+  "vbLongTime": {
+    "returns": "数値定数（3）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/formatdatetime-function.md"
+  },
+  "vbShortTime": {
+    "returns": "数値定数（4）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/formatdatetime-function.md"
+  },
+  "vbNormal": {
+    "returns": "数値定数（0）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/getattr-function.md"
+  },
+  "vbReadOnly": {
+    "returns": "数値定数（1）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/getattr-function.md"
+  },
+  "vbHidden": {
+    "returns": "数値定数（2）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/getattr-function.md"
+  },
+  "vbSystem": {
+    "returns": "数値定数（4）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/getattr-function.md"
+  },
+  "vbVolume": {
+    "returns": "数値定数（8）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/getattr-function.md"
+  },
+  "vbDirectory": {
+    "returns": "数値定数（16）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/getattr-function.md"
+  },
+  "vbArchive": {
+    "returns": "数値定数（32）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/getattr-function.md"
+  },
+  "vbAlias": {
+    "returns": "数値定数（64）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/getattr-function.md"
+  },
   "vbCrLf": {
     "returns": "String（改行文字 Chr(13) + Chr(10)）",
     "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/miscellaneous-constants.md"

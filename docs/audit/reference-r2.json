@@ -7485,6 +7485,1510 @@
   "sha256": "493ca4d9ac8d7e31b5701ae5322ce9816f3d3b9b956496d4a66c5f78fdbe35f0"
  },
  {
+  "kind": "vba",
+  "name": "vbBinaryCompare",
+  "supported": true,
+  "fields": {
+   "description": "バイナリ比較（大文字小文字を区別）を表す比較定数です。InStr／Replace の compare 引数に使います。",
+   "returns": "数値定数（0）",
+   "caution": "文字列定数ではなく数値の定数です。",
+   "example": "Debug.Print vbBinaryCompare",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/miscellaneous-constants.md"
+  },
+  "sha256": "fd9ba4b637473ca5954b5cc8b00b2a1dbf946d0241bb6c15a71873eace2a34e1",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "vba",
+  "name": "vbTextCompare",
+  "supported": true,
+  "fields": {
+   "description": "テキスト比較（大文字小文字を区別しない）を表す比較定数です。InStr／Replace の compare 引数に使います。",
+   "returns": "数値定数（1）",
+   "caution": "文字列定数ではなく数値の定数です。",
+   "example": "Debug.Print vbTextCompare",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/miscellaneous-constants.md"
+  },
+  "sha256": "cd0eb0ac74c0f5d7afabe7fef46277d827c384e4c897b1ce999e3a70ccef057a",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "vba",
+  "name": "vbDatabaseCompare",
+  "supported": true,
+  "fields": {
+   "description": "データベースの情報を基に比較することを表す比較定数です。",
+   "returns": "数値定数（2）",
+   "caution": "Excel の InStr／Replace では使えず、compare に渡すとエラー5になります（定数自体の値は2です）。",
+   "example": "Debug.Print vbDatabaseCompare",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/miscellaneous-constants.md"
+  },
+  "sha256": "a5b7b033f85102b3943a15255320b5498058fe295bb0855f5e85668ee39aff82",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "vba",
+  "name": "vbCr",
+  "supported": true,
+  "fields": {
+   "description": "キャリッジリターン（Chr(13)）を表す文字列定数です。",
+   "returns": "String（キャリッジリターン Chr(13)）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print Len(vbCr)",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/miscellaneous-constants.md"
+  },
+  "sha256": "77ab7729a8110a8b89fa1c1ba69dfc494787049d84a626393b2a95f896f9feb5",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "vba",
+  "name": "vbLf",
+  "supported": true,
+  "fields": {
+   "description": "ラインフィード（Chr(10)）を表す文字列定数です。",
+   "returns": "String（ラインフィード Chr(10)）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print Len(vbLf)",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/miscellaneous-constants.md"
+  },
+  "sha256": "f40c6b062cf30f1a01ece6ceb709fc14d1a110d5f1b05e50ebd470833c8adffd",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "vba",
+  "name": "vbNewLine",
+  "supported": true,
+  "fields": {
+   "description": "プラットフォーム固有の改行文字を表す文字列定数です。Windows では Chr(13) + Chr(10) です。",
+   "returns": "String（改行文字。Windows では Chr(13) + Chr(10)）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print Len(vbNewLine)",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/miscellaneous-constants.md"
+  },
+  "sha256": "236c9889973e8861c44b280d959405e3ab188e095d6467918620db0cbc22de57",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "vba",
+  "name": "vbNullChar",
+  "supported": true,
+  "fields": {
+   "description": "値 0 の文字（Chr(0)）を表す文字列定数です。",
+   "returns": "String（値 0 の文字 Chr(0)）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print Len(vbNullChar)",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/miscellaneous-constants.md"
+  },
+  "sha256": "d1d45a9c6ca6d8b0aeaf7bc53d059a4193cb308a050907c8e03ed5acacd517d5",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "vba",
+  "name": "vbNullString",
+  "supported": true,
+  "fields": {
+   "description": "値 0 の文字列ポインタを表す定数です。外部プロシージャの呼び出しに使います。",
+   "returns": "String（値 0 の文字列）",
+   "caution": "長さ 0 の文字列 \"\" とは厳密には異なりますが、このアプリの値の意味論では \"\" と同じに振る舞います。",
+   "example": "Debug.Print Len(vbNullString)",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/miscellaneous-constants.md"
+  },
+  "sha256": "def0fdcabfaf4ef038bf49336cbef55264ed691d327c6ab182a93c1b15fd9da9",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "vba",
+  "name": "vbFormFeed",
+  "supported": true,
+  "fields": {
+   "description": "フォームフィード（Chr(12)）を表す文字列定数です。",
+   "returns": "String（フォームフィード Chr(12)）",
+   "caution": "Microsoft Windows では実用上の意味を持ちません。",
+   "example": "Debug.Print Len(vbFormFeed)",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/miscellaneous-constants.md"
+  },
+  "sha256": "27ddaf2fdf0ebe43f4b2f51f5ba563599271b56d59e2121412a1dcec7f934933",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "vba",
+  "name": "vbVerticalTab",
+  "supported": true,
+  "fields": {
+   "description": "垂直タブ（Chr(11)）を表す文字列定数です。",
+   "returns": "String（垂直タブ Chr(11)）",
+   "caution": "Microsoft Windows では実用上の意味を持ちません。",
+   "example": "Debug.Print Len(vbVerticalTab)",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/miscellaneous-constants.md"
+  },
+  "sha256": "3693d6c62f238ad5ab38c80391fc3e65bf76a20eb5a8cebf2260192f877d197f",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "vba",
+  "name": "vbBlack",
+  "supported": true,
+  "fields": {
+   "description": "黒を表す色定数です。",
+   "returns": "数値定数（0）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbBlack",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/color-constants.md"
+  },
+  "sha256": "2714a2fb2b20f2c4e584cbf28173f0a7ee76b638303b7c4a7210e5b9b69cb953",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "vba",
+  "name": "vbRed",
+  "supported": true,
+  "fields": {
+   "description": "赤を表す色定数です。",
+   "returns": "数値定数（255）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbRed",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/color-constants.md"
+  },
+  "sha256": "2b68eee3630fa0e7b8ea338cb4feb9f9c0840debc773fbdd27fe4ba072661a7d",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "vba",
+  "name": "vbGreen",
+  "supported": true,
+  "fields": {
+   "description": "緑を表す色定数です。",
+   "returns": "数値定数（65280）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbGreen",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/color-constants.md"
+  },
+  "sha256": "e323135562c3f14fd3d9d52e5779d750843d7c6c7bb456a394fbdb516dcf50cd",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "vba",
+  "name": "vbYellow",
+  "supported": true,
+  "fields": {
+   "description": "黄色を表す色定数です。",
+   "returns": "数値定数（65535）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbYellow",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/color-constants.md"
+  },
+  "sha256": "0d860f3cc0fa7ccfd2617faac37cfc2691dd39f24bc8e508d7264765e2ab7c62",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "vba",
+  "name": "vbBlue",
+  "supported": true,
+  "fields": {
+   "description": "青を表す色定数です。",
+   "returns": "数値定数（16711680）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbBlue",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/color-constants.md"
+  },
+  "sha256": "1db0e44b6ddde424bc8943669e859d31403962a158020540007f31997f77eeca",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "vba",
+  "name": "vbMagenta",
+  "supported": true,
+  "fields": {
+   "description": "マゼンタを表す色定数です。",
+   "returns": "数値定数（16711935）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbMagenta",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/color-constants.md"
+  },
+  "sha256": "11a19aa665bbd4bc144f669fbaf9cdd0dc5bb1910daf043dbf65c2a0f483a5f7",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "vba",
+  "name": "vbCyan",
+  "supported": true,
+  "fields": {
+   "description": "シアンを表す色定数です。",
+   "returns": "数値定数（16776960）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbCyan",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/color-constants.md"
+  },
+  "sha256": "d6a3340fbdb2984ed72bfb5b02a72bd693513c86719377c7f882c9b69ac2aad0",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "vba",
+  "name": "vbWhite",
+  "supported": true,
+  "fields": {
+   "description": "白を表す色定数です。",
+   "returns": "数値定数（16777215）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbWhite",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/color-constants.md"
+  },
+  "sha256": "827ce2147e8047c06bcbaffa074093d0a5d252d5167e870b5761dffe305c73a6",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "vba",
+  "name": "vbOKOnly",
+  "supported": true,
+  "fields": {
+   "description": "MsgBox で［OK］ボタンだけを表示することを表す定数です。",
+   "returns": "数値定数（0）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbOKOnly",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/msgbox-constants.md"
+  },
+  "sha256": "d89518804611f2fd6812b4770734d6db9985fbf6df435ec39cfcb31d19588c27",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "vba",
+  "name": "vbOKCancel",
+  "supported": true,
+  "fields": {
+   "description": "MsgBox で［OK］と［キャンセル］ボタンを表示することを表す定数です。",
+   "returns": "数値定数（1）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbOKCancel",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/msgbox-constants.md"
+  },
+  "sha256": "8b15b426f5786b0a6d82a6486d939894a097e078c5c18a1da17c973549a0e52e",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "vba",
+  "name": "vbAbortRetryIgnore",
+  "supported": true,
+  "fields": {
+   "description": "MsgBox で［中止］［再試行］［無視］ボタンを表示することを表す定数です。",
+   "returns": "数値定数（2）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbAbortRetryIgnore",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/msgbox-constants.md"
+  },
+  "sha256": "9e0b3a365b3d890fc586a29652600b137f54d6425c9092063da703ab910e7c9c",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "vba",
+  "name": "vbYesNoCancel",
+  "supported": true,
+  "fields": {
+   "description": "MsgBox で［はい］［いいえ］［キャンセル］ボタンを表示することを表す定数です。",
+   "returns": "数値定数（3）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbYesNoCancel",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/msgbox-constants.md"
+  },
+  "sha256": "e75df5d81b84515a675dee264d743c86889fe042491a0dc66d20dff19335e6f6",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "vba",
+  "name": "vbYesNo",
+  "supported": true,
+  "fields": {
+   "description": "MsgBox で［はい］と［いいえ］ボタンを表示することを表す定数です。",
+   "returns": "数値定数（4）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbYesNo",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/msgbox-constants.md"
+  },
+  "sha256": "59887e3d3a8afdc8259ceb06c1af6e6c424af8726e64c1aab8a214259bfbd566",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "vba",
+  "name": "vbRetryCancel",
+  "supported": true,
+  "fields": {
+   "description": "MsgBox で［再試行］と［キャンセル］ボタンを表示することを表す定数です。",
+   "returns": "数値定数（5）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbRetryCancel",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/msgbox-constants.md"
+  },
+  "sha256": "5c1f25b226a0706eed46f0328faf631c4b71f58bb4fcce32ac10612edfc6135a",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "vba",
+  "name": "vbCritical",
+  "supported": true,
+  "fields": {
+   "description": "MsgBox で重大なメッセージのアイコンを表示することを表す定数です。",
+   "returns": "数値定数（16）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbCritical",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/msgbox-constants.md"
+  },
+  "sha256": "57596604a02d8531da5e97096949ae95db882cef54da5bbdea66839471e32e76",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "vba",
+  "name": "vbQuestion",
+  "supported": true,
+  "fields": {
+   "description": "MsgBox で問い合わせのアイコンを表示することを表す定数です。",
+   "returns": "数値定数（32）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbQuestion",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/msgbox-constants.md"
+  },
+  "sha256": "a69babb01e46db4835dedc8d9a8d87be3c2dd87df93252717707a786559570e4",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "vba",
+  "name": "vbExclamation",
+  "supported": true,
+  "fields": {
+   "description": "MsgBox で警告メッセージのアイコンを表示することを表す定数です。",
+   "returns": "数値定数（48）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbExclamation",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/msgbox-constants.md"
+  },
+  "sha256": "15ecadc1ed1dc669e31a31a14b9bf839434097c8ba57c859e052c24a95b69eed",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "vba",
+  "name": "vbInformation",
+  "supported": true,
+  "fields": {
+   "description": "MsgBox で情報メッセージのアイコンを表示することを表す定数です。",
+   "returns": "数値定数（64）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbInformation",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/msgbox-constants.md"
+  },
+  "sha256": "2b856eb3c7744d89a131d1dc239f2ed49f429da47bf119715f15208069fece7f",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "vba",
+  "name": "vbDefaultButton1",
+  "supported": true,
+  "fields": {
+   "description": "MsgBox で最初のボタンを既定にすることを表す定数です。",
+   "returns": "数値定数（0）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbDefaultButton1",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/msgbox-constants.md"
+  },
+  "sha256": "1fead589369fd702fa708b0de20687b789bfe3d4df6523c7cadc783d1ea14d70",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "vba",
+  "name": "vbDefaultButton2",
+  "supported": true,
+  "fields": {
+   "description": "MsgBox で2番目のボタンを既定にすることを表す定数です。",
+   "returns": "数値定数（256）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbDefaultButton2",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/msgbox-constants.md"
+  },
+  "sha256": "f6d0f3329032c82301e65ddef868e4121582b00725f8838b60afce2340b99f96",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "vba",
+  "name": "vbDefaultButton3",
+  "supported": true,
+  "fields": {
+   "description": "MsgBox で3番目のボタンを既定にすることを表す定数です。",
+   "returns": "数値定数（512）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbDefaultButton3",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/msgbox-constants.md"
+  },
+  "sha256": "9238420b807a5233493c88dc89ab4d83a91ba0f4cda5ddc8014bd1ca5191205f",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "vba",
+  "name": "vbDefaultButton4",
+  "supported": true,
+  "fields": {
+   "description": "MsgBox で4番目のボタンを既定にすることを表す定数です。",
+   "returns": "数値定数（768）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbDefaultButton4",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/msgbox-constants.md"
+  },
+  "sha256": "9b5f838b975074342fe246ac644da983c273e70a6a956501fc0d589faadd9989",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "vba",
+  "name": "vbApplicationModal",
+  "supported": true,
+  "fields": {
+   "description": "MsgBox をアプリケーションモーダルにすることを表す定数です。",
+   "returns": "数値定数（0）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbApplicationModal",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/msgbox-constants.md"
+  },
+  "sha256": "f9ffe76f8d2dc968366c3382c528a49711f013cbfc67b114a72020e84454b2ff",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "vba",
+  "name": "vbSystemModal",
+  "supported": true,
+  "fields": {
+   "description": "MsgBox をシステムモーダルにすることを表す定数です。",
+   "returns": "数値定数（4096）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbSystemModal",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/msgbox-constants.md"
+  },
+  "sha256": "643550e035020cc37bc0954af33bc52bc7da20e33f64dac36f8a86c46cecd3ea",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "vba",
+  "name": "vbMsgBoxHelpButton",
+  "supported": true,
+  "fields": {
+   "description": "MsgBox に［ヘルプ］ボタンを追加することを表す定数です。",
+   "returns": "数値定数（16384）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbMsgBoxHelpButton",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/msgbox-constants.md"
+  },
+  "sha256": "4792c1f6ba5a6362dc227c8015b77fb476f3c03bfe0138bbd871a2dc109a2879",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "vba",
+  "name": "vbMsgBoxSetForeground",
+  "supported": true,
+  "fields": {
+   "description": "MsgBox のウィンドウを前面に表示することを表す定数です。",
+   "returns": "数値定数（65536）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbMsgBoxSetForeground",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/msgbox-constants.md"
+  },
+  "sha256": "b613b911b19895aead7d40def76cd99b1678b5899fe1eb087a7aa86ea997dcaa",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "vba",
+  "name": "vbMsgBoxRight",
+  "supported": true,
+  "fields": {
+   "description": "MsgBox のテキストを右寄せにすることを表す定数です。",
+   "returns": "数値定数（524288）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbMsgBoxRight",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/msgbox-constants.md"
+  },
+  "sha256": "591604c9d648d74ad2c9e461e94ea46eb49648e5f938f9b35357c7a15a7eacca",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "vba",
+  "name": "vbMsgBoxRtlReading",
+  "supported": true,
+  "fields": {
+   "description": "MsgBox のテキストを右から左への読み順で表示することを表す定数です。",
+   "returns": "数値定数（1048576）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbMsgBoxRtlReading",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/msgbox-constants.md"
+  },
+  "sha256": "43e92183386df30d8bff895ea2baa81684960a2864037b58b1e7956469027d88",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "vba",
+  "name": "vbOK",
+  "supported": true,
+  "fields": {
+   "description": "MsgBox で［OK］ボタンが押されたことを表す戻り値の定数です。",
+   "returns": "数値定数（1）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbOK",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/msgbox-constants.md"
+  },
+  "sha256": "9d22828bca40710c3ac709f6f85d406d280ed1014bd52c8600946d40ee1b0534",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "vba",
+  "name": "vbCancel",
+  "supported": true,
+  "fields": {
+   "description": "MsgBox で［キャンセル］ボタンが押されたことを表す戻り値の定数です。",
+   "returns": "数値定数（2）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbCancel",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/msgbox-constants.md"
+  },
+  "sha256": "d190eb2e2785673ebce86b1409706d1cdda238028fab2980362395487b248e84",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "vba",
+  "name": "vbAbort",
+  "supported": true,
+  "fields": {
+   "description": "MsgBox で［中止］ボタンが押されたことを表す戻り値の定数です。",
+   "returns": "数値定数（3）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbAbort",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/msgbox-constants.md"
+  },
+  "sha256": "5fe4a712b6406817a6395af6df9f676ff8beffe0a52a0fa02cc92063a16d49d8",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "vba",
+  "name": "vbRetry",
+  "supported": true,
+  "fields": {
+   "description": "MsgBox で［再試行］ボタンが押されたことを表す戻り値の定数です。",
+   "returns": "数値定数（4）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbRetry",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/msgbox-constants.md"
+  },
+  "sha256": "f05c6336499a0b40cde1f1327974bc7f07a0a4f5a328e26c16fc9328a62c7519",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "vba",
+  "name": "vbIgnore",
+  "supported": true,
+  "fields": {
+   "description": "MsgBox で［無視］ボタンが押されたことを表す戻り値の定数です。",
+   "returns": "数値定数（5）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbIgnore",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/msgbox-constants.md"
+  },
+  "sha256": "2a474dfa5c96503f5c990a5e071c5f370d9ebaea9a219e3c96ecf7c5d4d0db75",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "vba",
+  "name": "vbYes",
+  "supported": true,
+  "fields": {
+   "description": "MsgBox で［はい］ボタンが押されたことを表す戻り値の定数です。",
+   "returns": "数値定数（6）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbYes",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/msgbox-constants.md"
+  },
+  "sha256": "12b346de978138df8b803d79f1c4cb3e95a34be6ee1993f40fedd4612fd9c836",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "vba",
+  "name": "vbNo",
+  "supported": true,
+  "fields": {
+   "description": "MsgBox で［いいえ］ボタンが押されたことを表す戻り値の定数です。",
+   "returns": "数値定数（7）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbNo",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/msgbox-constants.md"
+  },
+  "sha256": "7053a832899d48ffe0ab3df260c8dc9cd7f6e9154d194b48d8fc5f9b8f2a8b3c",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "vba",
+  "name": "vbUseSystem",
+  "supported": true,
+  "fields": {
+   "description": "システム設定（NLS API の設定）を使うことを表す日付定数です。週の初日・年の初週のどちらの指定にも使います。",
+   "returns": "数値定数（0）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbUseSystem",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/date-constants.md"
+  },
+  "sha256": "68e022d05c91cb6b9fa717e7eafa9f1bb8e0d2f69f45adc3f5f36fb6344c67e6",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "vba",
+  "name": "vbUseSystemDayOfWeek",
+  "supported": true,
+  "fields": {
+   "description": "週の初日にシステム設定で指定された曜日を使うことを表す日付定数です。",
+   "returns": "数値定数（0）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbUseSystemDayOfWeek",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/date-constants.md"
+  },
+  "sha256": "7d59db7339b63d63955bf90afb7479ab5aeac00cc124cab20059b702541a9c3e",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "vba",
+  "name": "vbSunday",
+  "supported": true,
+  "fields": {
+   "description": "日曜日を表す日付定数です。Weekday などの戻り値でも使われます。",
+   "returns": "数値定数（1）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbSunday",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/date-constants.md"
+  },
+  "sha256": "e1937a5c918d3310c2f5c47afbfe2798329f674870a742d0b30f96b2f7da7ac3",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "vba",
+  "name": "vbMonday",
+  "supported": true,
+  "fields": {
+   "description": "月曜日を表す日付定数です。Weekday などの戻り値でも使われます。",
+   "returns": "数値定数（2）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbMonday",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/date-constants.md"
+  },
+  "sha256": "8ab4cab695dfab3d4fd6539dc40c7a4134cc4617695652020b5861c3275f01a6",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "vba",
+  "name": "vbTuesday",
+  "supported": true,
+  "fields": {
+   "description": "火曜日を表す日付定数です。Weekday などの戻り値でも使われます。",
+   "returns": "数値定数（3）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbTuesday",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/date-constants.md"
+  },
+  "sha256": "4a3864824f5c93164325e8cd9a59142aee51bb036fdc6448d0ce0a343116c9bd",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "vba",
+  "name": "vbWednesday",
+  "supported": true,
+  "fields": {
+   "description": "水曜日を表す日付定数です。Weekday などの戻り値でも使われます。",
+   "returns": "数値定数（4）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbWednesday",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/date-constants.md"
+  },
+  "sha256": "f895afbfc822be1c54b1d199c9f64011ba73c242af3b2da2a9217a5e29f19712",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "vba",
+  "name": "vbThursday",
+  "supported": true,
+  "fields": {
+   "description": "木曜日を表す日付定数です。Weekday などの戻り値でも使われます。",
+   "returns": "数値定数（5）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbThursday",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/date-constants.md"
+  },
+  "sha256": "a5e4a7c9acef16c8168c975c190d5f97345cd543dd496aae2a2f6a054bf03020",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "vba",
+  "name": "vbFriday",
+  "supported": true,
+  "fields": {
+   "description": "金曜日を表す日付定数です。Weekday などの戻り値でも使われます。",
+   "returns": "数値定数（6）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbFriday",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/date-constants.md"
+  },
+  "sha256": "7bff84a7febab5f4293ff1fb7af9737b97e9c05fe79093e0c6a7b42b087c153a",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "vba",
+  "name": "vbSaturday",
+  "supported": true,
+  "fields": {
+   "description": "土曜日を表す日付定数です。Weekday などの戻り値でも使われます。",
+   "returns": "数値定数（7）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbSaturday",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/date-constants.md"
+  },
+  "sha256": "e5bc9db6270f64d1fb2a657f337b421c0bd51c309bc75fa3c4c93b8ba5f925a2",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "vba",
+  "name": "vbFirstJan1",
+  "supported": true,
+  "fields": {
+   "description": "年の最初の週を、1月1日を含む週とすることを表す日付定数です。",
+   "returns": "数値定数（1）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbFirstJan1",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/date-constants.md"
+  },
+  "sha256": "5213383eb369abdc3b57d2526978cfa8e5fe4e0e1156bc3be8b66cb53038cd79",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "vba",
+  "name": "vbFirstFourDays",
+  "supported": true,
+  "fields": {
+   "description": "年の最初の週を、新年に少なくとも4日含まれる最初の週とすることを表す日付定数です。",
+   "returns": "数値定数（2）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbFirstFourDays",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/date-constants.md"
+  },
+  "sha256": "06679a8d55eb64d6b8a0fb121646f4b92b5d645aac1a5b649c643ab60aae655c",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "vba",
+  "name": "vbFirstFullWeek",
+  "supported": true,
+  "fields": {
+   "description": "年の最初の週を、年の最初の完全な週とすることを表す日付定数です。",
+   "returns": "数値定数（3）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbFirstFullWeek",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/date-constants.md"
+  },
+  "sha256": "88ae545227fbcba330f70f61a8ad405fe7dd60893f03fe00f8585b51181a458e",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "vba",
+  "name": "vbUseDefault",
+  "supported": true,
+  "fields": {
+   "description": "既定の設定を使うことを表す TriState 定数です。数値書式を指定する関数の引数などに使います。",
+   "returns": "数値定数（-2）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbUseDefault",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/tristate-constants.md"
+  },
+  "sha256": "f66a62642ccdd31f4763927c8acffb30d6d85a139c7799aa5d090dbd37ca65c4",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "vba",
+  "name": "vbTrue",
+  "supported": true,
+  "fields": {
+   "description": "真を表す TriState 定数です。数値としては -1 で、True と同じ値です。",
+   "returns": "数値定数（-1）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbTrue",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/tristate-constants.md"
+  },
+  "sha256": "35c2f19b8afe3fc46556d35cc89ac2c4635e6447975c842865aeecfd350975ca",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "vba",
+  "name": "vbFalse",
+  "supported": true,
+  "fields": {
+   "description": "偽を表す TriState 定数です。数値としては 0 で、False と同じ値です。",
+   "returns": "数値定数（0）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbFalse",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/tristate-constants.md"
+  },
+  "sha256": "b4fad9d52a3867b9310522e78a15e02ee6fe7f576f3d1eeff6c92b19abc37d1e",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "vba",
+  "name": "vbEmpty",
+  "supported": true,
+  "fields": {
+   "description": "VarType の戻り値で、Empty（未初期化）を表す定数です。",
+   "returns": "数値定数（0）",
+   "caution": "キーワードの Empty 自体とは別の、数値の定数です。",
+   "example": "Debug.Print vbEmpty",
+   "source": "https://learn.microsoft.com/en-us/office/vba/language/concepts/getting-started/vartype-constants"
+  },
+  "sha256": "2ce17e8571a8d7464378928dc566a36482aa00cb4dc06acbc938e3fdb24567a8",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "vba",
+  "name": "vbNull",
+  "supported": true,
+  "fields": {
+   "description": "VarType の戻り値で、Null（有効なデータがない）を表す定数です。",
+   "returns": "数値定数（1）",
+   "caution": "キーワードの Null 自体とは別の、数値の定数です。",
+   "example": "Debug.Print vbNull",
+   "source": "https://learn.microsoft.com/en-us/office/vba/language/concepts/getting-started/vartype-constants"
+  },
+  "sha256": "8899fded40f4795ff90ae608a0c2edd776a5161dfb108dff2dc062067f824e57",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "vba",
+  "name": "vbInteger",
+  "supported": true,
+  "fields": {
+   "description": "VarType の戻り値で、Integer 型を表す定数です。",
+   "returns": "数値定数（2）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbInteger",
+   "source": "https://learn.microsoft.com/en-us/office/vba/language/concepts/getting-started/vartype-constants"
+  },
+  "sha256": "86446b271f19e468196ca5e13efe64437da45020c1cc33aa4982197fe79fb41a",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "vba",
+  "name": "vbLong",
+  "supported": true,
+  "fields": {
+   "description": "VarType の戻り値で、Long 型を表す定数です。",
+   "returns": "数値定数（3）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbLong",
+   "source": "https://learn.microsoft.com/en-us/office/vba/language/concepts/getting-started/vartype-constants"
+  },
+  "sha256": "41d52d98822adf26afde6732fd76ba0eaa02ac2218072841ed7be1ce390135ce",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "vba",
+  "name": "vbSingle",
+  "supported": true,
+  "fields": {
+   "description": "VarType の戻り値で、Single 型を表す定数です。",
+   "returns": "数値定数（4）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbSingle",
+   "source": "https://learn.microsoft.com/en-us/office/vba/language/concepts/getting-started/vartype-constants"
+  },
+  "sha256": "b30d0fe669d91343efdd2a5e122a5aad70894a9cf29a03134200b4b01701a7a1",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "vba",
+  "name": "vbDouble",
+  "supported": true,
+  "fields": {
+   "description": "VarType の戻り値で、Double 型を表す定数です。",
+   "returns": "数値定数（5）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbDouble",
+   "source": "https://learn.microsoft.com/en-us/office/vba/language/concepts/getting-started/vartype-constants"
+  },
+  "sha256": "eff1ed5539225d7a4cf99aa3452c62cb24e87aa132d2d02aaa51ce0966f57b5b",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "vba",
+  "name": "vbCurrency",
+  "supported": true,
+  "fields": {
+   "description": "VarType の戻り値で、Currency 型を表す定数です。",
+   "returns": "数値定数（6）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbCurrency",
+   "source": "https://learn.microsoft.com/en-us/office/vba/language/concepts/getting-started/vartype-constants"
+  },
+  "sha256": "9c7d1bd5f5f1b0a3bed004820f61c707729cea5304da21e4de6eaa81148d310d",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "vba",
+  "name": "vbDate",
+  "supported": true,
+  "fields": {
+   "description": "VarType の戻り値で、日付型を表す定数です。",
+   "returns": "数値定数（7）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbDate",
+   "source": "https://learn.microsoft.com/en-us/office/vba/language/concepts/getting-started/vartype-constants"
+  },
+  "sha256": "dcd9d188baa69865bb355f72095f4b05a5aff88e265148839d059e4bfa129b72",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "vba",
+  "name": "vbString",
+  "supported": true,
+  "fields": {
+   "description": "VarType の戻り値で、String 型を表す定数です。",
+   "returns": "数値定数（8）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbString",
+   "source": "https://learn.microsoft.com/en-us/office/vba/language/concepts/getting-started/vartype-constants"
+  },
+  "sha256": "e9e188990324753411b520025973fde177a54c6e4aeca01c6b73e8b70b939492",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "vba",
+  "name": "vbObject",
+  "supported": true,
+  "fields": {
+   "description": "VarType の戻り値で、オブジェクト型を表す定数です。",
+   "returns": "数値定数（9）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbObject",
+   "source": "https://learn.microsoft.com/en-us/office/vba/language/concepts/getting-started/vartype-constants"
+  },
+  "sha256": "b64c565fb952aad747c3f514139fbfb122aecba55150628d20197bb575ba36ff",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "vba",
+  "name": "vbError",
+  "supported": true,
+  "fields": {
+   "description": "VarType の戻り値で、エラー値を表す定数です。",
+   "returns": "数値定数（10）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbError",
+   "source": "https://learn.microsoft.com/en-us/office/vba/language/concepts/getting-started/vartype-constants"
+  },
+  "sha256": "67480dbf819b78977a6ae8f1b45b2846b87d2465e599137a02d521978240e005",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "vba",
+  "name": "vbBoolean",
+  "supported": true,
+  "fields": {
+   "description": "VarType の戻り値で、Boolean 型を表す定数です。",
+   "returns": "数値定数（11）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbBoolean",
+   "source": "https://learn.microsoft.com/en-us/office/vba/language/concepts/getting-started/vartype-constants"
+  },
+  "sha256": "fe827282b77c99ad4e9a047ed8001ae45d40c4fe90ee6451b133328ce3eb6548",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "vba",
+  "name": "vbVariant",
+  "supported": true,
+  "fields": {
+   "description": "VarType の戻り値で、Variant 型を表す定数です。Variant の配列の要素型としてだけ返されます。",
+   "returns": "数値定数（12）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbVariant",
+   "source": "https://learn.microsoft.com/en-us/office/vba/language/concepts/getting-started/vartype-constants"
+  },
+  "sha256": "b7993f4ac4a5688b04c0993026c158b6794c1ee827c535ff7dcc0a39038b4c45",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "vba",
+  "name": "vbDataObject",
+  "supported": true,
+  "fields": {
+   "description": "VarType の戻り値で、データアクセスオブジェクトを表す定数です。",
+   "returns": "数値定数（13）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbDataObject",
+   "source": "https://learn.microsoft.com/en-us/office/vba/language/concepts/getting-started/vartype-constants"
+  },
+  "sha256": "3d0c9ca2a3a448b2a43337bb154222d47aabda2991c447d2ead9fd2fb8034693",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "vba",
+  "name": "vbDecimal",
+  "supported": true,
+  "fields": {
+   "description": "VarType の戻り値で、Decimal 型を表す定数です。",
+   "returns": "数値定数（14）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbDecimal",
+   "source": "https://learn.microsoft.com/en-us/office/vba/language/concepts/getting-started/vartype-constants"
+  },
+  "sha256": "a5119cdbc341177e04881d8a66d0b8275c34ea40a04288a8b9f148167376998e",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "vba",
+  "name": "vbByte",
+  "supported": true,
+  "fields": {
+   "description": "VarType の戻り値で、Byte 型を表す定数です。",
+   "returns": "数値定数（17）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbByte",
+   "source": "https://learn.microsoft.com/en-us/office/vba/language/concepts/getting-started/vartype-constants"
+  },
+  "sha256": "9ceb8f5af674dc06df4a8bb1d51d3f6fc99553b5fe45d78dcf0220fba59e9160",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "vba",
+  "name": "vbLongLong",
+  "supported": true,
+  "fields": {
+   "description": "VarType の戻り値で、LongLong 型を表す定数です。64ビット版でのみ有効です。",
+   "returns": "数値定数（20）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbLongLong",
+   "source": "https://learn.microsoft.com/en-us/office/vba/language/concepts/getting-started/vartype-constants"
+  },
+  "sha256": "3bb3e1f92e8a1acd92673d2ae9754a94b63bccd06f6925fc2855376096aeecbf",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "vba",
+  "name": "vbUserDefinedType",
+  "supported": true,
+  "fields": {
+   "description": "VarType の戻り値で、ユーザ定義型を含む Variant を表す定数です。",
+   "returns": "数値定数（36）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbUserDefinedType",
+   "source": "https://learn.microsoft.com/en-us/office/vba/language/concepts/getting-started/vartype-constants"
+  },
+  "sha256": "6c4fc0a87bbce43fbb89ef4107352a73e3410654bfed6898b9f3cf2094e82c25",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "vba",
+  "name": "vbArray",
+  "supported": true,
+  "fields": {
+   "description": "VarType の戻り値で、配列であることを表す定数です。要素型の値に加算されて返されます。",
+   "returns": "数値定数（8192）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbArray",
+   "source": "https://learn.microsoft.com/en-us/office/vba/language/concepts/getting-started/vartype-constants"
+  },
+  "sha256": "e2cc8d013f92a0e6eb8b11e5e48d53d686aba6a3e6bab694eeeafcc6f1a5def7",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "vba",
+  "name": "vbObjectError",
+  "supported": true,
+  "fields": {
+   "description": "オブジェクトエラーの番号の基底を表す定数です。ユーザ定義のエラー番号はこの値より大きくします。",
+   "returns": "数値定数（-2147221504）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbObjectError",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/miscellaneous-constants.md"
+  },
+  "sha256": "e9dbe6b4581edbd0adeaeed39bf174e074a96f91ff27c34e297f5dedea378f22",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "vba",
+  "name": "vbBack",
+  "supported": true,
+  "fields": {
+   "description": "バックスペース文字（Chr(8)）を表す文字列定数です。",
+   "returns": "String（バックスペース文字 Chr(8)）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print Len(vbBack)",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/miscellaneous-constants.md"
+  },
+  "sha256": "74d9af8ccc1fa513a81bd869a42fe776dd593611f467e4934c557fbc785a6739",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "vba",
+  "name": "vbGeneralDate",
+  "supported": true,
+  "fields": {
+   "description": "FormatDateTime で標準の日付書式を使うことを表す定数です。",
+   "returns": "数値定数（0）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbGeneralDate",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/formatdatetime-function.md"
+  },
+  "sha256": "0498482bb0f04e0f44d21a6986b165766d1985e50a08a9e0a457914b6ab2c707",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "vba",
+  "name": "vbLongDate",
+  "supported": true,
+  "fields": {
+   "description": "FormatDateTime で長い日付書式を使うことを表す定数です。",
+   "returns": "数値定数（1）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbLongDate",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/formatdatetime-function.md"
+  },
+  "sha256": "d54fc4bcc0484a0b51a677eef4e78927ac30e20f65f3ec49a90138243f747e48",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "vba",
+  "name": "vbShortDate",
+  "supported": true,
+  "fields": {
+   "description": "FormatDateTime で短い日付書式を使うことを表す定数です。",
+   "returns": "数値定数（2）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbShortDate",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/formatdatetime-function.md"
+  },
+  "sha256": "6268cb7aaf4a0e84f844ed1959923ec72a19558cf9ea7dcc3afe7f8433c2cb41",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "vba",
+  "name": "vbLongTime",
+  "supported": true,
+  "fields": {
+   "description": "FormatDateTime で長い時刻書式を使うことを表す定数です。",
+   "returns": "数値定数（3）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbLongTime",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/formatdatetime-function.md"
+  },
+  "sha256": "cd1f99f994a87ad1c6a13c84f79e625b79f2c458c5db4b5501f474739e4fb6d6",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "vba",
+  "name": "vbShortTime",
+  "supported": true,
+  "fields": {
+   "description": "FormatDateTime で短い時刻書式（24時間形式）を使うことを表す定数です。",
+   "returns": "数値定数（4）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbShortTime",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/formatdatetime-function.md"
+  },
+  "sha256": "aac6b9711d310a52dd066d7932ca488f9b0d7913cc41462de2b5d5da4558d76a",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "vba",
+  "name": "vbNormal",
+  "supported": true,
+  "fields": {
+   "description": "ファイル属性がない（通常）ことを表す定数です。GetAttr／SetAttr／Dir で使います。",
+   "returns": "数値定数（0）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbNormal",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/getattr-function.md"
+  },
+  "sha256": "7aae62e20c7a0c67ba523f7823f83421d76f6dd0c73ba535ea42502d0dab29c8",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "vba",
+  "name": "vbReadOnly",
+  "supported": true,
+  "fields": {
+   "description": "読み取り専用のファイル属性を表す定数です。GetAttr／SetAttr／Dir で使います。",
+   "returns": "数値定数（1）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbReadOnly",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/getattr-function.md"
+  },
+  "sha256": "14121149f68a07ca02a27a2ef9650660470397342a7f82b2aa6ce0d3c1b440e4",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "vba",
+  "name": "vbHidden",
+  "supported": true,
+  "fields": {
+   "description": "隠しファイルの属性を表す定数です。GetAttr／SetAttr／Dir で使います。",
+   "returns": "数値定数（2）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbHidden",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/getattr-function.md"
+  },
+  "sha256": "1ef433ad50f85d325e7c52873d1c783d81082f15caba0f93559fb5e53d5d77c0",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "vba",
+  "name": "vbSystem",
+  "supported": true,
+  "fields": {
+   "description": "システムファイルの属性を表す定数です。GetAttr／SetAttr／Dir で使います。",
+   "returns": "数値定数（4）",
+   "caution": "Macintosh では使えません。",
+   "example": "Debug.Print vbSystem",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/getattr-function.md"
+  },
+  "sha256": "20865976972eafea64605aac7f5cbef698e02b9e0c48810abf9f4e0959670ec3",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "vba",
+  "name": "vbVolume",
+  "supported": true,
+  "fields": {
+   "description": "ボリュームラベルの属性を表す定数です。Dir で使います。",
+   "returns": "数値定数（8）",
+   "caution": "SetAttr では使えません。",
+   "example": "Debug.Print vbVolume",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/getattr-function.md"
+  },
+  "sha256": "bde0f1e3d626c90be20b93a5c46a2ea4acc2ef6b153719717bf374a0577d160a",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "vba",
+  "name": "vbDirectory",
+  "supported": true,
+  "fields": {
+   "description": "フォルダ（ディレクトリ）の属性を表す定数です。GetAttr／SetAttr／Dir で使います。",
+   "returns": "数値定数（16）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbDirectory",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/getattr-function.md"
+  },
+  "sha256": "2482abb7ce39633c43e7d8a9cdb83f41300ed432daddd68d16aee31cea573b61",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "vba",
+  "name": "vbArchive",
+  "supported": true,
+  "fields": {
+   "description": "前回のバックアップ以降に変更されたファイルの属性を表す定数です。GetAttr／SetAttr で使います。",
+   "returns": "数値定数（32）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbArchive",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/getattr-function.md"
+  },
+  "sha256": "f684316e001509183e8bd7a24aa61166e47fa033ec1e505b9c16aa184448c709",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "vba",
+  "name": "vbAlias",
+  "supported": true,
+  "fields": {
+   "description": "エイリアス（ショートカット）の属性を表す定数です。",
+   "returns": "数値定数（64）",
+   "caution": "Macintosh でのみ使えます。",
+   "example": "Debug.Print vbAlias",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/getattr-function.md"
+  },
+  "sha256": "aecb750bff06761826305c0a3646de90a95e596e3ebf23983ba8220176164d27",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
   "kind": "imagej",
   "name": "sin",
   "supported": true,
@@ -9540,6 +11044,54 @@
  },
  {
   "kind": "python",
+  "name": "Ellipsis",
+  "supported": true,
+  "fields": {
+   "description": "組み込み定数。省略記号 ... と同じ値（シングルトン）で、主に拡張スライスや型ヒントで使う。",
+   "returns": "ellipsis: Ellipsis（シングルトン）",
+   "caution": "... と書いても同じ値。組み込み名なので代入で別の値に変えることもできるが、通常は定数として扱う。辞書のキーや集合の要素にもできる（ハッシュ可能）。",
+   "example": "print(Ellipsis)",
+   "source": "https://docs.python.org/ja/3.12/library/constants.html#Ellipsis"
+  },
+  "sha256": "ce0428fe59bf1c9013d5ee0cc64126d42cc0d32fb97ddf7eaf0cdee5b9abef76",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "python",
+  "name": "NotImplemented",
+  "supported": true,
+  "fields": {
+   "description": "組み込み定数。二項演算の特殊メソッドが「相手側の処理に任せる」ときに返すための値（シングルトン）。",
+   "returns": "NotImplementedType: NotImplemented（シングルトン）",
+   "caution": "例外の NotImplementedError とは別物。真偽判定に使う値ではない（bool(NotImplemented) は True になるが、その目的で使うものではない）。辞書のキーや集合の要素にもできる（ハッシュ可能）。",
+   "example": "print(NotImplemented)",
+   "source": "https://docs.python.org/ja/3.12/library/constants.html#NotImplemented"
+  },
+  "sha256": "99e52f0230b46aaf9886b70b558db701b4cf4d1b60621a1f370a45a356b55420",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "python",
+  "name": "__debug__",
+  "supported": true,
+  "fields": {
+   "description": "組み込み定数。通常の実行では True、-O オプションで最適化した実行では False。assert 文が有効かどうかと連動する。",
+   "returns": "bool: True（通常実行時）",
+   "caution": "この説明では通常実行をモデル化するため常に True。実 CPython でも通常実行は True で、False になるのは -O オプションのときだけ。__debug__ への代入は SyntaxError になる。",
+   "example": "print(__debug__)",
+   "source": "https://docs.python.org/ja/3.12/library/constants.html#__debug__"
+  },
+  "sha256": "2919e4254b112884b74bd4bc49d226e140a02bb3d6e61f7fcd534795c8563be5",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "python",
   "name": "Exception",
   "supported": true,
   "fields": {
@@ -11326,11 +12878,11 @@
   "fields": {
    "description": "整数演算のオーバーフローを検査せず、ビット幅で折り返して計算することを明示します。C# の既定の動作でもあります。",
    "returns": "戻り値なし（宣言または制御文）",
-   "caution": "checked と対の指定です。定数式のオーバーフローは unchecked でもコンパイルエラーとして停止します。",
+   "caution": "checked と対の指定です。実 C# では、定数式の算術オーバーフローは unchecked では折り返し（checked ではコンパイルエラー CS0220）、範囲外の定数変換は unchecked でも CS0031 で拒否されます。このモデルでは、定数式のオーバーフローは算術形・変換形とも停止します（モデルの制限）。",
    "example": "using System;\nclass Program {\n    static void Main() {\nint n = 2147483647;\nunchecked { n = n + 1; }\n    }\n}",
    "source": "https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/statements/checked-and-unchecked"
   },
-  "sha256": "983e0f89d9fd2a037275343118e83c169b089f23cac10673da10a462cc7e8c8f"
+  "sha256": "0f54f5e5bf86b9576d868041ac791ac85ab0c40721c9e73cb46b77b60d771410"
  },
  {
   "kind": "csharp",
@@ -14412,5 +15964,44 @@
    "source": "https://docs.python.org/ja/3.12/library/exceptions.html#EnvironmentError"
   },
   "sha256": "b8f77d18ac1ab8885e18537e42e65c192de1a2e76c8ec3196bcd3293971acca9"
+ },
+ {
+  "kind": "cloudformation",
+  "name": "Ellipsis",
+  "supported": true,
+  "fields": {
+   "description": "組み込み定数。省略記号 ... と同じ値（シングルトン）で、主に拡張スライスや型ヒントで使う。",
+   "returns": "ellipsis: Ellipsis（シングルトン）",
+   "caution": "... と書いても同じ値。組み込み名なので代入で別の値に変えることもできるが、通常は定数として扱う。辞書のキーや集合の要素にもできる（ハッシュ可能）。",
+   "example": "def handler(event, context):\n    print(Ellipsis)\n    return {\"requestId\":event[\"requestId\"],\"status\":\"success\",\"fragment\":event[\"fragment\"]}",
+   "source": "https://docs.python.org/ja/3.12/library/constants.html#Ellipsis"
+  },
+  "sha256": "562eb44ddd7e1c4d7b9ba198416727e5aa02e978bba9a276fc8fb53c5966e07c"
+ },
+ {
+  "kind": "cloudformation",
+  "name": "NotImplemented",
+  "supported": true,
+  "fields": {
+   "description": "組み込み定数。二項演算の特殊メソッドが「相手側の処理に任せる」ときに返すための値（シングルトン）。",
+   "returns": "NotImplementedType: NotImplemented（シングルトン）",
+   "caution": "例外の NotImplementedError とは別物。真偽判定に使う値ではない（bool(NotImplemented) は True になるが、その目的で使うものではない）。辞書のキーや集合の要素にもできる（ハッシュ可能）。",
+   "example": "def handler(event, context):\n    print(NotImplemented)\n    return {\"requestId\":event[\"requestId\"],\"status\":\"success\",\"fragment\":event[\"fragment\"]}",
+   "source": "https://docs.python.org/ja/3.12/library/constants.html#NotImplemented"
+  },
+  "sha256": "91e077ac6c668329ff21ecd3048ecba295bb97aa24c1257489ea0ed1d95b7212"
+ },
+ {
+  "kind": "cloudformation",
+  "name": "__debug__",
+  "supported": true,
+  "fields": {
+   "description": "組み込み定数。通常の実行では True、-O オプションで最適化した実行では False。assert 文が有効かどうかと連動する。",
+   "returns": "bool: True（通常実行時）",
+   "caution": "この説明では通常実行をモデル化するため常に True。実 CPython でも通常実行は True で、False になるのは -O オプションのときだけ。__debug__ への代入は SyntaxError になる。",
+   "example": "def handler(event, context):\n    print(__debug__)\n    return {\"requestId\":event[\"requestId\"],\"status\":\"success\",\"fragment\":event[\"fragment\"]}",
+   "source": "https://docs.python.org/ja/3.12/library/constants.html#__debug__"
+  },
+  "sha256": "d676729cea496b5600877b04980ac202aa3ce2f8d10cd165cd9fa26546a9306e"
  }
 ]

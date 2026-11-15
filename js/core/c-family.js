@@ -899,6 +899,109 @@ function parse(source, language, deadline) {
     if (savedChain) this.coutChain = savedChain;
     return a;
   };
+  // R27-N18 根因：波括弧初期化子の要素は、それ自体が波括弧で包まれた
+  // 部分初期化子（sub-initializer）になりうる。共有パーサの expr() は
+  // 先行する "{" をレコードリテラルとして読むため、入れ子波括弧が
+  // 「レコードのフィールド名が必要です」という虚偽原因になっていた。
+  // 初期化子の文脈では要素位置の "{" を初期化子リストとして再帰的に
+  // 読む（要素の式そのものが "{" で始まる場合だけが対象で、それ以外
+  // の式の読みは従来どおり expr() に委ねる）。
+  const parseBracedInit = (parser) => {
+    const line = parser.ts[parser.i]?.line;
+    parser.take(); // "{"
+    const values = [];
+    while (!parser.peek("}")) {
+      values.push(
+        parser.peek("{") ? parseBracedInit(parser) : parser.expr(),
+      );
+      if (!parser.peek(",")) break;
+      parser.take();
+    }
+    parser.take("}");
+    return { k: "array", values, line };
+  };
+  // R27-N18：部分初期化子の波括弧を、言語規則どおりに畳む／名指す。
+  // - C：スカラーへの余分な波括弧は合法（gcc 実測：値は内側の値、
+  //   余分な要素は先頭を採用）。配列要素を包む波括弧も同様に剥がす。
+  // - C++：配列要素を包む波括弧は合法だが、スカラーへの二重波括弧は
+  //   g++ が "too many braces around scalar initializer" でエラーに
+  //   する。停止自体は正しいため、真因を名指して停止する。要素位置
+  //   の波括弧に複数要素が入る形も g++ では変換エラーになる。
+  // - C#：波括弧の入れ子は従来どおり実行側の型検査に委ねる（不変）。
+  const normalizeBracedInit = (value, { isArray, baseType, line }) => {
+    if (!["c", "cpp"].includes(language) || value?.k !== "array")
+      return value;
+    const emptyElem = () =>
+      baseType === "string"
+        ? { k: "literal", value: "", line }
+        : baseType === "bool"
+          ? { k: "literal", value: false, line }
+          : { k: "literal", value: 0, line };
+    if (isArray) {
+      // char 配列の要素を波括弧で包んだ文字列（{{"hi"}}）は剥がさない。
+      // C++ では変換エラー、C でも文字列ではなくポインタ値の変換に
+      // なる形（gcc 実測で警告つきの別物）であり、"hi" と捏造せず
+      // 実行側の型検査で停止させる。{"hi"} の単一波括弧形（R27-N17）
+      // は要素自体が文字列なので、ここには来ない。
+      const wrapsString = (el) => {
+        let cur = el;
+        while (cur?.k === "array" && cur.values.length === 1)
+          cur = cur.values[0];
+        return (
+          cur?.k === "literal" &&
+          typeof cur.value === "string" &&
+          cur.quote !== "'"
+        );
+      };
+      value.values = value.values.map((el) => {
+        if (el?.k !== "array") return el;
+        if (baseType === "char" && wrapsString(el)) return el;
+        if (language === "c") {
+          // C は要素を包む波括弧の中の先頭要素を採用する（gcc 実測：
+          // {{1,2},{3}} は警告のみで 1 と 3 が入る）。
+          let cur = el;
+          while (cur?.k === "array")
+            cur = cur.values.length ? cur.values[0] : emptyElem();
+          return cur;
+        }
+        // C++：要素を包む波括弧は単一要素（または空＝値初期化）だけ。
+        let cur = el;
+        while (cur?.k === "array" && cur.values.length === 1)
+          cur = cur.values[0];
+        if (cur?.k === "array") {
+          if (cur.values.length === 0) return emptyElem();
+          throw new PracticeError(
+            "配列要素の波括弧初期化子に要素が多すぎます（要素を波括弧で包む場合は要素1つだけです）",
+            line,
+            "CompileError",
+          );
+        }
+        return cur;
+      });
+      return value;
+    }
+    // スカラー形
+    if (language === "cpp") {
+      if (value.values.some((el) => el?.k === "array"))
+        throw new PracticeError(
+          "スカラーの初期化子に波括弧が多すぎます（too many braces around scalar initializer）",
+          line,
+          "CompileError",
+        );
+      return value;
+    }
+    // C：{{…}} は内側のリストをそのまま初期化子として採用し、
+    // 先頭要素が波括弧の場合はその中身の先頭まで剥がす。
+    while (value.values.length === 1 && value.values[0]?.k === "array")
+      value = value.values[0];
+    if (value.values[0]?.k === "array") {
+      let cur = value.values[0];
+      while (cur?.k === "array")
+        cur = cur.values.length ? cur.values[0] : emptyElem();
+      value.values[0] = cur;
+    }
+    return value;
+  };
   p.simple = function () {
     let t = this.ts[this.i];
     if (["let", "const", "auto", "var"].includes(t.v))
@@ -997,157 +1100,153 @@ function parse(source, language, deadline) {
       (builtinTypes.includes(t.v) || classes[t.v] || compositeTypes.includes(t.v)) &&
       this.ts[this.i + 1]?.v !== "("
     ) {
-      let type = this.take().v,
-        array = false,
-        size = null,
-        pointer = false, referenceAlias = false;
+      let type = this.take().v;
       if (language === "c" && type === "string") unsupported("Cには組込みstring型がありません。char配列を使ってください", t.line);
-      if (this.peek("[")) {
-        this.take();
-        this.take("]");
-        array = true;
-      }
-      if (this.peek("*")) {
-        this.take();
-        pointer = true;
-      }
-      if (this.peek("&")) {
-        if (language !== "cpp") unsupported("参照宣言はC++専用です", t.line);
-        this.take(); referenceAlias = true;
-      }
       if (type === "unsigned") type = "unsigned int";
       if (type === "signed") type = "int";
-      let name = this.take();
-      if (name.k !== "id") throw new PracticeError("変数名が必要です", t.line);
+      // 型の直後の []（C# 形式の配列型）は基本型の一部として全ての
+      // 宣言子に共通する。それ以外の修飾（* ／ & ／ [長さ]）と初期化子
+      // は宣言子ごとのものとして読み直す。
+      let baseArray = false;
       if (this.peek("[")) {
+        const saveBracket = this.i;
         this.take();
-        size = this.peek("]") ? null : this.expr();
-        this.take("]");
-        array = true;
+        if (this.peek("]")) {
+          this.take();
+          baseArray = true;
+        } else this.i = saveBracket;
       }
-      let value = null;
-      if (this.peek("(")) {
-        // Direct initialization: Type name(args) — a single argument only.
-        this.take();
-        let args = [];
-        while (!this.peek(")")) {
-          args.push(this.expr());
-          if (!this.peek(",")) break;
+      // R27-N11 根因：宣言パーサが宣言子を1つしか読まず、カンマの位置で
+      // 「; が必要です」という虚偽原因になっていた。C／C++／C# の基本
+      // 文法である宣言子列（型 名1 = 初期化子, 名2, …;）を宣言子ごとに
+      // 読み、各宣言子を独立した declare ノードとして返す。単独宣言の
+      // 場合は従来どおり declare ノードそのものを返す。
+      const declarators = [];
+      for (;;) {
+        let array = baseArray,
+          size = null,
+          pointer = false,
+          referenceAlias = false;
+        if (this.peek("*")) {
           this.take();
+          pointer = true;
         }
-        this.take(")");
-        if (args.length !== 1)
-          unsupported("複数引数の直接初期化は未対応です", t.line);
-        value = args[0];
-      } else if (this.peek("{")) {
-        // R26-N19：直接リスト初期化 `型 名{値};` は C++ の基本形（g++ 実測で
-        // 合法）。従来は波括弧位置で「; が必要です」という虚偽原因になって
-        // いた。`=` 付きコピー形と同じ { k:"array" } の初期化子として読み、
-        // 実行側の narrowing 検査（RG-192）をそのまま適用する。
-        // C（C11 の gcc 実測でエラー）／C# では実物でも不正なので受理せず、
-        // 真因を名指して停止する（セミコロンは書かれているため
-        // 「; が必要です」とは言わない）。
-        if (language !== "cpp")
-          throw new PracticeError(
-            language === "c"
-              ? "Cでは波括弧による直接初期化はできません（= {値} の形で書いてください）"
-              : "C#では波括弧による直接初期化はできません（= new 型 {値} など通常の初期化で書いてください）",
-            t.line,
-            "SyntaxError",
-          );
-        this.take();
-        let values = [];
-        while (!this.peek("}")) {
-          values.push(this.expr());
-          if (!this.peek(",")) break;
-          this.take();
+        if (this.peek("&")) {
+          if (language !== "cpp") unsupported("参照宣言はC++専用です", t.line);
+          this.take(); referenceAlias = true;
         }
-        this.take("}");
-        value = { k: "array", values, line: t.line };
-      } else if (this.peek("=")) {
-        this.take();
-        if (this.peek("{")) {
+        let name = this.take();
+        if (name.k !== "id") throw new PracticeError("変数名が必要です", t.line);
+        if (this.peek("[")) {
           this.take();
-          let values = [];
-          while (!this.peek("}")) {
-            values.push(this.expr());
+          size = this.peek("]") ? null : this.expr();
+          this.take("]");
+          array = true;
+        }
+        let value = null;
+        if (this.peek("(")) {
+          // Direct initialization: Type name(args) — a single argument only.
+          this.take();
+          let args = [];
+          while (!this.peek(")")) {
+            args.push(this.expr());
             if (!this.peek(",")) break;
             this.take();
           }
-          this.take("}");
-          value = { k: "array", values, line: t.line };
-        } else if (this.peek("new")) {
+          this.take(")");
+          if (args.length !== 1)
+            unsupported("複数引数の直接初期化は未対応です", t.line);
+          value = args[0];
+        } else if (this.peek("{")) {
+          // R26-N19：直接リスト初期化 `型 名{値};` は C++ の基本形（g++ 実測で
+          // 合法）。従来は波括弧位置で「; が必要です」という虚偽原因になって
+          // いた。`=` 付きコピー形と同じ { k:"array" } の初期化子として読み、
+          // 実行側の narrowing 検査（RG-192）をそのまま適用する。
+          // C（C11 の gcc 実測でエラー）／C# では実物でも不正なので受理せず、
+          // 真因を名指して停止する（セミコロンは書かれているため
+          // 「; が必要です」とは言わない）。
+          if (language !== "cpp")
+            throw new PracticeError(
+              language === "c"
+                ? "Cでは波括弧による直接初期化はできません（= {値} の形で書いてください）"
+                : "C#では波括弧による直接初期化はできません（= new 型 {値} など通常の初期化で書いてください）",
+              t.line,
+              "SyntaxError",
+            );
+          value = parseBracedInit(this);
+          value = normalizeBracedInit(value, { isArray: array, baseType: type, line: t.line });
+        } else if (this.peek("=")) {
           this.take();
-          let typeName = this.take().v;
-          if (this.peek("[")) {
+          if (this.peek("{")) {
+            value = parseBracedInit(this);
+            value = normalizeBracedInit(value, { isArray: array, baseType: type, line: t.line });
+          } else if (this.peek("new")) {
             this.take();
-            if (this.peek("]")) {
+            let typeName = this.take().v;
+            if (this.peek("[")) {
               this.take();
-              if (this.peek("{")) {
+              if (this.peek("]")) {
                 this.take();
-                let values = [];
-                while (!this.peek("}")) {
-                  values.push(this.expr());
-                  if (!this.peek(",")) break;
-                  this.take();
-                }
-                this.take("}");
-                value = { k: "array", values, line: t.line };
-                array = true;
-                size = null;
-              } else
-                unsupported(
-                  "new " + typeName + "[] のこの形式は未対応です",
-                  t.line,
-                );
+                if (this.peek("{")) {
+                  value = parseBracedInit(this);
+                  array = true;
+                  size = null;
+                } else
+                  unsupported(
+                    "new " + typeName + "[] のこの形式は未対応です",
+                    t.line,
+                  );
+              } else {
+                let count = this.expr();
+                this.take("]");
+                if (this.peek("{")) {
+                  value = parseBracedInit(this);
+                  // R24-N11 根因（宣言経路も同じ）：宣言長を保持する。
+                  value = { ...value, size: count };
+                  array = true;
+                  size = null;
+                } else
+                  value = {
+                    k: "construct",
+                    name: typeName + "[]",
+                    args: [count],
+                    line: t.line,
+                  };
+              }
             } else {
-              let count = this.expr();
-              this.take("]");
-              if (this.peek("{")) {
+              this.take("(");
+              let args = [];
+              while (!this.peek(")")) {
+                args.push(this.expr());
+                if (!this.peek(",")) break;
                 this.take();
-                let values = [];
-                while (!this.peek("}")) {
-                  values.push(this.expr());
-                  if (!this.peek(",")) break;
-                  this.take();
-                }
-                this.take("}");
-                // R24-N11 根因（宣言経路も同じ）：宣言長を保持する。
-                value = { k: "array", values, size: count, line: t.line };
-                array = true;
-                size = null;
-              } else
-                value = {
-                  k: "construct",
-                  name: typeName + "[]",
-                  args: [count],
-                  line: t.line,
-                };
+              }
+              this.take(")");
+              value = { k: "construct", name: typeName, args, line: t.line };
             }
-          } else {
-            this.take("(");
-            let args = [];
-            while (!this.peek(")")) {
-              args.push(this.expr());
-              if (!this.peek(",")) break;
-              this.take();
-            }
-            this.take(")");
-            value = { k: "construct", name: typeName, args, line: t.line };
-          }
-        } else value = this.expr();
+          } else value = this.expr();
+        }
+        declarators.push({
+          k: "declare",
+          name: name.v,
+          type,
+          array,
+          size,
+          pointer,
+          referenceAlias,
+          value,
+          line: t.line,
+          refs: [pointer ? "pointer" : array ? "array" : type],
+        });
+        if (!this.peek(",")) break;
+        this.take();
       }
+      if (declarators.length === 1) return declarators[0];
       return {
-        k: "declare",
-        name: name.v,
-        type,
-        array,
-        size,
-        pointer,
-        referenceAlias,
-        value,
+        k: "declareGroup",
+        declarations: declarators,
         line: t.line,
-        refs: [pointer ? "pointer" : array ? "array" : type],
+        refs: [...new Set(declarators.flatMap((d) => d.refs))],
       };
     }
     if (t.k === "id" && this.ts[this.i + 1]?.k === "id" && !classes[t.v])
@@ -1413,7 +1512,7 @@ function parse(source, language, deadline) {
   p.statement = function () {
     const n = innerStatement.call(this);
     if (
-      ["declare", "assign", "expression", "return", "break", "continue"].includes(n.k) ||
+      ["declare", "declareGroup", "assign", "expression", "return", "break", "continue"].includes(n.k) ||
       (n.k === "action" && n.action === "cout")
     ) {
       if (!this.peek(";"))
@@ -1874,7 +1973,7 @@ export function createCFamily({ id, name, extensions, language }) {
       "unchecked { … } / unchecked(式)",
       "整数演算のオーバーフローを検査せず、ビット幅で折り返して計算することを明示します。C# の既定の動作でもあります。",
       "int n = 2147483647;\nunchecked { n = n + 1; }",
-      "checked と対の指定です。定数式のオーバーフローは unchecked でもコンパイルエラーとして停止します。",
+      "checked と対の指定です。実 C# では、定数式の算術オーバーフローは unchecked では折り返し（checked ではコンパイルエラー CS0220）、範囲外の定数変換は unchecked でも CS0031 で拒否されます。このモデルでは、定数式のオーバーフローは算術形・変換形とも停止します（モデルの制限）。",
     ],
     [
       "new",
@@ -2411,8 +2510,9 @@ export function createCFamily({ id, name, extensions, language }) {
             );
           if (node.k === "cast") return isConstantIntegerExpr(node.arg);
           // checked(式)／unchecked(式) で包まれた定数も定数式のまま
-          // （定数式のオーバーフローは unchecked でもコンパイルエラー
-          // という unchecked 項目の開示方針と揃える）。
+          // （実 C# の unchecked では定数算術は折り返すが、このモデル
+          // では定数式のオーバーフローを停止する制限として、unchecked
+          // 項目の caution に明示している）。
           if (
             node.k === "call" &&
             ["checked", "unchecked"].includes(callName(node.target)) &&
@@ -2868,6 +2968,10 @@ export function createCFamily({ id, name, extensions, language }) {
             return Boolean(v);
           },
           step(n, s, api) {
+            // R27-N11：宣言子列（int a = 1, b = 2; 等）は、宣言子ごとの
+            // declare ノードを同じスコープで順に実行する。
+            if (n.k === "declareGroup")
+              return api.run(n.declarations, [s]);
             // R25-N28：null 配列の foreach は「未確定または配列でない
             // 繰り返し対象」（未対応）ではなく NullReferenceException
             // （dotnet 実測）。共有 loop() の配列検査より前に、確定した
@@ -3059,9 +3163,89 @@ export function createCFamily({ id, name, extensions, language }) {
                       );
                   });
                 }
-                if (!managed && n.type === "char" && typeof v === "string") {
-                  if ([...v].some(c => c.codePointAt(0) > 127)) api.fail("このモデルのchar文字列はASCIIに限定します", n, "未対応");
-                  const bytes = [...v].map(c => c.charCodeAt(0));
+                // R27-N16 根因：narrowing 検査の対象型テーブルに bool が
+                // 含まれず、`bool b{2}` 等の整数定数が黙って受理されて
+                // いた（g++ 13.3 実測では全形が narrowing エラー）。
+                // bool が表せる整数定数は 0 と 1 だけであり、true／false
+                // のリテラルは対象外（合法）。文字定数（'a' は 97 として
+                // 評価される）も整数定数として扱う（g++ 実測で
+                // bool{'a'} も narrowing エラー）。
+                // 棚卸しで見つけた同根の漏れ：float への整数定数も、
+                // float で正確に表せない値は g++ では narrowing エラー
+                // （実測：float{16777217}）だが黙って丸めていた。
+                // double はモデルで安全な整数を全て正確に表せるため
+                // 対象外。符号付き狭型（char／short／int 等）の範囲外
+                // 定数は cast 側で従来どおり停止する（理由分類は既知の
+                // 候補 U-4 の範囲で、本バッチでは変えない）。
+                if (
+                  language === "cpp" &&
+                  Array.isArray(n.value?.values) &&
+                  ["bool", "float"].includes(n.type)
+                ) {
+                  const isConstIntVal = (el) => {
+                    if (!el || typeof el !== "object") return false;
+                    if (el.k === "literal") {
+                      if (typeof el.value === "number")
+                        return (
+                          Number.isInteger(el.value) &&
+                          (/^0[xXbBoO]/.test(String(el.raw || "")) ||
+                            !/[.eE]/.test(
+                              String(el.raw || "").replace(/[uUlLfF]+$/, ""),
+                            ))
+                        );
+                      return (
+                        el.quote === "'" &&
+                        typeof el.value === "string" &&
+                        el.value.length === 1
+                      );
+                    }
+                    if (el.k === "unary" && ["-", "+", "~"].includes(el.op))
+                      return isConstIntVal(el.arg);
+                    if (el.k === "binary")
+                      return isConstIntVal(el.a) && isConstIntVal(el.b);
+                    if (el.k === "cast")
+                      return (
+                        !["float", "double"].includes(el.type) &&
+                        isConstIntVal(el.arg)
+                      );
+                    return false;
+                  };
+                  n.value.values.forEach((el, idx) => {
+                    if (!isConstIntVal(el)) return;
+                    const val = Array.isArray(v) ? v[idx] : undefined;
+                    if (typeof val !== "number") return;
+                    if (n.type === "bool" && val !== 0 && val !== 1)
+                      api.fail(
+                        `波括弧初期化で整数の定数 ${val} を bool へ縮小変換（narrowing）はできません`,
+                        n,
+                        "CompileError",
+                      );
+                    if (n.type === "float" && Math.fround(val) !== val)
+                      api.fail(
+                        `波括弧初期化で整数の定数 ${val} を float へ縮小変換（narrowing）はできません`,
+                        n,
+                        "CompileError",
+                      );
+                  });
+                }
+                // R27-N17 根因：char 配列の波括弧で包んだ文字列初期化
+                // （char s[] = {"hi"};）は gcc／g++ ともに合法だが、配列
+                // 初期化子が要素を数値としてのみ解釈し「数値型が一致し
+                // ません」で停止していた。単一の文字列要素だけを、波括弧
+                // なし形（char s[] = "hi";）と同じ文字列初期化として扱う。
+                const charInitString =
+                  !managed && n.type === "char"
+                    ? typeof v === "string"
+                      ? v
+                      : Array.isArray(v) &&
+                          v.length === 1 &&
+                          typeof v[0] === "string"
+                        ? v[0]
+                        : null
+                    : null;
+                if (charInitString !== null) {
+                  if ([...charInitString].some(c => c.codePointAt(0) > 127)) api.fail("このモデルのchar文字列はASCIIに限定します", n, "未対応");
+                  const bytes = [...charInitString].map(c => c.charCodeAt(0));
                   const size = n.size ? api.read(n.size, s) : bytes.length + 1;
                   if (language === "cpp" && size <= bytes.length) api.fail("C++の文字配列には終端ヌル文字の領域も必要です", n, "CompileError");
                   v = size === bytes.length ? bytes : [...bytes, 0];
@@ -3222,6 +3406,40 @@ export function createCFamily({ id, name, extensions, language }) {
                           "CompileError",
                         );
                     }
+                    // R27-N16（スカラー形）：bool への整数定数と、float
+                    // で正確に表せない整数定数は、配列形と同じく
+                    // narrowing として名指す。文字定数は constKind では
+                    // 数値リテラルとして数えられないため、評価値
+                    // （文字コード）と形から別に判定する（bool{'a'} は
+                    // g++ 実測で narrowing エラー）。
+                    const isCharConst = (e) =>
+                      e?.k === "literal" &&
+                      e.quote === "'" &&
+                      typeof e.value === "string" &&
+                      e.value.length === 1;
+                    if (
+                      n.type === "bool" &&
+                      typeof elVal === "number" &&
+                      (kind === "int" || isCharConst(el)) &&
+                      elVal !== 0 &&
+                      elVal !== 1
+                    )
+                      api.fail(
+                        `波括弧初期化で整数の定数 ${elVal} を bool へ縮小変換（narrowing）はできません`,
+                        n,
+                        "CompileError",
+                      );
+                    if (
+                      n.type === "float" &&
+                      typeof elVal === "number" &&
+                      (kind === "int" || isCharConst(el)) &&
+                      Math.fround(elVal) !== elVal
+                    )
+                      api.fail(
+                        `波括弧初期化で整数の定数 ${elVal} を float へ縮小変換（narrowing）はできません`,
+                        n,
+                        "CompileError",
+                      );
                     v = elVal;
                   }
                 }
@@ -4423,6 +4641,45 @@ export function createCFamily({ id, name, extensions, language }) {
               for (const tr of p.trace || [])
                 if (tr.refs)
                   tr.refs = tr.refs.filter((r) => !userNames.has(r));
+        }
+        // R27-N10（RG-208 と同型・C家族への拡大）：最終状態
+        // （paths[].vars と、C家族の配列が入る paths[].model.memory）は
+        // JSON として直列化される表示面であり、非有限数
+        // （Infinity／-Infinity／NaN）が null に化けて、プログラムの
+        // 出力表示（C／C++ は "inf"／"-inf"／"nan"、C# は "Infinity"／
+        // "-Infinity"／"NaN"）と矛盾していた。実行完了後のスナップ
+        // ショットに限り、非有限数を出力表示と同じ文字列表現へ置き
+        // 換える（実行中の数値としての働きは変えない）。未確定値と
+        // 未初期化マーカーは数値を含まないため、そのまま返す。
+        if (result.paths) {
+          const nonFiniteText = (v) =>
+            managed
+              ? String(v)
+              : Number.isNaN(v)
+                ? "nan"
+                : v > 0
+                  ? "inf"
+                  : "-inf";
+          const finiteSafeSnapshot = (v, seen = new Map()) => {
+            if (typeof v === "number")
+              return Number.isFinite(v) ? v : nonFiniteText(v);
+            if (!v || typeof v !== "object") return v;
+            if (isUnknown(v) || v === uninitialized) return v;
+            if (seen.has(v)) return seen.get(v);
+            const out = Array.isArray(v) ? [] : {};
+            seen.set(v, out);
+            if (Array.isArray(v))
+              for (const x of v) out.push(finiteSafeSnapshot(x, seen));
+            else
+              for (const [k, x] of Object.entries(v))
+                out[k] = finiteSafeSnapshot(x, seen);
+            return out;
+          };
+          for (const p of result.paths) {
+            p.vars = finiteSafeSnapshot(p.vars);
+            if (p.model?.memory)
+              p.model.memory = finiteSafeSnapshot(p.model.memory);
+          }
         }
         return result;
       } catch (e) {

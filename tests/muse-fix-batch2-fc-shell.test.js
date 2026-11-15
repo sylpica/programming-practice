@@ -512,12 +512,19 @@ test("fc-shell SH-C1-follow redirect route still covers type/dir outputs to devi
 });
 test("fc-shell R23-N2-follow binary literal 0b is named, never split into 0 and a word", () => {
   // 実 PowerShell の数値リテラルに 0b 形式は無い。"0" と "b101" への
-  // 黙った分割（誤値・虚偽原因）にせず、リテラルを名指して止める。
-  for (const code of ["Write-Output 0b101", "$x = 0b101", "Write-Output (0b0)", "Write-Output 0B11"]) {
+  // 黙った分割（誤値・虚偽原因）にせず、式モードではリテラルを名指して
+  // 止める。引数モードは修正バッチ6（R27-N5）の再裁定で、文法 B.1.7 の
+  // generic-token として単一の文字列引数になる（分割ではない）。
+  for (const code of ["$x = 0b101", "Write-Output (0b0)"]) {
     const r = runPs(code);
     assert.ok(errors(r).length, code);
     assert.match(errors(r)[0].message, /未対応：2進数リテラル（0[bB][01]+）/, code);
     assert.doesNotMatch(errors(r)[0].message, /コマンドレット／関数：b/, code);
+  }
+  for (const [code, text] of [["Write-Output 0b101", "0b101"], ["Write-Output 0B11", "0B11"]]) {
+    const r = runPs(code);
+    assert.deepEqual(errors(r), [], code);
+    assert.deepEqual(outPs(r), [[text]], code);
   }
   // 16進・単位接尾辞の受理には影響しない
   assert.deepEqual(errors(runPs("Write-Output 0x1F")), []);

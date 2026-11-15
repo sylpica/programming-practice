@@ -415,6 +415,14 @@ function prescanAHK(source) {
   for (let i = 0; i < tokens.length; i++) {
     const t = tokens[i];
     if (t.k === "eof") break;
+    // R27-N8：**= は AutoHotkey v2 公式の代入演算子表に存在しない
+    // （複合代入は := += -= *= /= //= .= |= &= ^= >>= <<= >>>= のみ）。
+    // 汎用の式エラーに落とさず、演算子そのものを名指して止める。
+    if (t.v === "**=")
+      unsupported(
+        "複合代入演算子 **=（AutoHotkeyに **= という代入演算子はありません。累乗は x := x ** 3 の形で書きます）",
+        t.line,
+      );
     const prev = tokens[i - 1];
     const atStmtStart = !prev || prev.k === "nl" || prev.v === "{" || prev.v === "}";
     if (t.k !== "id") continue;
@@ -602,7 +610,7 @@ function rewriteSegment(seg) {
     const name = rawName.replace(/[ \t]+/g, "");
     if (!name.includes(".") && AHK_STMT_KEYWORDS.has(name.toLowerCase())) return seg;
     if (
-      /^(:=|==|!=|<=|>=|\+=|-=|\*=|\/=|\.=|&&|\|\|)/.test(rest) ||
+      /^(:=|==|!=|<=|>=|\+=|-=|\*=|\/=|\*\*=|&=|\|=|\^=|<<=|>>=|>>>=|\.=|&&|\|\|)/.test(rest) ||
       /^[=*\/(\[{?:,|<>.%^]/.test(rest)
     )
       return seg;
@@ -674,20 +682,116 @@ function transformCodeLine(line) {
   c = rewriteStatements(c);
   return { text: c + comment, opensBlock };
 }
+// R27-N15：行継続の妥当性検査のための、文字列リテラルを伏せたコード形。
+// 文字列の中の演算子・括弧・セミコロンを構文として数えないため、
+// リテラル全体を "" へ置き換える（バッククォートエスケープと引用符の
+// 二重化は共有トークナイザと同じ規則で読み飛ばす）。
+function maskAhkStrings(code) {
+  let out = "",
+    inString = null;
+  for (let i = 0; i < code.length; i++) {
+    const c = code[i];
+    if (inString) {
+      if (c === "`") i++;
+      else if (c === inString) {
+        if (code[i + 1] === inString) i++;
+        else {
+          inString = null;
+          out += '"';
+        }
+      }
+      continue;
+    }
+    if (c === '"' || c === "'") {
+      inString = c;
+      out += '"';
+      continue;
+    }
+    out += c;
+  }
+  return out;
+}
+// 行末が未完の式かどうか（代入の空の右辺・二項／複合演算子・三項の
+// ? と :・連結子等で終わる形）。ラベル行（名前だけ＋:）とホットキー
+// 行（:: で終わる形）は式ではないため除く。
+function ahkLineEndsIncomplete(maskedTrimmed) {
+  if (!maskedTrimmed) return false;
+  if (maskedTrimmed.endsWith("::")) return false;
+  // 後置 ++ ／ -- で終わる行は完全な式（継続演算子の対象外。公式の
+  // 継続行規則でも ++ ／ -- は例外と明記されている）。
+  if (maskedTrimmed.endsWith("++") || maskedTrimmed.endsWith("--"))
+    return false;
+  if (/^[\p{ID_Start}_][\p{ID_Continue}_]*\s*:$/u.test(maskedTrimmed))
+    return false;
+  // 小数点で終わる数値リテラル（1. 等）は完全な式であり、連結子ではない。
+  const s = /\d\.$/.test(maskedTrimmed)
+    ? maskedTrimmed.slice(0, -1)
+    : maskedTrimmed;
+  return /(:=|\+=|-=|\*=|\/=|\*\*=|&=|\|=|\^=|<<=|>>=|>>>=|\.=|\*\*|==|!=|<=|>=|&&|\|\||<<|>>>|>>|[-+*\/%^&|<>?:.,!~])$/.test(
+    s,
+  );
+}
+// 次の行が「文」で始まる形かどうか：コマンド形式の呼出（rewriteSegment
+// で呼出式へ書換わる形）に加え、代入文で始まる行も式の被演算子には
+// ならない（代入が被演算子になるのは括弧で囲った場合だけ）。
+function ahkLineStartsStatement(code) {
+  if (rewriteSegment(code) !== code) return true;
+  return /^\s*[\p{ID_Start}_][\p{ID_Continue}_]*(?:\s*\.\s*[\p{ID_Start}_][\p{ID_Continue}_]*|\s*\[[^\]\n]*\])*\s*(:=|\+=|-=|\*=|\/=|\*\*=|&=|\|=|\^=|<<=|>>=|>>>=|\.=)/u.test(
+    code,
+  );
+}
 function phaseB(source) {
   let inBlock = false;
+  // R27-N15：行継続の妥当性検査。前の有意な行が未完の式で終わって
+  // いるのに、次の行がコマンド形式の文（書換で呼出式に化ける形）で
+  // 始まる場合、その文は式の被演算子にはならない（AutoHotkey v2 の
+  // 継続は式同士を繋ぐもので、文は式の続きにならない）。従来は行ごと
+  // の書換で MsgBox x が MsgBox(x) という正当な呼出式に化け、共有
+  // パーサの行継続が無言で飲み込んでいた（後続文の消失・次行への
+  // 誤帰属）。コマンド形式かどうかは書換前の形でしか判別できない
+  // ため、検査はこの準備層に置く。括弧・角括弧の内側（enclosure に
+  // よる継続）は対象外とする。
+  let prevIncompleteLine = 0;
+  let enclosureDepth = 0;
   return source
     .split("\n")
-    .map((line) => {
+    .map((line, idx) => {
+      let text, analysisCode;
       if (inBlock) {
         const end = line.indexOf("*/");
         if (end < 0) return line;
         inBlock = false;
-        return line.slice(0, end + 2) + transformCodeLine(line.slice(end + 2)).text;
+        const rest = line.slice(end + 2);
+        text = line.slice(0, end + 2) + transformCodeLine(rest).text;
+        analysisCode = splitCodeComment(rest).code;
+      } else {
+        const { code } = splitCodeComment(line);
+        analysisCode = code;
+        if (
+          prevIncompleteLine &&
+          enclosureDepth === 0 &&
+          code.trim() &&
+          ahkLineStartsStatement(code)
+        )
+          throw new PracticeError(
+            `式が途中で終わっています：${prevIncompleteLine}行目の式が未完成のまま、次の文が始まっています`,
+            prevIncompleteLine,
+            "SyntaxError",
+          );
+        const r = transformCodeLine(line);
+        inBlock = r.opensBlock;
+        text = r.text;
       }
-      const r = transformCodeLine(line);
-      inBlock = r.opensBlock;
-      return r.text;
+      const masked = maskAhkStrings(analysisCode);
+      for (const ch of masked) {
+        if (ch === "(" || ch === "[") enclosureDepth++;
+        else if (ch === ")" || ch === "]")
+          enclosureDepth = Math.max(0, enclosureDepth - 1);
+      }
+      const trimmed = masked.trim();
+      if (trimmed)
+        prevIncompleteLine = ahkLineEndsIncomplete(trimmed) ? idx + 1 : 0;
+      return text;
     })
     .join("\n");
 }
@@ -775,7 +879,7 @@ function lexAHK(source) {
     }
     m = source
       .slice(i)
-      .match(/^(===|!==|%\/%|%%|%in%|<-|->|:=|==|!=|<=|>=|&&|\|\||\+\+|--|\+=|-=|\*=|\/=|<<|>>|::|=>|<>|\[\[|\]\]|\.=)/);
+      .match(/^(===|!==|%\/%|%%|%in%|<-|->|:=|==|!=|<=|>=|&&|\|\||\+\+|--|\+=|-=|\*=|\/=|\*\*=|&=|\|=|\^=|<<=|<<|>>=|>>|>>>=|::|=>|<>|\[\[|\]\]|\.=)/);
     if (m) {
       const start = i;
       i += m[0].length;
@@ -1565,6 +1669,20 @@ export const definition = {
           if (n.k === "ahkForEach") return runForEach(n, s, api);
           if ((n.k === "repeat" || n.k === "while") && n.untilCond)
             return runUntilLoop(n, s, api);
+          // R27-N8：ビット演算の複合代入（&= ／ |= ／ ^= ／ <<= ／ >>= ／
+          // >>>=）は AutoHotkey v2 公式の代入演算子だが、その基礎になる
+          // ビット演算自体が本モデルの未対応（64ビット整数演算）である
+          // ため、複合代入演算子そのものを名指して止める（**= は公式の
+          // 代入演算子表に存在しないため、prescanAHK で別途名指す）。
+          if (
+            n.k === "assign" &&
+            ["&=", "|=", "^=", "<<=", ">>=", ">>>="].includes(n.op)
+          )
+            api.fail(
+              `未対応：AutoHotkeyの複合代入演算子 ${n.op}（ビット演算は未対応です）`,
+              n,
+              "未対応",
+            );
           // NX-N23: subscript assignments (and postfix ++/-- on a
           // subscript) are executed here, mirroring the shared
           // executor's assign/expression steps, so the note can name
@@ -1573,10 +1691,13 @@ export const definition = {
             const label = ahkExprLabel(n.target);
             if (label) {
               let v = api.read(n.value, s);
-              if (["+=", "-=", "*=", "/="].includes(n.op))
+              const base = {
+                "+=": "+", "-=": "-", "*=": "*", "/=": "/",
+              }[n.op];
+              if (base)
                 v = semantics.binary
-                  ? semantics.binary(n.op[0], api.read(n.target, s), v, n, s, api)
-                  : baseBinary(n.op[0], api.read(n.target, s), v, "ahk");
+                  ? semantics.binary(base, api.read(n.target, s), v, n, s, api)
+                  : baseBinary(base, api.read(n.target, s), v, "ahk");
               api.write(n.target, v, s, n);
               api.note(s, n, `${label} に ${fmt(v)} を代入します`);
               return [s];

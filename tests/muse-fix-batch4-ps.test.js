@@ -141,7 +141,6 @@ test("batch4-ps R25-N10 dotted numeric continuations name the literal in every p
   for (const [code, literal] of [
     ["Write-Output (1.5.2)", "1.5.2"],
     ["$x = 1.5.2", "1.5.2"],
-    ["Write-Output 1.5.2", "1.5.2"],
     ["Write-Output (1.5e2.3)", "1.5e2.3"],
     ["Write-Output (0x1F.2)", "0x1F.2"],
     ["Write-Output (.5.2)", ".5.2"],
@@ -155,6 +154,9 @@ test("batch4-ps R25-N10 dotted numeric continuations name the literal in every p
     // （字句段階の停止なので出力は一切出ない）。
     assert.deepEqual(out(r).flat(), [], code);
   }
+  // 引数モードの 1.5.2 は、修正バッチ6（R27-N5）の再裁定で文法 B.1.7 の
+  // generic-token として単一の文字列引数になる（2文への分割ではない）。
+  expectOut("Write-Output 1.5.2", [["1.5.2"]]);
 });
 test("batch4-ps R25-N10 legitimate dotted forms are unchanged", () => {
   expectOut("Write-Output (1.5)", [["1.5"]]);

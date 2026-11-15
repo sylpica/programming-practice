@@ -1023,6 +1023,41 @@ function expressionBinary(a, s) {
   }
   return result;
 }
+// R27-N7: 色・MsgBox・曜日・TriState・VarType・ファイル属性・日付書式の
+// 各列挙に属する組み込み定数（キーは小文字化した識別子名）。
+// 値は Microsoft 公式ドキュメントの各定数ページで確定した（班報告参照）。
+const VBA_ENUM_CONSTANTS = {
+  // VbColor（Color constants）
+  vbblack: 0, vbred: 255, vbgreen: 65280, vbyellow: 65535,
+  vbblue: 16711680, vbmagenta: 16711935, vbcyan: 16776960, vbwhite: 16777215,
+  // VbMsgBoxStyle（MsgBox constants・引数）
+  vbokonly: 0, vbokcancel: 1, vbabortretryignore: 2, vbyesnocancel: 3,
+  vbyesno: 4, vbretrycancel: 5, vbcritical: 16, vbquestion: 32,
+  vbexclamation: 48, vbinformation: 64, vbdefaultbutton1: 0,
+  vbdefaultbutton2: 256, vbdefaultbutton3: 512, vbdefaultbutton4: 768,
+  vbapplicationmodal: 0, vbsystemmodal: 4096, vbmsgboxhelpbutton: 16384,
+  vbmsgboxsetforeground: 65536, vbmsgboxright: 524288, vbmsgboxrtlreading: 1048576,
+  // VbMsgBoxResult（MsgBox constants・戻り値）
+  vbok: 1, vbcancel: 2, vbabort: 3, vbretry: 4, vbignore: 5, vbyes: 6, vbno: 7,
+  // VbDayOfWeek／VbFirstWeekOfYear（Date constants）
+  vbusesystem: 0, vbusesystemdayofweek: 0, vbsunday: 1, vbmonday: 2,
+  vbtuesday: 3, vbwednesday: 4, vbthursday: 5, vbfriday: 6, vbsaturday: 7,
+  vbfirstjan1: 1, vbfirstfourdays: 2, vbfirstfullweek: 3,
+  // TriState（Tristate constants）
+  vbusedefault: -2, vbtrue: -1, vbfalse: 0,
+  // VbVarType（VarType constants）
+  vbempty: 0, vbnull: 1, vbinteger: 2, vblong: 3, vbsingle: 4, vbdouble: 5,
+  vbcurrency: 6, vbdate: 7, vbstring: 8, vbobject: 9, vberror: 10,
+  vbboolean: 11, vbvariant: 12, vbdataobject: 13, vbdecimal: 14, vbbyte: 17,
+  vblonglong: 20, vbuserdefinedtype: 36, vbarray: 8192,
+  // Miscellaneous constants（残り）
+  vbobjecterror: -2147221504, vbback: "\b",
+  // VbDateTimeFormat（FormatDateTime function）
+  vbgeneraldate: 0, vblongdate: 1, vbshortdate: 2, vblongtime: 3, vbshorttime: 4,
+  // VbFileAttribute（GetAttr function）
+  vbnormal: 0, vbreadonly: 1, vbhidden: 2, vbsystem: 4, vbvolume: 8,
+  vbdirectory: 16, vbarchive: 32, vbalias: 64,
+};
 function evalExpr(a, s) {
   switch (a.k) {
     case "lit":
@@ -1055,6 +1090,18 @@ function evalExpr(a, s) {
       if (a.name === "vbnullstring") return "";
       if (a.name === "vbformfeed") return "\f";
       if (a.name === "vbverticaltab") return "\v";
+      // R27-N7: 比較・文字列以外の組み込み定数族の完成（RG-204 の列挙の
+      // 取り残し）。従来は未定義で暗黙の Empty 変数に化け、If r = vbYes の
+      // 黙った誤分岐や Option Explicit 下の虚偽原因停止を起こしていた。
+      // 値と所属列挙は Microsoft 公式ドキュメントで確定した：
+      // 色＝VbColor（Color constants）、MsgBox 引数＝VbMsgBoxStyle／戻り値＝
+      // VbMsgBoxResult（MsgBox constants）、曜日・週の開始＝VbDayOfWeek／
+      // VbFirstWeekOfYear（Date constants）、TriState＝Tristate constants、
+      // VarType＝VbVarType（VarType constants）、ファイル属性＝
+      // VbFileAttribute（GetAttr function）、日付書式＝VbDateTimeFormat
+      // （FormatDateTime function）、その他＝Miscellaneous constants
+      // （vbObjectError／vbBack は Chr(8)）。
+      if (a.name in VBA_ENUM_CONSTANTS) return VBA_ENUM_CONSTANTS[a.name];
       if (a.name === "err") return { kind: "err" };
       if (a.name === "date") return unknown("実行時の現在日付（時刻なし）");
       if (a.name === "now") return unknown("実行時の現在日時（日付と時刻）");

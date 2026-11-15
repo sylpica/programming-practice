@@ -869,7 +869,7 @@ export const definition = {
     } catch {
       // Tokenizer errors are reported by simulateScript itself.
     }
-    return simulateScript(
+    const result = simulateScript(
       code,
       model,
       {
@@ -959,6 +959,22 @@ export const definition = {
             return { handled: true, value: Infinity };
           if (a.k === "member") {
             let x = api.read(a.target, s);
+            if (isUnknown(x)) return null;
+            // R27-N25（読み取り側）：$ が有効なのは再帰的オブジェクト
+            // （リスト類・データフレーム）と NULL だけ（?Extract）。
+            // 原子ベクトルへの $ は実 R では読み取りも
+            // "$ operator is invalid for atomic vectors" エラー。
+            // 従来はデータフレーム以外が共有基盤のレコード参照へ落ち、
+            // 存在しないフィールドの汎用文言や、書き込みで作られた
+            // 幽霊フィールドの捏造値を返していた。
+            if (x === null) return { handled: true, value: null };
+            if (
+              x?.kind !== "data.frame" &&
+              (Array.isArray(x) ||
+                isNA(x) ||
+                typeof x !== "object")
+            )
+              api.fail("$ operator is invalid for atomic vectors", a);
             if (x?.kind === "data.frame") {
               if (Object.hasOwn(x.columns, a.name))
                 return { handled: true, value: x.columns[a.name] };
@@ -1075,6 +1091,15 @@ export const definition = {
           if (a.k === "member") {
             let target = api.read(a.target, s);
             if (target?.kind === "data.frame") {
+              // R27-N26：df$列 <- NULL は列の削除（?Extract：NULL の
+              // 代入は対応する要素・列を削除する）。従来は長さ0の置換
+              // ベクトルとして行数検証にかけられ、虚偽原因
+              // "replacement has incompatible rows" で停止していた。
+              // 存在しない列への NULL 代入は実 R でも無言の無操作。
+              if (v === null) {
+                delete target.columns[a.name];
+                return true;
+              }
               let n = Object.values(target.columns)[0]?.length || vec(v).length,
                 values = vec(v);
               if (!values.length || n % values.length)
@@ -1084,6 +1109,21 @@ export const definition = {
               );
               return true;
             }
+            // R27-N25（書き込み側）：原子ベクトルへの $ 代入は実 R では
+            // "$ operator is invalid for atomic vectors" エラー。従来は
+            // 共有基盤のレコード書き込みへ落ち、ベクトルの内部表現に
+            // 見えないフィールドを作って読み戻しで捏造値を返していた。
+            // 未確定値・NULL・レコード（リスト相当）は従来経路に委ねる
+            // （NULL への書き込みは共有基盤が名前を挙げて停止する）。
+            if (
+              !isUnknown(target) &&
+              target !== null &&
+              target !== undefined &&
+              (Array.isArray(target) ||
+                isNA(target) ||
+                typeof target !== "object")
+            )
+              api.fail("$ operator is invalid for atomic vectors", node);
           }
           if (a.k === "index") {
             let target = api.read(a.target, s);
@@ -1460,7 +1500,26 @@ export const definition = {
                   pop = Object.keys(xVal.columns).length;
                 else {
                   const els = vec(xVal);
-                  if (els.length === 1 && typeof els[0] === "number") {
+                  // R27-N24：x が長さ0（空ベクトル・NULL）または長さ1の
+                  // NA のときは、実 R では "invalid first argument" の
+                  // 決定的エラー（?sample：母集団は長さ1以上の要素か
+                  // 正の整数。size = 0 の明示がある長さ0だけは同ページの
+                  // 記述により許される）。従来は検証が無く、未確定値で
+                  // 黙って受理されていた（RG-201 の x 検証の取り残し）。
+                  if (!els.length) {
+                    const sizeGiven = named.size ?? pos[1];
+                    if (!(sizeGiven !== undefined && !isUnknown(sizeGiven) && vec(sizeGiven)[0] === 0))
+                      api.fail(
+                        `sampleの x が不正です：x = ${show(xVal)}（母集団が空です：invalid first argument）`,
+                        node,
+                      );
+                    pop = 0;
+                  } else if (els.length === 1 && isNA(els[0]))
+                    api.fail(
+                      `sampleの x が不正です：x = ${show(els[0])}（x が NA です：invalid first argument）`,
+                      node,
+                    );
+                  else if (els.length === 1 && typeof els[0] === "number") {
                     if (!Number.isFinite(els[0]) || els[0] < 1)
                       api.fail(
                         `sampleの x が不正です：x = ${show(els[0])}（長さ1の数値の x は正の整数で指定してください：invalid first argument）`,
@@ -1810,13 +1869,24 @@ export const definition = {
               for (const k of Object.keys(named))
                 if (!["from", "to", "by", "length.out", "along.with"].includes(k))
                   api.fail(`seqの引数 ${k} は説明に対応していません`, node);
-              const hasTo = named.to !== undefined || pos[1] !== undefined,
-                hasBy = named.by !== undefined || pos[2] !== undefined;
-              let lengthOut = named["length.out"] ?? pos[3];
-              const alongWith = named["along.with"] ?? pos[4];
-              if (alongWith !== undefined)
-                lengthOut = alongWith === null ? 0 : vec(alongWith).length;
-              let from = Number(named.from ?? pos[0] ?? 1);
+              // R27-N21〜N23：seq.default の公式ソース（seq.R）の構造に
+              // 沿って書き直す。従来は (1) length.out に整数を必須化し
+              // 分数を虚偽原因で停止していた（公式 ?seq は seq／seq.int
+              // では分数は切り上げと明記し、ソースも ceiling() 実装）、
+              // (2) 省略形（seq() 等）が「to／length.out／along.with の
+              // いずれかが必要」という独自前提で虚偽停止し、NULL 端点が
+              // 既定値1への化けで誤値を返していた（ソースでは from／to
+              // の既定値は各1で、長さ0の端点は長さエラー）、
+              // (3) 全ての検証失敗が "wrong sign in by argument" に
+              // 一律化されていた（ソースは検証項目ごとに別の stop を持つ）。
+              // 引数の有無は「与えられたか」で判定する（NULL は値として
+              // 与えられたものとして扱い、既定値へ化かさない）。
+              const hasArg = (key, idx) =>
+                  Object.hasOwn(named, key) || pos[idx] !== undefined,
+                argVal = (key, idx) =>
+                  Object.hasOwn(named, key) ? named[key] : pos[idx];
+              const hasTo = hasArg("to", 1),
+                hasBy = hasArg("by", 2);
               // R26-N24：引数が from ただ1つだけの形（?seq の第5の用法）。
               // 長さ1の数値なら 1:from（seq(0) でも c(1, 0)。S 互換として
               // ?seq が明記）、それ以外は 1:length(from)（長さ0なら空）。
@@ -1827,8 +1897,8 @@ export const definition = {
               const isSoleFrom =
                 !hasTo &&
                 !hasBy &&
-                lengthOut === undefined &&
-                alongWith === undefined &&
+                !hasArg("length.out", 3) &&
+                !hasArg("along.with", 4) &&
                 ((pos.length === 1 && !Object.keys(named).length) ||
                   (pos.length === 0 &&
                     Object.keys(named).length === 1 &&
@@ -1856,39 +1926,176 @@ export const definition = {
                 if (lf > 10000) api.fail("ベクトル長の上限です", node);
                 return Array.from({ length: lf }, (_, i) => i + 1);
               }
-              if (lengthOut !== undefined) {
-                const lo = Number(vec(lengthOut)[0]);
-                if (!Number.isInteger(lo) || lo < 0)
-                  api.fail("length.outは0以上の整数で指定してください", node);
-                if (lo > 10000) api.fail("ベクトル長の上限です", node);
-                if (lo === 0) return [];
-                let byVal;
-                if (hasBy) byVal = Number(named.by ?? pos[2]);
-                else if (hasTo)
-                  byVal = lo === 1 ? 0 : (Number(named.to ?? pos[1]) - from) / (lo - 1);
-                else byVal = 1;
-                if (!Number.isFinite(from) || !Number.isFinite(byVal))
-                  api.fail("NA/NaN argument", node);
-                return Array.from({ length: lo }, (_, i) => from + i * byVal);
+              // 未確定の引数は判定できないため従来どおり未確定値にする
+              // （位置引数の未確定は call() 冒頭の検査で先に処理される）。
+              if (vals.some(isUnknown)) return unknown("seqの引数による");
+              const rLength = (v) =>
+                v === null
+                  ? 0
+                  : v?.kind === "data.frame"
+                    ? Object.keys(v.columns).length
+                    : vec(v).length;
+              // length.out／along.with の決定（seq.R の順序：along.with が
+              // 優先し、length.out は長さ検査の後に ceiling で切り上げる）。
+              let lengthOut;
+              if (hasArg("along.with", 4))
+                lengthOut = rLength(argVal("along.with", 4));
+              else if (hasArg("length.out", 3)) {
+                const raw = argVal("length.out", 3),
+                  els = raw === null ? [] : vec(raw);
+                if (!els.length)
+                  api.fail(
+                    "seqの length.out は長さ1で指定してください（'length.out' must be of length 1）",
+                    node,
+                  );
+                const el = els[0];
+                // 整数・論理値はそのまま、それ以外は as.numeric の後に
+                // ceiling（seq.R）。数値文字列も as.numeric で変換される。
+                if (isNA(el)) lengthOut = NaN;
+                else if (
+                  typeof el === "boolean" ||
+                  (typeof el === "number" && Number.isInteger(el))
+                )
+                  lengthOut = Number(el);
+                else
+                  lengthOut = Math.ceil(
+                    typeof el === "number"
+                      ? el
+                      : typeof el === "string" && el.trim() !== ""
+                        ? Number(el)
+                        : NaN,
+                  );
               }
-              if (!hasTo)
+              // from／to の検証（seq.R の順序：両端点の長さ検査→有限性検査。
+              // 文字列は as.numeric で変換され、変換できないものは有限でない
+              // ものとして扱われる）。
+              const endpointEl = (key, idx, label) => {
+                const raw = argVal(key, idx);
+                if (rLength(raw) !== 1)
+                  api.fail(
+                    `seqの ${label} は長さ1で指定してください（'${label}' must be of length 1）`,
+                    node,
+                  );
+                return vec(raw)[0];
+              };
+              const finiteVal = (el, label) => {
+                const num = isNA(el)
+                  ? NaN
+                  : typeof el === "number"
+                    ? el
+                    : typeof el === "boolean"
+                      ? el
+                        ? 1
+                        : 0
+                      : typeof el === "string" && el.trim() !== ""
+                        ? Number(el)
+                        : NaN;
+                if (!Number.isFinite(num))
+                  api.fail(
+                    `seqの ${label} は有限の数で指定してください（'${label}' must be a finite number）`,
+                    node,
+                  );
+                return num;
+              };
+              const fromEl = hasArg("from", 0)
+                  ? endpointEl("from", 0, "from")
+                  : undefined,
+                toEl = hasTo ? endpointEl("to", 1, "to") : undefined;
+              const from = fromEl === undefined ? 1 : finiteVal(fromEl, "from"),
+                to = toEl === undefined ? 1 : finiteVal(toEl, "to");
+              // by の値（長さ・型の検証は使う経路側で行う。seq.R では
+              // by の長さ検査は length.out の無い経路の中にある）。
+              let by;
+              if (hasBy) {
+                const raw = argVal("by", 2),
+                  el = raw === null ? undefined : vec(raw)[0];
+                if (typeof el === "string")
+                  api.fail(
+                    "seqの by は数値で指定してください（non-numeric argument to binary operator）",
+                    node,
+                  );
+                by = isNA(el)
+                  ? NaN
+                  : typeof el === "boolean"
+                    ? el
+                      ? 1
+                      : 0
+                    : typeof el === "number"
+                      ? el
+                      : NaN;
+                if (lengthOut === undefined && rLength(raw) !== 1)
+                  api.fail(
+                    "seqの by は長さ1で指定してください（'by' must be of length 1）",
+                    node,
+                  );
+              }
+              if (lengthOut !== undefined) {
+                if (!Number.isFinite(lengthOut) || lengthOut < 0)
+                  api.fail(
+                    "seqの length.out は0以上の数で指定してください（'length.out' must be a non-negative number）",
+                    node,
+                  );
+                if (lengthOut > 10000) api.fail("ベクトル長の上限です", node);
+                if (lengthOut === 0) return [];
+                if (hasBy) {
+                  // seq.R：from／to／by／length.out の全指定は過剰指定。
+                  if (hasArg("from", 0) && hasTo)
+                    api.fail("seqの引数が多すぎます（too many arguments）", node);
+                  if (hasTo && !hasArg("from", 0))
+                    return Array.from(
+                      { length: lengthOut },
+                      (_, i) => to - (lengthOut - 1 - i) * by,
+                    );
+                  return Array.from(
+                    { length: lengthOut },
+                    (_, i) => from + i * by,
+                  );
+                }
+                if (!hasTo)
+                  return Array.from(
+                    { length: lengthOut },
+                    (_, i) => from + i,
+                  );
+                // seq.R：length.out 指定で from が省略され to が与えられた
+                // 場合は、from を to - (length.out - 1) で逆算する
+                // （seq(to = 5, length.out = 3) は c(3, 4, 5)）。
+                if (!hasArg("from", 0)) {
+                  const start = to - (lengthOut - 1);
+                  return Array.from(
+                    { length: lengthOut },
+                    (_, i) => start + i,
+                  );
+                }
+                if (lengthOut === 1) return [from];
+                const byVal = (to - from) / (lengthOut - 1);
+                return Array.from(
+                  { length: lengthOut },
+                  (_, i) => from + i * byVal,
+                );
+              }
+              if (!hasBy) {
+                const step = to >= from ? 1 : -1,
+                  n = Math.floor((to - from) / step) + 1;
+                if (n > 10000) api.fail("ベクトル長の上限です", node);
+                return Array.from({ length: n }, (_, i) => from + i * step);
+              }
+              const del = to - from;
+              // seq.R：del == 0 かつ to == 0 のときは by の検証より先に to。
+              if (del === 0 && to === 0) return [to];
+              const ratio = del / by;
+              if (!Number.isFinite(ratio)) {
+                if (by === 0 && del === 0) return [from];
                 api.fail(
-                  "seqには to、length.out、along.with のいずれかが必要です",
+                  "seqの by が不正です（invalid '(to - from)/by'）",
                   node,
                 );
-              let to = Number(named.to ?? pos[1]),
-                by = hasBy
-                  ? Number(named.by ?? pos[2])
-                  : to >= from
-                    ? 1
-                    : -1;
-              if (
-                !by ||
-                ![from, to, by].every(Number.isFinite) ||
-                (to - from) * by < 0
-              )
-                api.fail("wrong sign in by argument", node);
-              let n = Math.floor((to - from) / by) + 1;
+              }
+              if (ratio < 0)
+                api.fail(
+                  "seqの by の符号が from から to への向きと合っていません（wrong sign in 'by' argument）",
+                  node,
+                );
+              const n = Math.floor(ratio + 1e-10) + 1;
               if (n > 10000) api.fail("ベクトル長の上限です", node);
               return Array.from({ length: n }, (_, i) => from + i * by);
             }
@@ -2165,11 +2372,24 @@ export const definition = {
             }
             const v = api.read(n.value, s);
             api.write(n.target, v, s, n);
-            api.note(
-              s,
-              n,
-              `${targetName(n.target) || "対象"} に ${show(v)} を代入します`,
-            );
+            // R27-N26：df$列 <- NULL の手順文は、効果（列の削除）に
+            // 合わせる（「NULL を代入します」だけでは削除が見えない）。
+            if (
+              n.target?.k === "member" &&
+              v === null &&
+              api.read(n.target.target, s)?.kind === "data.frame"
+            )
+              api.note(
+                s,
+                n,
+                `${targetName(n.target) || "対象"} に NULL を代入して列を削除します`,
+              );
+            else
+              api.note(
+                s,
+                n,
+                `${targetName(n.target) || "対象"} に ${show(v)} を代入します`,
+              );
             return [s];
           }
           if (n.k === "expression" && n.value.k !== "post") {
@@ -2196,8 +2416,44 @@ export const definition = {
       },
       limits,
     );
+    // R27-N10（R 分）：最終状態（paths[].vars）は JSON として直列化される
+    // 表示面であり、非有限数（Inf／-Inf／NaN）が null に化けて、出力・
+    // groups の "c(Inf)" 表示と矛盾していた（UI.Vision の RG-208 と同型）。
+    // 実行完了後のスナップショットに限り、非有限数を R の出力表示と
+    // 一致する文字列（"Inf"／"-Inf"／"NaN"）へ置き換える。実行中の
+    // 数値としての働きと groups（実行中に確定済み）は変えない。
+    for (let p of result.paths || [])
+      if (p.vars) p.vars = rFiniteSafeSnapshot(p.vars);
+    return result;
   },
 };
+
+// R27-N10：非有限数を R 表記の文字列へ置き換えた表示用スナップショット。
+// ベクトル（配列）・データフレーム列などの入れ子も対象とする。未確定値と
+// NA はそのまま保持し、循環は元の参照を保つ。
+function rFiniteSafeSnapshot(v, seen = new Map()) {
+  if (typeof v === "number")
+    return Number.isFinite(v)
+      ? v
+      : v === Infinity
+        ? "Inf"
+        : v === -Infinity
+          ? "-Inf"
+          : "NaN";
+  if (!v || typeof v !== "object") return v;
+  if (isUnknown(v) || isNA(v)) return v;
+  if (seen.has(v)) return seen.get(v);
+  let out = Array.isArray(v) ? [] : {};
+  seen.set(v, out);
+  if (Array.isArray(v)) {
+    for (let x of v) out.push(rFiniteSafeSnapshot(x, seen));
+    // ベクトルの名前属性（.names）は要素ではないため、明示的に引き継ぐ。
+    if (v.names) out.names = [...v.names];
+  } else
+    for (let [k, x] of Object.entries(v))
+      out[k] = rFiniteSafeSnapshot(x, seen);
+  return out;
+}
 
 definition.templates.push(...additionalTemplates(definition.model.defaults));
 

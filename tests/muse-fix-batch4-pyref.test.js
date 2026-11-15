@@ -81,7 +81,7 @@ test("F-02(pyref): all 69 builtin exception names have a python reference item",
     assert.equal(r.category, "例外", name);
     assert.equal(r.supported, true, name);
   }
-  assert.equal(py.reference.length, 210); // 166 + 例外44件
+  assert.equal(py.reference.length, 213); // 166 + 例外44件 + 修正バッチ6 R27-N20 組み込み定数3件
 });
 
 test("F-02(pyref): every exception name reaches its own item via the app search predicate (0 unreachable)", () => {
@@ -121,7 +121,7 @@ test("F-02(pyref): new exception examples run clean in python and match expected
 });
 
 test("F-02(pyref): new exception items propagate to CloudFormation and their handler examples run clean", async () => {
-  assert.equal(cf.reference.length, 221); // 177 + 伝播44件
+  assert.equal(cf.reference.length, 224); // 177 + 伝播44件 + 修正バッチ6 R27-N20 組み込み定数3件の伝播
   for (const name of NEW_NAMES) {
     const r = cf.reference.find((x) => x.name === name);
     assert.ok(r, `missing in cloudformation: ${name}`);
@@ -150,7 +150,7 @@ const r2 = JSON.parse(
 );
 
 test("F-02(pyref): reference-r2 rows for python/cloudformation are fully in sync (fields + sha256)", () => {
-  assert.equal(r2.length, 1007); // 919 + python 44 + cloudformation 44
+  assert.equal(r2.length, 1107); // 919 + python 44 + cloudformation 44 + 修正バッチ6 R27-N20 python 3 + cloudformation 伝播3（統合時に追加）+ R27-N7 VBA 定数94
   for (const [kind, def] of [
     ["python", py],
     ["cloudformation", cf],
@@ -229,8 +229,8 @@ for (const [label, code, expect] of HANDLER_CASES) {
   });
 }
 
-test("except-handler: totals across all definitions stay 1086 after the propagation", () => {
+test("except-handler: totals across all definitions stay 1186 after the propagation", () => {
   let n = 0;
   for (const d of definitions) n += d.reference.length;
-  assert.equal(n, 1086);
+  assert.equal(n, 1186); // 1086 + 修正バッチ6 R27-N20 組み込み定数3件×2種（Python＋CloudFormation伝播）+ R27-N7 VBA 定数94件
 });
