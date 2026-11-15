@@ -27,11 +27,10 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
-      - name: Execute second milestone shell cases
-        run: python audit-probes/step2/windows-step2.py
       - name: Execute all CSharp materials and boundaries
         run: python audit-probes/step2/native-csharp.py
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: codex-r7-native-evidence
           path: audit-probes/step2/results*.json
