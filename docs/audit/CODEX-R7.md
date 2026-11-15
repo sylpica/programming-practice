@@ -1,4 +1,19 @@
-# Codex R7 独立監査 — ee01f07（節目3・未完了）
+# Codex R7 独立監査 — ee01f07（節目4・未完了）
+
+対象は引き続き **ee01f07402b404c7b9dbcd83935b4be3bc4de187、全15種類・104テンプレート・978リファレンス**。配信日：2026-11-16 JST。Muse側の指摘一覧・個票を参照せず、固定対象の実装と公式資料・実ランタイムから独立に確認した。
+
+節目4の追加は **26件（P2：25、P3：1）**。累計 **126件（P1：0、P2：117、P3：9）**。Museとの重複を除いた新規件数ではない。同じ原因の複数入力、既報の補強を水増しして数えない。[節目4の追加指摘](#節目4の追加指摘)と[残作業](#節目4の残作業)を参照。
+
+**使った書き込みコール数：2件（この節目）。累計13件。** Windows用の監査専用ブランチへのgit push 1回と、報告書だけをmainへまとめて配信するgit push 1回。過去の節目は5件、4件、2件。ローカル作業、読取り、公式ソースの読取り専用clone、CI内の保存は含めない。製品コード・教材・既存テスト・DEVELOPMENT.mdは変更していない。監査ブランチをmainへマージしていない。
+
+配信準備時のmainは前回報告の `196360c7060540329566cd893b6e0960262a9b6c`。個々の指摘はee01f07で再現する。進んだmainに同じ欠陥が残るとの再監査ではない。
+
+**観点1〜8の監査は未完了。** この節目はAHK・UI.Vision・PAD・Power Appsの状態と異常入力を進め、JavaScriptへ共通する追加引数の評価も確認した。全15種類の残作業、978参照項目、全104教材・全ビューの対象は維持する。サブエージェント・リセット権は使用していない。依頼モデル／推論設定を会話のツールから変更・確認できないという制約も前回どおりで、設定を検証したと偽らない。
+
+## 節目3までの記録
+
+以下は前回内容を保持した履歴。累計・書き込み回数・未実施の記述は当時の値であり、今回の状況は末尾の節目4で更新する。
+
 
 監査対象は引き続き **ee01f07402b404c7b9dbcd83935b4be3bc4de187、全15種類・104テンプレート・978リファレンス**。配信日：2026-11-16 JST。Muse側の指摘一覧は読まず、修正後mainの挙動を固定対象へ混ぜていない。
 
@@ -1959,3 +1974,526 @@ print(rnorm(-1))
 VBAの27関数等の項目漏れ確認を、VBA90項目の全説明／全挙動が正しいという結論へ広げない。ImageJ400件も引数数・停止制御を洗う入力集合であり、200関数の全型・全オプションの代わりではない。実施不能の製品セッション・GUI・実機があること、実施可能な部分にも残作業があることを分けて保持する。
 
 使用量・回数制限の通知は受けていない。リセット権は使っていない。リセット時刻の通知もないため推測しない。今回も節目の未完了報告であり、完成監査として扱わない。
+
+
+## 節目4の検証範囲と一次情報
+
+### AutoHotkeyの実Windows照合
+
+[Windows CI run 43751293375](https://github.com/sylpica/programming-practice/actions/runs/43751293375)、[監査スクリプト7aaf157](https://github.com/sylpica/programming-practice/tree/7aaf157/audit-probes/step4)。公式配布のAutoHotkey 2.0.19をWindows Server 2025で起動し16ケースを比較した。
+
+監査用のGUIを2個だけ作り、Bをアクティブにしてから実行した。実行できた12ケースではACTIVE_B=1を出力してフォーカスの前提を確認。残り4ケースは過剰引数が読込み時に検出され、GUI作成前に終了コード2となった。これをフォーカス失敗や未検証と取り違えていない。対話MsgBoxの出力はFileAppend String(...)へ置換して標準出力へ採取し、型エラーはcatchのType／Messageを記録した。InputBoxの過剰引数ケースは読込み時に拒否され、ダイアログを放置してタイムアウトした結果ではない。
+
+実測の主な組合せ：IsSetRefの数値・空文字・VarRef以外、forのbreak／continueと通常Object、Floatから文字列、Sleepの型と個数、複数組込みの過剰引数、同じタイトル部分を持つ2窓のWinActive、WinText、Last Found Window。全16件が正常終了という意味ではなく、実物のエラーを含めて結果を得た。
+
+InputBoxを2回呼ぶ場合のResultの独立性は、公式の返り値契約とアプリの分岐を照合したもの。実WindowsでOK／Cancelを2回自動操作した実測ではない。ValueだけfreshUnknownでResultは同じ記号を使う実装と、0／3だけの到達パスを確認した。
+
+AutoHotkeyの公式サイトは一部403となったため、公式AutoHotkeyDocsリポジトリのv2資料を読んだ。第三者の解説へ置き換えていない。
+
+### Power FxのSDK・資料・状態確認
+
+Microsoft.PowerFx.Interpreter **1.3.1**、.NET SDK **8.0.408**を使用。最初の153式を既定DecimalとNumberIsFloat=trueの両方でCheck／Evalし、さらにIsBlankや文字列比較へ入れた4式をFloatモードで確認した（Floatは計157式）。実Canvas製品セッションの実測とは区別する。アプリのJS数値とSDKの既定Decimalの違いだけを欠陥に数えないため、Textの丸めはFloatでも再確認した。たとえばText(-1,"0,")はDecimalが0、Floatが-0で、アプリはFloatと一致するため指摘から除いた。
+
+- #／0、空文字列、Blank、0／1／−1、小数の丸め、%、桁区切り・桁縮小、文字を挟む数値書式、対応外書式、Sequenceの小数、BlankだけのSum等。
+- 画面コンテキストとグローバルの同名変数、Navigate後のbindings、変数を経由したPatchについては公式の変数・画面・レコードの契約と明示モデルを照合。SDKの純粋式の試験だけでCanvas画面動作を検証したとはしない。
+- Blank()=0、Blank()=""、Blank()=false、Blank()=Blank()の4式は、今回のSDKモードではそれぞれfalse／false／false／trueで、アプリと一致。この入力集合の比較は**確認済み・なし**。他のBlank／型違いの全組合せが正しいとの意味ではない。
+
+レコードのin演算はSDKで「色として解釈できない」というErrorValueになった。同型レコードの完全一致の対照式まで同様となり、この結果をアプリに必要なエラーとして採用していない。実Canvasや別の公式実装経路での裏付けが必要な保留項目。エラーオブジェクトのJSON表現を、通常の戻り値だと誤認していない。
+
+### UI.VisionとPAD
+
+UI.Visionは公式資料に加え、公式A9T9/RPAのソースを読取り専用で取得し、比較先を **17b6302f1617b838efe2b26d3ef19c2face81350** に固定した。assertText→globMatch、変数名の大文字正規化、!TIMESの読取専用指定、空名の除外を確認した。実拡張をロードして製品のマクロを実行したわけではない。
+
+PADは学習用JSONが実製品のexport互換でないという宣言を維持したうえで、通常の%表記の変数名と%%のリテラルをMicrosoft Learnへ照合した。Power Fx有効フローv2.43以降のケースセンシティブな名前とは分けた。実PAD製品セッション未接続という制約は残る。
+
+実装名の対応確認：PADの全15アクション名は参照項目へ対応し、この命令名の列挙範囲の漏れは**確認済み・なし**。Power Appsのcall内26関数、ThisRecord、in／exactin（束ね項目）も参照へ対応。UI.VisionはNumber／Stringと通常コマンド・内部変数を確認し、旧名endIf／endWhileの漏れを追加した。これらを全構文・全型・全用語の完全性の合格とは呼ばない。
+
+### 組合せ・画面・教材
+
+JavaScriptの8関数×3種の追加引数と、UI.VisionのNumber／String×3種、計30ケースをNode実物と比較。追加引数が返り値に使われなくても評価は必要という規則を確認し、未定義名／null.xの例外が消える箇所を検出した。
+
+追加26件の掲載コードを固定対象のAPIで再実行し、同じコード・モデルを実Chromiumでも操作した。画面の先頭パスの出力とエラー理由はAPI結果と一致し、26操作でpageerror 0。**今回のAPI結果と画面出力の取り違えは確認済み・なし**。アプリ自身の不正な値・分岐が正しいとの意味ではない。InputBoxの全パス欠落はAPIのパス集合でも確認した。
+
+AHK・UI.Vision・PAD・Power Appsの全24テンプレートのタイトル・intro・コードを通読し、既定モデルでの既存全件実行記録とも照合した。この24件について今回新たに確定したタイトル／説明と掲載コードの主張の不一致はない。これは全104教材の公式照合の完了でも、テンプレートから使える全入力の合格でもない。PADのpa-break-totalの「6」はコード上のIndexで、合計は15となることを確認した。合計が6になるという誤った期待値は作っていない。
+
+## 節目4の追加指摘
+
+再現は指定コミットの固定画面で種類を選択して行う。JSONはそのままコード欄へ貼る。複数ケースは前のエラーで後続を止めないよう独立に実行する。実Windowsと、公式資料／ソース／SDKからの判定を各指摘で分ける。
+
+### R7-101（P2）IsSetRefが代入済みの数値・文字列を未代入とする
+
+対象：AutoHotkey。再現：ee01f07で種類を選び、コードを入力・実行。モデルeventをnullにする。
+
+```text
+x:=1
+MsgBox IsSetRef(&x)
+```
+
+実際：アプリ0、実Windows 2.0.19は1。x:=""でも0対1。IsSetRef(x)へ配列を直接渡すとアプリ1だが実物はVarRefを要求するTypeError。IsSetRef(1)はアプリ0、実物TypeError。
+
+期待：参照先に値があるかを判定し、値が配列／オブジェクトかどうかで判定しない。VarRef以外は止める。リファレンスの「数値・文字列は0」というモデル注意書きも実物と矛盾する値を教えており、未対応停止の宣言へ替えるだけなら合格。
+
+根拠：[AutoHotkey公式資料](https://github.com/AutoHotkey/AutoHotkeyDocs/tree/v2/docs)、[Windows 2.0.19実測](https://github.com/sylpica/programming-practice/actions/runs/43751293375)。[IsSet／IsSetRef](https://github.com/AutoHotkey/AutoHotkeyDocs/blob/v2/docs/lib/IsSet.htm)。
+
+### R7-102（P2）forのbreakを無視しcontinueでループと後続を止める
+
+対象：AutoHotkey。再現：ee01f07で種類を選び、コードを入力・実行。モデルeventをnullにする。
+
+```text
+n:=0
+for v in [10,20,30] {
+ n+=1
+ break
+}
+MsgBox n
+```
+
+実際：アプリは3、実Windowsは1。breakをcontinueへ置換すると、アプリはn=1でMsgBoxへ到達しないが実物は3。
+
+期待：breakはループを終え、continueは次の反復へ進む。ネストの外側へ制御信号を漏らさない。runForEachがbreakを消してactiveへ戻し、continueを残したままdoneへ入れている。
+
+根拠：[AutoHotkey公式資料](https://github.com/AutoHotkey/AutoHotkeyDocs/tree/v2/docs)、[Windows 2.0.19実測](https://github.com/sylpica/programming-practice/actions/runs/43751293375)。[For](https://github.com/AutoHotkey/AutoHotkeyDocs/blob/v2/docs/lib/For.htm)。
+
+### R7-103（P2）通常Objectを列挙可能なコレクションとして扱う
+
+対象：AutoHotkey。再現：ee01f07で種類を選び、コードを入力・実行。モデルeventをnullにする。
+
+```text
+n:=0
+for k,v in {a:1,b:2} {
+ n+=v
+}
+MsgBox n
+```
+
+実際：アプリは3、実WindowsはTypeError: Value not enumerable.。
+
+期待：通常のObjectには列挙子がないため停止する。OwnProps等を扱えないなら未対応停止にし、プロパティを勝手にforの要素にしない。リファレンスの「オブジェクトではプロパティ名」という無条件の説明も修正対象。
+
+根拠：[AutoHotkey公式資料](https://github.com/AutoHotkey/AutoHotkeyDocs/tree/v2/docs)、[Windows 2.0.19実測](https://github.com/sylpica/programming-practice/actions/runs/43751293375)。[Forの__Enum要件](https://github.com/AutoHotkey/AutoHotkeyDocs/blob/v2/docs/lib/For.htm)。
+
+### R7-104（P2）整数値のFloatを文字列化すると小数部を失い比較が変わる
+
+対象：AutoHotkey。再現：ee01f07で種類を選び、コードを入力・実行。モデルeventをnullにする。
+
+```text
+x:=1.0 . ""
+MsgBox x
+MsgBox (x == "1.0")
+```
+
+実際：アプリは文字列1と比較結果0。実Windowsは文字列1.0と比較結果1。
+
+期待：Floatの文字列表現を保つか、保持できない型変換を未確認として止める。数値として等しくても文字列への変換後の分岐を変えない。
+
+根拠：[AutoHotkey公式資料](https://github.com/AutoHotkey/AutoHotkeyDocs/tree/v2/docs)、[Windows 2.0.19実測](https://github.com/sylpica/programming-practice/actions/runs/43751293375)。[数値と文字列変換](https://github.com/AutoHotkey/AutoHotkeyDocs/blob/v2/docs/Concepts.htm)。
+
+### R7-105（P2）Sleepの型不正を検査せず後続処理を実行する
+
+対象：AutoHotkey。再現：ee01f07で種類を選び、コードを入力・実行。モデルeventをnullにする。
+
+```text
+Sleep "bad"
+MsgBox "AFTER"
+```
+
+実際：アプリはAFTER。実WindowsはTypeError: Parameter #1 of Sleep requires a Number, but received a String. で停止。
+
+期待：数値を要求する引数を検査し、badミリ秒の待機を実行したかのように説明しない。
+
+根拠：[AutoHotkey公式資料](https://github.com/AutoHotkey/AutoHotkeyDocs/tree/v2/docs)、[Windows 2.0.19実測](https://github.com/sylpica/programming-practice/actions/runs/43751293375)。[Sleep](https://github.com/AutoHotkey/AutoHotkeyDocs/blob/v2/docs/lib/Sleep.htm)。
+
+### R7-106（P2）組込み関数の過剰引数を黙って捨てる
+
+対象：AutoHotkey。再現：ee01f07で種類を選び、コードを入力・実行。モデルeventをnullにする。SendText等の比較でも実WindowsのGUIは監査専用ウィンドウだけを使用した。
+
+```text
+Sleep 0,0
+MsgBox "AFTER"
+```
+
+実際：アプリはAFTER。実WindowsはToo many parameters passed to function. Specifically: Sleep（読込み時、終了コード2）。SendText "x","y"、SetTitleMatchMode(2,3)、InputBox("p","t","","d","extra")も実物は過剰引数で停止するが、アプリは送信・戻り値・入力オブジェクトを正常に生成する。
+
+期待：関数ごとの引数個数を検査し、未対応形なら停止する。第1引数だけ処理して残りを無かったことにしない。
+
+根拠：[AutoHotkey公式資料](https://github.com/AutoHotkey/AutoHotkeyDocs/tree/v2/docs)、[Windows 2.0.19実測](https://github.com/sylpica/programming-practice/actions/runs/43751293375)。各関数の公式署名。
+
+### R7-107（P2）WinActiveが最初の一致ウィンドウだけで判定する
+
+対象：AutoHotkey。再現：ee01f07で種類を選び、コードを入力・実行。モデルeventをnull、windowsをID 1のR7 Window AとID 2のR7 Window B（いずれもexists=true、text=present text）とし、activeIdを2にする。
+
+```text
+MsgBox (WinActive("R7 Window") > 0)
+```
+
+実際：アプリ0。実WindowsはBがアクティブであることを確認（ACTIVE_B=1）したうえで1。
+
+期待：アクティブなBがタイトル条件に合えばBのHWNDを返す。同じ部分文字列を持つAが先に見つかっても0にしない。
+
+根拠：[AutoHotkey公式資料](https://github.com/AutoHotkey/AutoHotkeyDocs/tree/v2/docs)、[Windows 2.0.19実測](https://github.com/sylpica/programming-practice/actions/runs/43751293375)。[WinActive](https://github.com/AutoHotkey/AutoHotkeyDocs/blob/v2/docs/lib/WinActive.htm)。
+
+### R7-108（P2）WinExistのWinText引数を無視して別条件の窓を見つける
+
+対象：AutoHotkey。再現：ee01f07で種類を選び、コードを入力・実行。モデルeventをnull、windowsをID 1のR7 Window AとID 2のR7 Window B（いずれもexists=true、text=present text）とし、activeIdを2にする。
+
+```text
+MsgBox WinExist("R7 Window","absent text")
+```
+
+実際：アプリはID 1、実Windowsは0。監査GUIにはpresent textだけがありabsent textは存在しない。
+
+期待：タイトルとWinTextの両条件を評価するか、WinTextが未対応なら名指しで停止する。見つからないはずの窓を発見して後続分岐へ流さない。
+
+根拠：[AutoHotkey公式資料](https://github.com/AutoHotkey/AutoHotkeyDocs/tree/v2/docs)、[Windows 2.0.19実測](https://github.com/sylpica/programming-practice/actions/runs/43751293375)。[WinExist](https://github.com/AutoHotkey/AutoHotkeyDocs/blob/v2/docs/lib/WinExist.htm)。
+
+### R7-109（P2）Last Found Windowを保持せず引数なしWinExistが先頭の窓を返す
+
+対象：AutoHotkey。再現：ee01f07で種類を選び、コードを入力・実行。モデルeventをnull、windowsをID 1のR7 Window AとID 2のR7 Window B（いずれもexists=true、text=present text）とし、activeIdを2にする。
+
+```text
+x:=WinExist("R7 Window B")
+MsgBox (WinExist()=x)
+```
+
+実際：アプリ0、実Windows1。アプリの最初のWinExistはBのID 2だが、次のWinExist()はAのID 1を返している。
+
+期待：引数なしはLast Found Windowを使い、直前に見つけたBを維持する。状態をモデル化しないなら引数なしを未対応として止める。
+
+根拠：[AutoHotkey公式資料](https://github.com/AutoHotkey/AutoHotkeyDocs/tree/v2/docs)、[Windows 2.0.19実測](https://github.com/sylpica/programming-practice/actions/runs/43751293375)。[Last Found Window](https://github.com/AutoHotkey/AutoHotkeyDocs/blob/v2/docs/misc/WinTitle.htm)。
+
+### R7-110（P2）別々のInputBoxのResultを同じ未確定値へ結び付けパスを欠く
+
+対象：AutoHotkey。再現：ee01f07で種類を選び、コードを入力・実行。モデルeventをnullにする。
+
+```text
+a:=InputBox("A")
+b:=InputBox("B")
+x:=0
+if a.Result="OK" {
+ x+=1
+}
+if b.Result="OK" {
+ x+=2
+}
+MsgBox x
+```
+
+実際：アプリの結果はx=3と0の2パスだけ。上限による打切りはない。
+
+期待：別の2回のダイアログのOK／Cancelは独立で、OK→Cancelの1、Cancel→OKの2も到達可能。Resultにも呼出しごとに独立の記号を割り当てる。ValueはfreshUnknownだがResultは同じsource/idを繰り返している。
+
+根拠：[InputBoxのResult契約](https://github.com/AutoHotkey/AutoHotkeyDocs/blob/v2/docs/lib/InputBox.htm)。この入力組合せは公式契約からの到達可能性照合であり、Windowsで2ダイアログを自動操作した実測ではない。
+
+### R7-111（P2）同名の画面変数とグローバル変数を上書き・消失させる
+
+対象：Power Apps。再現：ee01f07で種類を選び、コードを入力・実行。既定モデルを使用する。
+
+```text
+UpdateContext({X:1}); Set(X,2); Set(Result,X)
+```
+
+実際：アプリResult=2。画面コンテキストのX=1をSet(X,2)が参照用のs.varsで上書きする。さらに Set(X,100);UpdateContext({X:1});Navigate(Detail);Set(Result,X) は、モデルのグローバルX=100があるのに未定義の名前Xで停止する。
+
+期待：同じ画面内ではコンテキスト変数X=1が優先される。別画面へ移るとグローバルX=100を参照する。2つのスコープを1つの辞書として上書き／削除しない。
+
+根拠：[Microsoft Learn：変数のスコープと優先順位](https://learn.microsoft.com/en-us/power-platform/power-fx/variables)、[Set](https://learn.microsoft.com/en-us/power-platform/power-fx/reference/function-set)。実Canvasでは未実測。
+
+### R7-112（P2）画面遷移後に表示数式が再計算されず旧画面の値を残す
+
+対象：Power Apps。再現：ee01f07で種類を選び、コードを入力・実行。screensをHome.context={X:1}、Detail.context={X:2}、bindingsを{"Label1.Text":"Text(X)"}とする。他は既定。
+
+```text
+Navigate(Detail)
+```
+
+実際：現在画面Detail、変数X=2なのにLabel1.Textは1。初期化時のHomeの値が残る。
+
+期待：Xを参照する表示数式を遷移後のスコープで再計算し2とする。次の別のSetが偶然再計算を起こすまで古い表示にしない。
+
+根拠：[UpdateContextの自動再計算](https://learn.microsoft.com/en-us/power-platform/power-fx/reference/function-updatecontext)、[Navigate](https://learn.microsoft.com/en-us/power-platform/power-fx/reference/function-navigate)。実装はNavigate内でrecalcを呼ばない。実Canvas未実測。
+
+### R7-113（P2）変数へ保存した元レコードをPatchの対象として認識しない
+
+対象：Power Apps。再現：ee01f07で種類を選び、コードを入力・実行。dataSources.Orders=[{ID:1,Done:false}]とする。
+
+```text
+Set(r,LookUp(Orders,ID=1)); Patch(Orders,r,{Done:true})
+```
+
+実際：「更新するレコードがデータソースにありません」。同じLookUpを直接Patchの第2引数に置くと更新できる。
+
+期待：データソース由来レコードを変数へ保存しても追跡可能性を保ち、ID 1のDoneをtrueへ更新する。SetのstructuredCloneでJS参照が変わったことを、元レコードがないというエラーにしない。
+
+根拠：[Microsoft Learn：Patchのbase recordは変数等を経由してよい](https://learn.microsoft.com/en-us/power-platform/power-fx/reference/function-patch)。実Canvas未実測。
+
+### R7-114（P2）Sequenceが有効な小数の件数を不正と誤診する
+
+対象：Power Apps。再現：ee01f07で種類を選び、コードを入力・実行。既定モデルを使用する。
+
+```text
+Set(Result,CountRows(Sequence(0.9)))
+```
+
+実際：アプリ「Sequenceの行数が不正または上限を超えています」。公式SDKは0。1.9は公式SDKで1。
+
+期待：Recordsを切り捨てる規則を適用するか、小数形式が未対応だと正直に説明する。0.9を実言語で不正な行数として直させない。
+
+根拠：[Microsoft Learn：Sequence](https://learn.microsoft.com/en-us/power-platform/power-fx/reference/function-sequence)。Microsoft.PowerFx.Interpreter 1.3.1のDecimal／Floatで照合。
+
+### R7-115（P2）BlankだけのSumを0にしてIsBlankの分岐を変える
+
+対象：Power Apps。再現：ee01f07で種類を選び、コードを入力・実行。既定モデルを使用する。
+
+```text
+Set(Result,IsBlank(Sum(Table({x:Blank()}),x)))
+```
+
+実際：アプリfalse、公式SDKはtrue。内部のSumはアプリ0、公式SDKはBlank。
+
+期待：有効な数値のない集計結果と数値0を区別する。
+
+根拠：[Microsoft Learn：集計関数](https://learn.microsoft.com/en-us/power-platform/power-fx/reference/function-aggregates)、[公式Power Fx実装](https://github.com/microsoft/Power-Fx)。SDK1.3.1で直接のSumとIsBlankを実行した。
+
+### R7-116（P2）TextのBlank入力が書式処理を迂回して常に空文字列になる
+
+対象：Power Apps。再現：ee01f07で種類を選び、コードを入力・実行。既定モデルを使用する。
+
+```text
+Set(Result,Text(Blank(),"0"))
+```
+
+実際：アプリ空文字列、公式SDKは0という文字列。0.00書式もアプリ空、SDK0.00。未対応の書式もBlankだけは検証を迂回して空文字列になる。
+
+期待：書式を伴うBlankの変換規則に合わせるか未対応停止にする。書式検証を入力値のBlankによって省略しない。
+
+根拠：[Microsoft Learn：Text](https://learn.microsoft.com/en-us/power-platform/power-fx/reference/function-text)。公式SDK1.3.1のDecimal／Floatで一致した結果。IsBlank(Text(Blank(),"0"))はSDK false、アプリtrue。
+
+### R7-117（P2）Textの#書式が不要な0や小数点を付ける
+
+対象：Power Apps。再現：ee01f07で種類を選び、コードを入力・実行。既定モデルを使用する。
+
+```text
+Set(Result,IsBlank(Text(0,"#")))
+```
+
+実際：アプリfalse、公式SDK true。Text(0,"#")はアプリ0、SDK空文字列。Text(1,"0.##")はアプリ1.、SDK1。Text(0,"#.00")はアプリ0.00、SDK.00。
+
+期待：#は不要な0を表示せず、小数部が省略されたとき不要な小数点を残さない。書式が0を要求する場合と区別する。
+
+根拠：[Microsoft Learn：Textのnumber placeholders](https://learn.microsoft.com/en-us/power-platform/power-fx/reference/function-text)。SDK1.3.1でDecimal／Floatを確認。
+
+### R7-118（P2）Textの丸めがPower Fxの書式結果と異なる
+
+対象：Power Apps。再現：ee01f07で種類を選び、コードを入力・実行。既定モデルを使用する。
+
+```text
+Set(Result,Text(1.005,"0.00"))
+```
+
+実際：アプリ1.00、公式SDK1.01。2.675も2.67対2.68。1.005の0%書式は100%対101%。
+
+期待：対象ホストの数値形式に応じた書式の丸めを再現するか、未確定な書式結果として停止する。
+
+根拠：[Microsoft Learn：Textの桁数超過時の丸め](https://learn.microsoft.com/en-us/power-platform/power-fx/reference/function-text)。SDK1.3.1の既定DecimalだけでなくNumberIsFloat=trueでも同じ期待値を確認した。JSのtoFixedとの型差だけで指摘していない。実Canvasでは未実測。
+
+### R7-119（P2）Textの桁の途中に置く文字を末尾へ移す
+
+対象：Power Apps。再現：ee01f07で種類を選び、コードを入力・実行。既定モデルを使用する。
+
+```text
+Set(Result,Text(1,"00-00"))
+```
+
+実際：アプリ0001-、公式SDK00-01。1000も1000-対10-00。
+
+期待：桁プレースホルダと文字の位置を保つ。扱えない配置なら未対応として停止する。
+
+根拠：[Microsoft Learn：Textのcustom format](https://learn.microsoft.com/en-us/power-platform/power-fx/reference/function-text)。SDK1.3.1のDecimal／Floatで照合。実装は全整数桁を最初のphへ一括出力している。
+
+### R7-120（P2）assertTextが有効なパターンを完全一致として失敗させる
+
+対象：UI.Vision。再現：ee01f07で種類を選び、コードを入力・実行。既定モデルを使用する。
+
+```text
+{
+  "Commands": [
+    {
+      "Command": "assertText",
+      "Target": "id=result",
+      "Value": "未*"
+    },
+    {
+      "Command": "echo",
+      "Target": "AFTER"
+    }
+  ]
+}
+```
+
+実際：既定のid=resultの未送信に対して未*で検査するとテキストが一致しませんで停止。
+
+期待：公式のパターン照合で一致させるか、パターン形式が未対応だと説明する。リファレンスの「完全一致」という無条件の説明も実仕様と異なる。
+
+根拠：[公式assertText](https://ui.vision/rpa/docs/selenium-ide/asserttext-verifytext)、[公式実装17b6302 command_runner.js](https://github.com/A9T9/RPA/blob/17b6302f1617b838efe2b26d3ef19c2face81350/src/ext/content_script/command_runner.js)のassertText→globMatch。実拡張セッション未実測。
+
+### R7-121（P2）変数名の大小文字を区別し正しい参照・内部設定を失敗させる
+
+対象：UI.Vision。再現：ee01f07で種類を選び、コードを入力・実行。既定モデルを使用する。
+
+```text
+{
+  "Commands": [
+    {
+      "Command": "store",
+      "Target": "abc",
+      "Value": "Name"
+    },
+    {
+      "Command": "echo",
+      "Target": "${name}"
+    }
+  ]
+}
+```
+
+実際：Nameへ保存後の${name}が「変数がありません」で停止。!ERRORIGNOREにtrueを保存してもエラーを無視できず止まる。
+
+期待：変数名・内部変数名を公式仕様どおり同一視する。!ERRORIGNOREを別の無関係な変数として作らない。
+
+根拠：[UI.Vision公式変数実装](https://github.com/A9T9/RPA/blob/17b6302f1617b838efe2b26d3ef19c2face81350/src/common/variables.js)。setで大文字へ正規化しgetでも大文字へ変換する。実拡張セッション未実測。
+
+### R7-122（P3）実装済みendIf／endWhileの項目・別名説明・除外宣言がない
+
+対象：UI.Vision。再現：ee01f07で種類を選び、コードを入力・実行。既定モデルを使用する。
+
+```text
+{
+  "Commands": [
+    {
+      "Command": "if",
+      "Target": "true"
+    },
+    {
+      "Command": "echo",
+      "Target": "YES"
+    },
+    {
+      "Command": "endIf"
+    }
+  ]
+}
+```
+
+実際：アプリはendIfで正常にブロックを閉じYESを出す。endWhileも対応してAFTERへ進む。一方22参照項目の名前・書式・説明・例にもDEVELOPMENT.mdにも両名の記載がない。
+
+期待：既存end項目へ旧名・別名として束ねて説明するか、意図的除外を宣言する。
+
+根拠：[公式end：formerly endWhile and endIf](https://ui.vision/rpa/docs/selenium-ide/end)。js/types/uivision/index.jsのclassifyで両名がendへ対応する。
+
+### R7-123（P2）通常PADの変数名を大小文字で別物にする
+
+対象：Power Automate Desktop。再現：ee01f07で種類を選び、コードを入力・実行。既定モデルを使用する。
+
+```text
+{
+  "actions": [
+    {
+      "action": "Set variable",
+      "target": "Name",
+      "value": "abc"
+    },
+    {
+      "action": "Display message",
+      "value": "%name%"
+    }
+  ]
+}
+```
+
+実際：Nameを設定した直後の%name%で未定義の名前name。
+
+期待：通常の%表記のデスクトップフローでは変数名を大小文字で同一視する。Power Fx有効フローv2.43以降の大小文字区別と混同しない。
+
+根拠：[Microsoft Learn：通常フローの変数名](https://learn.microsoft.com/en-us/power-automate/guidance/rpa-sap-playbook/adding-variables-to-vbscript)、[Power Fx有効フローの版差](https://learn.microsoft.com/en-us/power-automate/desktop-flows/power-fx)。本アプリの%表記を対象にした資料照合。実PAD未実測。
+
+### R7-124（P2）%%エスケープを処理せず誤った文面や構文エラーにする
+
+対象：Power Automate Desktop。再現：ee01f07で種類を選び、コードを入力・実行。既定モデルを使用する。
+
+```text
+{
+  "actions": [
+    {
+      "action": "Display message",
+      "value": "100%%"
+    }
+  ]
+}
+```
+
+実際：アプリは100%%をそのまま表示。Price=20を設定して%%Price%%を表示するケースは「式を解釈できません：%」で停止。
+
+期待：%%をリテラルの%として扱い、100%や%Price%を表示する。後者を変数参照として再展開しない。
+
+根拠：[Microsoft Learn：% notationと%%によるescape](https://learn.microsoft.com/en-us/power-automate/desktop-flows/variable-manipulation)。実PAD未実測。
+
+### R7-125（P2）使わない追加引数の評価を省略し、本来の例外を消す
+
+対象：JavaScript／UI.Vision。再現：ee01f07で種類を選び、コードを入力・実行。JavaScriptでは掲載コード。UI.VisionではexecuteScript_SandboxのTargetをreturn String("1",NoSuchR7);、Valueをrとし、echo ${r}を続ける。
+
+```text
+console.log(String("1",NoSuchR7));
+```
+
+実際：JavaScriptアプリは1、Node実物はReferenceError: NoSuchR7 is not defined。UI.Vision Sandboxのreturn String("1",NoSuchR7);もアプリ1。同じ差はNumberでも再現。JavaScriptのBoolean、Math.abs/floor/round、JSON.stringifyでも追加引数の未定義名やnull.xの例外を無視する。
+
+期待：関数が追加引数の値を使用しなくても、呼出し前の全実引数の評価を行う。第1引数だけ読んで正常値を生成しない。
+
+根拠：[ECMAScript ArgumentListEvaluation](https://tc39.es/ecma262/multipage/ecmascript-language-expressions.html#sec-argument-lists-runtime-semantics-argumentlistevaluation)、[UI.VisionのES5 Sandbox](https://ui.vision/rpa/docs/selenium-ide/executescript)。独立30ケースをNodeと比較。UI拡張セッションは未実測。
+
+### R7-126（P2）読取専用の!timesや空名へstoreして存在しない状態を作る
+
+対象：UI.Vision。再現：ee01f07で種類を選び、コードを入力・実行。既定モデルを使用する。
+
+```text
+{
+  "Commands": [
+    {
+      "Command": "store",
+      "Target": "5",
+      "Value": "!times"
+    },
+    {
+      "Command": "echo",
+      "Target": "${!times}"
+    }
+  ]
+}
+```
+
+実際：アプリはループ外で!timesに5を設定しecho 5。Valueを空文字列にしたstoreでは空名の変数も作る。
+
+期待：!TIMESは読取専用なのでユーザーのstoreを止める。空名は公式変数setterで無視され、空名の変数は存在しない。アプリがより明確な入力エラーとして止める方法でも合格だが、幻の変数を作らない。
+
+根拠：[UI.Vision公式!TIMESのread-only宣言](https://ui.vision/rpa/docs/)、[公式variables.js](https://github.com/A9T9/RPA/blob/17b6302f1617b838efe2b26d3ef19c2face81350/src/common/variables.js)のreadonly配列／書込拒否と空キー除外。実拡張セッション未実測。
+
+## 節目4の残作業
+
+対象を縮小せず、節目3までの全15種類別台帳・観点1〜8を保持する。
+
+| 観点 | この節目の進捗 | 残作業 |
+|---|---|---|
+| 1 一次情報 | Windows AHK16、公式SDK Decimal153／Float157、公式UI.Visionソース、Microsoft Learn | 全15種類の残る全機能・型・書式の照合。実Canvas／PAD／UI.Vision等の製品セッション |
+| 2 対応宣言 | AHKの値・窓条件、Power Appsの再計算、UI旧名、PAD通常式とPower Fx有効式の区別 | DEVELOPMENT.md全宣言の双方向照合、各制限の正直な停止 |
+| 3 パス・状態・表示 | AHKの独立入力とループ信号、窓の状態、Power Appsのスコープ・Patch、26画面再現 | 全種類の全分岐制約、保存・復元・同時編集・テンプレート切替の未確認経路 |
+| 4 cmd／PowerShell | 既報と実Windowsの連結echo等の結果を保持 | 新2種類の残る全引数・パイプライン・展開段階・書式・エラー理由。今回追加全件試験したとはしない |
+| 5 完全性・正確性 | PAD15命令とPower Apps26関数等の項目対応、UI旧名の漏れ、AHK／Text等の誤説明 | 978項目すべての記述・期待出力と一次情報、全実装名の完全対応表、111用語と教材語・ビュー間説明 |
+| 6 全関数の境界・異常値・組合せ | AHKの型・引数・ループ・窓、Text／Sequence／Sum、追加引数30入力 | 全関数の各引数位置・全型・空集合・null相当・未知値・副作用・入れ子。今回の入力集合で代替しない |
+| 7 全104教材・全停止理由 | 4種類24教材の主張とコード、Sleep等の不正引数、偽の未定義／不一致エラー | 残る教材と全エンジンの全停止理由を再現し一次情報へ照合 |
+| 8 文面・a11y・劣化・性能 | 画面26操作、明示した出力・表示書式 | 全文面、aria・フォーカス、破損／容量超過／PWAの全経路、最重入力探索。前回のWindows性能実測を保持 |
+
+VBA・ImageJ・Python・R・C・C++・C#・JavaScript・CloudFormation、cmd／PowerShellについても前の未了事項は全て継続する。今回はそれらの全機能を再検証したという意味ではない。Power FxレコードinのSDK結果、残るBlank／型変換・レコード列名の扱い、UI.Visionの追加コマンド境界等も保留・継続対象。
+
+実Excel／Canvas／PAD／AWS／UI.Vision製品セッション、実スクリーンリーダー、Safari／Firefox／iOS実機、ImageJのGUI全経路は未実施。公式資料・ソース・SDKの判定を実機の出力に作り替えていない。Windows AHKで測れたものは測り、できた範囲と未実施を分けた。
+
+使用量・回数制限の通知は受けていない。リセット権は使っていない。リセット時刻の通知もないため推測しない。この節目も未完了報告であり、完成監査や欠陥収束の宣言ではない。
