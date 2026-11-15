@@ -1,6 +1,7 @@
-import base64,json,subprocess,tempfile,urllib.request,zipfile,time
+import base64,json,subprocess,tempfile,urllib.request,zipfile,time,os
 from pathlib import Path
 root=Path(__file__).resolve().parents[1];rows=[]
+pwsh=os.environ.get('PWSH_AUDIT_PATH','pwsh')
 with tempfile.TemporaryDirectory() as td:
  p=Path(td)
  url='https://github.com/AutoHotkey/AutoHotkey/releases/download/v2.0.19/AutoHotkey_2.0.19.zip'
@@ -14,7 +15,7 @@ with tempfile.TemporaryDirectory() as td:
  ps=['$null * 5','5 * $null','$null / 5','$null - 5','1 -eq "1.4"','1 -eq "1.6"','2 -eq "1.6"','0 -eq ""',"'x' * 2147483648",'$PSVersionTable.PSVersion.ToString()']
  for code in ps:
   script="$ErrorActionPreference='Stop'; try {ConvertTo-Json -InputObject @{values=@(& {"+code+"})} -Depth 10 -Compress} catch {ConvertTo-Json -InputObject @{error=$_.Exception.Message} -Compress}"
-  v=subprocess.run(['pwsh','-NoProfile','-EncodedCommand',base64.b64encode(script.encode('utf-16le')).decode()],capture_output=True,text=True,encoding='utf-8',timeout=10)
+  v=subprocess.run([pwsh,'-NoProfile','-NonInteractive','-EncodedCommand',base64.b64encode(script.encode('utf-16le')).decode()],capture_output=True,text=True,encoding='utf-8',timeout=10)
   rows.append(dict(kind='powershell',code=code,stdout=v.stdout,stderr=v.stderr,returncode=v.returncode))
  bodies=[
   'double x; Console.WriteLine(double.TryParse("0x10",out x)); Console.WriteLine(x);',

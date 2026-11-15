@@ -16,6 +16,14 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - name: Prepare PowerShell 7.4.6 portable runtime
+        shell: pwsh
+        run: |
+          $zip = Join-Path $env:RUNNER_TEMP 'pwsh-7.4.6.zip'
+          $dir = Join-Path $env:RUNNER_TEMP 'pwsh-7.4.6'
+          Invoke-WebRequest 'https://github.com/PowerShell/PowerShell/releases/download/v7.4.6/PowerShell-7.4.6-win-x64.zip' -OutFile $zip
+          Expand-Archive $zip -DestinationPath $dir
+          "PWSH_AUDIT_PATH=$dir\pwsh.exe" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
       - name: Execute independent cases
         run: python audit-probes/native.py
       - name: Check AHK and dotnet semantics
