@@ -29,17 +29,33 @@ const entries = [
     "set_1",
   ],
   [
+    "set /p",
+    "入力",
+    'set /p "名前=プロンプト"',
+    "プロンプトを表示し、入力した文字列を環境変数へ代入します。モデルでは入力値を捏造せず、モデルinputsで候補を明示できます。Enterのみの入力では変数は変わりません。",
+    'set /p "ANSWER=Continue? "\necho %ANSWER%',
+    "set_1",
+  ],
+  [
+    "動的変数",
+    "変数",
+    "%ERRORLEVEL% / %CD% / %RANDOM% / %DATE% / %TIME%",
+    "cmdが自動で用意する動的変数です。%ERRORLEVEL%は直近の終了コード、%CD%は現在のフォルダを返します。%RANDOM%は0〜32767の乱数、%DATE%は現在の日付、%TIME%は現在の時刻で、いずれも実行時に決まる値です。同名の環境変数をsetで定義すると、%ERRORLEVEL%と%CD%ではその環境変数の値が優先され、動的な値は隠れます。",
+    "echo %ERRORLEVEL%\necho %CD%",
+    "cmd",
+  ],
+  [
     "変数展開",
     "変数",
     "%NAME% / !NAME!",
-    "%NAME%は論理コマンドの読み取り時に展開します。遅延展開が有効なとき、!NAME!は各実行時に展開します。",
+    "%NAME%は論理コマンドの読み取り時に展開します。遅延展開が有効なとき、!NAME!は各実行時に展開します。%ERRORLEVEL%・%CD%・%RANDOM%・%DATE%・%TIME%はcmdが用意する動的変数で、詳しくは「動的変数」の項目を見てください。",
     "set NAME=Alice\necho %NAME%",
     "cmd",
   ],
   [
     "setlocal",
     "環境",
-    "setlocal EnableDelayedExpansion",
+    "setlocal EnableDelayedExpansion / setlocal DisableDelayedExpansion",
     "環境変数・遅延展開の設定を局所化します。",
     "setlocal EnableDelayedExpansion\nset X=1\necho !X!\nendlocal",
     "setlocal",
@@ -56,7 +72,7 @@ const entries = [
     "if",
     "分岐",
     "if 条件 ( … ) else ( … )",
-    "文字列・数値・ファイル存在・終了コードなどの条件で処理を分けます。if errorlevel NはN以上かの判定です。",
+    "条件で処理を分けます。比較は文字列の==、数値比較のEQU（等しい）・NEQ（等しくない）・LSS（より小さい）・LEQ（以下）・GTR（より大きい）・GEQ（以上）を使います。ほかに対象の存在を調べるexist、変数の定義を調べるdefined、終了コードが指定値以上かを調べるerrorlevel、条件を反転するnot、大文字小文字を区別しない/Iがあります。",
     "if exist notes.txt (\n echo found\n) else (\n echo missing\n)",
     "if",
   ],
@@ -80,7 +96,7 @@ const entries = [
     "call",
     "制御",
     "call :ラベル 引数",
-    "同一ファイルのラベルをサブルーチンとして呼び出します。引数は%1〜%9、%~1で参照します。",
+    "同一ファイルのラベルをサブルーチンとして呼び出します。引数は%1〜%9、%~1で参照します。%0はバッチファイル自身の名前で、このモデルでは実行時に決まる値として扱います。",
     'call :show "Alice"\ngoto :eof\n:show\necho %~1\nexit /b',
     "call",
   ],
@@ -112,15 +128,15 @@ const entries = [
     "cd",
     "フォルダ",
     "cd [/d] パス",
-    "モデルの現在フォルダを変更します。/dはドライブも変更します。",
+    "モデルの現在フォルダを変更します。/dはドライブも変更します。別名chdirでも同じ処理をします。",
     "cd logs\ncd",
     "cd",
   ],
   [
     "dir",
     "ファイル",
-    "dir /b [パターン]",
-    "モデル配列の順に名前を列挙します。実機の時刻・空き容量・列挙順は推定しません。",
+    "dir /b [/s] [パターン]",
+    "モデル配列の順に名前を列挙します。/sを併用すると対象フォルダ以下を再帰的にフルパスで列挙します。実機の時刻・空き容量・列挙順は推定しません。",
     "dir /b *.txt",
     "dir",
   ],
@@ -134,25 +150,25 @@ const entries = [
   ],
 ];
 const more = [
-  ["md", "md フォルダ", "仮想FSにフォルダを作成します。", "md extra", "md"],
+  ["md", "md フォルダ", "仮想FSにフォルダを作成します。別名mkdirでも同じ処理をします。", "md extra", "md"],
   [
     "rd",
     "rd [/s /q] フォルダ",
-    "仮想FSのフォルダを削除します。空でない場合は/sが必要です。",
+    "仮想FSのフォルダを削除します。空でない場合は/sが必要です。別名rmdirでも同じ処理をします。",
     "md extra\nrd extra",
     "rd",
   ],
   [
     "del",
     "del [/q] ファイル",
-    "仮想FSのファイルを削除します。ワイルドカードもモデル内だけで処理します。",
+    "仮想FSのファイルを削除します。ワイルドカードもモデル内だけで処理します。別名eraseでも同じ処理をします。",
     "copy notes.txt temp.txt\ndel temp.txt",
     "del",
   ],
   [
     "ren",
     "ren 元 新しい名前",
-    "同じフォルダ内で名前を変更します。",
+    "同じフォルダ内で名前を変更します。別名renameでも同じ処理をします。",
     "copy notes.txt temp.txt\nren temp.txt renamed.txt",
     "ren",
   ],
@@ -205,6 +221,8 @@ const returns = {
   echo: "文章または空行（on/offは設定変更）",
   set: "環境変数の更新",
   "set /a": "計算結果を環境変数へ格納",
+  "set /p": "入力文字列を環境変数へ格納",
+  動的変数: "各動的変数の現在の値（%RANDOM%・%DATE%・%TIME%は実行時に決まる値）",
   変数展開: "展開後の文字列",
   setlocal: "環境・遅延展開設定の保存",
   endlocal: "保存した環境・設定への復元",
@@ -311,7 +329,7 @@ export const definition = {
       code: '@echo off\nset /p "ANSWER=Continue? "\nif "%ANSWER%"=="yes" (\n echo accepted\n) else (\n echo other input\n)',
       intro:
         "入力値を捏造せず、yesとそれ以外のパスを表示します。モデルinputs.ANSWERに候補を明示することもできます。",
-      refs: ["set", "if", "変数展開", "echo"],
+      refs: ["set /p", "set", "if", "変数展開", "echo"],
     },
   ],
   glossary: [
@@ -329,6 +347,10 @@ export const definition = {
       "実ファイルへ接続せず、明示したフォルダ・ファイルだけを扱うモデルです。",
     ],
     ["ラベル", "gotoやcallの移動先を示す:名前です。"],
+    [
+      "未確定（値）",
+      "実行時に決まる値のことです。このアプリでは値を仮定して作らず、未確定のまま扱って、到達可能な分岐をすべて表示します。",
+    ],
   ],
   model: {
     kind: "json",
@@ -340,7 +362,7 @@ export const definition = {
     description:
       "コマンド拡張有効・初期コマンド表示offのバッチをモデル化します。",
     support:
-      "echo、setと基本set /a、%VAR%／!VAR!、setlocal/endlocal、if、for基本形／/L、goto、call :label、%1〜%9／%~1、exit、rem、pause、cd、dir /b、type、md/rd/del/ren/copy/move、cls、find、>／>>、基本パイプ。未対応：外部プロセス、番号つき／複合リダイレクト、for /F、二重展開・展開修飾、複雑な算術代入、UNC／ドライブ相対パス。",
+      "echo、setと基本set /a、%VAR%／!VAR!（遅延展開の動的変数を含む）、%%エスケープ、setlocal/endlocal、if、for基本形／/L、goto、call :label、%1〜%9／%~1、exit、rem、pause、cd、dir /b（/s再帰を含む）、type、md/rd/del/ren/copy/move、cls、find、>／>>、基本パイプ。%0はモデルに無いため実行時に決まる値として扱う。未対応：外部プロセス、番号つき／複合リダイレクト、for /F、二重展開・展開修飾、複雑な算術代入、UNC／ドライブ相対パス。",
     sources: [
       { title: "Microsoft Windows commands", url: base },
       { title: "Microsoft cmd", url: base + "cmd" },
@@ -352,6 +374,9 @@ export const definition = {
       for (const line of code.split("\n"))
         for (const ref of commandRefs(line.trim())) names.add(ref);
       if (/set\s+\/a/i.test(code)) names.add("set /a");
+      if (/set\s+\/p/i.test(code)) names.add("set /p");
+      if (/%(ERRORLEVEL|CD|RANDOM|DATE|TIME)%|!(ERRORLEVEL|CD|RANDOM|DATE|TIME)!/i.test(code))
+        names.add("動的変数");
     } catch {}
     return [...names];
   },

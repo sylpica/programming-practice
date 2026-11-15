@@ -1,0 +1,1478 @@
+[
+ {
+  "kind": "python",
+  "name": "with",
+  "supported": false,
+  "fields": {
+   "description": "リソースの後始末（ファイルのクローズ等）を自動化する構文。本アプリでは本文を実行する部分対応で、後始末そのものは再現しない。",
+   "returns": "—（構文のため戻り値なし）",
+   "caution": "ブロックを抜けると例外時でも __exit__ が呼ばれ後始末される（実際の Python）。対象はコンテキストマネージャ対応オブジェクトに限る。本アプリでは __enter__／__exit__ の実際の処理や後始末は再現されず、as 変数には未確定値が入る。 このアプリでは with は部分対応です：本文は実行されますが、__enter__／__exit__ の実際の処理や後始末は再現されず、as 変数には未確定値が入ります。open() と組み合わせた場合は open 自体が未対応のため停止します。",
+   "example": "class Ctx:\n    def __enter__(self):\n        return self\n    def __exit__(self, *args):\n        return False\nwith Ctx() as c:\n    print(\"本文を実行\")",
+   "source": "https://docs.python.org/ja/3.12/reference/compound_stmts.html#the-with-statement"
+  }
+ },
+ {
+  "kind": "python",
+  "name": "float",
+  "supported": true,
+  "fields": {
+   "description": "値を浮動小数点数に変換する、または浮動小数点数型を作る関数。",
+   "returns": "float: 浮動小数点数",
+   "caution": "float(\"abc\") は ValueError。整数を渡すと 3.0 のように小数部が付く。文字列の前後の空白は無視される。",
+   "example": "print(float(\"3.5\") + 1)",
+   "source": "https://docs.python.org/ja/3.12/library/functions.html#float"
+  }
+ },
+ {
+  "kind": "python",
+  "name": "bool",
+  "supported": true,
+  "fields": {
+   "description": "値を真理値（True / False）に変換する関数。",
+   "returns": "bool: True / False",
+   "caution": "0、空文字列、空リスト、None は False、それ以外は基本的に True。文字列 \"False\" も中身があるため True になる。",
+   "example": "print(bool(0), bool(\"\"), bool(\"x\"))",
+   "source": "https://docs.python.org/ja/3.12/library/functions.html#bool"
+  }
+ },
+ {
+  "kind": "python",
+  "name": "reversed",
+  "supported": true,
+  "fields": {
+   "description": "シーケンスを逆順にたどるイテレータを返す関数。",
+   "returns": "逆順イテレータ",
+   "caution": "結果はイテレータなので一覧表示には list() が必要。元のシーケンスは変更されない（リストを直接逆転させるなら list.reverse()）。",
+   "example": "print(list(reversed([1, 2, 3])))",
+   "source": "https://docs.python.org/ja/3.12/library/functions.html#reversed"
+  }
+ },
+ {
+  "kind": "python",
+  "name": "ord",
+  "supported": true,
+  "fields": {
+   "description": "1文字の文字列について、その Unicode コードポイント（整数）を返す関数。",
+   "returns": "int: コードポイント",
+   "caution": "2文字以上や空文字列を渡すと TypeError。逆変換は chr()。",
+   "example": "print(ord(\"A\"))",
+   "source": "https://docs.python.org/ja/3.12/library/functions.html#ord"
+  }
+ },
+ {
+  "kind": "python",
+  "name": "chr",
+  "supported": true,
+  "fields": {
+   "description": "Unicode コードポイント（整数）に対応する1文字の文字列を返す関数。",
+   "returns": "str: 対応する1文字",
+   "caution": "範囲外の整数を渡すと ValueError。逆変換は ord()。",
+   "example": "print(chr(65))",
+   "source": "https://docs.python.org/ja/3.12/library/functions.html#chr"
+  }
+ },
+ {
+  "kind": "python",
+  "name": "divmod",
+  "supported": true,
+  "fields": {
+   "description": "割り算の商と余りを組にして返す関数。",
+   "returns": "(商, 余り) のタプル",
+   "caution": "整数では (a // b, a % b) と等しく、商は0から遠い側ではなく床方向に丸められる（divmod(-7, 2) は (-4, 1)）。b が 0 だと ZeroDivisionError。",
+   "example": "print(divmod(17, 5))",
+   "source": "https://docs.python.org/ja/3.12/library/functions.html#divmod"
+  }
+ },
+ {
+  "kind": "python",
+  "name": "pow",
+  "supported": true,
+  "fields": {
+   "description": "べき乗を返す関数。3引数形式では剰余付きべき乗を返す。",
+   "returns": "base ** exp（mod 指定時はその剰余）",
+   "caution": "pow(2, 3, 5) は 3（8 を 5 で割った余り）。mod を指定したときは exp に負数を渡すと逆元を求める（3.8 以降、結果が存在しない場合は ValueError）。",
+   "example": "print(pow(2, 10))",
+   "source": "https://docs.python.org/ja/3.12/library/functions.html#pow"
+  }
+ },
+ {
+  "kind": "python",
+  "name": "any",
+  "supported": true,
+  "fields": {
+   "description": "イテラブルの要素のどれか1つでも真なら True を返す関数。",
+   "returns": "bool: 1つでも真なら True（空なら False）",
+   "caution": "空のイテラブルでは False。真の要素が見つかった時点で判定を終える（短絡評価）。",
+   "example": "print(any([0, \"\", 3]))",
+   "source": "https://docs.python.org/ja/3.12/library/functions.html#any"
+  }
+ },
+ {
+  "kind": "python",
+  "name": "all",
+  "supported": true,
+  "fields": {
+   "description": "イテラブルの要素が全て真なら True を返す関数。",
+   "returns": "bool: 全て真なら True（空なら True）",
+   "caution": "空のイテラブルでは True。偽の要素が見つかった時点で判定を終える（短絡評価）。",
+   "example": "print(all([1, \"a\", 2]))",
+   "source": "https://docs.python.org/ja/3.12/library/functions.html#all"
+  }
+ },
+ {
+  "kind": "python",
+  "name": "repr",
+  "supported": true,
+  "fields": {
+   "description": "オブジェクトの文字列表現（主に開発者向けの、再現可能な表記）を返す関数。",
+   "returns": "str: オブジェクトの表現文字列",
+   "caution": "文字列では引用符付きの表記になる点が str() と異なる。print では通常 str() の表記が使われる。",
+   "example": "print(repr(\"abc\"))",
+   "source": "https://docs.python.org/ja/3.12/library/functions.html#repr"
+  }
+ },
+ {
+  "kind": "python",
+  "name": "hex",
+  "supported": true,
+  "fields": {
+   "description": "整数を「0x」付きの16進数文字列に変換する関数。",
+   "returns": "str: 小文字の16進数表記",
+   "caution": "接頭辞 0x が付く。接頭辞なしが欲しい場合は format(x, \"x\") を使う。浮動小数点数には使えない（float.hex とは別）。",
+   "example": "print(hex(255))",
+   "source": "https://docs.python.org/ja/3.12/library/functions.html#hex"
+  }
+ },
+ {
+  "kind": "python",
+  "name": "bin",
+  "supported": true,
+  "fields": {
+   "description": "整数を「0b」付きの2進数文字列に変換する関数。",
+   "returns": "str: 2進数表記",
+   "caution": "接頭辞 0b が付く。接頭辞なしが欲しい場合は format(x, \"b\") を使う。",
+   "example": "print(bin(5))",
+   "source": "https://docs.python.org/ja/3.12/library/functions.html#bin"
+  }
+ },
+ {
+  "kind": "python",
+  "name": "oct",
+  "supported": true,
+  "fields": {
+   "description": "整数を「0o」付きの8進数文字列に変換する関数。",
+   "returns": "str: 8進数表記",
+   "caution": "接頭辞は 0o（ゼロと小文字のオー）。接頭辞なしが欲しい場合は format(x, \"o\") を使う。",
+   "example": "print(oct(8))",
+   "source": "https://docs.python.org/ja/3.12/library/functions.html#oct"
+  }
+ },
+ {
+  "kind": "python",
+  "name": "format",
+  "supported": true,
+  "fields": {
+   "description": "値を書式指定（フォーマット仕様）に従って文字列に変換する関数。",
+   "returns": "str: 整形済み文字列",
+   "caution": "str.format() や f文字列の中で {} の後に書く書式指定と同じ規則。数値以外への数値用書式は TypeError や ValueError になる。",
+   "example": "print(format(3.14159, \".2f\"))",
+   "source": "https://docs.python.org/ja/3.12/library/functions.html#format"
+  }
+ },
+ {
+  "kind": "python",
+  "name": "next",
+  "supported": true,
+  "fields": {
+   "description": "イテレータから次の要素を取り出す関数。",
+   "returns": "次の要素",
+   "caution": "要素が尽きた状態で default なしで呼ぶと StopIteration。for 文はこの例外を内部で処理してループを終える。",
+   "example": "it = iter([10, 20, 30])\nprint(next(it))\nprint(next(it))",
+   "source": "https://docs.python.org/ja/3.12/library/functions.html#next"
+  }
+ },
+ {
+  "kind": "python",
+  "name": "iter",
+  "supported": true,
+  "fields": {
+   "description": "イテラブルからイテレータを取り出す関数。",
+   "returns": "イテレータ",
+   "caution": "イテレータは一度読み切ると再利用できない。for 文は対象に対して自動で iter() を呼ぶ。",
+   "example": "print(list(iter([1, 2, 3])))",
+   "source": "https://docs.python.org/ja/3.12/library/functions.html#iter"
+  }
+ },
+ {
+  "kind": "python",
+  "name": "str.upper",
+  "supported": true,
+  "fields": {
+   "description": "文字列のコピーを、全て大文字に変換して返すメソッド。",
+   "returns": "str: 大文字化した新しい文字列",
+   "caution": "元の文字列は変更されない（文字列はイミュータブル）。数字や記号はそのまま。",
+   "example": "print(\"hello\".upper())",
+   "source": "https://docs.python.org/ja/3.12/library/stdtypes.html#str.upper"
+  }
+ },
+ {
+  "kind": "python",
+  "name": "str.lower",
+  "supported": true,
+  "fields": {
+   "description": "文字列のコピーを、全て小文字に変換して返すメソッド。",
+   "returns": "str: 小文字化した新しい文字列",
+   "caution": "元の文字列は変更されない。大文字小文字を区別しない比較では、対象によって casefold() の方が適する場合がある（本アプリでは casefold は未対応）。",
+   "example": "print(\"HELLO\".lower())",
+   "source": "https://docs.python.org/ja/3.12/library/stdtypes.html#str.lower"
+  }
+ },
+ {
+  "kind": "python",
+  "name": "str.title",
+  "supported": true,
+  "fields": {
+   "description": "各単語の先頭を大文字にし、残りを小文字にした文字列を返すメソッド。",
+   "returns": "str: タイトルケースの文字列",
+   "caution": "アポストロフィの直後も大文字化される（\"they're\" が \"They'Re\" になる）など、英語のタイトル規則とは完全には一致しない。",
+   "example": "print(\"hello world\".title())",
+   "source": "https://docs.python.org/ja/3.12/library/stdtypes.html#str.title"
+  }
+ },
+ {
+  "kind": "python",
+  "name": "str.capitalize",
+  "supported": true,
+  "fields": {
+   "description": "先頭の文字を大文字にし、残りを全て小文字にした文字列を返すメソッド。",
+   "returns": "str: 先頭だけ大文字の文字列",
+   "caution": "大文字化されるのは先頭の1文字だけで、2語目以降の先頭は小文字になる（単語ごとには title() を使う）。",
+   "example": "print(\"hello world\".capitalize())",
+   "source": "https://docs.python.org/ja/3.12/library/stdtypes.html#str.capitalize"
+  }
+ },
+ {
+  "kind": "python",
+  "name": "str.strip",
+  "supported": true,
+  "fields": {
+   "description": "文字列の両端から空白類（または指定した文字群）を取り除いた文字列を返すメソッド。",
+   "returns": "str: 両端を取り除いた新しい文字列",
+   "caution": "取り除かれるのは両端だけで、途中の空白は残る。chars は文字列そのものではなく文字の集合として扱われる。",
+   "example": "print(\"[\" + \"  hello  \".strip() + \"]\")",
+   "source": "https://docs.python.org/ja/3.12/library/stdtypes.html#str.strip"
+  }
+ },
+ {
+  "kind": "python",
+  "name": "str.lstrip",
+  "supported": true,
+  "fields": {
+   "description": "文字列の左端（先頭）から空白類（または指定した文字群）を取り除いた文字列を返すメソッド。",
+   "returns": "str: 左端を取り除いた新しい文字列",
+   "caution": "右端の空白は残る。両端を取るなら strip()、右端だけなら rstrip()。",
+   "example": "print(\"[\" + \"  hello  \".lstrip() + \"]\")",
+   "source": "https://docs.python.org/ja/3.12/library/stdtypes.html#str.lstrip"
+  }
+ },
+ {
+  "kind": "python",
+  "name": "str.rstrip",
+  "supported": true,
+  "fields": {
+   "description": "文字列の右端（末尾）から空白類（または指定した文字群）を取り除いた文字列を返すメソッド。",
+   "returns": "str: 右端を取り除いた新しい文字列",
+   "caution": "左端の空白は残る。改行だけを取り除きたい場合にもよく使われる。",
+   "example": "print(\"[\" + \"  hello  \".rstrip() + \"]\")",
+   "source": "https://docs.python.org/ja/3.12/library/stdtypes.html#str.rstrip"
+  }
+ },
+ {
+  "kind": "python",
+  "name": "str.rsplit",
+  "supported": true,
+  "fields": {
+   "description": "文字列を右側から指定した区切りで分割し、リストを返すメソッド。",
+   "returns": "list: 分割された文字列のリスト",
+   "caution": "maxsplit を指定しない場合は split() と同じ結果になる。右から数えて分割したいとき（末尾の要素だけ分ける等）に使う。",
+   "example": "print(\"a,b,c\".rsplit(\",\", 1))",
+   "source": "https://docs.python.org/ja/3.12/library/stdtypes.html#str.rsplit"
+  }
+ },
+ {
+  "kind": "python",
+  "name": "str.replace",
+  "supported": true,
+  "fields": {
+   "description": "文字列の中の部分文字列を別の文字列に置き換えた新しい文字列を返すメソッド。",
+   "returns": "str: 置き換えた新しい文字列",
+   "caution": "元の文字列は変更されない。old が見つからない場合は元の文字列のコピーが返る（エラーにはならない）。",
+   "example": "print(\"hello\".replace(\"l\", \"L\"))",
+   "source": "https://docs.python.org/ja/3.12/library/stdtypes.html#str.replace"
+  }
+ },
+ {
+  "kind": "python",
+  "name": "str.find",
+  "supported": true,
+  "fields": {
+   "description": "部分文字列が最初に現れる位置（インデックス）を返すメソッド。",
+   "returns": "int: 最初の位置（見つからなければ -1）",
+   "caution": "見つからない場合は例外ではなく -1 を返す。例外にしてほしい場合は index() を使う。",
+   "example": "print(\"hello\".find(\"lo\"))",
+   "source": "https://docs.python.org/ja/3.12/library/stdtypes.html#str.find"
+  }
+ },
+ {
+  "kind": "python",
+  "name": "str.index",
+  "supported": true,
+  "fields": {
+   "description": "部分文字列が最初に現れる位置（インデックス）を返すメソッド。",
+   "returns": "int: 最初の位置",
+   "caution": "見つからない場合は -1 ではなく ValueError になる点が find() と異なる。",
+   "example": "print(\"hello\".index(\"lo\"))",
+   "source": "https://docs.python.org/ja/3.12/library/stdtypes.html#str.index"
+  }
+ },
+ {
+  "kind": "python",
+  "name": "str.rfind",
+  "supported": true,
+  "fields": {
+   "description": "部分文字列が最後に現れる位置（インデックス）を返すメソッド。",
+   "returns": "int: 最後の位置（見つからなければ -1）",
+   "caution": "見つからない場合は -1。最初に現れる位置は find() を使う。",
+   "example": "print(\"hello\".rfind(\"l\"))",
+   "source": "https://docs.python.org/ja/3.12/library/stdtypes.html#str.rfind"
+  }
+ },
+ {
+  "kind": "python",
+  "name": "str.rindex",
+  "supported": true,
+  "fields": {
+   "description": "部分文字列が最後に現れる位置（インデックス）を返すメソッド。",
+   "returns": "int: 最後の位置",
+   "caution": "見つからない場合は ValueError になる点が rfind() と異なる。",
+   "example": "print(\"hello\".rindex(\"l\"))",
+   "source": "https://docs.python.org/ja/3.12/library/stdtypes.html#str.rindex"
+  }
+ },
+ {
+  "kind": "python",
+  "name": "str.count",
+  "supported": true,
+  "fields": {
+   "description": "部分文字列が重ならずに現れる回数を数えるメソッド。",
+   "returns": "int: 出現回数",
+   "caution": "重なった出現は数えない（\"aaa\".count(\"aa\") は 1）。空文字列を渡すと長さ+1 が返る。",
+   "example": "print(\"banana\".count(\"an\"))",
+   "source": "https://docs.python.org/ja/3.12/library/stdtypes.html#str.count"
+  }
+ },
+ {
+  "kind": "python",
+  "name": "str.startswith",
+  "supported": true,
+  "fields": {
+   "description": "文字列が指定した接頭辞で始まるかを判定するメソッド。",
+   "returns": "bool: 始まれば True",
+   "caution": "prefix にタプルを渡すと「どれか1つに一致」で判定できる。大文字小文字は区別される。",
+   "example": "print(\"hello\".startswith(\"he\"))",
+   "source": "https://docs.python.org/ja/3.12/library/stdtypes.html#str.startswith"
+  }
+ },
+ {
+  "kind": "python",
+  "name": "str.endswith",
+  "supported": true,
+  "fields": {
+   "description": "文字列が指定した接尾辞で終わるかを判定するメソッド。",
+   "returns": "bool: 終われば True",
+   "caution": "ファイル名の拡張子チェック等によく使われる。大文字小文字は区別されるため、必要なら lower() と組み合わせる。",
+   "example": "print(\"hello\".endswith(\"lo\"))",
+   "source": "https://docs.python.org/ja/3.12/library/stdtypes.html#str.endswith"
+  }
+ },
+ {
+  "kind": "python",
+  "name": "str.isdigit",
+  "supported": true,
+  "fields": {
+   "description": "文字列の全ての文字が数字（10進数字に限らない）で、1文字以上あるかを判定するメソッド。",
+   "returns": "bool: 全て数字なら True",
+   "caution": "空文字列は False。マイナス記号や小数点は数字ではないため \"-3\" や \"3.5\" は False。全角数字や上付き数字も True になりうる。",
+   "example": "print(\"123\".isdigit())",
+   "source": "https://docs.python.org/ja/3.12/library/stdtypes.html#str.isdigit"
+  }
+ },
+ {
+  "kind": "python",
+  "name": "str.isdecimal",
+  "supported": true,
+  "fields": {
+   "description": "文字列の全ての文字が10進数字で、1文字以上あるかを判定するメソッド。",
+   "returns": "bool: 全て10進数字なら True",
+   "caution": "isdigit() より範囲が狭く、上付き数字などは False。int() で変換できる文字列の目安になる。",
+   "example": "print(\"123\".isdecimal())",
+   "source": "https://docs.python.org/ja/3.12/library/stdtypes.html#str.isdecimal"
+  }
+ },
+ {
+  "kind": "python",
+  "name": "str.isnumeric",
+  "supported": true,
+  "fields": {
+   "description": "文字列の全ての文字が数値文字（漢数字や分数文字を含む）で、1文字以上あるかを判定するメソッド。",
+   "returns": "bool: 全て数値文字なら True",
+   "caution": "isdigit() より範囲が広く、漢数字なども True になるが、そのまま int() や float() で変換できるとは限らない。",
+   "example": "print(\"123\".isnumeric())",
+   "source": "https://docs.python.org/ja/3.12/library/stdtypes.html#str.isnumeric"
+  }
+ },
+ {
+  "kind": "python",
+  "name": "str.isalpha",
+  "supported": true,
+  "fields": {
+   "description": "文字列の全ての文字が英字等（アルファベット系の文字）で、1文字以上あるかを判定するメソッド。",
+   "returns": "bool: 全て文字なら True",
+   "caution": "日本語の文字も True になる。空白や数字が混ざると False。空文字列は False。",
+   "example": "print(\"abc\".isalpha())",
+   "source": "https://docs.python.org/ja/3.12/library/stdtypes.html#str.isalpha"
+  }
+ },
+ {
+  "kind": "python",
+  "name": "str.isalnum",
+  "supported": true,
+  "fields": {
+   "description": "文字列の全ての文字が英数字（文字または数字）で、1文字以上あるかを判定するメソッド。",
+   "returns": "bool: 全て英数字なら True",
+   "caution": "記号や空白が1つでも混ざると False。空文字列は False。",
+   "example": "print(\"abc123\".isalnum())",
+   "source": "https://docs.python.org/ja/3.12/library/stdtypes.html#str.isalnum"
+  }
+ },
+ {
+  "kind": "python",
+  "name": "str.isspace",
+  "supported": true,
+  "fields": {
+   "description": "文字列の全ての文字が空白類で、1文字以上あるかを判定するメソッド。",
+   "returns": "bool: 全て空白なら True",
+   "caution": "タブや改行も空白に含まれる。空文字列は False。",
+   "example": "print(\"   \".isspace())",
+   "source": "https://docs.python.org/ja/3.12/library/stdtypes.html#str.isspace"
+  }
+ },
+ {
+  "kind": "python",
+  "name": "str.isascii",
+  "supported": true,
+  "fields": {
+   "description": "文字列の全ての文字が ASCII 範囲（U+0000〜U+007F）かを判定するメソッド。",
+   "returns": "bool: 全て ASCII なら True（空文字列も True）",
+   "caution": "他の is 系と違い、空文字列でも True を返す。日本語が1文字でも混ざると False。",
+   "example": "print(\"abc\".isascii())",
+   "source": "https://docs.python.org/ja/3.12/library/stdtypes.html#str.isascii"
+  }
+ },
+ {
+  "kind": "python",
+  "name": "str.isidentifier",
+  "supported": true,
+  "fields": {
+   "description": "文字列が有効な識別子（変数名など）として使えるかを判定するメソッド。",
+   "returns": "bool: 識別子として有効なら True",
+   "caution": "キーワード（\"class\" 等）も識別子の形としては True になるため、予約語チェックは別途必要。数字で始まる文字列は False。",
+   "example": "print(\"my_var\".isidentifier())",
+   "source": "https://docs.python.org/ja/3.12/library/stdtypes.html#str.isidentifier"
+  }
+ },
+ {
+  "kind": "python",
+  "name": "str.islower",
+  "supported": true,
+  "fields": {
+   "description": "文字列に大文字小文字の区別がある文字が1つ以上あり、全て小文字かを判定するメソッド。",
+   "returns": "bool: 全て小文字なら True",
+   "caution": "数字だけの文字列など、区別のある文字が無い場合は False（\"123\".islower() は False）。",
+   "example": "print(\"abc\".islower())",
+   "source": "https://docs.python.org/ja/3.12/library/stdtypes.html#str.islower"
+  }
+ },
+ {
+  "kind": "python",
+  "name": "str.isupper",
+  "supported": true,
+  "fields": {
+   "description": "文字列に大文字小文字の区別がある文字が1つ以上あり、全て大文字かを判定するメソッド。",
+   "returns": "bool: 全て大文字なら True",
+   "caution": "数字だけの文字列など、区別のある文字が無い場合は False。",
+   "example": "print(\"ABC\".isupper())",
+   "source": "https://docs.python.org/ja/3.12/library/stdtypes.html#str.isupper"
+  }
+ },
+ {
+  "kind": "python",
+  "name": "list.extend",
+  "supported": true,
+  "fields": {
+   "description": "イテラブルの全要素をリストの末尾に追加するメソッド（リスト自体を変更する）。",
+   "returns": "None（リスト自体が変更される）",
+   "caution": "append() と違い、リストを1要素としてではなく要素ごとに展開して追加する。戻り値は None。",
+   "example": "xs = [1, 2]\nxs.extend([3, 4])\nprint(xs)",
+   "source": "https://docs.python.org/ja/3.12/tutorial/datastructures.html#more-on-lists"
+  }
+ },
+ {
+  "kind": "python",
+  "name": "list.insert",
+  "supported": true,
+  "fields": {
+   "description": "指定した位置に要素を挿入するメソッド（リスト自体を変更する）。",
+   "returns": "None（リスト自体が変更される）",
+   "caution": "範囲外のインデックスはエラーにならず、先頭または末尾への挿入になる。末尾への追加だけなら append() の方が速く分かりやすい。",
+   "example": "xs = [1, 3]\nxs.insert(1, 2)\nprint(xs)",
+   "source": "https://docs.python.org/ja/3.12/tutorial/datastructures.html#more-on-lists"
+  }
+ },
+ {
+  "kind": "python",
+  "name": "list.pop",
+  "supported": true,
+  "fields": {
+   "description": "指定した位置の要素を取り除き、その要素を返すメソッド。",
+   "returns": "取り除かれた要素",
+   "caution": "空のリストで呼ぶと IndexError。位置を指定しないと末尾から取り出す（スタックとして使える）。",
+   "example": "xs = [1, 2, 3]\nprint(xs.pop())\nprint(xs)",
+   "source": "https://docs.python.org/ja/3.12/tutorial/datastructures.html#more-on-lists"
+  }
+ },
+ {
+  "kind": "python",
+  "name": "list.remove",
+  "supported": true,
+  "fields": {
+   "description": "指定した値と等しい最初の要素を取り除くメソッド（リスト自体を変更する）。",
+   "returns": "None（リスト自体が変更される）",
+   "caution": "値が存在しない場合は ValueError。取り除かれるのは最初の1つだけ。位置で消すなら pop() や del を使う。",
+   "example": "xs = [1, 2, 3]\nxs.remove(2)\nprint(xs)",
+   "source": "https://docs.python.org/ja/3.12/tutorial/datastructures.html#more-on-lists"
+  }
+ },
+ {
+  "kind": "python",
+  "name": "list.index",
+  "supported": true,
+  "fields": {
+   "description": "指定した値と等しい最初の要素のインデックスを返すメソッド。",
+   "returns": "int: 最初のインデックス",
+   "caution": "値が存在しない場合は ValueError。存在確認には in 演算子を併用するか try で捕捉する。",
+   "example": "print([10, 20, 30].index(20))",
+   "source": "https://docs.python.org/ja/3.12/tutorial/datastructures.html#more-on-lists"
+  }
+ },
+ {
+  "kind": "python",
+  "name": "list.count",
+  "supported": true,
+  "fields": {
+   "description": "指定した値と等しい要素の個数を数えるメソッド。",
+   "returns": "int: 個数",
+   "caution": "存在しない値では 0 を返す（エラーにはならない）。",
+   "example": "print([1, 2, 2, 3].count(2))",
+   "source": "https://docs.python.org/ja/3.12/tutorial/datastructures.html#more-on-lists"
+  }
+ },
+ {
+  "kind": "python",
+  "name": "list.reverse",
+  "supported": true,
+  "fields": {
+   "description": "リストの要素の順序をその場で逆転させるメソッド。",
+   "returns": "None（リスト自体が変更される）",
+   "caution": "戻り値は None。元のリストを変えずに逆順でたどりたい場合は reversed() を使う。",
+   "example": "xs = [1, 2, 3]\nxs.reverse()\nprint(xs)",
+   "source": "https://docs.python.org/ja/3.12/tutorial/datastructures.html#more-on-lists"
+  }
+ },
+ {
+  "kind": "python",
+  "name": "list.copy",
+  "supported": true,
+  "fields": {
+   "description": "リストの浅いコピー（新しいリスト）を作るメソッド。",
+   "returns": "list: コピーされた新しいリスト",
+   "caution": "浅いコピーのため、要素がリストなどの変更可能なオブジェクトの場合は中身が共有される。単純な代入（ys = xs）では同じリストを指すだけ。",
+   "example": "xs = [1, 2]\nys = xs.copy()\nys.append(3)\nprint(xs, ys)",
+   "source": "https://docs.python.org/ja/3.12/tutorial/datastructures.html#more-on-lists"
+  }
+ },
+ {
+  "kind": "python",
+  "name": "list.clear",
+  "supported": true,
+  "fields": {
+   "description": "リストの全要素を取り除いて空にするメソッド。",
+   "returns": "None（リスト自体が変更される）",
+   "caution": "同じリストを指す他の変数からも空に見える。新しい空リストを代入する（xs = []）場合とは共有関係が異なる。",
+   "example": "xs = [1, 2, 3]\nxs.clear()\nprint(xs)",
+   "source": "https://docs.python.org/ja/3.12/tutorial/datastructures.html#more-on-lists"
+  }
+ },
+ {
+  "kind": "python",
+  "name": "dict.keys",
+  "supported": true,
+  "fields": {
+   "description": "辞書のキーの一覧ビューを返すメソッド。",
+   "returns": "dict_keys ビュー",
+   "caution": "ビューは辞書の変更を反映する。値だけなら values()、組なら items() を使う。順序は挿入順。",
+   "example": "d = {\"a\": 1, \"b\": 2}\nprint(list(d.keys()))",
+   "source": "https://docs.python.org/ja/3.12/library/stdtypes.html#dict.keys"
+  }
+ },
+ {
+  "kind": "python",
+  "name": "dict.values",
+  "supported": true,
+  "fields": {
+   "description": "辞書の値の一覧ビューを返すメソッド。",
+   "returns": "dict_values ビュー",
+   "caution": "ビューは辞書の変更を反映する。値に重複があっても全て含まれる。順序は挿入順。",
+   "example": "d = {\"a\": 1, \"b\": 2}\nprint(list(d.values()))",
+   "source": "https://docs.python.org/ja/3.12/library/stdtypes.html#dict.values"
+  }
+ },
+ {
+  "kind": "python",
+  "name": "dict.update",
+  "supported": true,
+  "fields": {
+   "description": "別の辞書やキー・値の組で辞書を更新するメソッド（辞書自体を変更する）。",
+   "returns": "None（辞書自体が変更される）",
+   "caution": "同じキーがあれば上書きされ、新しいキーは末尾に追加される。戻り値は None。",
+   "example": "d = {\"a\": 1}\nd.update({\"b\": 2})\nprint(d)",
+   "source": "https://docs.python.org/ja/3.12/library/stdtypes.html#dict.update"
+  }
+ },
+ {
+  "kind": "python",
+  "name": "dict.pop",
+  "supported": true,
+  "fields": {
+   "description": "指定したキーを辞書から取り除き、その値を返すメソッド。",
+   "returns": "キーの値（キーが無く default 指定時は default）",
+   "caution": "キーが無く default も指定しない場合は KeyError。default を渡せば安全に取り出せる。",
+   "example": "d = {\"a\": 1, \"b\": 2}\nprint(d.pop(\"a\"))\nprint(d)",
+   "source": "https://docs.python.org/ja/3.12/library/stdtypes.html#dict.pop"
+  }
+ },
+ {
+  "kind": "python",
+  "name": "dict.setdefault",
+  "supported": true,
+  "fields": {
+   "description": "キーがあればその値を返し、無ければ既定値を登録してから返すメソッド。",
+   "returns": "キーの値（既存の値または登録した default）",
+   "caution": "キーが既にある場合は辞書は変更されず既存の値が返る。「数える」処理では d[k] = d.get(k, 0) + 1 と同じ用途に使える。",
+   "example": "d = {\"a\": 1}\nprint(d.setdefault(\"b\", 2))\nprint(d)",
+   "source": "https://docs.python.org/ja/3.12/library/stdtypes.html#dict.setdefault"
+  }
+ },
+ {
+  "kind": "python",
+  "name": "dict.popitem",
+  "supported": true,
+  "fields": {
+   "description": "辞書から最後に挿入された (キー, 値) の組を取り除き、返すメソッド。",
+   "returns": "(キー, 値) のタプル",
+   "caution": "空の辞書で呼ぶと KeyError。取り出されるのは最後に挿入された組（LIFO）。",
+   "example": "d = {\"a\": 1, \"b\": 2}\nprint(d.popitem())",
+   "source": "https://docs.python.org/ja/3.12/library/stdtypes.html#dict.popitem"
+  }
+ },
+ {
+  "kind": "python",
+  "name": "dict.copy",
+  "supported": true,
+  "fields": {
+   "description": "辞書の浅いコピー（新しい辞書）を作るメソッド。",
+   "returns": "dict: コピーされた新しい辞書",
+   "caution": "浅いコピーのため、値がリストなどの変更可能なオブジェクトの場合は中身が共有される。",
+   "example": "d = {\"a\": 1}\ne = d.copy()\ne[\"b\"] = 2\nprint(d, e)",
+   "source": "https://docs.python.org/ja/3.12/library/stdtypes.html#dict.copy"
+  }
+ },
+ {
+  "kind": "python",
+  "name": "dict.clear",
+  "supported": true,
+  "fields": {
+   "description": "辞書の全ての組を取り除いて空にするメソッド。",
+   "returns": "None（辞書自体が変更される）",
+   "caution": "同じ辞書を指す他の変数からも空に見える。",
+   "example": "d = {\"a\": 1}\nd.clear()\nprint(d)",
+   "source": "https://docs.python.org/ja/3.12/library/stdtypes.html#dict.clear"
+  }
+ },
+ {
+  "kind": "python",
+  "name": "set.add",
+  "supported": true,
+  "fields": {
+   "description": "集合に要素を1つ追加するメソッド（集合自体を変更する）。",
+   "returns": "None（集合自体が変更される）",
+   "caution": "既に同じ要素がある場合は何も起きない（重複は保持されない）。戻り値は None。",
+   "example": "s = {1, 2}\ns.add(3)\nprint(sorted(s))",
+   "source": "https://docs.python.org/ja/3.12/library/stdtypes.html#set"
+  }
+ },
+ {
+  "kind": "python",
+  "name": "set.remove",
+  "supported": true,
+  "fields": {
+   "description": "集合から指定した要素を取り除くメソッド。",
+   "returns": "None（集合自体が変更される）",
+   "caution": "要素が存在しない場合は KeyError。エラーにしたくない場合は discard() を使う。",
+   "example": "s = {1, 2, 3}\ns.remove(2)\nprint(sorted(s))",
+   "source": "https://docs.python.org/ja/3.12/library/stdtypes.html#set"
+  }
+ },
+ {
+  "kind": "python",
+  "name": "set.discard",
+  "supported": true,
+  "fields": {
+   "description": "集合に要素があれば取り除くメソッド。無ければ何もしない。",
+   "returns": "None（集合自体が変更される）",
+   "caution": "要素が無くてもエラーにならない点が remove() と異なる。",
+   "example": "s = {1, 2}\ns.discard(99)\nprint(sorted(s))",
+   "source": "https://docs.python.org/ja/3.12/library/stdtypes.html#set"
+  }
+ },
+ {
+  "kind": "python",
+  "name": "set.update",
+  "supported": true,
+  "fields": {
+   "description": "他のイテラブルの要素を全て集合に追加するメソッド。",
+   "returns": "None（集合自体が変更される）",
+   "caution": "重複する要素は1つにまとまる。新しい集合を作りたい場合は union() を使う。",
+   "example": "s = {1, 2}\ns.update([2, 3])\nprint(sorted(s))",
+   "source": "https://docs.python.org/ja/3.12/library/stdtypes.html#set"
+  }
+ },
+ {
+  "kind": "python",
+  "name": "set.clear",
+  "supported": true,
+  "fields": {
+   "description": "集合の全要素を取り除いて空にするメソッド。",
+   "returns": "None（集合自体が変更される）",
+   "caution": "空の集合のリテラルは {} ではなく set()（{} は空の辞書）。",
+   "example": "s = {1, 2}\ns.clear()\nprint(len(s))",
+   "source": "https://docs.python.org/ja/3.12/library/stdtypes.html#set"
+  }
+ },
+ {
+  "kind": "python",
+  "name": "set.pop",
+  "supported": true,
+  "fields": {
+   "description": "集合から任意の要素を1つ取り除き、その要素を返すメソッド。",
+   "returns": "取り除かれた要素（どれになるかは定まらない）",
+   "caution": "取り出される要素は集合の実装に依存し、順序は保証されない。本アプリでも取り出した要素は未確定値として扱う。空の集合では KeyError。",
+   "example": "s = {1, 2, 3}\nremoved = s.pop()\nprint(\"要素を取り出しました\")",
+   "source": "https://docs.python.org/ja/3.12/library/stdtypes.html#set"
+  }
+ },
+ {
+  "kind": "python",
+  "name": "set.intersection_update",
+  "supported": true,
+  "fields": {
+   "description": "集合を、他の集合との共通要素だけに更新するメソッド。",
+   "returns": "None（集合自体が変更される）",
+   "caution": "元の集合が書き換わる。新しい集合が欲しい場合は intersection() を使う。",
+   "example": "s = {1, 2, 3}\ns.intersection_update({2, 3, 4})\nprint(sorted(s))",
+   "source": "https://docs.python.org/ja/3.12/library/stdtypes.html#set"
+  }
+ },
+ {
+  "kind": "python",
+  "name": "set.difference_update",
+  "supported": true,
+  "fields": {
+   "description": "集合から、他の集合に含まれる要素を全て取り除くメソッド。",
+   "returns": "None（集合自体が変更される）",
+   "caution": "元の集合が書き換わる。新しい集合が欲しい場合は difference() を使う。",
+   "example": "s = {1, 2, 3}\ns.difference_update({2})\nprint(sorted(s))",
+   "source": "https://docs.python.org/ja/3.12/library/stdtypes.html#set"
+  }
+ },
+ {
+  "kind": "python",
+  "name": "set.symmetric_difference_update",
+  "supported": true,
+  "fields": {
+   "description": "集合を、どちらか一方にだけ含まれる要素の集合に更新するメソッド。",
+   "returns": "None（集合自体が変更される）",
+   "caution": "両方に含まれる要素は除かれ、片方にだけある要素が残る。新しい集合が欲しい場合は symmetric_difference() を使う。",
+   "example": "s = {1, 2}\ns.symmetric_difference_update({2, 3})\nprint(sorted(s))",
+   "source": "https://docs.python.org/ja/3.12/library/stdtypes.html#set"
+  }
+ },
+ {
+  "kind": "python",
+  "name": "set.union",
+  "supported": true,
+  "fields": {
+   "description": "2つの集合の全要素を含む新しい集合（和集合）を返すメソッド。",
+   "returns": "set: 和集合（新しい集合）",
+   "caution": "元の集合は変更されない（変更したい場合は update()）。| 演算子でも同じことができるが、そちらは相手も集合でなければならない。",
+   "example": "print(sorted({1, 2}.union({2, 3})))",
+   "source": "https://docs.python.org/ja/3.12/library/stdtypes.html#set"
+  }
+ },
+ {
+  "kind": "python",
+  "name": "set.intersection",
+  "supported": true,
+  "fields": {
+   "description": "2つの集合に共通する要素だけの新しい集合（積集合）を返すメソッド。",
+   "returns": "set: 積集合（新しい集合）",
+   "caution": "元の集合は変更されない（変更したい場合は intersection_update()）。& 演算子でも同じことができる。",
+   "example": "print(sorted({1, 2, 3}.intersection({2, 3, 4})))",
+   "source": "https://docs.python.org/ja/3.12/library/stdtypes.html#set"
+  }
+ },
+ {
+  "kind": "python",
+  "name": "set.difference",
+  "supported": true,
+  "fields": {
+   "description": "元の集合にあって相手にない要素だけの新しい集合（差集合）を返すメソッド。",
+   "returns": "set: 差集合（新しい集合）",
+   "caution": "向きがある（a.difference(b) と b.difference(a) は異なる）。- 演算子でも同じことができる。",
+   "example": "print(sorted({1, 2, 3}.difference({2})))",
+   "source": "https://docs.python.org/ja/3.12/library/stdtypes.html#set"
+  }
+ },
+ {
+  "kind": "python",
+  "name": "set.symmetric_difference",
+  "supported": true,
+  "fields": {
+   "description": "どちらか一方にだけ含まれる要素の新しい集合（対称差）を返すメソッド。",
+   "returns": "set: 対称差（新しい集合）",
+   "caution": "両方に含まれる要素は含まれない。^ 演算子でも同じことができる。",
+   "example": "print(sorted({1, 2}.symmetric_difference({2, 3})))",
+   "source": "https://docs.python.org/ja/3.12/library/stdtypes.html#set"
+  }
+ },
+ {
+  "kind": "python",
+  "name": "set.copy",
+  "supported": true,
+  "fields": {
+   "description": "集合の浅いコピー（新しい集合）を作るメソッド。",
+   "returns": "set: コピーされた新しい集合",
+   "caution": "コピー側への追加・削除は元の集合に影響しない。単純な代入では同じ集合を指すだけ。",
+   "example": "s = {1, 2}\nt = s.copy()\nt.add(3)\nprint(sorted(s), sorted(t))",
+   "source": "https://docs.python.org/ja/3.12/library/stdtypes.html#set"
+  }
+ },
+ {
+  "kind": "python",
+  "name": "tuple.count",
+  "supported": true,
+  "fields": {
+   "description": "指定した値と等しい要素の個数を数えるメソッド。",
+   "returns": "int: 個数",
+   "caution": "存在しない値では 0 を返す（エラーにはならない）。",
+   "example": "print((1, 2, 2, 3).count(2))",
+   "source": "https://docs.python.org/ja/3.12/library/stdtypes.html#tuple"
+  }
+ },
+ {
+  "kind": "python",
+  "name": "tuple.index",
+  "supported": true,
+  "fields": {
+   "description": "指定した値と等しい最初の要素のインデックスを返すメソッド。",
+   "returns": "int: 最初のインデックス",
+   "caution": "値が存在しない場合は ValueError。",
+   "example": "print((10, 20, 30).index(20))",
+   "source": "https://docs.python.org/ja/3.12/library/stdtypes.html#tuple"
+  }
+ },
+ {
+  "kind": "python",
+  "name": "range.count",
+  "supported": true,
+  "fields": {
+   "description": "range の中に指定した値が何個含まれるか（0 か 1）を返すメソッド。",
+   "returns": "int: 0 または 1",
+   "caution": "range の要素は重複しないため結果は 0 か 1 のどちらか。実際に列挙せずに判定される。",
+   "example": "print(range(0, 10, 2).count(4))",
+   "source": "https://docs.python.org/ja/3.12/library/stdtypes.html#range"
+  }
+ },
+ {
+  "kind": "python",
+  "name": "range.index",
+  "supported": true,
+  "fields": {
+   "description": "range の中で指定した値が何番目かを返すメソッド。",
+   "returns": "int: 位置（0始まり）",
+   "caution": "値が含まれない場合は ValueError。実際に列挙せずに計算される。",
+   "example": "print(range(0, 10, 2).index(6))",
+   "source": "https://docs.python.org/ja/3.12/library/stdtypes.html#range"
+  }
+ },
+ {
+  "kind": "python",
+  "name": "def",
+  "supported": true,
+  "fields": {
+   "description": "関数を定義する構文。定義した関数は名前で呼び出せる。",
+   "returns": "—（構文のため戻り値なし）",
+   "caution": "定義しただけでは中身は実行されない（呼び出して初めて動く）。文末のコロンとインデントが必須。",
+   "example": "def add(a, b):\n    return a + b\nprint(add(2, 3))",
+   "source": "https://docs.python.org/ja/3.12/reference/compound_stmts.html#function-definitions"
+  }
+ },
+ {
+  "kind": "python",
+  "name": "class",
+  "supported": true,
+  "fields": {
+   "description": "クラス（オブジェクトの設計図）を定義する構文。",
+   "returns": "—（構文のため戻り値なし）",
+   "caution": "メソッドの第1引数 self は慣例的な名前で、インスタンス自身を受け取る。クラス名は通常パスカルケースで書く。",
+   "example": "class Dog:\n    def __init__(self, name):\n        self.name = name\n    def bark(self):\n        return self.name + \"!\"\nd = Dog(\"ポチ\")\nprint(d.bark())",
+   "source": "https://docs.python.org/ja/3.12/reference/compound_stmts.html#class-definitions"
+  }
+ },
+ {
+  "kind": "python",
+  "name": "return",
+  "supported": true,
+  "fields": {
+   "description": "関数の実行を終え、呼び出し側に値を返す構文。",
+   "returns": "—（構文のため戻り値なし）",
+   "caution": "return の後の処理は実行されない。値を書かない、または return 自体がない関数は None を返す。関数の外では使えない。",
+   "example": "def double(x):\n    return x * 2\nprint(double(21))",
+   "source": "https://docs.python.org/ja/3.12/reference/simple_stmts.html#the-return-statement"
+  }
+ },
+ {
+  "kind": "python",
+  "name": "break",
+  "supported": true,
+  "fields": {
+   "description": "最も内側のループ（for / while）を直ちに終了する構文。",
+   "returns": "—（構文のため戻り値なし）",
+   "caution": "終了するのは最も内側のループだけ。ループの else 節は break で抜けた場合は実行されない。ループの外では使えない。",
+   "example": "for n in range(10):\n    if n == 3:\n        break\n    print(n)",
+   "source": "https://docs.python.org/ja/3.12/reference/simple_stmts.html#the-break-statement"
+  }
+ },
+ {
+  "kind": "python",
+  "name": "continue",
+  "supported": true,
+  "fields": {
+   "description": "ループの今回の周回を途中までで終え、次の周回へ進む構文。",
+   "returns": "—（構文のため戻り値なし）",
+   "caution": "continue より後の処理はその周回では実行されない。while では条件判定に戻るため、カウンタ更新が continue より後にあると無限ループになりやすい。",
+   "example": "total = 0\nfor n in range(6):\n    if n % 2 == 0:\n        continue\n    total += n\nprint(total)",
+   "source": "https://docs.python.org/ja/3.12/reference/simple_stmts.html#the-continue-statement"
+  }
+ },
+ {
+  "kind": "python",
+  "name": "pass",
+  "supported": true,
+  "fields": {
+   "description": "何もしない文。文が必須な場所のプレースホルダとして使う。",
+   "returns": "—（構文のため戻り値なし）",
+   "caution": "空の関数やクラスはそのままでは構文エラーになるため、とりあえず pass を書いて形にする。実装の先送りを意味するので、残し忘れに注意。",
+   "example": "def todo():\n    pass\nprint(\"ok\")",
+   "source": "https://docs.python.org/ja/3.12/reference/simple_stmts.html#the-pass-statement"
+  }
+ },
+ {
+  "kind": "python",
+  "name": "del",
+  "supported": true,
+  "fields": {
+   "description": "変数の束縛や、リストの要素・辞書のキーを削除する構文。",
+   "returns": "—（構文のため戻り値なし）",
+   "caution": "変数を del した後に参照すると NameError。文字列やタプルの要素は削除できない（TypeError）。スライスでの一括削除もできる。",
+   "example": "xs = [1, 2, 3]\ndel xs[0]\nprint(xs)",
+   "source": "https://docs.python.org/ja/3.12/reference/simple_stmts.html#the-del-statement"
+  }
+ },
+ {
+  "kind": "python",
+  "name": "assert",
+  "supported": true,
+  "fields": {
+   "description": "条件が成り立つことを表明し、成り立たなければ AssertionError を発生させる構文。",
+   "returns": "—（構文のため戻り値なし）",
+   "caution": "python -O で実行すると assert は無効化されるため、入力検証などの本番の検査には使わない。メッセージは省略できる。",
+   "example": "assert 2 + 2 == 4\nprint(\"ok\")",
+   "source": "https://docs.python.org/ja/3.12/reference/simple_stmts.html#the-assert-statement"
+  }
+ },
+ {
+  "kind": "python",
+  "name": "raise",
+  "supported": true,
+  "fields": {
+   "description": "例外を意図的に発生させる構文。",
+   "returns": "—（構文のため戻り値なし）",
+   "caution": "except の中で引数なしの raise を使うと処理中の例外を再発生させられる（本アプリでは引数なし raise は未対応）。例外クラスではなく文字列を raise することはできない。",
+   "example": "try:\n    raise ValueError(\"bad\")\nexcept ValueError:\n    print(\"捕捉しました\")",
+   "source": "https://docs.python.org/ja/3.12/reference/simple_stmts.html#the-raise-statement"
+  }
+ },
+ {
+  "kind": "python",
+  "name": "global",
+  "supported": true,
+  "fields": {
+   "description": "関数の中から、モジュール全体の変数（global）や外側の関数の変数（nonlocal）を書き換えられるように宣言する構文。",
+   "returns": "—（構文のため戻り値なし）",
+   "caution": "宣言なしに代入すると、その関数だけのローカル変数になる（読み取りだけなら宣言は不要）。nonlocal はモジュールレベルの変数には使えない。引数や代入済みの名前への宣言は SyntaxError。",
+   "example": "def inc():\n    global counter\n    counter = 1\ndef show():\n    global counter\n    return counter\ninc()\nprint(show())",
+   "source": "https://docs.python.org/ja/3.12/reference/simple_stmts.html#the-global-statement"
+  }
+ },
+ {
+  "kind": "python",
+  "name": "comprehension",
+  "supported": true,
+  "fields": {
+   "description": "イテラブルの各要素を変換・抽出してリスト等を簡潔に作る表記。",
+   "returns": "—（構文のため戻り値なし）",
+   "caution": "辞書内包 {k: v for ...} や集合内包 {式 for ...} も書ける。処理が複雑な場合は無理に内包表記にせず通常の for 文にした方が読みやすい。",
+   "example": "print([x * x for x in range(5)])",
+   "source": "https://docs.python.org/ja/3.12/reference/expressions.html#displays-for-lists-sets-and-dictionaries"
+  }
+ },
+ {
+  "kind": "python",
+  "name": "f-string",
+  "supported": true,
+  "fields": {
+   "description": "文字列リテラルの中に {式} を埋め込んで値を差し込む表記（フォーマット文字列）。",
+   "returns": "—（構文のため戻り値なし）",
+   "caution": "接頭辞 f を忘れると {式} がそのまま表示される。{式:.2f} のように書式指定もできる。波括弧自体を表示するには {{ と }} と重ねる。",
+   "example": "name = \"世界\"\nprint(f\"こんにちは、{name}さん\")",
+   "source": "https://docs.python.org/ja/3.12/reference/lexical_analysis.html#formatted-string-literals"
+  }
+ },
+ {
+  "kind": "python",
+  "name": "math.sqrt",
+  "supported": true,
+  "fields": {
+   "description": "数値の平方根を返す math モジュールの関数。",
+   "returns": "float: 平方根",
+   "caution": "負数を渡すと ValueError（math domain error）。戻り値は常に float。import math が必要。",
+   "example": "import math\nprint(math.sqrt(81))",
+   "source": "https://docs.python.org/ja/3.12/library/math.html#math.sqrt"
+  }
+ },
+ {
+  "kind": "python",
+  "name": "math.fabs",
+  "supported": true,
+  "fields": {
+   "description": "数値の絶対値を float で返す math モジュールの関数。",
+   "returns": "float: 絶対値",
+   "caution": "組み込みの abs() と違い、整数を渡しても 3.0 のように float で返る。import math が必要。",
+   "example": "import math\nprint(math.fabs(-3))",
+   "source": "https://docs.python.org/ja/3.12/library/math.html#math.fabs"
+  }
+ },
+ {
+  "kind": "python",
+  "name": "math.floor",
+  "supported": true,
+  "fields": {
+   "description": "数値以下の最大の整数（床）を返す math モジュールの関数。",
+   "returns": "int: x 以下の最大の整数",
+   "caution": "負数では 0 から遠い側に丸められる（math.floor(-3.2) は -4）。int() の切り捨てとは負数での結果が異なる。import math が必要。",
+   "example": "import math\nprint(math.floor(3.7))",
+   "source": "https://docs.python.org/ja/3.12/library/math.html#math.floor"
+  }
+ },
+ {
+  "kind": "python",
+  "name": "math.ceil",
+  "supported": true,
+  "fields": {
+   "description": "数値以上の最小の整数（天井）を返す math モジュールの関数。",
+   "returns": "int: x 以上の最小の整数",
+   "caution": "負数では 0 に近い側に丸められる（math.ceil(-3.2) は -3）。import math が必要。",
+   "example": "import math\nprint(math.ceil(3.2))",
+   "source": "https://docs.python.org/ja/3.12/library/math.html#math.ceil"
+  }
+ },
+ {
+  "kind": "python",
+  "name": "Exception",
+  "supported": true,
+  "fields": {
+   "description": "通常の組み込み例外すべての基底クラス。個別の例外をまとめて捕捉するときに使う。",
+   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
+   "caution": "あらゆる通常例外を捕捉するため、広く捕りすぎると不具合の発見が遅れる。具体的な例外型を指定するのが基本。KeyboardInterrupt や SystemExit は基底が BaseException のため捕捉されない（本アプリの照合は簡略化されている）。",
+   "example": "try:\n    raise Exception(\"bad\")\nexcept Exception:\n    print(\"Exceptionを捕捉\")",
+   "source": "https://docs.python.org/ja/3.12/library/exceptions.html#Exception"
+  }
+ },
+ {
+  "kind": "python",
+  "name": "BaseException",
+  "supported": true,
+  "fields": {
+   "description": "全ての組み込み例外の最上位の基底クラス。SystemExit や KeyboardInterrupt もここに属する。",
+   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
+   "caution": "通常のコードで捕捉することは稀で、捕捉すると Ctrl+C や終了処理まで止めてしまう。実務では Exception 側を使う。",
+   "example": "try:\n    raise BaseException(\"bad\")\nexcept BaseException:\n    print(\"BaseExceptionを捕捉\")",
+   "source": "https://docs.python.org/ja/3.12/library/exceptions.html#BaseException"
+  }
+ },
+ {
+  "kind": "python",
+  "name": "ValueError",
+  "supported": true,
+  "fields": {
+   "description": "型は適切でも値が不適切なときに発生する例外。int(\"abc\") や math.sqrt(-1) などで起きる。",
+   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
+   "caution": "変換や範囲チェックの失敗は多くがこの例外。捕捉する場合は、どの値が不正だったかをメッセージで示すと原因を追いやすい。",
+   "example": "try:\n    raise ValueError(\"bad\")\nexcept ValueError:\n    print(\"ValueErrorを捕捉\")",
+   "source": "https://docs.python.org/ja/3.12/library/exceptions.html#ValueError"
+  }
+ },
+ {
+  "kind": "python",
+  "name": "TypeError",
+  "supported": true,
+  "fields": {
+   "description": "不適切な型への操作や、引数の数・型の誤りで発生する例外。1 + \"a\" や len(5) などで起きる。",
+   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
+   "caution": "文字列と数値を + でつなぐ、関数の引数を間違える、といった初歩的な誤りの多くがこの例外になる。",
+   "example": "try:\n    raise TypeError(\"bad\")\nexcept TypeError:\n    print(\"TypeErrorを捕捉\")",
+   "source": "https://docs.python.org/ja/3.12/library/exceptions.html#TypeError"
+  }
+ },
+ {
+  "kind": "python",
+  "name": "KeyError",
+  "supported": true,
+  "fields": {
+   "description": "辞書に存在しないキーを参照したときに発生する例外。",
+   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
+   "caution": "存在しない可能性があるキーは dict.get() で既定値を返すか、in で事前に確認する。例外の表示ではキーが引用符付きで示される。",
+   "example": "try:\n    raise KeyError(\"bad\")\nexcept KeyError:\n    print(\"KeyErrorを捕捉\")",
+   "source": "https://docs.python.org/ja/3.12/library/exceptions.html#KeyError"
+  }
+ },
+ {
+  "kind": "python",
+  "name": "IndexError",
+  "supported": true,
+  "fields": {
+   "description": "リストや文字列などのインデックスが範囲外のときに発生する例外。",
+   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
+   "caution": "末尾の要素は -1 で参照できる。範囲を調べるには len() を使う。辞書版が KeyError、こちらはシーケンス版。",
+   "example": "try:\n    raise IndexError(\"bad\")\nexcept IndexError:\n    print(\"IndexErrorを捕捉\")",
+   "source": "https://docs.python.org/ja/3.12/library/exceptions.html#IndexError"
+  }
+ },
+ {
+  "kind": "python",
+  "name": "ZeroDivisionError",
+  "supported": true,
+  "fields": {
+   "description": "ゼロで割ったり、ゼロで剰余を取ったりしたときに発生する例外。",
+   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
+   "caution": "割り算の前に割る数が 0 でないか確認する。浮動小数点数の 1.0 / 0.0 でも ZeroDivisionError になる（inf にはならない）。",
+   "example": "try:\n    raise ZeroDivisionError(\"bad\")\nexcept ZeroDivisionError:\n    print(\"ZeroDivisionErrorを捕捉\")",
+   "source": "https://docs.python.org/ja/3.12/library/exceptions.html#ZeroDivisionError"
+  }
+ },
+ {
+  "kind": "python",
+  "name": "NameError",
+  "supported": true,
+  "fields": {
+   "description": "定義されていない名前（変数・関数）を参照したときに発生する例外。",
+   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
+   "caution": "綴り間違い、定義より前の参照、スコープの勘違いが主な原因。関数内で代入する名前を代入前に読むと、亜種の UnboundLocalError になる。",
+   "example": "try:\n    raise NameError(\"bad\")\nexcept NameError:\n    print(\"NameErrorを捕捉\")",
+   "source": "https://docs.python.org/ja/3.12/library/exceptions.html#NameError"
+  }
+ },
+ {
+  "kind": "python",
+  "name": "AttributeError",
+  "supported": true,
+  "fields": {
+   "description": "存在しない属性やメソッドを参照・代入したときに発生する例外。",
+   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
+   "caution": "メソッド名の綴り間違いや、None に対してメソッドを呼んだ場合によく起きる。型を type() や isinstance() で確認すると切り分けやすい。",
+   "example": "try:\n    raise AttributeError(\"bad\")\nexcept AttributeError:\n    print(\"AttributeErrorを捕捉\")",
+   "source": "https://docs.python.org/ja/3.12/library/exceptions.html#AttributeError"
+  }
+ },
+ {
+  "kind": "python",
+  "name": "RuntimeError",
+  "supported": true,
+  "fields": {
+   "description": "他のどの分類にも当てはまらない実行時エラー全般に使う例外。",
+   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
+   "caution": "具体的な例外型が用意されている場合はそちらを使う。ジェネレータが閉じた後に next() を呼んだ場合などにも発生する。",
+   "example": "try:\n    raise RuntimeError(\"bad\")\nexcept RuntimeError:\n    print(\"RuntimeErrorを捕捉\")",
+   "source": "https://docs.python.org/ja/3.12/library/exceptions.html#RuntimeError"
+  }
+ },
+ {
+  "kind": "python",
+  "name": "StopIteration",
+  "supported": true,
+  "fields": {
+   "description": "イテレータの要素が尽きたことを知らせる例外。next() で要素がないときに発生する。",
+   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
+   "caution": "通常は for 文が内部で処理するため直接捕捉することは少ない。ジェネレータの中で明示的に raise すると RuntimeError に変換される（PEP 479）。",
+   "example": "try:\n    raise StopIteration(\"bad\")\nexcept StopIteration:\n    print(\"StopIterationを捕捉\")",
+   "source": "https://docs.python.org/ja/3.12/library/exceptions.html#StopIteration"
+  }
+ },
+ {
+  "kind": "python",
+  "name": "AssertionError",
+  "supported": true,
+  "fields": {
+   "description": "assert 文の条件が成り立たなかったときに発生する例外。",
+   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
+   "caution": "python -O では assert 自体が無効化されるため、この例外に依存した制御は避ける。",
+   "example": "try:\n    raise AssertionError(\"bad\")\nexcept AssertionError:\n    print(\"AssertionErrorを捕捉\")",
+   "source": "https://docs.python.org/ja/3.12/library/exceptions.html#AssertionError"
+  }
+ },
+ {
+  "kind": "python",
+  "name": "ImportError",
+  "supported": true,
+  "fields": {
+   "description": "import が失敗したときに発生する例外。モジュールが見つからない場合は亜種の ModuleNotFoundError になる。",
+   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
+   "caution": "モジュール名の綴り、インストール漏れ、循環 import などが原因。from ... import で名前が無い場合も ImportError。",
+   "example": "try:\n    raise ImportError(\"bad\")\nexcept ImportError:\n    print(\"ImportErrorを捕捉\")",
+   "source": "https://docs.python.org/ja/3.12/library/exceptions.html#ImportError"
+  }
+ },
+ {
+  "kind": "python",
+  "name": "ModuleNotFoundError",
+  "supported": true,
+  "fields": {
+   "description": "import しようとしたモジュール自体が見つからないときに発生する例外（ImportError のサブクラス）。",
+   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
+   "caution": "except ImportError でまとめて捕捉できる。モジュールのインストール漏れや名前の勘違いが主な原因。",
+   "example": "try:\n    raise ModuleNotFoundError(\"bad\")\nexcept ModuleNotFoundError:\n    print(\"ModuleNotFoundErrorを捕捉\")",
+   "source": "https://docs.python.org/ja/3.12/library/exceptions.html#ModuleNotFoundError"
+  }
+ },
+ {
+  "kind": "python",
+  "name": "OSError",
+  "supported": true,
+  "fields": {
+   "description": "ファイル操作など OS が関係するエラーの基底クラス。FileNotFoundError など多くの亜種がある。",
+   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
+   "caution": "実務では FileNotFoundError や PermissionError など具体的な亜種で捕捉する。本アプリは実ファイルを実行しないため、主に raise／except の照合で使う。",
+   "example": "try:\n    raise OSError(\"bad\")\nexcept OSError:\n    print(\"OSErrorを捕捉\")",
+   "source": "https://docs.python.org/ja/3.12/library/exceptions.html#OSError"
+  }
+ },
+ {
+  "kind": "python",
+  "name": "FileNotFoundError",
+  "supported": true,
+  "fields": {
+   "description": "存在しないファイルやディレクトリを開こうとしたときに発生する例外（OSError のサブクラス）。",
+   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
+   "caution": "パスの綴りや作業ディレクトリの勘違いが主な原因。except OSError でも捕捉できる。本アプリは実ファイルを実行しない。",
+   "example": "try:\n    raise FileNotFoundError(\"bad\")\nexcept FileNotFoundError:\n    print(\"FileNotFoundErrorを捕捉\")",
+   "source": "https://docs.python.org/ja/3.12/library/exceptions.html#FileNotFoundError"
+  }
+ },
+ {
+  "kind": "python",
+  "name": "NotImplementedError",
+  "supported": true,
+  "fields": {
+   "description": "まだ実装されていないことを示すために発生させる例外（RuntimeError のサブクラス）。",
+   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
+   "caution": "抽象的な処理の雛形で「サブクラス側で実装すること」を示す用途が典型。組み込みの定数 NotImplemented とは別物。",
+   "example": "try:\n    raise NotImplementedError(\"bad\")\nexcept NotImplementedError:\n    print(\"NotImplementedErrorを捕捉\")",
+   "source": "https://docs.python.org/ja/3.12/library/exceptions.html#NotImplementedError"
+  }
+ },
+ {
+  "kind": "python",
+  "name": "ArithmeticError",
+  "supported": true,
+  "fields": {
+   "description": "算術計算のエラーの基底クラス。ZeroDivisionError や OverflowError の親。",
+   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
+   "caution": "個別の算術エラーをまとめて捕捉したい場合に使う。具体的な原因を追うなら亜種ごとに分ける。",
+   "example": "try:\n    raise ArithmeticError(\"bad\")\nexcept ArithmeticError:\n    print(\"ArithmeticErrorを捕捉\")",
+   "source": "https://docs.python.org/ja/3.12/library/exceptions.html#ArithmeticError"
+  }
+ },
+ {
+  "kind": "python",
+  "name": "LookupError",
+  "supported": true,
+  "fields": {
+   "description": "キーやインデックスによる探索エラーの基底クラス。KeyError と IndexError の親。",
+   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
+   "caution": "辞書とシーケンスの探索失敗をまとめて捕捉したい場合に使う。",
+   "example": "try:\n    raise LookupError(\"bad\")\nexcept LookupError:\n    print(\"LookupErrorを捕捉\")",
+   "source": "https://docs.python.org/ja/3.12/library/exceptions.html#LookupError"
+  }
+ },
+ {
+  "kind": "python",
+  "name": "OverflowError",
+  "supported": true,
+  "fields": {
+   "description": "数値演算の結果が大きすぎて表せないときに発生する例外（ArithmeticError のサブクラス）。",
+   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
+   "caution": "float の範囲を超える計算（math.exp(1000) など）で発生する。整数同士の演算は任意精度のため通常は発生しない。",
+   "example": "try:\n    raise OverflowError(\"bad\")\nexcept OverflowError:\n    print(\"OverflowErrorを捕捉\")",
+   "source": "https://docs.python.org/ja/3.12/library/exceptions.html#OverflowError"
+  }
+ },
+ {
+  "kind": "python",
+  "name": "RecursionError",
+  "supported": true,
+  "fields": {
+   "description": "再帰呼び出しが深くなりすぎたときに発生する例外（RuntimeError のサブクラス）。",
+   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
+   "caution": "再帰の終了条件の書き忘れが典型的な原因。再帰上限は sys.getrecursionlimit() で確認できる（既定は概ね 1000）。",
+   "example": "try:\n    raise RecursionError(\"bad\")\nexcept RecursionError:\n    print(\"RecursionErrorを捕捉\")",
+   "source": "https://docs.python.org/ja/3.12/library/exceptions.html#RecursionError"
+  }
+ },
+ {
+  "kind": "python",
+  "name": "UnicodeError",
+  "supported": true,
+  "fields": {
+   "description": "Unicode の符号化・復号でエラーが起きたときに発生する例外（ValueError のサブクラス）。",
+   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
+   "caution": "except ValueError でも捕捉できる。エンコーディング指定の誤りが主な原因。",
+   "example": "try:\n    raise UnicodeError(\"bad\")\nexcept UnicodeError:\n    print(\"UnicodeErrorを捕捉\")",
+   "source": "https://docs.python.org/ja/3.12/library/exceptions.html#UnicodeError"
+  }
+ },
+ {
+  "kind": "python",
+  "name": "EOFError",
+  "supported": true,
+  "fields": {
+   "description": "input() が入力を受け取る前に終端（EOF）に達したときに発生する例外。",
+   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
+   "caution": "入力を繰り返し読む処理では、終了条件として EOFError の捕捉が使われる。本アプリでは input() の実値は未確定値として扱う。",
+   "example": "try:\n    raise EOFError(\"bad\")\nexcept EOFError:\n    print(\"EOFErrorを捕捉\")",
+   "source": "https://docs.python.org/ja/3.12/library/exceptions.html#EOFError"
+  }
+ },
+ {
+  "kind": "python",
+  "name": "KeyboardInterrupt",
+  "supported": true,
+  "fields": {
+   "description": "ユーザーが Ctrl+C などで割り込みをかけたときに発生する例外（BaseException の一員）。",
+   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
+   "caution": "except Exception では捕捉されないため、長時間処理を止められることは通常は妨げない。捕捉する場合は終了処理だけを行い、握り潰さない。",
+   "example": "try:\n    raise KeyboardInterrupt(\"bad\")\nexcept KeyboardInterrupt:\n    print(\"KeyboardInterruptを捕捉\")",
+   "source": "https://docs.python.org/ja/3.12/library/exceptions.html#KeyboardInterrupt"
+  }
+ },
+ {
+  "kind": "python",
+  "name": "SystemExit",
+  "supported": true,
+  "fields": {
+   "description": "sys.exit() によって発生し、インタプリタの終了を要求する例外（BaseException の一員）。",
+   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
+   "caution": "except Exception では捕捉されない。終了コードは引数で渡され、0 が正常終了を表す。本アプリの照合は簡略化されており、except Exception でも一致する場合がある。",
+   "example": "try:\n    raise SystemExit(\"bad\")\nexcept SystemExit:\n    print(\"SystemExitを捕捉\")",
+   "source": "https://docs.python.org/ja/3.12/library/exceptions.html#SystemExit"
+  }
+ },
+ {
+  "kind": "cloudformation",
+  "name": "region",
+  "supported": true,
+  "fields": {
+   "description": "マクロが実行される AWS リージョンです。",
+   "returns": "マクロが実行されるリージョン",
+   "caution": "モデル既定は model-region です。実際のリージョン名は捏造しません。",
+   "example": "def handler(event, context):\n    fragment = event[\"fragment\"]\n    fragment[\"Metadata\"] = {\"Stage\": event[\"params\"].get(\"Stage\", \"dev\")}\n    return {\"requestId\": event[\"requestId\"], \"status\": \"success\", \"fragment\": fragment}",
+   "source": "https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/template-macros-author.html"
+  }
+ },
+ {
+  "kind": "cloudformation",
+  "name": "accountId",
+  "supported": true,
+  "fields": {
+   "description": "マクロを実行する AWS アカウントの ID です。",
+   "returns": "マクロを実行するアカウント ID",
+   "caution": "モデル既定は model-account です。実際のアカウント ID は捏造しません。",
+   "example": "def handler(event, context):\n    fragment = event[\"fragment\"]\n    fragment[\"Metadata\"] = {\"Stage\": event[\"params\"].get(\"Stage\", \"dev\")}\n    return {\"requestId\": event[\"requestId\"], \"status\": \"success\", \"fragment\": fragment}",
+   "source": "https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/template-macros-author.html"
+  }
+ },
+ {
+  "kind": "cloudformation",
+  "name": "transformId",
+  "supported": true,
+  "fields": {
+   "description": "呼び出されたマクロの名前（Transform で指定した名前）です。",
+   "returns": "呼び出されたマクロ名",
+   "caution": "モデルでマクロを呼ぶときは、呼び出し側のマクロ名で上書きされて渡されます。",
+   "example": "def handler(event, context):\n    fragment = event[\"fragment\"]\n    fragment[\"Metadata\"] = {\"Stage\": event[\"params\"].get(\"Stage\", \"dev\")}\n    return {\"requestId\": event[\"requestId\"], \"status\": \"success\", \"fragment\": fragment}",
+   "source": "https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/template-macros-author.html"
+  }
+ },
+ {
+  "kind": "cloudformation",
+  "name": "errorMessage",
+  "supported": true,
+  "fields": {
+   "description": "マクロが失敗したときに理由を示す応答フィールドです。",
+   "returns": "失敗時の理由メッセージ",
+   "caution": "status が success 以外のとき、失敗の理由として読み取られます。成功応答には不要です。",
+   "example": "def handler(event, context):\n    fragment = event[\"fragment\"]\n    fragment[\"Metadata\"] = {\"Stage\": event[\"params\"].get(\"Stage\", \"dev\")}\n    return {\"requestId\": event[\"requestId\"], \"status\": \"success\", \"fragment\": fragment}",
+   "source": "https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/template-macros-author.html"
+  }
+ }
+]

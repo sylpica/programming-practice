@@ -19,7 +19,7 @@ const exampleSetup = {
   d2s:'mean=1.25;',"Array.sort":'values=newArray(3,1,2);',"Array.copy":'a=newArray(3,1,2);',"Array.getStatistics":'vals=newArray(1,2,3);',
   abs:'a=2; b=5;',"Math.min":'a=2; b=5;',"Math.max":'a=2; b=5;',minOf:'a=2; b=5;',maxOf:'a=2; b=5;',pow:'x=3;',exp:'x=1;',log:'x=2;',atan2:'dy=1; dx=1;',print:'mean=2.5;'
 };
-for (const r of reference) if (exampleSetup[r.name]) r.example = exampleSetup[r.name] + "\n" + r.example;
+for (const r of reference) if (Object.prototype.hasOwnProperty.call(exampleSetup, r.name)) r.example = exampleSetup[r.name] + "\n" + r.example;
 reference.find(r=>r.name === "File.exists").example = 'print(File.exists("/model/sample.tif"));';
 reference.find(r=>r.name === "open").example = 'open("/model/input/image1.tif");';
 const unmodeledReferences = new Set(["getValue", "setColor", "drawLine", "getPixelSize", "getLut", "getDateAndTime", "getLocationAndSize", "getDisplayedArea", "getSelectionCoordinates", "getLine", "getCursorLoc", "Roi.getBounds", "Roi.getCoordinates", "Roi.contains", "Roi.move", "Roi.translate", "Roi.setStrokeWidth", "Roi.setStrokeColor", "Roi.setFillColor", "Roi.setName", "Roi.getName", "Roi.setPosition", "Roi.getPosition", "Roi.getProperty", "Roi.setProperty", "RoiManager.select", "RoiManager.selectByName", "RoiManager.getName", "RoiManager.getIndex", "RoiManager.delete", "setForegroundColor", "File.open", "File.append", "runMacro"]);
@@ -47,6 +47,22 @@ export const definition = {
     ["モデル画像", "画素値・幅・高さ・階調などを明示した学習用の画像です。"],
     ["ROI", "測定や処理の対象として選択した領域。"],
     ["Log", "printの出力先です。"],
+    [
+      "スタック",
+      "複数枚のスライスを重ねた画像の集まりです。スライスの枚数がスタックの大きさになります。",
+    ],
+    [
+      "閾値・二値化",
+      "画素の明るさを閾値（境目の値）で区切り、白黒2値に分ける処理です。粒子カウントなどの前処理に使います。",
+    ],
+    [
+      "結果表（Results）",
+      "測定結果が1行ずつ並ぶ表です。ROIごとの測定値などが記録されます。",
+    ],
+    [
+      "未確定（値）",
+      "実行時に決まる値のことです。このアプリでは値を仮定して作らず、未確定のまま扱って、到達可能な分岐をすべて表示します。",
+    ],
   ],
   model: {
     kind: "json",

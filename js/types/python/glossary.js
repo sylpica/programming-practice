@@ -505,5 +505,19 @@ export const GLOSSARY = [
    "package",
    "pip"
   ]
+ },
+ {
+  "id": "unknown-value",
+  "ja": "未確定（値）",
+  "en": "unknown value",
+  "importance": "最重要",
+  "def": "実行時に決まる値のこと。本アプリのモデルでは、入力など実行時まで分からない値を仮定して作らず『未確定』のまま扱い、到達可能な分岐をすべて表示する。",
+  "easy": "まだ決まっていない値。決め打ちせず、あり得る分岐を全部見せてくれる。",
+  "example": null,
+  "misconception": "未確定はエラーや未対応のことだと思いがちだが、モデルが値を捏造しないための仕組みであり、未確定を含む分岐もすべて表示される。",
+  "related": [
+   "variable",
+   "object"
+  ]
  }
 ];

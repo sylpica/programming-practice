@@ -1,0 +1,710 @@
+[
+ {
+  "kind": "imagej",
+  "name": "sin",
+  "supported": true,
+  "fields": {
+   "description": "角度（ラジアン）の正弦（サイン）を返す。Math.sin と同じ働きをする、名前空間なしの関数。",
+   "returns": "正弦値",
+   "caution": "角度はラジアンで指定する。度から直すには角度に PI/180 を掛ける。",
+   "example": "y = sin(0.5);",
+   "source": "https://imagej.net/ij/developer/macro/functions2.html#sin"
+  }
+ },
+ {
+  "kind": "imagej",
+  "name": "cos",
+  "supported": true,
+  "fields": {
+   "description": "角度（ラジアン）の余弦（コサイン）を返す。Math.cos と同じ働きをする、名前空間なしの関数。",
+   "returns": "余弦値",
+   "caution": "角度はラジアンで指定する。",
+   "example": "y = cos(0.5);",
+   "source": "https://imagej.net/ij/developer/macro/functions2.html#cos"
+  }
+ },
+ {
+  "kind": "imagej",
+  "name": "tan",
+  "supported": true,
+  "fields": {
+   "description": "角度（ラジアン）の正接（タンジェント）を返す。Math.tan と同じ働きをする、名前空間なしの関数。",
+   "returns": "正接値",
+   "caution": "角度はラジアンで指定する。",
+   "example": "y = tan(0.5);",
+   "source": "https://imagej.net/ij/developer/macro/functions2.html#tan"
+  }
+ },
+ {
+  "kind": "imagej",
+  "name": "asin",
+  "supported": true,
+  "fields": {
+   "description": "逆正弦（アークサイン）をラジアンで返す。n は -1 から 1 の範囲で、戻り値は -PI/2 から PI/2 の範囲になる。Math.asin と同じ働きをする、名前空間なしの関数。",
+   "returns": "逆正弦（ラジアン）",
+   "caution": "",
+   "example": "a = asin(0.5);",
+   "source": "https://imagej.net/ij/developer/macro/functions2.html#asin"
+  }
+ },
+ {
+  "kind": "imagej",
+  "name": "acos",
+  "supported": true,
+  "fields": {
+   "description": "逆余弦（アークコサイン）をラジアンで返す。n は -1 から 1 の範囲で、戻り値は 0 から PI の範囲になる。Math.acos と同じ働きをする、名前空間なしの関数。",
+   "returns": "逆余弦（ラジアン）",
+   "caution": "",
+   "example": "a = acos(0.5);",
+   "source": "https://imagej.net/ij/developer/macro/functions2.html#acos"
+  }
+ },
+ {
+  "kind": "imagej",
+  "name": "atan",
+  "supported": true,
+  "fields": {
+   "description": "逆正接（アークタンジェント）をラジアンで返す。戻り値は -PI/2 から PI/2 の範囲になる。Math.atan と同じ働きをする、名前空間なしの関数。",
+   "returns": "逆正接（ラジアン）",
+   "caution": "象限まで考慮して角度を求めたい場合は atan2 を使う。",
+   "example": "a = atan(0.5);",
+   "source": "https://imagej.net/ij/developer/macro/functions2.html#atan"
+  }
+ },
+ {
+  "kind": "imagej",
+  "name": "lastIndexOf",
+  "supported": true,
+  "fields": {
+   "description": "文字列の中で部分文字列が最後に現れる位置を返す（0始まり）。見つからなければ -1。最初に現れる位置を返す indexOf と対になる関数で、拡張子の直前の区切りを探すときなどに使う。",
+   "returns": "出現位置（見つからなければ -1）",
+   "caution": "文字列メソッド形式 s.lastIndexOf(substring) でも同じ結果が得られる（1.52t以降）。",
+   "example": "p = lastIndexOf(\"sample_01.tif\", \"_\");",
+   "source": "https://imagej.net/ij/developer/macro/functions2.html#lastIndexOf"
+  }
+ },
+ {
+  "kind": "imagej",
+  "name": "trim",
+  "supported": true,
+  "fields": {
+   "description": "文字列の前後にある空白を取り除いたコピーを返す。String.trim と同じ働きで、文字列メソッド形式 s.trim() でも書ける。",
+   "returns": "前後の空白を取り除いた文字列",
+   "caution": "",
+   "example": "s = trim(\"  sample  \");",
+   "source": "https://imagej.net/ij/developer/macro/functions2.html#String.trim"
+  }
+ },
+ {
+  "kind": "imagej",
+  "name": "toLowerCase",
+  "supported": true,
+  "fields": {
+   "description": "文字列のすべての文字を小文字に変換したコピーを返す。拡張子の比較など、大文字小文字を揃えてから判定したい場合に使う。",
+   "returns": "小文字化した文字列",
+   "caution": "文字列メソッド形式 s.toLowerCase でも同じ結果が得られる（1.52t以降）。",
+   "example": "s = toLowerCase(\"Sample_01\");",
+   "source": "https://imagej.net/ij/developer/macro/functions2.html#toLowerCase"
+  }
+ },
+ {
+  "kind": "imagej",
+  "name": "toUpperCase",
+  "supported": true,
+  "fields": {
+   "description": "文字列のすべての文字を大文字に変換したコピーを返す。表示用ラベルの整形などに使う。",
+   "returns": "大文字化した文字列",
+   "caution": "文字列メソッド形式 s.toUpperCase でも同じ結果が得られる（1.52t以降）。",
+   "example": "s = toUpperCase(\"Sample_01\");",
+   "source": "https://imagej.net/ij/developer/macro/functions2.html#toUpperCase"
+  }
+ },
+ {
+  "kind": "imagej",
+  "name": "charCodeAt",
+  "supported": true,
+  "fields": {
+   "description": "文字列の指定位置（0始まり）にある文字の Unicode 値を返す。逆の変換は fromCharCode を使う。",
+   "returns": "文字の Unicode 値（数値）",
+   "caution": "index は 0 から lengthOf(string) までの範囲で指定する。",
+   "example": "c = charCodeAt(\"A\", 0);",
+   "source": "https://imagej.net/ij/developer/macro/functions2.html#charCodeAt"
+  }
+ },
+ {
+  "kind": "imagej",
+  "name": "fromCharCode",
+  "supported": true,
+  "fields": {
+   "description": "1つ以上の Unicode 値を、それぞれ対応する文字からなる文字列に変換して返す。charCodeAt の逆の変換にあたる。",
+   "returns": "変換した文字列",
+   "caution": "",
+   "example": "s = fromCharCode(65);",
+   "source": "https://imagej.net/ij/developer/macro/functions2.html#fromCharCode"
+  }
+ },
+ {
+  "kind": "imagej",
+  "name": "toString",
+  "supported": true,
+  "fields": {
+   "description": "数値を10進表記の文字列に変換して返す。第2引数で小数点以下の桁数を指定する形式もある。",
+   "returns": "数値の文字列",
+   "caution": "桁数を指定して整形したい場合は d2s も使える。このアプリでは第2引数の桁数指定はモデル化されず、値は ImageJ の数値表示に準じて文字列化される。",
+   "example": "s = toString(255);",
+   "source": "https://imagej.net/ij/developer/macro/functions2.html#toString"
+  }
+ },
+ {
+  "kind": "imagej",
+  "name": "getBoundingRect",
+  "supported": true,
+  "fields": {
+   "description": "現在の選択の外接矩形（バウンディングボックス）の左上座標と幅・高さを、指定した変数に書き込む。getSelectionBounds の旧名にあたる関数で、働きは同じ。",
+   "returns": "戻り値なし（処理または引数の変数への書き込み）",
+   "caution": "公式では getSelectionBounds への置き換えが案内されている。引数はすべて書き込み先の変数名で、選択がない場合は画像全体の範囲が書き込まれる。",
+   "example": "getBoundingRect(bx, by, bw, bh);\nprint(bw, bh);",
+   "source": "https://imagej.net/ij/developer/macro/functions2.html#getBoundingRect"
+  }
+ },
+ {
+  "kind": "imagej",
+  "name": "Math.abs",
+  "supported": true,
+  "fields": {
+   "description": "絶対値を返す。Math 名前空間の関数で、裸名の abs(n) と同じ働きをする。",
+   "returns": "n の絶対値",
+   "caution": "",
+   "example": "y = Math.abs(-3);",
+   "source": "https://imagej.net/ij/developer/macro/functions2.html#Math.abs"
+  }
+ },
+ {
+  "kind": "imagej",
+  "name": "Math.sqrt",
+  "supported": true,
+  "fields": {
+   "description": "平方根を返す。n が負の場合は NaN になる。裸名の sqrt(n) と同じ働きをする。",
+   "returns": "n の平方根",
+   "caution": "",
+   "example": "y = Math.sqrt(2);",
+   "source": "https://imagej.net/ij/developer/macro/functions2.html#Math.sqrt"
+  }
+ },
+ {
+  "kind": "imagej",
+  "name": "Math.exp",
+  "supported": true,
+  "fields": {
+   "description": "自然指数関数 e の n 乗を返す。裸名の exp(n) と同じ働きをする。",
+   "returns": "e^n",
+   "caution": "",
+   "example": "y = Math.exp(1);",
+   "source": "https://imagej.net/ij/developer/macro/functions2.html#Math.exp"
+  }
+ },
+ {
+  "kind": "imagej",
+  "name": "Math.log",
+  "supported": true,
+  "fields": {
+   "description": "自然対数（底 e）を返す。裸名の log(n) と同じ働きをする。",
+   "returns": "ln(n)",
+   "caution": "常用対数（底 10）は Math.log10 を使う。",
+   "example": "y = Math.log(10);",
+   "source": "https://imagej.net/ij/developer/macro/functions2.html#Math.log"
+  }
+ },
+ {
+  "kind": "imagej",
+  "name": "Math.log10",
+  "supported": true,
+  "fields": {
+   "description": "常用対数（底 10）を返す。自然対数は Math.log を使う。",
+   "returns": "log10(n)",
+   "caution": "log(n)/log(10) でも同じ値が得られる。",
+   "example": "y = Math.log10(100);",
+   "source": "https://imagej.net/ij/developer/macro/functions2.html#Math.log10"
+  }
+ },
+ {
+  "kind": "imagej",
+  "name": "Math.floor",
+  "supported": true,
+  "fields": {
+   "description": "n 以下の最大の整数を返す（切り捨て）。裸名の floor(n) と同じ働きをする。",
+   "returns": "切り捨てた整数",
+   "caution": "",
+   "example": "y = Math.floor(2.9);",
+   "source": "https://imagej.net/ij/developer/macro/functions2.html#Math.floor"
+  }
+ },
+ {
+  "kind": "imagej",
+  "name": "Math.sin",
+  "supported": true,
+  "fields": {
+   "description": "角度（ラジアン）の正弦（サイン）を返す。裸名の sin(angle) と同じ働きをする。",
+   "returns": "正弦値",
+   "caution": "",
+   "example": "y = Math.sin(0.5);",
+   "source": "https://imagej.net/ij/developer/macro/functions2.html#Math.sin"
+  }
+ },
+ {
+  "kind": "imagej",
+  "name": "Math.cos",
+  "supported": true,
+  "fields": {
+   "description": "角度（ラジアン）の余弦（コサイン）を返す。裸名の cos(angle) と同じ働きをする。",
+   "returns": "余弦値",
+   "caution": "",
+   "example": "y = Math.cos(0.5);",
+   "source": "https://imagej.net/ij/developer/macro/functions2.html#Math.cos"
+  }
+ },
+ {
+  "kind": "imagej",
+  "name": "Math.tan",
+  "supported": true,
+  "fields": {
+   "description": "角度（ラジアン）の正接（タンジェント）を返す。裸名の tan(angle) と同じ働きをする。",
+   "returns": "正接値",
+   "caution": "",
+   "example": "y = Math.tan(0.5);",
+   "source": "https://imagej.net/ij/developer/macro/functions2.html#Math.tan"
+  }
+ },
+ {
+  "kind": "imagej",
+  "name": "Math.asin",
+  "supported": true,
+  "fields": {
+   "description": "逆正弦（アークサイン）をラジアンで返す。裸名の asin(n) と同じ働きをする。",
+   "returns": "逆正弦（ラジアン）",
+   "caution": "",
+   "example": "a = Math.asin(0.5);",
+   "source": "https://imagej.net/ij/developer/macro/functions2.html#Math.asin"
+  }
+ },
+ {
+  "kind": "imagej",
+  "name": "Math.acos",
+  "supported": true,
+  "fields": {
+   "description": "逆余弦（アークコサイン）をラジアンで返す。裸名の acos(n) と同じ働きをする。",
+   "returns": "逆余弦（ラジアン）",
+   "caution": "",
+   "example": "a = Math.acos(0.5);",
+   "source": "https://imagej.net/ij/developer/macro/functions2.html#Math.acos"
+  }
+ },
+ {
+  "kind": "imagej",
+  "name": "Math.atan",
+  "supported": true,
+  "fields": {
+   "description": "逆正接（アークタンジェント）をラジアンで返す。戻り値は -PI/2 から PI/2 の範囲になる。裸名の atan(n) と同じ働きをする。",
+   "returns": "逆正接（ラジアン）",
+   "caution": "",
+   "example": "a = Math.atan(0.5);",
+   "source": "https://imagej.net/ij/developer/macro/functions2.html#Math.atan"
+  }
+ },
+ {
+  "kind": "imagej",
+  "name": "Math.sinh",
+  "supported": true,
+  "fields": {
+   "description": "双曲線正弦（ハイパボリックサイン）を返す。sinh(n) = (e^n - e^-n) / 2 で定義される双曲線関数。",
+   "returns": "sinh(n)",
+   "caution": "",
+   "example": "y = Math.sinh(0.5);",
+   "source": "https://imagej.net/ij/developer/macro/functions2.html#Math.sinh"
+  }
+ },
+ {
+  "kind": "imagej",
+  "name": "Math.cosh",
+  "supported": true,
+  "fields": {
+   "description": "双曲線余弦（ハイパボリックコサイン）を返す。cosh(n) = (e^n + e^-n) / 2 で定義される双曲線関数。",
+   "returns": "cosh(n)",
+   "caution": "",
+   "example": "y = Math.cosh(0.5);",
+   "source": "https://imagej.net/ij/developer/macro/functions2.html#Math.cosh"
+  }
+ },
+ {
+  "kind": "imagej",
+  "name": "Math.tanh",
+  "supported": true,
+  "fields": {
+   "description": "双曲線正接（ハイパボリックタンジェント）を返す。tanh(n) = sinh(n) / cosh(n) で定義される双曲線関数。",
+   "returns": "tanh(n)",
+   "caution": "",
+   "example": "y = Math.tanh(0.5);",
+   "source": "https://imagej.net/ij/developer/macro/functions2.html#Math.tanh"
+  }
+ },
+ {
+  "kind": "imagej",
+  "name": "Math.pow",
+  "supported": true,
+  "fields": {
+   "description": "base の exponent 乗を返す。裸名の pow(base, exponent) と同じ働きをする。",
+   "returns": "base^exponent",
+   "caution": "",
+   "example": "y = Math.pow(2, 3);",
+   "source": "https://imagej.net/ij/developer/macro/functions2.html#Math.pow"
+  }
+ },
+ {
+  "kind": "imagej",
+  "name": "Math.atan2",
+  "supported": true,
+  "fields": {
+   "description": "y/x の逆正接を、象限を考慮して -PI から PI の範囲で返す。裸名の atan2(y, x) と同じ働きをする。",
+   "returns": "角度（ラジアン）",
+   "caution": "引数の順序は (y, x)。",
+   "example": "a = Math.atan2(1, 1);",
+   "source": "https://imagej.net/ij/developer/macro/functions2.html#Math.atan2"
+  }
+ },
+ {
+  "kind": "imagej",
+  "name": "Math.sqr",
+  "supported": true,
+  "fields": {
+   "description": "n の二乗（n×n）を返す。平方根の sqrt と対になる関数。",
+   "returns": "n^2",
+   "caution": "",
+   "example": "y = Math.sqr(3);",
+   "source": "https://imagej.net/ij/developer/macro/functions2.html#Math.sqr"
+  }
+ },
+ {
+  "kind": "imagej",
+  "name": "Math.round",
+  "supported": true,
+  "fields": {
+   "description": "最も近い整数に丸めて返す。裸名の round(n) と同じ働きをする。",
+   "returns": "丸めた整数",
+   "caution": "",
+   "example": "y = Math.round(2.5);",
+   "source": "https://imagej.net/ij/developer/macro/functions2.html#Math.round"
+  }
+ },
+ {
+  "kind": "imagej",
+  "name": "String.trim",
+  "supported": true,
+  "fields": {
+   "description": "文字列の前後にある空白を取り除いたコピーを返す。裸名の trim と同じ働きで、文字列メソッド形式 s.trim() でも書ける（1.52t以降）。",
+   "returns": "前後の空白を取り除いた文字列",
+   "caution": "",
+   "example": "s = String.trim(\"  sample  \");",
+   "source": "https://imagej.net/ij/developer/macro/functions2.html#String.trim"
+  }
+ },
+ {
+  "kind": "imagej",
+  "name": "String.join",
+  "supported": true,
+  "fields": {
+   "description": "配列の要素を区切り文字列でつないだ文字列を作る。delimiter を省略すると \", \" でつながれる。split の逆の操作にあたる。",
+   "returns": "つないだ文字列",
+   "caution": "",
+   "example": "a = newArray(\"a\", \"b\", \"c\");\ns = String.join(a, \"-\");",
+   "source": "https://imagej.net/ij/developer/macro/functions2.html#String.join"
+  }
+ },
+ {
+  "kind": "imagej",
+  "name": "String.pad",
+  "supported": true,
+  "fields": {
+   "description": "数値または文字列 n の前に 0 を補って、全体が length 文字の幅になる文字列を返す。連番ファイル名の桁揃えなどに使う。",
+   "returns": "0 で桁揃えした文字列",
+   "caution": "n は数値でも文字列でもよい。すでに length 以上の長さがある場合はそのまま返る。",
+   "example": "s = String.pad(7, 3);",
+   "source": "https://imagej.net/ij/developer/macro/functions2.html#String.pad"
+  }
+ },
+ {
+  "kind": "imagej",
+  "name": "contains",
+  "supported": true,
+  "fields": {
+   "description": "文字列 s が部分文字列 substring を含むかどうかを返す、文字列メソッド形式の関数。ファイル名のキーワード判定など、条件分岐によく使う。",
+   "returns": "含めば 1（true）、そうでなければ 0（false）",
+   "caution": "この形式はメソッドとしてのみ使える。裸名の関数形式 contains(string, substring) はない。",
+   "example": "s = \"sample_01.tif\";\nif (s.contains(\"01\")) print(\"対象です\");",
+   "source": "https://imagej.net/ij/developer/macro/functions2.html#contains"
+  }
+ },
+ {
+  "kind": "imagej",
+  "name": "charAt",
+  "supported": true,
+  "fields": {
+   "description": "文字列 s の指定位置（0始まり）にある文字を返す、文字列メソッド形式の関数。文字の Unicode 値が欲しい場合は charCodeAt を使う。",
+   "returns": "指定位置の文字（文字列）",
+   "caution": "範囲外の位置を指定するとエラーで止まる。",
+   "example": "s = \"sample\";\nprint(s.charAt(0));",
+   "source": "https://imagej.net/ij/developer/macro/functions2.html#charAt"
+  }
+ },
+ {
+  "kind": "imagej",
+  "name": "matches",
+  "supported": true,
+  "fields": {
+   "description": "文字列 s 全体が正規表現 regex に一致するかどうかを返す、文字列メソッド形式の関数。部分一致ではなく、文字列全体との一致を判定する。",
+   "returns": "一致すれば 1（true）、そうでなければ 0（false）",
+   "caution": "裸名の関数形式 matches(string, regex) も公式にはあるが、このアプリで対応するのはメソッド形式のみ。",
+   "example": "s = \"sample_01.tif\";\nif (s.matches(\".*01.*\")) print(\"一致\");",
+   "source": "https://imagej.net/ij/developer/macro/functions2.html#matches"
+  }
+ },
+ {
+  "kind": "imagej",
+  "name": "PI",
+  "supported": true,
+  "fields": {
+   "description": "円周率 π（3.14159265…）を表す定義済み定数。円の円周と直径の比で、角度の度とラジアンの変換（度 = ラジアン * 180/PI）などに使う。",
+   "returns": "円周率 π",
+   "caution": "括弧は付けない。組み込みの名前のため代入はできない。",
+   "example": "print(PI);",
+   "source": "https://imagej.net/ij/developer/macro/functions2.html#PI"
+  }
+ },
+ {
+  "kind": "imagej",
+  "name": "File.separator",
+  "supported": true,
+  "fields": {
+   "description": "ファイル名の区切り文字を返す定義済み変数。値は OS によって \"/\" またはバックスラッシュのどちらかになる。パスを組み立てるときに、フォルダのパスとファイル名の間に入れて使う。",
+   "returns": "区切り文字（文字列）",
+   "caution": "括弧は付けない。このアプリのモデルでは \"/\" を返す。",
+   "example": "sep = File.separator;\nprint(sep);",
+   "source": "https://imagej.net/ij/developer/macro/functions2.html#File.separator"
+  }
+ },
+ {
+  "kind": "imagej",
+  "name": "Dialog.addCheckbox",
+  "supported": true,
+  "fields": {
+   "description": "構築中のダイアログにチェックボックスを追加する。label は表示ラベル、default は初期状態（true または false）。チェックの状態は Dialog.getCheckbox で取り出す。",
+   "returns": "戻り値なし（処理または引数の変数への書き込み）",
+   "caution": "このアプリでは Dialog. 接頭辞が汎用モデルで受理され、値は実行時に決まるものとして扱う（個別の動作はモデル化されていない）。",
+   "example": "Dialog.addCheckbox(\"対象を含める\", true);",
+   "source": "https://imagej.net/ij/developer/macro/functions2.html#Dialog.addCheckbox"
+  }
+ },
+ {
+  "kind": "imagej",
+  "name": "Dialog.addCheckboxGroup",
+  "supported": true,
+  "fields": {
+   "description": "構築中のダイアログに、rows 行×columns 列の格子状のチェックボックス群を追加する。labels は各チェックボックスのラベルの配列、defaults は初期状態の配列。状態は Dialog.getCheckbox で順に取り出す。",
+   "returns": "戻り値なし（処理または引数の変数への書き込み）",
+   "caution": "このアプリでは Dialog. 接頭辞が汎用モデルで受理され、値は実行時に決まるものとして扱う（個別の動作はモデル化されていない）。",
+   "example": "labels = newArray(\"A\", \"B\", \"C\", \"D\");\ndefs = newArray(true, false, true, false);\nDialog.addCheckboxGroup(2, 2, labels, defs);",
+   "source": "https://imagej.net/ij/developer/macro/functions2.html#Dialog.addCheckboxGroup"
+  }
+ },
+ {
+  "kind": "imagej",
+  "name": "Dialog.addDirectory",
+  "supported": true,
+  "fields": {
+   "description": "構築中のダイアログに、フォルダ入力欄と「Browse」ボタンを追加する。label は表示ラベル、defaultPath は初期パス。入力されたパスは Dialog.getString で取り出す。",
+   "returns": "戻り値なし（処理または引数の変数への書き込み）",
+   "caution": "第3引数で欄の幅（文字数）も指定できる（1.54i以降）。このアプリでは Dialog. 接頭辞が汎用モデルで受理され、値は実行時に決まるものとして扱う（個別の動作はモデル化されていない）。",
+   "example": "Dialog.addDirectory(\"保存先:\", \"/data/out/\");",
+   "source": "https://imagej.net/ij/developer/macro/functions2.html#Dialog.addDirectory"
+  }
+ },
+ {
+  "kind": "imagej",
+  "name": "Dialog.addFile",
+  "supported": true,
+  "fields": {
+   "description": "構築中のダイアログに、ファイル入力欄と「Browse」ボタンを追加する。label は表示ラベル、defaultPath は初期パス。入力されたパスは Dialog.getString で取り出す。",
+   "returns": "戻り値なし（処理または引数の変数への書き込み）",
+   "caution": "第3引数で欄の幅（文字数）も指定できる（1.54i以降）。このアプリでは Dialog. 接頭辞が汎用モデルで受理され、値は実行時に決まるものとして扱う（個別の動作はモデル化されていない）。",
+   "example": "Dialog.addFile(\"ファイル:\", \"/data/sample.tif\");",
+   "source": "https://imagej.net/ij/developer/macro/functions2.html#Dialog.addFile"
+  }
+ },
+ {
+  "kind": "imagej",
+  "name": "Dialog.addHelp",
+  "supported": true,
+  "fields": {
+   "description": "構築中のダイアログに「Help」ボタンを追加する。押すと指定した URL が既定のブラウザで開かれる。引数が \"<html>\" で始まる場合は、HTML 形式のメッセージとして表示される。",
+   "returns": "戻り値なし（処理または引数の変数への書き込み）",
+   "caution": "このアプリでは Dialog. 接頭辞が汎用モデルで受理され、値は実行時に決まるものとして扱う（個別の動作はモデル化されていない）。",
+   "example": "Dialog.addHelp(\"https://imagej.net/\");",
+   "source": "https://imagej.net/ij/developer/macro/functions2.html#Dialog.addHelp"
+  }
+ },
+ {
+  "kind": "imagej",
+  "name": "Dialog.addImage",
+  "supported": true,
+  "fields": {
+   "description": "構築中のダイアログに画像を表示する。引数は画像ファイルのパスまたは URL。",
+   "returns": "戻り値なし（処理または引数の変数への書き込み）",
+   "caution": "このアプリでは Dialog. 接頭辞が汎用モデルで受理され、値は実行時に決まるものとして扱う（個別の動作はモデル化されていない）。",
+   "example": "Dialog.addImage(\"/data/sample.tif\");",
+   "source": "https://imagej.net/ij/developer/macro/functions2.html#Dialog.addImage"
+  }
+ },
+ {
+  "kind": "imagej",
+  "name": "Dialog.addImageChoice",
+  "supported": true,
+  "fields": {
+   "description": "構築中のダイアログに、現在開かれている画像の一覧から選ぶプルダウンメニューを追加する。選ばれた画像のタイトルは Dialog.getImageChoice で取り出す。開かれている画像が無いとマクロは中止される。",
+   "returns": "戻り値なし（処理または引数の変数への書き込み）",
+   "caution": "第2引数で初期選択の画像も指定できる（1.53s以降）。このアプリでは Dialog. 接頭辞が汎用モデルで受理され、値は実行時に決まるものとして扱う（個別の動作はモデル化されていない）。",
+   "example": "Dialog.addImageChoice(\"画像:\");",
+   "source": "https://imagej.net/ij/developer/macro/functions2.html#Dialog.addImageChoice"
+  }
+ },
+ {
+  "kind": "imagej",
+  "name": "Dialog.addMessage",
+  "supported": true,
+  "fields": {
+   "description": "構築中のダイアログにメッセージ（説明文）を追加する。文字列に改行文字を含めると複数行に分かれる。第2引数でフォントサイズ、第3引数で文字色も指定できる。",
+   "returns": "戻り値なし（処理または引数の変数への書き込み）",
+   "caution": "このアプリでは Dialog. 接頭辞が汎用モデルで受理され、値は実行時に決まるものとして扱う（個別の動作はモデル化されていない）。",
+   "example": "Dialog.addMessage(\"条件を確認してください\");",
+   "source": "https://imagej.net/ij/developer/macro/functions2.html#Dialog.addMessage"
+  }
+ },
+ {
+  "kind": "imagej",
+  "name": "Dialog.addRadioButtonGroup",
+  "supported": true,
+  "fields": {
+   "description": "構築中のダイアログにラジオボタンのグループを追加する。label はグループのラベル、items はボタンのラベルの配列、rows と columns は格子の行数と列数、default は初期選択のラベル。選ばれた値は Dialog.getRadioButton で取り出す。",
+   "returns": "戻り値なし（処理または引数の変数への書き込み）",
+   "caution": "このアプリでは Dialog. 接頭辞が汎用モデルで受理され、値は実行時に決まるものとして扱う（個別の動作はモデル化されていない）。",
+   "example": "items = newArray(\"A\", \"B\");\nDialog.addRadioButtonGroup(\"方法:\", items, 1, 2, \"A\");",
+   "source": "https://imagej.net/ij/developer/macro/functions2.html#Dialog.addRadioButtonGroup"
+  }
+ },
+ {
+  "kind": "imagej",
+  "name": "Dialog.addSlider",
+  "supported": true,
+  "fields": {
+   "description": "構築中のダイアログに、スライダー付きの数値入力欄を追加する。label は表示ラベル、min と max は範囲、default は初期値。値は Dialog.getNumber で取り出す。",
+   "returns": "戻り値なし（処理または引数の変数への書き込み）",
+   "caution": "このアプリでは Dialog. 接頭辞が汎用モデルで受理され、値は実行時に決まるものとして扱う（個別の動作はモデル化されていない）。",
+   "example": "Dialog.addSlider(\"半径:\", 1, 50, 10);",
+   "source": "https://imagej.net/ij/developer/macro/functions2.html#Dialog.addSlider"
+  }
+ },
+ {
+  "kind": "imagej",
+  "name": "Dialog.addToSameRow",
+  "supported": true,
+  "fields": {
+   "description": "次に追加する項目を、前の項目と同じ行に並べて配置する。数値欄・スライダー・選択欄・チェックボックス・文字列欄・メッセージなどに使える。",
+   "returns": "戻り値なし（処理または引数の変数への書き込み）",
+   "caution": "このアプリでは Dialog. 接頭辞が汎用モデルで受理され、値は実行時に決まるものとして扱う（個別の動作はモデル化されていない）。",
+   "example": "Dialog.addToSameRow();",
+   "source": "https://imagej.net/ij/developer/macro/functions2.html#Dialog.addToSameRow"
+  }
+ },
+ {
+  "kind": "imagej",
+  "name": "Dialog.createNonBlocking",
+  "supported": true,
+  "fields": {
+   "description": "汎用ダイアログの構築を、モードレス（ノンブロッキング）形式で開始する。Dialog.create がモーダルなのに対し、こちらは表示中も他の操作ができる。以後の手順は Dialog.create と同じで、Dialog.add 系で入力欄を追加し、Dialog.show で表示する。",
+   "returns": "戻り値なし（処理または引数の変数への書き込み）",
+   "caution": "このアプリでは Dialog. 接頭辞が汎用モデルで受理され、値は実行時に決まるものとして扱う（個別の動作はモデル化されていない）。",
+   "example": "Dialog.createNonBlocking(\"条件設定\");",
+   "source": "https://imagej.net/ij/developer/macro/functions2.html#Dialog.createNonBlocking"
+  }
+ },
+ {
+  "kind": "imagej",
+  "name": "Dialog.getCheckbox",
+  "supported": true,
+  "fields": {
+   "description": "表示したダイアログのチェックボックスの状態を、追加した順に1つずつ取り出す。チェックボックス群（Dialog.addCheckboxGroup）の状態もこの関数で順に取る。",
+   "returns": "チェックされていれば真（true）、そうでなければ偽（false）",
+   "caution": "このアプリでは Dialog. 接頭辞が汎用モデルで受理され、値は実行時に決まるものとして扱う（個別の動作はモデル化されていない）。",
+   "example": "v = Dialog.getCheckbox();",
+   "source": "https://imagej.net/ij/developer/macro/functions2.html#Dialog.getCheckbox"
+  }
+ },
+ {
+  "kind": "imagej",
+  "name": "Dialog.getImageChoice",
+  "supported": true,
+  "fields": {
+   "description": "表示したダイアログの画像選択欄（Dialog.addImageChoice）で選ばれた画像のタイトルを、追加した順に1つずつ文字列で取り出す。",
+   "returns": "選ばれた画像のタイトル（文字列）",
+   "caution": "このアプリでは Dialog. 接頭辞が汎用モデルで受理され、値は実行時に決まるものとして扱う（個別の動作はモデル化されていない）。",
+   "example": "t = Dialog.getImageChoice();",
+   "source": "https://imagej.net/ij/developer/macro/functions2.html#Dialog.getImageChoice"
+  }
+ },
+ {
+  "kind": "imagej",
+  "name": "Dialog.getLocation",
+  "supported": true,
+  "fields": {
+   "description": "表示したダイアログの画面上の位置を、指定した変数に書き込む。ダイアログ位置の記録や、次回表示位置の復元に使う。",
+   "returns": "戻り値なし（処理または引数の変数への書き込み）",
+   "caution": "引数は書き込み先の変数名。このアプリでは Dialog. 接頭辞が汎用モデルで受理され、値は実行時に決まるものとして扱う（個別の動作はモデル化されていない）。",
+   "example": "x = 0; y = 0;\nDialog.getLocation(x, y);",
+   "source": "https://imagej.net/ij/developer/macro/functions2.html#Dialog.getLocation"
+  }
+ },
+ {
+  "kind": "imagej",
+  "name": "Dialog.getRadioButton",
+  "supported": true,
+  "fields": {
+   "description": "表示したダイアログのラジオボタングループ（Dialog.addRadioButtonGroup）で選ばれた項目を、追加した順に1つずつ文字列で取り出す。",
+   "returns": "選ばれた項目（文字列）",
+   "caution": "このアプリでは Dialog. 接頭辞が汎用モデルで受理され、値は実行時に決まるものとして扱う（個別の動作はモデル化されていない）。",
+   "example": "v = Dialog.getRadioButton();",
+   "source": "https://imagej.net/ij/developer/macro/functions2.html#Dialog.getRadioButton"
+  }
+ },
+ {
+  "kind": "imagej",
+  "name": "Dialog.setInsets",
+  "supported": true,
+  "fields": {
+   "description": "次に追加する項目の余白（インセット）を、上・左・下の順に指定して既定値から変更する。余白は項目の種類ごとに既定値が決まっており、それを上書きしたい場合に使う。",
+   "returns": "戻り値なし（処理または引数の変数への書き込み）",
+   "caution": "このアプリでは Dialog. 接頭辞が汎用モデルで受理され、値は実行時に決まるものとして扱う（個別の動作はモデル化されていない）。",
+   "example": "Dialog.setInsets(10, 20, 0);",
+   "source": "https://imagej.net/ij/developer/macro/functions2.html#Dialog.setInsets"
+  }
+ },
+ {
+  "kind": "imagej",
+  "name": "Dialog.setLocation",
+  "supported": true,
+  "fields": {
+   "description": "ダイアログが表示される画面上の位置を、x と y の画面座標で指定する。",
+   "returns": "戻り値なし（処理または引数の変数への書き込み）",
+   "caution": "このアプリでは Dialog. 接頭辞が汎用モデルで受理され、値は実行時に決まるものとして扱う（個別の動作はモデル化されていない）。",
+   "example": "Dialog.setLocation(100, 100);",
+   "source": "https://imagej.net/ij/developer/macro/functions2.html#Dialog.setLocation"
+  }
+ }
+]

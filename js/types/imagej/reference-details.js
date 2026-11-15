@@ -422,5 +422,182 @@ export const referenceDetails = {
   },
   "requires": {
     "source": "https://imagej.net/ij/developer/macro/functions2.html#requires"
+  },
+  "sin": {
+    "source": "https://imagej.net/ij/developer/macro/functions2.html#sin"
+  },
+  "cos": {
+    "source": "https://imagej.net/ij/developer/macro/functions2.html#cos"
+  },
+  "tan": {
+    "source": "https://imagej.net/ij/developer/macro/functions2.html#tan"
+  },
+  "asin": {
+    "source": "https://imagej.net/ij/developer/macro/functions2.html#asin"
+  },
+  "acos": {
+    "source": "https://imagej.net/ij/developer/macro/functions2.html#acos"
+  },
+  "atan": {
+    "source": "https://imagej.net/ij/developer/macro/functions2.html#atan"
+  },
+  "PI": {
+    "source": "https://imagej.net/ij/developer/macro/functions2.html#PI"
+  },
+  "lastIndexOf": {
+    "source": "https://imagej.net/ij/developer/macro/functions2.html#lastIndexOf"
+  },
+  "trim": {
+    "source": "https://imagej.net/ij/developer/macro/functions2.html#String.trim"
+  },
+  "toLowerCase": {
+    "source": "https://imagej.net/ij/developer/macro/functions2.html#toLowerCase"
+  },
+  "toUpperCase": {
+    "source": "https://imagej.net/ij/developer/macro/functions2.html#toUpperCase"
+  },
+  "charCodeAt": {
+    "source": "https://imagej.net/ij/developer/macro/functions2.html#charCodeAt"
+  },
+  "fromCharCode": {
+    "source": "https://imagej.net/ij/developer/macro/functions2.html#fromCharCode"
+  },
+  "toString": {
+    "source": "https://imagej.net/ij/developer/macro/functions2.html#toString"
+  },
+  "getBoundingRect": {
+    "source": "https://imagej.net/ij/developer/macro/functions2.html#getBoundingRect"
+  },
+  "Math.abs": {
+    "source": "https://imagej.net/ij/developer/macro/functions2.html#Math.abs"
+  },
+  "Math.sqrt": {
+    "source": "https://imagej.net/ij/developer/macro/functions2.html#Math.sqrt"
+  },
+  "Math.exp": {
+    "source": "https://imagej.net/ij/developer/macro/functions2.html#Math.exp"
+  },
+  "Math.log": {
+    "source": "https://imagej.net/ij/developer/macro/functions2.html#Math.log"
+  },
+  "Math.log10": {
+    "source": "https://imagej.net/ij/developer/macro/functions2.html#Math.log10"
+  },
+  "Math.floor": {
+    "source": "https://imagej.net/ij/developer/macro/functions2.html#Math.floor"
+  },
+  "Math.sin": {
+    "source": "https://imagej.net/ij/developer/macro/functions2.html#Math.sin"
+  },
+  "Math.cos": {
+    "source": "https://imagej.net/ij/developer/macro/functions2.html#Math.cos"
+  },
+  "Math.tan": {
+    "source": "https://imagej.net/ij/developer/macro/functions2.html#Math.tan"
+  },
+  "Math.asin": {
+    "source": "https://imagej.net/ij/developer/macro/functions2.html#Math.asin"
+  },
+  "Math.acos": {
+    "source": "https://imagej.net/ij/developer/macro/functions2.html#Math.acos"
+  },
+  "Math.atan": {
+    "source": "https://imagej.net/ij/developer/macro/functions2.html#Math.atan"
+  },
+  "Math.sinh": {
+    "source": "https://imagej.net/ij/developer/macro/functions2.html#Math.sinh"
+  },
+  "Math.cosh": {
+    "source": "https://imagej.net/ij/developer/macro/functions2.html#Math.cosh"
+  },
+  "Math.tanh": {
+    "source": "https://imagej.net/ij/developer/macro/functions2.html#Math.tanh"
+  },
+  "Math.pow": {
+    "source": "https://imagej.net/ij/developer/macro/functions2.html#Math.pow"
+  },
+  "Math.atan2": {
+    "source": "https://imagej.net/ij/developer/macro/functions2.html#Math.atan2"
+  },
+  "Math.sqr": {
+    "source": "https://imagej.net/ij/developer/macro/functions2.html#Math.sqr"
+  },
+  "Math.round": {
+    "source": "https://imagej.net/ij/developer/macro/functions2.html#Math.round"
+  },
+  "String.trim": {
+    "source": "https://imagej.net/ij/developer/macro/functions2.html#String.trim"
+  },
+  "String.join": {
+    "source": "https://imagej.net/ij/developer/macro/functions2.html#String.join"
+  },
+  "String.pad": {
+    "source": "https://imagej.net/ij/developer/macro/functions2.html#String.pad"
+  },
+  "contains": {
+    "source": "https://imagej.net/ij/developer/macro/functions2.html#contains"
+  },
+  "charAt": {
+    "source": "https://imagej.net/ij/developer/macro/functions2.html#charAt"
+  },
+  "matches": {
+    "source": "https://imagej.net/ij/developer/macro/functions2.html#matches"
+  },
+  "File.separator": {
+    "source": "https://imagej.net/ij/developer/macro/functions2.html#File.separator"
+  },
+  "Dialog.addCheckbox": {
+    "source": "https://imagej.net/ij/developer/macro/functions2.html#Dialog.addCheckbox"
+  },
+  "Dialog.addCheckboxGroup": {
+    "source": "https://imagej.net/ij/developer/macro/functions2.html#Dialog.addCheckboxGroup"
+  },
+  "Dialog.addDirectory": {
+    "source": "https://imagej.net/ij/developer/macro/functions2.html#Dialog.addDirectory"
+  },
+  "Dialog.addFile": {
+    "source": "https://imagej.net/ij/developer/macro/functions2.html#Dialog.addFile"
+  },
+  "Dialog.addHelp": {
+    "source": "https://imagej.net/ij/developer/macro/functions2.html#Dialog.addHelp"
+  },
+  "Dialog.addImage": {
+    "source": "https://imagej.net/ij/developer/macro/functions2.html#Dialog.addImage"
+  },
+  "Dialog.addImageChoice": {
+    "source": "https://imagej.net/ij/developer/macro/functions2.html#Dialog.addImageChoice"
+  },
+  "Dialog.addMessage": {
+    "source": "https://imagej.net/ij/developer/macro/functions2.html#Dialog.addMessage"
+  },
+  "Dialog.addRadioButtonGroup": {
+    "source": "https://imagej.net/ij/developer/macro/functions2.html#Dialog.addRadioButtonGroup"
+  },
+  "Dialog.addSlider": {
+    "source": "https://imagej.net/ij/developer/macro/functions2.html#Dialog.addSlider"
+  },
+  "Dialog.addToSameRow": {
+    "source": "https://imagej.net/ij/developer/macro/functions2.html#Dialog.addToSameRow"
+  },
+  "Dialog.createNonBlocking": {
+    "source": "https://imagej.net/ij/developer/macro/functions2.html#Dialog.createNonBlocking"
+  },
+  "Dialog.getCheckbox": {
+    "source": "https://imagej.net/ij/developer/macro/functions2.html#Dialog.getCheckbox"
+  },
+  "Dialog.getImageChoice": {
+    "source": "https://imagej.net/ij/developer/macro/functions2.html#Dialog.getImageChoice"
+  },
+  "Dialog.getLocation": {
+    "source": "https://imagej.net/ij/developer/macro/functions2.html#Dialog.getLocation"
+  },
+  "Dialog.getRadioButton": {
+    "source": "https://imagej.net/ij/developer/macro/functions2.html#Dialog.getRadioButton"
+  },
+  "Dialog.setInsets": {
+    "source": "https://imagej.net/ij/developer/macro/functions2.html#Dialog.setInsets"
+  },
+  "Dialog.setLocation": {
+    "source": "https://imagej.net/ij/developer/macro/functions2.html#Dialog.setLocation"
   }
 };

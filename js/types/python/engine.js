@@ -936,11 +936,15 @@ function parseSimple(tc, line) {
   }
   // 代入か式か：ターゲットを試しに読んで = が来るか見る
   const save = tc.i;
+  // R22-N19：「:」や代入演算子まで読めた時点で代入文は確定する。その後の
+  // 右辺の SyntaxError を式文としての読み直しで化けさせず、そのまま伝える。
+  let committed = false;
   try {
     let tgt = parseTarget(tc, line);
     // 型注釈つき代入 x: int = 5（注釈は読み飛ばす）。値がなければ注釈だけの文
-    if (tgt.k === 'name' && tc.isOp(':')) { tc.next(); parseExpr(tc, line); if (!tc.isOp('=') && !tc.isOp('+=') && !tc.isOp('-=') && !tc.isOp('*=') && !tc.isOp('/=') && !tc.isOp('//=') && !tc.isOp('%=') && !tc.isOp('**=') && !tc.isOp('|=') && !tc.isOp('&=') && !tc.isOp('^=') && !tc.isOp('<<=') && !tc.isOp('>>=')) return { k: 'annassign', target: tgt, line }; }
+    if (tgt.k === 'name' && tc.isOp(':')) { tc.next(); committed = true; parseExpr(tc, line); if (!tc.isOp('=') && !tc.isOp('+=') && !tc.isOp('-=') && !tc.isOp('*=') && !tc.isOp('/=') && !tc.isOp('//=') && !tc.isOp('%=') && !tc.isOp('**=') && !tc.isOp('|=') && !tc.isOp('&=') && !tc.isOp('^=') && !tc.isOp('<<=') && !tc.isOp('>>=')) return { k: 'annassign', target: tgt, line }; }
     if (tc.isOp('=') || tc.isOp('+=') || tc.isOp('-=') || tc.isOp('*=') || tc.isOp('/=') || tc.isOp('//=') || tc.isOp('%=') || tc.isOp('**=') || tc.isOp('|=') || tc.isOp('&=') || tc.isOp('^=') || tc.isOp('<<=') || tc.isOp('>>=')) {
+      committed = true;
       const op = tc.next().v;
       if (op === '=') {
         // 連鎖代入 a = b = 5：次のターゲットがさらに = を伴う間、ターゲットとして集める
@@ -961,16 +965,18 @@ function parseSimple(tc, line) {
       const rhs = parseExprList(tc, line);
       return { k: 'aug', target: tgt, op: op.slice(0, -1), expr: rhs, line };
     }
-  } catch (e) { if (e instanceof RangeError) throw e; /* 式として読み直す（深さ超過は解析の失敗ではないので飲み込まない：RG-56） */ }
+  } catch (e) { if (e instanceof RangeError) throw e; if (committed && e instanceof SimDiag) throw e; /* 式として読み直す（深さ超過は解析の失敗ではないので飲み込まない：RG-56） */ }
   tc.i = save;
   const e = parseExpr(tc, line);
   return { k: 'expr', expr: e, line };
 }
 function parseExprList(tc, line) {
+  // 代入・return の右辺はタプル表示であり、各要素の先頭の「*」は正当（R22-N19）。
+  tc.starHead = true;
   const first = parseExpr(tc, line);
   if (tc.isOp(',')) {
     const items = [first];
-    while (tc.eatOp(',')) { if (tc.atEnd() || tc.isOp(';')) break; items.push(parseExpr(tc, line)); }
+    while (tc.eatOp(',')) { if (tc.atEnd() || tc.isOp(';')) break; tc.starHead = true; items.push(parseExpr(tc, line)); }
     return { k: 'tuple', items: items.map(x => ({ e: x })), line };
   }
   return first;
@@ -1055,7 +1061,13 @@ function parseTerm(tc, line) {
   return l;
 }
 function parseUnary(tc, line) {
+  // R22-N19：単項位置の「*」は、表示（タプル・集合・代入右辺の並び）の先頭
+  // でのみ正当（呼び出し・リスト内は各パーサが先に処理する）。二項演算子の
+  // 後など、それ以外の位置で「*」を無言で読み飛ばすと誤値が捏造されるため、
+  // CPython と同じく SyntaxError で停止する。許可位置では tc.starHead を立てる。
+  const starHead = tc.starHead; tc.starHead = false;
   if (tc.isOp('-') || tc.isOp('+') || tc.isOp('~')) { const op = tc.next().v; return { k: 'un', op, e: parseUnary(tc, line), line }; }
+  if (tc.isOp('*') && !starHead) throw new SimDiag(line, 'SyntaxError', '「*」はここでは使えません（式の途中では展開できません）', '「*」による展開（アンパック）は、呼び出しの引数やリスト・タプルなどの並びの中でのみ使えます');
   return parsePower(tc, line);
 }
 function parsePower(tc, line) {
@@ -1135,11 +1147,12 @@ function parseAtom(tc, line) {
   }
   if (t.t === 'OP' && t.v === '(') {
     if (tc.isOp(')')) { tc.next(); return { k: 'tuple', items: [], line }; }
+    tc.starHead = true; // タプル表示の要素先頭の「*」は正当（R22-N19）
     const first = parseExpr(tc, line);
     if (tc.isName('for')) { const gens = parseGens(tc, line); tc.expectOp(')', line); return { k: 'listcomp', gen: true, elt: first, gens, line }; }
     if (tc.isOp(',')) {
       const items = [{ e: first }];
-      while (tc.eatOp(',')) { if (tc.isOp(')')) break; items.push({ e: parseExpr(tc, line) }); }
+      while (tc.eatOp(',')) { if (tc.isOp(')')) break; tc.starHead = true; items.push({ e: parseExpr(tc, line) }); }
       tc.expectOp(')', line);
       return { k: 'tuple', items, line };
     }
@@ -1164,6 +1177,7 @@ function parseAtom(tc, line) {
       tc.expectOp('}', line);
       return { k: 'dict', pairs, line };
     }
+    tc.starHead = true; // 集合表示の要素先頭の「*」は正当（R22-N19）
     const firstK = parseExpr(tc, line);
     if (tc.isOp(':')) {
       tc.next();
@@ -1176,7 +1190,7 @@ function parseAtom(tc, line) {
     }
     if (tc.isName('for')) { const gens = parseGens(tc, line); tc.expectOp('}', line); return { k: 'setcomp', elt: firstK, gens, line }; }
     const items = [{ e: firstK }];
-    while (tc.eatOp(',')) { if (tc.isOp('}')) break; items.push({ e: parseExpr(tc, line) }); }
+    while (tc.eatOp(',')) { if (tc.isOp('}')) break; tc.starHead = true; items.push({ e: parseExpr(tc, line) }); }
     tc.expectOp('}', line);
     return { k: 'set', items, line };
   }
@@ -1939,6 +1953,18 @@ class Interp {
     if (!silent) this.err(line, 'TypeError', typeName(v) + ' は繰り返し（for）に使えません', 'for にはリスト・文字列・range() などの「並び」を指定してください');
     return null;
   }
+  // R22-N19：「*」の展開先が、確定した非イテラブル（数値・真偽値・None・
+  // 関数など）のときは CPython と同じく TypeError で正直に停止する。
+  // 値が不明な場合は従来どおり「実行時に決まる値」として扱う。
+  checkUnpackable(v, line) {
+    if (!v || typeof v !== 'object' || isUnk(v)) return;
+    if (isNum(v) || isBool(v) || isNone(v) || isEllipsis(v) || isFunc(v) || isMethodRef(v) || !!v.__builtin || !!v.__type || !!v.__class)
+      this.err(line, 'TypeError', '「*」で展開できるのはリスト・タプル・文字列・辞書などの並びだけです（' + typeName(v) + ' は展開できません）', '「*」のあとには並びを書いてください');
+  }
+  unpackSeq(v, line) {
+    this.checkUnpackable(v, line);
+    return this.iterable(v, line, true);
+  }
 }
 function targetName(t) {
   if (t.k === 'name') return t.name;
@@ -1990,13 +2016,13 @@ Interp.prototype.eval = function (n, env) {
     case 'list': {
       const arr = [];
       for (const it of n.items) {
-        if (it.star) { const sv = this.eval(it.e, env); const seq = this.iterable(sv, n.line, true); if (seq === null) return UNK(); arr.push(...seq); }
+        if (it.star) { const sv = this.eval(it.e, env); const seq = this.unpackSeq(sv, n.line); if (seq === null) return UNK(); arr.push(...seq); }
         else arr.push(this.eval(it.e, env));
       }
       return LIST(arr);
     }
-    case 'tuple': { const arr = []; for (const it of n.items) { if (it.e && it.e.k === 'star') { const seq = this.iterable(this.eval(it.e.e, env), n.line, true); if (seq === null) return UNK(); arr.push(...seq); } else arr.push(this.eval(it.e, env)); } return TUPLE(arr); }
-    case 'set': { const arr = []; for (const it of n.items) { let vs; if (it.e && it.e.k === 'star') { const prev = this.orderFree; this.orderFree = true; vs = this.iterable(this.eval(it.e.e, env), n.line); this.orderFree = prev; if (vs === null) return UNK(); } else vs = [this.eval(it.e, env)]; for (const v of vs) { this.needHash(v, n.line); if (isUnk(v)) return UNK(); if (!arr.some(x => eqVal(x, v) === true)) arr.push(v); } } return SET(arr); }
+    case 'tuple': { const arr = []; for (const it of n.items) { if (it.e && it.e.k === 'star') { const seq = this.unpackSeq(this.eval(it.e.e, env), n.line); if (seq === null) return UNK(); arr.push(...seq); } else arr.push(this.eval(it.e, env)); } return TUPLE(arr); }
+    case 'set': { const arr = []; for (const it of n.items) { let vs; if (it.e && it.e.k === 'star') { const sv = this.eval(it.e.e, env); this.checkUnpackable(sv, n.line); const prev = this.orderFree; this.orderFree = true; vs = this.iterable(sv, n.line); this.orderFree = prev; if (vs === null) return UNK(); } else vs = [this.eval(it.e, env)]; for (const v of vs) { this.needHash(v, n.line); if (isUnk(v)) return UNK(); if (!arr.some(x => eqVal(x, v) === true)) arr.push(v); } } return SET(arr); }
     case 'dict': {
       const d = DICT();
       for (const p of n.pairs) { if (p.dstar) { const dv = this.eval(p.dstar, env); if (isUnk(dv)) return UNK(); if (!isDict(dv)) this.err(n.line, 'TypeError', '** のあとには辞書を書いてください', ''); for (const e of dv.__dict.values()) dictSet(d, e.k, e.v); continue; } const k = this.eval(p.k, env); const v = this.eval(p.v, env); if (!isUnk(k) && !dictSet(d, k, v)) this.err(n.line, 'TypeError', '辞書のキーにできない型です（' + typeName(k) + '）', 'キーには文字列や数値を使ってください'); if (isUnk(k)) return UNK(); }
@@ -2097,7 +2123,7 @@ Interp.prototype.eval = function (n, env) {
     case 'listcomp': case 'setcomp': case 'dictcomp': return this.evalComp(n, env);
     case 'lambda': this.diag(n.line, 'note', '対応外', 'lambda（無名関数）はこの説明では解釈できません', '通常の def で書くと説明できます'); return UNK('lambda の結果');
     case 'unkexpr': this.diag(n.line, 'note', '対応外', '「' + n.what + '」はこの説明では解釈できません。関係する値は「実行時に決まる値」として扱います', ''); return UNK(n.what + ' の結果');
-    case 'star': return this.eval(n.e, env);
+    case 'star': { const v = this.eval(n.e, env); this.checkUnpackable(v, n.line); return v; }
     case '__val': return n.v;
   }
   return UNK();
@@ -2471,7 +2497,7 @@ Interp.prototype.evalArgs = function (n, env) {
   const args = [];
   for (const a of n.args) {
     if (a.dstar) continue;
-    if (a.star) { const seq = this.iterable(this.eval(a.e, env), n.line, true); if (seq === null) return null; for (const x of seq) args.push(x); }
+    if (a.star) { const seq = this.unpackSeq(this.eval(a.e, env), n.line); if (seq === null) return null; for (const x of seq) args.push(x); }
     else args.push(this.eval(a.e, env));
   }
   return args;

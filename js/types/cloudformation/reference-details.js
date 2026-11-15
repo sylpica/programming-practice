@@ -24,6 +24,22 @@ export const referenceDetails = {
     "returns": "successまたは失敗状態",
     "source": "https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/template-macros-author.html"
   },
+  "region": {
+    "returns": "マクロが実行されるリージョン",
+    "source": "https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/template-macros-author.html"
+  },
+  "accountId": {
+    "returns": "マクロを実行するアカウント ID",
+    "source": "https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/template-macros-author.html"
+  },
+  "transformId": {
+    "returns": "呼び出されたマクロ名",
+    "source": "https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/template-macros-author.html"
+  },
+  "errorMessage": {
+    "returns": "失敗時の理由メッセージ",
+    "source": "https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/template-macros-author.html"
+  },
   "templateParameterValues": {
     "returns": "評価済みテンプレートパラメーター",
     "source": "https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/template-macros-author.html"

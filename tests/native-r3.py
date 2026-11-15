@@ -48,16 +48,19 @@ with tempfile.TemporaryDirectory() as tmp:
  script='import vm from "node:vm";try{vm.runInNewContext("let x=1; {console.log(x); let x=2;}",{console});process.exit(1)}catch(e){if(e.name!=="ReferenceError")throw e;console.log(e.name)}'
  actual=subprocess.check_output(['node','--input-type=module','-e',script],text=True).strip();assert actual=='ReferenceError'
  records.append({'kind':'javascript','sample':'TDZ ReferenceError','actual':actual})
- # Optional native C# regressions run in CI, whose SDK is available.
+ # Optional native C# regressions run in CI, whose SDK is available. The
+ # case list is defined outside the dotnet guard so the expected count is
+ # known even when dotnet is absent (R22-N30).
+ csharp_cases=[
+   ('field','Box b=new Box(); b.D=2; b.D/=3; Console.WriteLine(b.D>0.66 && b.D<0.67);'),
+   ('array','double[] a={2}; a[0]/=3; Console.WriteLine(a[0]>0.66 && a[0]<0.67);'),
+   ('float','float a=16777216; float b=1; double n=a+b; double literal=2.9f; Console.WriteLine(n==16777216 && literal>2.9);'),
+  ]
  if shutil.which('dotnet'):
   project=Path(tmp)/'cs-r3';project.mkdir()
   env={**os.environ,'DOTNET_CLI_HOME':str(Path(tmp)/'dotnet-home'),'DOTNET_CLI_TELEMETRY_OPTOUT':'1','DOTNET_NOLOGO':'1'}
   subprocess.run(['dotnet','new','console','--output',str(project)],env=env,text=True,capture_output=True,check=True,timeout=60)
-  for name,body in [
-   ('field','Box b=new Box(); b.D=2; b.D/=3; Console.WriteLine(b.D>0.66 && b.D<0.67);'),
-   ('array','double[] a={2}; a[0]/=3; Console.WriteLine(a[0]>0.66 && a[0]<0.67);'),
-   ('float','float a=16777216; float b=1; double n=a+b; double literal=2.9f; Console.WriteLine(n==16777216 && literal>2.9);'),
-  ]:
+  for name,body in csharp_cases:
    code='using System; class Box {public double D;} class Program {static void Main(){'+body+'}}'
    (project/'Program.cs').write_text(code)
    result=subprocess.run(['dotnet','run','--project',str(project),'--verbosity','quiet'],env=env,text=True,capture_output=True,timeout=60)
@@ -65,4 +68,6 @@ with tempfile.TemporaryDirectory() as tmp:
    records.append({'kind':'csharp','sample':name,'actual':'True'})
 Path('work/audit').mkdir(parents=True,exist_ok=True)
 Path('work/audit/native-r3.json').write_text(json.dumps(records,ensure_ascii=False,indent=2))
-print(json.dumps({'new_native_oracles':len(records),'by_kind':{k:sum(r['kind']==k for r in records) for k in ['c','cpp','python','javascript','cloudformation','csharp']},'all_passed':True}))
+csharp_expected=len(csharp_cases);csharp_executed=sum(r['kind']=='csharp' for r in records);csharp_skipped=csharp_expected-csharp_executed
+if csharp_skipped:print(f"WARNING: dotnet unavailable: {csharp_skipped} of {csharp_expected} C# native checks were NOT executed.",file=sys.stderr)
+print(json.dumps({'new_native_oracles':len(records),'by_kind':{k:sum(r['kind']==k for r in records) for k in ['c','cpp','python','javascript','cloudformation','csharp']},'Csharp_expected':csharp_expected,'Csharp_executed':csharp_executed,'Csharp_skipped':csharp_skipped,'all_passed':True}))

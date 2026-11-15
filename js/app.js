@@ -36,13 +36,18 @@ try {
 
 if (!Object.keys(drafts).length) {
   try {
-    let raw = localStorage.getItem("macro-practice-v2"), interim = JSON.parse(raw);
-    if (interim) {
-      if (interim.drafts && typeof interim.drafts === "object" && !Array.isArray(interim.drafts)) {
-        drafts = interim.drafts;
-        active = getDefinition(interim.active);
-      } else if (raw) {
-        localStorage.setItem("programming-practice-recovery-v2", raw);
+    let raw = localStorage.getItem("macro-practice-v2");
+    // R22-N27: 構文的に壊れた JSON でも原文を recovery へ保全する。
+    // 判定は純関数 parseLegacyV2 に寄せ、パース失敗をここで握り潰さない。
+    let migrated = parseLegacyV2(raw);
+    if (migrated.kind === "drafts") {
+      drafts = migrated.drafts;
+      active = getDefinition(migrated.active);
+    } else if (migrated.kind === "recovery") {
+      try {
+        localStorage.setItem("programming-practice-recovery-v2", migrated.raw);
+      } catch {
+        storageBlocked = true;
       }
     }
   } catch {}
@@ -73,6 +78,11 @@ let result = null,
   // RG-57: 下書きの由来テンプレート。編集で templateId が "" に切り離されても
   // draftKey は由来を保持し、下書きをテンプレート別に振り分ける。
   draftKey = "",
+  // R22-N25: 利用者が明示的にテンプレートを選んだ直後の changed() では
+  // 選択表示と解説を切り離さないための一回限りの保持フラグ。
+  // loadTemplate が立て、changed() が消費する。その後の追加編集では
+  // フラグがないため従来どおり「なし」へ切り離される。
+  preserveTemplateSelection = false,
   timer,
   worker,
   request = 0,
@@ -199,9 +209,17 @@ function syncScroll() {
   $("lineNumbers").scrollTop = $("editor").scrollTop;
 }
 function changed() {
-  const selected = templates.find(t => t.id === templateId);
-  if (selected && $("editor").value !== selected.code) {
-    templateId = "";
+  // R22-N25: 明示的なテンプレート選択直後は保持フラグを消費して切り離さない。
+  const preserve = preserveTemplateSelection;
+  preserveTemplateSelection = false;
+  const nextTemplateId = templateSelectionAfterChange(
+    templateId,
+    templates,
+    $("editor").value,
+    preserve,
+  );
+  if (nextTemplateId !== templateId) {
+    templateId = nextTemplateId;
     $("template").value = "";
     renderExplanation(null);
   }
@@ -262,6 +280,9 @@ function loadTemplate(id) {
       $("modelJson").value = freeDraft.modelText;
   }
   renderExplanation(t);
+  // R22-N25: 復元したコードが下書き（テンプレート原本と異なる）でも、
+  // 利用者が明示的に選んだ直後は選択表示と解説を維持する。
+  preserveTemplateSelection = true;
   changed();
   if (t) run();
 }
@@ -285,6 +306,51 @@ function fileDraft(previous, snapshot, draftKey) {
 function pickTemplateDraft(entry, id) {
   let draft = entry?.byTemplate?.[id];
   return draft && typeof draft.code === "string" ? draft : null;
+}
+// R22-N25: changed() でのテンプレート切り離し判定（純関数）。
+// preserve が真（明示的なテンプレート選択直後）なら、コードが下書きで
+// テンプレート原本と異なっても選択を維持する。preserve が偽なら従来
+// どおり、選択中テンプレートの原本と異なるコードでは "" に切り離す。
+function templateSelectionAfterChange(templateId, templatesList, editorValue, preserve) {
+  if (preserve) return templateId;
+  const selected = (templatesList || []).find((t) => t.id === templateId);
+  return selected && editorValue !== selected.code ? "" : templateId;
+}
+// R22-N25: 種類切替・起動時の復元で表示するテンプレート選択（純関数）。
+// 選択が記録されている場合は、復元コードが下書きで原本と異なっても
+// その選択を維持する。選択が記録されていない旧形式データでは、
+// 復元コードが先頭テンプレートの原本と一致する場合だけ先頭を選ぶ
+// （異なる下書きを無関係なテンプレートに帰属させない、従来の扱い）。
+function restoredTemplateSelection(saved, templatesList) {
+  const list = templatesList || [];
+  const first = list[0];
+  const recorded = saved?.templateId;
+  if (recorded) return list.some((t) => t.id === recorded) ? recorded : "";
+  if (recorded === "") return "";
+  const code = saved?.code ?? first?.code ?? "";
+  return first && code === first.code ? first.id : "";
+}
+// R22-N27: 旧形式 v2 保存データの移行判定（純関数）。戻り値は
+// { kind: "empty" } / { kind: "drafts", drafts, active } /
+// { kind: "recovery", raw } のいずれか。構文的に壊れた JSON は例外を
+// 投げず recovery として返し、呼び出し側が原文を保全できるようにする。
+// 「JSON として正しいが形式不正」の場合も従来どおり recovery とする。
+function parseLegacyV2(raw) {
+  if (!raw) return { kind: "empty" };
+  let interim;
+  try {
+    interim = JSON.parse(raw);
+  } catch {
+    return { kind: "recovery", raw };
+  }
+  if (!interim) return { kind: "empty" };
+  if (
+    interim.drafts &&
+    typeof interim.drafts === "object" &&
+    !Array.isArray(interim.drafts)
+  )
+    return { kind: "drafts", drafts: interim.drafts, active: interim.active };
+  return { kind: "recovery", raw };
 }
 // RG-86: 複数タブ保存競合のマージ（純関数）。base はこのタブが起動時に
 // 読み込んだ下書き、mine はこのタブのメモリ内下書き、stored は保存直前に
@@ -476,7 +542,8 @@ function refArticle(r, expanded = false, heading = "h3") {
     el("p", r.description),
     ...(r.returns ? [el("p", "戻り値：" + r.returns)] : []),
     el("pre", r.example),
-    el("p", r.caution, "caution"),
+    // R22-N26: caution が空なら空の要素自体を描画しない。
+    ...(r.caution ? [el("p", r.caution, "caution")] : []),
   );
   if (r.source) {
     const source = el("a", "公式資料");
@@ -556,7 +623,7 @@ function updateUsed() {
     $("used").append(b);
   }
   if (!names.length)
-    $("used").append(el("span", "該当する項目はありません", "muted"));
+    $("used").append(el("span", "該当する項目はありません。", "muted"));
 }
 function jumpLine(line, nodeId) {
   if (nodeId && editorPlugin?.highlight) {
@@ -908,11 +975,11 @@ function switchType(id, savePrevious = true) {
   $("refDetail").replaceChildren(...refArticle(reference[0], true).childNodes);
   let saved = drafts[active.id],
     first = templates[0];
-  templateId = saved?.templateId ?? first?.id ?? "";
+  // R22-N25: 種類切替時の復元でも、記録されたテンプレート選択は
+  // 復元コードが下書き（原本と異なる）という理由で切り離さない。
+  templateId = restoredTemplateSelection(saved, templates);
   $("template").value = templateId;
   $("editor").value = saved?.code ?? first?.code ?? "";
-  if (templateId && templates.find(t => t.id === templateId)?.code !== $("editor").value)
-    templateId = $("template").value = "";
   draftKey = saved?.draftOrigin ?? saved?.templateId ?? "";
   $("auto").checked = !!saved?.auto;
   $("sort").value = saved?.sort || "original";

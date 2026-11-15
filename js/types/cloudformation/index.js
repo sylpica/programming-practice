@@ -56,6 +56,38 @@ const ref = rows([
     '"status": "success"',
   ],
   [
+    "region",
+    "ハンドラ",
+    'event["region"]',
+    "マクロが実行される AWS リージョンです。",
+    'event["region"]',
+    "モデル既定は model-region です。実際のリージョン名は捏造しません。",
+  ],
+  [
+    "accountId",
+    "ハンドラ",
+    'event["accountId"]',
+    "マクロを実行する AWS アカウントの ID です。",
+    'event["accountId"]',
+    "モデル既定は model-account です。実際のアカウント ID は捏造しません。",
+  ],
+  [
+    "transformId",
+    "ハンドラ",
+    'event["transformId"]',
+    "呼び出されたマクロの名前（Transform で指定した名前）です。",
+    'event["transformId"]',
+    "モデルでマクロを呼ぶときは、呼び出し側のマクロ名で上書きされて渡されます。",
+  ],
+  [
+    "errorMessage",
+    "ハンドラ",
+    '{"errorMessage": "理由"}',
+    "マクロが失敗したときに理由を示す応答フィールドです。",
+    '"errorMessage": "変換できませんでした"',
+    "status が success 以外のとき、失敗の理由として読み取られます。成功応答には不要です。",
+  ],
+  [
     "templateParameterValues",
     "ハンドラ",
     'event["templateParameterValues"]',
@@ -141,8 +173,20 @@ export const definition = {
   glossary: [
     ["Transform", "CloudFormationテンプレートをマクロで変換する指示です。"],
     [
+      "マクロ",
+      "CloudFormationがテンプレートの処理中に呼び出し、断片を変換して返す仕組みです。実体はLambdaハンドラです。",
+    ],
+    [
+      "断片（フラグメント）",
+      "マクロが受け取り、変換して返すテンプレートの一部です。",
+    ],
+    [
       "Lambdaハンドラ",
       "マクロのリクエストを受け、変換済み断片を返す関数です。",
+    ],
+    [
+      "未確定（値）",
+      "実行時に決まる値のことです。このアプリでは値を仮定して作らず、未確定のまま扱って、到達可能な分岐をすべて表示します。",
     ],
   ],
   model: {

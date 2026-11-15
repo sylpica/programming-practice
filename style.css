@@ -1095,3 +1095,33 @@ footer p {
   .workspace { grid-template-rows: minmax(0, 1fr); }
   .left-column, .right-column { min-height: 0; }
 }
+/* R22-N24: <details> の内容は ::details-content ラッパーに包まれるため、
+   パネル自身を flex 化しても .model-body には高さ制約が届かなかった。
+   761px 以上（行高が制約される配置）ではラッパーを flex column 化し、
+   summary を固定、.model-body を唯一の内部スクロール領域にする。
+   リセット行は .model-body 内で sticky にし、内部スクロールでも
+   見出し直下に残るようにする（.model-body の padding-top 9px 分を
+   top:-9px で相殺し、スクロール領域の上端に貼り付ける）。 */
+@media (min-width: 761px) {
+  .model-panel::details-content {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+  }
+  .model-panel summary {
+    flex-shrink: 0;
+  }
+  .workspace .model-panel .model-body {
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+  }
+  .model-panel .model-actions {
+    position: sticky;
+    top: -9px;
+    background: #fff;
+    z-index: 2;
+  }
+}

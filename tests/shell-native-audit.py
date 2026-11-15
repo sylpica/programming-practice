@@ -53,8 +53,9 @@ ConvertTo-Json -InputObject $result -Depth 14 -Compress
    records.append({'kind':'powershell','name':name,'passed':matched})
  else:print('PowerShell runtime unavailable: native PowerShell probes skipped')
  cmd=shutil.which('cmd.exe')
- if cmd:
-  cases=[
+ # The case list lives outside the runtime guard so the expected total can
+ # always be counted, even when cmd.exe is absent (R22-N29).
+ cmd_cases=[
    ('variables','set X=1\necho %X%',['1']),
    ('quotes','echo "hello"',['"hello"']),
    ('block expansion','set X=before\n(\nset X=after\necho %X%\n)\necho %X%',['before','after']),
@@ -69,7 +70,8 @@ ConvertTo-Json -InputObject $result -Depth 14 -Compress
    ('redirect','echo first>out.txt\necho second>>out.txt\ntype out.txt',['first','second']),
    ('pipe','echo apple|find "app"',['apple']),
   ]
-  for name,body,expected in cases:
+ if cmd:
+  for name,body,expected in cmd_cases:
    bat=sandbox/'probe.cmd';bat.write_bytes(('@echo off\r\n'+body.replace('\n','\r\n')+'\r\n').encode('ascii'))
    proc=subprocess.run([cmd,'/d','/q','/c',bat.name],cwd=sandbox,capture_output=True,text=True,timeout=10)
    matched=proc.stdout.splitlines()==expected
@@ -100,5 +102,20 @@ ConvertTo-Json -InputObject $result -Depth 14 -Compress
   records.append({'kind':entry['kind'],'name':'material:'+entry['name'],'passed':matched})
 Path('work/audit').mkdir(parents=True,exist_ok=True)
 Path('work/audit/shell-native-results.json').write_text(json.dumps(records,ensure_ascii=False,indent=2),encoding='utf-8')
-print(json.dumps({'native_shell_checks':len(records),'powershell':sum(r['kind']=='powershell'for r in records),'cmd':sum(r['kind']=='cmd'for r in records),'passed':not failures}))
+# Skipped checks are never silently green (R22-N29). Expected totals are
+# derived from the fixture/case/material lists themselves, so a missing
+# runtime shows up as an explicit skipped count, a stderr warning, a
+# passed:false summary, and a non-zero exit -- with or without
+# --require-both. When both runtimes are present nothing is skipped and
+# the behaviour (including the Windows CI --require-both job) is unchanged.
+expected={'powershell':len(fixtures)+sum(1 for e in materials if e['kind']=='powershell'),'cmd':len(cmd_cases)+sum(1 for e in materials if e['kind']=='cmd')}
+executed={'powershell':sum(r['kind']=='powershell'for r in records),'cmd':sum(r['kind']=='cmd'for r in records)}
+skipped={kind:expected[kind]-executed[kind] for kind in expected}
+skipped_total=sum(skipped.values());expected_total=sum(expected.values())
+summary={'native_shell_checks':len(records),'powershell':executed['powershell'],'cmd':executed['cmd'],'expected_total':expected_total,'expected_powershell':expected['powershell'],'expected_cmd':expected['cmd'],'skipped':skipped_total,'skipped_powershell':skipped['powershell'],'skipped_cmd':skipped['cmd'],'passed':not failures and skipped_total==0}
+print(json.dumps(summary))
+if skipped_total:
+ print(f"WARNING: {skipped_total} of {expected_total} native shell checks were NOT executed (powershell skipped: {skipped['powershell']}, cmd skipped: {skipped['cmd']}); this run is not a pass.",file=sys.stderr)
 assert not failures,json.dumps(failures,ensure_ascii=True)
+if skipped_total:
+ sys.exit(f"native shell audit incomplete: {skipped_total} of {expected_total} checks skipped (powershell: {skipped['powershell']}, cmd: {skipped['cmd']})")

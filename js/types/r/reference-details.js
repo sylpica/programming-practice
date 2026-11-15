@@ -91,5 +91,89 @@ export const referenceDetails = {
   "while": {
     "returns": "不可視のNULL",
     "source": "https://stat.ethz.ch/R-manual/R-devel/library/base/html/Control.html"
+  },
+  "rnorm": {
+    "returns": "長さnの数値ベクトル（このモデルでは実行時に決まる未確定値）",
+    "source": "https://stat.ethz.ch/R-manual/R-devel/library/stats/html/Normal.html"
+  },
+  "runif": {
+    "returns": "長さnの数値ベクトル（このモデルでは実行時に決まる未確定値）",
+    "source": "https://stat.ethz.ch/R-manual/R-devel/library/stats/html/Uniform.html"
+  },
+  "sample": {
+    "returns": "抽出した要素のベクトル（このモデルでは実行時に決まる未確定値）",
+    "source": "https://stat.ethz.ch/R-manual/R-devel/library/base/html/sample.html"
+  },
+  "%in%": {
+    "returns": "左辺と同じ長さの論理ベクトル（NAを含まない）",
+    "source": "https://stat.ethz.ch/R-manual/R-devel/library/base/html/match.html"
+  },
+  "$": {
+    "returns": "列のベクトル。存在しない列はNULL",
+    "source": "https://stat.ethz.ch/R-manual/R-devel/library/base/html/Extract.html"
+  },
+  "[": {
+    "returns": "選択された部分（ベクトル、またはデータフレームの部分）",
+    "source": "https://stat.ethz.ch/R-manual/R-devel/library/base/html/Extract.html"
+  },
+  "[[": {
+    "returns": "単一の要素（データフレームでは列ベクトル）",
+    "source": "https://stat.ethz.ch/R-manual/R-devel/library/base/html/Extract.html"
+  },
+  "NA": {
+    "returns": "欠損値（論理型のNA）",
+    "source": "https://stat.ethz.ch/R-manual/R-devel/library/base/html/NA.html"
+  },
+  "NULL": {
+    "returns": "NULL（長さ0のオブジェクト）",
+    "source": "https://stat.ethz.ch/R-manual/R-devel/library/base/html/NULL.html"
+  },
+  "break": {
+    "returns": "不可視のNULL",
+    "source": "https://stat.ethz.ch/R-manual/R-devel/library/base/html/Control.html"
+  },
+  "next": {
+    "returns": "不可視のNULL",
+    "source": "https://stat.ethz.ch/R-manual/R-devel/library/base/html/Control.html"
+  },
+  "repeat": {
+    "returns": "不可視のNULL",
+    "source": "https://stat.ethz.ch/R-manual/R-devel/library/base/html/Control.html"
+  },
+  ":": {
+    "returns": "開始値から終了値までの数値列",
+    "source": "https://stat.ethz.ch/R-manual/R-devel/library/base/html/Colon.html"
+  },
+  "%%": {
+    "returns": "剰余の数値ベクトル",
+    "source": "https://stat.ethz.ch/R-manual/R-devel/library/base/html/Arithmetic.html"
+  },
+  "%/%": {
+    "returns": "商（整数除算）の数値ベクトル",
+    "source": "https://stat.ethz.ch/R-manual/R-devel/library/base/html/Arithmetic.html"
+  },
+  "NaN": {
+    "returns": "NaN（数値）",
+    "source": "https://stat.ethz.ch/R-manual/R-devel/library/base/html/is.finite.html"
+  },
+  "Inf": {
+    "returns": "Inf（数値）",
+    "source": "https://stat.ethz.ch/R-manual/R-devel/library/base/html/is.finite.html"
+  },
+  "TRUE": {
+    "returns": "論理値TRUE",
+    "source": "https://stat.ethz.ch/R-manual/R-devel/library/base/html/logical.html"
+  },
+  "FALSE": {
+    "returns": "論理値FALSE",
+    "source": "https://stat.ethz.ch/R-manual/R-devel/library/base/html/logical.html"
+  },
+  "T": {
+    "returns": "論理値TRUE（変数Tが再定義されていない場合）",
+    "source": "https://stat.ethz.ch/R-manual/R-devel/library/base/html/logical.html"
+  },
+  "F": {
+    "returns": "論理値FALSE（変数Fが再定義されていない場合）",
+    "source": "https://stat.ethz.ch/R-manual/R-devel/library/base/html/logical.html"
   }
 };

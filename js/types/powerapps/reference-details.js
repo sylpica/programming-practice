@@ -91,5 +91,25 @@ export const referenceDetails = {
   "Notify": {
     "returns": "true",
     "source": "https://learn.microsoft.com/en-us/power-platform/power-fx/reference/function-showerror"
+  },
+  "And": {
+    "returns": "真偽値",
+    "source": "https://learn.microsoft.com/en-us/power-platform/power-fx/reference/function-logicals"
+  },
+  "Or": {
+    "returns": "真偽値",
+    "source": "https://learn.microsoft.com/en-us/power-platform/power-fx/reference/function-logicals"
+  },
+  "Not": {
+    "returns": "真偽値",
+    "source": "https://learn.microsoft.com/en-us/power-platform/power-fx/reference/function-logicals"
+  },
+  "ThisRecord": {
+    "returns": "現在処理中のレコード",
+    "source": "https://learn.microsoft.com/en-us/power-platform/power-fx/reference/operators"
+  },
+  "in（演算子）": {
+    "returns": "真偽値",
+    "source": "https://learn.microsoft.com/en-us/power-platform/power-fx/reference/operators"
   }
 };

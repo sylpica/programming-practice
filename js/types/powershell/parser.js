@@ -313,7 +313,9 @@ export class PSParser {
       k: "pipeline",
       pipe,
       line,
-      suppress: pipe.stages.length === 1 && pipe.stages[0].value?.k === "post",
+      suppress:
+        pipe.stages.length === 1 &&
+        ["post", "pre"].includes(pipe.stages[0].value?.k),
     };
   }
   parameters() {
@@ -348,6 +350,8 @@ export class PSParser {
     const stages = [this.stage()];
     while (this.peek("|")) {
       this.take();
+      // R22-N18: 行末の | は改行継続として扱う（改行は ";" トークン）。
+      this.skip();
       stages.push(this.stage());
     }
     return { stages, line: stages[0].line };
@@ -382,9 +386,41 @@ export class PSParser {
             "force",
             "nonewline",
           ];
-          params[p] = switches.includes(p)
-            ? { k: "literal", value: true, line: token.line }
-            : this.argument();
+          if (switches.includes(p))
+            params[p] = { k: "literal", value: true, line: token.line };
+          else {
+            const next = this.ts[this.i];
+            // R22-N17: 値のないパラメーターは <eof> 等の汎用エラーにせず、
+            // コマンド名とパラメーター名を名指しする。
+            if (
+              !next ||
+              [";", "|", ")", "}", ",", "<eof>"].includes(next.v) ||
+              (next.v === "-" && this.ts[this.i + 1]?.k === "word")
+            )
+              fail(
+                "未対応のパラメーター：" + name + " -" + p,
+                token.line,
+                "SyntaxError",
+              );
+            try {
+              params[p] = this.argument();
+            } catch (e) {
+              // R22-N15: パラメーター値の汎用パースエラーは対象を名指しする。
+              if (/未対応または不正なPowerShellの式/.test(e.message))
+                fail(
+                  "未対応または不正なパラメーター値：" +
+                    name +
+                    " -" +
+                    p +
+                    "（" +
+                    e.message +
+                    "）",
+                  token.line,
+                  "SyntaxError",
+                );
+              throw e;
+            }
+          }
         } else args.push(this.argument());
       }
       return { k: "command", name, args, params, line: t.line };
@@ -414,6 +450,18 @@ export class PSParser {
   oneArgument() {
     const t = this.ts[this.i];
     if (t.v === "{") return { k: "block", body: this.block(), line: t.line };
+    // 引数モードでは "."（現在フォルダ）と ".."（親フォルダ）はパス文字列。
+    // ただし ".5" のような数値リテラルに隣接する場合は対象外（従来どおり式側へ）。
+    if (
+      (t.v === "." || t.v === "..") &&
+      !(
+        this.ts[this.i + 1]?.start === t.end &&
+        this.ts[this.i + 1]?.k === "number"
+      )
+    ) {
+      this.take();
+      return { k: "literal", value: t.v, line: t.line };
+    }
     if (t.k === "word" || ["*", "?"].includes(t.v)) {
       let text = this.take().v,
         end = this.ts[this.i - 1].end;
@@ -451,6 +499,9 @@ export class PSParser {
     else if (t.k === "var") a = { k: "var", name: t.v, line };
     else if (["-", "+", "!", "-not"].includes(t.v.toLowerCase()))
       a = { k: "unary", op: t.v.toLowerCase(), arg: this.expr(7), line };
+    else if (t.v === "++" || t.v === "--")
+      // R22-N16: 前置インクリメント／デクリメント。
+      a = { k: "pre", op: t.v, target: this.expr(7), line };
     else if (t.v === "(" || t.v === "$(") {
       const pipe = this.pipeline();
       this.take(")");

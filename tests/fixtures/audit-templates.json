@@ -897,5 +897,50 @@
         "合計: 12"
       ]
     ]
+  },
+  {
+    "kind": "cmd",
+    "template": "cmd-calculate",
+    "paths": 1,
+    "outputs": [
+      [
+        "14"
+      ]
+    ]
+  },
+  {
+    "kind": "cmd",
+    "template": "cmd-subroutine",
+    "paths": 1,
+    "outputs": [
+      [
+        "Hello Alice Smith",
+        "returned"
+      ]
+    ]
+  },
+  {
+    "kind": "powershell",
+    "template": "ps-values",
+    "paths": 1,
+    "outputs": [
+      [
+        "Alice",
+        "4",
+        "3"
+      ]
+    ]
+  },
+  {
+    "kind": "powershell",
+    "template": "ps-function",
+    "paths": 1,
+    "outputs": [
+      [
+        "2",
+        "4",
+        "6"
+      ]
+    ]
   }
 ]

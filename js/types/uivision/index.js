@@ -79,6 +79,67 @@ reference.push({
   caution: "数値に変換できない文字列では NaN になります。",
   supported: true,
 });
+// Number と同じ方針：式の語彙として String 関数もリファレンスに載せる
+// （Sandbox 式で使える関数は Number と String の2件のみで、他は未対応で停止する）。
+reference.push({
+  name: "String",
+  category: "式の関数",
+  syntax: "String(値)",
+  description:
+    "式の中で値を文字列へ変換します（JavaScriptのString関数）。executeScript_Sandboxのreturn式などで使います。",
+  example: encode([
+    cmd("open", "https://example.test/form"),
+    cmd("store", "0", "count"),
+    cmd("executeScript_Sandbox", "return String(${count});", "text"),
+    cmd("echo", "${text}"),
+  ]),
+  caution: "このモデルで式に使える関数はNumberとStringのみです。",
+  supported: true,
+});
+// 製品の組み込み変数も、式・条件で使う語彙としてリファレンスに載せる（Number の前例と同方針）。
+reference.push({
+  name: "${!times}",
+  category: "組み込み変数",
+  syntax: "${!times}",
+  description:
+    "timesループの中で使える組み込み変数です。現在の繰り返し回数を1始まりで表します。",
+  example: encode([
+    cmd("open", "https://example.test/form"),
+    cmd("times", "2"),
+    cmd("echo", "${!times}"),
+    cmd("end"),
+  ]),
+  caution: "timesループの外では値は設定されません。",
+  supported: true,
+});
+reference.push({
+  name: "!statusOK",
+  category: "組み込み変数",
+  syntax: "${!statusOK}",
+  description:
+    "直前のコマンドが成功したかを表す組み込み変数です。成功でtrue、エラーでfalseになります。",
+  example: encode([
+    cmd("open", "https://example.test/form"),
+    cmd("store", "0", "count"),
+    cmd("echo", "${!statusOK}"),
+  ]),
+  caution: "",
+  supported: true,
+});
+reference.push({
+  name: "!errorIgnore",
+  category: "組み込み変数",
+  syntax: "${!errorIgnore}",
+  description:
+    "文字列\"true\"に設定すると、コマンドでエラーが起きてもマクロを止めずに継続します。",
+  example: encode([
+    cmd("open", "https://example.test/form"),
+    cmd("store", "true", "!errorIgnore"),
+    cmd("echo", "${!errorIgnore}"),
+  ]),
+  caution: "このモデルでは文字列\"true\"のときだけ有効です。",
+  supported: true,
+});
 export const definition = {
   id: "uivision",
   name: "UI.Vision RPA",
@@ -136,6 +197,10 @@ export const definition = {
   glossary: [
     ["ロケーター", "id=などでページ要素を識別する指定です。"],
     ["モデルページ", "URL、要素、クリック後の効果を明示した仮想ページです。"],
+    [
+      "未確定（値）",
+      "実行時に決まる値のことです。このアプリでは値を仮定して作らず、未確定のまま扱って、到達可能な分岐をすべて表示します。",
+    ],
   ],
   editor: createActionEditor({
     key: "Commands",

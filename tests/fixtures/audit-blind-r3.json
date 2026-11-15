@@ -772,5 +772,120 @@
     "paths": 1,
     "error": null,
     "model": null
+  },
+  {
+    "kind": "cmd",
+    "name": "arithmetic precedence",
+    "code": "set /a \"N=10-4*2\"\necho %N%",
+    "outputs": [
+      "2"
+    ],
+    "paths": 1,
+    "error": null,
+    "model": null
+  },
+  {
+    "kind": "cmd",
+    "name": "descending loop",
+    "code": "for /L %%i in (3,-1,1) do echo %%i",
+    "outputs": [
+      "3",
+      "2",
+      "1"
+    ],
+    "paths": 1,
+    "error": null,
+    "model": null
+  },
+  {
+    "kind": "cmd",
+    "name": "quoted echo",
+    "code": "echo \"hello\"",
+    "outputs": [
+      "\"hello\""
+    ],
+    "paths": 1,
+    "error": null,
+    "model": null
+  },
+  {
+    "kind": "cmd",
+    "name": "variable overwrite",
+    "code": "set X=before\nset X=after\necho %X%",
+    "outputs": [
+      "after"
+    ],
+    "paths": 1,
+    "error": null,
+    "model": null
+  },
+  {
+    "kind": "cmd",
+    "name": "known branch",
+    "code": "set N=3\nif %N%==3 (\n echo match\n) else (\n echo nomatch\n)",
+    "outputs": [
+      "match"
+    ],
+    "paths": 1,
+    "error": null,
+    "model": null
+  },
+  {
+    "kind": "powershell",
+    "name": "pipeline sort",
+    "code": "@(3,1,2) | Sort-Object",
+    "outputs": [
+      "1",
+      "2",
+      "3"
+    ],
+    "paths": 1,
+    "error": null,
+    "model": null
+  },
+  {
+    "kind": "powershell",
+    "name": "string concatenation",
+    "code": "$a=\"ab\"\n$a + \"cd\"",
+    "outputs": [
+      "abcd"
+    ],
+    "paths": 1,
+    "error": null,
+    "model": null
+  },
+  {
+    "kind": "powershell",
+    "name": "pipeline filter",
+    "code": "@(1,2,3,4) | Where-Object { $_ -gt 2 }",
+    "outputs": [
+      "3",
+      "4"
+    ],
+    "paths": 1,
+    "error": null,
+    "model": null
+  },
+  {
+    "kind": "powershell",
+    "name": "equality comparison",
+    "code": "$x=5\n$x -eq 5",
+    "outputs": [
+      "True"
+    ],
+    "paths": 1,
+    "error": null,
+    "model": null
+  },
+  {
+    "kind": "powershell",
+    "name": "modulus",
+    "code": "$n=7\n$n % 3",
+    "outputs": [
+      "1"
+    ],
+    "paths": 1,
+    "error": null,
+    "model": null
   }
 ]

@@ -30,22 +30,22 @@ const reference = rows([
   [
     "If",
     "分岐",
-    "If(Condition, Then, Else)",
-    "条件を左から評価し、最初に成立する式だけを評価します。",
+    "If(Condition1, Then1 [, Condition2, Then2, ...] [, Else])",
+    "条件を左から評価し、最初に成立する式だけを評価します。条件と結果の組は複数並べることができ、最後に既定値を1つ置けます（可変長）。",
     'If(Count > 0, Set(Result, "正"), Set(Result, "その他"))',
   ],
   [
     "Switch",
     "分岐",
-    "Switch(Value, Match, Result, Default)",
-    "値を一度評価し、最初に一致する結果だけを評価します。",
+    "Switch(Value, Match1, Result1 [, Match2, Result2, ...] [, Default])",
+    "値を一度評価し、最初に一致する結果だけを評価します。一致値と結果の組は複数並べることができ、最後に既定値を1つ置けます（可変長）。",
     'Switch(Count, 1, "一", "その他")',
   ],
   [
     "Collect",
     "コレクション",
-    "Collect(Collection, Record)",
-    "レコードを追加します。値だけならValue列に入ります。",
+    "Collect(Collection, Record1 [, Record2, ...])",
+    "レコードを追加します。値だけならValue列に入ります。複数のレコードやテーブルを一度に指定して追加することもできます。",
     'Collect(Items, {Name: "A"})',
   ],
   [
@@ -59,8 +59,8 @@ const reference = rows([
   [
     "ClearCollect",
     "コレクション",
-    "ClearCollect(Collection, Table)",
-    "コレクションを空にしてから追加します。",
+    "ClearCollect(Collection, RecordOrTable1 [, RecordOrTable2, ...])",
+    "コレクションを空にしてから追加します。Collectと同様に、複数のレコードやテーブルを一度に指定できます。",
     "ClearCollect(Items, Table({Value:1},{Value:2}))",
   ],
   [
@@ -73,8 +73,8 @@ const reference = rows([
   [
     "Sequence",
     "テーブル",
-    "Sequence(Records, Start, Step)",
-    "Value列を持つ数列テーブルを生成します。",
+    "Sequence(Records [, Start [, Step]])",
+    "Value列を持つ数列テーブルを生成します。Start（既定値1）とStep（既定値1）は省略できます。",
     "Sequence(3)",
   ],
   [
@@ -110,9 +110,9 @@ const reference = rows([
   [
     "LookUp",
     "テーブル",
-    "LookUp(Table, Condition)",
-    "最初に一致したレコードを返します。",
-    "LookUp(Items, Value = 2)",
+    "LookUp(Table, Condition [, ReductionFormula])",
+    "最初に一致したレコードを返します。第3引数に削減式を指定すると、レコードそのものではなく、そのレコードの範囲で削減式を評価した値を返します。",
+    "LookUp(Items, Value = 2, Value * 10)",
   ],
   [
     "Patch",
@@ -135,7 +135,7 @@ const reference = rows([
     "Navigate(Screen)",
     "表示するモデル画面を切り替えます。",
     "Navigate(Detail)",
-    "画面のOnVisible等は未対応です。",
+    "このモデルは第1引数の画面だけに対応します。画面遷移（第2引数）やコンテキスト（第3引数）を渡すと引数の数のエラーで停止します。画面のOnVisible等も未対応です。",
   ],
   [
     "Reset",
@@ -147,9 +147,10 @@ const reference = rows([
   [
     "Text",
     "型変換",
-    "Text(Value)",
-    "明示したモデルの数値を文字列にします。",
-    "Text(Count)",
+    "Text(Value [, Format [, ResultLanguageTag]])",
+    "値を文字列に変換します。第2引数に書式文字列（0や#のプレースホルダ、小数点・桁区切り、%など）を指定すると数値を整形でき、第3引数で結果の言語タグを指定できます。",
+    'Text(Count, "#,##0")',
+    "このモデルの書式指定は数値に対してのみで、言語タグはen-USのみ対応します。日付・時刻の書式は未対応です。",
   ],
   [
     "Value",
@@ -173,6 +174,42 @@ const reference = rows([
     "Notify(Message)",
     "通知をモデルの出力へ追加します。",
     'Notify("保存しました")',
+  ],
+  [
+    "And",
+    "論理",
+    "And(Logical1 [, Logical2, ...])",
+    "すべての引数が真のとき真を返します（関数形）。演算子のAndや&&でも同じ意味になります。",
+    "And(1 < 2, 2 < 3)",
+  ],
+  [
+    "Or",
+    "論理",
+    "Or(Logical1 [, Logical2, ...])",
+    "いずれかの引数が真のとき真を返します（関数形）。演算子のOrや||でも同じ意味になります。",
+    "Or(false, 1 < 2)",
+  ],
+  [
+    "Not",
+    "論理",
+    "Not(Logical)",
+    "真偽を反転します（関数形）。演算子のNotでも同じ意味になります。",
+    "Not(false)",
+  ],
+  [
+    "ThisRecord",
+    "レコード",
+    "ThisRecord",
+    "ForAll／Filter／Sum／LookUpなどの数式の中で、現在処理中のレコード全体を表します。レコードの範囲の外では使えません。",
+    "Sum(Sequence(3), ThisRecord.Value)",
+    "レコードの範囲の外で使うと、名前を挙げて停止します。",
+  ],
+  [
+    "in（演算子）",
+    "演算子",
+    "部分文字列 in 文字列／値 in テーブル／部分文字列 exactin 文字列",
+    "左の値が右に含まれるかを返します。文字列同士では部分文字列かどうかを判定し、inは大文字と小文字を区別せず、exactinは区別します。テーブルに対しては要素が含まれるかを判定します。",
+    'Set(Found, "ell" in "Hello")',
   ],
 ]);
 for (const r of reference) {
@@ -320,10 +357,26 @@ export const definition = {
   ],
   glossary: [
     ["コントロール", "入力欄・ラベルなどの画面部品です。"],
+    [
+      "レコード",
+      "テーブルの1行分のデータです。項目ごとの値の集まりで表します。",
+    ],
+    [
+      "テーブル",
+      "レコードを行として並べたデータの集まりです。列が項目に対応します。",
+    ],
+    [
+      "データソース",
+      "アプリがレコードを読み書きする接続先です。このアプリではモデル上のデータがデータソースになります。",
+    ],
     ["コレクション", "アプリ内のレコードを行として持つテーブルです。"],
     [
       "動作数式",
       "SetやNavigateなど、操作イベントに応じて状態を変更する数式です。",
+    ],
+    [
+      "未確定（値）",
+      "実行時に決まる値のことです。このアプリでは値を仮定して作らず、未確定のまま扱って、到達可能な分岐をすべて表示します。",
     ],
   ],
   model: {

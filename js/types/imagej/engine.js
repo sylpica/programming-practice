@@ -1345,6 +1345,7 @@ function simBuiltin(S, e, args, refs, H){
     case "nSlices": { var imN = img(); return imN ? imN.slices : 0; }
     case "nImages": return S.images.length;
     case "nResults": return S.results.length;
+    case "PI": return Math.PI;
     case "Array.copy": return Array.isArray(args[0]) ? args[0].slice() : SIM_UNK;
     case "getWidth": { var im2 = needImg("getWidth()"); step(line, "画像の幅 " + (typeof im2.w === "number" ? im2.w + " px" : "（不明）") + " を取得します"); return typeof im2.w === "number" ? im2.w : SIM_UNK; }
     case "getHeight": { var im3 = needImg("getHeight()"); step(line, "画像の高さ " + (typeof im3.h === "number" ? im3.h + " px" : "（不明）") + " を取得します"); return typeof im3.h === "number" ? im3.h : SIM_UNK; }

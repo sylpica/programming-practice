@@ -717,5 +717,121 @@
     "paths": 1,
     "error": null,
     "model": null
+  },
+  {
+    "kind": "cmd",
+    "name": "variable echo",
+    "code": "set X=1\necho %X%",
+    "outputs": [
+      "1"
+    ],
+    "paths": 1,
+    "error": null,
+    "model": null
+  },
+  {
+    "kind": "cmd",
+    "name": "set /a precedence",
+    "code": "set /a \"N=2+3*4\"\necho %N%",
+    "outputs": [
+      "14"
+    ],
+    "paths": 1,
+    "error": null,
+    "model": null
+  },
+  {
+    "kind": "cmd",
+    "name": "known branch",
+    "code": "set N=5\nif %N%==5 (\n echo five\n) else (\n echo other\n)",
+    "outputs": [
+      "five"
+    ],
+    "paths": 1,
+    "error": null,
+    "model": null
+  },
+  {
+    "kind": "cmd",
+    "name": "counting loop",
+    "code": "for /L %%i in (1,1,3) do echo %%i",
+    "outputs": [
+      "1",
+      "2",
+      "3"
+    ],
+    "paths": 1,
+    "error": null,
+    "model": null
+  },
+  {
+    "kind": "cmd",
+    "name": "list loop",
+    "code": "for %%f in (alpha beta) do echo %%f",
+    "outputs": [
+      "alpha",
+      "beta"
+    ],
+    "paths": 1,
+    "error": null,
+    "model": null
+  },
+  {
+    "kind": "powershell",
+    "name": "variable arithmetic",
+    "code": "$x=2+3\n$x",
+    "outputs": [
+      "5"
+    ],
+    "paths": 1,
+    "error": null,
+    "model": null
+  },
+  {
+    "kind": "powershell",
+    "name": "string interpolation",
+    "code": "$name=\"Alice\"\nWrite-Output \"Hello $name\"",
+    "outputs": [
+      "Hello Alice"
+    ],
+    "paths": 1,
+    "error": null,
+    "model": null
+  },
+  {
+    "kind": "powershell",
+    "name": "comparison branch",
+    "code": "if (3 -gt 2) { Write-Output \"yes\" } else { Write-Output \"no\" }",
+    "outputs": [
+      "yes"
+    ],
+    "paths": 1,
+    "error": null,
+    "model": null
+  },
+  {
+    "kind": "powershell",
+    "name": "pipeline transform",
+    "code": "@(1,2,3) | ForEach-Object { $_ * 2 }",
+    "outputs": [
+      "2",
+      "4",
+      "6"
+    ],
+    "paths": 1,
+    "error": null,
+    "model": null
+  },
+  {
+    "kind": "powershell",
+    "name": "array index and count",
+    "code": "$a=@(10,20,30)\n$a[1]\n$a.Count",
+    "outputs": [
+      "20",
+      "3"
+    ],
+    "paths": 1,
+    "error": null,
+    "model": null
   }
 ]

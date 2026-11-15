@@ -263,5 +263,101 @@ export const referenceDetails = {
   "Now": {
     "returns": "Variant/Date（現在の日付と時刻）",
     "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/now-function.md"
+  },
+  "Single": {
+    "returns": "型の宣言（式の戻り値ではありません）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/single-data-type.md"
+  },
+  "Object": {
+    "returns": "型の宣言（式の戻り値ではありません）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/object-data-type.md"
+  },
+  "Time": {
+    "returns": "Variant/Date（現在の時刻）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/time-function.md"
+  },
+  "Rnd": {
+    "returns": "Single（0以上1未満の乱数）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/rnd-function.md"
+  },
+  "Timer": {
+    "returns": "Single（午前0時からの経過秒数）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/timer-function.md"
+  },
+  "Command": {
+    "returns": "Variant（コマンドライン引数の文字列）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/command-function.md"
+  },
+  "CurDir": {
+    "returns": "Variant/String（現在のパス）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/curdir-function.md"
+  },
+  "FreeFile": {
+    "returns": "Integer（次の空きファイル番号）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/freefile-function.md"
+  },
+  "DoEvents": {
+    "returns": "Integer（単独版Visual Basicでは開いているフォーム数、それ以外では0）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/doevents-function.md"
+  },
+  "IMEStatus": {
+    "returns": "Integer（IMEの状態コード）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/imestatus-function.md"
+  },
+  "Empty": {
+    "returns": "Variant（未初期化を表す値）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/variant-data-type.md"
+  },
+  "Null": {
+    "returns": "Variant（有効なデータがないことを表す値）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/variant-data-type.md"
+  },
+  "Nothing": {
+    "returns": "オブジェクト参照なしを表すキーワード値",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/nothing-keyword.md"
+  },
+  "True": {
+    "returns": "Boolean（True）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/boolean-data-type.md"
+  },
+  "False": {
+    "returns": "Boolean（False）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/boolean-data-type.md"
+  },
+  "vbCrLf": {
+    "returns": "String（改行文字 Chr(13) + Chr(10)）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/miscellaneous-constants.md"
+  },
+  "vbTab": {
+    "returns": "String（タブ文字 Chr(9)）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/miscellaneous-constants.md"
+  },
+  "And": {
+    "returns": "Boolean（論理積）または数値（ビットごとのAND）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/and-operator.md"
+  },
+  "Or": {
+    "returns": "Boolean（論理和）または数値（ビットごとのOR）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/or-operator.md"
+  },
+  "Xor": {
+    "returns": "Boolean（排他的論理和）または数値（ビットごとの排他的OR）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/xor-operator.md"
+  },
+  "Mod": {
+    "returns": "数値（割り算の余り）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/mod-operator.md"
+  },
+  "Not": {
+    "returns": "Boolean（真偽の反転）または数値（ビット反転）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/not-operator.md"
+  },
+  "Let": {
+    "returns": "戻り値なし（宣言または制御文）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/let-statement.md"
+  },
+  "Rem": {
+    "returns": "戻り値なし（宣言または制御文）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/rem-statement.md"
   }
 };

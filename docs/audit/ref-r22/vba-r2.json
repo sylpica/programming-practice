@@ -1,0 +1,302 @@
+[
+  {
+    "kind": "vba",
+    "name": "Replace",
+    "supported": true,
+    "fields": {
+      "description": "一致する文字列を置換します。",
+      "returns": "String",
+      "caution": "本アプリは3〜6引数に対応し、開始位置・置換回数・比較方法（0=大文字小文字を区別、1=区別しない）を指定できます。比較方法の-1（Option Compare依存）は未対応です。",
+      "example": "Debug.Print Replace(\"a-b\", \"-\", \"/\")",
+      "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/replace-function.md"
+    }
+  },
+  {
+    "kind": "vba",
+    "name": "Single",
+    "supported": true,
+    "fields": {
+      "description": "単精度の浮動小数点数です。初期値は0です。",
+      "returns": "型の宣言（式の戻り値ではありません）",
+      "caution": "範囲は約-3.402823E38～3.402823E38。Doubleより精度が低く、代入時に単精度へ丸められます。",
+      "example": "Dim x As Single",
+      "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/single-data-type.md"
+    }
+  },
+  {
+    "kind": "vba",
+    "name": "Object",
+    "supported": true,
+    "fields": {
+      "description": "任意のオブジェクトへの参照を格納する型。初期値はNothingです。",
+      "returns": "型の宣言（式の戻り値ではありません）",
+      "caution": "代入にはSetを使います。未設定の参照を使うとエラー91です。",
+      "example": "Dim obj As Object",
+      "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/object-data-type.md"
+    }
+  },
+  {
+    "kind": "vba",
+    "name": "Time",
+    "supported": true,
+    "fields": {
+      "description": "現在のシステム時刻を返します。",
+      "returns": "Variant/Date（現在の時刻）",
+      "caution": "実行時に決まる値として表示します。日付は含みません。",
+      "example": "Debug.Print Time",
+      "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/time-function.md"
+    }
+  },
+  {
+    "kind": "vba",
+    "name": "Rnd",
+    "supported": true,
+    "fields": {
+      "description": "0以上1未満の擬似乱数を返します。",
+      "returns": "Single（0以上1未満の乱数）",
+      "caution": "括弧つきの呼び出しや引数は未対応です。値は実行時に決まる値として表示します。",
+      "example": "x = Rnd",
+      "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/rnd-function.md"
+    }
+  },
+  {
+    "kind": "vba",
+    "name": "Timer",
+    "supported": true,
+    "fields": {
+      "description": "午前0時から現在までの経過秒数を返します。",
+      "returns": "Single（午前0時からの経過秒数）",
+      "caution": "実行時に決まる値として表示します。経過時間の計算結果は確定しません。",
+      "example": "x = Timer",
+      "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/timer-function.md"
+    }
+  },
+  {
+    "kind": "vba",
+    "name": "Command",
+    "supported": true,
+    "fields": {
+      "description": "起動時に渡された引数文字列を返します。",
+      "returns": "Variant（コマンドライン引数の文字列）",
+      "caution": "公式にはAccessで利用できる関数です。本アプリでは実行時に決まる文字列として表示します。",
+      "example": "x = Command",
+      "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/command-function.md"
+    }
+  },
+  {
+    "kind": "vba",
+    "name": "CurDir",
+    "supported": true,
+    "fields": {
+      "description": "現在のフォルダーのパスを返します。",
+      "returns": "Variant/String（現在のパス）",
+      "caution": "引数（ドライブ指定）は未対応です。実際のパスは推測せず、実行時に決まる値として表示します。",
+      "example": "x = CurDir",
+      "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/curdir-function.md"
+    }
+  },
+  {
+    "kind": "vba",
+    "name": "FreeFile",
+    "supported": true,
+    "fields": {
+      "description": "Open文で使える次の空きファイル番号を返します。",
+      "returns": "Integer（次の空きファイル番号）",
+      "caution": "引数は未対応です。ファイル入出力自体は本アプリの対象外で、番号は実行時に決まる値として表示します。",
+      "example": "x = FreeFile",
+      "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/freefile-function.md"
+    }
+  },
+  {
+    "kind": "vba",
+    "name": "DoEvents",
+    "supported": true,
+    "fields": {
+      "description": "OSに処理を譲り、溜まっているイベントを処理させます。",
+      "returns": "Integer（単独版Visual Basicでは開いているフォーム数、それ以外では0）",
+      "caution": "本アプリではイベント処理は行わず、戻り値だけを実行時に決まる値として表示します。",
+      "example": "x = DoEvents",
+      "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/doevents-function.md"
+    }
+  },
+  {
+    "kind": "vba",
+    "name": "IMEStatus",
+    "supported": true,
+    "fields": {
+      "description": "現在のIME（入力メソッド）の状態を返します。東アジア版のみで使えます。",
+      "returns": "Integer（IMEの状態コード）",
+      "caution": "状態コードはロケールで異なります。本アプリでは実行時に決まる値として表示します。",
+      "example": "x = IMEStatus",
+      "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/imestatus-function.md"
+    }
+  },
+  {
+    "kind": "vba",
+    "name": "Empty",
+    "supported": true,
+    "fields": {
+      "description": "未初期化のVariantを表す値です。数値としては0、文字列としては空文字列として扱われます。",
+      "returns": "Variant（未初期化を表す値）",
+      "caution": "空文字列やNullとは異なります。",
+      "example": "Debug.Print IsEmpty(Empty)",
+      "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/variant-data-type.md"
+    }
+  },
+  {
+    "kind": "vba",
+    "name": "Null",
+    "supported": true,
+    "fields": {
+      "description": "有効なデータがないことを表す値です。",
+      "returns": "Variant（有効なデータがないことを表す値）",
+      "caution": "Nullを含む演算は原則としてNullになります。Null同士でも等しくなりません。",
+      "example": "Debug.Print IsNull(Null)",
+      "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/variant-data-type.md"
+    }
+  },
+  {
+    "kind": "vba",
+    "name": "Nothing",
+    "supported": true,
+    "fields": {
+      "description": "オブジェクト変数がどのオブジェクトも参照していない状態を表します。",
+      "returns": "オブジェクト参照なしを表すキーワード値",
+      "caution": "代入にはSetが必要です。通常の代入や値としての使用はエラー91になります。",
+      "example": "Dim obj As Object\nSet obj = Nothing",
+      "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/nothing-keyword.md"
+    }
+  },
+  {
+    "kind": "vba",
+    "name": "True",
+    "supported": true,
+    "fields": {
+      "description": "真を表すBooleanの値です。",
+      "returns": "Boolean（True）",
+      "caution": "数値への変換では-1です。",
+      "example": "Debug.Print True",
+      "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/boolean-data-type.md"
+    }
+  },
+  {
+    "kind": "vba",
+    "name": "False",
+    "supported": true,
+    "fields": {
+      "description": "偽を表すBooleanの値です。",
+      "returns": "Boolean（False）",
+      "caution": "数値への変換では0です。",
+      "example": "Debug.Print False",
+      "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/boolean-data-type.md"
+    }
+  },
+  {
+    "kind": "vba",
+    "name": "vbCrLf",
+    "supported": true,
+    "fields": {
+      "description": "改行（キャリッジリターンとラインフィード）を表す文字列定数です。",
+      "returns": "String（改行文字 Chr(13) + Chr(10)）",
+      "caution": "Chr(13)とChr(10)の組み合わせです。",
+      "example": "Debug.Print \"a\" & vbCrLf & \"b\"",
+      "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/miscellaneous-constants.md"
+    }
+  },
+  {
+    "kind": "vba",
+    "name": "vbTab",
+    "supported": true,
+    "fields": {
+      "description": "タブ文字を表す文字列定数です。",
+      "returns": "String（タブ文字 Chr(9)）",
+      "caution": "Chr(9)と同じ文字です。",
+      "example": "Debug.Print \"a\" & vbTab & \"b\"",
+      "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/miscellaneous-constants.md"
+    }
+  },
+  {
+    "kind": "vba",
+    "name": "And",
+    "supported": true,
+    "fields": {
+      "description": "両方の式がTrueのときだけTrueを返します。数値ではビットごとのANDを行います。",
+      "returns": "Boolean（論理積）または数値（ビットごとのAND）",
+      "caution": "短絡評価はされません。Nullを含む場合はNullが伝播します（FalseとのAndはFalse）。",
+      "example": "Debug.Print True And False",
+      "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/and-operator.md"
+    }
+  },
+  {
+    "kind": "vba",
+    "name": "Or",
+    "supported": true,
+    "fields": {
+      "description": "少なくとも一方の式がTrueならTrueを返します。数値ではビットごとのORを行います。",
+      "returns": "Boolean（論理和）または数値（ビットごとのOR）",
+      "caution": "短絡評価はされません。Nullを含む場合はNullが伝播します（TrueとのOrはTrue）。",
+      "example": "Debug.Print True Or False",
+      "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/or-operator.md"
+    }
+  },
+  {
+    "kind": "vba",
+    "name": "Xor",
+    "supported": true,
+    "fields": {
+      "description": "ちょうど一方の式だけがTrueのときTrueを返します。数値ではビットごとの排他的ORを行います。",
+      "returns": "Boolean（排他的論理和）または数値（ビットごとの排他的OR）",
+      "caution": "どちらか一方がNullなら結果はNullです。",
+      "example": "Debug.Print True Xor False",
+      "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/xor-operator.md"
+    }
+  },
+  {
+    "kind": "vba",
+    "name": "Mod",
+    "supported": true,
+    "fields": {
+      "description": "割り算の余りを返します。",
+      "returns": "数値（割り算の余り）",
+      "caution": "被演算子は整数へ丸めてから計算します。除数が丸めの結果0になるとエラー11です。",
+      "example": "Debug.Print 10 Mod 3",
+      "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/mod-operator.md"
+    }
+  },
+  {
+    "kind": "vba",
+    "name": "Not",
+    "supported": true,
+    "fields": {
+      "description": "式の真偽を反転します。数値ではビットを反転します。",
+      "returns": "Boolean（真偽の反転）または数値（ビット反転）",
+      "caution": "Nullに使うとNullです。数値ではNot 0 は-1のようにビット反転の結果になります。",
+      "example": "Debug.Print Not True",
+      "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/not-operator.md"
+    }
+  },
+  {
+    "kind": "vba",
+    "name": "Let",
+    "supported": true,
+    "fields": {
+      "description": "式の値を変数やプロパティに代入します。Letは通常省略します。",
+      "returns": "戻り値なし（宣言または制御文）",
+      "caution": "オブジェクトの代入にはLetではなくSetを使います。",
+      "example": "Let x = 5",
+      "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/let-statement.md"
+    }
+  },
+  {
+    "kind": "vba",
+    "name": "Rem",
+    "supported": true,
+    "fields": {
+      "description": "コメント行を表します。その行は実行されません。",
+      "returns": "戻り値なし（宣言または制御文）",
+      "caution": "アポストロフィ（'）で始めるコメントと同じです。文の後ろに置くときはコロンで区切ります。",
+      "example": "Rem これはコメントです\nx = 1",
+      "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/rem-statement.md"
+    }
+  }
+]

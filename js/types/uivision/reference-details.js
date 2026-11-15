@@ -89,5 +89,25 @@ export const referenceDetails = {
     "description": "要素のテキストを期待文字列と完全一致で検証します。不一致はエラーです。",
     "returns": "式の戻り値なし（コマンド）",
     "source": "https://ui.vision/rpa/docs/selenium-ide/asserttext-verifytext"
+  },
+  "String": {
+    "description": "式の中で値を文字列へ変換します（JavaScriptのString関数）。executeScript_Sandboxのreturn式などで使います。",
+    "returns": "変換した文字列",
+    "source": "https://developer.mozilla.org/ja/docs/Web/JavaScript/Reference/Global_Objects/String"
+  },
+  "${!times}": {
+    "description": "timesループの中で使える組み込み変数です。現在の繰り返し回数を1始まりで表します。",
+    "returns": "現在の繰り返し回数（1始まり）",
+    "source": "https://ui.vision/rpa/docs/selenium-ide/times"
+  },
+  "!statusOK": {
+    "description": "直前のコマンドが成功したかを表す組み込み変数です。成功でtrue、エラーでfalseになります。",
+    "returns": "真偽値（成功でtrue）",
+    "source": "https://ui.vision/rpa/docs/selenium-ide/"
+  },
+  "!errorIgnore": {
+    "description": "文字列\"true\"に設定すると、コマンドでエラーが起きてもマクロを止めずに継続します。",
+    "returns": "設定値（文字列）",
+    "source": "https://ui.vision/rpa/docs/selenium-ide/"
   }
 };

@@ -138,7 +138,10 @@ function property(v, key, node) {
     const k = ciKey(v.properties, key);
     if (k !== undefined) return v.properties[k];
     if (lower === "count" || lower === "length") return 1;
-    return /Info$/.test(v.psType) ? unknown("モデルに未指定の " + key) : null;
+    // R22-N13: モデル化オブジェクト（FileInfo等）の存在しないプロパティは
+    // 実物どおり決定的に $null。モデルに明示された値が未確定値の場合
+    // （例：内容未指定ファイルの Length）は上の ciKey 経由で保持される。
+    return null;
   }
   if (lower === "count") return v == null ? 0 : Array.isArray(v) ? v.length : 1;
   if (lower === "length")
@@ -439,7 +442,16 @@ export function simulatePowerShell(source, model, limits) {
             ciSet(s.vars, "Matches", hash(match.map((v, i) => [i, v])));
           return base.startsWith("not") ? !match : !!match;
         }
-        if (Array.isArray(b)) fail("未対応：右辺が配列の比較", n.line);
+        if (Array.isArray(b)) {
+          // R22-N14: 右辺がコレクションでも左辺がスカラー／$null のときは
+          // フィルタ意味論にならず通常のスカラー比較になる
+          // （about_Comparison_Operators：右辺は常に単独の値として扱われる）。
+          // $null -eq @() は False、$null -ne @() は True。
+          if (base === "eq") return false;
+          if (base === "ne") return true;
+          if (a === null) return false;
+          fail("未対応：右辺が配列の比較", n.line);
+        }
         let x = a,
           y = b;
         if (x === null || y === null)
@@ -499,6 +511,29 @@ export function simulatePowerShell(source, model, limits) {
       if (op === "+" && Array.isArray(a))
         return [...a, ...(Array.isArray(b) ? b : [b])];
       if (op === "+" && typeof a === "string") return a + text(b, n);
+      if (op === "*" && (typeof a === "string" || Array.isArray(a))) {
+        // R22-N12: 文字列×整数・配列×整数は繰返し
+        // （about_Arithmetic_Operators）。右辺は整数へ変換される。
+        const raw = numeric(b, n);
+        if (!Number.isFinite(raw))
+          fail("繰返し回数を整数へ変換できません", n.line, "RuntimeException");
+        // .NET の整数変換に合わせ、小数部は最近接へ丸める（.5 は偶数側）。
+        let count = Math.floor(raw);
+        const frac = raw - count;
+        if (frac > 0.5 || (frac === 0.5 && count % 2 !== 0)) count++;
+        else if (frac < -0.5 || (frac === -0.5 && count % 2 !== 0)) count--;
+        if (count < 0)
+          fail("繰返し回数は0以上が必要です", n.line, "RuntimeException");
+        if (
+          (typeof a === "string" && a.length * count > 100000) ||
+          (Array.isArray(a) && a.length * count > 10000)
+        )
+          fail("未確認：繰返し結果がモデルの上限を超えます", n.line, "未確認");
+        if (typeof a === "string") return a.repeat(count);
+        const repeated = [];
+        for (let i = 0; i < count; i++) repeated.push(...a);
+        return repeated;
+      }
       a = numeric(a, n);
       b = numeric(b, n);
       if ((op === "/" || op === "%") && b === 0)
@@ -732,6 +767,22 @@ export function simulatePowerShell(source, model, limits) {
         );
         return v;
       }
+      if (a.k === "pre") {
+        // R22-N16: 前置 ++／-- は更新後の値を返す。
+        const v = read(a.target, s, api);
+        if (isUnknown(v))
+          fail("未確認：未確定値のインクリメント", a.line, "未確認");
+        const updated = binary(
+          a.op === "++" ? "+" : "-",
+          v,
+          1,
+          s,
+          a,
+          api,
+        );
+        set(s, a.target, updated, a, api);
+        return updated;
+      }
       if (a.k === "binary") {
         const x = read(a.a, s, api);
         if (["-and", "-or"].includes(a.op) && isUnknown(truth(x))) {
@@ -739,6 +790,7 @@ export function simulatePowerShell(source, model, limits) {
             node &&
             typeof node === "object" &&
             (node.k === "post" ||
+              node.k === "pre" ||
               node.k === "command" ||
               Object.values(node).some((v) =>
                 Array.isArray(v) ? v.some(effects) : effects(v),
@@ -807,7 +859,7 @@ export function simulatePowerShell(source, model, limits) {
         "get-content": ["path", "raw"],
         "set-content": ["path", "value", "nonewline"],
         "add-content": ["path", "value", "nonewline"],
-        "new-item": ["path", "itemtype", "value", "force"],
+        "new-item": ["path", "name", "itemtype", "value", "force"],
         "remove-item": ["path", "recurse", "force"],
         "rename-item": ["path", "newname"],
         "copy-item": ["path", "destination", "force"],
@@ -1247,13 +1299,37 @@ export function simulatePowerShell(source, model, limits) {
         return [{ s, values: [] }];
       }
       if (name === "new-item") {
-        const path = p("path", 0, null),
-          type = String(p("itemtype", 100, "file")).toLowerCase(),
+        let path = p("path", 0, null);
+        const type = String(p("itemtype", 100, "file")).toLowerCase(),
           force = !!p("force", 100, false);
+        // R22-N15: -Name は -Path（省略時は現在フォルダ）を親とする名前。
+        const itemName = p("name", 100, null);
+        if (itemName !== null && itemName !== undefined) {
+          if (isUnknown(itemName))
+            fail("未確認：New-Item -Name の値", c.line, "未確認");
+          const leaf = text(itemName, c);
+          if (isUnknown(leaf))
+            fail("未確認：New-Item -Name の値", c.line, "未確認");
+          const base =
+            path === null || path === undefined
+              ? s.model.cwd
+              : windowsPath(path, s.model.cwd, c.line);
+          if (isUnknown(base))
+            fail("未確認：New-Item -Path の値", c.line, "未確認");
+          path = windowsPath(leaf, base, c.line);
+        }
+        if (path === null || path === undefined)
+          fail(
+            "New-Itemには-Pathまたは-Nameが必要です",
+            c.line,
+            "ParameterBindingException",
+          );
+        if (typeof path === "string")
+          path = windowsPath(path, s.model.cwd, c.line);
         let e = fsEntry(s, path, c.line);
         if (type === "directory") {
           if (e && !force)
-            fail("モデルにパスが既に存在します", c.line, "IOException");
+            fail("モデルにパスが既に存在します：" + path, c.line, "IOException");
           if (!e) makeDirectory(s, path, c.line);
           e = fsEntry(s, path, c.line);
           if (e.type !== "directory")
@@ -1264,7 +1340,7 @@ export function simulatePowerShell(source, model, limits) {
             );
         } else if (type === "file") {
           if (e && !force)
-            fail("モデルにパスが既に存在します", c.line, "IOException");
+            fail("モデルにパスが既に存在します：" + path, c.line, "IOException");
           e = writeFile(s, path, text(p("value", 100, ""), c), c.line);
         } else fail("未対応のNew-Item -ItemType：" + type, c.line);
         return [{ s, values: [info(e)] }];
@@ -1324,6 +1400,7 @@ export function simulatePowerShell(source, model, limits) {
         typeof n === "object" &&
         (n.k === "assign" ||
           n.k === "post" ||
+          n.k === "pre" ||
           (n.k === "command" &&
             !pure.has((alias[n.name.toLowerCase()] || n.name).toLowerCase())) ||
           Object.values(n).some((v) =>

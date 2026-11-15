@@ -11,12 +11,19 @@ for name in ['index.html','style.css','sw.js','precache.js','manifest.webmanifes
 folder=root/'js/types/auditdummy';folder.mkdir(exist_ok=True)
 (folder/'index.js').write_text("import {definition as base} from '../javascript/index.js';\nexport const definition={...base,id:'auditdummy',name:'監査用ダミー',extensions:['.dummy']};\n")
 registry=root/'js/types/registry.js';text=registry.read_text();text="import {definition as auditdummy} from './auditdummy/index.js';\n"+text.replace('export const definitions = [','export const definitions = [auditdummy,');registry.write_text(text)
+# Expected option count is derived from the live registry, never a fixed
+# number (R22-N28): the defined types are counted by evaluating the source
+# registry in the working tree (the copy under work/audit/extension was made
+# from it), and the browser must show that count plus the one dummy type
+# added above.
+defined_types=int(subprocess.check_output(['node','--input-type=module','-e',"import {definitions} from './js/types/registry.js';process.stdout.write(String(definitions.length))"],cwd=Path('.'),text=True))
+expected_types=defined_types+1
 subprocess.run(['node','scripts/precache.mjs'],cwd=root,check=True)
 class Handler(SimpleHTTPRequestHandler):
  def log_message(self,*a):pass
 server=ThreadingHTTPServer(('127.0.0.1',4176),functools.partial(Handler,directory=str(root.resolve())));Thread(target=server.serve_forever,daemon=True).start()
 with sync_playwright() as p:
- b=p.chromium.launch(executable_path='/usr/bin/chromium',args=['--no-sandbox']);c=b.new_context();page=c.new_page();page.goto('http://127.0.0.1:4176');page.wait_for_function('!document.querySelector("#run").disabled');assert page.locator('#macroType option').count()==14
+ b=p.chromium.launch(executable_path='/usr/bin/chromium',args=['--no-sandbox']);c=b.new_context();page=c.new_page();page.goto('http://127.0.0.1:4176');page.wait_for_function('!document.querySelector("#run").disabled');assert page.locator('#macroType option').count()==expected_types,(page.locator('#macroType option').count(),expected_types)
  page.locator('#macroType').select_option('auditdummy');page.wait_for_function('!document.querySelector("#run").disabled');assert page.locator('#file').get_attribute('accept')=='.dummy';page.locator('#editor').fill('console.log(2+3);');page.locator('#run').click();page.wait_for_function('!document.querySelector("#run").disabled');assert '5' in page.locator('#outputs').inner_text()
  page.wait_for_function('navigator.serviceWorker.controller!==null');c.set_offline(True);page.reload();page.wait_for_function('!document.querySelector("#run").disabled');assert page.locator('#macroType').input_value()=='auditdummy';assert '5' in page.locator('#outputs').inner_text();b.close()
-server.shutdown();print(json.dumps({'temporary_types':14,'changed':['js/types/auditdummy/index.js','js/types/registry.js','precache.js'],'core_changes':0,'offline':'passed'}))
+server.shutdown();print(json.dumps({'temporary_types':expected_types,'defined_types':defined_types,'changed':['js/types/auditdummy/index.js','js/types/registry.js','precache.js'],'core_changes':0,'offline':'passed'}))

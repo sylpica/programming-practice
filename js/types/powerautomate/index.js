@@ -121,6 +121,29 @@ for (const r of reference) {
   if (r.name === "Exit loop") actions = [{action:"Loop",target:"Index",from:1,to:3,step:1},sample,{action:"End"}];
   r.example = encode([...setup,...actions]);
 }
+// Else if はパレットには無いが、フロー分類（classify）で elseif として処理される
+// アクションのため、リファレンスにだけ項目を持つ（If／Else／End と同列）。
+reference.push({
+  name: "Else if",
+  category: "アクション",
+  syntax: JSON.stringify({ action: "Else if", condition: "%Count% > 0" }),
+  description:
+    "Power Automate for desktopの「Else if」を学習用モデル上で説明します。",
+  example: encode([
+    { action: "Set variable", target: "Count", value: 0 },
+    { action: "Set variable", target: "Items", value: ["A", "B"] },
+    { action: "If", condition: "%Count% > 1" },
+    { action: "Display message", value: "大きい" },
+    { action: "Else if", condition: "%Count% > 0" },
+    { action: "Display message", value: "正" },
+    { action: "Else" },
+    { action: "Display message", value: "0" },
+    { action: "End" },
+  ]),
+  caution:
+    "JSONはこのアプリの学習用フロー表現で、製品のエクスポート形式ではありません。",
+  supported: true,
+});
 export const definition = {
   id: "powerautomate",
   name: "Power Automate",
@@ -195,7 +218,11 @@ export const definition = {
     ["アクション", "フロー内の1つの操作です。"],
     [
       "デスクトップフロー",
-      "アクションを条件やループで組み合わせる自動化です。",
+      "自分のパソコン（デスクトップ）上のアプリ操作やファイル操作を自動化するフローです。Power Automate for desktop で作成し、アクションを組み合わせて組み立てます。",
+    ],
+    [
+      "未確定（値）",
+      "実行時に決まる値のことです。このアプリでは値を仮定して作らず、未確定のまま扱って、到達可能な分岐をすべて表示します。",
     ],
   ],
   editor: createActionEditor({ palette }),
@@ -352,6 +379,13 @@ export const definition = {
             value = resolve(a.value, s, api);
           switch (n.action) {
             case "Set variable":
+              // R22-N23：実 PAD の「変数の設定」は変数名と値が必須で、欠落は
+              // フロー定義エラー。target 欠落で幻の変数 undefined を作ったり、
+              // value 欠落を無言で通したりせず、名指しで停止する。
+              if (a.target === undefined || a.target === null || String(a.target).trim() === "")
+                api.fail("Set variable には変数名（target）が必要です", n);
+              if (a.value === undefined)
+                api.fail("Set variable には値（value）が必要です", n);
               s.vars[a.target] = structuredClone(value);
               api.note(
                 s,

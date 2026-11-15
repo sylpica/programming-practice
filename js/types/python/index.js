@@ -14,9 +14,13 @@ const reference = REFERENCE.map((r) => ({
   source: r.doc,
 }));
 for (const r of reference) {
-  if (["open","with","str.format","random","json","os","datetime","numpy.array","pandas.DataFrame"].includes(r.name)) {
+  if (["open","str.format","random","json","os","datetime","numpy.array","pandas.DataFrame"].includes(r.name)) {
     r.supported = false;
     r.caution += " このアプリのシミュレーションでは未対応として停止します。";
+  }
+  if (r.name === "with") {
+    r.supported = false;
+    r.caution += " このアプリでは with は部分対応です：本文は実行されますが、__enter__／__exit__ の実際の処理や後始末は再現されず、as 変数には未確定値が入ります。open() と組み合わせた場合は open 自体が未対応のため停止します。";
   }
   if (r.name === "filter") r.example = 'def even(x):\n    return x % 2 == 0\nprint(list(filter(even, range(6))))';
 }

@@ -25,6 +25,11 @@ export const referenceDetails = {
     "source": "https://learn.microsoft.com/en-us/power-automate/desktop-flows/actions-reference/conditionals#else",
     "description": "前のIf条件が成立しなかった場合のブロックです。"
   },
+  "Else if": {
+    "returns": "戻り値なし（宣言または制御文）",
+    "source": "https://learn.microsoft.com/en-us/power-automate/desktop-flows/actions-reference/conditionals#else-if",
+    "description": "前のIfやElse ifの条件がすべて成立せず、この条件が成立した場合のブロックです。条件を複数段つなげられます。"
+  },
   "End": {
     "returns": "戻り値なし（宣言または制御文）",
     "source": "https://learn.microsoft.com/en-us/power-automate/desktop-flows/actions-reference/loops",

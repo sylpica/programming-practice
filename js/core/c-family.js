@@ -880,7 +880,32 @@ function parse(source, language) {
       }
       this.i = save;
     }
-    return simple();
+    try {
+      return simple();
+    } catch (e) {
+      // R22-N20（RG-78 の別表面）：共有パーサの simple() は、代入文・式文の
+      // 終端チェックで「次のトークン」を未対応として名指しする。しかし
+      // C系で文が完結した直後に別トークンが続くのは ; の欠落が真因であり、
+      // 宣言文と同じく「; が必要です」と表示する。文の内部で起きた未対応
+      // （固定文言のもの）は対象外で、そのまま伝える。
+      if (e instanceof PracticeError && e.category === "未対応") {
+        const tok = this.ts[this.i]?.v;
+        if (
+          e.message ===
+            "この構文は説明に対応していません：代入の区切りが必要です" ||
+          e.message ===
+            "この構文は説明に対応していません：宣言の区切りが必要です" ||
+          (tok !== undefined &&
+            e.message === "この構文は説明に対応していません：" + tok)
+        )
+          throw new PracticeError(
+            "; が必要です",
+            this.ts[this.i]?.line ?? t.line,
+            "SyntaxError",
+          );
+      }
+      throw e;
+    }
   };
   p.statement = function () {
     this.skip();
@@ -906,6 +931,11 @@ function parse(source, language) {
       while (!this.peek("}")) {
         this.skip();
         if (this.peek("}")) break;
+        // R22-N21：クラス末尾の } が無いまま入力が終わると、take() が
+        // トークン列の末尾を越えて生の TypeError になる。} 欠落として
+        // 名指しで停止する（この経路は C# 専用）。
+        if (this.peek("<eof>"))
+          throw new PracticeError("} が必要です", this.ts[this.i]?.line ?? t.line);
         let start = this.i;
         while (
           ["public", "private", "protected", "static"].includes(
@@ -922,8 +952,19 @@ function parse(source, language) {
           main.push(...this.body());
           continue;
         }
-        let type = this.take().v,
-          field = this.take().v;
+        // R22-N21：修飾子の直後や型の直後で入力が終わっている場合も、
+        // 未定義トークンの読み取りではなく } 欠落として停止する。
+        if (this.peek("<eof>"))
+          throw new PracticeError("} が必要です", this.ts[this.i]?.line ?? t.line);
+        let typeTok = this.take(),
+          fieldTok = this.take();
+        if (!fieldTok || fieldTok.v === "<eof>")
+          throw new PracticeError(
+            "} が必要です",
+            fieldTok?.line ?? typeTok?.line ?? t.line,
+          );
+        let type = typeTok.v,
+          field = fieldTok.v;
         if (!builtinTypes.includes(type))
           unsupported("クラスのフィールド型 " + type, t.line);
         if (this.peek("=")) unsupported("クラスフィールドの初期化式", t.line);
@@ -1130,7 +1171,7 @@ export function createCFamily({ id, name, extensions, language }) {
       "if",
       "制御",
       "if (condition) { … } else { … }",
-      "成立する側だけを実行します。",
+      "条件が真なら if のブロック、偽なら else のブロック（あれば）を実行します。else if で条件を連ねることもできます。",
       "if (n > 0) { n = 1; }",
     ],
     [
@@ -1209,13 +1250,350 @@ export function createCFamily({ id, name, extensions, language }) {
       "uncheckedの実行時int演算は32ビットへ折り返します。",
       managed,
     ],
+    [
+      "long",
+      "型",
+      "long n = 1;",
+      managed
+        ? "64ビット符号付き整数（System.Int64）です。"
+        : "符号付き整数です。モデルでは longBits（既定64ビット）で幅を表します。",
+      "long n = 1;",
+      managed
+        ? "範囲は -9223372036854775808〜9223372036854775807。安全な精度範囲を超える計算は未確認として停止します。"
+        : "別名表記 long int、signed long も同じ型です。long long は実言語では別の型ですが、モデルでは long へ畳み込んで受理します。",
+    ],
+    [
+      "float",
+      "型",
+      "float x = 1.5f;",
+      "32ビット単精度浮動小数点数です。",
+      "float x = 1.5f;",
+      managed
+        ? "リテラル 1.5 は double 型です。float には f 接尾辞（1.5f）を付けます。"
+        : "リテラル 1.5 は double 型です。float には f 接尾辞（1.5f）を付けます。double より精度が粗くなります。",
+    ],
+    [
+      "char",
+      "型",
+      "char c = 'A';",
+      managed
+        ? "16ビットの Unicode 文字1文字を表します（System.Char）。"
+        : "1バイトの文字型です。モデルでは文字コードの数値として扱います（'A' は 65）。",
+      "char c = 'A';",
+      managed
+        ? "文字列ではなく1文字です。数値との相互変換はキャストで行います。"
+        : "char の符号は処理系依存です。モデルでは範囲外の値への変換を未確認として停止します。符号を保証したい場合は signed char／unsigned char を使います。",
+    ],
+    [
+      "short",
+      "型",
+      "short n = 1;",
+      "16ビット符号付き整数です。",
+      "short n = 1;",
+      managed
+        ? "範囲は -32768〜32767（System.Int16）。"
+        : "別名表記 short int、signed short も同じ型です。範囲は -32768〜32767。",
+    ],
+    [
+      "bool",
+      "型",
+      "bool ok = true;",
+      id === "csharp"
+        ? "真偽値 true／false を表します（System.Boolean）。"
+        : id === "cpp"
+          ? "真偽値 true／false を表す型です。整数との相互変換もできます。"
+          : "真偽値 true／false を表す型です（本来は <stdbool.h> の bool）。モデルでは宣言と真偽値の代入に対応します。",
+      "bool ok = true;",
+      id === "c"
+        ? "部分実装です：(bool) 式のキャストは C では明示的に対応しておらず、未対応として停止します（宣言・代入は動作します）。"
+        : id === "cpp"
+          ? "(bool) キャストを含め対応しています。"
+          : "条件式の結果も bool です。数値との暗黙変換はありません。",
+    ],
+    [
+      "unsigned int",
+      "型",
+      "unsigned int n = 1;",
+      "32ビット符号なし整数です。負の値にはならず、演算は 2^32 の剰余で折り返します。",
+      "unsigned int n = 1;",
+      "unsigned だけでも同じ型を表します（unsigned = unsigned int）。",
+    ],
+    [
+      "unsigned long",
+      "型",
+      "unsigned long n = 1;",
+      "符号なし整数です。幅は long と同じで、モデルでは longBits（既定64ビット）に従います。",
+      "unsigned long n = 1;",
+      "別名表記 unsigned long int も同じ型です。unsigned long long は実言語では別の型ですが、モデルでは unsigned long へ畳み込んで受理します。",
+    ],
+    [
+      "unsigned short",
+      "型",
+      "unsigned short n = 1;",
+      "16ビット符号なし整数です（0〜65535）。",
+      "unsigned short n = 1;",
+      "別名表記 unsigned short int も同じ型です。",
+    ],
+    [
+      "unsigned char",
+      "型",
+      "unsigned char n = 65;",
+      "1バイト符号なし整数です（0〜255）。文字コードの格納にも使います。",
+      "unsigned char n = 65;",
+      "char とは別の型で、符号なしであることが保証されます。",
+    ],
+    [
+      "signed char",
+      "型",
+      "signed char c = 'A';",
+      "1バイト符号付き整数です（-128〜127）。",
+      "signed char c = 'A';",
+      "通常の char とは別の型です。char の符号は処理系依存ですが、signed char は符号付きが保証されます。",
+    ],
+    [
+      "uint",
+      "型",
+      "uint n = 1;",
+      "32ビット符号なし整数（System.UInt32）です。範囲は 0〜4294967295。",
+      "uint n = 1;",
+      "モデル側の制限：代入時の変換では int の範囲を超える値を範囲外として停止します（実C#では有効な値でも停止します）。uint.MaxValue 自体は参照できます。",
+    ],
+    [
+      "ulong",
+      "型",
+      "ulong n = 1;",
+      "64ビット符号なし整数（System.UInt64）です。範囲は 0〜18446744073709551615。",
+      "ulong n = 1;",
+      "64ビットの大きな値は安全な精度範囲外として未確認になる場合があります。ulong.MaxValue は未確定値として返ります（定数項目を参照）。",
+    ],
+    [
+      "ushort",
+      "型",
+      "ushort n = 1;",
+      "16ビット符号なし整数（System.UInt16）です。範囲は 0〜65535。",
+      "ushort n = 1;",
+      "モデル側の制限：代入時の変換では short の範囲を超える値を範囲外として停止します。また ushort.MaxValue／MinValue は静的メンバーの表になく未対応として停止します（型自体は対応済み）。",
+    ],
+    [
+      "byte",
+      "型",
+      "byte n = 1;",
+      "8ビット符号なし整数（System.Byte）です。範囲は 0〜255。",
+      "byte n = 1;",
+      "モデル側の制限：代入時の変換では sbyte の範囲を超える値を範囲外として停止します（実C#では有効な値でも停止します）。byte.MaxValue 自体は参照できます。",
+    ],
+    [
+      "sbyte",
+      "型",
+      "sbyte n = -1;",
+      "8ビット符号付き整数（System.SByte）です。範囲は -128〜127。",
+      "sbyte n = -1;",
+      "byte と異なり負の値を表せます。",
+    ],
+    [
+      "string",
+      "型",
+      managed ? "string s = \"tea\";" : "std::string s = \"tea\";",
+      managed
+        ? "文字列を表す参照型です。Length プロパティと添字 s[i] に対応します。"
+        : "std::string 型の文字列です。既定では空文字列で、+／+= で連結でき、添字で1文字ずつ読み書きできます。比較もできます。",
+      managed
+        ? "string s = \"tea\";"
+        : "string s = \"ab\";\ns += \"c\";\ncout << s << endl;",
+      managed
+        ? "文字列補間 $\"…\" は別項目です。"
+        : "メソッド（.length() 等）は未実装です。C にはこの型はなく、char 配列を使います。",
+    ],
+    [
+      "参照",
+      "型",
+      "int& ref = n;",
+      "宣言した変数の別名です。参照を通した読み書きは、参照先の変数そのものへの読み書きになります。",
+      "int n = 1;\nint& ref = n;\nref = 2;\ncout << n << endl;",
+      "C++専用です。宣言時に参照先の指定が必須で、後から別の変数へ付け替えることはできません（代入は参照先への代入になります）。ポインタとは別の仕組みです。",
+    ],
+    [
+      "do",
+      "制御",
+      "do { … } while (condition);",
+      "本体を先に1回実行し、その後、条件が真の間くり返します。条件が最初から偽でも本体は1回実行されます。",
+      "int n = 0;\ndo { n++; } while (n < 3);",
+      "末尾の while の後には ; が必要です。",
+    ],
+    [
+      "sizeof",
+      "演算子",
+      "sizeof(型) / sizeof 式",
+      "型または式の型の大きさをバイト数で返します。モデルでのサイズは char・bool が1、short が2、int・float が4、double が8、long は longBits（既定64で8）です。",
+      "int bytes = sizeof(double);",
+      "オペランドの式は評価されません（副作用は起きません）。結果の型は size_t 相当で、モデルでは longBits=64 のとき unsigned long です。ポインタ型・構造体型の sizeof は未対応です。",
+    ],
+    [
+      "キャスト",
+      "型",
+      "(型)式",
+      managed
+        ? "式の値を指定した型へ明示的に変換します。対応する型は int、long、double、float、char、bool、short、uint、ulong、ushort、byte、sbyte、string です。"
+        : "式の値を指定した型へ明示的に変換します（C形式キャスト）。浮動小数点から整数への変換では小数部が切り捨てられます。",
+      "double x = 1.5;\nint n = (int)x;",
+      id === "c"
+        ? "(bool) 式のキャストは C では未対応です（bool 項目を参照）。ポインタ型・修飾型・独自型へのキャストも未対応です。"
+        : id === "cpp"
+          ? "static_cast 等の名前付きキャストと関数形式のキャストは未対応です。ポインタ型・参照型・修飾型へのキャストも未対応です。"
+          : "decimal へのキャストは未対応です。範囲外の変換は例外または未確認として停止します。",
+    ],
+    [
+      "三項演算子",
+      "演算子",
+      "condition ? value1 : value2",
+      "条件が真なら value1、偽なら value2 を値とする式です。条件演算子とも呼びます。",
+      "int n = 2;\nint label = n > 0 ? 1 : 0;",
+      managed
+        ? "null 合体演算子 ?? は未対応です。"
+        : "文ではなく式です。入れ子にすると読みにくくなるため、複雑な分岐は if を使います。",
+    ],
+    [
+      "abs",
+      "関数",
+      "abs(n)",
+      "int の絶対値を返します（<stdlib.h>／<cstdlib> の関数）。",
+      "int n = abs(-3);",
+      "最も小さい int（-2147483648）の絶対値は int で表せず、未定義動作として停止します。",
+    ],
+    [
+      "break",
+      "制御",
+      "break;",
+      "内側のループの実行を直ちに終了し、ループの次の文へ進みます。",
+      "int total = 0;\nfor (int i = 0; i < 10; i++) { if (i == 3) { break; } total += i; }",
+      managed
+        ? "switch 文から抜けるためにも使いますが、モデルでは switch 文は未対応です。"
+        : "ループの外では使えません。",
+    ],
+    [
+      "continue",
+      "制御",
+      "continue;",
+      "ループの今回の繰り返しを打ち切り、次の繰り返しの判定へ進みます。",
+      "int total = 0;\nfor (int i = 0; i < 5; i++) { if (i == 2) { continue; } total += i; }",
+      "for では更新式を実行してから次の判定へ進みます。",
+    ],
+    [
+      "getline",
+      "入力",
+      "std::getline(std::cin, stringVariable)",
+      "標準入力から1行を読み取り、string 変数へ格納します。モデルでは実行時の入力を未確定値として扱います。std::cin はこの関数の第1引数としてだけ使います。",
+      "string line;\nstd::getline(std::cin, line);",
+      "対応形式は std::getline(std::cin, 変数) のみです。cin >> x の抽出演算子は未実装で、シフト演算として解釈され停止します。",
+    ],
+    [
+      "endl",
+      "出力",
+      "std::endl",
+      "cout への出力で改行を表します。モデルでは改行文字 \"\\n\" として扱います。",
+      "cout << 1 << endl;",
+      "実物の std::endl は改行に加えてストリームをフラッシュしますが、モデルではフラッシュは再現しません。",
+    ],
+    [
+      "foreach",
+      "制御",
+      "foreach (型 変数 in コレクション) { … }",
+      "配列などの要素を先頭から順に変数へ代入しながらくり返します。",
+      "int[] values = {1, 2, 3};\nint total = 0;\nforeach (int v in values) { total += v; }",
+    ],
+    [
+      "unchecked",
+      "数値",
+      "unchecked { … } / unchecked(式)",
+      "整数演算のオーバーフローを検査せず、ビット幅で折り返して計算することを明示します。C# の既定の動作でもあります。",
+      "int n = 2147483647;\nunchecked { n = n + 1; }",
+      "checked と対の指定です。定数式のオーバーフローは unchecked でもコンパイルエラーとして停止します。",
+    ],
+    [
+      "new",
+      "式",
+      "new 型[個数] / new 型[] { … } / new クラス名()",
+      "配列またはオブジェクトを生成する式です。配列は要素が型の既定値で初期化されます。",
+      "int[] values = new int[3];\nvalues[0] = 1;",
+      "対応形式は new 型[個数]、new 型[] {…}、引数なしの new クラス名() のみです。引数付きコンストラクタなどは未対応です。",
+    ],
+    [
+      "文字列補間",
+      "文字列",
+      "$\"…{式}…\"",
+      "文字列リテラル内の {式} の部分を、その値の文字列表現で置き換えます。{{ と }} は波括弧そのものを表します。",
+      "int n = 3;\nstring s = $\"n={n}\";\nConsole.WriteLine(s);",
+      "配置指定（{式,配置}）と書式指定子（{式:書式}）は未対応です。",
+    ],
+    [
+      "int.TryParse",
+      "変換",
+      "int.TryParse(string, out int variable)",
+      "文字列を int へ変換できるか試します。成功すると true を返し out 変数へ値を入れ、失敗すると false を返し out 変数へ 0 を入れます。",
+      "int n;\nbool ok = int.TryParse(\"42\", out n);\nConsole.WriteLine(n);",
+      "int.Parse と異なり、変換できない文字列でも例外にはなりません。対応形式は（文字列, out 変数）の2引数のみです。int.Parse／double.Parse は未実装です。",
+    ],
+    [
+      "double.TryParse",
+      "変換",
+      "double.TryParse(string, out double variable)",
+      "文字列を double へ変換できるか試します。成功すると true を返し out 変数へ値を入れ、失敗すると false を返し out 変数へ 0 を入れます。",
+      "double x;\nbool ok = double.TryParse(\"1.5\", out x);\nConsole.WriteLine(x);",
+      "double.Parse と異なり、変換できない文字列でも例外にはなりません。対応形式は（文字列, out 変数）の2引数のみです。",
+    ],
+    [
+      "Length",
+      "プロパティ",
+      "array.Length / text.Length",
+      "配列では要素数、文字列では文字数を int で返します。",
+      "int[] values = {1, 2, 3};\nstring s = \"tea\";\nint n = values.Length + s.Length;",
+      "文字列の各文字へは添字 s[i] でもアクセスできます。",
+    ],
+    ...[
+      ["int.MaxValue", "int の最大値です。"],
+      ["int.MinValue", "int の最小値です。"],
+      ["uint.MaxValue", "uint の最大値です。"],
+      ["uint.MinValue", "uint の最小値です。"],
+      ["short.MaxValue", "short の最大値です。"],
+      ["short.MinValue", "short の最小値です。"],
+      ["byte.MaxValue", "byte の最大値です。"],
+      ["byte.MinValue", "byte の最小値です。"],
+      ["sbyte.MaxValue", "sbyte の最大値です。"],
+      ["sbyte.MinValue", "sbyte の最小値です。"],
+      ["char.MaxValue", "char の最大値です（U+FFFF）。"],
+      ["char.MinValue", "char の最小値です（U+0000）。"],
+      ["Math.PI", "円周率 π の近似値です。"],
+      ["Math.E", "自然対数の底 e の近似値です。"],
+      ["String.Empty", "空文字列 \"\" です。string.Empty と同じ値です。"],
+      ["string.Empty", "空文字列 \"\" です。String.Empty と同じ値です。"],
+      ["long.MaxValue", "long の最大値です。"],
+      ["long.MinValue", "long の最小値です。"],
+      ["ulong.MaxValue", "ulong の最大値です。"],
+    ].map(([n, d]) => [
+      n,
+      "定数",
+      n,
+      d,
+      `Console.WriteLine(${n});`,
+      n === "uint.MaxValue" || n === "byte.MaxValue"
+        ? "変数への代入時の変換では対応する符号付き型の範囲を超えるため範囲外として停止します。値の参照自体はこの例のようにできます。"
+        : n === "long.MaxValue"
+          ? "モデルでは64ビット境界値を安全な整数として表せないため、未確定値として返ります（実値は 9223372036854775807）。"
+          : n === "long.MinValue"
+            ? "モデルでは64ビット境界値を安全な整数として表せないため、未確定値として返ります（実値は -9223372036854775808）。"
+            : n === "ulong.MaxValue"
+              ? "モデルでは64ビット境界値を安全な整数として表せないため、未確定値として返ります（実値は 18446744073709551615）。"
+              : "",
+    ]),
   ]);
   const prelude = {pointer:"int values[3]={1,2,3};",if:"int n=2;",for:"int total=0;",while:"int n=0;",printf:"int n=3;",cout:"int n=3;","Console.WriteLine":"int total=3;",class:"class Counter { public int Value; }",checked:"int n=1;"};
   for (const r of reference) if (prelude[r.name]) r.example = prelude[r.name] + "\n" + r.example;
   if (managed) reference.find(r => r.name === "array").syntax = "int[] values = {1, 2, 3};";
+  const csharpOnly = ["uint","ulong","ushort","byte","sbyte","foreach","unchecked","new","文字列補間","int.TryParse","double.TryParse","Length","int.MaxValue","int.MinValue","uint.MaxValue","uint.MinValue","short.MaxValue","short.MinValue","byte.MaxValue","byte.MinValue","sbyte.MaxValue","sbyte.MinValue","char.MaxValue","char.MinValue","Math.PI","Math.E","String.Empty","string.Empty","long.MaxValue","long.MinValue","ulong.MaxValue"];
+  const cppOnly = ["参照","getline","endl"];
   reference = reference.filter(r => !managed
-    ? !["Console.WriteLine","Console.ReadLine","class","checked", ...(id === "c" ? ["cout"] : [])].includes(r.name)
-    : !["pointer","printf","cout"].includes(r.name));
+    ? !["Console.WriteLine","Console.ReadLine","class","checked", ...csharpOnly, ...(id === "c" ? ["cout","string", ...cppOnly] : [])].includes(r.name)
+    : !["pointer","printf","cout","unsigned int","unsigned long","unsigned short","unsigned char","signed char","sizeof","abs", ...cppOnly].includes(r.name));
   if (!managed) for (const r of reference) {
     if (id === "cpp") r.example = r.example.replace(/\b(cout|endl|printf)\b/g, "std::$1");
     r.example = `#include <${id === "cpp" ? "iostream>\n#include <cstdio" : "stdio.h"}>\nint main() {\n${r.example}\nreturn 0;\n}`;
@@ -1277,19 +1655,38 @@ export function createCFamily({ id, name, extensions, language }) {
     },
     reference,
     templates,
+    // 用語集は言語ごとに分ける（旧実装は3種類で同一配列を共有し、C# に
+    // ポインタ／未定義動作、C に参照オブジェクトが混入していた：RG-136）。
     glossary: [
       ["配列", "同じ型の要素が並ぶオブジェクトです。"],
+      ...(managed
+        ? [
+            [
+              "参照オブジェクト",
+              "複数の変数から同じ実体を参照できるオブジェクトです。",
+            ],
+          ]
+        : [
+            [
+              "ポインタ",
+              "オブジェクト内の位置を指す値です。実アドレスとは分けてモデル化します。",
+            ],
+            [
+              "未定義動作",
+              "言語仕様が結果を規定しない実行です。予測値を作らず停止します。",
+            ],
+          ]),
+      ...(id === "cpp"
+        ? [
+            [
+              "参照",
+              "宣言した変数の別名です。参照への代入は、参照先の変数への代入になります。",
+            ],
+          ]
+        : []),
       [
-        "ポインタ",
-        "オブジェクト内の位置を指す値です。実アドレスとは分けてモデル化します。",
-      ],
-      [
-        "未定義動作",
-        "言語仕様が結果を規定しない実行です。予測値を作らず停止します。",
-      ],
-      [
-        "参照オブジェクト",
-        "複数の変数から同じ実体を参照できるオブジェクトです。",
+        "未確定（値）",
+        "実行時に決まる値のことです。このアプリでは値を仮定して作らず、未確定のまま扱って、到達可能な分岐をすべて表示します。",
       ],
     ],
     model: {
@@ -1453,6 +1850,10 @@ export function createCFamily({ id, name, extensions, language }) {
             let l = typeOf(a.a, s),
               r = typeOf(a.b, s);
             if (language === "cpp" && a.op === "+" && [l, r].includes("string")) return "string";
+            // R22-N22（RG-05 別表面）：C# では string との + は連結であり、
+            // 結果型は string。左結合チェーン（"x" + 1 + 2）でも後続の + が
+            // 連結として扱えるよう、内側の連結結果の型を string として伝える。
+            if (managed && a.op === "+" && [l, r].includes("string")) return "string";
             return arithmeticType(l, r, s);
           }
           if (a.k === "index") {

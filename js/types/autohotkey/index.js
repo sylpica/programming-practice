@@ -103,6 +103,22 @@ const reference = rows([
     'answer := InputBox("名前").Value',
   ],
   [
+    "IsSet",
+    "変数",
+    "IsSet(変数)",
+    "変数に値が代入されているかを調べ、代入済みなら1、未代入なら0を返します。引数の変数は評価されないため、未代入の変数を渡してもエラーになりません。空文字列が代入されている場合も代入済みです。",
+    "x := 1\nMsgBox IsSet(x)\nMsgBox IsSet(y)",
+    "組み込み変数A_*は常に値があるため、IsSetの結果は1です。",
+  ],
+  [
+    "IsSetRef",
+    "変数",
+    "IsSetRef(&変数)",
+    "参照（&変数）で受け取った変数に値が代入されているかを調べ、代入済みなら1、未代入なら0を返します。参照先は評価されないため、未代入でもエラーになりません。",
+    "y := [1, 2]\nMsgBox IsSetRef(&y)\nMsgBox IsSetRef(&z)",
+    "この教材のモデルでは、参照先が配列・オブジェクトのときに1、数値・文字列のときに0を返します。",
+  ],
+  [
     "if",
     "制御",
     "if 条件 { … } else { … }",
@@ -112,9 +128,65 @@ const reference = rows([
   [
     "Loop",
     "制御",
-    "Loop 回数 { … }",
-    "指定回数だけ本体を繰り返します。",
+    "Loop 回数 { … } / Loop { … } Until 条件",
+    "指定回数だけ本体を繰り返します。Until 節（Loop { … } Until 条件）を付けると、本体を1回実行するごとにその後で条件を評価し、条件が成立した時点で繰り返しを終了します。",
     'Loop 3 {\n SendText "A"\n}',
+  ],
+  [
+    "for",
+    "制御",
+    "for Key, Value in Collection { … }",
+    "コレクションの要素を順に取り出し、Key（配列では1始まりの添字、オブジェクトではプロパティ名）とValue（要素の値）へ代入しながら本体を繰り返します。変数が1つだけのときは値だけを受け取ります。",
+    "total := 0\nfor idx, v in [10, 20] {\n total += v\n}\nMsgBox total",
+    "繰り返し対象が未確定値や配列・オブジェクトでない場合は未対応として停止します。",
+  ],
+  [
+    "break",
+    "制御",
+    "break",
+    "最も内側のループを直ちに終了し、ループの次の文から実行を続けます。",
+    "Loop 5 {\n if A_Index = 2 {\n  break\n }\n MsgBox A_Index\n}",
+    "ループの外で使うことはできません。",
+  ],
+  [
+    "continue",
+    "制御",
+    "continue",
+    "現在の繰り返しの残りの文を飛ばし、次の繰り返しへ進みます。",
+    "Loop 3 {\n if A_Index = 2 {\n  continue\n }\n MsgBox A_Index\n}",
+    "ループの外で使うことはできません。",
+  ],
+  [
+    "return",
+    "制御",
+    "return / return 式",
+    "現在の関数またはホットキー本体の実行を終えて、呼び出し側へ戻ります。式を付けると、その値が戻り値になります。",
+    'MsgBox "前"\nreturn\nMsgBox "後"',
+    "この教材ではユーザー関数定義が未対応のため、使用例はホットキー本体を途中で終える形です。式付きの形は関数内でのみ意味を持ちます。",
+  ],
+  [
+    "A_Index",
+    "変数",
+    "A_Index",
+    "現在実行中のループの繰り返し回数（1始まり）を保持する組み込み変数です。最も内側のループが優先され、ループの外では0です。配列の添字などに使います。",
+    "Loop 3 {\n MsgBox A_Index\n}",
+    "この教材のモデルでは、A_Indexへの代入によるループ制御は未対応です。",
+  ],
+  [
+    "A_*（組み込み変数）",
+    "変数",
+    "A_Space / A_Tab / A_ScriptDir / A_Now ほか",
+    "AutoHotkeyが用意する組み込み変数群で、原則として読み取り専用です。A_Space（空白1文字）とA_Tab（タブ1文字）は固定値です。それ以外は実行時に決まる値で、この教材では値を捏造せず「実行時に決まる値」として扱います。代表例：日時（A_YYYY・A_MM・A_DD・A_Hour・A_Min・A_Sec・A_MSec・A_Now・A_NowUTC・A_TickCount）、スクリプト情報（A_ScriptDir・A_ScriptName・A_ScriptFullPath・A_WorkingDir・A_AhkVersion・A_AhkPath・A_LineNumber）、環境とOS（A_UserName・A_ComputerName・A_OSVersion・A_WinDir・A_Temp・A_AppData・A_Desktop・A_ProgramFiles・A_ScreenWidth・A_ScreenHeight・A_IsAdmin・A_Clipboard）、スクリプト設定（A_TitleMatchMode・A_SendMode・A_KeyDelay・A_MouseDelay・A_DetectHiddenWindows・A_FileEncoding）などです。",
+    'MsgBox "a" A_Space "b"\nMsgBox A_ScriptDir',
+    "ループ専用のA_Loop*系（A_LoopField・A_LoopFileName・A_LoopReadLine・A_LoopRegNameなど）とA_ThisFuncは未対応で、読み取り時に名前を挙げて停止します。A_Indexは個別項目です。",
+  ],
+  [
+    "Length",
+    "プロパティ",
+    "対象.Length",
+    "配列では要素数を、文字列では文字数を返すプロパティです。配列では代入で長さを変更でき、長くすると値のない要素が増え、短くすると末尾が切り捨てられます。",
+    'a := [10, 20, 30]\nMsgBox a.Length\nMsgBox "hello".Length',
+    "プロパティ名は大文字小文字を区別しません（.lengthでも同じです）。文字列のLengthへは代入できません。",
   ],
   [
     "while",
@@ -995,6 +1067,14 @@ export const definition = {
   glossary: [
     ["ホットキー", "キーの組み合わせを起動イベントにする仕組みです。"],
     ["ホットストリング", "入力した短い文字列を置き換える仕組みです。"],
+    [
+      "自動実行",
+      "スクリプトの冒頭部分で、起動時に上から順に実行される区間です。ホットキーなどの定義が始まるまでが自動実行部分になります。",
+    ],
+    [
+      "未確定（値）",
+      "実行時に決まる値のことです。このアプリでは値を仮定して作らず、未確定のまま扱って、到達可能な分岐をすべて表示します。",
+    ],
   ],
   model: {
     kind: "json",
@@ -1029,6 +1109,25 @@ export const definition = {
     let found = scanScript(code, reference, "ahk");
     if (/::/.test(code))
       found.unshift(code.trim().includes("::btw") ? "Hotstring" : "Hotkey");
+    // R22: built-in variables A_* have no reference item of their own
+    // (except A_Index), so scanScript can never surface them. Resolve
+    // every implemented A_* name in the code to the A_Index item or
+    // the bundled A_* item, mirroring the cmd dynamic-variable
+    // bundling. The 21 names in AHK_BUILTIN_UNSUPPORTED stop by name
+    // at run time and are deliberately not resolved, and neither are
+    // names that are not built-ins at all.
+    for (const m of code.matchAll(/\bA_[A-Za-z0-9_]+\b/gi)) {
+      const lower = m[0].toLowerCase();
+      if (lower === "a_index") {
+        if (!found.includes("A_Index")) found.push("A_Index");
+      } else if (
+        Object.hasOwn(AHK_BUILTIN_EXACT, lower) ||
+        AHK_BUILTIN_RUNTIME.has(lower)
+      ) {
+        if (!found.includes("A_*（組み込み変数）"))
+          found.push("A_*（組み込み変数）");
+      }
+    }
     return [...new Set(found)];
   },
   async simulate(code, model, limits) {

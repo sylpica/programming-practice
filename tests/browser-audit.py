@@ -18,7 +18,9 @@ branch={
 'python':'x=input()\nif x == "a":\n    print("A")\nelse:\n    print("B")',
 'r':'x <- readline("x")\nif(x == "a"){print("A")}else{print("B")}',
 'csharp':'string x=Console.ReadLine(); if(x=="a"){Console.WriteLine(1);}else{Console.WriteLine(2);}',
-'javascript':'let x=prompt("x"); if(x=="a"){console.log(1);}else{console.log(2);}'
+'javascript':'let x=prompt("x"); if(x=="a"){console.log(1);}else{console.log(2);}',
+'cmd':'set /p "X=x"\nif "%X%"=="a" (\n echo A\n) else (\n echo B\n)',
+'powershell':'$x=Read-Host "x"\nif ($x -eq "a") {\n Write-Output "A"\n} else {\n Write-Output "B"\n}'
 }
 records=[];issues=[];dialogs=[]
 with sync_playwright() as p:

@@ -196,7 +196,9 @@ test("RG-29 scan of all template intros: preserve legacy links and reject mid-wo
   assert.equal(legacyTemplates,88);
   assert.equal(midWord, 0);
   // RG-58 で let／const／var の項目が増え、解説文からのリンクが4件増えた（83→87）。
-  assert.equal(legacyLinks, 87);
+  // リファレンス完全性修正（RG-116〜RG-135）で A_Index／PI／return／TypeError／$／NA の
+  // 項目が増え、解説文中の正当な言及がリンク化されて6件増えた（87→93）。
+  assert.equal(legacyLinks, 93);
   assert.ok(total >= legacyLinks);
 });
 

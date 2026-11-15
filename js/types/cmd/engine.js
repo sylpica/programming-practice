@@ -27,22 +27,66 @@ import {
 import { commands, block, commandRefs } from "./parser.js";
 import { arithmetic } from "./arithmetic.js";
 function slot(value, s) {
-  if (!isUnknown(value)) return String(value ?? "");
+  // Unknown values are always held behind a placeholder so structural
+  // parsing (command splitting on &, pipes, redirects, blocks) cannot
+  // mistake their eventual text for syntax. Known values that contain
+  // cmd structural characters (& | < > ^ ( ) " or newlines) need the same
+  // protection: in real cmd the text produced by expanding a variable is
+  // data, not a new command separator (R22-N5).
+  if (
+    !isUnknown(value) &&
+    !/[&|<>^()"\r\n]/.test(String(value ?? ""))
+  )
+    return String(value ?? "");
   const key = "__CMD_VALUE_" + Object.keys(s.cmd.slots).length + "__";
   s.cmd.slots[key] = value;
   return key;
 }
 function value(text, s) {
+  if (typeof text !== "string") return text;
   if (Object.hasOwn(s.cmd.slots, text)) return s.cmd.slots[text];
-  const keys = Object.keys(s.cmd.slots).filter((k) => text.includes(k));
-  return keys.length
-    ? unknown(
-        "環境変数を展開した文字列",
-        keys.map((k) => s.cmd.slots[k].id).join(":") +
-          ":" +
-          text.replace(/__CMD_VALUE_\d+__/g, "?"),
-      )
-    : text;
+  const keys = [
+    ...new Set(
+      [...text.matchAll(/__CMD_VALUE_\d+__/g)]
+        .map((m) => m[0])
+        .filter((k) => Object.hasOwn(s.cmd.slots, k)),
+    ),
+  ];
+  if (!keys.length) return text;
+  if (keys.some((k) => isUnknown(s.cmd.slots[k]))) {
+    let described = text;
+    for (const k of keys)
+      if (!isUnknown(s.cmd.slots[k]))
+        described = described.replaceAll(k, String(s.cmd.slots[k]));
+    return unknown(
+      "環境変数を展開した文字列",
+      keys
+        .map((k) =>
+          isUnknown(s.cmd.slots[k]) ? s.cmd.slots[k].id : String(s.cmd.slots[k]),
+        )
+        .join(":") +
+        ":" +
+        described.replace(/__CMD_VALUE_\d+__/g, "?"),
+    );
+  }
+  let out = text;
+  for (const k of keys) out = out.replaceAll(k, String(s.cmd.slots[k]));
+  return out;
+}
+// Dynamic variables (%ERRORLEVEL%, %CD%, ...) yield the internal value
+// when no environment variable of the same name is defined. Shared by
+// percent expansion (read time) and delayed expansion (execution time)
+// so both forms resolve the same value at their own timing (R22-N1).
+function dynamicValue(name, s, api) {
+  let v = ciGet(s.vars, name);
+  if (v !== undefined) return v;
+  if (/^cd$/i.test(name)) return s.model.cwd;
+  if (/^errorlevel$/i.test(name)) return s.cmd.errorlevel;
+  if (/^(random|date|time)$/i.test(name))
+    return api
+      ? api.freshUnknown(name + " の実行時の値", s)
+      : unknown(name + " の実行時の値");
+  return "";
 }
 function percent(text, s, api, node) {
   let out = "";
@@ -52,20 +96,37 @@ function percent(text, s, api, node) {
       continue;
     }
     if (text[i + 1] === "%") {
-      out += text.slice(i, i + 3);
-      i += 2;
+      const third = text[i + 2];
+      // %%<letter> (and %%~…) is a for-variable reference, not an escape:
+      // keep it intact for the for-variable substitution in delayed().
+      if (third !== undefined && /[a-z~]/i.test(third)) {
+        out += text.slice(i, i + 3);
+        i += 2;
+        continue;
+      }
+      // In a batch file %% is the escape for a single literal % (R22-N2).
+      // This is what makes the regular spelling set /a "N=7%%3" work.
+      out += "%";
+      i += 1;
       continue;
     }
-    let m = text.slice(i).match(/^%~([1-9])/);
+    let m = text.slice(i).match(/^%~([0-9])/);
     if (m) {
-      out += slot(unquote(s.cmd.args[Number(m[1]) - 1] || ""), s);
+      out +=
+        m[1] === "0"
+          ? // %0 is the invoked batch name, which the model does not
+            // hold: never fabricate one (R22-N8).
+            slot(unknown("バッチファイル名（%0）の実行時の値"), s)
+          : slot(unquote(s.cmd.args[Number(m[1]) - 1] || ""), s);
       i += m[0].length - 1;
       continue;
     }
     m = text.slice(i).match(/^%([0-9])/);
     if (m) {
       out += slot(
-        m[1] === "0" ? "practice.cmd" : s.cmd.args[Number(m[1]) - 1] || "",
+        m[1] === "0"
+          ? unknown("バッチファイル名（%0）の実行時の値")
+          : s.cmd.args[Number(m[1]) - 1] || "",
         s,
       );
       i++;
@@ -76,20 +137,12 @@ function percent(text, s, api, node) {
     const name = text.slice(i + 1, end);
     if (name.includes(":"))
       fail("未対応：環境変数の部分文字列・置換展開", node.line);
-    let v = ciGet(s.vars, name);
-    if (v === undefined) {
-      if (/^cd$/i.test(name)) v = s.model.cwd;
-      else if (/^errorlevel$/i.test(name)) v = s.cmd.errorlevel;
-      else if (/^(random|date|time)$/i.test(name))
-        v = api.freshUnknown(name + " の実行時の値", s);
-      else v = "";
-    }
-    out += slot(v, s);
+    out += slot(dynamicValue(name, s, api), s);
     i = end;
   }
   return out;
 }
-function delayed(text, s, node) {
+function delayed(text, s, node, api) {
   text = text.replace(/%%([a-z])/gi, (_, name) => {
     if (!Object.hasOwn(s.cmd.loops, name))
       fail("未対応：未束縛のfor変数／callによる二重展開", node.line);
@@ -97,7 +150,7 @@ function delayed(text, s, node) {
   });
   if (s.cmd.delayed)
     text = text.replace(/!([^!]*)!/g, (_, name) =>
-      slot(ciGet(s.vars, name) ?? "", s),
+      slot(dynamicValue(name, s, api), s),
     );
   let out = "",
     quote = false;
@@ -113,6 +166,50 @@ function delayed(text, s, node) {
     } else out += c;
   }
   return out;
+}
+// for basic-list items are separated by spaces, tabs, commas,
+// semicolons and equals signs (quoted items keep their delimiters).
+function forItems(text, line = 1) {
+  const out = [];
+  let part = "",
+    quote = false,
+    started = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (c === '"') {
+      quote = !quote;
+      part += c;
+      started = true;
+    } else if (!quote && /[\s,;=]/.test(c)) {
+      if (started) {
+        out.push(part);
+        part = "";
+        started = false;
+      }
+    } else {
+      part += c;
+      started = true;
+    }
+  }
+  if (quote) fail("引用符が閉じられていません", line, "SyntaxError");
+  if (started) out.push(part);
+  return out;
+}
+// True when the text contains a pipe/redirect character that is really
+// syntax: outside double quotes and not caret-escaped. Quoted or
+// escaped occurrences are literal data (R22-N11).
+function hasBareSpecial(text) {
+  let quote = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (c === "^" && !quote) {
+      i++;
+      continue;
+    }
+    if (c === '"') quote = !quote;
+    else if (!quote && /[<>|]/.test(c)) return true;
+  }
+  return false;
 }
 function partsIf(text, node) {
   let negate = false,
@@ -398,7 +495,7 @@ export function simulateCmd(source, model, limits) {
                 const append = raw[i + 1] === ">",
                   offset = append ? 2 : 1;
                 const target = unquote(
-                  delayed(raw.slice(i + offset).trim(), s, n),
+                  delayed(raw.slice(i + offset).trim(), s, n, api),
                 );
                 if (!target || /[<>|]/.test(target))
                   fail("未対応：複合リダイレクト", n.line);
@@ -425,8 +522,8 @@ export function simulateCmd(source, model, limits) {
 
         if (/^if\s/i.test(raw)) {
           const c = partsIf(raw.slice(3), n);
-          c.a = delayed(c.a, s, n);
-          if (c.b) c.b = delayed(c.b, s, n);
+          c.a = delayed(c.a, s, n, api);
+          if (c.b) c.b = delayed(c.b, s, n, api);
           const yes = block(c.body, n.line);
           let no = [];
           if (yes.rest) {
@@ -472,7 +569,7 @@ export function simulateCmd(source, model, limits) {
             [frame.start, frame.step, frame.end] = nums;
           } else {
             frame.items = [];
-            for (const item of words(m[3], n.line)) {
+            for (const item of forItems(m[3], n.line)) {
               if (/[?*]/.test(item)) {
                 const entries = listFiles(s, item, n.line);
                 frame.items.push(
@@ -487,18 +584,22 @@ export function simulateCmd(source, model, limits) {
           s.tasks.push(frame);
           return;
         }
-        raw = delayed(raw, s, n);
         if (raw.startsWith("(")) {
+          // A bare parenthesised block is a container, not a command:
+          // do not delayed-expand its whole text now. Each command
+          // inside must delayed-expand at its own execution time,
+          // exactly like if/for bodies (R22-N6).
           const b = block(raw, n.line);
           if (b.rest) fail("未対応：ブロック後の連結", n.line);
           pushNodes(s, b.nodes);
           return;
         }
+        raw = delayed(raw, s, n, api);
         const m = raw.match(/^(echo\.|[\w]+)(?:\s+([\s\S]*))?$/i);
         if (!m) fail("未対応：cmdの構文 " + raw, n.line);
         const name = m[1].toLowerCase(),
           arg = m[2] ?? "";
-        if (/[<>|]/.test(arg) && name !== "set")
+        if (hasBareSpecial(arg) && name !== "set")
           fail("未対応：パイプライン・リダイレクト", n.line);
         function output(v, raw = false) {
           s.outputs.push({
@@ -657,12 +758,15 @@ export function simulateCmd(source, model, limits) {
             break;
           case "cd":
           case "chdir": {
-            if (!arg) {
+            // cmd tokenises arguments: surrounding whitespace is a
+            // delimiter, never part of the folder name (R22-N3).
+            const cdArg = arg.trim();
+            if (!cdArg) {
               output(s.model.cwd);
               break;
             }
             const target = windowsPath(
-                value(arg.replace(/^\/d\s+/i, ""), s),
+                value(cdArg.replace(/^\/d\s+/i, "").trim(), s),
                 s.model.cwd,
                 n.line,
               ),
@@ -675,7 +779,7 @@ export function simulateCmd(source, model, limits) {
             }
             if (
               target.slice(0, 2) !== s.model.cwd.slice(0, 2) &&
-              !/^\/d\s/i.test(arg)
+              !/^\/d\s/i.test(cdArg)
             )
               fail("未対応：/dを伴わないドライブをまたぐcd", n.line);
             s.model.cwd = target;
@@ -684,13 +788,79 @@ export function simulateCmd(source, model, limits) {
             break;
           }
           case "dir": {
-            if (!/^\/b(?:\s|$)/i.test(arg))
+            const dirTokens = words(arg, n.line),
+              dirFlags = dirTokens.filter((t) => /^\//.test(t)),
+              dirPatterns = dirTokens.filter((t) => !/^\//.test(t));
+            if (!dirFlags.some((f) => /^\/b$/i.test(f)))
               fail(
                 "未対応：dirは日時・実物のサイズを捏造しない /b 形式のみ",
                 n.line,
               );
-            const pattern = arg.replace(/^\/b\s*/i, "") || "*",
-              target = fsEntry(s, pattern, n.line);
+            const badFlag = dirFlags.find((f) => !/^\/(b|s)$/i.test(f));
+            if (badFlag) fail("未対応：dirのオプション " + badFlag, n.line);
+            if (dirPatterns.length > 1)
+              fail("未対応：dirの複数パターン", n.line);
+            const patternValue = value(dirPatterns[0] ?? "*", s);
+            if (isUnknown(patternValue))
+              fail("未確認：dirのパターン", n.line, "未確認");
+            const pattern = patternValue,
+              recursive = dirFlags.some((f) => /^\/s$/i.test(f));
+            if (recursive) {
+              // dir /b /s: recursive bare listing with full paths
+              // (R22-N4). The virtual tree is small, so list every
+              // matching entry below the base folder in model order.
+              const found = fsEntry(s, pattern, n.line);
+              let base = s.model.cwd,
+                mask = pattern;
+              if (found?.type === "directory") {
+                base = windowsPath(pattern, s.model.cwd, n.line);
+                mask = "*";
+              } else if (found?.type === "file") {
+                const full = windowsPath(pattern, s.model.cwd, n.line);
+                base = full.slice(0, full.lastIndexOf("\\"));
+                mask = full.slice(full.lastIndexOf("\\") + 1);
+              } else if (pattern.includes("\\")) {
+                const slash = pattern.lastIndexOf("\\");
+                base = windowsPath(
+                  pattern.slice(0, slash) || "\\",
+                  s.model.cwd,
+                  n.line,
+                );
+                mask = pattern.slice(slash + 1);
+              }
+              const maskRegex = new RegExp(
+                "^" +
+                  (mask === "*.*" ? "*" : mask)
+                    .split("")
+                    .map((c) =>
+                      c === "*"
+                        ? ".*"
+                        : c === "?"
+                          ? "."
+                          : c.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
+                    )
+                    .join("") +
+                  "$",
+                "i",
+              );
+              const prefix = (
+                base.endsWith("\\") ? base : base + "\\"
+              ).toLowerCase();
+              const entries = s.model.files.filter(
+                (e) =>
+                  e.path.toLowerCase().startsWith(prefix) &&
+                  maskRegex.test(e.path.slice(e.path.lastIndexOf("\\") + 1)),
+              );
+              for (const e of entries) output(e.path);
+              s.cmd.errorlevel = entries.length ? 0 : 1;
+              api.note(
+                s,
+                n,
+                "フォルダ以下を再帰的に列挙します：" + entries.length + "件",
+              );
+              break;
+            }
+            const target = fsEntry(s, pattern, n.line);
             const entries = listFiles(
               s,
               target?.type === "directory"
@@ -706,7 +876,9 @@ export function simulateCmd(source, model, limits) {
             break;
           }
           case "type": {
-            const e = fsEntry(s, value(arg, s), n.line);
+            // Trailing whitespace is an argument delimiter, not part
+            // of the file name (R22-N3, incl. the space before a pipe).
+            const e = fsEntry(s, value(arg.trim(), s), n.line);
             if (isUnknown(e))
               fail(
                 "未確認：typeのファイルが確定していません",
@@ -766,9 +938,36 @@ export function simulateCmd(source, model, limits) {
                   n.line,
                   "未確認",
                 );
-              for (const e of listFiles(s, pattern, n.line))
-                if (e.type === "file") removeEntry(s, e.path, n.line);
+              const resolved = value(pattern, s);
+              if (isUnknown(resolved))
+                fail(
+                  "未確認：delの削除対象が確定していません",
+                  n.line,
+                  "未確認",
+                );
+              const matches = listFiles(s, resolved, n.line);
+              if (isUnknown(matches))
+                fail(
+                  "未確認：delの削除対象が確定していません",
+                  n.line,
+                  "未確認",
+                );
+              const files = matches.filter((e) => e.type === "file");
+              // Like cd/type/find, a model-level failure stops instead
+              // of silently succeeding; the runtime then shows the
+              // failure exit code as unconfirmed (R22-N9). The real
+              // ERRORLEVEL value for a missing del target is not
+              // established from a primary source, so none is invented.
+              if (!files.length)
+                fail(
+                  "モデルに削除対象のファイルがありません：" +
+                    unquote(resolved),
+                  n.line,
+                  "実行エラー",
+                );
+              for (const e of files) removeEntry(s, e.path, n.line);
             }
+            s.cmd.errorlevel = 0;
             api.note(s, n, "モデルから一致するファイルを削除します");
             break;
           }
@@ -815,16 +1014,31 @@ export function simulateCmd(source, model, limits) {
             api.note(s, n, "モデルの出力をクリアします");
             break;
           case "find": {
-            const args = words(arg, n.line),
-              insensitive = args.some((x) => /^\/i$/i.test(x)),
-              pos = args.filter((x) => !/^\/i$/i.test(x));
+            const args = words(arg, n.line);
+            // Options are the unquoted /… tokens. Only /i is supported;
+            // name any other option instead of blaming the quoting of
+            // the search string (R22-N10).
+            const badOption = args.find(
+              (x) => /^\//.test(x) && !/^\/i$/i.test(x),
+            );
+            if (badOption)
+              fail("未対応：findのオプション " + badOption, n.line);
+            const insensitive = args.some((x) => /^\/i$/i.test(x)),
+              pos = args.filter((x) => !/^\//.test(x));
             if (!pos.length || !pos[0].startsWith('"'))
               fail(
                 "findの検索文字列は二重引用符で囲んでください",
                 n.line,
                 "SyntaxError",
               );
-            const query = unquote(pos.shift());
+            const queryValue = value(unquote(pos.shift()), s);
+            if (isUnknown(queryValue))
+              fail(
+                "未確認：findの検索文字列が確定していません",
+                n.line,
+                "未確認",
+              );
+            const query = queryValue;
             let text = s.cmd.stdin;
             if (pos.length) {
               if (pos.length !== 1) fail("未対応：findの複数ファイル", n.line);

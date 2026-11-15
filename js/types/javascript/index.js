@@ -73,6 +73,13 @@ const reference = rows([
     "last = values.pop();",
   ],
   [
+    "join",
+    "配列",
+    "array.join(separator)",
+    "配列の要素を区切り文字列で連結した文字列を返します。区切りを省略するとカンマです。",
+    'values.join("-")',
+  ],
+  [
     "Number",
     "型変換",
     "Number(value)",
@@ -139,6 +146,98 @@ const reference = rows([
     "for (let i=0; i<3; i++) { total += i; }",
   ],
   [
+    "while",
+    "制御",
+    "while (条件) { … }／do { … } while (条件);",
+    "条件が真の間繰り返します。do-whileは本体を一度実行してから条件を判定します。",
+    "let n = 0;\nwhile (n < 3) { n = n + 1; }",
+  ],
+  [
+    "break",
+    "制御",
+    "break;",
+    "最も内側のループを直ちに終了します。",
+    "for (let i = 0; i < 5; i++) { if (i === 2) { break; } }",
+  ],
+  [
+    "continue",
+    "制御",
+    "continue;",
+    "現在の繰り返しの残りを飛ばし、次の繰り返しへ進みます。",
+    "for (let i = 0; i < 3; i++) { if (i === 1) { continue; } console.log(i); }",
+  ],
+  [
+    "typeof",
+    "演算子",
+    "typeof 値",
+    "値の型を表す文字列を返します。未宣言の名前に対してもエラーにならず \"undefined\" を返します。",
+    "typeof 42",
+  ],
+  [
+    "BigInt",
+    "数値",
+    "123n",
+    "任意精度の整数です。末尾にnを付けたリテラルで表し、BigInt同士の演算ができます。通常の数値と混ぜて演算することはできません。",
+    "10n + 20n",
+    "BigInt(...)というコンストラクタ呼び出しはこのモデルでは未実装です。リテラルとBigInt同士の演算だけに対応します。",
+  ],
+  [
+    "オブジェクトリテラル",
+    "オブジェクト",
+    "{キー: 値, …}",
+    "プロパティを持つオブジェクトをその場で作ります。宣言の初期値としても使えます。",
+    "const point = {a: 1, b: 2};",
+  ],
+  [
+    "id",
+    "DOM",
+    "element.id",
+    "モデル要素のIDを読み書きします。",
+    'document.getElementById("result").id',
+  ],
+  [
+    "tagName",
+    "DOM",
+    "element.tagName",
+    "モデル要素のタグ名を返します。HTML要素では大文字です。",
+    'document.getElementById("result").tagName',
+  ],
+  [
+    "children",
+    "DOM",
+    "element.children",
+    "モデル要素の子要素の一覧を返します。",
+    "document.body.children",
+  ],
+  [
+    "document.body",
+    "DOM",
+    "document.body",
+    "モデルDOMのbody要素を返します。appendChildで子要素を追加できます。",
+    'const p = document.createElement("p");\ndocument.body.appendChild(p);',
+  ],
+  [
+    "undefined",
+    "値",
+    "undefined",
+    "値が未定義であることを表すプリミティブ値です。初期化されていない変数の値でもあります。",
+    "console.log(undefined);",
+  ],
+  [
+    "NaN",
+    "値",
+    "NaN",
+    "数値ではない計算結果を表す値です。NaN同士も等しくありません（NaN === NaNはfalse）。",
+    "console.log(NaN);",
+  ],
+  [
+    "Infinity",
+    "値",
+    "Infinity",
+    "正の無限大を表す値です。1 / 0の結果などで現れます。",
+    "console.log(Infinity);",
+  ],
+  [
     "let",
     "宣言",
     "let 名前 = 値;",
@@ -170,7 +269,7 @@ const reference = rows([
   ],
 ]);
 const referenceNames = new Set(reference.map((r) => r.name));
-const exampleSetup = {"console.log":"let total=3;",appendChild:'const p=document.createElement("p");',push:"const values=[1,2,3];",pop:"const values=[1,2,3]; let last;",if:"let score=2;",for:"let total=0;"};
+const exampleSetup = {"console.log":"let total=3;",appendChild:'const p=document.createElement("p");',push:"const values=[1,2,3];",pop:"const values=[1,2,3]; let last;",join:"const values=[1,2,3];",if:"let score=2;",for:"let total=0;"};
 for (const r of reference) if (exampleSetup[r.name]) r.example = exampleSetup[r.name] + "\n" + r.example;
 function convertedUnknown(value, conversion) {
   return { ...unknown(conversion + "の入力による", conversion + ":" + value.id),
@@ -308,6 +407,10 @@ export const definition = {
     ["DOM", "文書を要素ノードの構造として扱う仕組みです。"],
     ["参照", "同じオブジェクトを指す値です。"],
     ["const", "変数への再代入を禁止します。オブジェクトの内容は変更できます。"],
+    [
+      "未確定（値）",
+      "実行時に決まる値のことです。このアプリでは値を仮定して作らず、未確定のまま扱って、到達可能な分岐をすべて表示します。",
+    ],
   ],
   model: {
     kind: "json",

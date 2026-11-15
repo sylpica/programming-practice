@@ -1,0 +1,382 @@
+[
+  {
+    "kind": "cmd",
+    "name": "set /p",
+    "description": "プロンプトを表示し、入力した文字列を環境変数へ代入します。モデルでは入力値を捏造せず、モデルinputsで候補を明示できます。Enterのみの入力では変数は変わりません。",
+    "returns": "入力文字列を環境変数へ格納",
+    "caution": "バッチ・コマンド拡張有効の部分モデル。実ファイル・外部プロセスには接続しません。",
+    "example": "set /p \"ANSWER=Continue? \"\necho %ANSWER%",
+    "source": "https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/set_1",
+    "officialSource": "https://github.com/MicrosoftDocs/windowsserverdocs/blob/a0a65c62a67f277772a21f51648e994f1f2dd0b0/WindowsServerDocs/administration/windows-commands/set_1.md"
+  },
+  {
+    "kind": "cmd",
+    "name": "動的変数",
+    "description": "cmdが自動で用意する動的変数です。%ERRORLEVEL%は直近の終了コード、%CD%は現在のフォルダを返します。%RANDOM%は0〜32767の乱数、%DATE%は現在の日付、%TIME%は現在の時刻で、いずれも実行時に決まる値です。同名の環境変数をsetで定義すると、%ERRORLEVEL%と%CD%ではその環境変数の値が優先され、動的な値は隠れます。",
+    "returns": "各動的変数の現在の値（%RANDOM%・%DATE%・%TIME%は実行時に決まる値）",
+    "caution": "バッチ・コマンド拡張有効の部分モデル。実ファイル・外部プロセスには接続しません。",
+    "example": "echo %ERRORLEVEL%\necho %CD%",
+    "source": "https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/cmd",
+    "officialSource": "https://github.com/MicrosoftDocs/windowsserverdocs/blob/a0a65c62a67f277772a21f51648e994f1f2dd0b0/WindowsServerDocs/administration/windows-commands/cmd.md"
+  },
+  {
+    "kind": "cmd",
+    "name": "変数展開",
+    "description": "%NAME%は論理コマンドの読み取り時に展開します。遅延展開が有効なとき、!NAME!は各実行時に展開します。%ERRORLEVEL%・%CD%・%RANDOM%・%DATE%・%TIME%はcmdが用意する動的変数で、詳しくは「動的変数」の項目を見てください。",
+    "returns": "展開後の文字列",
+    "caution": "バッチ・コマンド拡張有効の部分モデル。実ファイル・外部プロセスには接続しません。",
+    "example": "set NAME=Alice\necho %NAME%",
+    "source": "https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/cmd",
+    "officialSource": "https://github.com/MicrosoftDocs/windowsserverdocs/blob/a0a65c62a67f277772a21f51648e994f1f2dd0b0/WindowsServerDocs/administration/windows-commands/cmd.md"
+  },
+  {
+    "kind": "cmd",
+    "name": "setlocal",
+    "description": "環境変数・遅延展開の設定を局所化します。",
+    "returns": "環境・遅延展開設定の保存",
+    "caution": "バッチ・コマンド拡張有効の部分モデル。実ファイル・外部プロセスには接続しません。",
+    "example": "setlocal EnableDelayedExpansion\nset X=1\necho !X!\nendlocal",
+    "source": "https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/setlocal",
+    "officialSource": "https://github.com/MicrosoftDocs/windowsserverdocs/blob/a0a65c62a67f277772a21f51648e994f1f2dd0b0/WindowsServerDocs/administration/windows-commands/setlocal.md"
+  },
+  {
+    "kind": "cmd",
+    "name": "if",
+    "description": "条件で処理を分けます。比較は文字列の==、数値比較のEQU（等しい）・NEQ（等しくない）・LSS（より小さい）・LEQ（以下）・GTR（より大きい）・GEQ（以上）を使います。ほかに対象の存在を調べるexist、変数の定義を調べるdefined、終了コードが指定値以上かを調べるerrorlevel、条件を反転するnot、大文字小文字を区別しない/Iがあります。",
+    "returns": "条件に合う処理への分岐",
+    "caution": "バッチ・コマンド拡張有効の部分モデル。実ファイル・外部プロセスには接続しません。",
+    "example": "if exist notes.txt (\n echo found\n) else (\n echo missing\n)",
+    "source": "https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/if",
+    "officialSource": "https://github.com/MicrosoftDocs/windowsserverdocs/blob/a0a65c62a67f277772a21f51648e994f1f2dd0b0/WindowsServerDocs/administration/windows-commands/if.md"
+  },
+  {
+    "kind": "cmd",
+    "name": "call",
+    "description": "同一ファイルのラベルをサブルーチンとして呼び出します。引数は%1〜%9、%~1で参照します。%0はバッチファイル自身の名前で、このモデルでは実行時に決まる値として扱います。",
+    "returns": "サブルーチン実行後に復帰",
+    "caution": "バッチ・コマンド拡張有効の部分モデル。実ファイル・外部プロセスには接続しません。",
+    "example": "call :show \"Alice\"\ngoto :eof\n:show\necho %~1\nexit /b",
+    "source": "https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/call",
+    "officialSource": "https://github.com/MicrosoftDocs/windowsserverdocs/blob/a0a65c62a67f277772a21f51648e994f1f2dd0b0/WindowsServerDocs/administration/windows-commands/call.md"
+  },
+  {
+    "kind": "cmd",
+    "name": "cd",
+    "description": "モデルの現在フォルダを変更します。/dはドライブも変更します。別名chdirでも同じ処理をします。",
+    "returns": "現在フォルダの変更、引数なしは現在フォルダの出力",
+    "caution": "バッチ・コマンド拡張有効の部分モデル。実ファイル・外部プロセスには接続しません。",
+    "example": "cd logs\ncd",
+    "source": "https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/cd",
+    "officialSource": "https://github.com/MicrosoftDocs/windowsserverdocs/blob/a0a65c62a67f277772a21f51648e994f1f2dd0b0/WindowsServerDocs/administration/windows-commands/cd.md"
+  },
+  {
+    "kind": "cmd",
+    "name": "md",
+    "description": "仮想FSにフォルダを作成します。別名mkdirでも同じ処理をします。",
+    "returns": "フォルダ作成",
+    "caution": "バッチ・コマンド拡張有効の部分モデル。実ファイル・外部プロセスには接続しません。",
+    "example": "md extra",
+    "source": "https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/md",
+    "officialSource": "https://github.com/MicrosoftDocs/windowsserverdocs/blob/a0a65c62a67f277772a21f51648e994f1f2dd0b0/WindowsServerDocs/administration/windows-commands/md.md"
+  },
+  {
+    "kind": "cmd",
+    "name": "rd",
+    "description": "仮想FSのフォルダを削除します。空でない場合は/sが必要です。別名rmdirでも同じ処理をします。",
+    "returns": "フォルダ削除",
+    "caution": "バッチ・コマンド拡張有効の部分モデル。実ファイル・外部プロセスには接続しません。",
+    "example": "md extra\nrd extra",
+    "source": "https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/rd",
+    "officialSource": "https://github.com/MicrosoftDocs/windowsserverdocs/blob/a0a65c62a67f277772a21f51648e994f1f2dd0b0/WindowsServerDocs/administration/windows-commands/rd.md"
+  },
+  {
+    "kind": "cmd",
+    "name": "del",
+    "description": "仮想FSのファイルを削除します。ワイルドカードもモデル内だけで処理します。別名eraseでも同じ処理をします。",
+    "returns": "一致したファイルの削除",
+    "caution": "バッチ・コマンド拡張有効の部分モデル。実ファイル・外部プロセスには接続しません。",
+    "example": "copy notes.txt temp.txt\ndel temp.txt",
+    "source": "https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/del",
+    "officialSource": "https://github.com/MicrosoftDocs/windowsserverdocs/blob/a0a65c62a67f277772a21f51648e994f1f2dd0b0/WindowsServerDocs/administration/windows-commands/del.md"
+  },
+  {
+    "kind": "cmd",
+    "name": "ren",
+    "description": "同じフォルダ内で名前を変更します。別名renameでも同じ処理をします。",
+    "returns": "項目名の変更",
+    "caution": "バッチ・コマンド拡張有効の部分モデル。実ファイル・外部プロセスには接続しません。",
+    "example": "copy notes.txt temp.txt\nren temp.txt renamed.txt",
+    "source": "https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/ren",
+    "officialSource": "https://github.com/MicrosoftDocs/windowsserverdocs/blob/a0a65c62a67f277772a21f51648e994f1f2dd0b0/WindowsServerDocs/administration/windows-commands/ren.md"
+  },
+  {
+    "kind": "powershell",
+    "name": "Write-Output",
+    "description": "値を成功ストリームへ出力し、次のパイプラインへ渡します。別名echoでも同じ処理をします。",
+    "returns": "出力したオブジェクト列",
+    "caution": "仮想FS・明示モデル内の対応部分集合です。実プロセス・実ファイル・実ホストには接続しません。",
+    "example": "Write-Output 1,2,3",
+    "source": "https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.utility/write-output?view=powershell-7.4",
+    "officialSource": "https://github.com/PowerShell/PowerShell-Docs/blob/ebaa235784a688ec72ab642186c4c17460fb438b/reference/7.4/Microsoft.PowerShell.Utility/Write-Output.md"
+  },
+  {
+    "kind": "powershell",
+    "name": "Write-Host",
+    "description": "画面表示へ出力します。成功ストリームの値には含めません。構文行の基本形のほかに、複数の値を区切る-Separatorも実装されています。",
+    "returns": "成功ストリームへの戻り値なし",
+    "caution": "仮想FS・明示モデル内の対応部分集合です。実プロセス・実ファイル・実ホストには接続しません。",
+    "example": "Write-Host \"画面のみ\"\nWrite-Output \"パイプライン\"",
+    "source": "https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.utility/write-host?view=powershell-7.4",
+    "officialSource": "https://github.com/PowerShell/PowerShell-Docs/blob/ebaa235784a688ec72ab642186c4c17460fb438b/reference/7.4/Microsoft.PowerShell.Utility/Write-Host.md"
+  },
+  {
+    "kind": "powershell",
+    "name": "Get-ChildItem",
+    "description": "仮想FSの子項目をプロパティを持つオブジェクトとして列挙します。別名gci・ls・dirでも同じ処理をします。構文行の基本形のほかに、下位フォルダまでたどる-Recurse、ファイルだけ／フォルダだけに絞る-File・-Directoryも実装されています。",
+    "returns": "FileInfo／DirectoryInfoに相当するモデルオブジェクト列",
+    "caution": "仮想FS・明示モデル内の対応部分集合です。実プロセス・実ファイル・実ホストには接続しません。",
+    "example": "Get-ChildItem -Filter \"*.txt\"",
+    "source": "https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.management/get-childitem?view=powershell-7.4",
+    "officialSource": "https://github.com/PowerShell/PowerShell-Docs/blob/ebaa235784a688ec72ab642186c4c17460fb438b/reference/7.4/Microsoft.PowerShell.Management/Get-ChildItem.md"
+  },
+  {
+    "kind": "powershell",
+    "name": "Where-Object",
+    "description": "入力オブジェクトごとに条件を評価し、真になるオブジェクトを渡します。別名where・?でも同じ処理をします。",
+    "returns": "条件を満たす入力オブジェクト列",
+    "caution": "仮想FS・明示モデル内の対応部分集合です。実プロセス・実ファイル・実ホストには接続しません。",
+    "example": "1..5 | Where-Object { $_ -gt 2 }",
+    "source": "https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/where-object?view=powershell-7.4",
+    "officialSource": "https://github.com/PowerShell/PowerShell-Docs/blob/ebaa235784a688ec72ab642186c4c17460fb438b/reference/7.4/Microsoft.PowerShell.Core/Where-Object.md"
+  },
+  {
+    "kind": "powershell",
+    "name": "ForEach-Object",
+    "description": "各入力を$_／$PSItemで参照し、ブロックが出力したオブジェクトを渡します。別名foreach・%でも同じ処理をします。",
+    "returns": "ブロックの成功ストリーム出力列",
+    "caution": "仮想FS・明示モデル内の対応部分集合です。実プロセス・実ファイル・実ホストには接続しません。",
+    "example": "1..3 | ForEach-Object { $_ * 2 }",
+    "source": "https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/foreach-object?view=powershell-7.4",
+    "officialSource": "https://github.com/PowerShell/PowerShell-Docs/blob/ebaa235784a688ec72ab642186c4c17460fb438b/reference/7.4/Microsoft.PowerShell.Core/ForEach-Object.md"
+  },
+  {
+    "kind": "powershell",
+    "name": "Select-Object",
+    "description": "プロパティの選択または先頭・末尾・スキップによる件数選択を行います。別名selectでも同じ処理をします。構文行の基本形のほかに、プロパティの値そのものを取り出す-ExpandProperty、末尾を選ぶ-Last、読み飛ばす-Skipも実装されています。",
+    "returns": "選択したオブジェクト、プロパティ選択時は新しいオブジェクト",
+    "caution": "仮想FS・明示モデル内の対応部分集合です。実プロセス・実ファイル・実ホストには接続しません。",
+    "example": "Get-ChildItem | Select-Object Name,FullName -First 2",
+    "source": "https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.utility/select-object?view=powershell-7.4",
+    "officialSource": "https://github.com/PowerShell/PowerShell-Docs/blob/ebaa235784a688ec72ab642186c4c17460fb438b/reference/7.4/Microsoft.PowerShell.Utility/Select-Object.md"
+  },
+  {
+    "kind": "powershell",
+    "name": "Sort-Object",
+    "description": "プロパティまたは値を並べ替えます。モデルの文字列カルチャはen-USです。別名sortでも同じ処理をします。",
+    "returns": "並べ替えたオブジェクト列",
+    "caution": "仮想FS・明示モデル内の対応部分集合です。実プロセス・実ファイル・実ホストには接続しません。",
+    "example": "@(3,1,2) | Sort-Object",
+    "source": "https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.utility/sort-object?view=powershell-7.4",
+    "officialSource": "https://github.com/PowerShell/PowerShell-Docs/blob/ebaa235784a688ec72ab642186c4c17460fb438b/reference/7.4/Microsoft.PowerShell.Utility/Sort-Object.md"
+  },
+  {
+    "kind": "powershell",
+    "name": "Measure-Object",
+    "description": "個数を数え、指定時は数値の合計・平均・最大・最小を求めます。別名measureでも同じ処理をします。構文行の基本形のほかに、平均を求める-Average、最大値を求める-Maximum、最小値を求める-Minimumも実装されています。",
+    "returns": "Count・Sum等を持つ集計オブジェクト",
+    "caution": "仮想FS・明示モデル内の対応部分集合です。実プロセス・実ファイル・実ホストには接続しません。",
+    "example": "1..3 | Measure-Object -Sum",
+    "source": "https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.utility/measure-object?view=powershell-7.4",
+    "officialSource": "https://github.com/PowerShell/PowerShell-Docs/blob/ebaa235784a688ec72ab642186c4c17460fb438b/reference/7.4/Microsoft.PowerShell.Utility/Measure-Object.md"
+  },
+  {
+    "kind": "powershell",
+    "name": "Set-Location",
+    "description": "仮想FSの現在フォルダを変更します。別名cdでも同じ処理をします。",
+    "returns": "通常は成功ストリームへの出力なし",
+    "caution": "仮想FS・明示モデル内の対応部分集合です。実プロセス・実ファイル・実ホストには接続しません。",
+    "example": "Set-Location logs\nGet-Location",
+    "source": "https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.management/set-location?view=powershell-7.4",
+    "officialSource": "https://github.com/PowerShell/PowerShell-Docs/blob/ebaa235784a688ec72ab642186c4c17460fb438b/reference/7.4/Microsoft.PowerShell.Management/Set-Location.md"
+  },
+  {
+    "kind": "powershell",
+    "name": "Get-Location",
+    "description": "モデルの現在フォルダを返します。別名pwdでも同じ処理をします。",
+    "returns": "Pathを持つモデルPathInfo",
+    "caution": "仮想FS・明示モデル内の対応部分集合です。実プロセス・実ファイル・実ホストには接続しません。",
+    "example": "Get-Location",
+    "source": "https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.management/get-location?view=powershell-7.4",
+    "officialSource": "https://github.com/PowerShell/PowerShell-Docs/blob/ebaa235784a688ec72ab642186c4c17460fb438b/reference/7.4/Microsoft.PowerShell.Management/Get-Location.md"
+  },
+  {
+    "kind": "powershell",
+    "name": "Get-Content",
+    "description": "モデルに明示したファイルの内容を行ごとに返します。-Rawは全体を1文字列で返します。別名cat・gcでも同じ処理をします。",
+    "returns": "文字列の列。-Rawは1つの文字列",
+    "caution": "仮想FS・明示モデル内の対応部分集合です。実プロセス・実ファイル・実ホストには接続しません。",
+    "example": "Get-Content notes.txt",
+    "source": "https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.management/get-content?view=powershell-7.4",
+    "officialSource": "https://github.com/PowerShell/PowerShell-Docs/blob/ebaa235784a688ec72ab642186c4c17460fb438b/reference/7.4/Microsoft.PowerShell.Management/Get-Content.md"
+  },
+  {
+    "kind": "powershell",
+    "name": "Set-Content",
+    "description": "仮想ファイルの内容を置き換えます。モデルはUTF-8・Windowsの改行を使用します。別名scでも同じ処理をします。構文行の基本形のほかに、末尾の改行を付けない-NoNewlineも実装されています。",
+    "returns": "成功ストリームへの出力なし",
+    "caution": "仮想FS・明示モデル内の対応部分集合です。実プロセス・実ファイル・実ホストには接続しません。",
+    "example": "Set-Content out.txt -Value \"Hello\"\nGet-Content out.txt",
+    "source": "https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.management/set-content?view=powershell-7.4",
+    "officialSource": "https://github.com/PowerShell/PowerShell-Docs/blob/ebaa235784a688ec72ab642186c4c17460fb438b/reference/7.4/Microsoft.PowerShell.Management/Set-Content.md"
+  },
+  {
+    "kind": "powershell",
+    "name": "Add-Content",
+    "description": "仮想ファイルへ内容を追記します。別名acでも同じ処理をします。構文行の基本形のほかに、末尾の改行を付けない-NoNewlineも実装されています。",
+    "returns": "成功ストリームへの出力なし",
+    "caution": "仮想FS・明示モデル内の対応部分集合です。実プロセス・実ファイル・実ホストには接続しません。",
+    "example": "Set-Content out.txt \"A\"\nAdd-Content out.txt \"B\"\nGet-Content out.txt",
+    "source": "https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.management/add-content?view=powershell-7.4",
+    "officialSource": "https://github.com/PowerShell/PowerShell-Docs/blob/ebaa235784a688ec72ab642186c4c17460fb438b/reference/7.4/Microsoft.PowerShell.Management/Add-Content.md"
+  },
+  {
+    "kind": "powershell",
+    "name": "New-Item",
+    "description": "仮想FSにファイルまたはフォルダを作成します。別名niでも同じ処理をします。構文行の基本形のほかに、既存項目がある場合に上書きする-Force、ファイルの初期内容を指定する-Valueも実装されています。",
+    "returns": "作成したモデル項目",
+    "caution": "仮想FS・明示モデル内の対応部分集合です。実プロセス・実ファイル・実ホストには接続しません。",
+    "example": "New-Item -Path extra -ItemType Directory",
+    "source": "https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.management/new-item?view=powershell-7.4",
+    "officialSource": "https://github.com/PowerShell/PowerShell-Docs/blob/ebaa235784a688ec72ab642186c4c17460fb438b/reference/7.4/Microsoft.PowerShell.Management/New-Item.md"
+  },
+  {
+    "kind": "powershell",
+    "name": "Remove-Item",
+    "description": "モデルからファイル・フォルダを削除します。別名ri・rmでも同じ処理をします。構文行の基本形のほかに、確認なしで削除する-Forceも実装されています。",
+    "returns": "成功ストリームへの出力なし",
+    "caution": "仮想FS・明示モデル内の対応部分集合です。実プロセス・実ファイル・実ホストには接続しません。",
+    "example": "New-Item temp.txt -ItemType File\nRemove-Item temp.txt",
+    "source": "https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.management/remove-item?view=powershell-7.4",
+    "officialSource": "https://github.com/PowerShell/PowerShell-Docs/blob/ebaa235784a688ec72ab642186c4c17460fb438b/reference/7.4/Microsoft.PowerShell.Management/Remove-Item.md"
+  },
+  {
+    "kind": "powershell",
+    "name": "Rename-Item",
+    "description": "仮想FSの項目名を変更します。新しい名前はパスでなく名前を指定します。別名renでも同じ処理をします。",
+    "returns": "通常は成功ストリームへの出力なし",
+    "caution": "仮想FS・明示モデル内の対応部分集合です。実プロセス・実ファイル・実ホストには接続しません。",
+    "example": "Copy-Item notes.txt copy.txt\nRename-Item copy.txt renamed.txt",
+    "source": "https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.management/rename-item?view=powershell-7.4",
+    "officialSource": "https://github.com/PowerShell/PowerShell-Docs/blob/ebaa235784a688ec72ab642186c4c17460fb438b/reference/7.4/Microsoft.PowerShell.Management/Rename-Item.md"
+  },
+  {
+    "kind": "powershell",
+    "name": "Copy-Item",
+    "description": "モデル内で単一ファイルをコピーします。別名cpでも同じ処理をします。構文行の基本形のほかに、上書きする-Forceも実装されています。",
+    "returns": "通常は成功ストリームへの出力なし",
+    "caution": "仮想FS・明示モデル内の対応部分集合です。実プロセス・実ファイル・実ホストには接続しません。",
+    "example": "Copy-Item notes.txt copied.txt",
+    "source": "https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.management/copy-item?view=powershell-7.4",
+    "officialSource": "https://github.com/PowerShell/PowerShell-Docs/blob/ebaa235784a688ec72ab642186c4c17460fb438b/reference/7.4/Microsoft.PowerShell.Management/Copy-Item.md"
+  },
+  {
+    "kind": "powershell",
+    "name": "Move-Item",
+    "description": "モデル内で項目を移動します。別名mvでも同じ処理をします。構文行の基本形のほかに、上書きする-Forceも実装されています。",
+    "returns": "通常は成功ストリームへの出力なし",
+    "caution": "仮想FS・明示モデル内の対応部分集合です。実プロセス・実ファイル・実ホストには接続しません。",
+    "example": "Copy-Item notes.txt copied.txt\nMove-Item copied.txt moved.txt",
+    "source": "https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.management/move-item?view=powershell-7.4",
+    "officialSource": "https://github.com/PowerShell/PowerShell-Docs/blob/ebaa235784a688ec72ab642186c4c17460fb438b/reference/7.4/Microsoft.PowerShell.Management/Move-Item.md"
+  },
+  {
+    "kind": "powershell",
+    "name": "変数",
+    "description": "変数名は大文字小文字を区別しません。未定義変数は、この非StrictModeモデルでは$nullです。組み込みの定数として、真を表す$true、偽を表す$false、値がないことを表す$nullがあります（$nullは未定義変数の値でもあります）。",
+    "returns": "構文に従って変数・制御・成功ストリームを更新",
+    "caution": "未対応の形式は名称・行を示して停止します。",
+    "example": "$Name=\"Alice\"\n$name",
+    "source": "https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_variables?view=powershell-7.4",
+    "officialSource": "https://github.com/PowerShell/PowerShell-Docs/blob/ebaa235784a688ec72ab642186c4c17460fb438b/reference/7.4/Microsoft.PowerShell.Core/About/about_Variables.md"
+  },
+  {
+    "kind": "powershell",
+    "name": "$_",
+    "description": "自動変数です。パイプライン処理のブロックの中で、現在処理しているオブジェクトを表します。$PSItemと同じ値です。",
+    "returns": "構文に従って変数・制御・成功ストリームを更新",
+    "caution": "未対応の形式は名称・行を示して停止します。",
+    "example": "1..3 | ForEach-Object { $_ * 2 }",
+    "source": "https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_automatic_variables?view=powershell-7.4",
+    "officialSource": "https://github.com/PowerShell/PowerShell-Docs/blob/ebaa235784a688ec72ab642186c4c17460fb438b/reference/7.4/Microsoft.PowerShell.Core/About/about_Automatic_Variables.md"
+  },
+  {
+    "kind": "powershell",
+    "name": "$PSItem",
+    "description": "自動変数です。パイプライン処理のブロックの中で、現在処理しているオブジェクトを表します。$_と同じ値です。",
+    "returns": "構文に従って変数・制御・成功ストリームを更新",
+    "caution": "未対応の形式は名称・行を示して停止します。",
+    "example": "1..3 | ForEach-Object { $PSItem + 1 }",
+    "source": "https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_automatic_variables?view=powershell-7.4",
+    "officialSource": "https://github.com/PowerShell/PowerShell-Docs/blob/ebaa235784a688ec72ab642186c4c17460fb438b/reference/7.4/Microsoft.PowerShell.Core/About/about_Automatic_Variables.md"
+  },
+  {
+    "kind": "powershell",
+    "name": "$?",
+    "description": "自動変数です。直前に実行したコマンドやパイプラインが成功したかどうかを、$true（成功）または$false（失敗）で保持します。",
+    "returns": "構文に従って変数・制御・成功ストリームを更新",
+    "caution": "未対応の形式は名称・行を示して停止します。",
+    "example": "Write-Output \"done\"\n$?",
+    "source": "https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_automatic_variables?view=powershell-7.4",
+    "officialSource": "https://github.com/PowerShell/PowerShell-Docs/blob/ebaa235784a688ec72ab642186c4c17460fb438b/reference/7.4/Microsoft.PowerShell.Core/About/about_Automatic_Variables.md"
+  },
+  {
+    "kind": "powershell",
+    "name": "$LASTEXITCODE",
+    "description": "自動変数です。最後に実行した外部プログラムの終了コードを保持します。このモデルでは外部プログラムを実行しないため、モデルで明示した初期値のみを保持します。",
+    "returns": "構文に従って変数・制御・成功ストリームを更新",
+    "caution": "未対応の形式は名称・行を示して停止します。",
+    "example": "$LASTEXITCODE",
+    "source": "https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_automatic_variables?view=powershell-7.4",
+    "officialSource": "https://github.com/PowerShell/PowerShell-Docs/blob/ebaa235784a688ec72ab642186c4c17460fb438b/reference/7.4/Microsoft.PowerShell.Core/About/about_Automatic_Variables.md"
+  },
+  {
+    "kind": "powershell",
+    "name": "$args",
+    "description": "自動変数です。関数で、宣言した引数に割り当てられなかった余分な引数を配列として保持します。",
+    "returns": "構文に従って変数・制御・成功ストリームを更新",
+    "caution": "未対応の形式は名称・行を示して停止します。",
+    "example": "function Show { $args[0] }\nShow \"extra\"",
+    "source": "https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_automatic_variables?view=powershell-7.4",
+    "officialSource": "https://github.com/PowerShell/PowerShell-Docs/blob/ebaa235784a688ec72ab642186c4c17460fb438b/reference/7.4/Microsoft.PowerShell.Core/About/about_Automatic_Variables.md"
+  },
+  {
+    "kind": "powershell",
+    "name": "型変換（キャスト）",
+    "description": "値の前に型名を角括弧で書くと、その型へ変換します。[string]は文字列化、[int]（[int32]とも書けます）は整数化、[double]は小数化、[bool]（[boolean]とも書けます）は真偽値化します。[pscustomobject]はハッシュテーブルをプロパティを持つオブジェクトへ変換します。",
+    "returns": "構文に従って変数・制御・成功ストリームを更新",
+    "caution": "未対応の形式は名称・行を示して停止します。",
+    "example": "[int]\"42\" + 1\n[string]7\n[pscustomobject]@{Name=\"A\"}",
+    "source": "https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_type_operators?view=powershell-7.4",
+    "officialSource": "https://github.com/PowerShell/PowerShell-Docs/blob/ebaa235784a688ec72ab642186c4c17460fb438b/reference/7.4/Microsoft.PowerShell.Core/About/about_Type_Operators.md"
+  },
+  {
+    "kind": "powershell",
+    "name": "論理演算子",
+    "description": "真偽値を組み合わせます。-andは両方が真のとき真、-orは少なくとも一方が真のとき真です。-notと!は同じ意味で、真偽を反転します。",
+    "returns": "構文に従って変数・制御・成功ストリームを更新",
+    "caution": "未対応の形式は名称・行を示して停止します。",
+    "example": "$true -and $false\n$true -or $false\n-not $true\n!$false",
+    "source": "https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_logical_operators?view=powershell-7.4",
+    "officialSource": "https://github.com/PowerShell/PowerShell-Docs/blob/ebaa235784a688ec72ab642186c4c17460fb438b/reference/7.4/Microsoft.PowerShell.Core/About/about_Logical_Operators.md"
+  },
+  {
+    "kind": "powershell",
+    "name": "算術・代入演算子",
+    "description": "加算+、減算-、乗算*、除算/、剰余%で計算します。+=・-=・*=・/=は計算結果を変数へ代入する複合代入です。++は変数を1増やし、--は1減らします（このモデルでは後置形式に対応します）。",
+    "returns": "構文に従って変数・制御・成功ストリームを更新",
+    "caution": "未対応の形式は名称・行を示して停止します。",
+    "example": "$x=10\n$x += 5\n$x\n$x++\n$x",
+    "source": "https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_arithmetic_operators?view=powershell-7.4",
+    "officialSource": "https://github.com/PowerShell/PowerShell-Docs/blob/ebaa235784a688ec72ab642186c4c17460fb438b/reference/7.4/Microsoft.PowerShell.Core/About/about_Arithmetic_Operators.md"
+  }
+]

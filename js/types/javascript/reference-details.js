@@ -99,5 +99,61 @@ export const referenceDetails = {
   "var": {
     "returns": "戻り値なし（宣言または制御文）",
     "source": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/var"
+  },
+  "join": {
+    "returns": "区切り文字列で連結した文字列",
+    "source": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/join"
+  },
+  "while": {
+    "returns": "戻り値なし（宣言または制御文）",
+    "source": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/while"
+  },
+  "break": {
+    "returns": "戻り値なし（宣言または制御文）",
+    "source": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/break"
+  },
+  "continue": {
+    "returns": "戻り値なし（宣言または制御文）",
+    "source": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/continue"
+  },
+  "typeof": {
+    "returns": "型を表す文字列（\"number\"、\"string\"、\"bigint\"、\"boolean\"、\"undefined\"、\"object\"、\"function\"のいずれか）",
+    "source": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/typeof"
+  },
+  "BigInt": {
+    "returns": "BigInt値",
+    "source": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/BigInt"
+  },
+  "オブジェクトリテラル": {
+    "returns": "新しいオブジェクト",
+    "source": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object"
+  },
+  "id": {
+    "returns": "文字列（要素のID。設定がなければ空文字列）",
+    "source": "https://developer.mozilla.org/en-US/docs/Web/API/Element/id"
+  },
+  "tagName": {
+    "returns": "文字列（タグ名。HTML要素では大文字）",
+    "source": "https://developer.mozilla.org/en-US/docs/Web/API/Element/tagName"
+  },
+  "children": {
+    "returns": "子要素のコレクション（このモデルでは要素の配列）",
+    "source": "https://developer.mozilla.org/en-US/docs/Web/API/Element/children"
+  },
+  "document.body": {
+    "returns": "body要素（Element）",
+    "source": "https://developer.mozilla.org/en-US/docs/Web/API/Document/body"
+  },
+  "undefined": {
+    "returns": "プリミティブ値undefinedそのもの",
+    "source": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/undefined"
+  },
+  "NaN": {
+    "returns": "数値NaNそのもの",
+    "source": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/NaN"
+  },
+  "Infinity": {
+    "returns": "数値Infinityそのもの",
+    "source": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Infinity"
   }
 };

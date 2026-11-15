@@ -1,8 +1,12 @@
 """Compile the exact C/C++ teaching material, without adding headers or wrappers."""
-import json, subprocess, tempfile, shutil, os
+import json, subprocess, tempfile, shutil, os, sys
 from pathlib import Path
 root=Path(__file__).resolve().parents[1]
 source=subprocess.check_output(['node','--input-type=module','-e',"import {definitions} from './js/types/registry.js';const rows=[];for(const d of definitions.filter(d=>['c','cpp','csharp','python'].includes(d.id))){const entry={id:d.id,templates:structuredClone(d.templates),reference:structuredClone(d.reference)};for(const section of ['templates','reference'])for(const item of entry[section]){const code=item.code??item.example;const r=await d.simulate(code,structuredClone(item.model||d.model.defaults));item.expectedStdout=r.paths?.[0]?.outputs?.map(o=>o.text).join('')??'';}rows.push(entry);}console.log(JSON.stringify(rows));"],cwd=root,text=True)
+parsed_source=json.loads(source)
+# C# expectations are counted from the loaded definitions so a missing
+# dotnet can never drop them silently (R22-N30).
+csharp_expected=sum(len(d[section]) for d in parsed_source if d['id']=='csharp' for section in ['templates','reference'])
 checks=[]
 with tempfile.TemporaryDirectory() as tmp:
  dotnet=shutil.which('dotnet')
@@ -11,7 +15,7 @@ with tempfile.TemporaryDirectory() as tmp:
   csenv={**os.environ,'DOTNET_CLI_HOME':str(Path(tmp)/'dotnet-home'),'DOTNET_CLI_TELEMETRY_OPTOUT':'1','DOTNET_NOLOGO':'1'}
   created=subprocess.run([dotnet,'new','console','--no-restore','--output',str(csdir)],capture_output=True,text=True,env=csenv,timeout=40)
   assert created.returncode==0,created.stderr
- for d in json.loads(source):
+ for d in parsed_source:
   for section in ['templates','reference']:
    for entry in d[section]:
     code=entry['code'] if section=='templates' else entry['example'];name=entry.get('id',entry.get('name'))
@@ -43,7 +47,9 @@ with tempfile.TemporaryDirectory() as tmp:
      else:checks.append([d['id'],section,name,'CPython compile passed; external dependency/file not executed'])
 Path('work/audit').mkdir(parents=True,exist_ok=True)
 Path('work/audit/native-r2.json').write_text(json.dumps(checks,ensure_ascii=False,indent=2))
-print(json.dumps({'checks':len(checks),'C_CPP_stdout_matches_simulator':True,'Csharp_native_execution':sum(x[0]=='csharp' for x in checks),'Csharp_compiler_available':bool(dotnet),'python_execution':sum('compile and run' in x[3] and x[0]=='python' for x in checks)},ensure_ascii=False))
+csharp_executed=sum(x[0]=='csharp' for x in checks);csharp_skipped=csharp_expected-csharp_executed
+if csharp_skipped:print(f"WARNING: dotnet unavailable or incomplete: {csharp_skipped} of {csharp_expected} C# native checks were NOT executed.",file=sys.stderr)
+print(json.dumps({'checks':len(checks),'C_CPP_stdout_matches_simulator':True,'Csharp_native_execution':csharp_executed,'Csharp_expected':csharp_expected,'Csharp_skipped':csharp_skipped,'Csharp_compiler_available':bool(dotnet),'python_execution':sum('compile and run' in x[3] and x[0]=='python' for x in checks)},ensure_ascii=False))
 
 # Round 3 exercises casts with separately derived values and native runtimes.
 subprocess.run(["python3",str(root/"tests/native-r3.py")],cwd=root,check=True)

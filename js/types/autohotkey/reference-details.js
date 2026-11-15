@@ -48,6 +48,14 @@ export const referenceDetails = {
     "returns": "ValueとResultを持つオブジェクト",
     "source": "https://www.autohotkey.com/docs/v2/lib/InputBox.htm"
   },
+  "IsSet": {
+    "returns": "代入済みなら1、未代入なら0",
+    "source": "https://www.autohotkey.com/docs/v2/Variables.htm"
+  },
+  "IsSetRef": {
+    "returns": "参照先が代入済みなら1、未代入なら0",
+    "source": "https://www.autohotkey.com/docs/v2/Variables.htm"
+  },
   "if": {
     "returns": "戻り値なし（宣言または制御文）",
     "source": "https://www.autohotkey.com/docs/v2/lib/If.htm"
@@ -59,6 +67,34 @@ export const referenceDetails = {
   "while": {
     "returns": "戻り値なし（宣言または制御文）",
     "source": "https://www.autohotkey.com/docs/v2/lib/While.htm"
+  },
+  "for": {
+    "returns": "戻り値なし（宣言または制御文）",
+    "source": "https://www.autohotkey.com/docs/v2/lib/For.htm"
+  },
+  "break": {
+    "returns": "戻り値なし（宣言または制御文）",
+    "source": "https://www.autohotkey.com/docs/v2/lib/Break.htm"
+  },
+  "continue": {
+    "returns": "戻り値なし（宣言または制御文）",
+    "source": "https://www.autohotkey.com/docs/v2/lib/Continue.htm"
+  },
+  "return": {
+    "returns": "戻り値なし、またはreturn式の値",
+    "source": "https://www.autohotkey.com/docs/v2/lib/Return.htm"
+  },
+  "A_Index": {
+    "returns": "現在の繰り返し回数（Integer、ループ外では0）",
+    "source": "https://www.autohotkey.com/docs/v2/Variables.htm"
+  },
+  "A_*（組み込み変数）": {
+    "returns": "各変数の現在の値（A_Space・A_Tabは固定値、それ以外は実行時に決まる値）",
+    "source": "https://www.autohotkey.com/docs/v2/Variables.htm"
+  },
+  "Length": {
+    "returns": "配列の要素数または文字列の文字数（Integer）",
+    "source": "https://www.autohotkey.com/docs/v2/lib/Array.htm"
   },
   "Hotkey": {
     "returns": "ホットキー定義（この教材ではイベント本体）",

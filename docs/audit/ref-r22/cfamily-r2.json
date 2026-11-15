@@ -1,0 +1,998 @@
+[
+  {
+    "kind": "c",
+    "name": "if",
+    "supported": true,
+    "fields": {
+      "description": "条件が真なら if のブロック、偽なら else のブロック（あれば）を実行します。else if で条件を連ねることもできます。",
+      "returns": "戻り値なし（宣言または制御文）",
+      "caution": "",
+      "example": "#include <stdio.h>\nint main() {\nint n=2;\nif (n > 0) { n = 1; }\nreturn 0;\n}",
+      "source": "https://en.cppreference.com/w/c/language/if"
+    }
+  },
+  {
+    "kind": "c",
+    "name": "long",
+    "supported": true,
+    "fields": {
+      "description": "符号付き整数です。モデルでは longBits（既定64ビット）で幅を表します。",
+      "returns": "戻り値なし（宣言または制御文）",
+      "caution": "別名表記 long int、signed long も同じ型です。long long は実言語では別の型ですが、モデルでは long へ畳み込んで受理します。",
+      "example": "#include <stdio.h>\nint main() {\nlong n = 1;\nreturn 0;\n}",
+      "source": "https://en.cppreference.com/w/c/language/arithmetic_types"
+    }
+  },
+  {
+    "kind": "c",
+    "name": "float",
+    "supported": true,
+    "fields": {
+      "description": "32ビット単精度浮動小数点数です。",
+      "returns": "戻り値なし（宣言または制御文）",
+      "caution": "リテラル 1.5 は double 型です。float には f 接尾辞（1.5f）を付けます。double より精度が粗くなります。",
+      "example": "#include <stdio.h>\nint main() {\nfloat x = 1.5f;\nreturn 0;\n}",
+      "source": "https://en.cppreference.com/w/c/language/arithmetic_types"
+    }
+  },
+  {
+    "kind": "c",
+    "name": "char",
+    "supported": true,
+    "fields": {
+      "description": "1バイトの文字型です。モデルでは文字コードの数値として扱います（'A' は 65）。",
+      "returns": "戻り値なし（宣言または制御文）",
+      "caution": "char の符号は処理系依存です。モデルでは範囲外の値への変換を未確認として停止します。符号を保証したい場合は signed char／unsigned char を使います。",
+      "example": "#include <stdio.h>\nint main() {\nchar c = 'A';\nreturn 0;\n}",
+      "source": "https://en.cppreference.com/w/c/language/arithmetic_types"
+    }
+  },
+  {
+    "kind": "c",
+    "name": "short",
+    "supported": true,
+    "fields": {
+      "description": "16ビット符号付き整数です。",
+      "returns": "戻り値なし（宣言または制御文）",
+      "caution": "別名表記 short int、signed short も同じ型です。範囲は -32768〜32767。",
+      "example": "#include <stdio.h>\nint main() {\nshort n = 1;\nreturn 0;\n}",
+      "source": "https://en.cppreference.com/w/c/language/arithmetic_types"
+    }
+  },
+  {
+    "kind": "c",
+    "name": "bool",
+    "supported": true,
+    "fields": {
+      "description": "真偽値 true／false を表す型です（本来は <stdbool.h> の bool）。モデルでは宣言と真偽値の代入に対応します。",
+      "returns": "戻り値なし（宣言または制御文）",
+      "caution": "部分実装です：(bool) 式のキャストは C では明示的に対応しておらず、未対応として停止します（宣言・代入は動作します）。",
+      "example": "#include <stdio.h>\nint main() {\nbool ok = true;\nreturn 0;\n}",
+      "source": "https://en.cppreference.com/w/c/language/arithmetic_types"
+    }
+  },
+  {
+    "kind": "c",
+    "name": "unsigned int",
+    "supported": true,
+    "fields": {
+      "description": "32ビット符号なし整数です。負の値にはならず、演算は 2^32 の剰余で折り返します。",
+      "returns": "戻り値なし（宣言または制御文）",
+      "caution": "unsigned だけでも同じ型を表します（unsigned = unsigned int）。",
+      "example": "#include <stdio.h>\nint main() {\nunsigned int n = 1;\nreturn 0;\n}",
+      "source": "https://en.cppreference.com/w/c/language/arithmetic_types"
+    }
+  },
+  {
+    "kind": "c",
+    "name": "unsigned long",
+    "supported": true,
+    "fields": {
+      "description": "符号なし整数です。幅は long と同じで、モデルでは longBits（既定64ビット）に従います。",
+      "returns": "戻り値なし（宣言または制御文）",
+      "caution": "別名表記 unsigned long int も同じ型です。unsigned long long は実言語では別の型ですが、モデルでは unsigned long へ畳み込んで受理します。",
+      "example": "#include <stdio.h>\nint main() {\nunsigned long n = 1;\nreturn 0;\n}",
+      "source": "https://en.cppreference.com/w/c/language/arithmetic_types"
+    }
+  },
+  {
+    "kind": "c",
+    "name": "unsigned short",
+    "supported": true,
+    "fields": {
+      "description": "16ビット符号なし整数です（0〜65535）。",
+      "returns": "戻り値なし（宣言または制御文）",
+      "caution": "別名表記 unsigned short int も同じ型です。",
+      "example": "#include <stdio.h>\nint main() {\nunsigned short n = 1;\nreturn 0;\n}",
+      "source": "https://en.cppreference.com/w/c/language/arithmetic_types"
+    }
+  },
+  {
+    "kind": "c",
+    "name": "unsigned char",
+    "supported": true,
+    "fields": {
+      "description": "1バイト符号なし整数です（0〜255）。文字コードの格納にも使います。",
+      "returns": "戻り値なし（宣言または制御文）",
+      "caution": "char とは別の型で、符号なしであることが保証されます。",
+      "example": "#include <stdio.h>\nint main() {\nunsigned char n = 65;\nreturn 0;\n}",
+      "source": "https://en.cppreference.com/w/c/language/arithmetic_types"
+    }
+  },
+  {
+    "kind": "c",
+    "name": "signed char",
+    "supported": true,
+    "fields": {
+      "description": "1バイト符号付き整数です（-128〜127）。",
+      "returns": "戻り値なし（宣言または制御文）",
+      "caution": "通常の char とは別の型です。char の符号は処理系依存ですが、signed char は符号付きが保証されます。",
+      "example": "#include <stdio.h>\nint main() {\nsigned char c = 'A';\nreturn 0;\n}",
+      "source": "https://en.cppreference.com/w/c/language/arithmetic_types"
+    }
+  },
+  {
+    "kind": "c",
+    "name": "do",
+    "supported": true,
+    "fields": {
+      "description": "本体を先に1回実行し、その後、条件が真の間くり返します。条件が最初から偽でも本体は1回実行されます。",
+      "returns": "戻り値なし（宣言または制御文）",
+      "caution": "末尾の while の後には ; が必要です。",
+      "example": "#include <stdio.h>\nint main() {\nint n = 0;\ndo { n++; } while (n < 3);\nreturn 0;\n}",
+      "source": "https://en.cppreference.com/w/c/language/do"
+    }
+  },
+  {
+    "kind": "c",
+    "name": "sizeof",
+    "supported": true,
+    "fields": {
+      "description": "型または式の型の大きさをバイト数で返します。モデルでのサイズは char・bool が1、short が2、int・float が4、double が8、long は longBits（既定64で8）です。",
+      "returns": "size_t（型または式の大きさ（バイト数））",
+      "caution": "オペランドの式は評価されません（副作用は起きません）。結果の型は size_t 相当で、モデルでは longBits=64 のとき unsigned long です。ポインタ型・構造体型の sizeof は未対応です。",
+      "example": "#include <stdio.h>\nint main() {\nint bytes = sizeof(double);\nreturn 0;\n}",
+      "source": "https://en.cppreference.com/w/c/language/sizeof"
+    }
+  },
+  {
+    "kind": "c",
+    "name": "キャスト",
+    "supported": true,
+    "fields": {
+      "description": "式の値を指定した型へ明示的に変換します（C形式キャスト）。浮動小数点から整数への変換では小数部が切り捨てられます。",
+      "returns": "変換後の型の値",
+      "caution": "(bool) 式のキャストは C では未対応です（bool 項目を参照）。ポインタ型・修飾型・独自型へのキャストも未対応です。",
+      "example": "#include <stdio.h>\nint main() {\ndouble x = 1.5;\nint n = (int)x;\nreturn 0;\n}",
+      "source": "https://en.cppreference.com/w/c/language/cast"
+    }
+  },
+  {
+    "kind": "c",
+    "name": "三項演算子",
+    "supported": true,
+    "fields": {
+      "description": "条件が真なら value1、偽なら value2 を値とする式です。条件演算子とも呼びます。",
+      "returns": "条件で選ばれた側の値",
+      "caution": "文ではなく式です。入れ子にすると読みにくくなるため、複雑な分岐は if を使います。",
+      "example": "#include <stdio.h>\nint main() {\nint n = 2;\nint label = n > 0 ? 1 : 0;\nreturn 0;\n}",
+      "source": "https://en.cppreference.com/w/c/language/operator_other"
+    }
+  },
+  {
+    "kind": "c",
+    "name": "abs",
+    "supported": true,
+    "fields": {
+      "description": "int の絶対値を返します（<stdlib.h>／<cstdlib> の関数）。",
+      "returns": "int（絶対値）",
+      "caution": "最も小さい int（-2147483648）の絶対値は int で表せず、未定義動作として停止します。",
+      "example": "#include <stdio.h>\nint main() {\nint n = abs(-3);\nreturn 0;\n}",
+      "source": "https://en.cppreference.com/w/c/numeric/math/abs"
+    }
+  },
+  {
+    "kind": "c",
+    "name": "break",
+    "supported": true,
+    "fields": {
+      "description": "内側のループの実行を直ちに終了し、ループの次の文へ進みます。",
+      "returns": "戻り値なし（宣言または制御文）",
+      "caution": "ループの外では使えません。",
+      "example": "#include <stdio.h>\nint main() {\nint total = 0;\nfor (int i = 0; i < 10; i++) { if (i == 3) { break; } total += i; }\nreturn 0;\n}",
+      "source": "https://en.cppreference.com/w/c/language/break"
+    }
+  },
+  {
+    "kind": "c",
+    "name": "continue",
+    "supported": true,
+    "fields": {
+      "description": "ループの今回の繰り返しを打ち切り、次の繰り返しの判定へ進みます。",
+      "returns": "戻り値なし（宣言または制御文）",
+      "caution": "for では更新式を実行してから次の判定へ進みます。",
+      "example": "#include <stdio.h>\nint main() {\nint total = 0;\nfor (int i = 0; i < 5; i++) { if (i == 2) { continue; } total += i; }\nreturn 0;\n}",
+      "source": "https://en.cppreference.com/w/c/language/continue"
+    }
+  },
+  {
+    "kind": "cpp",
+    "name": "if",
+    "supported": true,
+    "fields": {
+      "description": "条件が真なら if のブロック、偽なら else のブロック（あれば）を実行します。else if で条件を連ねることもできます。",
+      "returns": "戻り値なし（宣言または制御文）",
+      "caution": "",
+      "example": "#include <iostream>\n#include <cstdio>\nint main() {\nint n=2;\nif (n > 0) { n = 1; }\nreturn 0;\n}",
+      "source": "https://en.cppreference.com/w/cpp/language/if"
+    }
+  },
+  {
+    "kind": "cpp",
+    "name": "long",
+    "supported": true,
+    "fields": {
+      "description": "符号付き整数です。モデルでは longBits（既定64ビット）で幅を表します。",
+      "returns": "戻り値なし（宣言または制御文）",
+      "caution": "別名表記 long int、signed long も同じ型です。long long は実言語では別の型ですが、モデルでは long へ畳み込んで受理します。",
+      "example": "#include <iostream>\n#include <cstdio>\nint main() {\nlong n = 1;\nreturn 0;\n}",
+      "source": "https://en.cppreference.com/w/cpp/language/types"
+    }
+  },
+  {
+    "kind": "cpp",
+    "name": "float",
+    "supported": true,
+    "fields": {
+      "description": "32ビット単精度浮動小数点数です。",
+      "returns": "戻り値なし（宣言または制御文）",
+      "caution": "リテラル 1.5 は double 型です。float には f 接尾辞（1.5f）を付けます。double より精度が粗くなります。",
+      "example": "#include <iostream>\n#include <cstdio>\nint main() {\nfloat x = 1.5f;\nreturn 0;\n}",
+      "source": "https://en.cppreference.com/w/cpp/language/types"
+    }
+  },
+  {
+    "kind": "cpp",
+    "name": "char",
+    "supported": true,
+    "fields": {
+      "description": "1バイトの文字型です。モデルでは文字コードの数値として扱います（'A' は 65）。",
+      "returns": "戻り値なし（宣言または制御文）",
+      "caution": "char の符号は処理系依存です。モデルでは範囲外の値への変換を未確認として停止します。符号を保証したい場合は signed char／unsigned char を使います。",
+      "example": "#include <iostream>\n#include <cstdio>\nint main() {\nchar c = 'A';\nreturn 0;\n}",
+      "source": "https://en.cppreference.com/w/cpp/language/types"
+    }
+  },
+  {
+    "kind": "cpp",
+    "name": "short",
+    "supported": true,
+    "fields": {
+      "description": "16ビット符号付き整数です。",
+      "returns": "戻り値なし（宣言または制御文）",
+      "caution": "別名表記 short int、signed short も同じ型です。範囲は -32768〜32767。",
+      "example": "#include <iostream>\n#include <cstdio>\nint main() {\nshort n = 1;\nreturn 0;\n}",
+      "source": "https://en.cppreference.com/w/cpp/language/types"
+    }
+  },
+  {
+    "kind": "cpp",
+    "name": "bool",
+    "supported": true,
+    "fields": {
+      "description": "真偽値 true／false を表す型です。整数との相互変換もできます。",
+      "returns": "戻り値なし（宣言または制御文）",
+      "caution": "(bool) キャストを含め対応しています。",
+      "example": "#include <iostream>\n#include <cstdio>\nint main() {\nbool ok = true;\nreturn 0;\n}",
+      "source": "https://en.cppreference.com/w/cpp/language/types"
+    }
+  },
+  {
+    "kind": "cpp",
+    "name": "unsigned int",
+    "supported": true,
+    "fields": {
+      "description": "32ビット符号なし整数です。負の値にはならず、演算は 2^32 の剰余で折り返します。",
+      "returns": "戻り値なし（宣言または制御文）",
+      "caution": "unsigned だけでも同じ型を表します（unsigned = unsigned int）。",
+      "example": "#include <iostream>\n#include <cstdio>\nint main() {\nunsigned int n = 1;\nreturn 0;\n}",
+      "source": "https://en.cppreference.com/w/cpp/language/types"
+    }
+  },
+  {
+    "kind": "cpp",
+    "name": "unsigned long",
+    "supported": true,
+    "fields": {
+      "description": "符号なし整数です。幅は long と同じで、モデルでは longBits（既定64ビット）に従います。",
+      "returns": "戻り値なし（宣言または制御文）",
+      "caution": "別名表記 unsigned long int も同じ型です。unsigned long long は実言語では別の型ですが、モデルでは unsigned long へ畳み込んで受理します。",
+      "example": "#include <iostream>\n#include <cstdio>\nint main() {\nunsigned long n = 1;\nreturn 0;\n}",
+      "source": "https://en.cppreference.com/w/cpp/language/types"
+    }
+  },
+  {
+    "kind": "cpp",
+    "name": "unsigned short",
+    "supported": true,
+    "fields": {
+      "description": "16ビット符号なし整数です（0〜65535）。",
+      "returns": "戻り値なし（宣言または制御文）",
+      "caution": "別名表記 unsigned short int も同じ型です。",
+      "example": "#include <iostream>\n#include <cstdio>\nint main() {\nunsigned short n = 1;\nreturn 0;\n}",
+      "source": "https://en.cppreference.com/w/cpp/language/types"
+    }
+  },
+  {
+    "kind": "cpp",
+    "name": "unsigned char",
+    "supported": true,
+    "fields": {
+      "description": "1バイト符号なし整数です（0〜255）。文字コードの格納にも使います。",
+      "returns": "戻り値なし（宣言または制御文）",
+      "caution": "char とは別の型で、符号なしであることが保証されます。",
+      "example": "#include <iostream>\n#include <cstdio>\nint main() {\nunsigned char n = 65;\nreturn 0;\n}",
+      "source": "https://en.cppreference.com/w/cpp/language/types"
+    }
+  },
+  {
+    "kind": "cpp",
+    "name": "signed char",
+    "supported": true,
+    "fields": {
+      "description": "1バイト符号付き整数です（-128〜127）。",
+      "returns": "戻り値なし（宣言または制御文）",
+      "caution": "通常の char とは別の型です。char の符号は処理系依存ですが、signed char は符号付きが保証されます。",
+      "example": "#include <iostream>\n#include <cstdio>\nint main() {\nsigned char c = 'A';\nreturn 0;\n}",
+      "source": "https://en.cppreference.com/w/cpp/language/types"
+    }
+  },
+  {
+    "kind": "cpp",
+    "name": "string",
+    "supported": true,
+    "fields": {
+      "description": "std::string 型の文字列です。既定では空文字列で、+／+= で連結でき、添字で1文字ずつ読み書きできます。比較もできます。",
+      "returns": "戻り値なし（宣言または制御文）",
+      "caution": "メソッド（.length() 等）は未実装です。C にはこの型はなく、char 配列を使います。",
+      "example": "#include <iostream>\n#include <cstdio>\nint main() {\nstring s = \"ab\";\ns += \"c\";\nstd::cout << s << std::endl;\nreturn 0;\n}",
+      "source": "https://en.cppreference.com/w/cpp/string/basic_string"
+    }
+  },
+  {
+    "kind": "cpp",
+    "name": "参照",
+    "supported": true,
+    "fields": {
+      "description": "宣言した変数の別名です。参照を通した読み書きは、参照先の変数そのものへの読み書きになります。",
+      "returns": "戻り値なし（宣言または制御文）",
+      "caution": "C++専用です。宣言時に参照先の指定が必須で、後から別の変数へ付け替えることはできません（代入は参照先への代入になります）。ポインタとは別の仕組みです。",
+      "example": "#include <iostream>\n#include <cstdio>\nint main() {\nint n = 1;\nint& ref = n;\nref = 2;\nstd::cout << n << std::endl;\nreturn 0;\n}",
+      "source": "https://en.cppreference.com/w/cpp/language/reference"
+    }
+  },
+  {
+    "kind": "cpp",
+    "name": "do",
+    "supported": true,
+    "fields": {
+      "description": "本体を先に1回実行し、その後、条件が真の間くり返します。条件が最初から偽でも本体は1回実行されます。",
+      "returns": "戻り値なし（宣言または制御文）",
+      "caution": "末尾の while の後には ; が必要です。",
+      "example": "#include <iostream>\n#include <cstdio>\nint main() {\nint n = 0;\ndo { n++; } while (n < 3);\nreturn 0;\n}",
+      "source": "https://en.cppreference.com/w/cpp/language/do"
+    }
+  },
+  {
+    "kind": "cpp",
+    "name": "sizeof",
+    "supported": true,
+    "fields": {
+      "description": "型または式の型の大きさをバイト数で返します。モデルでのサイズは char・bool が1、short が2、int・float が4、double が8、long は longBits（既定64で8）です。",
+      "returns": "std::size_t（型または式の大きさ（バイト数））",
+      "caution": "オペランドの式は評価されません（副作用は起きません）。結果の型は size_t 相当で、モデルでは longBits=64 のとき unsigned long です。ポインタ型・構造体型の sizeof は未対応です。",
+      "example": "#include <iostream>\n#include <cstdio>\nint main() {\nint bytes = sizeof(double);\nreturn 0;\n}",
+      "source": "https://en.cppreference.com/w/cpp/language/sizeof"
+    }
+  },
+  {
+    "kind": "cpp",
+    "name": "キャスト",
+    "supported": true,
+    "fields": {
+      "description": "式の値を指定した型へ明示的に変換します（C形式キャスト）。浮動小数点から整数への変換では小数部が切り捨てられます。",
+      "returns": "変換後の型の値",
+      "caution": "static_cast 等の名前付きキャストと関数形式のキャストは未対応です。ポインタ型・参照型・修飾型へのキャストも未対応です。",
+      "example": "#include <iostream>\n#include <cstdio>\nint main() {\ndouble x = 1.5;\nint n = (int)x;\nreturn 0;\n}",
+      "source": "https://en.cppreference.com/w/cpp/language/explicit_cast"
+    }
+  },
+  {
+    "kind": "cpp",
+    "name": "三項演算子",
+    "supported": true,
+    "fields": {
+      "description": "条件が真なら value1、偽なら value2 を値とする式です。条件演算子とも呼びます。",
+      "returns": "条件で選ばれた側の値",
+      "caution": "文ではなく式です。入れ子にすると読みにくくなるため、複雑な分岐は if を使います。",
+      "example": "#include <iostream>\n#include <cstdio>\nint main() {\nint n = 2;\nint label = n > 0 ? 1 : 0;\nreturn 0;\n}",
+      "source": "https://en.cppreference.com/w/cpp/language/operator_other"
+    }
+  },
+  {
+    "kind": "cpp",
+    "name": "abs",
+    "supported": true,
+    "fields": {
+      "description": "int の絶対値を返します（<stdlib.h>／<cstdlib> の関数）。",
+      "returns": "int（絶対値）",
+      "caution": "最も小さい int（-2147483648）の絶対値は int で表せず、未定義動作として停止します。",
+      "example": "#include <iostream>\n#include <cstdio>\nint main() {\nint n = abs(-3);\nreturn 0;\n}",
+      "source": "https://en.cppreference.com/w/cpp/numeric/math/abs"
+    }
+  },
+  {
+    "kind": "cpp",
+    "name": "break",
+    "supported": true,
+    "fields": {
+      "description": "内側のループの実行を直ちに終了し、ループの次の文へ進みます。",
+      "returns": "戻り値なし（宣言または制御文）",
+      "caution": "ループの外では使えません。",
+      "example": "#include <iostream>\n#include <cstdio>\nint main() {\nint total = 0;\nfor (int i = 0; i < 10; i++) { if (i == 3) { break; } total += i; }\nreturn 0;\n}",
+      "source": "https://en.cppreference.com/w/cpp/language/break"
+    }
+  },
+  {
+    "kind": "cpp",
+    "name": "continue",
+    "supported": true,
+    "fields": {
+      "description": "ループの今回の繰り返しを打ち切り、次の繰り返しの判定へ進みます。",
+      "returns": "戻り値なし（宣言または制御文）",
+      "caution": "for では更新式を実行してから次の判定へ進みます。",
+      "example": "#include <iostream>\n#include <cstdio>\nint main() {\nint total = 0;\nfor (int i = 0; i < 5; i++) { if (i == 2) { continue; } total += i; }\nreturn 0;\n}",
+      "source": "https://en.cppreference.com/w/cpp/language/continue"
+    }
+  },
+  {
+    "kind": "cpp",
+    "name": "getline",
+    "supported": true,
+    "fields": {
+      "description": "標準入力から1行を読み取り、string 変数へ格納します。モデルでは実行時の入力を未確定値として扱います。std::cin はこの関数の第1引数としてだけ使います。",
+      "returns": "std::istream&（第1引数のストリーム）",
+      "caution": "対応形式は std::getline(std::cin, 変数) のみです。cin >> x の抽出演算子は未実装で、シフト演算として解釈され停止します。",
+      "example": "#include <iostream>\n#include <cstdio>\nint main() {\nstring line;\nstd::getline(std::cin, line);\nreturn 0;\n}",
+      "source": "https://en.cppreference.com/w/cpp/string/basic_string/getline"
+    }
+  },
+  {
+    "kind": "cpp",
+    "name": "endl",
+    "supported": true,
+    "fields": {
+      "description": "cout への出力で改行を表します。モデルでは改行文字 \"\\n\" として扱います。",
+      "returns": "std::ostream&（出力先のストリーム）",
+      "caution": "実物の std::endl は改行に加えてストリームをフラッシュしますが、モデルではフラッシュは再現しません。",
+      "example": "#include <iostream>\n#include <cstdio>\nint main() {\nstd::cout << 1 << std::endl;\nreturn 0;\n}",
+      "source": "https://en.cppreference.com/w/cpp/io/manip/endl"
+    }
+  },
+  {
+    "kind": "csharp",
+    "name": "if",
+    "supported": true,
+    "fields": {
+      "description": "条件が真なら if のブロック、偽なら else のブロック（あれば）を実行します。else if で条件を連ねることもできます。",
+      "returns": "戻り値なし（宣言または制御文）",
+      "caution": "",
+      "example": "using System;\nclass Program {\n    static void Main() {\nint n=2;\nif (n > 0) { n = 1; }\n    }\n}",
+      "source": "https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/statements/selection-statements"
+    }
+  },
+  {
+    "kind": "csharp",
+    "name": "long",
+    "supported": true,
+    "fields": {
+      "description": "64ビット符号付き整数（System.Int64）です。",
+      "returns": "戻り値なし（宣言または制御文）",
+      "caution": "範囲は -9223372036854775808〜9223372036854775807。安全な精度範囲を超える計算は未確認として停止します。",
+      "example": "using System;\nclass Program {\n    static void Main() {\nlong n = 1;\n    }\n}",
+      "source": "https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/builtin-types/integral-numeric-types"
+    }
+  },
+  {
+    "kind": "csharp",
+    "name": "float",
+    "supported": true,
+    "fields": {
+      "description": "32ビット単精度浮動小数点数です。",
+      "returns": "戻り値なし（宣言または制御文）",
+      "caution": "リテラル 1.5 は double 型です。float には f 接尾辞（1.5f）を付けます。",
+      "example": "using System;\nclass Program {\n    static void Main() {\nfloat x = 1.5f;\n    }\n}",
+      "source": "https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/builtin-types/floating-point-numeric-types"
+    }
+  },
+  {
+    "kind": "csharp",
+    "name": "char",
+    "supported": true,
+    "fields": {
+      "description": "16ビットの Unicode 文字1文字を表します（System.Char）。",
+      "returns": "戻り値なし（宣言または制御文）",
+      "caution": "文字列ではなく1文字です。数値との相互変換はキャストで行います。",
+      "example": "using System;\nclass Program {\n    static void Main() {\nchar c = 'A';\n    }\n}",
+      "source": "https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/builtin-types/char"
+    }
+  },
+  {
+    "kind": "csharp",
+    "name": "short",
+    "supported": true,
+    "fields": {
+      "description": "16ビット符号付き整数です。",
+      "returns": "戻り値なし（宣言または制御文）",
+      "caution": "範囲は -32768〜32767（System.Int16）。",
+      "example": "using System;\nclass Program {\n    static void Main() {\nshort n = 1;\n    }\n}",
+      "source": "https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/builtin-types/integral-numeric-types"
+    }
+  },
+  {
+    "kind": "csharp",
+    "name": "bool",
+    "supported": true,
+    "fields": {
+      "description": "真偽値 true／false を表します（System.Boolean）。",
+      "returns": "戻り値なし（宣言または制御文）",
+      "caution": "条件式の結果も bool です。数値との暗黙変換はありません。",
+      "example": "using System;\nclass Program {\n    static void Main() {\nbool ok = true;\n    }\n}",
+      "source": "https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/builtin-types/bool"
+    }
+  },
+  {
+    "kind": "csharp",
+    "name": "uint",
+    "supported": true,
+    "fields": {
+      "description": "32ビット符号なし整数（System.UInt32）です。範囲は 0〜4294967295。",
+      "returns": "戻り値なし（宣言または制御文）",
+      "caution": "モデル側の制限：代入時の変換では int の範囲を超える値を範囲外として停止します（実C#では有効な値でも停止します）。uint.MaxValue 自体は参照できます。",
+      "example": "using System;\nclass Program {\n    static void Main() {\nuint n = 1;\n    }\n}",
+      "source": "https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/builtin-types/integral-numeric-types"
+    }
+  },
+  {
+    "kind": "csharp",
+    "name": "ulong",
+    "supported": true,
+    "fields": {
+      "description": "64ビット符号なし整数（System.UInt64）です。範囲は 0〜18446744073709551615。",
+      "returns": "戻り値なし（宣言または制御文）",
+      "caution": "64ビットの大きな値は安全な精度範囲外として未確認になる場合があります。ulong.MaxValue は未確定値として返ります（定数項目を参照）。",
+      "example": "using System;\nclass Program {\n    static void Main() {\nulong n = 1;\n    }\n}",
+      "source": "https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/builtin-types/integral-numeric-types"
+    }
+  },
+  {
+    "kind": "csharp",
+    "name": "ushort",
+    "supported": true,
+    "fields": {
+      "description": "16ビット符号なし整数（System.UInt16）です。範囲は 0〜65535。",
+      "returns": "戻り値なし（宣言または制御文）",
+      "caution": "モデル側の制限：代入時の変換では short の範囲を超える値を範囲外として停止します。また ushort.MaxValue／MinValue は静的メンバーの表になく未対応として停止します（型自体は対応済み）。",
+      "example": "using System;\nclass Program {\n    static void Main() {\nushort n = 1;\n    }\n}",
+      "source": "https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/builtin-types/integral-numeric-types"
+    }
+  },
+  {
+    "kind": "csharp",
+    "name": "byte",
+    "supported": true,
+    "fields": {
+      "description": "8ビット符号なし整数（System.Byte）です。範囲は 0〜255。",
+      "returns": "戻り値なし（宣言または制御文）",
+      "caution": "モデル側の制限：代入時の変換では sbyte の範囲を超える値を範囲外として停止します（実C#では有効な値でも停止します）。byte.MaxValue 自体は参照できます。",
+      "example": "using System;\nclass Program {\n    static void Main() {\nbyte n = 1;\n    }\n}",
+      "source": "https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/builtin-types/integral-numeric-types"
+    }
+  },
+  {
+    "kind": "csharp",
+    "name": "sbyte",
+    "supported": true,
+    "fields": {
+      "description": "8ビット符号付き整数（System.SByte）です。範囲は -128〜127。",
+      "returns": "戻り値なし（宣言または制御文）",
+      "caution": "byte と異なり負の値を表せます。",
+      "example": "using System;\nclass Program {\n    static void Main() {\nsbyte n = -1;\n    }\n}",
+      "source": "https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/builtin-types/integral-numeric-types"
+    }
+  },
+  {
+    "kind": "csharp",
+    "name": "string",
+    "supported": true,
+    "fields": {
+      "description": "文字列を表す参照型です。Length プロパティと添字 s[i] に対応します。",
+      "returns": "戻り値なし（宣言または制御文）",
+      "caution": "文字列補間 $\"…\" は別項目です。",
+      "example": "using System;\nclass Program {\n    static void Main() {\nstring s = \"tea\";\n    }\n}",
+      "source": "https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/builtin-types/reference-types"
+    }
+  },
+  {
+    "kind": "csharp",
+    "name": "do",
+    "supported": true,
+    "fields": {
+      "description": "本体を先に1回実行し、その後、条件が真の間くり返します。条件が最初から偽でも本体は1回実行されます。",
+      "returns": "戻り値なし（宣言または制御文）",
+      "caution": "末尾の while の後には ; が必要です。",
+      "example": "using System;\nclass Program {\n    static void Main() {\nint n = 0;\ndo { n++; } while (n < 3);\n    }\n}",
+      "source": "https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/statements/iteration-statements"
+    }
+  },
+  {
+    "kind": "csharp",
+    "name": "キャスト",
+    "supported": true,
+    "fields": {
+      "description": "式の値を指定した型へ明示的に変換します。対応する型は int、long、double、float、char、bool、short、uint、ulong、ushort、byte、sbyte、string です。",
+      "returns": "変換後の型の値",
+      "caution": "decimal へのキャストは未対応です。範囲外の変換は例外または未確認として停止します。",
+      "example": "using System;\nclass Program {\n    static void Main() {\ndouble x = 1.5;\nint n = (int)x;\n    }\n}",
+      "source": "https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/operators/type-testing-and-cast"
+    }
+  },
+  {
+    "kind": "csharp",
+    "name": "三項演算子",
+    "supported": true,
+    "fields": {
+      "description": "条件が真なら value1、偽なら value2 を値とする式です。条件演算子とも呼びます。",
+      "returns": "条件で選ばれた側の値",
+      "caution": "null 合体演算子 ?? は未対応です。",
+      "example": "using System;\nclass Program {\n    static void Main() {\nint n = 2;\nint label = n > 0 ? 1 : 0;\n    }\n}",
+      "source": "https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/operators/conditional-operator"
+    }
+  },
+  {
+    "kind": "csharp",
+    "name": "break",
+    "supported": true,
+    "fields": {
+      "description": "内側のループの実行を直ちに終了し、ループの次の文へ進みます。",
+      "returns": "戻り値なし（宣言または制御文）",
+      "caution": "switch 文から抜けるためにも使いますが、モデルでは switch 文は未対応です。",
+      "example": "using System;\nclass Program {\n    static void Main() {\nint total = 0;\nfor (int i = 0; i < 10; i++) { if (i == 3) { break; } total += i; }\n    }\n}",
+      "source": "https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/statements/jump-statements"
+    }
+  },
+  {
+    "kind": "csharp",
+    "name": "continue",
+    "supported": true,
+    "fields": {
+      "description": "ループの今回の繰り返しを打ち切り、次の繰り返しの判定へ進みます。",
+      "returns": "戻り値なし（宣言または制御文）",
+      "caution": "for では更新式を実行してから次の判定へ進みます。",
+      "example": "using System;\nclass Program {\n    static void Main() {\nint total = 0;\nfor (int i = 0; i < 5; i++) { if (i == 2) { continue; } total += i; }\n    }\n}",
+      "source": "https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/statements/jump-statements"
+    }
+  },
+  {
+    "kind": "csharp",
+    "name": "foreach",
+    "supported": true,
+    "fields": {
+      "description": "配列などの要素を先頭から順に変数へ代入しながらくり返します。",
+      "returns": "戻り値なし（宣言または制御文）",
+      "caution": "",
+      "example": "using System;\nclass Program {\n    static void Main() {\nint[] values = {1, 2, 3};\nint total = 0;\nforeach (int v in values) { total += v; }\n    }\n}",
+      "source": "https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/statements/iteration-statements"
+    }
+  },
+  {
+    "kind": "csharp",
+    "name": "unchecked",
+    "supported": true,
+    "fields": {
+      "description": "整数演算のオーバーフローを検査せず、ビット幅で折り返して計算することを明示します。C# の既定の動作でもあります。",
+      "returns": "戻り値なし（宣言または制御文）",
+      "caution": "checked と対の指定です。定数式のオーバーフローは unchecked でもコンパイルエラーとして停止します。",
+      "example": "using System;\nclass Program {\n    static void Main() {\nint n = 2147483647;\nunchecked { n = n + 1; }\n    }\n}",
+      "source": "https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/statements/checked-and-unchecked"
+    }
+  },
+  {
+    "kind": "csharp",
+    "name": "new",
+    "supported": true,
+    "fields": {
+      "description": "配列またはオブジェクトを生成する式です。配列は要素が型の既定値で初期化されます。",
+      "returns": "生成した配列またはオブジェクトへの参照",
+      "caution": "対応形式は new 型[個数]、new 型[] {…}、引数なしの new クラス名() のみです。引数付きコンストラクタなどは未対応です。",
+      "example": "using System;\nclass Program {\n    static void Main() {\nint[] values = new int[3];\nvalues[0] = 1;\n    }\n}",
+      "source": "https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/operators/new-operator"
+    }
+  },
+  {
+    "kind": "csharp",
+    "name": "文字列補間",
+    "supported": true,
+    "fields": {
+      "description": "文字列リテラル内の {式} の部分を、その値の文字列表現で置き換えます。{{ と }} は波括弧そのものを表します。",
+      "returns": "string（補間結果の文字列）",
+      "caution": "配置指定（{式,配置}）と書式指定子（{式:書式}）は未対応です。",
+      "example": "using System;\nclass Program {\n    static void Main() {\nint n = 3;\nstring s = $\"n={n}\";\nConsole.WriteLine(s);\n    }\n}",
+      "source": "https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/tokens/interpolated"
+    }
+  },
+  {
+    "kind": "csharp",
+    "name": "int.TryParse",
+    "supported": true,
+    "fields": {
+      "description": "文字列を int へ変換できるか試します。成功すると true を返し out 変数へ値を入れ、失敗すると false を返し out 変数へ 0 を入れます。",
+      "returns": "bool（変換できれば true、できなければ false）",
+      "caution": "int.Parse と異なり、変換できない文字列でも例外にはなりません。対応形式は（文字列, out 変数）の2引数のみです。int.Parse／double.Parse は未実装です。",
+      "example": "using System;\nclass Program {\n    static void Main() {\nint n;\nbool ok = int.TryParse(\"42\", out n);\nConsole.WriteLine(n);\n    }\n}",
+      "source": "https://learn.microsoft.com/en-us/dotnet/api/system.int32.tryparse"
+    }
+  },
+  {
+    "kind": "csharp",
+    "name": "double.TryParse",
+    "supported": true,
+    "fields": {
+      "description": "文字列を double へ変換できるか試します。成功すると true を返し out 変数へ値を入れ、失敗すると false を返し out 変数へ 0 を入れます。",
+      "returns": "bool（変換できれば true、できなければ false）",
+      "caution": "double.Parse と異なり、変換できない文字列でも例外にはなりません。対応形式は（文字列, out 変数）の2引数のみです。",
+      "example": "using System;\nclass Program {\n    static void Main() {\ndouble x;\nbool ok = double.TryParse(\"1.5\", out x);\nConsole.WriteLine(x);\n    }\n}",
+      "source": "https://learn.microsoft.com/en-us/dotnet/api/system.double.tryparse"
+    }
+  },
+  {
+    "kind": "csharp",
+    "name": "Length",
+    "supported": true,
+    "fields": {
+      "description": "配列では要素数、文字列では文字数を int で返します。",
+      "returns": "int（要素数または文字数）",
+      "caution": "文字列の各文字へは添字 s[i] でもアクセスできます。",
+      "example": "using System;\nclass Program {\n    static void Main() {\nint[] values = {1, 2, 3};\nstring s = \"tea\";\nint n = values.Length + s.Length;\n    }\n}",
+      "source": "https://learn.microsoft.com/en-us/dotnet/api/system.array.length"
+    }
+  },
+  {
+    "kind": "csharp",
+    "name": "int.MaxValue",
+    "supported": true,
+    "fields": {
+      "description": "int の最大値です。",
+      "returns": "int（2147483647）",
+      "caution": "",
+      "example": "using System;\nclass Program {\n    static void Main() {\nConsole.WriteLine(int.MaxValue);\n    }\n}",
+      "source": "https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/builtin-types/integral-numeric-types"
+    }
+  },
+  {
+    "kind": "csharp",
+    "name": "int.MinValue",
+    "supported": true,
+    "fields": {
+      "description": "int の最小値です。",
+      "returns": "int（-2147483648）",
+      "caution": "",
+      "example": "using System;\nclass Program {\n    static void Main() {\nConsole.WriteLine(int.MinValue);\n    }\n}",
+      "source": "https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/builtin-types/integral-numeric-types"
+    }
+  },
+  {
+    "kind": "csharp",
+    "name": "uint.MaxValue",
+    "supported": true,
+    "fields": {
+      "description": "uint の最大値です。",
+      "returns": "uint（4294967295）",
+      "caution": "変数への代入時の変換では対応する符号付き型の範囲を超えるため範囲外として停止します。値の参照自体はこの例のようにできます。",
+      "example": "using System;\nclass Program {\n    static void Main() {\nConsole.WriteLine(uint.MaxValue);\n    }\n}",
+      "source": "https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/builtin-types/integral-numeric-types"
+    }
+  },
+  {
+    "kind": "csharp",
+    "name": "uint.MinValue",
+    "supported": true,
+    "fields": {
+      "description": "uint の最小値です。",
+      "returns": "uint（0）",
+      "caution": "",
+      "example": "using System;\nclass Program {\n    static void Main() {\nConsole.WriteLine(uint.MinValue);\n    }\n}",
+      "source": "https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/builtin-types/integral-numeric-types"
+    }
+  },
+  {
+    "kind": "csharp",
+    "name": "short.MaxValue",
+    "supported": true,
+    "fields": {
+      "description": "short の最大値です。",
+      "returns": "short（32767）",
+      "caution": "",
+      "example": "using System;\nclass Program {\n    static void Main() {\nConsole.WriteLine(short.MaxValue);\n    }\n}",
+      "source": "https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/builtin-types/integral-numeric-types"
+    }
+  },
+  {
+    "kind": "csharp",
+    "name": "short.MinValue",
+    "supported": true,
+    "fields": {
+      "description": "short の最小値です。",
+      "returns": "short（-32768）",
+      "caution": "",
+      "example": "using System;\nclass Program {\n    static void Main() {\nConsole.WriteLine(short.MinValue);\n    }\n}",
+      "source": "https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/builtin-types/integral-numeric-types"
+    }
+  },
+  {
+    "kind": "csharp",
+    "name": "byte.MaxValue",
+    "supported": true,
+    "fields": {
+      "description": "byte の最大値です。",
+      "returns": "byte（255）",
+      "caution": "変数への代入時の変換では対応する符号付き型の範囲を超えるため範囲外として停止します。値の参照自体はこの例のようにできます。",
+      "example": "using System;\nclass Program {\n    static void Main() {\nConsole.WriteLine(byte.MaxValue);\n    }\n}",
+      "source": "https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/builtin-types/integral-numeric-types"
+    }
+  },
+  {
+    "kind": "csharp",
+    "name": "byte.MinValue",
+    "supported": true,
+    "fields": {
+      "description": "byte の最小値です。",
+      "returns": "byte（0）",
+      "caution": "",
+      "example": "using System;\nclass Program {\n    static void Main() {\nConsole.WriteLine(byte.MinValue);\n    }\n}",
+      "source": "https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/builtin-types/integral-numeric-types"
+    }
+  },
+  {
+    "kind": "csharp",
+    "name": "sbyte.MaxValue",
+    "supported": true,
+    "fields": {
+      "description": "sbyte の最大値です。",
+      "returns": "sbyte（127）",
+      "caution": "",
+      "example": "using System;\nclass Program {\n    static void Main() {\nConsole.WriteLine(sbyte.MaxValue);\n    }\n}",
+      "source": "https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/builtin-types/integral-numeric-types"
+    }
+  },
+  {
+    "kind": "csharp",
+    "name": "sbyte.MinValue",
+    "supported": true,
+    "fields": {
+      "description": "sbyte の最小値です。",
+      "returns": "sbyte（-128）",
+      "caution": "",
+      "example": "using System;\nclass Program {\n    static void Main() {\nConsole.WriteLine(sbyte.MinValue);\n    }\n}",
+      "source": "https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/builtin-types/integral-numeric-types"
+    }
+  },
+  {
+    "kind": "csharp",
+    "name": "char.MaxValue",
+    "supported": true,
+    "fields": {
+      "description": "char の最大値です（U+FFFF）。",
+      "returns": "char（'\\uffff'）",
+      "caution": "",
+      "example": "using System;\nclass Program {\n    static void Main() {\nConsole.WriteLine(char.MaxValue);\n    }\n}",
+      "source": "https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/builtin-types/char"
+    }
+  },
+  {
+    "kind": "csharp",
+    "name": "char.MinValue",
+    "supported": true,
+    "fields": {
+      "description": "char の最小値です（U+0000）。",
+      "returns": "char（'\\u0000'）",
+      "caution": "",
+      "example": "using System;\nclass Program {\n    static void Main() {\nConsole.WriteLine(char.MinValue);\n    }\n}",
+      "source": "https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/builtin-types/char"
+    }
+  },
+  {
+    "kind": "csharp",
+    "name": "Math.PI",
+    "supported": true,
+    "fields": {
+      "description": "円周率 π の近似値です。",
+      "returns": "double（3.141592653589793）",
+      "caution": "",
+      "example": "using System;\nclass Program {\n    static void Main() {\nConsole.WriteLine(Math.PI);\n    }\n}",
+      "source": "https://learn.microsoft.com/en-us/dotnet/api/system.math.pi"
+    }
+  },
+  {
+    "kind": "csharp",
+    "name": "Math.E",
+    "supported": true,
+    "fields": {
+      "description": "自然対数の底 e の近似値です。",
+      "returns": "double（2.718281828459045）",
+      "caution": "",
+      "example": "using System;\nclass Program {\n    static void Main() {\nConsole.WriteLine(Math.E);\n    }\n}",
+      "source": "https://learn.microsoft.com/en-us/dotnet/api/system.math.e"
+    }
+  },
+  {
+    "kind": "csharp",
+    "name": "String.Empty",
+    "supported": true,
+    "fields": {
+      "description": "空文字列 \"\" です。string.Empty と同じ値です。",
+      "returns": "string（\"\"）",
+      "caution": "",
+      "example": "using System;\nclass Program {\n    static void Main() {\nConsole.WriteLine(String.Empty);\n    }\n}",
+      "source": "https://learn.microsoft.com/en-us/dotnet/api/system.string.empty"
+    }
+  },
+  {
+    "kind": "csharp",
+    "name": "string.Empty",
+    "supported": true,
+    "fields": {
+      "description": "空文字列 \"\" です。String.Empty と同じ値です。",
+      "returns": "string（\"\"）",
+      "caution": "",
+      "example": "using System;\nclass Program {\n    static void Main() {\nConsole.WriteLine(string.Empty);\n    }\n}",
+      "source": "https://learn.microsoft.com/en-us/dotnet/api/system.string.empty"
+    }
+  },
+  {
+    "kind": "csharp",
+    "name": "long.MaxValue",
+    "supported": true,
+    "fields": {
+      "description": "long の最大値です。",
+      "returns": "long（未確定値として返ります）",
+      "caution": "モデルでは64ビット境界値を安全な整数として表せないため、未確定値として返ります（実値は 9223372036854775807）。",
+      "example": "using System;\nclass Program {\n    static void Main() {\nConsole.WriteLine(long.MaxValue);\n    }\n}",
+      "source": "https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/builtin-types/integral-numeric-types"
+    }
+  },
+  {
+    "kind": "csharp",
+    "name": "long.MinValue",
+    "supported": true,
+    "fields": {
+      "description": "long の最小値です。",
+      "returns": "long（未確定値として返ります）",
+      "caution": "モデルでは64ビット境界値を安全な整数として表せないため、未確定値として返ります（実値は -9223372036854775808）。",
+      "example": "using System;\nclass Program {\n    static void Main() {\nConsole.WriteLine(long.MinValue);\n    }\n}",
+      "source": "https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/builtin-types/integral-numeric-types"
+    }
+  },
+  {
+    "kind": "csharp",
+    "name": "ulong.MaxValue",
+    "supported": true,
+    "fields": {
+      "description": "ulong の最大値です。",
+      "returns": "ulong（未確定値として返ります）",
+      "caution": "モデルでは64ビット境界値を安全な整数として表せないため、未確定値として返ります（実値は 18446744073709551615）。",
+      "example": "using System;\nclass Program {\n    static void Main() {\nConsole.WriteLine(ulong.MaxValue);\n    }\n}",
+      "source": "https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/builtin-types/integral-numeric-types"
+    }
+  }
+]
