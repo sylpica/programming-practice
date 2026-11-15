@@ -1,0 +1,1402 @@
+[
+  {
+    "id": "autohotkey",
+    "name": "IsSetRef number",
+    "code": "x:=1\nMsgBox IsSetRef(&x)",
+    "model": {
+      "event": null,
+      "windows": [
+        {
+          "id": 1,
+          "title": "R7 Window A",
+          "exists": true,
+          "text": "present text"
+        },
+        {
+          "id": 2,
+          "title": "R7 Window B",
+          "exists": true,
+          "text": "present text"
+        }
+      ],
+      "activeId": 2
+    },
+    "app": {
+      "truncated": false,
+      "reasons": [],
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "MsgBox",
+              "text": "0",
+              "line": 2
+            }
+          ],
+          "vars": {
+            "x": 1
+          },
+          "model": {
+            "event": null,
+            "variables": {},
+            "windows": [
+              {
+                "id": 1,
+                "title": "R7 Window A",
+                "exists": true,
+                "text": "present text"
+              },
+              {
+                "id": 2,
+                "title": "R7 Window B",
+                "exists": true,
+                "text": "present text"
+              }
+            ],
+            "activeId": 2,
+            "mouse": {
+              "x": 0,
+              "y": 0
+            },
+            "keys": []
+          },
+          "trace": [
+            {
+              "line": 1,
+              "text": "x に 1 を代入します",
+              "kind": "step",
+              "refs": []
+            },
+            {
+              "line": 2,
+              "text": "メッセージを表示します",
+              "kind": "step",
+              "refs": [
+                "MsgBox",
+                "IsSetRef"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "id": "autohotkey",
+    "name": "IsSetRef string",
+    "code": "x:=\"\"\nMsgBox IsSetRef(&x)",
+    "model": {
+      "event": null,
+      "windows": [
+        {
+          "id": 1,
+          "title": "R7 Window A",
+          "exists": true,
+          "text": "present text"
+        },
+        {
+          "id": 2,
+          "title": "R7 Window B",
+          "exists": true,
+          "text": "present text"
+        }
+      ],
+      "activeId": 2
+    },
+    "app": {
+      "truncated": false,
+      "reasons": [],
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "MsgBox",
+              "text": "0",
+              "line": 2
+            }
+          ],
+          "vars": {
+            "x": ""
+          },
+          "model": {
+            "event": null,
+            "variables": {},
+            "windows": [
+              {
+                "id": 1,
+                "title": "R7 Window A",
+                "exists": true,
+                "text": "present text"
+              },
+              {
+                "id": 2,
+                "title": "R7 Window B",
+                "exists": true,
+                "text": "present text"
+              }
+            ],
+            "activeId": 2,
+            "mouse": {
+              "x": 0,
+              "y": 0
+            },
+            "keys": []
+          },
+          "trace": [
+            {
+              "line": 1,
+              "text": "x に  を代入します",
+              "kind": "step",
+              "refs": []
+            },
+            {
+              "line": 2,
+              "text": "メッセージを表示します",
+              "kind": "step",
+              "refs": [
+                "MsgBox",
+                "IsSetRef"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "id": "autohotkey",
+    "name": "IsSetRef no ref",
+    "code": "x:=[]\nMsgBox IsSetRef(x)",
+    "model": {
+      "event": null,
+      "windows": [
+        {
+          "id": 1,
+          "title": "R7 Window A",
+          "exists": true,
+          "text": "present text"
+        },
+        {
+          "id": 2,
+          "title": "R7 Window B",
+          "exists": true,
+          "text": "present text"
+        }
+      ],
+      "activeId": 2
+    },
+    "app": {
+      "truncated": false,
+      "reasons": [],
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "MsgBox",
+              "text": "1",
+              "line": 2
+            }
+          ],
+          "vars": {
+            "x": []
+          },
+          "model": {
+            "event": null,
+            "variables": {},
+            "windows": [
+              {
+                "id": 1,
+                "title": "R7 Window A",
+                "exists": true,
+                "text": "present text"
+              },
+              {
+                "id": 2,
+                "title": "R7 Window B",
+                "exists": true,
+                "text": "present text"
+              }
+            ],
+            "activeId": 2,
+            "mouse": {
+              "x": 0,
+              "y": 0
+            },
+            "keys": []
+          },
+          "trace": [
+            {
+              "line": 1,
+              "text": "x に [] を代入します",
+              "kind": "step",
+              "refs": []
+            },
+            {
+              "line": 2,
+              "text": "メッセージを表示します",
+              "kind": "step",
+              "refs": [
+                "MsgBox",
+                "IsSetRef"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "id": "autohotkey",
+    "name": "IsSetRef literal",
+    "code": "MsgBox IsSetRef(1)",
+    "model": {
+      "event": null,
+      "windows": [
+        {
+          "id": 1,
+          "title": "R7 Window A",
+          "exists": true,
+          "text": "present text"
+        },
+        {
+          "id": 2,
+          "title": "R7 Window B",
+          "exists": true,
+          "text": "present text"
+        }
+      ],
+      "activeId": 2
+    },
+    "app": {
+      "truncated": false,
+      "reasons": [],
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "MsgBox",
+              "text": "0",
+              "line": 1
+            }
+          ],
+          "vars": {},
+          "model": {
+            "event": null,
+            "variables": {},
+            "windows": [
+              {
+                "id": 1,
+                "title": "R7 Window A",
+                "exists": true,
+                "text": "present text"
+              },
+              {
+                "id": 2,
+                "title": "R7 Window B",
+                "exists": true,
+                "text": "present text"
+              }
+            ],
+            "activeId": 2,
+            "mouse": {
+              "x": 0,
+              "y": 0
+            },
+            "keys": []
+          },
+          "trace": [
+            {
+              "line": 1,
+              "text": "メッセージを表示します",
+              "kind": "step",
+              "refs": [
+                "MsgBox",
+                "IsSetRef"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "id": "autohotkey",
+    "name": "for break",
+    "code": "n:=0\nfor v in [10,20,30] {\n n+=1\n break\n}\nMsgBox n",
+    "model": {
+      "event": null,
+      "windows": [
+        {
+          "id": 1,
+          "title": "R7 Window A",
+          "exists": true,
+          "text": "present text"
+        },
+        {
+          "id": 2,
+          "title": "R7 Window B",
+          "exists": true,
+          "text": "present text"
+        }
+      ],
+      "activeId": 2
+    },
+    "app": {
+      "truncated": false,
+      "reasons": [],
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "MsgBox",
+              "text": "3",
+              "line": 6
+            }
+          ],
+          "vars": {
+            "n": 3,
+            "v": 30
+          },
+          "model": {
+            "event": null,
+            "variables": {},
+            "windows": [
+              {
+                "id": 1,
+                "title": "R7 Window A",
+                "exists": true,
+                "text": "present text"
+              },
+              {
+                "id": 2,
+                "title": "R7 Window B",
+                "exists": true,
+                "text": "present text"
+              }
+            ],
+            "activeId": 2,
+            "mouse": {
+              "x": 0,
+              "y": 0
+            },
+            "keys": []
+          },
+          "trace": [
+            {
+              "line": 1,
+              "text": "n に 0 を代入します",
+              "kind": "step",
+              "refs": []
+            },
+            {
+              "line": 2,
+              "text": "繰り返し 1回目",
+              "kind": "step",
+              "refs": [
+                "for"
+              ]
+            },
+            {
+              "line": 3,
+              "text": "n に 1 を代入します",
+              "kind": "step",
+              "refs": []
+            },
+            {
+              "line": 4,
+              "text": "ループを抜けます",
+              "kind": "step",
+              "refs": [
+                "break"
+              ]
+            },
+            {
+              "line": 2,
+              "text": "繰り返し 2回目",
+              "kind": "step",
+              "refs": [
+                "for"
+              ]
+            },
+            {
+              "line": 3,
+              "text": "n に 2 を代入します",
+              "kind": "step",
+              "refs": []
+            },
+            {
+              "line": 4,
+              "text": "ループを抜けます",
+              "kind": "step",
+              "refs": [
+                "break"
+              ]
+            },
+            {
+              "line": 2,
+              "text": "繰り返し 3回目",
+              "kind": "step",
+              "refs": [
+                "for"
+              ]
+            },
+            {
+              "line": 3,
+              "text": "n に 3 を代入します",
+              "kind": "step",
+              "refs": []
+            },
+            {
+              "line": 4,
+              "text": "ループを抜けます",
+              "kind": "step",
+              "refs": [
+                "break"
+              ]
+            },
+            {
+              "line": 6,
+              "text": "メッセージを表示します",
+              "kind": "step",
+              "refs": [
+                "MsgBox"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "id": "autohotkey",
+    "name": "for continue",
+    "code": "n:=0\nfor v in [10,20,30] {\n n+=1\n continue\n}\nMsgBox n",
+    "model": {
+      "event": null,
+      "windows": [
+        {
+          "id": 1,
+          "title": "R7 Window A",
+          "exists": true,
+          "text": "present text"
+        },
+        {
+          "id": 2,
+          "title": "R7 Window B",
+          "exists": true,
+          "text": "present text"
+        }
+      ],
+      "activeId": 2
+    },
+    "app": {
+      "truncated": false,
+      "reasons": [],
+      "paths": [
+        {
+          "outputs": [],
+          "vars": {
+            "n": 1,
+            "v": 10
+          },
+          "model": {
+            "event": null,
+            "variables": {},
+            "windows": [
+              {
+                "id": 1,
+                "title": "R7 Window A",
+                "exists": true,
+                "text": "present text"
+              },
+              {
+                "id": 2,
+                "title": "R7 Window B",
+                "exists": true,
+                "text": "present text"
+              }
+            ],
+            "activeId": 2,
+            "mouse": {
+              "x": 0,
+              "y": 0
+            },
+            "keys": []
+          },
+          "trace": [
+            {
+              "line": 1,
+              "text": "n に 0 を代入します",
+              "kind": "step",
+              "refs": []
+            },
+            {
+              "line": 2,
+              "text": "繰り返し 1回目",
+              "kind": "step",
+              "refs": [
+                "for"
+              ]
+            },
+            {
+              "line": 3,
+              "text": "n に 1 を代入します",
+              "kind": "step",
+              "refs": []
+            },
+            {
+              "line": 4,
+              "text": "次の繰り返しへ進みます",
+              "kind": "step",
+              "refs": [
+                "continue"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "id": "autohotkey",
+    "name": "for object",
+    "code": "n:=0\nfor k,v in {a:1,b:2} {\n n+=v\n}\nMsgBox n",
+    "model": {
+      "event": null,
+      "windows": [
+        {
+          "id": 1,
+          "title": "R7 Window A",
+          "exists": true,
+          "text": "present text"
+        },
+        {
+          "id": 2,
+          "title": "R7 Window B",
+          "exists": true,
+          "text": "present text"
+        }
+      ],
+      "activeId": 2
+    },
+    "app": {
+      "truncated": false,
+      "reasons": [],
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "MsgBox",
+              "text": "3",
+              "line": 5
+            }
+          ],
+          "vars": {
+            "n": 3,
+            "k": "b",
+            "v": 2
+          },
+          "model": {
+            "event": null,
+            "variables": {},
+            "windows": [
+              {
+                "id": 1,
+                "title": "R7 Window A",
+                "exists": true,
+                "text": "present text"
+              },
+              {
+                "id": 2,
+                "title": "R7 Window B",
+                "exists": true,
+                "text": "present text"
+              }
+            ],
+            "activeId": 2,
+            "mouse": {
+              "x": 0,
+              "y": 0
+            },
+            "keys": []
+          },
+          "trace": [
+            {
+              "line": 1,
+              "text": "n に 0 を代入します",
+              "kind": "step",
+              "refs": []
+            },
+            {
+              "line": 2,
+              "text": "繰り返し 1回目",
+              "kind": "step",
+              "refs": [
+                "for"
+              ]
+            },
+            {
+              "line": 3,
+              "text": "n に 1 を代入します",
+              "kind": "step",
+              "refs": []
+            },
+            {
+              "line": 2,
+              "text": "繰り返し 2回目",
+              "kind": "step",
+              "refs": [
+                "for"
+              ]
+            },
+            {
+              "line": 3,
+              "text": "n に 3 を代入します",
+              "kind": "step",
+              "refs": []
+            },
+            {
+              "line": 5,
+              "text": "メッセージを表示します",
+              "kind": "step",
+              "refs": [
+                "MsgBox"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "id": "autohotkey",
+    "name": "float concat",
+    "code": "x:=1.0 . \"\"\nMsgBox x\nMsgBox (x == \"1.0\")",
+    "model": {
+      "event": null,
+      "windows": [
+        {
+          "id": 1,
+          "title": "R7 Window A",
+          "exists": true,
+          "text": "present text"
+        },
+        {
+          "id": 2,
+          "title": "R7 Window B",
+          "exists": true,
+          "text": "present text"
+        }
+      ],
+      "activeId": 2
+    },
+    "app": {
+      "truncated": false,
+      "reasons": [],
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "MsgBox",
+              "text": "1",
+              "line": 2
+            },
+            {
+              "channel": "MsgBox",
+              "text": "0",
+              "line": 3
+            }
+          ],
+          "vars": {
+            "x": "1"
+          },
+          "model": {
+            "event": null,
+            "variables": {},
+            "windows": [
+              {
+                "id": 1,
+                "title": "R7 Window A",
+                "exists": true,
+                "text": "present text"
+              },
+              {
+                "id": 2,
+                "title": "R7 Window B",
+                "exists": true,
+                "text": "present text"
+              }
+            ],
+            "activeId": 2,
+            "mouse": {
+              "x": 0,
+              "y": 0
+            },
+            "keys": []
+          },
+          "trace": [
+            {
+              "line": 1,
+              "text": "x に 1 を代入します",
+              "kind": "step",
+              "refs": []
+            },
+            {
+              "line": 2,
+              "text": "メッセージを表示します",
+              "kind": "step",
+              "refs": [
+                "MsgBox"
+              ]
+            },
+            {
+              "line": 3,
+              "text": "メッセージを表示します",
+              "kind": "step",
+              "refs": [
+                "MsgBox"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "id": "autohotkey",
+    "name": "Sleep type",
+    "code": "Sleep \"bad\"\nMsgBox \"AFTER\"",
+    "model": {
+      "event": null,
+      "windows": [
+        {
+          "id": 1,
+          "title": "R7 Window A",
+          "exists": true,
+          "text": "present text"
+        },
+        {
+          "id": 2,
+          "title": "R7 Window B",
+          "exists": true,
+          "text": "present text"
+        }
+      ],
+      "activeId": 2
+    },
+    "app": {
+      "truncated": false,
+      "reasons": [],
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "MsgBox",
+              "text": "AFTER",
+              "line": 2
+            }
+          ],
+          "vars": {},
+          "model": {
+            "event": null,
+            "variables": {},
+            "windows": [
+              {
+                "id": 1,
+                "title": "R7 Window A",
+                "exists": true,
+                "text": "present text"
+              },
+              {
+                "id": 2,
+                "title": "R7 Window B",
+                "exists": true,
+                "text": "present text"
+              }
+            ],
+            "activeId": 2,
+            "mouse": {
+              "x": 0,
+              "y": 0
+            },
+            "keys": []
+          },
+          "trace": [
+            {
+              "line": 1,
+              "text": "badミリ秒の待機を説明します",
+              "kind": "step",
+              "refs": [
+                "Sleep"
+              ]
+            },
+            {
+              "line": 2,
+              "text": "メッセージを表示します",
+              "kind": "step",
+              "refs": [
+                "MsgBox"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "id": "autohotkey",
+    "name": "Sleep excess",
+    "code": "Sleep 0,0\nMsgBox \"AFTER\"",
+    "model": {
+      "event": null,
+      "windows": [
+        {
+          "id": 1,
+          "title": "R7 Window A",
+          "exists": true,
+          "text": "present text"
+        },
+        {
+          "id": 2,
+          "title": "R7 Window B",
+          "exists": true,
+          "text": "present text"
+        }
+      ],
+      "activeId": 2
+    },
+    "app": {
+      "truncated": false,
+      "reasons": [],
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "MsgBox",
+              "text": "AFTER",
+              "line": 2
+            }
+          ],
+          "vars": {},
+          "model": {
+            "event": null,
+            "variables": {},
+            "windows": [
+              {
+                "id": 1,
+                "title": "R7 Window A",
+                "exists": true,
+                "text": "present text"
+              },
+              {
+                "id": 2,
+                "title": "R7 Window B",
+                "exists": true,
+                "text": "present text"
+              }
+            ],
+            "activeId": 2,
+            "mouse": {
+              "x": 0,
+              "y": 0
+            },
+            "keys": []
+          },
+          "trace": [
+            {
+              "line": 1,
+              "text": "0ミリ秒の待機を説明します",
+              "kind": "step",
+              "refs": [
+                "Sleep"
+              ]
+            },
+            {
+              "line": 2,
+              "text": "メッセージを表示します",
+              "kind": "step",
+              "refs": [
+                "MsgBox"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "id": "autohotkey",
+    "name": "SendText excess",
+    "code": "SendText \"x\",\"y\"",
+    "model": {
+      "event": null,
+      "windows": [
+        {
+          "id": 1,
+          "title": "R7 Window A",
+          "exists": true,
+          "text": "present text"
+        },
+        {
+          "id": 2,
+          "title": "R7 Window B",
+          "exists": true,
+          "text": "present text"
+        }
+      ],
+      "activeId": 2
+    },
+    "app": {
+      "truncated": false,
+      "reasons": [],
+      "paths": [
+        {
+          "outputs": [],
+          "vars": {},
+          "model": {
+            "event": null,
+            "variables": {},
+            "windows": [
+              {
+                "id": 1,
+                "title": "R7 Window A",
+                "exists": true,
+                "text": "present text"
+              },
+              {
+                "id": 2,
+                "title": "R7 Window B",
+                "exists": true,
+                "text": "present textx",
+                "selectionAll": false
+              }
+            ],
+            "activeId": 2,
+            "mouse": {
+              "x": 0,
+              "y": 0
+            },
+            "keys": [
+              {
+                "windowId": 2,
+                "mode": "SendText",
+                "value": "x"
+              }
+            ]
+          },
+          "trace": [
+            {
+              "line": 1,
+              "text": "「R7 Window B」へ x を入力します",
+              "kind": "step",
+              "refs": [
+                "SendText"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "id": "autohotkey",
+    "name": "SetTitleMatchMode excess",
+    "code": "MsgBox SetTitleMatchMode(2,3)",
+    "model": {
+      "event": null,
+      "windows": [
+        {
+          "id": 1,
+          "title": "R7 Window A",
+          "exists": true,
+          "text": "present text"
+        },
+        {
+          "id": 2,
+          "title": "R7 Window B",
+          "exists": true,
+          "text": "present text"
+        }
+      ],
+      "activeId": 2
+    },
+    "app": {
+      "truncated": false,
+      "reasons": [],
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "MsgBox",
+              "text": "2",
+              "line": 1
+            }
+          ],
+          "vars": {},
+          "model": {
+            "event": null,
+            "variables": {},
+            "windows": [
+              {
+                "id": 1,
+                "title": "R7 Window A",
+                "exists": true,
+                "text": "present text"
+              },
+              {
+                "id": 2,
+                "title": "R7 Window B",
+                "exists": true,
+                "text": "present text"
+              }
+            ],
+            "activeId": 2,
+            "mouse": {
+              "x": 0,
+              "y": 0
+            },
+            "keys": [],
+            "titleMatchMode": 2
+          },
+          "trace": [
+            {
+              "line": 1,
+              "text": "メッセージを表示します",
+              "kind": "step",
+              "refs": [
+                "MsgBox",
+                "SetTitleMatchMode"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "id": "autohotkey",
+    "name": "InputBox excess",
+    "code": "x:=InputBox(\"p\",\"t\",\"\",\"d\",\"extra\")\nMsgBox \"AFTER\"",
+    "model": {
+      "event": null,
+      "windows": [
+        {
+          "id": 1,
+          "title": "R7 Window A",
+          "exists": true,
+          "text": "present text"
+        },
+        {
+          "id": 2,
+          "title": "R7 Window B",
+          "exists": true,
+          "text": "present text"
+        }
+      ],
+      "activeId": 2
+    },
+    "app": {
+      "truncated": false,
+      "reasons": [],
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "MsgBox",
+              "text": "AFTER",
+              "line": 2
+            }
+          ],
+          "vars": {
+            "x": {
+              "Value": {
+                "kind": "unknown",
+                "source": "InputBoxの入力",
+                "id": "InputBoxの入力-1"
+              },
+              "Result": {
+                "kind": "unknown",
+                "source": "InputBoxの確定／キャンセル",
+                "id": "InputBoxの確定／キャンセル"
+              }
+            }
+          },
+          "model": {
+            "event": null,
+            "variables": {},
+            "windows": [
+              {
+                "id": 1,
+                "title": "R7 Window A",
+                "exists": true,
+                "text": "present text"
+              },
+              {
+                "id": 2,
+                "title": "R7 Window B",
+                "exists": true,
+                "text": "present text"
+              }
+            ],
+            "activeId": 2,
+            "mouse": {
+              "x": 0,
+              "y": 0
+            },
+            "keys": []
+          },
+          "trace": [
+            {
+              "line": 1,
+              "text": "x に Value: 実行時に決まる：InputBoxの入力\nResult: 実行時に決まる：InputBoxの確定／キャンセル を代入します",
+              "kind": "step",
+              "refs": [
+                "InputBox"
+              ]
+            },
+            {
+              "line": 2,
+              "text": "メッセージを表示します",
+              "kind": "step",
+              "refs": [
+                "MsgBox"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "id": "autohotkey",
+    "name": "WinActive overlapping",
+    "code": "MsgBox (WinActive(\"R7 Window\") > 0)",
+    "model": {
+      "event": null,
+      "windows": [
+        {
+          "id": 1,
+          "title": "R7 Window A",
+          "exists": true,
+          "text": "present text"
+        },
+        {
+          "id": 2,
+          "title": "R7 Window B",
+          "exists": true,
+          "text": "present text"
+        }
+      ],
+      "activeId": 2
+    },
+    "app": {
+      "truncated": false,
+      "reasons": [],
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "MsgBox",
+              "text": "0",
+              "line": 1
+            }
+          ],
+          "vars": {},
+          "model": {
+            "event": null,
+            "variables": {},
+            "windows": [
+              {
+                "id": 1,
+                "title": "R7 Window A",
+                "exists": true,
+                "text": "present text"
+              },
+              {
+                "id": 2,
+                "title": "R7 Window B",
+                "exists": true,
+                "text": "present text"
+              }
+            ],
+            "activeId": 2,
+            "mouse": {
+              "x": 0,
+              "y": 0
+            },
+            "keys": []
+          },
+          "trace": [
+            {
+              "line": 1,
+              "text": "メッセージを表示します",
+              "kind": "step",
+              "refs": [
+                "MsgBox",
+                "WinActive"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "id": "autohotkey",
+    "name": "WinExist text",
+    "code": "MsgBox WinExist(\"R7 Window\",\"absent text\")",
+    "model": {
+      "event": null,
+      "windows": [
+        {
+          "id": 1,
+          "title": "R7 Window A",
+          "exists": true,
+          "text": "present text"
+        },
+        {
+          "id": 2,
+          "title": "R7 Window B",
+          "exists": true,
+          "text": "present text"
+        }
+      ],
+      "activeId": 2
+    },
+    "app": {
+      "truncated": false,
+      "reasons": [],
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "MsgBox",
+              "text": "1",
+              "line": 1
+            }
+          ],
+          "vars": {},
+          "model": {
+            "event": null,
+            "variables": {},
+            "windows": [
+              {
+                "id": 1,
+                "title": "R7 Window A",
+                "exists": true,
+                "text": "present text"
+              },
+              {
+                "id": 2,
+                "title": "R7 Window B",
+                "exists": true,
+                "text": "present text"
+              }
+            ],
+            "activeId": 2,
+            "mouse": {
+              "x": 0,
+              "y": 0
+            },
+            "keys": []
+          },
+          "trace": [
+            {
+              "line": 1,
+              "text": "メッセージを表示します",
+              "kind": "step",
+              "refs": [
+                "MsgBox",
+                "WinExist"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "id": "autohotkey",
+    "name": "LastFound",
+    "code": "x:=WinExist(\"R7 Window B\")\nMsgBox (WinExist()=x)",
+    "model": {
+      "event": null,
+      "windows": [
+        {
+          "id": 1,
+          "title": "R7 Window A",
+          "exists": true,
+          "text": "present text"
+        },
+        {
+          "id": 2,
+          "title": "R7 Window B",
+          "exists": true,
+          "text": "present text"
+        }
+      ],
+      "activeId": 2
+    },
+    "app": {
+      "truncated": false,
+      "reasons": [],
+      "paths": [
+        {
+          "outputs": [
+            {
+              "channel": "MsgBox",
+              "text": "0",
+              "line": 2
+            }
+          ],
+          "vars": {
+            "x": 2
+          },
+          "model": {
+            "event": null,
+            "variables": {},
+            "windows": [
+              {
+                "id": 1,
+                "title": "R7 Window A",
+                "exists": true,
+                "text": "present text"
+              },
+              {
+                "id": 2,
+                "title": "R7 Window B",
+                "exists": true,
+                "text": "present text"
+              }
+            ],
+            "activeId": 2,
+            "mouse": {
+              "x": 0,
+              "y": 0
+            },
+            "keys": []
+          },
+          "trace": [
+            {
+              "line": 1,
+              "text": "x に 2 を代入します",
+              "kind": "step",
+              "refs": [
+                "WinExist"
+              ]
+            },
+            {
+              "line": 2,
+              "text": "メッセージを表示します",
+              "kind": "step",
+              "refs": [
+                "MsgBox",
+                "WinExist"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  }
+]

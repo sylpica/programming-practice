@@ -16,10 +16,10 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Measure R repetition boundary on Windows
-        run: python audit-probes/step3/performance.py
+      - name: Check independent AutoHotkey boundaries on Windows
+        run: python audit-probes/step4/native-ahk.py
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: codex-r7-native-evidence
-          path: audit-probes/step3/results*.json
+          path: audit-probes/step4/results*.json
