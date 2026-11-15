@@ -186,13 +186,15 @@ test("fc-shell SH-P5 assignment does not overwrite the last pipeline value", () 
   assert.deepEqual(lastPipelineGroup(inc), ["9"]);
 });
 
-// ---------- SH-P6: foreach と $null ----------
-test("fc-shell SH-P6 foreach over $null runs once, over @() zero times", () => {
+// ---------- SH-P6 → RG-164 で裁定是正: foreach と $null ----------
+// SH-P6 は「foreach は $null を1回実行する」としたが、言語仕様 §8.4.4 と
+// Windows CI の実 pwsh（"0"）により誤りと確定。$null は0回が正しい。
+test("fc-shell SH-P6 (corrected by RG-164) foreach over $null runs zero times, over @() zero times", () => {
   const overNull = runPs(
     'foreach ($n in $null) { Write-Output "iter" }\nWrite-Output "END"',
   );
   assert.deepEqual(errors(overNull), []);
-  assert.deepEqual(outPs(overNull), [["iter", "END"]]);
+  assert.deepEqual(outPs(overNull), [["END"]]);
   const overEmpty = runPs(
     'foreach ($n in @()) { Write-Output "iter" }\nWrite-Output "END"',
   );
@@ -202,7 +204,7 @@ test("fc-shell SH-P6 foreach over $null runs once, over @() zero times", () => {
   const overVar = runPs(
     '$x = $null\nforeach ($n in $x) { Write-Output "iter" }\nWrite-Output "END"',
   );
-  assert.deepEqual(outPs(overVar), [["iter", "END"]]);
+  assert.deepEqual(outPs(overVar), [["END"]]);
 });
 
 // ---------- SH-P7: 範囲添字 ----------

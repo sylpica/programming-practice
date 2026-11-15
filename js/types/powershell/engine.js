@@ -1625,19 +1625,31 @@ export function simulatePowerShell(source, model, limits) {
         const evaluated = [];
         for (const st of active)
           for (const r of pipeline(n.collection, st, api)) {
-            // SH-P6: $null に対する foreach は変数を $null として1回実行する
-            // （about_Foreach）。空配列 @() の0回と区別するため、式の値そのもの
-            // （expressionValue）で判定する。出力なし（AutomationNull）も
-            // 代入すると $null になるため $null と同じ1回にする。
+            // RG-164（SH-P6 の裁定を是正）: foreach 文が指定するコレクションが
+            // $null のときは 0 要素として扱い、本体を1回も実行しない
+            // （PowerShell 言語仕様 §8.4.4「$null は 0 要素のコレクション
+            // として扱われる」）。$null 以外のスカラーは1要素、配列は要素
+            // ごと（$null 要素を含む）。式の値そのもの（expressionValue）で
+            // 判定するのは、@($null) のような明示的な配列と素の $null を
+            // 区別するため。出力なし（AutomationNull）も $null と同じ0回。
+            // コマンドの収集結果が単一の $null の場合も、パイプラインが
+            // 指定する値は $null なので0回にする。パイプライン側
+            // （ForEach-Object への入力列挙）は非対称で、$null は
+            // 1オブジェクトとして渡る（そちらは変更しない）。
             let items;
             if (Object.hasOwn(r, "expressionValue")) {
               const ev = r.expressionValue;
               items = Array.isArray(ev)
                 ? r.values
-                : ev === undefined
-                  ? [null]
+                : ev === null || ev === undefined
+                  ? []
                   : [ev];
-            } else items = r.values;
+            } else
+              items =
+                r.values.length === 1 &&
+                (r.values[0] === null || r.values[0] === undefined)
+                  ? []
+                  : r.values;
             r.s.ps.loops.push({ items, index: 0 });
             evaluated.push(r.s);
           }

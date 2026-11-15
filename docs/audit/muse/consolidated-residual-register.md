@@ -787,3 +787,17 @@
 - **RG-161 R／JavaScript の関数挙動と文面正確性**（13件：R-01、R-02、JS-01、R23-N4、RA-40〜RA-48）：R-02 と RA-42 は同一欠陥（$ 部分一致）として一体処置。R の数値条件停止、17関数の Usage 裁定（R23-N4）を含む。実機 R での再確認は未実施（公式ドキュメントで裁定）。→ 実装＋文面
 - **RG-162 フロー系の宣言済み表面と文面正確性**（24件：declared D-1〜D-6、R23-N3、RA-23〜RA-28、RA-53〜RA-63）：Power Fx の単一引用符文字列（R23-N3）を tokenize の fx 限定分岐で是正。番号対応の訂正：RA-59＝Power Automate 出典アンカー切れ、RA-60＝Power Automate の End（findings-refacc 原文の定義が正本）。→ 実装＋文面
 - **RG-163 AutoHotkey 文面正確性**（4件：RA-49〜RA-52）：全件を文面側で処置（モデルの制限は直さず差異として開示）。兄弟表面2件（A_TitleMatchMode の例外明記、IsSet caution と A_Loop* の整合）も一掃。→ 文面
+
+## 2026-11-15 Muse 修正による処置結果（第9バッチ：CI 実シェル照合の是正・1件）
+
+修正バッチ2の配信（コミット 8b0abc2）の GitHub Actions ラン #22 は validate ジョブ（npm test＋native-audit）が成功した一方、validate-shells ジョブが失敗した。失敗ステップ「Compare shell cases with real PowerShell and cmd」（`python tests/shell-native-audit.py --require-both`）の AssertionError は `[["null foreach scalar", ["0"], ["1"]]]` の1件のみで、アサーション形式（name, 実シェルの実測, フィクスチャ期待値）から、実 PowerShell が "0"、シミュレータ側（フィクスチャ期待値）が "1" と確定した。根本原因は修正バッチ2の SH-P6 裁定そのもの：funcheck の SH-P6 が about_Foreach を根拠に「foreach は $null を1回実行する」と裁定し、エンジンとフィクスチャ期待値の両方を1回実行へ変更していたが、これは about_Automatic_Variables の「コレクションに含まれる $null は1オブジェクトとして数える」「$null を ForEach-Object へパイプすると値が生成される」という、要素として・パイプライン側の記述を foreach 文へ取り違えたものであった。正本である PowerShell 言語仕様 §8.4.4 は「pipeline が $null を指定する場合、0要素のコレクションとして扱われる（$null 以外のスカラーは1要素）」と定めており、実シェルとも一致する。バッチ2以前のフィクスチャ期待値も "0" であった。新設は **RG-164 の1グループ**。
+
+- テスト：2,494件 → **2,500件**（回帰テスト6件を `tests/muse-fix-ci3.test.js` に追加。欠陥側だった SH-P6 の単体テスト1件の期待値と、フィクスチャ `null foreach scalar` の期待値 "1"→"0" も是正）。全件実行で **2,500件全件合格**。
+- native-audit.py（dotnet を含む全範囲、標準入力 EOF）：exit 0、checks 303、C# 59件全件実行・スキップ0、all_passed true。
+- precache は全変更の最後に再生成し `--check` 通過。
+- 累計：元項目 **954件**（953＋1）、統合 **164グループ**（RG-01〜RG-164）。
+- 修正報告書：`docs/audit/MUSE-FIX-CI3.md`。
+
+### CI 照合で新設された群（RG-164）
+
+- **RG-164 PowerShell foreach 文の $null コレクション意味論の是正**（1件）：`js/types/powershell/engine.js` の foreach 文は、コレクション式の値（expressionValue）が $null（または出力なし＝AutomationNull）のとき、$null を1要素として包んで本体を1回実行していた（SH-P6）。実 PowerShell では0回であり、ループ変数へ $null が代入されて既存値を壊す二次的な誤りも伴った。是正は foreach 文の要素計算に限定した：(1) 式が指定する値が $null／undefined のとき要素を空にする（$null リテラル、$null を保持する変数、未定義変数、括弧式、$null を返す関数呼び出し式がすべて0回になる）。(2) コマンドの収集結果が単一の $null のときも、パイプラインが指定する値は $null なので0回にする（@($null) を返す関数はパイプラインで展開され単一の $null 出力になるため0回、明示式 @($null) と @(F) は配列として1回を維持）。$null 以外のスカラー（0／$false／空文字列／ハッシュテーブルを含む）は1要素、配列は要素ごと（$null 要素を含む）の従来挙動は不変。パイプライン側の列挙（$null は ForEach-Object へ1オブジェクトとして渡る）は言語仕様上の非対称として変更していない。兄弟表面は foreach 文の全入口形状（リテラル／変数／未定義変数／括弧／関数返値の各形状／@() 包み）と、パイプライン側（ForEach-Object／Where-Object の $null 入力、@()／スカラー入力、$null.Count／@($null).Count）を全数プローブし、ずれは foreach 文側のみであることを確認した。単項カンマ `,@($null)` は従来どおり未対応の構文として正直に停止する表面であり、本件の根（$null 意味論）とは別のため対象外とした。フィクスチャ期待値の "1"→"0" は照合の弱体化ではなく、バッチ2で誤って変更された期待値を、言語仕様・実シェル実測・バッチ2以前の期待値の三者に一致する正値へ戻す是正である（`tests/shell-native-audit.py` 自体は無変更）。→ 実装＋照合期待値の是正
