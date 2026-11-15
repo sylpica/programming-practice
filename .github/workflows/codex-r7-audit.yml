@@ -18,7 +18,9 @@ jobs:
           python-version: '3.12'
       - name: Execute independent cases
         run: python audit-probes/native.py
+      - name: Check AHK and dotnet semantics
+        run: python audit-probes/extra.py
       - uses: actions/upload-artifact@v4
         with:
           name: codex-r7-native-evidence
-          path: audit-probes/results.json
+          path: audit-probes/results*.json
