@@ -185,7 +185,5 @@
   ["float modulo by zero", "Write-Output (5.5 % 0)", [["NaN"]]],
   ["quoted member name", "$h=@{k=10}\nWrite-Output ($h.'k')", [["10"]]],
   ["variable member name", "$n='k'\n$h=@{k=10}\nWrite-Output ($h.$n)", [["10"]]],
-  ["string increment converts to number", "$s='5'\n$s++\nWrite-Output $s", [["6"]]],
-  ["bare parameter attribute", "function f { param([Parameter] $x) $x }\nf 42", [["42"]]],
   ["ternary operator", "Write-Output ($true ? 1 : 2)\nWrite-Output ($false ? 1 : 2)", [["1", "2"]]]
 ]

@@ -1038,22 +1038,19 @@ export function simulatePowerShell(source, model, limits) {
           ? scalar(values[0].values)
           : undefined;
     }
-    // R28-N4: ++／-- の評価。++ は about_Assignment_Operators のとおり
-    // 「数値であるか、数値へ変換可能でなければならない」演算であり、
-    // 文字列の代入先では数値へ変換してから増やす（'5'++ → 6）。
-    // 通常の + 演算は文字列では連結になる（$s += 1 の '51' は実物
-    // どおり）ため、文字列の場合だけ -- と同じ数値変換経路を通す。
-    // 変換できない文字列（'abc'・''）は変換エラーで止まる。
+    // CI是正（RG-262 予定、旧 R28-N4／RG-242 の裁定を是正）: ++／-- の
+    // 評価。実 PowerShell では、文字列への ++／-- は保持値によらず
+    // （数値文字列 '5' でも）演算子エラーで停止する（CI validate-shells
+    // の実測: "The '++' operator works only on numbers. The operand is
+    // a 'System.String'."、出力なし）。旧裁定の「数値へ変換して増やす」
+    // （'5'++ → 6）も、R28-N4 の元の所見の「文字列連結になる」も実物
+    // とは異なるため、保持値が文字列なら値の変換を試みず、演算子を
+    // 名指してエラーで止める。判定は保持値の型だけで行う（型付きで
+    // 束縛され代入時に数値へ変換済みの保持値は数値として扱う）。
+    // 通常の + 演算の文字列連結（$s += 1 の '51'）は実物どおり不変。
     function incDec(v, op, s, n, api) {
-      if (op === "++" && typeof v === "string") {
-        const updated = numeric(v, n) + 1;
-        if (
-          !Number.isFinite(updated) ||
-          (Number.isInteger(updated) && !Number.isSafeInteger(updated))
-        )
-          fail("未確認：PowerShell演算のモデル数値範囲外", n.line, "未確認");
-        return updated;
-      }
+      if (typeof v === "string")
+        fail(op + "演算子は文字列には使えません", n.line, "RuntimeException");
       return binary(op === "++" ? "+" : "-", v, 1, s, n, api);
     }
     function read(a, s, api) {
@@ -1246,6 +1243,43 @@ export function simulatePowerShell(source, model, limits) {
           return rounded;
         }
         if (type === "double") return numeric(v, a);
+        // RG-263（CI是正）: 既知の属性名に対応する型への変換。括弧なし
+        // [Parameter] 等が型制約として保持された場合（parser 参照）、
+        // 実 PowerShell はその属性型（〜Attribute）への変換として
+        // 束縛・キャストを行い、$null はそのまま $null、非 $null の
+        // 値は引数変換エラーで停止する（CI validate-shells 実測：
+        // "Cannot convert the "42" value ... to type
+        // "System.Management.Automation.ParameterAttribute"."）。
+        // パラメータ束縛はこのキャスト評価を経由するため、束縛経路と
+        // 単独キャスト式の両方が実物どおりの規則で裁定される。
+        const attrFullName = {
+          parameter: "System.Management.Automation.ParameterAttribute",
+          validatenotnull:
+            "System.Management.Automation.ValidateNotNullAttribute",
+          validatenotnullorempty:
+            "System.Management.Automation.ValidateNotNullOrEmptyAttribute",
+          validatenotnullorwhitespace:
+            "System.Management.Automation.ValidateNotNullOrWhitespaceAttribute",
+          allownull: "System.Management.Automation.AllowNullAttribute",
+          allowemptystring:
+            "System.Management.Automation.AllowEmptyStringAttribute",
+          allowemptycollection:
+            "System.Management.Automation.AllowEmptyCollectionAttribute",
+          cmdletbinding: "System.Management.Automation.CmdletBindingAttribute",
+        }[type.split(".").at(-1).replace(/attribute$/, "")];
+        if (attrFullName) {
+          if (v === null || v === undefined) return null;
+          if (isUnknown(v))
+            fail("未確認：型変換の入力が確定していません", a.line, "未確認");
+          fail(
+            "引数変換エラー：値を " +
+              attrFullName +
+              " へ変換できません：" +
+              psFormat(v),
+            a.line,
+            "ParameterBindingException",
+          );
+        }
         fail("未対応の型変換：[" + a.type + "]", a.line);
       }
       if (a.k === "member")

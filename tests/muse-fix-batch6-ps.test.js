@@ -139,10 +139,14 @@ test("batch6-ps R27-N3 literal increment/decrement names the assignment target f
     const r = expectErr(code, /代入先が不正です/, /数値へ変換できません/);
     assert.doesNotMatch(errors(r)[0].message, HOST_TEXT, code);
   }
-  // 変換可能な文字列変数への後置 -- は従来どおり動作する（対照）
-  expectOut("$x = '5'\n$y = $x--\nWrite-Output $y\nWrite-Output $x", [
-    ["5", "4"],
-  ]);
+  // CI是正（RG-262 予定）の波及是正: 旧対照は「変換可能な文字列変数への
+  // 後置 -- は数値として動作する」としていたが、実 PowerShell は文字列
+  // への -- を保持値によらず演算子エラーにするため、対照をエラー側へ
+  // 書き換える（数値変数への後置 -- の対照は batch7 R28-N4 側に残る）。
+  expectErr(
+    "$x = '5'\n$y = $x--\nWrite-Output $y\nWrite-Output $x",
+    /--演算子は文字列には使えません/,
+  );
 });
 
 // ---------- R27-N4: 角括弧の内容全体を読む ----------

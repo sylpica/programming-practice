@@ -1,9 +1,9 @@
 // 修正バッチ7・PowerShell班の回帰テスト。
 // 対象: R28-N2（メンバーアクセス直後に接着した「/」＋数値が黙って $null 化／
 // 誤値化する）／R28-N3（浮動小数点の 0 除算・0 剰余が虚偽原因で停止する）／
-// R28-N4（文字列型の代入先への ++ が文字列連結になる）／
+// R28-N4（文字列への ++／-- は CI是正・RG-262 予定で演算子エラーへ再裁定）／
 // R28-N5（引用符付き／変数メンバー名が「プロパティ名が必要です」で停止する）／
-// R28-N6（括弧なし属性 [Parameter] が型キャストとして誤帰属される）／
+// R28-N6（括弧なし属性 [Parameter] の解釈。RG-263 の CI是正で実測に合わせて撤回済み）／
 // R28-N7（三項演算子が「) が必要です」で停止する）。
 // 一次情報: PowerShell 言語仕様 Appendix A 文法 B.1.10（simple-name の構成
 // 文字）・B.2（member-name: simple-name／string-literal／
@@ -109,27 +109,44 @@ test("batch7-ps R28-N3 floating point division and modulo by zero follow IEEE 75
   expectOut("Write-Output (5/2)", [["2.5"]]);
 });
 
-// ---------- R28-N4: 文字列への ++ は数値増加（連結ではない） ----------
-test("batch7-ps R28-N4 increment of a numeric string converts to a number", () => {
-  expectOut("$s = '5'\n$s++\nWrite-Output $s", [["6"]]);
-  expectOut("$s = '5'\n++$s\nWrite-Output $s", [["6"]]);
-  expectOut("$s = '5.5'\n$s++\nWrite-Output $s", [["6.5"]]);
-  expectOut("$s = '-3'\n$s++\nWrite-Output $s", [["-2"]]);
-  // 後置の返値は変換前の値（実物どおり旧値）で、変数側は数値になる
-  expectOut("$s = '5'\nWrite-Output ($s++)\nWrite-Output $s", [["5", "6"]]);
+// ---------- R28-N4: 文字列への ++／-- は演算子エラー（CI是正・RG-262 予定） ----------
+// CI是正（RG-262 予定）: バッチ7の旧裁定（RG-242「文字列への ++ は数値
+// 変換して増やす」）は CI validate-shells の実 PowerShell 実測と食い違い、
+// 是正した。実物は保持値によらず（数値文字列でも）文字列への ++／-- を
+// 演算子エラーにする（"The '++' operator works only on numbers. The
+// operand is a 'System.String'."）。R28-N4 の元の所見（連結化）も誤り。
+test("batch7-ps R28-N4 CI correction (RG-262 planned): increment/decrement of a string is an operator error", () => {
+  expectErr("$s = '5'\n$s++", /\+\+演算子は文字列には使えません/);
+  expectErr("$s = '5'\n$s--", /--演算子は文字列には使えません/);
+  expectErr("$s = '5'\n++$s", /\+\+演算子は文字列には使えません/);
+  expectErr("$s = '5'\n--$s", /--演算子は文字列には使えません/);
+  // 保持値によらない（小数形・負数形・非数値・空文字列でも同じ演算子エラー）
+  expectErr("$s = '5.5'\n$s++", /\+\+演算子は文字列には使えません/);
+  expectErr("$s = '-3'\n$s++", /\+\+演算子は文字列には使えません/);
+  expectErr(
+    "$s = 'abc'\n$s++",
+    /\+\+演算子は文字列には使えません/,
+    /数値へ変換できません/,
+  );
+  expectErr("$s = 'abc'\n++$s", /\+\+演算子は文字列には使えません/);
+  expectErr("$s = 'abc'\n$s--", /--演算子は文字列には使えません/);
+  expectErr("$s = ''\n$s++", /\+\+演算子は文字列には使えません/);
+  // 後置を式に使っても出力は出ずに止まる
+  const r = expectErr(
+    "$s = '5'\nWrite-Output ($s++)\nWrite-Output $s",
+    /\+\+演算子は文字列には使えません/,
+  );
+  assert.deepEqual(out(r), [[]]);
   // メンバー・添字の代入先でも同型
-  expectOut("$h = @{k = '5'}\n$h.k++\nWrite-Output $h.k", [["6"]]);
-  expectOut("$a = @('5')\n$a[0]++\nWrite-Output $a[0]", [["6"]]);
-  // 変換できない文字列はエラー（連結でごまかさない）
-  expectErr("$s = 'abc'\n$s++", /数値へ変換できません/);
-  expectErr("$s = 'abc'\n++$s", /数値へ変換できません/);
-  expectErr("$s = ''\n$s++", /数値へ変換できません/);
-  // -- と += の実物挙動は壊さない（-- は数値意味論、+= は文字列追加）
-  expectOut("$s = '5'\n$s--\nWrite-Output $s", [["4"]]);
-  expectErr("$s = 'abc'\n$s--", /数値へ変換できません/);
+  expectErr("$h = @{k = '5'}\n$h.k++", /\+\+演算子は文字列には使えません/);
+  expectErr("$h = @{k = '5'}\n$h.k--", /--演算子は文字列には使えません/);
+  expectErr("$a = @('5')\n$a[0]++", /\+\+演算子は文字列には使えません/);
+  expectErr("$a = @('5')\n$a[0]--", /--演算子は文字列には使えません/);
+  // += の実物挙動は壊さない（+= は文字列追加のまま）
   expectOut("$s = '5'\n$s += 1\nWrite-Output $s", [["51"]]);
-  // 数値への ++ は不変
+  // 数値への ++／-- は不変
   expectOut("$n = 5\n$n++\nWrite-Output $n", [["6"]]);
+  expectOut("$n = 5\n$n--\nWrite-Output $n", [["4"]]);
 });
 
 // ---------- R28-N5: member-name の正規生成（引用符・変数・式） ----------
@@ -150,35 +167,51 @@ test("batch7-ps R28-N5 quoted and variable member names are accepted", () => {
   // 書き込み側（代入・++）でも同型
   expectOut("$h = @{k = 10}\n$h.'k' = 20\nWrite-Output $h.k", [["20"]]);
   expectOut("$n = 'k'\n$h = @{k = 10}\n$h.$n = 30\nWrite-Output $h.k", [["30"]]);
-  expectOut("$h = @{k = '5'}\n$h.'k'++\nWrite-Output $h.k", [["6"]]);
+  // CI是正（RG-262 予定）: 引用符付きメンバー名でも、保持値が文字列なら
+  // ++ は数値化せず演算子エラーで止まる（R28-N4 の是正と同型）。
+  expectErr("$h = @{k = '5'}\n$h.'k'++", /\+\+演算子は文字列には使えません/);
   // 存在しない名前は従来どおり $null（捏造しない）
   expectOut("$h = @{k = 10}\nWrite-Output ($null -eq $h.'missing')", [["True"]]);
   // 名前が無い形は従来どおり「プロパティ名が必要です」で止まる
   expectErr("$h = @{k = 10}\nWrite-Output ($h.)", /プロパティ名が必要です/);
 });
 
-// ---------- R28-N6: 括弧なし属性 [Parameter] は属性として読む ----------
-test("batch7-ps R28-N6 bare Parameter attribute is not treated as a type cast", () => {
-  expectOut(
+// ---------- R28-N6 → RG-263（CI是正）: 括弧なし [Parameter] は型リテラル ----------
+// CI是正（RG-263 予定）: バッチ7配信（main b77ea21）の CI validate-shells で
+// フィクスチャ bare parameter attribute が実 PowerShell と食い違ったため、
+// R28-N6／RG-244 の裁定（括弧なし属性名は属性として読む）を撤回する。
+// 実 PowerShell は括弧なしの属性名を型リテラル（ParameterAttribute 型への
+// 変換）として解釈し、非 $null の引数は引数変換エラーで停止する。属性と
+// して扱われるのは括弧つき [Parameter(...)] の形だけである。
+test("batch7-ps RG-263 bare Parameter is a type literal and fails conversion (CI fix)", () => {
+  expectErr(
     "function f { param([Parameter] $x) Write-Output $x }\nf 42",
-    [["42"]],
+    /引数変換エラー：値を System\.Management\.Automation\.ParameterAttribute へ変換できません：42/,
   );
+  // 型が最後に勝つ組合せでは [string] 変換が効く（last-wins は不変）
   expectOut(
     "function f { param([Parameter] [string] $x) Write-Output $x }\nf 'hi'",
     [["hi"]],
   );
-  expectOut(
+  // 逆順では型が ParameterAttribute になり変換エラーで止まる
+  expectErr(
     "function f { param([string] [Parameter] $x) Write-Output $x }\nf 'hi'",
-    [["hi"]],
+    /引数変換エラー：値を System\.Management\.Automation\.ParameterAttribute へ変換できません：hi/,
   );
-  // 検証系の括弧なし属性も同型に属性として読む
-  expectOut(
+  // 検証系の括弧なし属性名も型リテラルとして変換エラーになる
+  expectErr(
     "function f { param([ValidateNotNull] $x) Write-Output $x }\nf 3",
-    [["3"]],
+    /引数変換エラー：値を System\.Management\.Automation\.ValidateNotNullAttribute へ変換できません：3/,
   );
-  expectOut(
+  // 既定値も束縛時に変換がかかるため、引数なしでも変換エラーで止まる
+  expectErr(
     "function f { param([Parameter] $x = 9) Write-Output $x }\nf",
-    [["9"]],
+    /引数変換エラー：値を System\.Management\.Automation\.ParameterAttribute へ変換できません：9/,
+  );
+  // $null の束縛は変換が成功する（$null はそのまま $null）
+  expectOut(
+    "function f { param([Parameter] $x) Write-Output ($null -eq $x) }\nf",
+    [["True"]],
   );
   // 括弧つき形（従来から正常）は不変
   expectOut(

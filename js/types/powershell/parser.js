@@ -616,29 +616,19 @@ export class PSParser {
         const bc = this.bracketContent(),
           text = bc.text.trim();
         if (!text.includes("(")) {
-          // R28-N6: 括弧なし属性（文法 B.2.4 の attribute は引数なしの
-          // 形も正規形である）。[Parameter] 等の既知の属性名は型名では
-          // なく属性として読む。従来は一律に型名として保持され、呼び出し
-          // 時の型変換で「未対応の型変換：[Parameter]」と誤帰属していた。
-          // Parameter（括弧なし）は Mandatory 指定なしの属性であり、
-          // ValidateNotNull 系は束縛値の検証として記録する。Allow 系は
-          // 値の変換に影響しない宣言として受理する。
-          const bare = text.replace(/\s+/g, "").toLowerCase();
-          if (bare === "parameter" || bare === "cmdletbinding") continue;
-          if (
-            bare === "validatenotnull" ||
-            bare === "validatenotnullorempty" ||
-            bare === "validatenotnullorwhitespace"
-          ) {
-            validateNotNull = true;
-            continue;
-          }
-          if (
-            bare === "allownull" ||
-            bare === "allowemptystring" ||
-            bare === "allowemptycollection"
-          )
-            continue;
+          // RG-263（CI是正・R28-N6／RG-244 の裁定を撤回）: 括弧なしの
+          // [Parameter] 等は属性ではなく型リテラルとして読む。文法
+          // B.2.4 上は引数なし属性とも読めるが、実 PowerShell（CI
+          // validate-shells 実測）では括弧なしの属性名は
+          // ParameterAttribute 型への変換として解釈され、非 $null の
+          // 引数は引数変換エラーで停止する（"Cannot process argument
+          // transformation on parameter 'x'. Cannot convert the "42"
+          // value ... to type "System.Management.Automation.
+          // ParameterAttribute"."）。属性として扱われるのは括弧つき
+          // [Parameter(...)] の形だけである。したがって括弧なし
+          // グループは他の型名と同様に型制約として保持し（複数並んだ
+          // 場合は従来どおり最後のものが勝つ）、変換の成否は engine
+          // 側の型変換（属性型への変換規則）で裁定する。
           type = text.replace(/\s+/g, "");
           continue;
         }
