@@ -1,4 +1,21 @@
-# Codex R7 独立監査 — ee01f07（節目1・未完了）
+# Codex R7 独立監査 — ee01f07（節目2・未完了）
+
+対象は引き続き **ee01f07402b404c7b9dbcd83935b4be3bc4de187、全15種類・104テンプレート・978リファレンス**。配信日：2026-11-16 JST。mainの後続修正を対象へ混ぜず、Muse側の指摘一覧・個票は参照していない。
+
+節目2では **追加22件（P2：20、P3：2）** を報告する。累計は **78件（P1：0、P2：70、P3：8）**。これは独立検出件数であり、Museとの重複を除外した件数ではない。既報への実測追加は重複計上しない。[節目2の追加指摘](#節目2の追加指摘)と[更新した残作業](#節目2の残作業台帳)を参照。
+
+**使った書き込みコール数：4件（この節目）。累計9件。** この節目の内訳は監査専用ブランチへのgit push 3回と、報告書だけをmainへまとめて配信するgit push 1回。前回は5回。計数の定義は前回どおりGitHubへの書き込みコールであり、ローカル作業用ファイルやCI内成果物の保存を含めない。製品コード・教材・既存テスト・DEVELOPMENT.mdは修正していない。監査ブランチをmainへマージしていない。
+
+配信準備時点のmainは `0ece37fdfa6a308c8e9477297b191a577062bdb6`。本書はee01f07の結果を記録し、進んだmainにまだ欠陥が残っているとの判定ではない。対象コミットの画面または固定checkoutで再現すること。
+
+**観点1〜8の監査は継続中。完了・収束ではない。** 特に、978項目すべての説明と一次情報の逐語的照合、全実装名からリファレンス／除外宣言への対応表、全関数の全引数・組合せ・停止理由の網羅は未了。対象を削って完了とは扱わない。前回の記録は下に保持し、実施不能・未了の現状は節目2台帳で更新する。
+
+依頼のGPT-6.1 Sol／推論「中」は引き続き希望設定として扱う。会話内のツールで親モデル・推論設定を変更／確認できないため、適用を検証したとは記載しない。サブエージェント、リセット権は使用していない。
+
+## 節目1の記録
+
+以下は前回配信の記録。実施状況のうちC# CLI不在、WindowsのFileInfoタイムアウト等は後の節目2で更新されている。前回の書き込み回数5件も当時の値を保持する。
+
 
 監査対象：`ee01f07402b404c7b9dbcd83935b4be3bc4de187`、15種類／104テンプレート／978リファレンス（対応917／参照専用61）。2026-11-15 JST の依頼に基づく。
 
@@ -1082,3 +1099,456 @@ Windowsの重い入力の実測はR7-14。8秒の親プロセス停止を「8秒
 - [C# exception handling](https://learn.microsoft.com/en-us/dotnet/csharp/fundamentals/exceptions/exception-handling)
 - [cmd call](https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/call)
 - [PowerShell Hash Tables](https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_hash_tables?view=powershell-7.4)
+
+
+## 節目2で追加した検証と既報への追記
+
+### Windows・実ランタイム
+
+監査ブランチのスクリプトは製品のソースを変更せずに実シェル／コンパイラを起動するもの。結果が期待どおりのエラーでも記録を継続し、CI successを全ケースの一致と読み替えていない。
+
+- [Windowsシェル追加実測：run 43721812095](https://github.com/sylpica/programming-practice/actions/runs/43721812095)：cmd 85件（8教材＋28参照例＋49追加）、PowerShell 79件（8教材＋45参照例＋26追加）、計164件、各ケースのタイムアウト0。PowerShellはダウンロードした7.4.6を明示して起動した。
+- [Windows C#全教材・参照例と境界値：run 43722002319](https://github.com/sylpica/programming-practice/actions/runs/43722002319)：59教材／参照例＋38境界ケース＝97件、タイムアウト0。59教材／参照例は全てコンパイル成功。配列範囲外の教材は意図どおりIndexOutOfRangeException。追加では負の定数配列長と暗黙縮小変換の2件がコンパイルエラー、null.Lengthとcheckedオーバーフローは実行時例外。これらをスイートの異常終了ではなく実言語の結果として記録した。ターゲットはnet8.0。
+- Linux：公式.NET SDK 8.0.408を作業用ディレクトリに展開し、同じC#97件を実行。別に数値型12×12の全144組を実コンパイルした。前回「CLI不在で未実施」だった59例はこれにより未実施ではなくなった。任意のC#コード全体を検証済みという意味ではない。
+- Power Fx：公式NuGetのMicrosoft.PowerFx.Interpreter 1.3.1を.NET 8のRecalcEngineから起動し、89式をCheck／Eval。Canvas／Power Apps製品セッションとは区別する。単一列テーブルのToObject表現とアプリのレコード配列表現の違いは、そのまま欠陥に数えていない。ForAllのBlank行についてもSDKのオブジェクト表現の差だけで新規欠陥とは判定していない。
+- JavaScript：Number／String／Boolean／parseInt／Math.abs・floor・round／JSON.stringifyとpush／pop／joinの260ケースをNode実物と照合。空引数、0、1、−1、空文字列、null、undefined、空配列、配列、オブジェクト、非数、非有限値、大きな値、余分な引数を含む。別にDOM関連10ケースを空のChromium 156ページと照合した。260件は当該関数群の入力表であり、DOMやJavaScript全構文の網羅完了ではない。
+
+今回のWindows監査スクリプト準備の失敗も隠さず記録する。
+
+1. [run 43721686567](https://github.com/sylpica/programming-practice/actions/runs/43721686567)：cmd途中の日本語ケース名のログ書出しでPython既定cp1252がUnicodeEncodeError。製品の失敗として数えていない。
+2. run 43721812095：シェル164件は完了したが、続くC#用JSONの既定cp1252読込でUnicodeDecodeError。したがってジョブ全体はfailure。シェル結果のRESULT_JSON_START／END内のJSONは最後まで出力されている。
+3. run 43722002319：C#データのUTF-8明示後に97件完了、ジョブsuccess。[監査用スクリプトの固定コミット](https://github.com/sylpica/programming-practice/tree/bc11210/audit-probes/step2)。失敗したジョブを全検証成功と記載しない。
+
+Windowsの追加シェルケースは毎回別の一時フォルダを使う。追加FSケースではnotes.txt／empty.txt／lines.txt／logs/nested.txt、教材例では既定モデル相当のnotes.txt／data.csv／readme.txt／logsを用意した。cmdのprobe.cmd自身の列挙、絶対パスのルート、OS列挙順、copy/moveのロケール依存件数メッセージ、Read-Hostの入力エコーはモデルとの差分から除いた。未知の入力候補の全分岐を1回の実シェル入力に一致させようとはしていない。
+
+### 既報の追加確認（新しい指摘件数には含めない）
+
+- **R7-16**：Windows 7.4.6で `$file=New-Item -Path ".hidden" -ItemType File; $file.Extension` の出力は `.hidden`。前回はFileInfo全体の深いJSON化がタイムアウトしたが、今回はスカラーだけを採って658.8635msで完了した。アプリの空文字列とは不一致。前回のWindows未確定は解消。
+- **R7-09**：`1,2,3 | Select-Object -Skip 1 -Last 1` はWindows 7.4.6で2、アプリ3。先にslice(skip)してから末尾を取る処理は、この組合せでも誤る。[Select-Object](https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.utility/select-object?view=powershell-7.4)。
+- **R7-02**：`setlocal EnableDelayedExpansion` の後の `set X=a^!b; echo !X!` は実cmdでab、アプリa!b。引用付き `set X="a!b"` でも実物の!は消え、アプリは残る。各文は別行。既報の遅延展開処理の追加再現とし、別件に数えない。
+- **R7-37／R7-36に関係する引数欠落**：`console.log(String(JSON.stringify()));` はNode実物でundefined、アプリnull。[ECMAScript JSON.stringify](https://tc39.es/ecma262/multipage/structured-data.html#sec-json.stringify)。replacer／spaceだけでなく引数なしの評価も誤る。既報のJSON処理への追記として扱う。
+- **R7-47〜49**：CountRowsへの文字列、Filterの文字列条件、Valueの%／指数表現を公式Power Fx SDKでも照合。Canvas実機と呼び替えない。
+
+### 状態・表示・文面の追加確認
+
+下書きコード保持の実ブラウザ検証は888件、失敗0、pageerror 0。15種類間の全225有向遷移、再読込み後の15種類、各種類内の異なるテンプレート間の全648有向遷移を実行した。各種類に異なる自由下書き、各テンプレートに異なる追記を保存し、戻ったときのコードを比較した。**このコード保持の領域は確認済み・なし。**
+
+モデル値と選択表示を含めた追加実行も888件、失敗0、pageerror 0。テンプレート遷移648件ではVBAのセルA1、他種類のJSONモデルに区別可能な監査値を保存し、戻ったときにコード・モデル入力欄・選択テンプレートを比較した。**この試験でのコード／モデル／選択表示の復元不整合は確認済み・なし。** 同時編集の競合・壊れた下書き・容量超過をこの正常データ試験で合格にしていない。
+
+全15種類の用語集111項目の文面を通読した。既報のAHK自動実行説明以外に今回新たに確定した定義の誤りはないが、全111定義の一次情報照合完了ではない。教材用語の未収載はR7-56を保持し、追加の抜け探索も継続する。リファレンスは実装済みPython属性の漏れとPowerShellの別名誤記を追加した。JavaScript／R／Power Fx／AHKのcall内のリテラル名抽出も補助に使ったが、動的ディスパッチ・基底エンジン・プロパティを含む完全な名簿の代わりにしない。
+
+Windowsでの今回の実シェル起動全体（プロセス起動・監査用投影を含む）の最大はcmd 60.8385ms（typeからfindへのパイプ）、PowerShell 658.8635ms（.hidden作成＋拡張子）だった。これはアプリの実行時間や最悪入力の上限ではない。C#97件のコンパイルの最大17,123.5034msも監査用ビルド時間であり、アプリの性能指標と混同しない。アプリのWindows性能評価は前回の実測・R7-14を保持し、より重い入力探索は継続する。
+
+## 節目2の追加指摘
+
+各指摘の再現はee01f07の固定画面で行う。JSONのフローはコード欄へそのまま貼り付ける。異なる式や異常値はそれぞれ独立に初期化して実行する。範囲外の入力は正しい理由の未対応／未確認停止でも合格とし、黙った正常値・誤った分岐・不正な状態の生成を問題としている。
+
+### R7-57（P2）暗黙の数値変換を許さない変数代入まで受理する
+
+対象：C#。再現：上記共通手順でコードを入力・実行。既定モデルを使用する。
+
+```text
+using System;
+class Program {
+    static void Main() {
+        int n = 1;
+        short x = n;
+        Console.WriteLine(x);
+    }
+}
+```
+
+実際：アプリは1を表示して正常終了。Windowsの実コンパイラは CS0266: Cannot implicitly convert type 'int' to 'short'. An explicit conversion exists (are you missing a cast?)。Linux SDK 8.0.408でも同じ。
+
+期待：intの「変数」からshortへの代入にはキャストが必要。定数式 `short x = 1;` が許される規則を変数へ広げない。型変換表どおりにエラー、または未対応として停止する。sbyte／byte／short／ushort／int／uint／long／ulong／float／double／decimal／charの12×12＝144組を各々コンパイルし、実物ではコンパイルエラーなのにアプリが受理する組合せを49通り確認した。49個の独立欠陥へ水増しせず、この型変換検査の欠陥1件として数える。
+
+根拠：[Microsoft Learn：数値変換](https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/builtin-types/numeric-conversions)。実装：js/core/c-family.js の代入時変換。Windows再現は後記CIの short variable narrow。
+
+### R7-58（P2）string型のnullをTryParseへ渡す正しい用法をコンパイルエラーにする
+
+対象：C#。再現：上記共通手順でコードを入力・実行。既定モデルを使用する。
+
+```text
+using System;
+class Program {
+    static void Main() {
+        string s = null;
+        int n;
+        Console.WriteLine(int.TryParse(s, out n));
+        Console.WriteLine(n);
+    }
+}
+```
+
+実際：アプリは「TryParse の第1引数は文字列です」（CompileError）で停止。実Windowsはコンパイル成功、出力は False 改行 0。Linuxでも同じ。
+
+期待：stringオーバーロードへのnull入力は変換失敗のFalseとout値0。誤った型を渡したコンパイルエラーにしない。裸のnullリテラルのオーバーロード解決とは分け、上記のstring変数で再現する。
+
+根拠：[Microsoft Learn：Int32.TryParse(String, Int32)](https://learn.microsoft.com/en-us/dotnet/api/system.int32.tryparse?view=net-8.0)。Windows CIの typed null TryParse。
+
+### R7-59（P3）実装済み数値・range・関数属性に項目も除外宣言もない
+
+対象：Python／CloudFormationの委譲Python。再現：上記共通手順でコードを入力・実行。Pythonはそのまま実行。CloudFormationではhandler内へ同じ文を置き、既定eventをそのまま返す正常なresponseを末尾に付ける。
+
+```text
+print((3).real, (3).imag, (3).numerator, (3).denominator)
+r = range(1, 5, 2)
+print(r.start, r.stop, r.step)
+def f(x: int) -> str:
+    return str(x)
+print(f.__annotations__)
+```
+
+実際：アプリは順に 3 0 3 1、1 5 2、{'x': <class 'int'>, 'return': <class 'str'>} を具体的に表示する。一方、Python160項目とCloudFormation171項目の名前・書式・説明・注意・例の全フィールドに real／imag／numerator／denominator／rangeのstart・stop・step／__annotations__ の説明がない。使用中チップもこれらへ解決しない。DEVELOPMENT.mdの明示除外にも含まれない。
+
+期待：公式に存在し実装も値を返す属性は、ユーザー指定の関数・コマンド・変数の完全性監査の対象として束ね項目等で説明するか、意図的除外を宣言する。属性を実装済みと認めながら無記載にしない。
+
+根拠：[Python数値型・range](https://docs.python.org/3.12/library/stdtypes.html)、[関数の属性](https://docs.python.org/3.12/reference/datamodel.html#user-defined-functions)。実装：js/types/python/engine.js:2098以降。DEVELOPMENT.mdの未対応メソッド一覧は照合したが、Muse監査個票は参照していない。
+
+### R7-60（P2）引用した数値風文字列を数値へ変え、値と厳密比較を誤る
+
+対象：UI.Vision。再現：上記共通手順でコードを入力・実行。既定モデルを使用する。
+
+```text
+{
+  "Commands": [
+    {
+      "Command": "store",
+      "Target": "001",
+      "Value": "x"
+    },
+    {
+      "Command": "executeScript_Sandbox",
+      "Target": "return \"${x}\";",
+      "Value": "y"
+    },
+    {
+      "Command": "echo",
+      "Target": "${y}"
+    }
+  ]
+}
+```
+
+実際：アプリのyは数値1、echoは1。Targetを `return String("${x}");` にしても文字列1。`return "${x}" === "001";` はfalse。
+
+期待：引用内へ展開した文字列001を保持し、上の厳密比較はtrue。Numberを明示した場合との違いを保持するか、未対応として停止する。
+
+根拠：[UI.Vision公式executeScript：引用内の変数展開例とES5の範囲](https://ui.vision/rpa/docs/selenium-ide/executescript)、[ECMAScript文字列](https://tc39.es/ecma262/multipage/ecmascript-data-types-and-values.html#sec-ecmascript-language-types-string-type)。実装のsemantics.readがuiConditionの文字列用一時変数にもNumber変換を行う。実UI.Vision製品セッションでは未実測。
+
+### R7-61（P2）引数なしString()が空文字列でなくnullという文字列を作る
+
+対象：UI.Vision。再現：上記共通手順でコードを入力・実行。既定モデルを使用する。
+
+```text
+{"Commands":[
+ {"Command":"executeScript_Sandbox","Target":"return String();","Value":"x"},
+ {"Command":"echo","Target":"${x}"}
+]}
+```
+
+実際：アプリは文字列nullを表示する。
+
+期待：ES5でもString()は空文字列。String(null)と区別する。Node実物でも空文字列を確認。
+
+根拠：[ECMAScript Stringコンストラクター](https://tc39.es/ecma262/multipage/text-processing.html#sec-string-constructor-string-value)、[UI.Vision公式のES5 Sandbox宣言](https://ui.vision/rpa/docs/selenium-ide/executescript)。js/types/uivision/index.js のString呼出しが存在しない第1引数をreadし、nullを文字列化する。
+
+### R7-62（P2）引用内の変数を使ったwhile条件が固定文字列に化ける
+
+対象：UI.Vision。再現：上記共通手順でコードを入力・実行。既定モデルを使用する。
+
+```text
+{
+  "Commands": [
+    {
+      "Command": "store",
+      "Target": "2",
+      "Value": "x"
+    },
+    {
+      "Command": "while",
+      "Target": "\"${x}\" != \"0\""
+    },
+    {
+      "Command": "executeScript_Sandbox",
+      "Target": "return Number(${x}) - 1;",
+      "Value": "x"
+    },
+    {
+      "Command": "end"
+    },
+    {
+      "Command": "echo",
+      "Target": "${x}"
+    }
+  ]
+}
+```
+
+実際：アプリはx=-98まで実行し、「ループの代表パス・回数上限」で打ち切る。echoへ到達しない。引用なしの `${x} != 0` にするとx=0で終了する。
+
+期待：引用内も各反復時の変数値を文字列として評価し、2回でx=0、echo 0となる。対応外なら反復前に正直に停止する。上限の表示自体は正直だが、そこへ至る条件評価が誤り。
+
+根拠：[UI.Vision：if/whileもSandbox式で評価](https://ui.vision/rpa/docs/selenium-ide/executescript)。js/types/uivision/index.js のaction-loopだけはuiConditionを通らず、`${x}`を識別子文字列xへ単純置換する。実製品セッションでは未実測。
+
+### R7-63（P2）Tableがテーブル引数を展開せず、スカラーもレコードとして受理する
+
+対象：Power Apps／Power Fx。再現：上記共通手順でコードを入力・実行。既定モデルを使用する。
+
+```text
+Set(Result, CountRows(Table(Table({x:1},{x:2}))))
+```
+
+実際：アプリResult=1。実Microsoft.PowerFx.Interpreter 1.3.1のRecalcEngineは2。`Set(Result, CountRows(Table({x:1},Table({x:2},{x:3}))))` もアプリ2、SDK3。さらに `Set(Result, Table(1,2))` はアプリ[1,2]、SDKは引数の型エラー。
+
+期待：Tableのレコード／テーブル引数からレコードを連結する。スカラー引数を通して存在しない正常なテーブルを作らない。リファレンスの `Table(Record, Record, ...)` だけの書式も、テーブル引数を記載するか部分対応を明記する。
+
+根拠：[Microsoft Learn：Table](https://learn.microsoft.com/en-us/power-platform/power-fx/reference/function-table)。公式SDKの実行はCanvas実機の検証とは区別する。実装：js/types/powerapps/index.js のcase table。
+
+### R7-64（P2）関数形And／Orが短絡せず不要な式のゼロ除算で停止する
+
+対象：Power Apps／Power Fx。再現：上記共通手順でコードを入力・実行。既定モデルを使用する。
+
+```text
+Set(Result, And(false, 1/0 = 0))
+```
+
+実際：アプリは0で割ることはできませんで停止。公式SDKはfalse。`Set(Result, Or(true, 1/0 = 0))` もアプリ停止、SDK true。
+
+期待：結果が確定した後続式を評価せず、false／trueを返す。リファレンスが関数形と演算子形を同じ意味と説明することとも一致させる。
+
+根拠：[Microsoft Learn：And／Or／Not](https://learn.microsoft.com/en-us/power-platform/power-fx/reference/function-logicals)、[公式Power Fx実装](https://github.com/microsoft/Power-Fx)。Microsoft.PowerFx.Interpreter 1.3.1で上記2式を実測。アプリはargs.map(get)で先に全引数を評価する。
+
+### R7-65（P2）テーブルをスカラーへ暗黙変換し、型エラーを正常値にする
+
+対象：Power Apps／Power Fx。再現：上記共通手順でコードを入力・実行。既定モデルを使用する。
+
+```text
+Set(Result, Not(Table()))
+```
+
+実際：アプリはfalse。`Set(Result, Sequence(Table()))` は空テーブル、`Set(Result, Text(Table()))` は文字列[]。公式SDKはそれぞれ型エラー（Logical／Number等が必要）となる。
+
+期待：数値・真偽値・文字列に対応する入力型を検査する。テーブルをJSのtruthy、Number([])、文字列化で処理して正常値を捏造しない。
+
+根拠：[論理関数](https://learn.microsoft.com/en-us/power-platform/power-fx/reference/function-logicals)、[Sequence](https://learn.microsoft.com/en-us/power-platform/power-fx/reference/function-sequence)、[Text](https://learn.microsoft.com/en-us/power-platform/power-fx/reference/function-text)。公式SDK1.3.1のCheckで各式の型エラーを確認した。
+
+### R7-66（P2）入力requestIdが未確定だとresponseからの欠落まで見逃す
+
+対象：CloudFormation。再現：上記共通手順でコードを入力・実行。モデルのeventを {"fragment":{}} に置き換える。requestIdを省略するとモデルが正直な未確定値を補う仕様を使う。
+
+```text
+def handler(event, context):
+    return {"status":"success", "fragment":{}}
+```
+
+実際：アプリはエラーも未確認停止もなくresponseを受理する。値が不明であることと、必須キーを返していないことを区別できていない。
+
+期待：responseにrequestIdが存在しないことは入力IDが未確定でも判定可能。必須キー欠落として停止する。具体的なIDの推測は不要。
+
+根拠：[AWS公式：マクロのresponse形式](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/template-macros-author.html#template-macros-response)。js/types/cloudformation/index.js の比較はevent.requestIdがunknownならキー欠落の検査も飛ばす。実AWS実行では未実測。
+
+### R7-67（P3）存在するstatusの型不正をキー欠落と誤診する
+
+対象：CloudFormation。再現：上記共通手順でコードを入力・実行。既定モデルを使用する。
+
+```text
+def handler(event, context):
+    return {"requestId":event["requestId"], "status":None, "fragment":{}}
+```
+
+実際：「レスポンスにstatusが含まれていません」。statusを1またはTrueにしても同じ。いずれもキーは含まれている。
+
+期待：statusの値／型が不正であると説明する。キーの追加だけを直す方向へ誘導しない。
+
+根拠：[AWS公式：statusのresponse契約](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/template-macros-author.html)。js/types/cloudformation/index.js は typeof response.status !== string を一律に欠落として表示する。
+
+### R7-68（P2）偽値のFn::Transform指定を削除して正常終了する
+
+対象：CloudFormation。再現：上記共通手順でコードを入力・実行。既定モデルを使用する。
+
+```text
+{"Resources":{"Fn::Transform":false,"Keep":1}}
+```
+
+実際：エラーも未対応表示もなくFn::Transformを消して処理する。falseをnull／0／空文字列にした場合も同じ。
+
+期待：Fn::Transformの存在を判定し、不正な指定ならNameが必要等の正しい理由で停止する。一般的なテンプレート全体の検証ではなく、自身が処理する組込み関数の引数の検査。指定を黙って無かったことにしない。
+
+根拠：[AWS公式：Fn::TransformのName必須構文](https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/intrinsic-function-reference-transform.html)。js/types/cloudformation/index.js は先にbaseからキーを削除し、後で値のtruthyで処理の有無を決める。実AWS実行では未実測。
+
+### R7-69（P2）ワイルドカードと-Recurseの組合せで下位ファイルを列挙しない
+
+対象：PowerShell。再現：上記共通手順でコードを入力・実行。モデルのC:\Practice直下にnotes.txt、empty.txt、lines.txtとlogsフォルダ、logs内にnested.txtを明示する。各ファイル本文は任意の既知文字列。Windowsでは同じ構造を新規の一時フォルダに作り、そこで実行する。
+
+```text
+Get-ChildItem -Path "*.txt" -Recurse | Select-Object Name
+```
+
+実際：アプリはnotes.txt／empty.txt／lines.txtだけ。実Windows 7.4.6はこの3件とlogs内のnested.txtの4件。実際の列挙順は比較対象から除外した。`.\*.txt` にしても同じ欠落。
+
+期待：ワイルドカードを使う場合にも下位フォルダを再帰探索する。再現できない組合せなら停止する。リファレンスとDEVELOPMENT.mdの-Recurse対応宣言の範囲内。
+
+根拠：[Microsoft Learn：Get-ChildItem](https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.management/get-childitem?view=powershell-7.4)、実Windowsの該当ケース（values内にName:nested.txt）。実装はentryがdirectoryのときだけ再帰し、パターン指定時はlistFilesの直下結果で終了する。
+
+### R7-70（P2）空ファイルのGet-Content -Rawを空文字列としnull比較を誤る
+
+対象：PowerShell。再現：上記共通手順でコードを入力・実行。既定モデルを使用する。
+
+```text
+Set-Content out.txt $null
+(Get-Content out.txt -Raw) -eq $null
+```
+
+実際：アプリはFalse。実Windows 7.4.6はTrue。
+
+期待：空ファイルの実際の読み取り結果を再現し、後続のnull判定を変えない。Set-Contentが空ファイルを作ること自体は誤りと数えない。原因はget-contentのraw分岐が空本文も常に1個の空文字列として返すこと。
+
+根拠：[Microsoft Learn：Get-Content](https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.management/get-content?view=powershell-7.4)、[Set-Content](https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.management/set-content?view=powershell-7.4)。実Windowsは標準化した出力 {"values":[true],"error":null}。
+
+### R7-71（P2）CR単独の改行を行境界として読まない
+
+対象：PowerShell。再現：上記共通手順でコードを入力・実行。既定モデルを使用する。
+
+```text
+"a`rb`nc`r`nd" | Set-Content out.txt
+@(Get-Content out.txt).Count
+```
+
+実際：アプリ3、実Windows 7.4.6は4。
+
+期待：CR、LF、CRLFの実物の行分割に合わせるか、未対応の改行形式として停止する。本文中のCRを前の行へ残し、行数を過小にしない。
+
+根拠：[Microsoft Learn：Get-Contentの行単位出力](https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.management/get-content?view=powershell-7.4)、実Windows values:[4]。js/types/powershell/engine.js はCRLFだけをLFへ変換し、LFでsplitする。
+
+### R7-72（P2）引数なしSet-Locationがホームへ移らず現在フォルダに留まる
+
+対象：PowerShell。再現：上記共通手順でコードを入力・実行。既定モデルを使用する。
+
+```text
+Set-Location
+(Get-Location).Path
+```
+
+実際：アプリはC:\Practice。実Windows 7.4.6では一時作業フォルダから C:\Users\runneradmin へ移動した。
+
+期待：Path省略時は現在ユーザーのホームを使う。モデルにホームがないなら未確認／未対応として正直に停止し、現在フォルダと同じだと決めない。
+
+根拠：[Microsoft Learn：Set-Location -Pathの既定値](https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.management/set-location?view=powershell-7.4)。実Windows values:["C:\\Users\\runneradmin"]。アプリはp(path,0,s.model.cwd)を用いている。
+
+### R7-73（P2）存在しないプロパティの測定結果オブジェクトを捏造する
+
+対象：PowerShell。再現：上記共通手順でコードを入力・実行。既定モデルを使用する。
+
+```text
+1,2,3 | Measure-Object -Property NoSuchProperty -Sum
+```
+
+実際：アプリは Count:0／Sum:0 等を持つGenericMeasureInfoを1個出力。実Windows 7.4.6は成功ストリームに何も出さない（values:[]、error:null）。
+
+期待：存在しないプロパティから測定結果オブジェクトを作らない。実物と同じ出力数、または未対応停止にする。後続の@(...).CountやForEachの回数を変えない。
+
+根拠：[Microsoft Learn：Measure-ObjectとProperty](https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.utility/measure-object?view=powershell-7.4)、実Windows該当ケース。実装は全プロパティが欠落していても最後にobject(props)を必ず返す。
+
+### R7-74（P2）Select-Objectのプロパティパターンを文字通りの名前として作る
+
+対象：PowerShell。再現：上記共通手順でコードを入力・実行。既定モデルを使用する。
+
+```text
+1,2 | Select-Object -Property "NoSuch*"
+```
+
+実際：アプリは `NoSuch* : $null` というプロパティを各オブジェクトに作る。実Windows 7.4.6は各々空のPSCustomObjectで、NoSuch*というプロパティは存在しない。監査出力のNativeTypeは空オブジェクトを示す監査用の印であり、実物のプロパティではない。
+
+期待：Propertyのワイルドカードを展開するか、その形式を未対応として停止する。実物にない名前のプロパティを捏造しない。
+
+根拠：[Microsoft Learn：Select-Object -Property](https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.utility/select-object?view=powershell-7.4)。実Windowsの安全な投影結果とアプリのobject(Object.fromEntries)を照合。
+
+### R7-75（P2）PowerShell 7.4にはないscをSet-Contentの標準別名として教える
+
+対象：PowerShellのリファレンス／実装。再現：上記共通手順でコードを入力・実行。既定モデルを使用する。
+
+```text
+sc out.txt "Hello"
+Get-Content out.txt
+```
+
+実際：アプリはSet-Contentとしてファイルを作りHelloを出力する。リファレンスにも「別名scでも同じ処理」とある。しかしWindowsの固定したPowerShell 7.4.6で `Get-Alias sc -ErrorAction SilentlyContinue | Select-Object Name,Definition` は出力なし（values:[]）。
+
+期待：この教材が対象とするPowerShell 7.4の標準別名としてscを教えない。Windows PowerShell 5.1等との版差、ユーザー定義の別名の有無を区別する。Windows上のsc.exeの実行結果まで、このGet-Alias検証で確認したとは主張しない。
+
+根拠：[Microsoft Learn：Set-Content、対象7.4](https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.management/set-content?view=powershell-7.4)、[Get-Alias](https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.utility/get-alias?view=powershell-7.4)、実Windows 7.4.6でのGet-Alias照合。
+
+### R7-76（P2）createElementの引数欠落・不正名から存在しない要素を作る
+
+対象：JavaScript／DOM。再現：上記共通手順でコードを入力・実行。既定モデルを使用する。
+
+```text
+console.log(document.createElement().tagName);
+```
+
+実際：アプリはNULL。実ChromiumはTypeError: 1 argument required, but only 0 present。`document.createElement("a b").tagName` はアプリA B、実物InvalidCharacterError。数値1もアプリ1、実物InvalidCharacterError。
+
+期待：必須引数の有無と要素名の妥当性を検査し、エラーまたは未対応停止にする。`createElement(null)` が実物でもNULL要素を作るケースとは区別して検証した。
+
+根拠：[WHATWG DOM：createElement](https://dom.spec.whatwg.org/#dom-document-createelement)、[Web IDL呼出し規則](https://webidl.spec.whatwg.org/#es-operations)。Chromium 156の別の空ページで同じ式を実行した。実装は第1引数をString化してtagNameを返すだけ。
+
+### R7-77（P2）getElementByIdの引数欠落を通常の未発見nullにする
+
+対象：JavaScript／DOM。再現：上記共通手順でコードを入力・実行。既定モデルを使用する。
+
+```text
+console.log(document.getElementById());
+```
+
+実際：アプリはnull。実ChromiumはTypeError: 1 argument required, but only 0 present。
+
+期待：存在しないIDを指定した結果のnullと、必須引数欠落を区別して停止する。未発見の正常分岐へ流さない。
+
+根拠：[WHATWG DOM：getElementById](https://dom.spec.whatwg.org/#dom-nonelementparentnode-getelementbyid)、[Web IDL](https://webidl.spec.whatwg.org/#es-operations)。Chromium 156の実測。
+
+### R7-78（P2）appendChildが非Nodeと循環した親子関係を正常に作る
+
+対象：JavaScript／DOM。再現：上記共通手順でコードを入力・実行。既定モデルを使用する。
+
+```text
+let a = document.createElement("div");
+let b = {};
+a.appendChild(b);
+```
+
+実際：アプリは空の一般オブジェクトbを子として受理する。実ChromiumはTypeError: parameter 1 is not of type Node。`let a={}; let b={}; a.appendChild(b);` もアプリ正常、実物はa.appendChild is not a function。`let a=document.createElement("div"); a.appendChild(a);` ではアプリが自己循環を作り、実物はHierarchyRequestError。
+
+期待：レシーバーと子がNodeであること、親子関係の妥当性を検査する。扱えない関係は停止し、実DOMに存在し得ない状態を作らない。既報R7-38の「正常なNodeを別の親へ移すと元の親から外れない」とは再現入力・必要な検査が異なる。
+
+根拠：[WHATWG DOM：pre-insert validityとappend](https://dom.spec.whatwg.org/#concept-node-ensure-pre-insertion-validity)、Chromium 156の実測。実装は一般のobjectならchildren配列へpushする。
+
+## 節目2の残作業台帳
+
+前回から対象範囲を減らしていない。以下は全て継続対象。例を全件実行したことと、書式・説明・出力・実装の全経路の一次情報照合が完了したことを区別する。
+
+| 種類 | 教材／参照 | この節目までの主な証拠 | 未了として保持する作業 |
+|---|---:|---|---|
+| VBA | 8／90 | 全例実行、Lenの独立再現、文面・ブラウザ遷移 | 90項目の全署名・境界値・型・表示と公式資料の全対応、実Excel照合 |
+| ImageJ | 10／200 | 全例実行、205独自ケース、公式1.54pソース、用語通読 | 全200項目の説明・実装名との対応、pure macroと画像・ダイアログ全経路 |
+| CloudFormation | 6／171 | AWS event／response／Transformスコープ照合、今回3件、Python委譲 | 全11固有項目＋160委譲項目の完全対応、全入れ子・分岐・停止理由、実AWS |
+| PAD | 6／15 | 全例、モデルアクション、下書き遷移、既報の捏造再現 | 全15アクションの全引数・引用・ループ・エラー理由、実PAD |
+| AutoHotkey | 6／26 | 全例、Windows 2.0.19、A_*集約宣言、用語通読 | 110変数の全値／未確定性、全関数の境界・型・省略引数・全イベント |
+| UI.Vision | 6／22 | 全例、公式ES5宣言と今回の文字列・while再現 | 全22項目の全引数、例外無視・要素操作・未確定分岐、実拡張 |
+| Power Apps | 6／28 | 全例、公式SDK89式、今回Table／論理／型検査 | 全28関数の全入力行列、状態更新・表示数式・既定値・全ビュー、実Canvas |
+| Python | 10／160 | 全例、初期86＋1,112独自入力、今回属性漏れ | 実装名と除外宣言の完全突合、全関数の全引数・キーワード・組合せ |
+| R | 6／44 | 全例、R 4.2.2で261入力、用語通読 | 全44関数の全境界・引数束縛・NA/NaN/NULL・表示・一次情報照合 |
+| C | 6／26 | 全例、gccオラクル、C標準ドラフト、状態遷移 | 全型・変換・未定義動作／未対応停止・printf書式・全参照項目 |
+| C++ | 6／31 | 全例、g++オラクル、C++標準ドラフト、状態遷移 | 全型・オーバーロード・参照／文字列・全参照項目 |
+| C# | 6／53 | 全59例と追加38をLinux／Windows、全144数値変換 | 配列・参照・メソッド・入力・書式等の残る全引数行列、全項目文面 |
+| JavaScript | 6／39 | 全例、260関数／メソッド入力、DOM10実測 | 残るDOM状態・言語構文・未確定制約・全39項目の一次情報と表示 |
+| cmd | 8／28 | 全36例＋49独自ケースをWindows、個別echo実測 | 全28項目と実装名・展開の全段階・ワイルドカード・制御／エラー理由 |
+| PowerShell | 8／45 | 全53例＋26独自ケースをWindows 7.4.6、既報の比較等 | 全45項目の全パラメーター・型・省略・列挙・パイプライン組合せ |
+
+共通：全104教材のタイトル・説明・期待動作の一次情報全照合、978参照項目の書式・説明・期待出力の全照合、全実装関数・コマンド・変数とリファレンス／範囲外宣言の双方向対応、用語の未収載・ビュー間矛盾、全エラー原因の再現、分岐とパス制約の健全性、破損保存の全形・同時編集・PWA・フォーカス遷移、より重い入力の性能探索が残る。正常データの遷移試験が合格でも、R7-50の型破損による原文喪失は解消していない。
+
+現環境での制約：Excel、実Power Apps／PAD、実AWS、実UI.Visionの製品セッション、スクリーンリーダー・iOS・Safari・Firefox実機は使用できていない。公式文書・公式SDK・標準・製品ソースや明示モデルで照合した部分は、それぞれの証拠の種類を記した。ImageJのGUI／実画像処理の全経路も未実施。Windows CIと.NET CLIは現在利用でき、C#全59例を「実施不能」のまま放置してはいない。
+
+PADの引用内変数とLoop conditionの追加候補も保持しているが、実製品の式構文・モデル表記との対応が未確定なので、この節目では確定欠陥に数えない。SDKの表現差や監査スクリプトの失敗を欠陥件数へ足していない。
+
+使用量／回数制限の通知は受けていない。リセット権は使っておらず、リセット時刻の通知もない。未完了を制限到達と偽って報告しない。引き続き全範囲を保持して監査する。
