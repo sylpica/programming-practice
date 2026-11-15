@@ -588,7 +588,16 @@ export const definition = {
           },
         ],
       };
-      return executeProgram(nodes, model, semantics, limits);
+      let result = executeProgram(nodes, model, semantics, limits);
+      // R26-N18: 最終状態（paths[].vars）は JSON として直列化される
+      // 表示面であり、非有限数（Infinity／-Infinity／NaN）が null に
+      // 化けて、echo や手順テキストの "Infinity" 表示と矛盾していた
+      // （RG-02 と同型）。実行完了後のスナップショットに限り、非有限
+      // 数を echo と同じ文字列表現へ置き換え、直列化しても矛盾しない
+      // 形にする（実行中の数値としての働きは変えない）。
+      for (let p of result.paths || [])
+        p.vars = finiteSafeSnapshot(p.vars);
+      return result;
     } catch (e) {
       return sourceFailure(
         e instanceof PracticeError || e?.category ? e : toLearnerError(e),
@@ -596,6 +605,23 @@ export const definition = {
     }
   },
 };
+// R26-N18: 非有限数を、その文字列表現（"Infinity"／"-Infinity"／
+// "NaN"）へ置き換えた表示用スナップショットを返す。オブジェクト／
+// 配列の中にネストした非有限数も対象とし、循環は元の参照を保つ。
+function finiteSafeSnapshot(v, seen = new Map()) {
+  if (typeof v === "number") return Number.isFinite(v) ? v : String(v);
+  if (!v || typeof v !== "object") return v;
+  if (isUnknown(v)) return v;
+  if (seen.has(v)) return seen.get(v);
+  let out = Array.isArray(v) ? [] : {};
+  seen.set(v, out);
+  if (Array.isArray(v))
+    for (let x of v) out.push(finiteSafeSnapshot(x, seen));
+  else
+    for (let [k, x] of Object.entries(v))
+      out[k] = finiteSafeSnapshot(x, seen);
+  return out;
+}
 
 definition.templates.push(...additionalTemplates(definition.model.defaults));
 

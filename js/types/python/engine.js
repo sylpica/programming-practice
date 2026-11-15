@@ -1864,7 +1864,11 @@ class Interp {
         let msg = '', excStr, excRepr;
         if (isCall) {
           const vals = s.e.args.map(a => this.eval(a.e, env));
-          if (vals.length === 1 && !isUnk(vals[0])) { msg = strVal(vals[0]); excStr = msg; excRepr = reprVal(vals[0]); } // str(例外) は引数の文字列化と一致する
+          // R26-N5：KeyError の __str__ は、引数が1つのときその引数の repr を返す
+          // （docs.python.org「Built-in Exceptions」KeyError の項／実 CPython 3.12.3 実測）。
+          // それ以外の例外の str は従来どおり引数の文字列化（str）と一致する。
+          // 未捕捉時の表示行（msg）も同じ excStr を使うため、全表面が揃う。
+          if (vals.length === 1 && !isUnk(vals[0])) { excRepr = reprVal(vals[0]); excStr = kind === 'KeyError' ? excRepr : strVal(vals[0]); msg = excStr; }
           else if (vals.length === 0) { excStr = ''; excRepr = ''; }
           else if (vals.length > 1 && vals.every(v => !isUnk(v))) { excStr = reprVal(TUPLE(vals)); excRepr = vals.map(v => reprVal(v)).join(', '); } // str はタプル表記、repr は引数を並べた形
           else if (vals.length) msg = '（実行時に決まる値）';
@@ -2270,45 +2274,106 @@ const BUILTIN_NAMES = ['print', 'len', 'range', 'str', 'int', 'float', 'bool', '
 BUILTIN_NAMES.push('repr', 'map', 'filter', 'hex', 'bin', 'oct', 'format', 'next', 'iter');
 const ARITY = { repr: [1, 1], map: [2, 99], filter: [2, 2], hex: [1, 1], bin: [1, 1], oct: [1, 1], format: [1, 2], print: [0, 99], len: [1, 1], range: [1, 3], str: [0, 1], int: [0, 2], float: [0, 1], bool: [0, 1], next: [1, 2], iter: [1, 1], list: [0, 1], tuple: [0, 1], set: [0, 1], dict: [0, 1], sum: [1, 2], min: [0, 99], max: [0, 99], abs: [1, 1], round: [1, 2], sorted: [1, 1], reversed: [1, 1], enumerate: [1, 2], zip: [0, 99], type: [1, 1], input: [0, 1], isinstance: [2, 2], ord: [1, 1], chr: [1, 1], divmod: [2, 2], pow: [2, 3], any: [1, 1], all: [1, 1], open: [1, 3] };
 
-// バッチ4 Python追随：except ハンドラ式の評価・検証（実 CPython 3.12.3 の規則を実走で確認）。
+// バッチ4 Python追随＋バッチ5是正（R26-N3／N4）：except ハンドラ式の評価・検証
+// （実 CPython 3.12.3 の規則を実走で確認）。
 // ハンドラ式は、例外が伝播してきたときに限り、書かれた順に評価される（try 本体で
-// 例外が起きなければ評価されない）。評価は「式全体の評価 → 各要素が例外クラスかの
-// 検証 → 発生した例外との階層照合」の順で、タプル形では全要素を評価・検証してから
-// 照合する（先頭要素が一致しても、後ろに未定義名があれば NameError、非例外があれば
-// TypeError になる）。未定義名は NameError、関数内の代入前参照は UnboundLocalError、
-// 例外クラスでない確定値は TypeError。値が実行時に決まる要素は判定できないため
-// 一致しないものとして扱い、断定できる誤りだけを名指しする。
+// 例外が起きなければ評価されない）。評価は「式全体の評価 → 評価結果が例外クラスか
+// その平坦なタプルかの検証 → 発生した例外との階層照合」の順で、タプル形では全要素を
+// 評価・検証してから照合する（先頭要素が一致しても、後ろに未定義名があれば NameError、
+// 非例外があれば TypeError になる）。未定義名は NameError、関数内の代入前参照は
+// UnboundLocalError、例外クラスでない確定値は TypeError。値が実行時に決まる要素は
+// 判定できないため一致しないものとして扱い、断定できる誤りだけを名指しする。
+// R26-N3：照合は式の形ではなく評価結果の値で行う。変数に束縛されたタプル値、
+// 呼出結果（クラス／タプル／非例外のいずれも）、添字・属性・条件式の結果も、
+// リテラル形と同じく値として検証・照合する。
+// R26-N4：except のタプルは平坦でなければならない。要素の値がタプルであること
+// 自体が TypeError（リテラルの入れ子・変数経由・呼出結果経由を問わない）。
+// isinstance 側の入れ子タプルは実物どおり合法であり、そちらは変更しない。
+// 評価順序（実 CPython 実測）：タプルリテラルの要素は左から評価し、要素の評価が
+// 例外を起こしたら残りの要素は評価せずその例外が伝播する。検証（TypeError）は
+// 全要素の評価が終わってから行うため、評価エラーが検証エラーに優先する
+// （(5, 未定義名) でも NameError）。呼出形の引数も呼び出し前に評価される
+// （except ValueError(未定義名): は NameError）。
 // 戻り値：{ match: boolean } | { err: SimDiag }
 Interp.prototype.resolveExceptHandler = function (hh, env, kind) {
   const line = hh.line;
-  const elems = [];
-  const flatten = (n) => { if (n.k === 'tuple') { for (const it of n.items) flatten(it.e); } else elems.push(n); };
-  flatten(hh.expr);
   const typeErr = (what) => new SimDiag(line, 'TypeError', 'except で捕捉できるのは例外クラス（BaseException を継承したクラス）かそのタプルだけです（' + what + 'は例外クラスではありません）', 'except には例外クラスの名前か、例外クラスを要素とするタプルを書いてください');
-  let firstEvalErr = null, firstTypeErr = null, matched = false;
-  for (const el of elems) {
-    if (el.k === 'call') {
-      // 呼び出し形はクラスのインスタンスを作るため、例外には使えない（実 CPython は TypeError）
-      let fv;
-      try { fv = this.eval(el.fn, env); }
-      catch (e) { if (!firstEvalErr && e instanceof SimDiag && isCatchableDiag(e)) firstEvalErr = e; continue; }
-      if (isUnk(fv) || isFunc(fv)) continue; // 呼び出し先・戻り値が判定できない形は断定しない
-      if (!firstTypeErr) firstTypeErr = typeErr('「' + exprSrc(el) + '」の値（クラスのインスタンス）');
-      continue;
-    }
-    let v;
-    try { v = this.eval(el, env); }
-    catch (e) { if (!firstEvalErr && e instanceof SimDiag && isCatchableDiag(e)) firstEvalErr = e; continue; }
-    if (isUnk(v)) { if (v.mod && !firstTypeErr) firstTypeErr = typeErr('モジュール「' + v.mod + '」'); continue; } // モジュールは確定して例外クラスではない。それ以外の未確定値は判定できない
+  const srcDesc = (n) => n.k === 'name' ? '「' + n.name + '」' : '「' + exprSrc(n) + '」';
+  let firstTypeErr = null, matched = false;
+  const noteBad = (what) => { if (!firstTypeErr) firstTypeErr = typeErr(what); };
+  // 1つの確定値を検証する。desc は文言用の発生源表示（「E」／「E」の値（tuple）の要素 等）。
+  // タプル値は呼び出し側で扱うため、ここには来ない。
+  const applySingle = (v, desc) => {
+    if (isUnk(v)) { if (v.mod) noteBad('モジュール「' + v.mod + '」'); return; } // モジュールは確定して例外クラスではない。それ以外の未確定値は判定できない
+    if (v && v.__handlerInstance) { noteBad(desc + 'の値（クラスのインスタンス）'); return; }
     if (v && v.__builtin) {
       if (EXC_NAMES.has(v.__builtin)) { if (excMatches(kind, v.__builtin)) matched = true; }
-      else if (!firstTypeErr) firstTypeErr = typeErr('「' + v.__builtin + '」');
-      continue;
+      else noteBad('「' + v.__builtin + '」');
+      return;
     }
     // 例外クラスそのものではない確定値（通常クラス・type() の結果・例外のインスタンス・数値・関数など）
-    if (!firstTypeErr) firstTypeErr = typeErr(el.k === 'name' ? '「' + el.name + '」の値（' + typeName(v) + '）' : '「' + exprSrc(el) + '」の値（' + typeName(v) + '）');
+    noteBad(desc + 'の値（' + (v && v.__exc ? v.kind + ' のインスタンス' : typeName(v)) + '）');
+  };
+  // タプル値の要素を検証する（要素がタプルなら入れ子として TypeError。R26-N4）
+  const applyTupleElems = (tupleVal, containerDesc) => {
+    for (const elV of tupleVal.__tuple) {
+      if (isTuple(elV)) { noteBad(containerDesc + 'の要素（tuple）'); continue; }
+      applySingle(elV, containerDesc + 'の要素');
+    }
+  };
+  // ハンドラ式（要素式）を評価する。呼出形は「呼び先の評価 → 引数の評価 → 呼び出し」の
+  // 順を1回だけ実行する。例外クラス・型・通常クラスへの呼び出しはインスタンスを
+  // 作るため、実体化せず目印を返す（コンストラクタ自体の未対応診断に化かさない）。
+  const evalHandlerExpr = (node) => {
+    if (node.k !== 'call') return this.eval(node, env);
+    if (node.fn) { if (node.fn.k === 'name') this.noteCall(node.fn.name, 'func'); else if (node.fn.k === 'attr') this.noteCall(node.fn.name, 'method'); }
+    if (node.args.some(a => a.dstar)) return this.eval(node, env); // ** 展開形は通常の呼び出し評価に委ねる
+    const fnV = this.eval(node.fn, env);
+    const args = this.evalArgs(node, env);
+    if (args === null) return UNK('呼び出しの結果'); // * 展開の対象が実行時に決まる場合は判定できない
+    const classLike = !!fnV && (!!fnV.__class || !!fnV.__type || !!fnV.__union || (!!fnV.__builtin && (EXC_NAMES.has(fnV.__builtin) || TYPE_BUILTINS.includes(fnV.__builtin))));
+    if (classLike) {
+      for (const k of Object.keys(node.kwargs || {})) this.eval(node.kwargs[k], env); // キーワード引数も呼び出し前に評価される
+      return { __handlerInstance: true };
+    }
+    if (isUnk(fnV)) return UNK('呼び出しの結果');
+    if (fnV && fnV.__builtin) return this.callBuiltin(fnV.__builtin, args, node.kwargs, env, line, node);
+    if (isFunc(fnV)) return this.callUserFunc(fnV, args, node.kwargs, env, line);
+    if (fnV && fnV.__bound) return this.callUserFunc(fnV.fn, [fnV.instance, ...args], node.kwargs, env, line);
+    if (fnV && fnV.__method) return this.callMethod(fnV.obj, fnV.name, args, node.kwargs, env, line);
+    // 呼び出しできない確定値への呼び出しは、評価そのものが TypeError（実 CPython と同じ）
+    this.err(line, 'TypeError', typeName(fnV) + ' は呼び出し（ ）ができません', '関数名のあとに ( ) を付けて呼び出します。変数と関数を取り違えていないか確認してください');
+    return UNK();
+  };
+  const evalOrErr = (node) => {
+    try { return { v: evalHandlerExpr(node) }; }
+    catch (e) { if (e instanceof SimDiag && isCatchableDiag(e)) return { err: e }; throw e; }
+  };
+  if (hh.expr.k === 'tuple') {
+    // リテラルタプル形（括弧なしの except A, B: も同じ AST）：要素を左から評価する
+    for (const it of hh.expr.items) {
+      const el = it.e;
+      if (el.k === 'star') { // * 展開要素：展開された各値が要素になる
+        let sv;
+        try { sv = this.eval(el.e, env); } catch (e) { if (e instanceof SimDiag && isCatchableDiag(e)) return { err: e }; throw e; }
+        if (isUnk(sv)) continue;
+        let seq;
+        try { seq = this.iterable(sv, line, true); } catch (e) { if (e instanceof SimDiag && isCatchableDiag(e)) return { err: e }; throw e; }
+        if (seq === null) continue;
+        for (const x of seq) { if (isTuple(x)) noteBad('「' + exprSrc(el) + '」の要素（tuple）'); else applySingle(x, '「' + exprSrc(el) + '」の要素'); }
+        continue;
+      }
+      const r = evalOrErr(el);
+      if (r.err) return { err: r.err }; // 要素の評価エラーは即座に伝播し、残りの要素は評価しない（実 CPython のタプル構築と同じ）
+      if (isTuple(r.v)) { noteBad(srcDesc(el) + 'の値（tuple）'); continue; } // 要素の値がタプル＝入れ子（R26-N4）
+      applySingle(r.v, srcDesc(el));
+    }
+  } else {
+    const r = evalOrErr(hh.expr);
+    if (r.err) return { err: r.err };
+    if (isTuple(r.v)) applyTupleElems(r.v, srcDesc(hh.expr) + 'の値（tuple）');
+    else applySingle(r.v, srcDesc(hh.expr));
   }
-  if (firstEvalErr) return { err: firstEvalErr };
   if (firstTypeErr) return { err: firstTypeErr };
   return { match: matched };
 };

@@ -220,6 +220,26 @@ for (const r of reference) {
 }
 function lowerBehavior(expr, line = expr.line || 1) {
   let name = callName(expr.target).toLowerCase();
+  // R26-N15: If／Switch の最小引数検証。動作数式として直接書かれた
+  // If／Switch は call() の RG-16 アリティ検証を通らずに if ノードへ
+  // 変換されるため、変換前に同じ文言で検証する（If() が Blank、
+  // If(条件) が条件値そのもの、Switch() が汎用文言になっていた）。
+  // Set の直下の If／Switch も、Blank 補完の前後いずれでもこの検証を
+  // 通る（検証は元の個数に対して行う）。
+  if (expr.k === "call" && name === "if" && expr.args.length < 2)
+    throw new PracticeError(
+      `${callName(expr.target)} の引数の数が正しくありません（2 個以上が必要です。空の引数は書けません）`,
+      line,
+    );
+  // Switch の最小は2個（Value と Default だけの形も、末尾＝Default の
+  // 解釈として実 Power Fx どおり受理する。F01A-7 で確認済みの正挙動）。
+  // 0〜1個は最小引数不足として引数個数エラーにする（call() 側の
+  // アリティ表も同じ最小2個に揃える）。
+  if (expr.k === "call" && name === "switch" && expr.args.length < 2)
+    throw new PracticeError(
+      `${callName(expr.target)} の引数の数が正しくありません（2 個以上が必要です。空の引数は書けません）`,
+      line,
+    );
   if (expr.k === "call" && name === "if") {
     let args = expr.args,
       otherwise =
@@ -282,6 +302,21 @@ function lowerBehavior(expr, line = expr.line || 1) {
   ) {
     let branch = expr.args[1],
       args = [...branch.args];
+    // R26-N15: Set 直下では、下の Blank 補完で個数が増えて検証を
+    // すり抜けないよう、補完前の元の個数でも検証する。
+    {
+      let bn = callName(branch.target).toLowerCase();
+      if (bn === "if" && branch.args.length < 2)
+        throw new PracticeError(
+          `${callName(branch.target)} の引数の数が正しくありません（2 個以上が必要です。空の引数は書けません）`,
+          line,
+        );
+      if (bn === "switch" && branch.args.length < 2)
+        throw new PracticeError(
+          `${callName(branch.target)} の引数の数が正しくありません（2 個以上が必要です。空の引数は書けません）`,
+          line,
+        );
+    }
     // D-1: If の既定値なし・Switch の既定値なしは Blank を返すのが
     // Power Fx の規則（各項目の returns 欄どおり）。Set の動作数式化で
     // 「該当なし」の経路に Set 自体が存在しないと、変数が未定義のまま
@@ -807,7 +842,10 @@ export const definition = {
             and: [2, Infinity],
             or: [2, Infinity],
             if: [2, Infinity],
-            switch: [3, Infinity],
+            // R26-N15: Switch の最小は2個（Value＋Default 形を
+            // lowerBehavior 側と揃える。従来の3個では、値として
+            // 評価される Switch(値, Default) が誤って停止していた）。
+            switch: [2, Infinity],
             set: [2, 2],
             updatecontext: [1, 1],
             table: [0, Infinity],

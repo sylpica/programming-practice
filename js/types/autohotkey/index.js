@@ -1623,7 +1623,13 @@ export const definition = {
               return { ...unknown(`${formatValue(a)} . ${formatValue(b)}`), op: ".", a, b };
             return baseBinary(op, a, b, "ahk");
           }
-          if (["^", "&", "|"].includes(op)) api.fail("未対応：AutoHotkeyの64ビットのビット演算", node, "未対応");
+          // R26-N16：累乗 `**` は AutoHotkey v2 の正式な演算子（公式ドキュメントの
+          // 演算子表）。従来は `*` の単独名指しで未対応停止していた。
+          if (op === "**") {
+            a = numeric(a, node, api); b = numeric(b, node, api);
+            return numeric(a ** b, node, api);
+          }
+          if (["^", "&", "|", "<<", ">>"].includes(op)) api.fail("未対応：AutoHotkeyの64ビットのビット演算", node, "未対応");
           if (["+", "-", "*", "/", "<", ">", "<=", ">="].includes(op)) {
             a = numeric(a,node,api); b = numeric(b,node,api);
             if (op === "/" && b === 0) api.fail("0による除算です", node, "ZeroDivisionError");

@@ -100,6 +100,15 @@ function dynamicValue(name, s, api) {
 // 明示して停止する（上限を引き上げても OOM しないための根治）。
 const CMD_VALUE_LIMIT = 200000;
 function percent(text, s, api, node) {
+  // R26-N22：set /a の式の中では単独の % は剰余演算子として読む（%名前% の
+  // 変数参照だけを展開する）。%0〜%9 や %~ 形まで位置引数として展開すると、
+  // 未確定の %0 が内部プレースホルダに化けて式へ流れ込み、学習者向け文言に
+  // 漏出していた。実 cmd でも set /a の 5%0 は 0 除算エラーになる。
+  const setA = /^\s*@?\s*set\s*\/a\b/i.test(text);
+  // R26-N23：定義済み（空文字を含む）変数と動的変数だけを展開対象とする。
+  const expandable = (name) =>
+    ciGet(s.vars, name) !== undefined ||
+    /^(cd|errorlevel|random|date|time)$/i.test(name);
   let out = "";
   for (let i = 0; i < text.length; i++) {
     if (out.length > CMD_VALUE_LIMIT)
@@ -110,6 +119,23 @@ function percent(text, s, api, node) {
       );
     if (text[i] !== "%") {
       out += text[i];
+      continue;
+    }
+    if (setA && text[i + 1] !== "%") {
+      const vm = text.slice(i).match(/^%([A-Za-z_][A-Za-z0-9_]*)%/);
+      if (!vm) {
+        // 剰余演算子としての % はそのまま残し、arithmetic 側で解釈させる。
+        out += "%";
+        continue;
+      }
+      if (!expandable(vm[1])) {
+        // 未定義変数はリテラルのまま残す（下の通常経路と同じ規則）。
+        out += slot(vm[0], s);
+        i += vm[0].length - 1;
+        continue;
+      }
+      out += slot(dynamicValue(vm[1], s, api), s);
+      i += vm[0].length - 1;
       continue;
     }
     if (text[i + 1] === "%") {
@@ -154,6 +180,15 @@ function percent(text, s, api, node) {
     const name = text.slice(i + 1, end);
     if (name.includes(":"))
       fail("未対応：環境変数の部分文字列・置換展開", node.line);
+    // R26-N23：未定義変数は実 cmd／SS64 どおり %名前% のリテラルとして
+    // 残す。空文字へ置換すると、echo %undefined% が引数なし echo と
+    // 誤認されて状態文（ECHO は OFF です。）を出す等の表面崩壊が起きる。
+    // 定義済み変数（空文字を含む）と動的変数は従来どおり展開する。
+    if (!expandable(name)) {
+      out += slot("%" + name + "%", s);
+      i = end;
+      continue;
+    }
     out += slot(dynamicValue(name, s, api), s);
     i = end;
   }

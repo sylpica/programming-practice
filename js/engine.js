@@ -891,7 +891,20 @@ function expressionType(a, s) {
           : "double";
   if (a.k === "id") {
     if (["true", "false"].includes(a.name)) return "boolean";
-    if (["vbcrlf", "vbtab"].includes(a.name)) return "string";
+    if (
+      [
+        "vbcrlf",
+        "vbtab",
+        "vbcr",
+        "vblf",
+        "vbnewline",
+        "vbnullchar",
+        "vbnullstring",
+        "vbformfeed",
+        "vbverticaltab",
+      ].includes(a.name)
+    )
+      return "string";
     return s.types[a.name] || "variant";
   }
   if (a.k === "call" && a.target.k === "id") {
@@ -1022,6 +1035,26 @@ function evalExpr(a, s) {
       if (a.name === "false") return false;
       if (a.name === "vbcrlf") return "\r\n";
       if (a.name === "vbtab") return "\t";
+      // R26-N13: 比較定数（VbCompareMethod）と、その他の文字列定数
+      // （Microsoft VBA-Docs「Miscellaneous constants」）。従来は
+      // vbCrLf／vbTab だけが定義され、vbTextCompare 等は Option Explicit
+      // なしでは暗黙の Empty 変数に化けて、InStr／Replace が黙って
+      // バイナリ比較になっていた。vbNewLine は Windows では
+      // vbCrLf と同じ（プラットフォーム固有定数の Windows 値）。
+      // vbNullString は値の意味論では "" と同じに振る舞う範囲で定義する
+      // （StrPtr のようなポインタの区別はこのモデルに無い）。
+      // vbDatabaseCompare は定数としては 2 だが、Excel の InStr／Replace
+      // では使えず、compare=2 は従来どおりエラー5で停止する。
+      if (a.name === "vbbinarycompare") return 0;
+      if (a.name === "vbtextcompare") return 1;
+      if (a.name === "vbdatabasecompare") return 2;
+      if (a.name === "vbcr") return "\r";
+      if (a.name === "vblf") return "\n";
+      if (a.name === "vbnewline") return "\r\n";
+      if (a.name === "vbnullchar") return "\0";
+      if (a.name === "vbnullstring") return "";
+      if (a.name === "vbformfeed") return "\f";
+      if (a.name === "vbverticaltab") return "\v";
       if (a.name === "err") return { kind: "err" };
       if (a.name === "date") return unknown("実行時の現在日付（時刻なし）");
       if (a.name === "now") return unknown("実行時の現在日時（日付と時刻）");

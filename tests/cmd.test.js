@@ -8,7 +8,9 @@ const errors = (r) => [r.error, ...r.paths.map((p) => p.error)].filter(Boolean),
 for (const [name, code, expected] of [
   ["quoted echo", 'echo "hello"', [['"hello"']]],
   ["assignment retains quotes", 'set X="hello"\necho %X%', [['"hello"']]],
-  ["missing variable", "echo x%MISSING%x", [["xx"]]],
+  // R26-N23 是正：未定義変数は実 cmd／SS64 どおり %名前% のまま残る
+  // （従来の空文字置換の期待値を実物根拠で是正）。
+  ["missing variable", "echo x%MISSING%x", [["x%MISSING%x"]]],
   ["case insensitive names", "set Name=Alice\necho %NAME%", [["Alice"]]],
   [
     "frozen block expansion",
@@ -174,5 +176,7 @@ for (const [name, code, expected] of [
 test("cmd missing names do not alias a variable named undefined", () => {
   const r = run("set undefined=bad\necho a%missing%b");
   assert.deepEqual(errors(r), []);
-  assert.deepEqual(out(r), [["ab"]]);
+  // R26-N23 是正：未定義名は "undefined" という変数にも空文字にもならず、
+  // 実 cmd どおり %missing% のリテラルのまま残る。
+  assert.deepEqual(out(r), [["a%missing%b"]]);
 });

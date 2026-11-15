@@ -300,7 +300,7 @@ export const definition = {
         step(n, s, api) {
           let item = n.item;
           if (n.k === "action-if") {
-            let v = uiCondition(n.test, s, api),
+            let v = uiCondition(unwrapPercentWrapped(n.test), s, api),
               done = [];
             for (let r of api.choose(s, v, n)) {
               api.note(
@@ -509,8 +509,30 @@ function resolve(v, s, api) {
   return interpolate(v, s);
 }
 function conditionAST(text, s) {
-  let normalized = text.replace(/%([A-Za-z_]\w*)%/g, "$1");
+  let normalized = unwrapPercentWrapped(text).replace(
+    /%([A-Za-z_]\w*)%/g,
+    "$1",
+  );
   return parseExpression(normalized);
+}
+// R26-N17: 条件全体を %…% で包んだ形（値側の resolve が受理する PAD の
+// 式記法）は、包みを外した内側を式として解釈する。内側の %変数% 参照は
+// そのまま残し、後段（uiCondition／conditionAST）の置換に委ねる。
+// %A% == %B% のように %変数% が並ぶだけの形は、両端の % を外すと壊れる
+// ため、%変数% を仮名へ置換した内側が構文解析できる場合に限って外す
+// （解析できない形は従来の解釈のままにする）。
+function unwrapPercentWrapped(text) {
+  if (typeof text !== "string") return text;
+  let t = text.trim();
+  if (t.length < 2 || !t.startsWith("%") || !t.endsWith("%")) return text;
+  let inner = t.slice(1, -1);
+  if (!inner.trim()) return text;
+  try {
+    parseExpression(inner.replace(/%[A-Za-z_]\w*%/g, "__wrappedVar"));
+  } catch {
+    return text;
+  }
+  return inner;
 }
 
 definition.templates.push(...additionalTemplates(definition.model.defaults));

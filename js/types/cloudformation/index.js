@@ -584,6 +584,7 @@ export const definition = {
               typeof spec !== "object" ||
               Array.isArray(spec) ||
               typeof spec.Name !== "string" ||
+              spec.Name === "" ||
               (spec.Parameters !== undefined &&
                 (!spec.Parameters ||
                   typeof spec.Parameters !== "object" ||
@@ -628,7 +629,12 @@ export const definition = {
         return states;
       }
       const original = structuredClone(doc),
-        transforms = doc.Transform
+        // R26-N14: Transform 節の有無は値の真偽ではなくキーの存在で
+        // 判定する。""／null は「節なし」ではなく不正な指定であり、
+        // 後段の検証で 123 と同じ文言で停止させる（従来は falsy として
+        // 素通りし、未変換のまま成功していた）。空配列 [] は従来どおり
+        // 「マクロなし」として受理する。
+        transforms = Object.hasOwn(doc, "Transform")
           ? Array.isArray(doc.Transform)
             ? doc.Transform
             : [doc.Transform]
@@ -663,7 +669,7 @@ export const definition = {
       for (let transform of transforms) {
         let done = [];
         const spec = typeof transform === "string" ? { Name: transform, Parameters: {} } : transform;
-        if (!spec || typeof spec.Name !== "string" || (spec.Parameters !== undefined && (!spec.Parameters || typeof spec.Parameters !== "object" || Array.isArray(spec.Parameters))))
+        if (!spec || typeof spec.Name !== "string" || spec.Name === "" || (spec.Parameters !== undefined && (!spec.Parameters || typeof spec.Parameters !== "object" || Array.isArray(spec.Parameters))))
           throw Error("Transformにはマクロ名またはNameとParametersのオブジェクトを指定してください");
         for (let s of states) {
           if (s.error) {

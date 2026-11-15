@@ -416,6 +416,17 @@ export function simulatePowerShell(source, model, limits) {
         ciSet(s.vars, target.name, v);
         return;
       }
+      // R26-N2（防御層）: ++／--・代入の対象が変数・プロパティ・添字の
+      // いずれでもない形（リテラルや式の結果への後置等）は、対象を
+      // 名指して止める。従来は対象に .target が無いまま読み取り側へ
+      // 進み、ホスト例外（Cannot read properties of undefined）の
+      // 生文言が学習者に表示されていた。
+      if (!["member", "index"].includes(target.k))
+        fail(
+          "代入先が不正です：++／--や代入の対象は変数・プロパティ・添字である必要があります",
+          n.line,
+          "RuntimeException",
+        );
       const host = read(target.target, s, api),
         key = target.k === "member" ? target.name : read(target.index, s, api);
       if (isUnknown(host) || isUnknown(key))
@@ -490,11 +501,30 @@ export function simulatePowerShell(source, model, limits) {
         b = numeric(b, n);
         if (isUnknown(a) || isUnknown(b))
           fail("未確認：範囲の端点", n.line, "未確認");
-        if (
-          !Number.isInteger(a) ||
-          !Number.isInteger(b) ||
-          Math.abs(b - a) > 10000
-        )
+        // R26-N21: 範囲の端点は言語仕様 §6.4（整数への変換規則）により
+        // [int] へ変換してから範囲を作る。変換は .NET 準拠の丸めであり、
+        // 五捨五入ではなく偶数丸め（端数がちょうど .5 のときは偶数側）：
+        // [int]1.5=2、[int]2.5=2、[int]3.5=4、[int](-1.5)=-2。
+        // 従来は非整数端点を「整数範囲のモデル上限」という虚偽の原因で
+        // 止めていた。上限の名指しは、丸めた後の端点差が実際に上限を
+        // 超える場合に限る（その場合は上限が真因として正しい）。
+        if (!Number.isFinite(a) || !Number.isFinite(b))
+          fail(
+            "範囲の端点を整数へ変換できません：" +
+              String(!Number.isFinite(a) ? a : b),
+            n.line,
+            "RuntimeException",
+          );
+        const toRangeInt = (v) => {
+          const floor = Math.floor(v),
+            frac = v - floor;
+          if (frac < 0.5) return floor;
+          if (frac > 0.5) return floor + 1;
+          return floor % 2 === 0 ? floor : floor + 1;
+        };
+        a = toRangeInt(a);
+        b = toRangeInt(b);
+        if (Math.abs(b - a) > 10000)
           fail("未対応：整数範囲のモデル上限", n.line);
         return Array.from(
           { length: Math.abs(b - a) + 1 },
@@ -2237,14 +2267,20 @@ export function simulatePowerShell(source, model, limits) {
           try {
             next.push(...statement(n, s, api));
           } catch (e) {
+            // R26-N2（防御層）: パス内エラーの出口でもホスト例外を変換する。
+            // 外側 catch（R25-N3）は実行開始前の例外しか変換しておらず、
+            // 文の実行中に発生したホスト例外（代入先の未定義参照等）は
+            // 生文言のまま s.error に入っていた。著作者エラー
+            // （PracticeError）は toLearnerError がそのまま通す。
+            const learner = toLearnerError(e);
             s.error = {
-              line: e.line || n.line,
-              message: e.message,
-              category: e.category || "RuntimeException",
+              line: learner.line || e.line || n.line,
+              message: learner.message,
+              category: learner.category || "RuntimeException",
             };
             s.ps.success = false;
             s.halt = true;
-            api.note(s, { ...n, refs: [] }, e.message, "error");
+            api.note(s, { ...n, refs: [] }, learner.message, "error");
             next.push(s);
           }
         }

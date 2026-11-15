@@ -15,6 +15,15 @@ const FUNCTION_NAMES = new Set(
   "c sum mean median sd length seq seq_len rep data.frame nrow ncol names is.na as.numeric as.character print cat readline read.csv rnorm runif sample sqrt abs log log10 log2 exp sin cos tan asin acos atan atan2 round floor ceiling trunc min max range sort rev order unique paste paste0 sprintf substr nchar toupper tolower sapply lapply apply mapply tapply vapply replicate list factor matrix array dim rownames colnames head tail summary plot".split(" "),
 );
 const NA = { kind: "NA" },
+  // R26-N6：?Reserved に列挙される定数語は代入先にできない（実 R は
+  // "invalid (do_set) left-hand side to assignment"）。TRUE／FALSE／NULL は
+  // RG-181 で是正済みで、本バッチで NA 系・Inf・NaN まで拡張する。
+  // T／F は予約語ではなく再代入可能な変数なので含めない。
+  RESERVED_CONSTANTS = [
+    "TRUE", "FALSE", "NULL",
+    "NA", "NA_integer_", "NA_real_", "NA_complex_", "NA_character_",
+    "Inf", "NaN",
+  ],
   isNA = (v) => v?.kind === "NA",
   // RG-03: NULL (JS null) is a length-0 object in R, never a length-1 zero.
   vec = (v) => (v === null ? [] : Array.isArray(v) ? v : [v]),
@@ -1405,6 +1414,88 @@ export const definition = {
           }
           if (name === "rep" && pos.length > 4)
             api.fail(`unused argument (${show(pos[4])})`, node);
+          // R26-N25：乱数系は値が未確定でも、決定的に不正な引数は実 R
+          // どおり名前を挙げて停止する（?sample：size は非負、x が長さ1の
+          // 数値なら正の整数で母集団は 1:x、replace=FALSE では size が
+          // 母集団を超えられない。?Normal／?Uniform：n は観測数）。
+          // 実装済みの乱数系は rnorm／runif／sample の3つのみで、
+          // sample.int／rbinom／rpois 等は未実装として名指し停止する
+          // 経路（default 節）にある。未確定の引数は判定できないため
+          // 対象外とし、合法形（rnorm(0)、sample(1:3, 0)、replace=TRUE
+          // での母集団超過）は従来どおり未確定値で受理する。
+          // sd<0 や min>max は実 R ではエラー停止ではなく NaN＋警告の
+          // 扱い（?Normal の "sd < 0" 記述）であり、prob の検証要否も
+          // 公式ページだけでは確定できないため、いずれも現行維持とする。
+          if (["rnorm", "runif", "sample"].includes(name)) {
+            const scalarNum = (v) => {
+              // 長さ1ベクトル（単項マイナスの結果など）はスカラーとして
+              // 読み、長さ2以上は ?Normal 等の「長さが個数になる」扱いに
+              // 倣って判定対象外とする。
+              if (v === undefined || isUnknown(v)) return undefined;
+              if (v?.kind === "data.frame") return undefined;
+              const els = vec(v);
+              return els.length === 1 ? els[0] : undefined;
+            };
+            const checkCount = (v, label, fn) => {
+              const el = scalarNum(v);
+              if (el === undefined) return undefined;
+              if (
+                isMissing(el) ||
+                (typeof el === "number" && !Number.isFinite(el)) ||
+                (typeof el === "number" && el < 0)
+              )
+                api.fail(
+                  `${fn}の ${label} が不正です：${label} = ${show(el)}（${label}は0以上の数で指定してください）`,
+                  node,
+                );
+              return typeof el === "number" ? el : undefined;
+            };
+            if (name === "rnorm" || name === "runif") {
+              checkCount(named.n ?? pos[0], "n", name);
+            } else {
+              const xVal = named.x ?? pos[0];
+              let pop;
+              if (xVal !== undefined && !isUnknown(xVal)) {
+                if (xVal?.kind === "data.frame")
+                  pop = Object.keys(xVal.columns).length;
+                else {
+                  const els = vec(xVal);
+                  if (els.length === 1 && typeof els[0] === "number") {
+                    if (!Number.isFinite(els[0]) || els[0] < 1)
+                      api.fail(
+                        `sampleの x が不正です：x = ${show(els[0])}（長さ1の数値の x は正の整数で指定してください：invalid first argument）`,
+                        node,
+                      );
+                    pop = Math.trunc(els[0]);
+                  } else pop = els.length;
+                }
+              }
+              const sizeRaw = named.size ?? pos[1];
+              const sizeNum = checkCount(sizeRaw, "size", "sample");
+              if (sizeNum !== undefined && pop !== undefined) {
+                const replaceRaw = named.replace ?? pos[2];
+                const replaceState =
+                  replaceRaw === undefined || isUnknown(replaceRaw)
+                    ? replaceRaw === undefined
+                      ? false
+                      : undefined
+                    : typeof replaceRaw === "boolean"
+                      ? replaceRaw
+                      : typeof replaceRaw === "number" &&
+                          !Number.isNaN(replaceRaw)
+                        ? replaceRaw !== 0
+                        : undefined;
+                if (
+                  replaceState === false &&
+                  Math.trunc(sizeNum) > pop
+                )
+                  api.fail(
+                    `sampleの size が不正です：size = ${show(sizeNum)} は母集団の大きさ ${pop} を超えています（replace = FALSE では母集団より大きい標本は取れません：cannot take a sample larger than the population when 'replace = FALSE'）`,
+                    node,
+                  );
+              }
+            }
+          }
           if (["readline", "rnorm", "runif", "sample"].includes(name))
             return api.freshUnknown(name + "の実行時の値", s);
           // RG-80（R21-N4）: 出力系（print／cat）は未知値でも行自体を消さない。
@@ -1726,25 +1817,45 @@ export const definition = {
               if (alongWith !== undefined)
                 lengthOut = alongWith === null ? 0 : vec(alongWith).length;
               let from = Number(named.from ?? pos[0] ?? 1);
-              if (
+              // R26-N24：引数が from ただ1つだけの形（?seq の第5の用法）。
+              // 長さ1の数値なら 1:from（seq(0) でも c(1, 0)。S 互換として
+              // ?seq が明記）、それ以外は 1:length(from)（長さ0なら空）。
+              // 従来は seq_len 相当の長さ解釈に寄っており、seq(0) が空、
+              // seq(-1) が c(1) になっていた。また単項マイナスの結果や
+              // c(5) のような長さ1ベクトルは配列で運ばれるため、要素を
+              // vec() で取り出してから判定しないと数値形を取り逃がす。
+              const isSoleFrom =
                 !hasTo &&
                 !hasBy &&
                 lengthOut === undefined &&
-                named.from === undefined &&
-                pos.length === 1 &&
-                !Array.isArray(pos[0])
-              ) {
-                // seq(n) is seq(1, n) in real R.
-                const n0 = Number(pos[0]);
-                if (!Number.isFinite(n0)) api.fail("NA/NaN argument", node);
-                if (n0 === 0) return [];
-                const by0 = n0 >= 1 ? 1 : -1,
-                  cnt = Math.floor(Math.abs(n0 - 1)) + 1;
-                if (cnt > 10000) api.fail("ベクトル長の上限です", node);
-                return Array.from({ length: cnt }, (_, i) => 1 + i * by0);
+                alongWith === undefined &&
+                ((pos.length === 1 && !Object.keys(named).length) ||
+                  (pos.length === 0 &&
+                    Object.keys(named).length === 1 &&
+                    named.from !== undefined));
+              if (isSoleFrom) {
+                const v = pos.length === 1 ? pos[0] : named.from;
+                if (v === null) return [];
+                const lf =
+                  v?.kind === "data.frame"
+                    ? Object.keys(v.columns).length
+                    : vec(v).length;
+                const el = lf === 1 ? vec(v)[0] : undefined;
+                if (lf === 1 && typeof el === "number") {
+                  if (!Number.isFinite(el))
+                    api.fail("NA/NaN argument", node);
+                  // アプリ自身のコロン演算子（1:el）と同じ意味論。
+                  const by0 = el >= 1 ? 1 : -1,
+                    cnt = Math.floor(Math.abs(el - 1)) + 1;
+                  if (cnt > 10000) api.fail("ベクトル長の上限です", node);
+                  return Array.from(
+                    { length: cnt },
+                    (_, i) => 1 + i * by0,
+                  );
+                }
+                if (lf > 10000) api.fail("ベクトル長の上限です", node);
+                return Array.from({ length: lf }, (_, i) => i + 1);
               }
-              if (Array.isArray(pos[0]) && !hasTo && lengthOut === undefined && named.from === undefined)
-                return Array.from({ length: pos[0].length }, (_, i) => i + 1);
               if (lengthOut !== undefined) {
                 const lo = Number(vec(lengthOut)[0]);
                 if (!Number.isInteger(lo) || lo < 0)
@@ -1936,6 +2047,15 @@ export const definition = {
         // which are not R syntax, keep the shared narration.
         step(n, s, api) {
           if (n.k === "each") {
+            // R26-N6 兄弟表面：for の反復変数も束縛であるため、予約定数を
+            // 反復変数にすることは代入と同じく名指しで停止する
+            // （従来は NA／TRUE 等が黙って再束縛されていた）。
+            if (RESERVED_CONSTANTS.includes(n.name))
+              api.fail(
+                `代入先が不正です：${n.name} には代入できません`,
+                n,
+                "SyntaxError",
+              );
             // R24-N27：R の for は対象をベクトルとして評価する（?Control／
             // R Language Definition）。NULL・長さ0では0回実行して継続し、
             // スカラーは長さ1ベクトルとして1回実行する。共有基盤の loop()
@@ -1998,6 +2118,21 @@ export const definition = {
             }
             return [...done, ...active];
           }
+          // R26-N6：予約定数への代入は、複合代入（+= 等、共有基盤側で
+          // 処理される形）も含めてここで先に名指す。基盤側の R 分の
+          // 列挙は TRUE／FALSE／NULL のみで、NA 系・Inf・NaN が届かない
+          // ためである。->（右辺代入）と <<- はパーサ段階で「未対応」と
+          // 名指し停止する形であり、黙った再束縛にはならない。
+          if (
+            n.k === "assign" &&
+            n.target?.k === "var" &&
+            RESERVED_CONSTANTS.includes(n.target.name)
+          )
+            api.fail(
+              `代入先が不正です：${n.target.name} には代入できません`,
+              n,
+              "SyntaxError",
+            );
           if (n.k === "assign" && !["+=", "-=", "*=", "/="].includes(n.op)) {
             // R25-N8（R 分）：この step は共有基盤の assign を迂回するため、
             // 基盤側の代入ターゲット検証（R24-N12）が届かず、右辺を先に
@@ -2006,15 +2141,9 @@ export const definition = {
             // NULL <- 5 が黙って受理されていた。右辺の評価より前に、
             // 基盤と同じ形の検証をここで行う（T／F は R では再代入可能な
             // 変数なので対象に含めない）。
-            if (
-              n.target?.k === "var" &&
-              ["TRUE", "FALSE", "NULL"].includes(n.target.name)
-            )
-              api.fail(
-                `代入先が不正です：${n.target.name} には代入できません`,
-                n,
-                "SyntaxError",
-              );
+            // R26-N6 で対象を ?Reserved の定数全て（RESERVED_CONSTANTS）
+            // へ拡張した。上の複合代入を含む検証と重なるが、文言・分類は
+            // 同一である。
             if (!["var", "index", "member"].includes(n.target?.k)) {
               const form =
                 {

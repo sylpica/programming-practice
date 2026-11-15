@@ -467,7 +467,7 @@ export function tokenize(source, dialect = "js") {
     m = source
       .slice(i)
       .match(
-        /^(===|!==|%\/%|%%|%in%|<-|->|:=|==|!=|<=|>=|&&|\|\||\+\+|--|\+=|-=|\*=|\/=|<<|>>>|>>|::|=>|<>|\[\[|\]\]|[+\-*\/%^&|!<>=(){}\[\],;:.$?])/,
+        /^(===|!==|%\/%|%%|%in%|<-|->|:=|==|!=|<=|>=|&&|\|\||\+\+|--|\*\*|\+=|-=|\*=|\/=|<<|>>>|>>|::|=>|<>|\[\[|\]\]|[+\-*\/%^&|!<>=(){}\[\],;:.$?])/,
       );
     if (!m) {
       // RG-61：不可視文字・制御文字は、そのまま出すと原因表示が空に見えるため名指しする。
@@ -479,6 +479,13 @@ export function tokenize(source, dialect = "js") {
     // 他の方言では `[` `]` 2つとして扱い、入れ子配列リテラルを壊さない。
     if ((m[0] === "[[" || m[0] === "]]") && dialect !== "r") {
       out.push({ v: m[0][0], line });
+      i += 1;
+      continue;
+    }
+    // R26-N16：`**` を単一トークンにするのは AutoHotkey（累乗演算子）だけ。
+    // 他方言では従来どおり `*` 2つとして扱い、挙動を変えない。
+    if (m[0] === "**" && dialect !== "ahk") {
+      out.push({ v: "*", line });
       i += 1;
       continue;
     }
@@ -537,7 +544,19 @@ const prec = {
   "%%": 8,
   "%/%": 8,
   "^": 10,
+  // R26-N16：AutoHotkey の累乗 `**` は乗除より強く結合する（公式ドキュメントの
+  // 演算子優先順位）。`**` トークンは ahk 方言でしか生成されないため、
+  // この表を共有する他方言（Power Fx）の式には現れない。
+  "**": 11,
 };
+// R26-N16：AutoHotkey では `:` は二項演算子ではなく三項演算子の区切り専用。
+// 共有表の ":"（連番演算子）を残すと、三項の真側の式が ":" を飲み込んで
+// 「: が必要です」という虚偽原因になるため、ahk 方言の表からは除く。
+// あわせてシフト `<<` / `>>`（加減算より弱い結合）を表に入れる：従来は
+// 表に無く式が途中で切れ、「代入の区切りが必要です」という実態と違う
+// 名指しになっていた。評価側はビット演算として名前を挙げて停止する。
+const ahkPrec = { ...prec, "<<": 6, ">>": 6 };
+delete ahkPrec[":"];
 const jsPrec = { "||": 1, "&&": 2, "|": 3, "^": 4, "&": 5,
   "==": 6, "!=": 6, "===": 6, "!==": 6,
   "<": 7, ">": 7, "<=": 7, ">=": 7,
@@ -586,6 +605,7 @@ export class ScriptParser {
   precTable() {
     if (this.dialect === "js") return jsPrec;
     if (this.dialect === "r") return rPrec;
+    if (this.dialect === "ahk") return ahkPrec;
     if (["c", "cpp", "csharp"].includes(this.dialect)) return cPrec;
     return prec;
   }
@@ -824,7 +844,10 @@ export class ScriptParser {
         if (this.ts[this.i + 1]?.v === ".")
           unsupported("オプショナルチェーン（?.）", next.line);
         // RG-06：条件演算子（?:）は JS／C系で評価する。他方言では ? を名指しで弾く経路に落とす。
-        if (!["js", "c", "cpp", "csharp"].includes(this.dialect)) break;
+        // R26-N16：AutoHotkey v2 にも正式な三項演算子 ?: がある（公式ドキュメントの
+        // 演算子表）。従来は ahk が対象外で break し、呼び出し側の「) が必要です」等の
+        // 虚偽原因になっていたため、ahk 方言でも条件演算子として解析する。
+        if (!["js", "c", "cpp", "csharp", "ahk"].includes(this.dialect)) break;
         if (min > 0) break;
         this.take();
         let then = this.expr(0);
@@ -853,7 +876,8 @@ export class ScriptParser {
       )
         break;
       this.take();
-      let b = this.expr(p + (v === "^" ? 0 : 1));
+      // R26-N16：`**`（AutoHotkey の累乗）は `^` と同じく右結合。
+      let b = this.expr(p + (v === "^" || v === "**" ? 0 : 1));
       a = { k: "binary", op: v, a, b, line: a.line };
     }
     this.depth--;
@@ -861,6 +885,206 @@ export class ScriptParser {
   }
   skipLines() {
     while (this.ts[this.i]?.v === "\n" && !this.ts[this.i]?.k) this.take();
+  }
+  // R26-N7：JavaScript の分割代入パターン（[ … ] / { … }）を読む。
+  // 文位置では式文の配列・オブジェクトリテラルと区別がつかないため、
+  // 呼び出し側が位置を保存して投機的に読み、直後に = が続く場合だけ
+  // 分割代入として採用する。パターンとして不正な要素（リテラル・呼び出し
+  // 結果・キーワード等）は invalid に記録し、採用時に Invalid LHS で
+  // 名指す（実 Node の SyntaxError と同じ帰属にする）。
+  parsePatternRoot(line) {
+    if (this.peek("[")) {
+      this.take();
+      return this.parseArrayPattern(line);
+    }
+    this.take("{");
+    return this.parseObjectPattern(line);
+  }
+  parseArrayPattern(line) {
+    const pattern = { k: "arrayPattern", elements: [], invalid: null, line };
+    while (true) {
+      this.skipLines();
+      if (this.peek("]")) {
+        this.take();
+        return pattern;
+      }
+      if (this.peek(",")) {
+        this.take();
+        pattern.elements.push(null);
+        continue;
+      }
+      const el = this.parsePatternElement(line, pattern);
+      pattern.elements.push(el);
+      this.skipLines();
+      if (this.peek(",")) {
+        this.take();
+        continue;
+      }
+      this.take("]");
+      return pattern;
+    }
+  }
+  parseObjectPattern(line) {
+    const pattern = { k: "objectPattern", props: [], invalid: null, line };
+    while (true) {
+      this.skipLines();
+      if (this.peek("}")) {
+        this.take();
+        return pattern;
+      }
+      if (
+        this.ts[this.i]?.v === "." &&
+        this.ts[this.i + 1]?.v === "." &&
+        this.ts[this.i + 2]?.v === "."
+      ) {
+        this.take();
+        this.take();
+        this.take();
+        const target = this.parsePatternTarget(line, pattern);
+        pattern.props.push({ rest: true, target });
+      } else if (this.peek("[")) {
+        // 計算済みキーは記録し、採用時に名前を挙げて停止する。
+        if (!pattern.invalid) pattern.invalid = "computed-key";
+        this.take();
+        this.expr();
+        this.take("]");
+        this.take(":");
+        const el = this.parsePatternElement(line, pattern);
+        pattern.props.push({ key: null, ...el });
+      } else {
+        const keyTok = this.take();
+        if (!["id", "string", "number"].includes(keyTok.k))
+          throw new PracticeError("分割代入のキーが必要です", keyTok.line);
+        const key = keyTok.k === "number" ? String(keyTok.v) : keyTok.v;
+        if (this.peek(":")) {
+          this.take();
+          const el = this.parsePatternElement(line, pattern);
+          pattern.props.push({ key, ...el });
+        } else {
+          if (keyTok.k !== "id")
+            throw new PracticeError("分割代入のキーが必要です", keyTok.line);
+          const target = { k: "var", name: key, line: keyTok.line };
+          if (
+            ["true", "false", "null", "this"].includes(key) &&
+            !pattern.invalid
+          )
+            pattern.invalid = target;
+          const prop = { key, target };
+          if (this.peek("=")) {
+            this.take();
+            prop.default = this.expr();
+          }
+          pattern.props.push(prop);
+        }
+      }
+      this.skipLines();
+      if (this.peek(",")) {
+        this.take();
+        continue;
+      }
+      this.take("}");
+      return pattern;
+    }
+  }
+  parsePatternElement(line, pattern) {
+    if (
+      this.ts[this.i]?.v === "." &&
+      this.ts[this.i + 1]?.v === "." &&
+      this.ts[this.i + 2]?.v === "."
+    ) {
+      this.take();
+      this.take();
+      this.take();
+      // 残余の受け先は識別子・プロパティ・添字のほか、入れ子のパターン
+      // （...[a, b] / ...{x}）も実 JavaScript では合法（Node 実測）。
+      let target;
+      if (this.peek("[")) {
+        this.take();
+        target = this.parseArrayPattern(line);
+      } else if (this.peek("{")) {
+        this.take();
+        target = this.parseObjectPattern(line);
+      } else target = this.parsePatternTarget(line, pattern);
+      return { target, rest: true };
+    }
+    let target;
+    if (this.peek("[")) {
+      this.take();
+      target = this.parseArrayPattern(line);
+    } else if (this.peek("{")) {
+      this.take();
+      target = this.parseObjectPattern(line);
+    } else target = this.parsePatternTarget(line, pattern);
+    if (this.peek("=")) {
+      this.take();
+      const def = this.expr();
+      return { target, default: def };
+    }
+    return { target };
+  }
+  parsePatternTarget(line, pattern) {
+    const target = this.expr();
+    if (
+      !["var", "member", "index"].includes(target.k) &&
+      !pattern.invalid
+    )
+      pattern.invalid = target;
+    if (
+      target.k === "var" &&
+      ["true", "false", "null", "this"].includes(target.name) &&
+      !pattern.invalid
+    )
+      pattern.invalid = target;
+    return target;
+  }
+  // 採用が決まったパターンの検証。不正な代入先・残余要素の位置・
+  // 宣言位置で使えないプロパティ／添字ターゲットを名指しで停止する。
+  checkPattern(pattern, declaring, line) {
+    if (pattern.invalid === "computed-key")
+      unsupported("分割代入の計算済みキー", line);
+    if (pattern.invalid) {
+      const inv = pattern.invalid;
+      const form =
+        inv.k === "var"
+          ? `${inv.name} には`
+          : `${
+              {
+                literal: "リテラル",
+                call: "関数呼び出しの結果",
+                binary: "演算の結果",
+                unary: "単項演算の結果",
+                cond: "条件式の結果",
+                array: "配列リテラル",
+                record: "オブジェクトリテラル",
+                post: "++ / -- の結果",
+              }[inv.k] || "この式"
+            }には`;
+      throw new PracticeError(
+        `代入先が不正です：${form}代入できません（Invalid left-hand side in assignment）`,
+        line,
+        "SyntaxError",
+      );
+    }
+    const els =
+      pattern.k === "arrayPattern" ? pattern.elements : pattern.props;
+    els.forEach((el, idx) => {
+      if (!el) return;
+      if (el.rest && idx !== els.length - 1)
+        throw new PracticeError(
+          "分割代入の残余要素（...）は最後に置く必要があります",
+          line,
+          "SyntaxError",
+        );
+      const t = el.target;
+      if (t?.k === "arrayPattern" || t?.k === "objectPattern")
+        this.checkPattern(t, declaring, line);
+      else if (declaring && t && t.k !== "var")
+        throw new PracticeError(
+          "代入先が不正です：宣言の分割代入ではプロパティや添字へは代入できません（Invalid left-hand side in assignment）",
+          line,
+          "SyntaxError",
+        );
+    });
   }
   program(end = "<eof>") {
     let out = [];
@@ -1030,7 +1254,37 @@ export class ScriptParser {
       }
       let name = this.take();
       // RG-07：分割代入は対象を名指して停止する（汎用の「変数名が必要です」に化けさせない）。
-      if (name.v === "[" || name.v === "{") unsupported("分割代入", line);
+      // R26-N7：JavaScript 方言では宣言の分割代入も文位置と同じ機構で実装する。
+      // 他方言では従来どおり対象を名指して停止する。
+      if (name.v === "[" || name.v === "{") {
+        if (kind !== "js") unsupported("分割代入", line);
+        const pattern =
+          name.v === "["
+            ? this.parseArrayPattern(line)
+            : this.parseObjectPattern(line);
+        this.checkPattern(pattern, true, line);
+        if (["of", "in"].includes(this.ts[this.i]?.v))
+          unsupported("分割代入（for-of / for-in の反復変数）", line);
+        if (!this.peek("="))
+          throw new PracticeError(
+            "分割代入の宣言には初期化式（= の右辺）が必要です",
+            line,
+            "SyntaxError",
+          );
+        this.take();
+        const patternValue = this.expr();
+        if (!["\n", ";", ")", "}", "<eof>"].includes(this.ts[this.i]?.v))
+          unsupported("宣言の区切りが必要です", line);
+        return {
+          k: "declarePattern",
+          name: null,
+          type,
+          pattern,
+          value: patternValue,
+          line,
+          refs: [type],
+        };
+      }
       if (name.k !== "id") throw new PracticeError("変数名が必要です", line);
       let size = null;
       if (this.peek("[")) {
@@ -1067,6 +1321,40 @@ export class ScriptParser {
         line,
         refs: [type],
       };
+    }
+    // R26-N7：文位置の分割代入（JavaScript 方言のみ）。`[` で始まる文は
+    // 式文の配列リテラルでもありうるため、パターンを投機的に読み、直後が
+    // = の場合だけ分割代入として採用する。括弧で包んだ ([…] = …) /
+    // ({…} = …) も同じ扱いにする。不採用の場合は位置を戻して通常の
+    // 式文として読み直すため、配列リテラル式文等の挙動は変わらない。
+    if (
+      this.dialect === "js" &&
+      (this.peek("[") ||
+        (this.peek("(") && ["[", "{"].includes(this.ts[this.i + 1]?.v)))
+    ) {
+      const save = this.i,
+        saveDepth = this.depth,
+        paren = this.peek("(");
+      if (paren) this.take();
+      let pattern = null;
+      try {
+        pattern = this.parsePatternRoot(line);
+      } catch {
+        pattern = null;
+      }
+      if (pattern && this.peek("=")) {
+        this.checkPattern(pattern, false, line);
+        this.take();
+        const value = this.expr();
+        if (paren) this.take(")");
+        if (
+          !["\n", ";", "}", ")", "<eof>", "else"].includes(this.ts[this.i]?.v)
+        )
+          unsupported("代入の区切りが必要です", line);
+        return { k: "destructure", pattern, value, line };
+      }
+      this.i = save;
+      this.depth = saveDepth;
     }
     let target = this.expr();
     // RG-43：代入演算子は方言ごとに限定する（他方言の演算子の無言受理を防ぐ）。
@@ -1455,6 +1743,93 @@ export function executeProgram(nodes, model, semantics = {}, custom = {}) {
     }
     unsupported("代入先", target.line);
   }
+  // R26-N7：分割代入のパターンを値へ束縛する。右辺は一度だけ評価され
+  // （呼び出し側で read 済み）、要素の既定値は要素が undefined のときだけ
+  // 評価する（実 JavaScript の意味論）。反復可能でない右辺・null /
+  // undefined のオブジェクト分割は TypeError で名指す。
+  function patternLeafNames(pattern, out = []) {
+    const els =
+      pattern.k === "arrayPattern" ? pattern.elements : pattern.props;
+    for (const el of els) {
+      if (!el) continue;
+      if (
+        el.target?.k === "arrayPattern" ||
+        el.target?.k === "objectPattern"
+      )
+        patternLeafNames(el.target, out);
+      else if (el.target?.k === "var") out.push(el.target.name);
+    }
+    return out;
+  }
+  function bindPattern(pattern, value, s, n, declareType) {
+    const bound = [];
+    const leaf = (target, v) => {
+      if (target.k === "arrayPattern" || target.k === "objectPattern") {
+        bound.push(...bindPattern(target, v, s, n, declareType));
+        return;
+      }
+      if (declareType) {
+        if (Object.hasOwn(s.types, target.name) && declareType !== "var")
+          throw new PracticeError("同名の変数が宣言済みです", n.line);
+        s.types[target.name] = declareType;
+        s.vars[target.name] = v;
+      } else write(target, v, s, n);
+      bound.push(
+        target.k === "var" ? target.name : callName(target) || "対象",
+      );
+    };
+    if (isUnknown(value)) {
+      const u = unknown("分割代入の右辺による");
+      const els =
+        pattern.k === "arrayPattern" ? pattern.elements : pattern.props;
+      for (const el of els) if (el) leaf(el.target, u);
+      return bound;
+    }
+    if (pattern.k === "arrayPattern") {
+      let items;
+      if (Array.isArray(value)) items = value;
+      else if (typeof value === "string") items = [...value];
+      else
+        throw new PracticeError(
+          "分割代入の右辺が反復可能ではありません（配列や文字列が必要です）",
+          n.line,
+          "TypeError",
+        );
+      pattern.elements.forEach((el, idx) => {
+        if (!el) return;
+        if (el.rest) {
+          leaf(el.target, items.slice(idx));
+          return;
+        }
+        let v = items[idx];
+        if (v === undefined && el.default) v = read(el.default, s);
+        leaf(el.target, v);
+      });
+    } else {
+      if (value == null)
+        throw new PracticeError(
+          "null / undefined は分割代入できません",
+          n.line,
+          "TypeError",
+        );
+      const boxed = Object(value),
+        used = new Set();
+      for (const prop of pattern.props) {
+        if (prop.rest) {
+          const restObj = {};
+          for (const k of Object.keys(boxed))
+            if (!used.has(k)) restObj[k] = boxed[k];
+          leaf(prop.target, restObj);
+          continue;
+        }
+        used.add(prop.key);
+        let v = boxed[prop.key];
+        if (v === undefined && prop.default) v = read(prop.default, s);
+        leaf(prop.target, v);
+      }
+    }
+    return bound;
+  }
   function truth(v, line, node, s) {
     // RG-76：条件の式ノードと状態も渡し、型に依存する条件可否（C++ の
     // std::string 等）を種類側が判定できるようにする。既存の truth 実装は
@@ -1781,6 +2156,29 @@ export function executeProgram(nodes, model, semantics = {}, custom = {}) {
           n,
           `${callName(n.target) || "対象"} に ${fmt(v)} を代入します`,
         );
+        return [s];
+      }
+      case "destructure": {
+        // R26-N7：文位置の分割代入。右辺を先に評価してから束縛する
+        // （[a, b] = [b, a] の swap が実 JavaScript どおり動く）。
+        let v = read(n.value, s);
+        let bound = bindPattern(n.pattern, v, s, n, null);
+        note(s, n, `分割代入で ${bound.join("、")} に値を割り当てます`);
+        return [s];
+      }
+      case "declarePattern": {
+        // R26-N7：宣言の分割代入。ブロックスコープの登録は通常の宣言と
+        // 同じ台帳へ step 時点で行う（prepareScope は declare のみ対象）。
+        if (
+          semantics.blockScopes &&
+          semantics.dialect === "js" &&
+          n.type !== "var"
+        )
+          for (const nm of patternLeafNames(n.pattern))
+            registerDeclaration(s, { name: nm, type: n.type, line: n.line });
+        let v = read(n.value, s);
+        let bound = bindPattern(n.pattern, v, s, n, n.type);
+        note(s, n, `分割代入で ${bound.join("、")} を用意します`);
         return [s];
       }
       case "expression": {

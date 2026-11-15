@@ -332,7 +332,19 @@ export class PSParser {
   block() {
     this.skip();
     this.take("{");
-    return this.program("}");
+    // R26-N1: 波括弧（スクリプトブロック・関数本体等）の内側は独立した
+    // 文脈であり、param 既定値のカンマ抑止（noComma）と引数モードの
+    // 接着判定（argGlued）は内側へ継承しない。
+    const savedComma = this.noComma,
+      savedGlued = this.argGlued;
+    this.noComma = 0;
+    this.argGlued = 0;
+    try {
+      return this.program("}");
+    } finally {
+      this.noComma = savedComma;
+      this.argGlued = savedGlued;
+    }
   }
   program(end = "<eof>") {
     const out = [];
@@ -532,7 +544,18 @@ export class PSParser {
   condition() {
     this.skip();
     this.take("(");
-    const p = this.pipeline();
+    // R26-N1: 条件の括弧内も独立した文脈（block と同じくリセットする）。
+    const savedComma = this.noComma,
+      savedGlued = this.argGlued;
+    this.noComma = 0;
+    this.argGlued = 0;
+    let p;
+    try {
+      p = this.pipeline();
+    } finally {
+      this.noComma = savedComma;
+      this.argGlued = savedGlued;
+    }
     this.take(")");
     return p;
   }
@@ -708,11 +731,15 @@ export class PSParser {
     // そのまま文字列として取り込む。空白で独立した演算子トークンの
     // 規則（R24-N31）や式位置の解釈には触れない。範囲（1..3 の「..」は
     // 対象演算子に含めないため、下の範囲構築が従来どおり働く。
+    // R26-N2: 二連演算子 ++／-- の接着形（1--2／1++2／1---2 等）も同じ
+    // generic-token であり、対象に含める。含めないと式パース側で
+    // リテラルへの後置 ++／-- になり、評価側の代入先参照でホスト例外の
+    // 生文言が漏出していた。
     if (t.k === "number") {
       const next = this.ts[this.i + 1];
       if (
         next?.k === "op" &&
-        ["+", "-", "*", "/", "%"].includes(next.v) &&
+        ["+", "-", "*", "/", "%", "++", "--"].includes(next.v) &&
         next.start === t.end
       ) {
         let text = this.take().v,
@@ -725,6 +752,89 @@ export class PSParser {
           end = this.ts[this.i - 1].end;
         }
         return { k: "literal", value: text, line: t.line };
+      }
+    }
+    // R26-N2: ++／-- で始まる接着形（--1／++2／----1 等）も B.1.7 の
+    // generic-token として単一の文字列引数として渡る。空白で独立した
+    // ++／--（-- 1／1 ++ の後続要素等）も、単独演算子の規則（R24-N31）
+    // と同じく文字列引数として扱う。変数への前置（++$x／--$x）と
+    // 括弧への前置は従来どおり式側で評価するため、この分岐では扱わない。
+    if (t.k === "op" && (t.v === "++" || t.v === "--")) {
+      const next = this.ts[this.i + 1];
+      if (
+        !next ||
+        [";", "|", ")", "}", "<eof>", ","].includes(next.v) ||
+        (next.start > t.end && next.k !== "var" && next.v !== "(")
+      ) {
+        this.take();
+        return { k: "literal", value: t.v, line: t.line };
+      }
+      if (
+        next.start === t.end &&
+        (next.k === "number" || ["++", "--", "+", "-"].includes(next.v))
+      ) {
+        let text = this.take().v,
+          end = this.ts[this.i - 1].end;
+        while (
+          this.ts[this.i]?.start === end &&
+          ![";", "|", ")", "}", "<eof>", ","].includes(this.ts[this.i].v)
+        ) {
+          text += this.take().v;
+          end = this.ts[this.i - 1].end;
+        }
+        return { k: "literal", value: text, line: t.line };
+      }
+    }
+    // R26-N2: 符号つき数値で始まり ++／-- が接着する形（-1--2／+1++2 等）
+    // も generic-token として単一の文字列引数として渡る。符号つき数値
+    // 単独（-3 等）の現行挙動は変えないため、二連演算子の接着がある
+    // 場合に限る。
+    if (t.k === "op" && (t.v === "-" || t.v === "+")) {
+      const n1 = this.ts[this.i + 1],
+        n2 = this.ts[this.i + 2];
+      if (
+        n1?.k === "number" &&
+        n1.start === t.end &&
+        n2?.k === "op" &&
+        ["++", "--"].includes(n2.v) &&
+        n2.start === n1.end
+      ) {
+        let text = this.take().v,
+          end = this.ts[this.i - 1].end;
+        while (
+          this.ts[this.i]?.start === end &&
+          ![";", "|", ")", "}", "<eof>", ","].includes(this.ts[this.i].v)
+        ) {
+          text += this.take().v;
+          end = this.ts[this.i - 1].end;
+        }
+        return { k: "literal", value: text, line: t.line };
+      }
+    }
+    // R26-N2: 引用文字列に ++／-- が接着する形（'a'++／"a"--2 等）も
+    // 単一の文字列引数として渡る。接着部分は引用符内の内容に続く
+    // 文字列として取り込む（二重引用符では展開規則を保つため string
+    // ノードのままにする）。
+    if (t.k === "string") {
+      const next = this.ts[this.i + 1];
+      if (
+        next?.k === "op" &&
+        ["++", "--"].includes(next.v) &&
+        next.start === t.end
+      ) {
+        const strToken = this.take();
+        let end = strToken.end;
+        while (
+          this.ts[this.i]?.start === end &&
+          ![";", "|", ")", "}", "<eof>", ","].includes(this.ts[this.i].v)
+        ) {
+          this.take();
+          end = this.ts[this.i - 1].end;
+        }
+        const suffix = this.source.slice(strToken.end, end);
+        return strToken.quote === '"'
+          ? { k: "string", value: strToken.v + suffix, quote: '"', line: t.line }
+          : { k: "literal", value: strToken.v + suffix, line: t.line };
       }
     }
     // カンマで区切られた後続要素（1,2+3 の 2+3 等）も含め、この引数の
@@ -772,11 +882,12 @@ export class PSParser {
       // R25-N12: 引数モード（argGlued）でカンマ要素等として読まれる
       // 数値にも接着判定を効かせる。隣接演算子列を文字列として取り込み、
       // 後続処理（メンバー・二項演算子）へは渡さない。
+      // R26-N2: 二連演算子 ++／-- も対象に含める（oneArgument と同じ）。
       if (this.argGlued > 0) {
         const next = this.ts[this.i];
         if (
           next?.k === "op" &&
-          ["+", "-", "*", "/", "%"].includes(next.v) &&
+          ["+", "-", "*", "/", "%", "++", "--"].includes(next.v) &&
           next.start === t.end
         ) {
           let text = t.v,
@@ -800,42 +911,76 @@ export class PSParser {
       // （-1,2 は (-1) と 2 の配列であり、-(1,2) ではないため）。
       // R25-N12: 被演算子は数値で始まる接着形の対象外（-3 等の負数形の
       // 現行挙動を変えないため、接着判定は下ろす）。
-      const savedGlued = this.argGlued;
+      // R26-N1: 被演算子の内側は param 既定値のカンマ抑止（noComma）の
+      // 対象外であり、区切り水準の抑止を内側へ継承しない（範囲右辺の
+      // カンマは文法 B.2.3 どおり式のカンマとして読む）。
+      const savedGlued = this.argGlued,
+        savedComma = this.noComma;
       this.argGlued = 0;
+      this.noComma = 0;
       let unaryArg;
       try {
         unaryArg = this.expr(8);
       } finally {
         this.argGlued = savedGlued;
+        this.noComma = savedComma;
       }
       a = { k: "unary", op: t.v.toLowerCase(), arg: unaryArg, line };
     } else if (t.v === "++" || t.v === "--") {
       // R22-N16: 前置インクリメント／デクリメント。
-      const savedGlued = this.argGlued;
+      // R26-N1: 被演算子の内側へ noComma を継承しない（単項と同じ）。
+      const savedGlued = this.argGlued,
+        savedComma = this.noComma;
       this.argGlued = 0;
+      this.noComma = 0;
       let preTarget;
       try {
         preTarget = this.expr(8);
       } finally {
         this.argGlued = savedGlued;
+        this.noComma = savedComma;
       }
-      a = { k: "pre", op: t.v, target: preTarget, line };
+      // R26-N2: 引数モード（argGlued）でカンマ要素等として expr 経由で
+      // 読まれた前置形は、oneArgument の先頭分岐を通らない。対象が
+      // 代入可能（変数・プロパティ・添字）でない場合は前置として
+      // 評価せず、接着した原文全体を generic-token の文字列として
+      // 扱う（1,++2 の第2要素等。従来は評価側でホスト例外が漏出した）。
+      // 変数等への前置（++$x）は従来どおり式として評価する。
+      if (
+        this.argGlued > 0 &&
+        !["var", "member", "index"].includes(preTarget.k)
+      )
+        a = {
+          k: "literal",
+          value: this.source.slice(t.start, this.ts[this.i - 1].end),
+          line,
+        };
+      else a = { k: "pre", op: t.v, target: preTarget, line };
     }
     else if (t.v === "(" || t.v === "$(") {
       // R25-N12: 括弧内は式モードに戻るため、接着判定を一時的に下ろす。
-      const savedGlued = this.argGlued;
+      // R26-N1: 括弧・部分式の内側へ noComma を継承しない。param 既定値の
+      // 区切りカンマが働くのはパラメータ列の水準だけであり、括弧内の
+      // カンマは式のカンマである（文法 B.2.3）。
+      const savedGlued = this.argGlued,
+        savedComma = this.noComma;
       this.argGlued = 0;
+      this.noComma = 0;
       let pipe;
       try {
         pipe = this.pipeline();
       } finally {
         this.argGlued = savedGlued;
+        this.noComma = savedComma;
       }
       this.take(")");
       a = { k: "subexpression", pipe, line };
     } else if (t.v === "@(") {
-      const savedGlued = this.argGlued;
+      // R26-N1: 配列表記の内側へ noComma を継承しない（括弧と同じ）。
+      const savedGlued = this.argGlued,
+        savedComma = this.noComma;
       this.argGlued = 0;
+      this.noComma = 0;
       const values = [];
       try {
         this.skip();
@@ -846,12 +991,16 @@ export class PSParser {
         }
       } finally {
         this.argGlued = savedGlued;
+        this.noComma = savedComma;
       }
       this.take(")");
       a = { k: "array-pipelines", values, line };
     } else if (t.v === "@{") {
-      const savedGlued = this.argGlued;
+      // R26-N1: ハッシュ表記の内側へ noComma を継承しない（括弧と同じ）。
+      const savedGlued = this.argGlued,
+        savedComma = this.noComma;
       this.argGlued = 0;
+      this.noComma = 0;
       const entries = [];
       try {
         this.skip();
@@ -869,6 +1018,7 @@ export class PSParser {
         }
       } finally {
         this.argGlued = savedGlued;
+        this.noComma = savedComma;
       }
       this.take("}");
       a = { k: "hashtable", entries, line };
@@ -877,13 +1027,17 @@ export class PSParser {
       this.take("]");
       // R24-N3: キャストの被演算子もカンマ演算子を含まない（単項と同様）。
       // R25-N12: 被演算子は式モードのため接着判定を下ろす。
-      const savedGlued = this.argGlued;
+      // R26-N1: 被演算子の内側へ noComma を継承しない（単項と同じ）。
+      const savedGlued = this.argGlued,
+        savedComma = this.noComma;
       this.argGlued = 0;
+      this.noComma = 0;
       let castArg;
       try {
         castArg = this.expr(8);
       } finally {
         this.argGlued = savedGlued;
+        this.noComma = savedComma;
       }
       a = { k: "cast", type, arg: castArg, line };
     } else
@@ -901,19 +1055,34 @@ export class PSParser {
       if (this.peek("[")) {
         this.take();
         // R25-N12: 添字内は式モードのため接着判定を一時的に下ろす。
-        const savedGlued = this.argGlued;
+        // R26-N1: 添字の内側へ noComma を継承しない（括弧と同じ）。
+        const savedGlued = this.argGlued,
+          savedComma = this.noComma;
         this.argGlued = 0;
+        this.noComma = 0;
         let index;
         try {
           index = this.expr();
         } finally {
           this.argGlued = savedGlued;
+          this.noComma = savedComma;
         }
         this.take("]");
         a = { k: "index", target: a, index, line };
         continue;
       }
       if (this.peek("++") || this.peek("--")) {
+        // R26-N2: 引数モード（argGlued）では、代入可能な対象（変数・
+        // プロパティ・添字）でない一次式への後置 ++／-- は消費しない。
+        // 消費すると評価側の代入先参照でホスト例外が漏出していた
+        // （Write-Output 1 --2 の第1引数等）。消費しなければ、後続の
+        // ++／-- は次の引数として generic-token 側で文字列になる。
+        // 式位置（argGlued=0）の解釈には触れない。
+        if (
+          this.argGlued > 0 &&
+          !["var", "member", "index"].includes(a.k)
+        )
+          break;
         a = { k: "post", op: this.take().v, target: a, line };
         continue;
       }
@@ -971,6 +1140,10 @@ export class PSParser {
         // 右辺を expr(8) で読む抑止は撤回する。要素は左辺のカンマ収集と
         // 同じく expr(8) で読み、param 既定値などカンマが区切りの文脈
         // （noComma）では従来どおり収集しない。
+        // R26-N1: noComma が届くのはパラメータ列の水準だけであり、括弧・
+        // @()・@{}・キャスト・単項・添字・ブロック等の内側では各分岐が
+        // noComma を 0 へ戻してから読むため、内側の範囲右辺はここで
+        // 通常どおり収集される。
         let b = this.expr(8);
         if (this.peek(",") && !this.noComma) {
           const values = [b];

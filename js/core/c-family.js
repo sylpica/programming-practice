@@ -1039,6 +1039,31 @@ function parse(source, language, deadline) {
         if (args.length !== 1)
           unsupported("複数引数の直接初期化は未対応です", t.line);
         value = args[0];
+      } else if (this.peek("{")) {
+        // R26-N19：直接リスト初期化 `型 名{値};` は C++ の基本形（g++ 実測で
+        // 合法）。従来は波括弧位置で「; が必要です」という虚偽原因になって
+        // いた。`=` 付きコピー形と同じ { k:"array" } の初期化子として読み、
+        // 実行側の narrowing 検査（RG-192）をそのまま適用する。
+        // C（C11 の gcc 実測でエラー）／C# では実物でも不正なので受理せず、
+        // 真因を名指して停止する（セミコロンは書かれているため
+        // 「; が必要です」とは言わない）。
+        if (language !== "cpp")
+          throw new PracticeError(
+            language === "c"
+              ? "Cでは波括弧による直接初期化はできません（= {値} の形で書いてください）"
+              : "C#では波括弧による直接初期化はできません（= new 型 {値} など通常の初期化で書いてください）",
+            t.line,
+            "SyntaxError",
+          );
+        this.take();
+        let values = [];
+        while (!this.peek("}")) {
+          values.push(this.expr());
+          if (!this.peek(",")) break;
+          this.take();
+        }
+        this.take("}");
+        value = { k: "array", values, line: t.line };
       } else if (this.peek("=")) {
         this.take();
         if (this.peek("{")) {
@@ -3199,6 +3224,21 @@ export function createCFamily({ id, name, extensions, language }) {
                     }
                     v = elVal;
                   }
+                }
+                // R26-N20：C のスカラー波括弧初期化（型 名 = {値};）は
+                // C11 の gcc 実測で合法（値は通常の変換を受ける）。
+                // 従来は配列のまま cast へ渡り「数値型が一致しません」で
+                // 停止していた（C++ の同形は動作する内部不整合）。
+                // C には narrowing の概念はないため、要素を取り出して
+                // 通常の初期化として扱う（char への {300} は切り捨て、
+                // 余分な要素は gcc どおり先頭要素を採用、空波括弧は 0）。
+                if (
+                  language === "c" &&
+                  v !== uninitialized &&
+                  Array.isArray(n.value?.values) &&
+                  Array.isArray(v)
+                ) {
+                  v = n.value.values.length === 0 ? 0 : v[0];
                 }
                 if (v !== uninitialized) v = cast(v, type, s, n, api);
                 s.vars[n.name] = v;

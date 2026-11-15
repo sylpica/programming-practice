@@ -73,6 +73,11 @@ export function arithmetic(source, vars, line = 1) {
       a = t === "-" ? -a : t === "~" ? ~a : t === "!" ? BigInt(a === 0n) : a;
     } else if (/^\d/.test(t || "")) a = literal(t);
     else if (/^[\p{L}_]/u.test(t || "")) {
+      // R26-N22：展開の内部プレースホルダが式へ届いた場合は、未確定の
+      // 入力として正直に停止する。プレースホルダ名の変数（未定義→0）と
+      // して黙って計算したり、文言にプレースホルダを出したりしない。
+      if (/__CMD_VALUE_\d+__/.test(t))
+        fail("未確認：set /a の入力値が確定していません", line, "未確認");
       const v = ciGet(vars, t);
       if (isUnknown(v))
         fail("未確認：set /a の入力値が確定していません", line, "未確認");
