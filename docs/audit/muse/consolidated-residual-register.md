@@ -724,3 +724,17 @@
 - **RG-140 ImageJ「スタック」「閾値・二値化」「結果表（Results）」の追加**（G-N9〜G-N11、3件）：教材で多用される ImageJ 固有概念（スタック＝複数スライスの集まり、閾値・二値化＝粒子カウントの中核フロー、結果表＝測定結果の出力先）が用語集になかった。3語を追加した。→ 実装
 - **RG-141 Power Apps「レコード」「テーブル」「データソース」の追加**（G-N12、1件・3語）：Power Fx の中核概念3語が用語集になく、既存項目「コレクション」の定義文が未定義の「レコード」「テーブル」を使っていた。3語を追加し、コレクション定義との整合を取った。→ 実装
 - **RG-142 AutoHotkey「自動実行」の追加**（G-N13、1件）：テンプレート [ahk-calc] の説明文で使われる AutoHotkey 固有の概念「自動実行」（スクリプト冒頭の自動実行セクション）が用語集になかった。追加した。→ 実装
+
+## 2026-11-15 Muse 修正による処置結果（第6バッチ：CI 実コンパイル照合・3件）
+
+統合配信（コミット 6763392）の GitHub Actions validate ジョブが、ステップ「Compile teaching examples with native runtimes」（`tests/native-audit.py`）で失敗した。native-audit は最初の失敗で停止する設計のため、同スクリプトと同じデータ抽出・同じコンパイル条件で失敗を全件収集したところ、失敗は **3件のみ**（C／C++／Python の全238件中）。あわせて、この VM に .NET SDK 8（8.0.428）を導入し、従来ローカル未検証だった C# の全59件（テンプレート6＋リファレンス53）も実コンパイル・実実行で照合し、失敗ゼロを確認した。Python は全170件で失敗ゼロ。新設は **RG-143 の1グループ**。
+
+- テスト：2,052件 → **2,054件**（CI 失敗クラスの静的回帰テスト2件を `tests/muse-fix-ci.test.js` に追加）。全件実行で **2,054件全件合格**（パス上限の実時間予算テストを含む）。
+- native-audit.py（dotnet を含む全範囲）の最終結果は修正報告書に記録。
+- precache は全変更の最後に再生成し `--check` 通過。
+- 累計：元項目 **727件**（724＋3）、統合 **143グループ**（RG-01〜RG-143）。
+- 修正報告書：`docs/audit/MUSE-FIX-CI.md`。
+
+### CI 照合で新設された群（RG-143）
+
+- **RG-143 C／C++ リファレンス使用例の実コンパイル前提の是正**（3件）：`js/core/c-family.js` のラッパーは使用例を `int main()` に包む際、インクルードを C は `<stdio.h>`、C++ は `<iostream>`＋`<cstdio>` に一律固定し、C++ の std:: 修飾も cout／endl／printf のみだったため、(1) C の `bool` 項目の使用例 `bool ok = true;` が `<stdbool.h>` なしでは C17 の実 gcc でコンパイルできず（unknown type name 'bool'）、(2) C++ の `string` 項目と (3) `getline` 項目の使用例が、無修飾の `string` 宣言と `<string>` 欠如で実 g++ でコンパイルできなかった。ラッパーを是正し、C では bool／true／false を使う使用例にだけ `#include <stdbool.h>` を、C++ では `string` を `std::string` へ修飾し `std::string` を使う使用例にだけ `#include <string>` を追加するようにした（他の使用例の表示は不変）。照合個票 `docs/audit/reference-r2.json` の該当3行（c/bool、cpp/string、cpp/getline）の example 文面と sha256 も同期した（sha256 は fields の JSON からの再計算で自己整合化）。回帰として、npm test 側に「C の使用例で bool／true／false を使うものは `<stdbool.h>` 必須」「C++ の使用例は無修飾 string 宣言禁止・std::string 使用時は `<string>` 必須」の静的検査を追加し、修正前の配信内容に対して3件全てを検出できることを確認した。→ 実装＋文面同期

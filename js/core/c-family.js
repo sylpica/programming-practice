@@ -1595,8 +1595,15 @@ export function createCFamily({ id, name, extensions, language }) {
     ? !["Console.WriteLine","Console.ReadLine","class","checked", ...csharpOnly, ...(id === "c" ? ["cout","string", ...cppOnly] : [])].includes(r.name)
     : !["pointer","printf","cout","unsigned int","unsigned long","unsigned short","unsigned char","signed char","sizeof","abs", ...cppOnly].includes(r.name));
   if (!managed) for (const r of reference) {
-    if (id === "cpp") r.example = r.example.replace(/\b(cout|endl|printf)\b/g, "std::$1");
-    r.example = `#include <${id === "cpp" ? "iostream>\n#include <cstdio" : "stdio.h"}>\nint main() {\n${r.example}\nreturn 0;\n}`;
+    if (id === "cpp") r.example = r.example.replace(/\b(cout|endl|printf|string)\b/g, "std::$1");
+    // The native examples must compile as written: C needs <stdbool.h> for
+    // bool/true/false (C17), and C++ needs <string> for std::string. Add only
+    // the headers each example actually uses.
+    const headers =
+      id === "cpp"
+        ? ["iostream", "cstdio", ...(r.example.includes("std::string") ? ["string"] : [])]
+        : ["stdio.h", ...(/\b(bool|true|false)\b/.test(r.example) ? ["stdbool.h"] : [])];
+    r.example = `${headers.map((h) => `#include <${h}>`).join("\n")}\nint main() {\n${r.example}\nreturn 0;\n}`;
   }
   let codeArray = managed
     ? "int[] values = {1, 2, 3};\nint total = 0;\nfor (int i = 0; i < 3; i++) {\n    total += values[i];\n}\nConsole.WriteLine(total);"

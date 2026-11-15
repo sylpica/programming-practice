@@ -9981,10 +9981,10 @@
    "description": "真偽値 true／false を表す型です（本来は <stdbool.h> の bool）。モデルでは宣言と真偽値の代入に対応します。",
    "returns": "戻り値なし（宣言または制御文）",
    "caution": "部分実装です：(bool) 式のキャストは C では明示的に対応しておらず、未対応として停止します（宣言・代入は動作します）。",
-   "example": "#include <stdio.h>\nint main() {\nbool ok = true;\nreturn 0;\n}",
+   "example": "#include <stdio.h>\n#include <stdbool.h>\nint main() {\nbool ok = true;\nreturn 0;\n}",
    "source": "https://en.cppreference.com/w/c/language/arithmetic_types"
   },
-  "sha256": "7bca8d44e1dffcc3ec23f6b7f12ae59646eaf5e134ec22ec1e41e3bc6094e972"
+  "sha256": "92d5f60c888400cd2ab5b1a2d15644cb3139f5664a710ba541897c8c787d4aa8"
  },
  {
   "kind": "c",
@@ -10280,10 +10280,10 @@
    "description": "std::string 型の文字列です。既定では空文字列で、+／+= で連結でき、添字で1文字ずつ読み書きできます。比較もできます。",
    "returns": "戻り値なし（宣言または制御文）",
    "caution": "メソッド（.length() 等）は未実装です。C にはこの型はなく、char 配列を使います。",
-   "example": "#include <iostream>\n#include <cstdio>\nint main() {\nstring s = \"ab\";\ns += \"c\";\nstd::cout << s << std::endl;\nreturn 0;\n}",
+   "example": "#include <iostream>\n#include <cstdio>\n#include <string>\nint main() {\nstd::string s = \"ab\";\ns += \"c\";\nstd::cout << s << std::endl;\nreturn 0;\n}",
    "source": "https://en.cppreference.com/w/cpp/string/basic_string"
   },
-  "sha256": "e2e7f0483d171e54dd3359af8c87bff3dc8c40ff5ccd206fb367f3f84964e681"
+  "sha256": "aa02cc1ef1f75f3a30d954d17bf5fb9b457845879e0fb86f281f7dd9ce3c6745"
  },
  {
   "kind": "cpp",
@@ -10397,10 +10397,10 @@
    "description": "標準入力から1行を読み取り、string 変数へ格納します。モデルでは実行時の入力を未確定値として扱います。std::cin はこの関数の第1引数としてだけ使います。",
    "returns": "std::istream&（第1引数のストリーム）",
    "caution": "対応形式は std::getline(std::cin, 変数) のみです。cin >> x の抽出演算子は未実装で、シフト演算として解釈され停止します。",
-   "example": "#include <iostream>\n#include <cstdio>\nint main() {\nstring line;\nstd::getline(std::cin, line);\nreturn 0;\n}",
+   "example": "#include <iostream>\n#include <cstdio>\n#include <string>\nint main() {\nstd::string line;\nstd::getline(std::cin, line);\nreturn 0;\n}",
    "source": "https://en.cppreference.com/w/cpp/string/basic_string/getline"
   },
-  "sha256": "330514ae3ed56ee7096f772a4721eb9dab298d049bc2fd8afb7997e9c7580df9"
+  "sha256": "2161767d0a5cfba3a48413c69c7f458e9e9ee678947f1b9b3c83492e41c66233"
  },
  {
   "kind": "cpp",
