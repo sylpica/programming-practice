@@ -93,7 +93,7 @@ test("RG-06 braceless if-else in C and C#", async () => {
   assert.equal(output(await first("csharp", `int x = 0; if (x > 0) Console.WriteLine("a"); else Console.WriteLine("b");`)), "b");
 });
 test("RG-06 user function definitions stop naming the function", async () => {
-  await expectError("c", `int add(int a, int b) { return a + b; } int main(){ return 0; }`, /ユーザー定義関数 add/, "未対応");
+  await expectError("c", `int add(int a, int b) { return a + b; } int main(){ return 0; }`, /ユーザ定義関数 add/, "未対応");
 });
 test("RG-06 static members and casts in C#", async () => {
   assert.equal(output(await first("csharp", `Console.WriteLine(int.MaxValue);`)), "2147483647");

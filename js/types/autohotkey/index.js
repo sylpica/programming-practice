@@ -48,7 +48,7 @@ const reference = rows([
     'WinActivate "タイトル"',
     "指定したモデルウィンドウをアクティブにします。",
     'WinActivate "メモ帳"',
-    "一致しなければTargetError。実ウィンドウは操作しません。",
+    "一致しなければTargetErrorです。実ウィンドウは操作しません。",
   ],
   [
     "WinClose",
@@ -56,15 +56,15 @@ const reference = rows([
     'WinClose "タイトル"',
     "モデルのウィンドウを閉じる操作を説明します。",
     'WinClose "メモ帳"',
-    "保存確認などアプリ固有の結果は未確認です。",
+    "対象ウィンドウが見つからなければTargetErrorを投げます（実物ではグループモード使用時を除く）。保存確認などアプリ固有の結果は未確認です。",
   ],
   [
     "SetTitleMatchMode",
     "ウィンドウ",
-    "SetTitleMatchMode 1 / 2 / 3",
-    "タイトルの先頭一致・部分一致・完全一致を切り替えます。",
+    "SetTitleMatchMode 1 / 2 / 3 / \"RegEx\" / \"Fast\" / \"Slow\"",
+    "タイトルの一致方法（1：先頭一致、2：部分一致、3：完全一致、\"RegEx\"：正規表現）か、ウィンドウテキストの検索速度（\"Fast\"／\"Slow\"）を切り替えます。速度は一致方法とは独立に設定できます。",
     "SetTitleMatchMode 3",
-    "RegExモードは未対応です。",
+    "この教材のモデルで対応するのは数値の1／2／3のみで、\"RegEx\"・\"Fast\"・\"Slow\"は未対応として停止します。",
   ],
   [
     "Click",
@@ -72,7 +72,7 @@ const reference = rows([
     "Click X, Y",
     "アクティブウィンドウのクライアント座標でクリックを記録します。",
     "Click 10, 20",
-    "座標モードは既定のClientのみ。画面上の効果は捏造しません。",
+    "座標モードは既定のClientのみです。画面上の効果は捏造しません。",
   ],
   [
     "MouseMove",
@@ -108,7 +108,7 @@ const reference = rows([
     "IsSet(変数)",
     "変数に値が代入されているかを調べ、代入済みなら1、未代入なら0を返します。引数の変数は評価されないため、未代入の変数を渡してもエラーになりません。空文字列が代入されている場合も代入済みです。",
     "x := 1\nMsgBox IsSet(x)\nMsgBox IsSet(y)",
-    "組み込み変数A_*は常に値があるため、IsSetの結果は1です。",
+    "対応している組み込み変数は常に値があるため、IsSetの結果は1です（未対応のA_Loop*系などは除きます）。",
   ],
   [
     "IsSetRef",
@@ -116,7 +116,7 @@ const reference = rows([
     "IsSetRef(&変数)",
     "参照（&変数）で受け取った変数に値が代入されているかを調べ、代入済みなら1、未代入なら0を返します。参照先は評価されないため、未代入でもエラーになりません。",
     "y := [1, 2]\nMsgBox IsSetRef(&y)\nMsgBox IsSetRef(&z)",
-    "この教材のモデルでは、参照先が配列・オブジェクトのときに1、数値・文字列のときに0を返します。",
+    "実物では型によらず代入済みなら1ですが、この教材のモデルは実物と異なり、参照先が配列・オブジェクトのときにだけ1を返し、代入済みの数値・文字列や未確定値でも0を返します（モデル側の制限です）。未代入のときは実物・モデルとも0です。",
   ],
   [
     "if",
@@ -162,7 +162,7 @@ const reference = rows([
     "return / return 式",
     "現在の関数またはホットキー本体の実行を終えて、呼び出し側へ戻ります。式を付けると、その値が戻り値になります。",
     'MsgBox "前"\nreturn\nMsgBox "後"',
-    "この教材ではユーザー関数定義が未対応のため、使用例はホットキー本体を途中で終える形です。式付きの形は関数内でのみ意味を持ちます。",
+    "この教材ではユーザ関数定義が未対応のため、使用例はホットキー本体を途中で終える形です。式付きの形は関数内でのみ意味を持ちます。",
   ],
   [
     "A_Index",
@@ -176,9 +176,9 @@ const reference = rows([
     "A_*（組み込み変数）",
     "変数",
     "A_Space / A_Tab / A_ScriptDir / A_Now ほか",
-    "AutoHotkeyが用意する組み込み変数群で、原則として読み取り専用です。A_Space（空白1文字）とA_Tab（タブ1文字）は固定値です。それ以外は実行時に決まる値で、この教材では値を捏造せず「実行時に決まる値」として扱います。代表例：日時（A_YYYY・A_MM・A_DD・A_Hour・A_Min・A_Sec・A_MSec・A_Now・A_NowUTC・A_TickCount）、スクリプト情報（A_ScriptDir・A_ScriptName・A_ScriptFullPath・A_WorkingDir・A_AhkVersion・A_AhkPath・A_LineNumber）、環境とOS（A_UserName・A_ComputerName・A_OSVersion・A_WinDir・A_Temp・A_AppData・A_Desktop・A_ProgramFiles・A_ScreenWidth・A_ScreenHeight・A_IsAdmin・A_Clipboard）、スクリプト設定（A_TitleMatchMode・A_SendMode・A_KeyDelay・A_MouseDelay・A_DetectHiddenWindows・A_FileEncoding）などです。",
+    "AutoHotkeyが用意する組み込み変数群で、多くは読み取り専用です。ただし一部は代入で設定を変更できます（A_WorkingDir・A_Clipboard・A_TitleMatchMode・A_SendMode・A_FileEncodingなど）。A_Space（空白1文字）とA_Tab（タブ1文字）は固定値です。それ以外は実行時に決まる値で、この教材では値を捏造せず「実行時に決まる値」として扱います（A_TitleMatchModeだけは例外で、現在の一致モード1／2／3を返します）。代表例：日時（A_YYYY・A_MM・A_DD・A_Hour・A_Min・A_Sec・A_MSec・A_Now・A_NowUTC・A_TickCount）、スクリプト情報（A_ScriptDir・A_ScriptName・A_ScriptFullPath・A_WorkingDir・A_AhkVersion・A_AhkPath・A_LineNumber）、環境とOS（A_UserName・A_ComputerName・A_OSVersion・A_WinDir・A_Temp・A_AppData・A_Desktop・A_ProgramFiles・A_ScreenWidth・A_ScreenHeight・A_IsAdmin・A_Clipboard）、スクリプト設定（A_TitleMatchMode・A_SendMode・A_KeyDelay・A_MouseDelay・A_DetectHiddenWindows・A_FileEncoding）などです。",
     'MsgBox "a" A_Space "b"\nMsgBox A_ScriptDir',
-    "ループ専用のA_Loop*系（A_LoopField・A_LoopFileName・A_LoopReadLine・A_LoopRegNameなど）とA_ThisFuncは未対応で、読み取り時に名前を挙げて停止します。A_Indexは個別項目です。",
+    "ループ専用のA_Loop*系（A_LoopField・A_LoopFileName・A_LoopReadLine・A_LoopRegNameなど）とA_ThisFuncは未対応で、読み取り時に名前を挙げて停止します。A_Indexは個別項目です。A_TitleMatchModeへの代入は、この教材のモデルではタイトル一致動作に反映されません（一致方法の変更にはSetTitleMatchModeを使ってください）。",
   ],
   [
     "Length",
@@ -216,7 +216,7 @@ for (const r of reference) {
   if (r.name === "Hotkey") continue;
   if (r.name === "Hotstring") {
     r.example += '\n^!n:: {\n MsgBox "モデルeventを::btwにすると置換を確認できます"\n}';
-    r.caution += " モデルeventを::btw、ウィンドウ末尾をbtwにして置換を確認します。";
+    r.caution += "モデルeventを::btw、ウィンドウ末尾をbtwにして置換を確認します。";
     continue;
   }
   const setup = r.name === "if" ? "x := 1\n" : r.name === "while" ? "n := 0\n" : "";
@@ -1093,7 +1093,7 @@ export const definition = {
     description:
       "AutoHotkey v2の起動部分とイベント本体を分離し、モデルのアクティブウィンドウ・送信キー・マウスを更新します。",
     support:
-      "ホットキーの単一イベント、単純ホットストリング、代入、If、Loop（Until 節・For を含む）、While、掲載関数、IsSet／IsSetRef、組み込み変数 A_*（値は実行時に決まるものとして扱い、A_Space・A_Tab は固定値）に対応。キーワード・プロパティ名は大文字小文字を区別しません。配列の添字は1始まり、真偽結果は 1／0 で表示します。空白による暗黙の連結と省略引数にも対応します。整数は安全整数範囲内のモデル。整数除算 //・64ビットビット演算は未対応として停止します。#HotIf、タイマー、複雑なSend記法、CoordMode変更、ユーザー関数定義、Try／Catch、Switch、クラス定義、ラベル／Goto、Loop Files／Parse／Read 等は未対応として停止します。",
+      "ホットキーの単一イベント、単純ホットストリング、代入、If、Loop（Until 節・For を含む）、While、掲載関数、IsSet／IsSetRef、組み込み変数 A_*（値は実行時に決まるものとして扱い、A_Space・A_Tab は固定値）に対応。キーワード・プロパティ名は大文字小文字を区別しません。配列の添字は1始まり、真偽結果は 1／0 で表示します。空白による暗黙の連結と省略引数にも対応します。整数は安全整数範囲内のモデル。整数除算 //・64ビットのビット演算は未対応として停止します。#HotIf、タイマー、複雑なSend記法、CoordMode変更、ユーザ関数定義、Try／Catch、Switch、クラス定義、ラベル／Goto、Loop Files／Parse／Read 等は未対応として停止します。",
     sources: [
       {
         title: "AutoHotkey公式 v2ドキュメント",
@@ -1188,6 +1188,52 @@ export const definition = {
         return v;
       }
       const fmt = (v) => formatValue(ahkDisplay(v));
+      // NX-N23: the shared executor names an assignment target via
+      // callName(), which covers variables and properties (o.Score)
+      // but returns "" for a subscript, so subscript assignments were
+      // narrated as 「対象 に …」. Render the target from the AST so
+      // a[2] / o.list[1] are named with their subscript.
+      function ahkExprLabel(a) {
+        if (!a || typeof a !== "object") return "";
+        switch (a.k) {
+          case "literal":
+            return typeof a.value === "string" ? `"${a.value}"` : String(a.value);
+          case "var":
+            return a.name;
+          case "member": {
+            const t = ahkExprLabel(a.target);
+            return t ? `${t}.${a.name}` : "";
+          }
+          case "index": {
+            const t = ahkExprLabel(a.target);
+            if (!t) return "";
+            const parts = (a.indexes || []).map(ahkExprLabel);
+            if (!parts.length || parts.some((p) => p === "")) return "";
+            return `${t}[${parts.join(", ")}]`;
+          }
+          case "binary": {
+            const l = ahkExprLabel(a.a),
+              r = ahkExprLabel(a.b);
+            return l && r ? `${l} ${a.op === ".concat" ? "." : a.op} ${r}` : "";
+          }
+          case "unary": {
+            const x = ahkExprLabel(a.arg);
+            return x ? `${a.op}${x}` : "";
+          }
+          case "post": {
+            const x = ahkExprLabel(a.target);
+            return x ? `${x}${a.op}` : "";
+          }
+          case "call": {
+            const t = ahkExprLabel(a.target);
+            if (!t) return "";
+            const args = (a.args || []).map(ahkExprLabel);
+            return args.some((x) => x === "") ? "" : `${t}(${args.join(", ")})`;
+          }
+          default:
+            return "";
+        }
+      }
       // RG-33: executes a Loop node carrying an Until condition. Mirrors
       // the shared executor's loop bookkeeping (iteration notes, A_Index
       // via loopIterations, break/continue/return signals, path caps) and
@@ -1297,8 +1343,23 @@ export const definition = {
             for (let out of api.run(n.body, [st])) {
               out.loopDepth--;
               out.loopIterations.pop();
-              if (out.signal === "break") out.signal = null;
-              next.push(out);
+              if (out.signal === "break") {
+                // NX-N1: break ends this for loop itself. The state is
+                // finished here, not carried into the next element.
+                out.signal = null;
+                done.push(out);
+              } else if (out.signal === "continue") {
+                // NX-N2: continue skips only the rest of this pass.
+                // Clear the signal so the next element — and the
+                // statements after the loop — still run.
+                out.signal = null;
+                next.push(out);
+              } else if (out.halt || out.signal === "return") {
+                done.push(out);
+              } else {
+                out.signal = null;
+                next.push(out);
+              }
             }
           }
           active = next;
@@ -1413,6 +1474,11 @@ export const definition = {
               return { handled: true, value: AHK_BUILTIN_EXACT[lname] };
             if (AHK_BUILTIN_UNSUPPORTED.has(lname))
               api.fail("この組み込み変数は未対応です：" + a.name, a, "未対応");
+            // NX-N14 (sibling surface): A_TitleMatchMode is not a
+            // runtime-determined value in this model — it is exactly
+            // the mode SetTitleMatchMode maintains, so read it back.
+            if (lname === "a_titlematchmode")
+              return { handled: true, value: s.model.titleMatchMode ?? 2 };
             if (AHK_BUILTIN_RUNTIME.has(lname))
               return { handled: true, value: unknown(a.name) };
           }
@@ -1442,6 +1508,11 @@ export const definition = {
               let n = ahkIndex(idxRaw, a),
                 pos = n < 0 ? target.length + n + 1 : n;
               if (pos < 1) api.fail("添字が有効範囲にありません", a, "IndexError");
+              // P-N1（配列の成長経路）: 巨大な添字で疎な配列の長さが爆発
+              // すると、状態スナップショットの表示・転送が要素数に比例して
+              // 肥大する。他系統と同じ上限で止める。
+              if (pos > 200000)
+                api.fail("添字が上限（200000）を超えます", a, "IndexError");
               // Writing at Length+1 appends; beyond that leaves unset slots,
               // matching AutoHotkey's sparse-array behaviour in this model.
               target[pos - 1] = v;
@@ -1466,6 +1537,9 @@ export const definition = {
               if (lname === "length") {
                 if (typeof v !== "number" || !Number.isInteger(v) || v < 0)
                   api.fail("Lengthには0以上の整数を指定してください", node, "TypeError");
+                // P-N1: Length の直接拡張も疎配列の成長経路として上限で止める。
+                if (v > 200000)
+                  api.fail("Lengthには200000以下の整数を指定してください", node, "TypeError");
                 target.length = v;
                 return true;
               }
@@ -1490,6 +1564,41 @@ export const definition = {
           if (n.k === "ahkForEach") return runForEach(n, s, api);
           if ((n.k === "repeat" || n.k === "while") && n.untilCond)
             return runUntilLoop(n, s, api);
+          // NX-N23: subscript assignments (and postfix ++/-- on a
+          // subscript) are executed here, mirroring the shared
+          // executor's assign/expression steps, so the note can name
+          // the element (a[2]) instead of the fallback 「対象」.
+          if (n.k === "assign" && n.target?.k === "index") {
+            const label = ahkExprLabel(n.target);
+            if (label) {
+              let v = api.read(n.value, s);
+              if (["+=", "-=", "*=", "/="].includes(n.op))
+                v = semantics.binary
+                  ? semantics.binary(n.op[0], api.read(n.target, s), v, n, s, api)
+                  : baseBinary(n.op[0], api.read(n.target, s), v, "ahk");
+              api.write(n.target, v, s, n);
+              api.note(s, n, `${label} に ${fmt(v)} を代入します`);
+              return [s];
+            }
+          }
+          if (
+            n.k === "expression" &&
+            n.value?.k === "post" &&
+            n.value.target?.k === "index"
+          ) {
+            const label = ahkExprLabel(n.value.target);
+            if (label) {
+              const before = s.trace.length;
+              let v = api.read(n.value, s);
+              if (s.trace.length === before)
+                api.note(
+                  s,
+                  n,
+                  `${label} を${n.value.op === "++" ? "増やし" : "減らし"}ます（後置式の値は変更前の ${fmt(v)}）`,
+                );
+              return [s];
+            }
+          }
           return null;
         },
         truth(v) {
@@ -1513,7 +1622,7 @@ export const definition = {
               return { ...unknown(`${formatValue(a)} . ${formatValue(b)}`), op: ".", a, b };
             return baseBinary(op, a, b, "ahk");
           }
-          if (["^", "&", "|"].includes(op)) api.fail("未対応：AutoHotkeyの64ビットビット演算", node, "未対応");
+          if (["^", "&", "|"].includes(op)) api.fail("未対応：AutoHotkeyの64ビットのビット演算", node, "未対応");
           if (["+", "-", "*", "/", "<", ">", "<=", ">="].includes(op)) {
             a = numeric(a,node,api); b = numeric(b,node,api);
             if (op === "/" && b === 0) api.fail("0による除算です", node, "ZeroDivisionError");
@@ -1592,8 +1701,47 @@ export const definition = {
           if (
             !["winexist", "winactive", "winactivate", "winclose", "settitlematchmode",
               "sendtext", "send", "click", "mousemove", "sleep", "inputbox", "msgbox"].includes(n)
-          )
+          ) {
+            // M-N5: a name that already holds a value is not an
+            // "unsupported function" — the value simply is not
+            // callable. Name that cause instead; only a name with no
+            // definition at all keeps the unsupported-function message.
+            if (!name.includes(".")) {
+              const varKey = Object.keys(s.vars).find(
+                (k) => k.toLowerCase() === n,
+              );
+              if (varKey !== undefined) {
+                const v = s.vars[varKey];
+                const kind = Array.isArray(v)
+                  ? "配列"
+                  : isUnknown(v)
+                    ? "未確定値"
+                    : typeof v === "number"
+                      ? "数値"
+                      : typeof v === "string"
+                        ? "文字列"
+                        : typeof v === "boolean"
+                          ? "真偽値"
+                          : v && typeof v === "object"
+                            ? "オブジェクト"
+                            : "値";
+                api.fail(
+                  `${name} は関数ではありません（${kind}は呼び出せません）`,
+                  node,
+                );
+              }
+              if (
+                Object.hasOwn(AHK_BUILTIN_EXACT, n) ||
+                AHK_BUILTIN_RUNTIME.has(n) ||
+                AHK_BUILTIN_UNSUPPORTED.has(n)
+              )
+                api.fail(
+                  `${name} は関数ではありません（組み込み変数は呼び出せません）`,
+                  node,
+                );
+            }
             api.fail("このAutoHotkey関数は未対応です：" + name, node);
+          }
           let vals = args.map((a) => api.read(a, s));
           // RG-55: arguments reaching a builtin are AHK values; a raw JS
           // boolean (e.g. from model data) is the number 1/0 here.
@@ -1664,6 +1812,15 @@ export const definition = {
                 api.fail("未対応：一致モードは1 / 2 / 3のみ対応です", node, "未対応");
               const previous = s.model.titleMatchMode ?? 2;
               s.model.titleMatchMode = vals[0];
+              // NX-N14: the return value is the *previous* mode (the
+              // documented contract), so the step must name the mode
+              // that was just set — otherwise the trace only ever shows
+              // the old value and the new mode appears nowhere.
+              api.note(
+                s,
+                node,
+                `タイトル一致モードを ${vals[0]}（${{ 1: "先頭一致", 2: "部分一致", 3: "完全一致" }[vals[0]]}）に設定します`,
+              );
               return previous;
             }
             case "sendtext":
@@ -1677,6 +1834,13 @@ export const definition = {
                 return null;
               }
               text = String(text);
+              // NX-N22: the note quotes the text as written. Keep a
+              // display copy before "{Enter}" is expanded to a real
+              // newline for the model state, and show any literal
+              // newline (e.g. from a `n escape in SendText) as
+              // （改行） instead of embedding it raw, which made the
+              // quoted value look blank.
+              const displayText = text.replace(/\r\n|\r|\n/g, "（改行）");
               if (n === "send") {
                 if (text === "^a") {
                   w.selectionAll = true;
@@ -1693,16 +1857,20 @@ export const definition = {
                 }
                 text = text.replaceAll("{Enter}", "\n");
               }
+              // P-N1（蓄積の成長経路）: 送信テキストの蓄積も値サイズ上限の
+              // 対象にする。上限を超えたら実体を保持せず未確定値へ倒す。
               w.text = w.selectionAll
                 ? text
                 : isUnknown(w.text)
                   ? w.text
-                  : String(w.text || "") + text;
+                  : String(w.text || "").length + text.length > 200000
+                    ? unknown("とても長い文字列")
+                    : String(w.text || "") + text;
               w.selectionAll = false;
               api.note(
                 s,
                 node,
-                `「${w.title}」へ ${formatValue(text)} を入力します`,
+                `「${w.title}」へ ${formatValue(displayText)} を入力します`,
               );
               return null;
             }
@@ -1806,6 +1974,16 @@ export const definition = {
             title: "モデル入力・ウィンドウ",
             entries: [
               ["アクティブID", formatValue(p.model.activeId)],
+              // NX-N14: the current title match mode belongs in the
+              // final summary, not only in the step that changed it.
+              [
+                "タイトル一致モード",
+                (() => {
+                  const mode = p.model.titleMatchMode ?? 2;
+                  const label = { 1: "先頭一致", 2: "部分一致", 3: "完全一致" }[mode];
+                  return label ? `${mode}（${label}）` : formatValue(mode);
+                })(),
+              ],
               ["ウィンドウ", formatValue(p.model.windows)],
               ["キー送信", formatValue(p.model.keys)],
               ["マウス", formatValue(p.model.mouse)],

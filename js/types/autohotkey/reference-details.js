@@ -25,7 +25,7 @@ export const referenceDetails = {
     "source": "https://www.autohotkey.com/docs/v2/lib/WinClose.htm"
   },
   "SetTitleMatchMode": {
-    "returns": "変更前の一致モード（Integer）または速度設定（String）",
+    "returns": "変更前の一致モード（Integerまたは\"RegEx\"）または変更前の速度設定（\"Fast\"／\"Slow\"）",
     "source": "https://www.autohotkey.com/docs/v2/lib/SetTitleMatchMode.htm"
   },
   "Click": {
@@ -89,7 +89,7 @@ export const referenceDetails = {
     "source": "https://www.autohotkey.com/docs/v2/Variables.htm"
   },
   "A_*（組み込み変数）": {
-    "returns": "各変数の現在の値（A_Space・A_Tabは固定値、それ以外は実行時に決まる値）",
+    "returns": "各変数の現在の値（A_Space・A_Tabは固定値、A_TitleMatchModeは現在の一致モード、それ以外は実行時に決まる値）",
     "source": "https://www.autohotkey.com/docs/v2/Variables.htm"
   },
   "Length": {

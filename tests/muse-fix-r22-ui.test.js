@@ -210,7 +210,7 @@ test("R22-N26 references without a caution render no empty caution element", () 
       total++;
       if (!r.caution) empty++;
     }
-  assert.equal(total, 978);
+  assert.equal(total, 995);
   assert.ok(empty > 0, "expected some references without a caution");
   assert.ok(
     appSource.includes('...(r.caution ? [el("p", r.caution, "caution")] : [])'),

@@ -149,14 +149,14 @@ test("RG-12 numeric string literal plus number follows the classic VBA rule", ()
   // 文字列同士は連結のまま、他の演算子も従来どおり変換する
   assert.equal(path('x = "5" + "3"').vars.x, "53");
   assert.equal(path('x = "5" - 1').vars.x, 4);
-  // 宣言された String 型変数と数値型の組み合わせは従来仕様を維持する
+  // 宣言された String 型変数と数値の組み合わせも F-VBA-10 で実 VBA どおり暗黙変換する
   assert.equal(
-    sim('Dim s As String\nDim n As Long\ns = "2"\nn = 3\nx = s + n').paths[0].error.code,
-    13,
+    path('Dim s As String\nDim n As Long\ns = "2"\nn = 3\nx = s + n').vars.x,
+    5,
   );
   assert.deepEqual(
     outputs('Dim s As String\ns = "2"\nv = 3\nDebug.Print s + v'),
-    ["23"], // RG-04 統合裁定：実 VBA 表記（引用符なし）
+    ["5"], // F-VBA-10：数値文字列は加算される（連結ではない）
   );
 });
 

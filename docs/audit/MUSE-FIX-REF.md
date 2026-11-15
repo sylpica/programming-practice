@@ -13,7 +13,7 @@
 | 本文・書式の追記是正 | 7名＋§5・別名・パラメーター群 | else（C／C++／C#）・%0・Loop Until・$true／$false 等は親項目への追記で解消。§5 の文面是正（Power Apps 6区分8項目、R 5件、VBA Replace、cmd if／setlocal、PowerShell の実装済み追加パラメーター）、別名の本文追記（cmd 5種、PowerShell 23種）を含む。照合個票の変更行は47行 |
 | 意図的除外の宣言化 | 1名 | JavaScript `length`：refs 除外をテストで明示検証している設計判断に基づき、項目化せず DEVELOPMENT.md に意図的除外として宣言 |
 | 宣言化裁定（項目化せず） | 70名 | Python のフォールバック受理のみの組み込み29件と TYPE_ATTRS メソッド41件（監査の名数外）：専用実装がなく未対応として停止する実態と項目化が矛盾するため、DEVELOPMENT.md に対応範囲外として全名を宣言 |
-| 非漏れ裁定 | 7名 | ImageJ SIM_EXTRA のみ6件（監査の名数外。実装なし・正直に停止）、C++ cin（getline 項目への明記で足りる） |
+| 非漏れ裁定 | 7名 | ImageJ SIM_EXTRA のみ7件（監査の名数外。実装なし・正直に停止。件数は修正バッチ2で6件から7件へ是正：String.format を含む）、C++ cin（getline 項目への明記で足りる） |
 
 - Python 例外クラス25件は、報告書では備考（フォールバック）扱いだったが、raise 文と try のハンドラ照合で種類名として実処理されるため項目追加に裁定した（上の「項目追加（個別）」に含む）。
 - Power Apps の保留中だった書式変更提案（Text の書式引数、LookUp の第3引数、And／Or／Not の関数形）は、And／Or／Not を項目追加、Text／LookUp 等を書式是正として、照合個票の更新とセットで処置した（RG-128／RG-129）。
@@ -27,13 +27,13 @@
 
 ## 品質確認
 
-- 追加・変更した全項目について、宣言＝文面＝実装挙動の3点一致を確認。対応項目の使用例はテスト（`tests/audit.test.js`）が全件をエンジンで実実行し、エラーなしを確認する仕組みで担保した。Python の新規119項目は expected と実出力の一致まで個別に実実行確認した。
+- 追加・変更した全項目について、宣言＝文面＝実装挙動の3点一致を確認。対応項目の使用例はテスト（`tests/audit.test.js`）が全件をエンジンで実実行し、エラーなしを確認する仕組みで担保した。Python の新規118項目は expected と実出力の一致まで個別に実実行確認した。
 - 全テスト：**1,410件 → 2,041件**。全件実行で全合格（fail 0）を確認した。パス上限の実時間予算テスト2件はベースラインでも負荷により断続的に落ちる既知の事象で、確認のための再実行では1件が落ちたが、単独再実行では2件とも合格した（負荷起因であり本修正との関連はない）。
 - 件数ピンの追随：`tests/muse-fix-r22-ui.test.js` の総数ピン 511→978。`tests/muse-fix-ui.test.js` の RG-29 legacyLinks ピン 87→93（増加6件は A_Index／PI／return／TypeError／$／NA の項目新設により、テンプレート解説文中の正当な言及がリンク化されたもの。全件をベースラインとの差分で確認し、midWord は0のまま）。
 - precache は全変更の最後に再生成し、`node scripts/precache.mjs --check` を通過した。
 - DEVELOPMENT.md は最終状態に同期した（種類別表の件数、C の unsigned 宣言の陳腐化是正、Python フォールバック群と JavaScript length の宣言、完全性修正の節を新設）。
 
-## 変更ファイル一覧（43件）
+## 変更ファイル一覧（58件）
 
 - リファレンス本体：`js/content.js`（VBA）、`js/core/c-family.js`（C系共有行）、`js/types/imagej/reference-data.js`、`js/types/python/reference.js`、`js/types/cmd/index.js`、`js/types/powershell/index.js`、`js/types/cloudformation/index.js`、`js/types/autohotkey/index.js`、`js/types/javascript/index.js`、`js/types/powerapps/index.js`、`js/types/powerautomate/index.js`、`js/types/uivision/index.js`、`js/types/r/index.js`
 - 詳細（returns／source 等）の追加：`js/types/vba/reference-details.js`、`js/types/imagej/reference-details.js`、`js/types/cloudformation/reference-details.js`、`js/types/autohotkey/reference-details.js`、`js/types/c/reference-details.js`、`js/types/cpp/reference-details.js`、`js/types/csharp/reference-details.js`、`js/types/javascript/reference-details.js`、`js/types/powerapps/reference-details.js`、`js/types/powerautomate/reference-details.js`、`js/types/uivision/reference-details.js`、`js/types/r/reference-details.js`
@@ -52,7 +52,7 @@
 6. **JavaScript length の宣言化**：テストが refs 除外を明示検証していることを意図的除外の根拠とした。
 7. **R のデータフレームへの要素演算**：固有の名前がないため独立項目にせず、学習者の到達先である data.frame 項目への追記で処置した。
 8. **Power Automate Else if の追加方式**：パレットには加えず、UI.Vision の Number と同じ参照専用の追加方式とした（palette と reference が同一ソースのため、分類経路のみで現れる名前の扱いとして整合）。
-9. **reference-r2.json の sha256**：導出方式（fields をキーソートした JSON の sha256）を特定し、新規・変更行に適用した。既存行のうち7行は本修正以前から再計算値と一致していない（過去の編集で sha が追随しなかったもの）。テストは sha256 を参照しないため、既存行はそのまま残し、個票に記録した。
+9. **reference-r2.json の sha256**：導出方式（fields をキーソートした JSON の sha256）を特定し、新規・変更行に適用した。既存行のうち7行は本修正以前から再計算値と一致していない（過去の編集で sha が追随しなかったもの）。テストは sha256 を参照しないため、既存行はそのまま残し、個票に記録した。**（修正バッチ2での訂正）** この「7行は一致していない」は誤りだった。正しい直列化（キーソート・UTF-8・ensure_ascii=False・json.dumps 既定の区切り）で再計算すると、sha256 を持つ全行が一致し不一致は0行だった。真の欠落は sha256 自体を持たない7行（javascript/let・const・var、c/return、cpp/return、csharp/return、uivision/Number）のみで、修正バッチ2で同方式により補完し、全行が再現可能な状態にした。
 
 ## 申し送り（本修正では直さなかったもの）
 

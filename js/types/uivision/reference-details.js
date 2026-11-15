@@ -31,7 +31,9 @@ export const referenceDetails = {
     "source": "https://ui.vision/rpa/docs/selenium-ide/storevalue"
   },
   "echo": {
-    "description": "テキストや変数の内容をログへ出力します。",
+    "description": "テキストや変数の内容をログへ出力します。Value欄に色を指定すると、ログの表示色を指定できます（任意）。",
+    "syntax": "echo | テキスト | 色（任意）",
+    "caution": "色にはredやgreenなどの色名、または#shownotificationを指定できます。このモデルでは色はログ出力のテキストには反映しません。",
     "returns": "式の戻り値なし（コマンド）",
     "source": "https://ui.vision/rpa/docs/selenium-ide/echo"
   },
@@ -41,7 +43,7 @@ export const referenceDetails = {
     "source": "https://ui.vision/rpa/docs/selenium-ide/if"
   },
   "elseif": {
-    "description": "先行条件が偽で、この条件が真の場合のブロックを選びます。",
+    "description": "先行条件が偽で、この条件が真の場合のブロックを選びます。製品でのコマンド名の綴りはelseIfで、このモデルではelseif／elseIfのどちらも使えます。",
     "returns": "式の戻り値なし（コマンド）",
     "source": "https://ui.vision/rpa/docs/selenium-ide/if"
   },
@@ -78,15 +80,15 @@ export const referenceDetails = {
   "break": {
     "description": "最も内側のループを終了します。",
     "returns": "式の戻り値なし（コマンド）",
-    "source": "https://ui.vision/rpa/docs/selenium-ide/"
+    "source": "https://ui.vision/rpa/docs/selenium-ide#break"
   },
   "continue": {
     "description": "現在の反復の残りを飛ばして次の反復へ進みます。",
     "returns": "式の戻り値なし（コマンド）",
-    "source": "https://ui.vision/rpa/docs/selenium-ide/"
+    "source": "https://ui.vision/rpa/docs/selenium-ide#continue"
   },
   "assertText": {
-    "description": "要素のテキストを期待文字列と完全一致で検証します。不一致はエラーです。",
+    "description": "要素のテキストを期待パターンと照合して検証します。パターンはワイルドカード（*は任意の文字列、?は任意の1文字）を使ったglob形式で、exact:を付けると完全一致、regexp:を付けると正規表現として照合します。不一致はエラーです。",
     "returns": "式の戻り値なし（コマンド）",
     "source": "https://ui.vision/rpa/docs/selenium-ide/asserttext-verifytext"
   },
@@ -101,13 +103,13 @@ export const referenceDetails = {
     "source": "https://ui.vision/rpa/docs/selenium-ide/times"
   },
   "!statusOK": {
-    "description": "直前のコマンドが成功したかを表す組み込み変数です。成功でtrue、エラーでfalseになります。",
-    "returns": "真偽値（成功でtrue）",
-    "source": "https://ui.vision/rpa/docs/selenium-ide/"
+    "description": "コマンドの成否を表す組み込み変数です。エラーになった場合や、storeText／storeValueで要素が見つからず#LNFになった場合にfalseになります。falseは成功したコマンドでは自動では戻らず、storeでtrueを保存すると手動で戻せます。",
+    "returns": "真偽値（正常時はtrue、エラーや#LNFのときfalse）",
+    "source": "https://ui.vision/rpa/docs/#!statusok"
   },
   "!errorIgnore": {
     "description": "文字列\"true\"に設定すると、コマンドでエラーが起きてもマクロを止めずに継続します。",
     "returns": "設定値（文字列）",
-    "source": "https://ui.vision/rpa/docs/selenium-ide/"
+    "source": "https://ui.vision/rpa/docs/#!errorignore"
   }
 };

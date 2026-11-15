@@ -19,7 +19,7 @@ const errors = (r) =>
   [r.error, ...(r.paths || []).map((p) => p.error)].filter(Boolean);
 
 test("ref-r22 VBA: all 24 missing names are individual supported entries", () => {
-  assert.equal(vba.reference.length, 90, "66 existing + 24 new");
+  assert.equal(vba.reference.length, 91, "66 existing + 25 new");
   for (const name of NEW_NAMES) {
     const r = byName.get(name);
     assert.ok(r, name + " must exist as its own reference entry");

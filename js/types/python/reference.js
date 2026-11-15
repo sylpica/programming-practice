@@ -284,7 +284,7 @@ export const REFERENCE = [
   "returns": "dict: 新しい辞書",
   "example": "print(dict(a=1, b=2))",
   "expected": "{'a': 1, 'b': 2}",
-  "pitfalls": "キーワード形式ではキーは有効な識別子でなければならない。キーにリストなどの変更可能な値は使えない。",
+  "pitfalls": "キーワード形式ではキーは有効な識別子でなければならない。キーにはハッシュ可能な値のみ使える。リスト・辞書・集合や、それらを含むタプルはキーにできない。",
   "related": [
    "dict.get",
    "dict.items",
@@ -387,7 +387,7 @@ export const REFERENCE = [
   "returns": "ファイルオブジェクト",
   "example": "with open(\"memo.txt\", \"w\", encoding=\"utf-8\") as f:\n    f.write(\"hello\")\nwith open(\"memo.txt\", encoding=\"utf-8\") as f:\n    print(f.read())",
   "expected": "hello",
-  "pitfalls": "Python 3.14以前ではencodingの既定値がロケールとUTF-8モードの設定に依存します。3.15からUTF-8モードが既定です。常に明示すると確実。with を使わないと閉じ忘れることがある。",
+  "pitfalls": "Python 3.14以前ではencodingの既定値がロケールとUTF-8モードの設定に依存する。3.15からUTF-8モードが既定になる。常に明示すると確実。with を使わないと閉じ忘れることがある。",
   "related": [
    "with",
    "input"
@@ -407,7 +407,7 @@ export const REFERENCE = [
   "returns": "str: 入力された文字列（改行は除く）",
   "example": "name = input(\"名前: \")\nprint(f\"こんにちは、{name}さん\")",
   "expected": "名前: タロウ\nこんにちは、タロウさん",
-  "pitfalls": "戻り値は常に文字列。数値として使うには int() や float() で変換する。入力ストリームの終端では EOFError。このアプリでは実際の標準入力を読まず、入力値は実行時に決まる未確定値として扱います。",
+  "pitfalls": "戻り値は常に文字列。数値として使うには int() や float() で変換する。入力ストリームの終端では EOFError。このアプリでは実際の標準入力を読まず、入力値は実行時に決まる未確定値として扱う。",
   "related": [
    "int",
    "str",
@@ -696,7 +696,7 @@ export const REFERENCE = [
   "returns": "—（構文のため戻り値なし）",
   "example": "class Ctx:\n    def __enter__(self):\n        return self\n    def __exit__(self, *args):\n        return False\nwith Ctx() as c:\n    print(\"本文を実行\")",
   "expected": "本文を実行",
-  "pitfalls": "ブロックを抜けると例外時でも __exit__ が呼ばれ後始末される（実際の Python）。対象はコンテキストマネージャ対応オブジェクトに限る。本アプリでは __enter__／__exit__ の実際の処理や後始末は再現されず、as 変数には未確定値が入る。",
+  "pitfalls": "ブロックを抜けると例外時でも __exit__ が呼ばれ後始末される（実際の Python）。対象はコンテキストマネージャ対応オブジェクトに限る。本アプリでは部分対応である：本文は実行されるが、__enter__／__exit__ の実際の処理や後始末は再現されず、as 変数には未確定値が入る。open() と組み合わせた場合は open 自体が未対応のため停止する。",
   "related": [
    "open",
    "try"
@@ -736,7 +736,7 @@ export const REFERENCE = [
   "returns": "モジュール",
   "example": "import math\nprint(math.sqrt(81))",
   "expected": "9.0",
-  "pitfalls": "sqrt の戻り値は float。複素数が必要なら cmath を使う。",
+  "pitfalls": "sqrt の戻り値は float。複素数が必要なら cmath を使う。本アプリで確定計算できるのは math.sqrt／fabs／floor／ceil と定数（pi／e／tau／inf／nan）のみで、その他の関数（sin／cos／log／gcd／pow／factorial／trunc／isqrt 等）は未確定値になる。",
   "related": [
    "random",
    "abs",
@@ -798,7 +798,7 @@ export const REFERENCE = [
   "returns": "モジュール",
   "example": "import os\nprint(os.path.join(\"data\", \"result.csv\"))",
   "expected": "data/result.csv",
-  "pitfalls": "パス区切りや利用可能なOS機能は実行環境に依存します。パスの結合は文字列連結ではなく os.path.join / pathlib を使う。",
+  "pitfalls": "パス区切りや利用可能なOS機能は実行環境に依存する。パスの結合は文字列連結ではなく os.path.join / pathlib を使う。",
   "related": [
    "open",
    "json"
@@ -838,7 +838,7 @@ export const REFERENCE = [
   "returns": "ndarray",
   "example": "import numpy as np\na = np.array([1, 2, 3])\nprint(a.sum())",
   "expected": "6",
-  "pitfalls": "通常のリストと違い、配列同士の演算は要素ごとに行われる。環境によっては NumPy が未導入の場合がある（本アプリはNumPyを実行しません）。",
+  "pitfalls": "通常のリストと違い、配列同士の演算は要素ごとに行われる。環境によっては NumPy が未導入の場合がある（本アプリはNumPyを実行しない）。",
   "related": [
    "pandas.DataFrame",
    "list",
@@ -859,7 +859,7 @@ export const REFERENCE = [
   "returns": "DataFrame",
   "example": "import pandas as pd\ndf = pd.DataFrame({\"x\": [1, 2], \"y\": [10, 20]})\nprint(df[\"y\"].sum())",
   "expected": "30",
-  "pitfalls": "列名の綴りミスで KeyError になる。実行にはpandasのインストールが必要です。本アプリはpandasを実行しません。",
+  "pitfalls": "列名の綴りミスで KeyError になる。実行にはpandasのインストールが必要である。本アプリはpandasを実行しない。",
   "related": [
    "numpy.array",
    "dict",
@@ -2677,7 +2677,7 @@ export const REFERENCE = [
   "category": "構文",
   "importance": "応用",
   "level": "中級",
-  "summary": "関数の中から、モジュール全体の変数（global）や外側の関数の変数（nonlocal）を書き換えられるように宣言する構文。",
+  "summary": "関数の中から外側の変数を書き換えられるように宣言する構文。global 文はモジュールレベルの変数を対象とし、nonlocal 文は外側の関数の変数を対象とする（両者は別の文）。",
   "syntax": "global 変数名\nnonlocal 変数名",
   "args": "—",
   "returns": "—（構文のため戻り値なし）",
@@ -2701,7 +2701,7 @@ export const REFERENCE = [
   "summary": "イテラブルの各要素を変換・抽出してリスト等を簡潔に作る表記。",
   "syntax": "[式 for 変数 in イテラブル if 条件]",
   "args": "—",
-  "returns": "—（構文のため戻り値なし）",
+  "returns": "リスト／集合／辞書（内包表記が生成するコレクション）",
   "example": "print([x * x for x in range(5)])",
   "expected": "[0, 1, 4, 9, 16]",
   "pitfalls": "辞書内包 {k: v for ...} や集合内包 {式 for ...} も書ける。処理が複雑な場合は無理に内包表記にせず通常の for 文にした方が読みやすい。",
@@ -2722,7 +2722,7 @@ export const REFERENCE = [
   "summary": "文字列リテラルの中に {式} を埋め込んで値を差し込む表記（フォーマット文字列）。",
   "syntax": "f\"...{式}...\"",
   "args": "—",
-  "returns": "—（構文のため戻り値なし）",
+  "returns": "str: 整形済み文字列",
   "example": "name = \"世界\"\nprint(f\"こんにちは、{name}さん\")",
   "expected": "こんにちは、世界さん",
   "pitfalls": "接頭辞 f を忘れると {式} がそのまま表示される。{式:.2f} のように書式指定もできる。波括弧自体を表示するには {{ と }} と重ねる。",
@@ -2819,6 +2819,111 @@ export const REFERENCE = [
   "doc": "https://docs.python.org/ja/3.12/library/math.html#math.ceil"
  },
  {
+  "id": "math.pi",
+  "name": "math.pi",
+  "category": "標準ライブラリ",
+  "importance": "重要",
+  "level": "基礎",
+  "summary": "円周率を表す math モジュールの定数。",
+  "syntax": "math.pi",
+  "args": "—",
+  "returns": "float: 3.141592653589793",
+  "example": "import math\nprint(math.pi)",
+  "expected": "3.141592653589793",
+  "pitfalls": "import math が必要。float の近似値であり、正確な円周率ではない。",
+  "related": [
+   "math",
+   "math.tau",
+   "math.e"
+  ],
+  "lesson": "stdlib",
+  "doc": "https://docs.python.org/ja/3.12/library/math.html#math.pi"
+ },
+ {
+  "id": "math.e",
+  "name": "math.e",
+  "category": "標準ライブラリ",
+  "importance": "重要",
+  "level": "基礎",
+  "summary": "自然対数の底（ネイピア数）を表す math モジュールの定数。",
+  "syntax": "math.e",
+  "args": "—",
+  "returns": "float: 2.718281828459045",
+  "example": "import math\nprint(math.e)",
+  "expected": "2.718281828459045",
+  "pitfalls": "import math が必要。float の近似値であり、正確な値ではない。",
+  "related": [
+   "math",
+   "math.pi",
+   "math.tau"
+  ],
+  "lesson": "stdlib",
+  "doc": "https://docs.python.org/ja/3.12/library/math.html#math.e"
+ },
+ {
+  "id": "math.tau",
+  "name": "math.tau",
+  "category": "標準ライブラリ",
+  "importance": "重要",
+  "level": "基礎",
+  "summary": "円周率の2倍（2π）を表す math モジュールの定数（Python 3.6 以降）。",
+  "syntax": "math.tau",
+  "args": "—",
+  "returns": "float: 6.283185307179586",
+  "example": "import math\nprint(math.tau)",
+  "expected": "6.283185307179586",
+  "pitfalls": "import math が必要。float の近似値であり、正確な値ではない。",
+  "related": [
+   "math",
+   "math.pi",
+   "math.e"
+  ],
+  "lesson": "stdlib",
+  "doc": "https://docs.python.org/ja/3.12/library/math.html#math.tau"
+ },
+ {
+  "id": "math.inf",
+  "name": "math.inf",
+  "category": "標準ライブラリ",
+  "importance": "重要",
+  "level": "基礎",
+  "summary": "正の無限大を表す math モジュールの定数（float('inf') と等しい）。",
+  "syntax": "math.inf",
+  "args": "—",
+  "returns": "float: 正の無限大（inf）",
+  "example": "import math\nprint(math.inf)",
+  "expected": "inf",
+  "pitfalls": "import math が必要。負の無限大は -math.inf。どんな有限の数よりも大きい。",
+  "related": [
+   "math",
+   "math.nan",
+   "float"
+  ],
+  "lesson": "stdlib",
+  "doc": "https://docs.python.org/ja/3.12/library/math.html#math.inf"
+ },
+ {
+  "id": "math.nan",
+  "name": "math.nan",
+  "category": "標準ライブラリ",
+  "importance": "重要",
+  "level": "基礎",
+  "summary": "NaN（非数）を表す math モジュールの定数（float('nan') と等しい）。",
+  "syntax": "math.nan",
+  "args": "—",
+  "returns": "float: NaN（非数）",
+  "example": "import math\nprint(math.nan)",
+  "expected": "nan",
+  "pitfalls": "import math が必要。NaN は自分自身とも等しくない（math.nan == math.nan は False）。NaN かどうかは math.isnan() で判定する。",
+  "related": [
+   "math",
+   "math.inf",
+   "float"
+  ],
+  "lesson": "stdlib",
+  "doc": "https://docs.python.org/ja/3.12/library/math.html#math.nan"
+ },
+ {
   "id": "Exception",
   "name": "Exception",
   "category": "例外",
@@ -2830,7 +2935,7 @@ export const REFERENCE = [
   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
   "example": "try:\n    raise Exception(\"bad\")\nexcept Exception:\n    print(\"Exceptionを捕捉\")",
   "expected": "Exceptionを捕捉",
-  "pitfalls": "あらゆる通常例外を捕捉するため、広く捕りすぎると不具合の発見が遅れる。具体的な例外型を指定するのが基本。KeyboardInterrupt や SystemExit は基底が BaseException のため捕捉されない（本アプリの照合は簡略化されている）。",
+  "pitfalls": "あらゆる通常例外を捕捉するため、広く捕りすぎると不具合の発見が遅れる。具体的な例外型を指定するのが基本。KeyboardInterrupt や SystemExit は基底が BaseException のため捕捉されない（実際の Python）。ただし本アプリの照合は簡略化されており、except Exception でも捕捉されてしまう。",
   "related": [
    "BaseException",
    "try",
@@ -2977,7 +3082,7 @@ export const REFERENCE = [
   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
   "example": "try:\n    raise NameError(\"bad\")\nexcept NameError:\n    print(\"NameErrorを捕捉\")",
   "expected": "NameErrorを捕捉",
-  "pitfalls": "綴り間違い、定義より前の参照、スコープの勘違いが主な原因。関数内で代入する名前を代入前に読むと、亜種の UnboundLocalError になる。",
+  "pitfalls": "綴り間違い、定義より前の参照、スコープの勘違いが主な原因。関数内で代入する名前を代入前に読むと、亜種の UnboundLocalError になる（本アプリでも発生する）。本アプリの except 照合は例外名の完全一致のみで、except NameError では UnboundLocalError を捕捉できない。",
   "related": [
    "AttributeError",
    "try",
@@ -3103,7 +3208,7 @@ export const REFERENCE = [
   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
   "example": "try:\n    raise ModuleNotFoundError(\"bad\")\nexcept ModuleNotFoundError:\n    print(\"ModuleNotFoundErrorを捕捉\")",
   "expected": "ModuleNotFoundErrorを捕捉",
-  "pitfalls": "except ImportError でまとめて捕捉できる。モジュールのインストール漏れや名前の勘違いが主な原因。",
+  "pitfalls": "except ImportError でまとめて捕捉できる（実際の Python）。モジュールのインストール漏れや名前の勘違いが主な原因。本アプリの except 照合は例外名の完全一致のみで、親クラスでの捕捉は再現されない。",
   "related": [
    "ImportError",
    "Exception",
@@ -3145,7 +3250,7 @@ export const REFERENCE = [
   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
   "example": "try:\n    raise FileNotFoundError(\"bad\")\nexcept FileNotFoundError:\n    print(\"FileNotFoundErrorを捕捉\")",
   "expected": "FileNotFoundErrorを捕捉",
-  "pitfalls": "パスの綴りや作業ディレクトリの勘違いが主な原因。except OSError でも捕捉できる。本アプリは実ファイルを実行しない。",
+  "pitfalls": "パスの綴りや作業ディレクトリの勘違いが主な原因。except OSError でも捕捉できる（実際の Python）。本アプリは実ファイルを実行しない。本アプリの except 照合は例外名の完全一致のみで、親クラスでの捕捉は再現されない。",
   "related": [
    "OSError",
    "ImportError",
@@ -3187,7 +3292,7 @@ export const REFERENCE = [
   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
   "example": "try:\n    raise ArithmeticError(\"bad\")\nexcept ArithmeticError:\n    print(\"ArithmeticErrorを捕捉\")",
   "expected": "ArithmeticErrorを捕捉",
-  "pitfalls": "個別の算術エラーをまとめて捕捉したい場合に使う。具体的な原因を追うなら亜種ごとに分ける。",
+  "pitfalls": "個別の算術エラーをまとめて捕捉したい場合に使う（実際の Python では ZeroDivisionError・OverflowError 等を捕捉できる）。具体的な原因を追うなら亜種ごとに分ける。本アプリの except 照合は例外名の完全一致のみで、子クラスの捕捉は再現されない。",
   "related": [
    "ZeroDivisionError",
    "OverflowError",
@@ -3208,7 +3313,7 @@ export const REFERENCE = [
   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
   "example": "try:\n    raise LookupError(\"bad\")\nexcept LookupError:\n    print(\"LookupErrorを捕捉\")",
   "expected": "LookupErrorを捕捉",
-  "pitfalls": "辞書とシーケンスの探索失敗をまとめて捕捉したい場合に使う。",
+  "pitfalls": "辞書とシーケンスの探索失敗をまとめて捕捉したい場合に使う（実際の Python では KeyError・IndexError を捕捉できる）。本アプリの except 照合は例外名の完全一致のみで、子クラスの捕捉は再現されない。",
   "related": [
    "KeyError",
    "IndexError",
@@ -3271,7 +3376,7 @@ export const REFERENCE = [
   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
   "example": "try:\n    raise UnicodeError(\"bad\")\nexcept UnicodeError:\n    print(\"UnicodeErrorを捕捉\")",
   "expected": "UnicodeErrorを捕捉",
-  "pitfalls": "except ValueError でも捕捉できる。エンコーディング指定の誤りが主な原因。",
+  "pitfalls": "except ValueError でも捕捉できる（実際の Python）。エンコーディング指定の誤りが主な原因。本アプリの except 照合は例外名の完全一致のみで、親クラスでの捕捉は再現されない。",
   "related": [
    "ValueError",
    "str",
@@ -3307,13 +3412,13 @@ export const REFERENCE = [
   "category": "例外",
   "importance": "応用",
   "level": "基礎",
-  "summary": "ユーザーが Ctrl+C などで割り込みをかけたときに発生する例外（BaseException の一員）。",
+  "summary": "ユーザが Ctrl+C などで割り込みをかけたときに発生する例外（BaseException の一員）。",
   "syntax": "raise KeyboardInterrupt(\"メッセージ\")",
   "args": "メッセージ等（例外に付ける情報）",
   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
   "example": "try:\n    raise KeyboardInterrupt(\"bad\")\nexcept KeyboardInterrupt:\n    print(\"KeyboardInterruptを捕捉\")",
   "expected": "KeyboardInterruptを捕捉",
-  "pitfalls": "except Exception では捕捉されないため、長時間処理を止められることは通常は妨げない。捕捉する場合は終了処理だけを行い、握り潰さない。",
+  "pitfalls": "except Exception では捕捉されないため、長時間処理を止められることは通常は妨げない。捕捉する場合は終了処理だけを行い、握り潰さない。本アプリの照合は簡略化されており、except Exception でも捕捉されてしまう（実際の Python と異なる）。",
   "related": [
    "BaseException",
    "SystemExit",

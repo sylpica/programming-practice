@@ -237,17 +237,18 @@ test("malformed fuzz does not crash public engine", () => {
   }
 });
 test("typed and Variant addition differ per Microsoft specification", () => {
+  // F-VBA-10 是正：型付き String 変数と数値の + も実 VBA どおり数値文字列を暗黙変換する（従来のエラー13は欠陥側の旧期待値）
   assert.equal(
     sim('Dim s As String\nDim n As Long\ns = "2"\nn = 3\nx = s + n').paths[0]
-      .error.code,
-    13,
+      .vars.x,
+    5,
   );
   assert.deepEqual(
     outputs(
       'Dim s As String\ns = "2"\nv = 3\nDebug.Print s + v\nDebug.Print Empty + "abc"',
     ),
-    // RG-04 統合裁定で期待値を実 VBA 表記へ是正（引用符なし）
-    ["23", "abc"],
+    // RG-04 統合裁定で期待値を実 VBA 表記へ是正（引用符なし）。s + v は F-VBA-10 で "5"。
+    ["5", "abc"],
   );
 });
 test("typed numeric versus numeric Variant string and typed string vs Variant", () => {

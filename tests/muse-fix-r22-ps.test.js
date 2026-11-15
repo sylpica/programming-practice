@@ -147,7 +147,7 @@ test("r22-ps N17 Get-ChildItem with an unknown parameter names it", () => {
   ]) {
     const r = run(code);
     assert.ok(errors(r).length, code);
-    assert.match(errors(r)[0].message, /未対応のパラメーター：Get-ChildItem -bogus/, code);
+    assert.match(errors(r)[0].message, /未対応のパラメータ：Get-ChildItem -bogus/, code);
   }
 });
 

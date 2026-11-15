@@ -11,7 +11,40 @@ import { sourceFailure, rows } from "./data.js";
 // RG-81（R21-N8）: エラーのカテゴリは category 引数だけが持つ。メッセージ
 // 本文に「未対応：」「未確認：」等の接頭辞を焼き込むと、カテゴリと合成する
 // 表示で二重になるため、このファイルの fail メッセージには付けない。
-import { formatModelValue as formatValue, isUnknown, unknown } from "./contract.js";
+import { formatModelValue as formatValue, isUnknown, unknown, LIMITS } from "./contract.js";
+// P-N3 受け皿：ホスト例外（V8 の RangeError 等）の生文言を学習者向けの
+// 表示へ漏らさないための変換。モデルのエラー（PracticeError）はそのまま
+// 通し、それ以外は日本語の停止理由に置き換える。
+function hostErrorAsPractice(e, line) {
+  if (e instanceof PracticeError) return e;
+  if (e instanceof RangeError)
+    return new PracticeError(
+      /string/i.test(e?.message || "")
+        ? "文字列が長くなりすぎて処理できませんでした。文字列を短くして再実行してください。"
+        : "値が大きすぎて処理できませんでした。コードを小さくして再実行してください。",
+      line || 1,
+      "limit",
+    );
+  return new PracticeError(
+    "処理を完了できませんでした。コードを小さくして再実行してください。",
+    line || 1,
+    "エラー",
+  );
+}
+// semantics の各境界でホスト例外を受け止め、日本語の停止理由へ変換する。
+function guardHostErrors(fn) {
+  return function (...args) {
+    try {
+      return fn.apply(this, args);
+    } catch (e) {
+      if (e instanceof PracticeError) throw e;
+      const node = args.find(
+        (a) => a && typeof a === "object" && typeof a.line === "number",
+      );
+      throw hostErrorAsPractice(e, node?.line);
+    }
+  };
+}
 const uninitialized = { kind: "uninitialized" },
   isPtr = (v) => v?.kind === "pointer",
   builtinTypes = [
@@ -54,7 +87,10 @@ function transformNumberLiteral(raw, suffix, language, line) {
       if (sl === "d") return digits;
     } else {
       if (sl === "l" || sl === "ul" || sl === "lu") return digits + "L";
-      if (sl === "u") return digits;
+      // D3 兄弟表面：u 接尾辞の型情報を落とすと uint リテラルが int
+      // として扱われ、uint 同士の演算が long へ昇格して折り返さない。
+      // C 側の ((unsigned int)…) と同じくキャスト形で型を保持する。
+      if (sl === "u") return `((uint)${digits})`;
     }
     unsupported(`数値リテラル ${raw}${suffix} の接尾辞 ${suffix} は未対応です`, line);
   }
@@ -76,7 +112,7 @@ function transformNumberLiteral(raw, suffix, language, line) {
 // contents are never rewritten (std:: inside a literal stays intact),
 // numeric literals follow the per-language grammar, C# interpolation is
 // lowered to concatenation, and unsupported literal forms stop honestly.
-function transformSource(source, language) {
+function transformSource(source, language, deadline) {
   const lines = source.split("\n").map((line, idx) => {
     if (/^\s*#/.test(line)) {
       if (/^\s*#\s*include\s*[<"][^>"]*[>"]\s*(\/\/.*)?$/.test(line)) return "";
@@ -249,7 +285,20 @@ function transformSource(source, language) {
     out += parts.length ? parts.join(" + ") : '""';
     advance(j);
   };
+  let scanCount = 0;
   while (i < src.length) {
+    // P-N4：準備段階も時間上限の対象にする。一定間隔で時刻を検査し、
+    // 超えたら日本語の理由で正直に打ち切る（上限体系の対象外をなくす）。
+    if (
+      deadline !== undefined &&
+      ++scanCount % 4096 === 0 &&
+      performance.now() > deadline
+    )
+      throw new PracticeError(
+        "解析時間の上限で停止しました。コードを小さくして再実行してください。",
+        line,
+        "limit",
+      );
     const c = src[i],
       rest = src.slice(i);
     if (rest.startsWith("//")) {
@@ -331,8 +380,11 @@ function transformSource(source, language) {
             ? ["ul", "lu", "f", "d", "m", "u", "l"]
             : ["ull", "llu", "ul", "lu", "ll", "u", "l", "f"];
         for (const p of pats) {
+          // P-N4 根因：残り全体を toLowerCase() すると数値リテラル1個ごとに
+          // 残り全文のコピーが発生し、文数に対して二乗コストになる。
+          // 接頭辞の候補（最大3文字）だけを切り出してから小文字化する。
           if (
-            srest.toLowerCase().startsWith(p) &&
+            srest.slice(0, p.length).toLowerCase() === p &&
             !/[A-Za-z0-9_]/.test(srest[p.length] || "")
           ) {
             suffix = srest.slice(0, p.length);
@@ -353,9 +405,9 @@ function transformSource(source, language) {
   }
   return out;
 }
-function parse(source, language) {
+function parse(source, language, deadline) {
   let classes = {},
-    code = transformSource(source, language);
+    code = transformSource(source, language, deadline);
   let p = new ScriptParser(code, language),
     simple = p.simple.bind(p),
     statement = p.statement.bind(p);
@@ -513,6 +565,48 @@ function parse(source, language) {
     const start = this.i;
     const first = this.ts[start]?.v;
     const csTypes = ["int", "long", "double", "float", "char", "bool", "short", "uint", "ulong", "ushort", "byte", "sbyte", "string", "decimal"];
+    // D14 追随（修正バッチ2・追随班）：キャスト位置の C 形式の型名
+    // （(unsigned int)5 等）も、宣言位置と同様に正名を提示して停止する。
+    // 複合型名（unsigned int 等）は後ろに ")" が続く場合にキャストと
+    // みなす。単独の unsigned／signed は、後ろに被演算子らしい
+    // トークンが続く場合だけキャストとみなし、同名変数の括弧式と
+    // 誤認しない。
+    if (["unsigned", "signed"].includes(first)) {
+      const cWords = [];
+      let j = start;
+      while (
+        ["int", "long", "short", "char", "unsigned", "signed"].includes(this.ts[j]?.v)
+      )
+        cWords.push(this.ts[j++].v);
+      const afterParen = this.ts[j]?.v === ")" ? this.ts[j + 1] : null;
+      const looksLikeCast =
+        this.ts[j]?.v === ")" &&
+        (cWords.length > 1 ||
+          (afterParen &&
+            (afterParen.k === "id" ||
+              afterParen.k === "number" ||
+              afterParen.v === "(")));
+      if (looksLikeCast) {
+        const suggestion =
+          {
+            "unsigned int": "uint",
+            "unsigned long": "ulong",
+            "unsigned short": "ushort",
+            "unsigned char": "byte",
+            "signed char": "sbyte",
+            "signed int": "int",
+            "signed long": "long",
+            "signed short": "short",
+            unsigned: "uint",
+            signed: "int",
+          }[cWords.join(" ")] || "対応する C# の型";
+        unsupported(
+          `C# に「${cWords.join(" ")}」という型名はありません（${suggestion} を使います）`,
+          meta.line,
+        );
+      }
+      return null;
+    }
     if (!csTypes.includes(first)) return null;
     if (first === "decimal") unsupported("decimal 型へのキャストは未対応です", meta.line);
     this.take();
@@ -693,6 +787,33 @@ function parse(source, language) {
     }
     if (t.v === "new") unsupported("newを文として使うことはできません", t.line);
     if (["unsigned", "signed", "short", "long"].includes(t.v)) {
+      // D14 根因：C# に unsigned int 等の C 形式の型名は存在しない
+      // （uint 等が正名）。複合型名として黙って受理していた。
+      if (language === "csharp" && ["unsigned", "signed"].includes(t.v)) {
+        let j = this.i;
+        const cWords = [];
+        while (
+          ["int", "long", "short", "char", "unsigned", "signed", "bool", "double", "float"].includes(this.ts[j]?.v)
+        )
+          cWords.push(this.ts[j++].v);
+        const suggestion =
+          {
+            "unsigned int": "uint",
+            "unsigned long": "ulong",
+            "unsigned short": "ushort",
+            "unsigned char": "byte",
+            "signed char": "sbyte",
+            "signed int": "int",
+            "signed long": "long",
+            "signed short": "short",
+            unsigned: "uint",
+            signed: "int",
+          }[cWords.join(" ")] || "対応する C# の型";
+        unsupported(
+          `C# に「${cWords.join(" ")}」という型名はありません（${suggestion} を使います）`,
+          t.line,
+        );
+      }
       // Multi-word type names (long long, unsigned int, …): fold the word
       // sequence into a single type token when a variable name follows.
       let j = this.i;
@@ -1032,17 +1153,24 @@ function parse(source, language) {
       this.take("(");
       let test = this.expr();
       this.take(")");
+      // NX-N5／NX-N10 根因：本体を先行実行して残りを while に書き換える
+      // 旧変換では、先行分が回数注記に含まれず（常に1回少ない）、先行分の
+      // break／continue がループ文脈の外で「繰り返しの外」と誤判定された。
+      // 共有パーサと同じく後判定ループ（postTest）として表し、初回反復も
+      // ループの中で数え・制御する。
       return {
-        k: "block",
-        body: [...body, { k: "while", test, body, line: t.line, refs: ["while"] }],
+        k: "while",
+        test,
+        body,
         line: t.line,
-        refs: ["do"],
+        postTest: true,
+        refs: ["do", "while"],
       };
     }
     if (t.v === "foreach" && language === "csharp") {
       this.take();
       this.take("(");
-      this.take();
+      let typeTok = this.take();
       if (this.peek("[")) {
         this.take();
         this.take("]");
@@ -1056,6 +1184,7 @@ function parse(source, language) {
       return {
         k: "each",
         name: name.v,
+        varType: typeTok.v,
         collection,
         body: this.body(),
         line: t.line,
@@ -1101,7 +1230,7 @@ function parse(source, language) {
               classes[params[0].v];
             if (after === "{" || (after === ";" && paramIsTyped))
               unsupported(
-                `ユーザー定義関数 ${nameTok.v} の定義は未対応です`,
+                `ユーザ定義関数 ${nameTok.v} の定義は未対応です`,
                 t.line,
               );
           }
@@ -1127,7 +1256,15 @@ function parse(source, language) {
     }
     return n;
   };
-  return { nodes: [...pendingDecls, ...p.program()], classes };
+  const nodes = [...pendingDecls, ...p.program()];
+  // P-N4：構文解析の段階も時間上限の対象にする（段階末でも検査する）。
+  if (deadline !== undefined && performance.now() > deadline)
+    throw new PracticeError(
+      "解析時間の上限で停止しました。コードを小さくして再実行してください。",
+      1,
+      "limit",
+    );
+  return { nodes, classes };
 }
 export function createCFamily({ id, name, extensions, language }) {
   const managed = id === "csharp";
@@ -1136,9 +1273,16 @@ export function createCFamily({ id, name, extensions, language }) {
       "int",
       "型",
       "int n = 1;",
-      "モデルでは32ビット符号付き整数です。",
+      // RA-38：C# の int は仕様で常に32ビット固定であり、「実環境で
+      // サイズが変わりうる」含みは C# では誤り。言語別に文面を分ける。
+      // RA-35：C／C++ では signed／signed int の別名にも言及する。
+      managed
+        ? "32ビット符号付き整数（System.Int32）です。C# では幅は常に32ビット固定です。"
+        : "モデルでは32ビット符号付き整数です。",
       "int n = 1;",
-      "実環境の型サイズはモデル設定と区別します。",
+      managed
+        ? "C# では常に32ビット固定で、実環境によってサイズが変わることはありません。"
+        : "実環境の型サイズはモデル設定と区別します。別名表記 signed、signed int も同じ型です（signed 単独でも int を表します）。",
     ],
     [
       "double",
@@ -1154,7 +1298,7 @@ export function createCFamily({ id, name, extensions, language }) {
       "添字0から連続する要素を表します。",
       managed ? "int[] values = {1,2,3};" : "int values[3] = {1,2,3};",
       managed
-        ? "範囲外はIndexOutOfRangeException。"
+        ? "範囲外はIndexOutOfRangeExceptionです。"
         : "範囲外の読み書きは未定義動作として停止します。",
     ],
     [
@@ -1193,8 +1337,11 @@ export function createCFamily({ id, name, extensions, language }) {
       "制御",
       "return value;",
       "関数から値を返して実行を終えます。",
-      managed ? "return;" : "return 0;",
-      "main の終了にも使います。",
+      // RA-39：C／C++ の例が return 0; の重複行（2行目は到達不能）に
+      // なっていた。条件分岐で早期 return を示す形にする。
+      // RA-38：C# では Main（大文字）が正表記。
+      managed ? "return;" : "int n = 1;\nif (n > 0) { return 0; }",
+      managed ? "Main の終了にも使います。" : "main の終了にも使います。",
     ],
     [
       "printf",
@@ -1202,7 +1349,7 @@ export function createCFamily({ id, name, extensions, language }) {
       'printf("%d\\n", n);',
       "書式と引数を対応させて出力を説明します。",
       'printf("%d\\n", n);',
-      "%d / %i / %f / %s / %c / %%のみ。書式と型の不一致は停止します。",
+      "%d / %i / %f / %s / %c / %%のみです。書式と型の不一致は停止します。",
       !managed,
     ],
     [
@@ -1211,7 +1358,7 @@ export function createCFamily({ id, name, extensions, language }) {
       "cout << n << endl;",
       "ストリームへの出力を説明します。",
       "cout << n << endl;",
-      "数値・文字列・endlに限定。",
+      "数値・文字列・endlに限定します。",
       id === "cpp",
     ],
     [
@@ -1220,7 +1367,7 @@ export function createCFamily({ id, name, extensions, language }) {
       "Console.WriteLine(value);",
       "標準出力に値と改行を出します。",
       "Console.WriteLine(total);",
-      "1引数形式のみ。",
+      "1引数形式のみです。",
       managed,
     ],
     [
@@ -1238,7 +1385,7 @@ export function createCFamily({ id, name, extensions, language }) {
       "class Counter { public int Value; }",
       "モデルのフィールドを持つ参照オブジェクトを作ります。",
       "Counter c = new Counter();\nc.Value = 1;",
-      "単純フィールドのみ。コンストラクタ・継承・プロパティ等は未対応。",
+      "単純フィールドのみです。コンストラクタ・継承・プロパティ等は未対応です。",
       managed,
     ],
     [
@@ -1259,14 +1406,19 @@ export function createCFamily({ id, name, extensions, language }) {
         : "符号付き整数です。モデルでは longBits（既定64ビット）で幅を表します。",
       "long n = 1;",
       managed
-        ? "範囲は -9223372036854775808〜9223372036854775807。安全な精度範囲を超える計算は未確認として停止します。"
-        : "別名表記 long int、signed long も同じ型です。long long は実言語では別の型ですが、モデルでは long へ畳み込んで受理します。",
+        ? "範囲は -9223372036854775808〜9223372036854775807です。安全な精度範囲を超える計算は未確認として停止します。"
+        : "別名表記 long int、signed long、signed long int も同じ型です。long long は実言語では別の型ですが、モデルでは long へ畳み込んで受理します。",
     ],
     [
       "float",
       "型",
       "float x = 1.5f;",
-      "32ビット単精度浮動小数点数です。",
+      // RA-32：C／C++ の規格は 32ビット／IEEE 形式を保証しない。
+      // モデルの幅を実物一般の事実のように断定しない（C# の float は
+      // 仕様で binary32 固定のため、その旨を明記する）。
+      managed
+        ? "32ビット単精度浮動小数点数（System.Single）です。C# では IEEE 754 binary32 形式と仕様で定められています。"
+        : "モデルでは32ビット単精度浮動小数点数（IEEE 754 binary32 相当）です。実環境では規格上、32ビットであることや IEEE 形式であることは保証されません。",
       "float x = 1.5f;",
       managed
         ? "リテラル 1.5 は double 型です。float には f 接尾辞（1.5f）を付けます。"
@@ -1288,11 +1440,16 @@ export function createCFamily({ id, name, extensions, language }) {
       "short",
       "型",
       "short n = 1;",
-      "16ビット符号付き整数です。",
+      // RA-32：C／C++ の short は少なくとも16ビットで幅は処理系依存、
+      // 保証される最小範囲は -32767〜32767。モデルの幅と分けて書く。
+      // RA-35：signed short int の別名にも言及する。
+      managed
+        ? "16ビット符号付き整数（System.Int16）です。C# では幅は常に16ビット固定です。"
+        : "モデルでは16ビット符号付き整数です。実環境では少なくとも16ビットで、幅は処理系依存です。",
       "short n = 1;",
       managed
-        ? "範囲は -32768〜32767（System.Int16）。"
-        : "別名表記 short int、signed short も同じ型です。範囲は -32768〜32767。",
+        ? "範囲は -32768〜32767（System.Int16）です。"
+        : "別名表記 short int、signed short、signed short int も同じ型です。モデルでの範囲は -32768〜32767（実環境で保証される最小範囲は -32767〜32767）です。",
     ],
     [
       "bool",
@@ -1314,7 +1471,8 @@ export function createCFamily({ id, name, extensions, language }) {
       "unsigned int",
       "型",
       "unsigned int n = 1;",
-      "32ビット符号なし整数です。負の値にはならず、演算は 2^32 の剰余で折り返します。",
+      // RA-32 兄弟表面：unsigned int もモデルの幅と実物の保証を分ける。
+      "モデルでは32ビット符号なし整数です。負の値にはならず、演算は 2^32 の剰余で折り返します。実環境では少なくとも16ビットで、幅は処理系依存です。",
       "unsigned int n = 1;",
       "unsigned だけでも同じ型を表します（unsigned = unsigned int）。",
     ],
@@ -1330,7 +1488,8 @@ export function createCFamily({ id, name, extensions, language }) {
       "unsigned short",
       "型",
       "unsigned short n = 1;",
-      "16ビット符号なし整数です（0〜65535）。",
+      // RA-32：short と同様、実物では少なくとも16ビットで処理系依存。
+      "モデルでは16ビット符号なし整数です（0〜65535）。実環境では少なくとも16ビットで、幅は処理系依存です。",
       "unsigned short n = 1;",
       "別名表記 unsigned short int も同じ型です。",
     ],
@@ -1338,7 +1497,8 @@ export function createCFamily({ id, name, extensions, language }) {
       "unsigned char",
       "型",
       "unsigned char n = 65;",
-      "1バイト符号なし整数です（0〜255）。文字コードの格納にも使います。",
+      // RA-32 兄弟表面：0〜255 は CHAR_BIT=8 のモデルの範囲。
+      "モデルでは1バイト（8ビット）符号なし整数です（0〜255）。文字コードの格納にも使います。実環境ではバイト幅（CHAR_BIT）が8より大きい処理系もあり、その場合は上限が広がります。",
       "unsigned char n = 65;",
       "char とは別の型で、符号なしであることが保証されます。",
     ],
@@ -1346,7 +1506,8 @@ export function createCFamily({ id, name, extensions, language }) {
       "signed char",
       "型",
       "signed char c = 'A';",
-      "1バイト符号付き整数です（-128〜127）。",
+      // RA-32：-128〜127 は CHAR_BIT=8 のモデルの範囲。
+      "モデルでは1バイト（8ビット）符号付き整数です（-128〜127）。実環境ではバイト幅（CHAR_BIT）が8より大きい処理系もあり、その場合は範囲が広がります。",
       "signed char c = 'A';",
       "通常の char とは別の型です。char の符号は処理系依存ですが、signed char は符号付きが保証されます。",
     ],
@@ -1356,7 +1517,9 @@ export function createCFamily({ id, name, extensions, language }) {
       "uint n = 1;",
       "32ビット符号なし整数（System.UInt32）です。範囲は 0〜4294967295。",
       "uint n = 1;",
-      "モデル側の制限：代入時の変換では int の範囲を超える値を範囲外として停止します（実C#では有効な値でも停止します）。uint.MaxValue 自体は参照できます。",
+      // D3 是正に合わせた文面：符号なし範囲で扱い、unchecked では
+      // 折り返し、checked では OverflowException になる。
+      "既定（unchecked）では、範囲を超える演算・変換は 2^32 の剰余で折り返します。checked では OverflowException になります。uint.MaxValue 自体も参照できます。",
     ],
     [
       "ulong",
@@ -1364,7 +1527,9 @@ export function createCFamily({ id, name, extensions, language }) {
       "ulong n = 1;",
       "64ビット符号なし整数（System.UInt64）です。範囲は 0〜18446744073709551615。",
       "ulong n = 1;",
-      "64ビットの大きな値は安全な精度範囲外として未確認になる場合があります。ulong.MaxValue は未確定値として返ります（定数項目を参照）。",
+      // RA-37：ulong.MinValue が未対応であることも開示する
+      // （ushort の MaxValue／MinValue 開示と揃える）。
+      "64ビットの大きな値は安全な精度範囲外として未確認になる場合があります。ulong.MaxValue は未確定値として返ります（定数項目を参照）。ulong.MinValue は静的メンバーの表になく未対応として停止します（実値は 0）。",
     ],
     [
       "ushort",
@@ -1372,7 +1537,7 @@ export function createCFamily({ id, name, extensions, language }) {
       "ushort n = 1;",
       "16ビット符号なし整数（System.UInt16）です。範囲は 0〜65535。",
       "ushort n = 1;",
-      "モデル側の制限：代入時の変換では short の範囲を超える値を範囲外として停止します。また ushort.MaxValue／MinValue は静的メンバーの表になく未対応として停止します（型自体は対応済み）。",
+      "既定（unchecked）では、範囲を超える演算・変換は 65536 の剰余で折り返します。checked では OverflowException になります。また ushort.MaxValue／MinValue は静的メンバーの表になく未対応として停止します（型自体は対応済み）。",
     ],
     [
       "byte",
@@ -1380,7 +1545,7 @@ export function createCFamily({ id, name, extensions, language }) {
       "byte n = 1;",
       "8ビット符号なし整数（System.Byte）です。範囲は 0〜255。",
       "byte n = 1;",
-      "モデル側の制限：代入時の変換では sbyte の範囲を超える値を範囲外として停止します（実C#では有効な値でも停止します）。byte.MaxValue 自体は参照できます。",
+      "既定（unchecked）では、範囲を超える演算・変換は 256 の剰余で折り返します。checked では OverflowException になります。byte.MaxValue 自体も参照できます。",
     ],
     [
       "sbyte",
@@ -1433,14 +1598,14 @@ export function createCFamily({ id, name, extensions, language }) {
       "型",
       "(型)式",
       managed
-        ? "式の値を指定した型へ明示的に変換します。対応する型は int、long、double、float、char、bool、short、uint、ulong、ushort、byte、sbyte、string です。"
+        ? "式の値を指定した型へ明示的に変換します。対応する型は int、long、double、float、char、bool、short、uint、ulong、ushort、byte、sbyte、string です。ただし bool へキャストできるのは bool の値だけ、string へキャストできるのは文字列と参照型だけです。"
         : "式の値を指定した型へ明示的に変換します（C形式キャスト）。浮動小数点から整数への変換では小数部が切り捨てられます。",
       "double x = 1.5;\nint n = (int)x;",
       id === "c"
         ? "(bool) 式のキャストは C では未対応です（bool 項目を参照）。ポインタ型・修飾型・独自型へのキャストも未対応です。"
         : id === "cpp"
           ? "static_cast 等の名前付きキャストと関数形式のキャストは未対応です。ポインタ型・参照型・修飾型へのキャストも未対応です。"
-          : "decimal へのキャストは未対応です。範囲外の変換は例外または未確認として停止します。",
+          : "decimal へのキャストは未対応です。数値から bool／string へのキャストはできません。範囲外の変換は例外または未確認として停止します。",
     ],
     [
       "三項演算子",
@@ -1482,9 +1647,10 @@ export function createCFamily({ id, name, extensions, language }) {
       "getline",
       "入力",
       "std::getline(std::cin, stringVariable)",
-      "標準入力から1行を読み取り、string 変数へ格納します。モデルでは実行時の入力を未確定値として扱います。std::cin はこの関数の第1引数としてだけ使います。",
+      "標準入力から1行を読み取り、string 変数へ格納します。モデルでは実行時の入力を未確定値として扱います。std::cin はこの関数の第1引数として使います。",
       "string line;\nstd::getline(std::cin, line);",
-      "対応形式は std::getline(std::cin, 変数) のみです。cin >> x の抽出演算子は未実装で、シフト演算として解釈され停止します。",
+      // D7 是正に合わせた文面：抽出先は未確定値になる。
+      "対応形式は std::getline(std::cin, 変数) のみです。cin >> x の抽出も、モデルでは抽出先の変数が未確定値になります（実際の入力内容は再現されません）。",
     ],
     [
       "endl",
@@ -1576,7 +1742,7 @@ export function createCFamily({ id, name, extensions, language }) {
       d,
       `Console.WriteLine(${n});`,
       n === "uint.MaxValue" || n === "byte.MaxValue"
-        ? "変数への代入時の変換では対応する符号付き型の範囲を超えるため範囲外として停止します。値の参照自体はこの例のようにできます。"
+        ? "変数へ代入しても、そのままの値が入ります。"
         : n === "long.MaxValue"
           ? "モデルでは64ビット境界値を安全な整数として表せないため、未確定値として返ります（実値は 9223372036854775807）。"
           : n === "long.MinValue"
@@ -1741,7 +1907,10 @@ export function createCFamily({ id, name, extensions, language }) {
     scan: (code) => scanScript(code, reference, language),
     async simulate(code, model, limits) {
       try {
-        let { nodes, classes } = parse(code, language);
+        // P-N4：準備（解析）段階にも実行と同じ時間上限を適用する。
+        const deadline =
+          performance.now() + (limits?.milliseconds ?? LIMITS.milliseconds);
+        let { nodes, classes } = parse(code, language, deadline);
         function netParts(av, isFloat) {
           let s;
           if (isFloat) {
@@ -1806,6 +1975,57 @@ export function createCFamily({ id, name, extensions, language }) {
         function csNumText(v, type) {
           return type === "float" ? csFloatText(v) : csDoubleText(v);
         }
+        // D8 根因：printf %f は常に固定小数表記だが、JS の toFixed は
+        // |値| >= 1e21 で指数表記へフォールバックする。その範囲の
+        // double は整数値なので、BigInt 経由で正確な10進桁を出す。
+        function formatFixed6(v) {
+          if (Math.abs(v) < 1e21) return v.toFixed(6);
+          return (v < 0 ? "-" : "") + BigInt(Math.abs(v)).toString() + ".000000";
+        }
+        // D13 根因：関数引数の評価順は未規定（C／C++）であり、同じ
+        // 変数への副作用（++／--／代入）と別の読み取りが1回の呼び出し
+        // の引数に混在すると未定義動作。左から右への確定値を捏造せず
+        // 停止する。C# は評価順が規定されているため対象外。cout の
+        // << 連鎖は C++17 で左から右へ順序付けられるため対象外とし、
+        // printf の引数だけを検査する。
+        function checkUnsequencedArgs(argNodes, node, api) {
+          const mods = new Map(),
+            reads = new Map();
+          const bump = (m, name) => m.set(name, (m.get(name) || 0) + 1);
+          const rootName = (t) =>
+            t?.k === "var" ? t.name : t?.k === "index" || t?.k === "member" ? rootName(t.target) : null;
+          const walk = (n, asModTarget) => {
+            if (!n || typeof n !== "object") return;
+            if (Array.isArray(n)) return n.forEach((c) => walk(c, asModTarget));
+            if (n.k === "pre" || n.k === "post") {
+              const rn = rootName(n.target);
+              if (rn) bump(mods, rn);
+              if (n.target?.k !== "var") walk(n.target, true);
+              return;
+            }
+            if (n.k === "assign") {
+              const rn = rootName(n.target);
+              if (rn) bump(mods, rn);
+              if (n.target?.k !== "var") walk(n.target, true);
+              walk(n.value, false);
+              return;
+            }
+            if (n.k === "var") {
+              if (!asModTarget) bump(reads, n.name);
+              return;
+            }
+            for (const key of Object.keys(n))
+              if (!["line", "refs"].includes(key)) walk(n[key], false);
+          };
+          for (const a of argNodes) walk(a, false);
+          for (const [name, count] of mods)
+            if (count > 1 || reads.has(name))
+              api.fail(
+                `引数の評価順が未規定なため、変数 ${name} への副作用と読み取り（または複数の副作用）が同じ呼び出しの中で競合します`,
+                node,
+                "未定義動作",
+              );
+        }
         function transformDisplay(v) {
           if (typeof v === "boolean")
             return managed ? (v ? "True" : "False") : v;
@@ -1835,11 +2055,50 @@ export function createCFamily({ id, name, extensions, language }) {
               : String(v);
           return String(v);
         }
+        // D7 根因：std::cin >> x はシフト演算として評価されるだけで、
+        // 抽出先の変数が旧値を保持したまま確定値として表示されていた
+        // （値の捏造）。モデルの入力は未確定であるため、抽出先は
+        // std::getline と同じく未確定値になるのが正直な扱い。
+        function isCinChain(node) {
+          if (!node) return false;
+          if (node.k === "var" && node.name === "cin") return true;
+          return node.k === "binary" && node.op === ">>" && isCinChain(node.a);
+        }
+        function extractFromCin(node, s, api) {
+          if (node.a?.k === "binary") extractFromCin(node.a, s, api);
+          const target = node.b;
+          if (target && ["var", "index", "member"].includes(target.k))
+            api.write(target, api.freshUnknown("標準入力", s), s, node);
+        }
         function typeOf(a, s) {
           if (!a) return "int";
           if (a.k === "cast" || a.k === "type") return a.type;
           if (a.k === "post" || a.k === "pre") return typeOf(a.target, s);
-          if (a.k === "ternary") return typeOf(a.then, s);
+          if (a.k === "call") {
+            // D4 受け皿：abs の結果型は引数型と変換規則で決まる。C では
+            // 引数が int へ変換されるため常に int、C++ では double
+            // オーバーロードが選ばれるため引数型のまま。
+            const nm = callName(a.target);
+            if (nm === "abs") {
+              const at = a.args?.length ? typeOf(a.args[0], s) : "int";
+              if (["float", "double"].includes(at))
+                return !managed && language === "cpp" ? at : "int";
+              return "int";
+            }
+            if (nm === "Console.ReadLine") return "string";
+            return "int";
+          }
+          if (a.k === "ternary") {
+            // D9 根因：三項演算子の結果型は両分岐の通常の算術変換で
+            // 統一される。第2被演算子の型だけを返すと int／double
+            // 混合で printf の型検査が虚偽の不一致になる。
+            const lt = typeOf(a.then, s),
+              rt = typeOf(a.els, s);
+            if (lt === rt) return lt;
+            if ([lt, rt].includes("string")) return "string";
+            if (lt.endsWith("*") || rt.endsWith("*") || lt.endsWith("[]") || rt.endsWith("[]")) return lt;
+            return arithmeticType(lt, rt, s);
+          }
           if (a.k === "assign") return typeOf(a.value, s);
           if (a.k === "literal") {
             if (/^0[xXbBoO]/.test(a.raw || ""))
@@ -1876,7 +2135,14 @@ export function createCFamily({ id, name, extensions, language }) {
             if (a.op === "sizeof") return (s.model.longBits || 64) === 64 ? "unsigned long" : "unsigned int";
             if (a.op === "!") return language === "c" ? "int" : "bool";
             if (a.op === "&") return typeOf(a.arg, s) + "*";
-            if (a.op === "*") return typeOf(a.arg, s).replace(/\*$/, "");
+            if (a.op === "*") {
+              // D10 根因：配列名の逆参照では要素型が結果型になる。
+              // "int[]" の末尾の "*" だけを剥がす旧実装では配列型が
+              // そのまま残り、printf の型検査が虚偽の不一致になった。
+              const t = typeOf(a.arg, s);
+              if (t.endsWith("[]")) return t.slice(0, -2);
+              return t.replace(/\*$/, "");
+            }
             if (
               managed &&
               a.op === "-" &&
@@ -1891,6 +2157,21 @@ export function createCFamily({ id, name, extensions, language }) {
         function arithmeticType(l, r, s) {
           if ([l,r].includes("double")) return "double";
           if ([l,r].includes("float")) return "float";
+          if (managed) {
+            // D3 根因の一部：C# の符号なし型名（uint 等）は "unsigned"
+            // で始まらないため、従来は符号付き int として扱われ、
+            // uint 同士の演算まで int の範囲で折り返されていた。
+            // C# の二項数値昇格：小さい整数型は int へ、uint と int の
+            // 混合は long へ、uint 同士は uint のまま。
+            const promote = (t) =>
+              ["byte", "sbyte", "short", "ushort", "char"].includes(t) ? "int" : t;
+            l = promote(l);
+            r = promote(r);
+            if ([l, r].includes("ulong")) return "ulong";
+            if ([l, r].includes("long")) return "long";
+            if ([l, r].includes("uint")) return [l, r].includes("int") ? "long" : "uint";
+            return "int";
+          }
           l = /char|short|bool/.test(l) ? "int" : l;
           r = /char|short|bool/.test(r) ? "int" : r;
           const hasLong = l.includes("long") || r.includes("long"), unsigned = l.startsWith("unsigned") || r.startsWith("unsigned");
@@ -1904,7 +2185,40 @@ export function createCFamily({ id, name, extensions, language }) {
           if (t.includes("long")) return managed ? 64 : s.model.longBits || 64;
           if (t.includes("short")) return 16;
           if (t === "byte" || t === "sbyte") return 8;
+          // NX-N6 根因の一部：複合型名 "unsigned char"／"signed char" が
+          // t === "char" に一致せず32ビットと誤判定されていた（本来8ビット）。
+          if (!managed && ["char", "unsigned char", "signed char"].includes(t))
+            return 8;
           return t === "char" && !managed ? 8 : 32;
+        }
+        // D3 追随（修正バッチ2・追随班）：C# の定数式かどうかの構文判定。
+        // リテラル、定数への単項 -／+／~、定数同士の二項演算、定数への
+        // キャストだけを定数とみなし、変数・呼び出し・メンバー参照など
+        // 実行時に決まる式は定数とみなさない（C# 仕様の constant_expression
+        // §12.26 の部分集合）。暗黙の定数式変換（§10.2.11）は値が変換先の
+        // 範囲内のときだけ許され、範囲外は CS0031 のコンパイルエラーに
+        // なるため、単項マイナス経由（uint u = -1; 等）や定数同士の演算
+        // （byte b = 100 + 200; 等）でもリテラル単体と同じく停止させる。
+        function isConstantIntegerExpr(node) {
+          if (!node || typeof node !== "object") return false;
+          if (node.k === "literal") return typeof node.value === "number";
+          if (node.k === "unary" && ["-", "+", "~"].includes(node.op))
+            return isConstantIntegerExpr(node.arg);
+          if (node.k === "binary")
+            return (
+              isConstantIntegerExpr(node.a) && isConstantIntegerExpr(node.b)
+            );
+          if (node.k === "cast") return isConstantIntegerExpr(node.arg);
+          // checked(式)／unchecked(式) で包まれた定数も定数式のまま
+          // （定数式のオーバーフローは unchecked でもコンパイルエラー
+          // という unchecked 項目の開示方針と揃える）。
+          if (
+            node.k === "call" &&
+            ["checked", "unchecked"].includes(callName(node.target)) &&
+            node.args?.length === 1
+          )
+            return isConstantIntegerExpr(node.args[0]);
+          return false;
         }
         function cast(v, type, s, node, api) {
           if (isUnknown(v)) return v;
@@ -1972,6 +2286,94 @@ export function createCFamily({ id, name, extensions, language }) {
             value = Math.trunc(v);
           if (!managed && type === "char" && ["float", "double"].includes(typeOf(node.value, s)) && (value < -128 || value > 255)) api.fail("浮動小数点からcharへの変換が範囲外です", node, "未定義動作");
           if (!managed && type === "char" && (value < 0 || value > 127)) api.fail("charの範囲外変換は符号と処理系により異なります（未確認）", node, "環境依存");
+          // NX-N6 根因：unsigned 型への変換にも符号付きの min／max を適用し、
+          // 型に取り得ない値を返したり、規格で定義された折り返しを
+          // 「処理系依存」と誤って停止したりしていた。unsigned への整数の
+          // 変換は規格どおり 2^bits の剰余で折り返す。浮動小数点からの
+          // 変換は、切り捨て後の値が表せない場合に限り従来どおり
+          // 範囲外（未定義動作）として停止する。C# の unsigned 型は
+          // reference にモデル制限として開示済みの範囲外停止を維持する。
+          if (!managed && type.startsWith("unsigned")) {
+            const fromFloat = ["float", "double"].includes(
+              typeOf(node?.value, s),
+            );
+            if (fromFloat) {
+              if (value < 0 || value > 2 ** bits - 1)
+                api.fail(
+                  "浮動小数点から整数への変換が範囲外です",
+                  node,
+                  "未定義動作",
+                );
+              if (!Number.isSafeInteger(value))
+                api.fail(
+                  "この64ビット整数は安全に計算できる範囲外です",
+                  node,
+                  "未確認",
+                );
+              return value;
+            } else {
+              if (!Number.isFinite(value))
+                api.fail(
+                  "この64ビット整数は安全に計算できる範囲外です",
+                  node,
+                  "未確認",
+                );
+              const wrapped = BigInt.asUintN(bits, BigInt(value));
+              if (wrapped > BigInt(Number.MAX_SAFE_INTEGER))
+                api.fail(
+                  "この64ビット整数は安全に計算できる範囲外です",
+                  node,
+                  "未確認",
+                );
+              return Number(wrapped);
+            }
+          }
+          // D3／SEM-3 根因：C# の符号なし型（byte／ushort／uint／ulong）
+          // にも符号付きの min／max を適用していたため、正当な値
+          // （byte 200、uint 4000000000 等）が虚偽の OverflowException
+          // になり、逆に符号付き範囲内の負値（uint への -1 代入）が
+          // 素通りして誤値になっていた。符号なし型の範囲は
+          // 0〜2^bits-1 で、checked では範囲外を例外にし、既定の
+          // unchecked では 2^bits の剰余で折り返す（実 C# の規則）。
+          // ただし宣言時の整数リテラル定数が範囲外の場合は、実 C# でも
+          // 定数変換エラーになるため折り返さず停止する。
+          // D3 追随：リテラル単体だけでなく、単項マイナスや定数同士の
+          // 演算を含む定数式（isConstantIntegerExpr）も同じ定数変換の
+          // 対象にする。実行時に決まる式は従来どおり折り返す。
+          if (managed && ["uint", "ulong", "ushort", "byte"].includes(type)) {
+            const maxU = 2 ** bits - 1;
+            if (value >= 0 && value <= maxU) {
+              if (!Number.isSafeInteger(value))
+                api.fail(
+                  "この64ビット整数は安全に計算できる範囲外です",
+                  node,
+                  "未確認",
+                );
+              return value;
+            }
+            if (s.checked)
+              api.fail("整数への変換が範囲外です", node, "OverflowException");
+            // 複合代入（+= 等）では node.value は被演算子の一部でしか
+            // なく、変換元の値は対象変数の実行時の値を含むため定数式
+            // 変換の対象にしない（u += -1; の折り返しを誤って止めない）。
+            if (
+              !(
+                node?.k === "assign" &&
+                node?.op &&
+                node.op !== "="
+              ) &&
+              isConstantIntegerExpr(node?.value)
+            )
+              api.fail("整数への変換が範囲外です", node, "OverflowException");
+            const wrappedU = BigInt.asUintN(bits, BigInt(value));
+            if (wrappedU > BigInt(Number.MAX_SAFE_INTEGER))
+              api.fail(
+                "この64ビット整数は安全に計算できる範囲外です",
+                node,
+                "未確認",
+              );
+            return Number(wrappedU);
+          }
           let min = -(2 ** (bits - 1)),
             max = 2 ** (bits - 1) - 1;
           if (value < min || value > max) {
@@ -2008,8 +2410,13 @@ export function createCFamily({ id, name, extensions, language }) {
           if (expr.k === "index") {
             let target = api.read(expr.target, s),
               index = api.read(expr.indexes[0], s);
-            if (!isPtr(target) || !Number.isInteger(index))
+            if (!isPtr(target))
               api.fail("モデルポインタと整数添字が必要です", node);
+            // R23-N5 書き込み側：小数の添字を「ポインタと整数添字が
+            // 必要」という曖昧な理由でなく、添字の型として名指す。
+            if (typeof index === "boolean") index = Number(index);
+            if (!Number.isInteger(index))
+              api.fail("添字は整数型でなければなりません", node, "CompileError");
             return { ...target, offset: target.offset + index };
           }
           if (expr.k === "unary" && expr.op === "*")
@@ -2167,8 +2574,23 @@ export function createCFamily({ id, name, extensions, language }) {
                   if (s.types[n.value.name] !== type) api.fail("配列型が一致しません", n, "CompileError");
                   // Assignment copies an array reference, not its elements.
                 } else
+                  // D3 追随：C# では配列初期化子の要素にも宣言本体と同じ
+                  // 定数変換チェックが効くよう、要素ごとの式ノードを
+                  // cast へ渡す（byte[] a = {300}; が 44 に折り返されず
+                  // 停止する）。C／C++ は従来どおり宣言ノードを渡し、
+                  // 符号なしの剰余変換（NX-N6）を維持する。
                   v = Array.from({ length }, (_, i) =>
-                    i < v.length ? cast(v[i], n.type, s, n, api) : defaultValue,
+                    i < v.length
+                      ? cast(
+                          v[i],
+                          n.type,
+                          s,
+                          managed && Array.isArray(n.value?.values)
+                            ? { ...n, value: n.value.values[i] }
+                            : n,
+                          api,
+                        )
+                      : defaultValue,
                   );
                 if (managed) {
                   s.vars[n.name] = v;
@@ -2224,6 +2646,20 @@ export function createCFamily({ id, name, extensions, language }) {
                 a,
                 "未確認",
               );
+            // D7：cin 抽出は被演算子を読む前に横取りする（未初期化の
+            // 抽出先を読むと未初期化エラーになってしまうため）。
+            if (
+              language === "cpp" &&
+              a.k === "binary" &&
+              a.op === ">>" &&
+              isCinChain(a.a)
+            ) {
+              extractFromCin(a, s, api);
+              return {
+                handled: true,
+                value: api.freshUnknown("標準入力ストリーム", s),
+              };
+            }
             if (a.k === "assign") {
               let v = api.read(a.value, s);
               if (a.op && a.op !== "=") {
@@ -2406,6 +2842,28 @@ export function createCFamily({ id, name, extensions, language }) {
                 api.fail("数値型へのキャスト元が数値ではありません", a, "CompileError");
               if (target === "double") return { handled: true, value: v };
               if (target === "float") return { handled: true, value: Math.fround(v) };
+              // D11 根因：unchecked 文脈での範囲外の浮動小数点→整数
+              // 変換は C# 仕様で unspecified な値であり、BigInt の
+              // 折り返しで得た 0 等を確定値として返してはならない。
+              // checked では OverflowException、unchecked では
+              // 未確認として停止する。非有限値も同じ扱い（従来は
+              // BigInt(Infinity) のホスト例外が limit に化けていた）。
+              if (["float", "double"].includes(typeOf(a.arg, s))) {
+                const t = Math.trunc(v),
+                  cBits = width(target, s),
+                  cUnsigned = ["uint", "ulong", "ushort", "byte"].includes(target),
+                  cMin = cUnsigned ? 0 : -(2 ** (cBits - 1)),
+                  cMax = cUnsigned ? 2 ** cBits - 1 : 2 ** (cBits - 1) - 1;
+                if (!Number.isFinite(t) || t < cMin || t > cMax) {
+                  if (s.checked)
+                    api.fail("整数へのキャストが範囲外です", a, "OverflowException");
+                  api.fail(
+                    "範囲外の浮動小数点から整数への変換結果は不定（unspecified）な値のため、確定値として扱えません",
+                    a,
+                    "未確認",
+                  );
+                }
+              }
               const bits = width(target, s),
                 unsigned = ["uint", "ulong", "ushort", "byte"].includes(target);
               let n = BigInt(Math.trunc(v));
@@ -2468,6 +2926,43 @@ export function createCFamily({ id, name, extensions, language }) {
                 index = api.read(a.indexes[0], s);
               if (isUnknown(index))
                 api.fail("未確定の添字によるメモリ参照は未対応です", a);
+              // D12 兄弟表面：未確定の対象（ReadLine 結果等）の要素は
+              // 未確定値として伝播させる。範囲外という虚偽の理由で
+              // 止めない。
+              if (isUnknown(target))
+                return {
+                  handled: true,
+                  value: unknown("未確定の値の要素"),
+                };
+              // R23-N5 根因：添字式の型が検証されておらず、小数・文字列
+              // の添字が範囲外や「未設定」の捏造に化けていた。実言語では
+              // 添字は整数型でなければならず、型の問題として停止する。
+              {
+                const idxType = typeOf(a.indexes[0], s);
+                if (
+                  ["double", "float", "string"].includes(idxType) ||
+                  (managed && idxType === "bool")
+                )
+                  api.fail(
+                    "添字は整数型でなければなりません",
+                    a,
+                    "CompileError",
+                  );
+                if (typeof index === "boolean") index = Number(index);
+                if (
+                  managed &&
+                  typeof index === "string" &&
+                  index.length === 1 &&
+                  idxType === "char"
+                )
+                  index = index.charCodeAt(0);
+                if (!Number.isInteger(index))
+                  api.fail(
+                    "添字は整数型でなければなりません",
+                    a,
+                    "CompileError",
+                  );
+              }
               if (typeof target === "string") {
                 if (!Number.isInteger(index))
                   api.fail("添字が整数ではありません", a, "CompileError");
@@ -2540,6 +3035,14 @@ export function createCFamily({ id, name, extensions, language }) {
               let obj = api.read(a.target, s);
               if (obj === null)
                 api.fail("null参照です", a, "NullReferenceException");
+              // D12 根因：ReadLine 結果のような未確定の文字列でも
+              // .Length は実在するプロパティであり、「フィールドが
+              // ありません」は虚偽の理由。未確定値として伝播させる。
+              if (isUnknown(obj))
+                return {
+                  handled: true,
+                  value: unknown(`未確定の対象の ${a.name}`),
+                };
               if (a.name === "Length" && Array.isArray(obj))
                 return { handled: true, value: obj.length };
               if (typeof obj === "string") {
@@ -2596,7 +3099,10 @@ export function createCFamily({ id, name, extensions, language }) {
             ) {
               const current = s.vars[a.target.name],
                 index = api.read(a.indexes[0], s);
-              if (!Number.isInteger(index) || index < 0 || index >= current.length)
+              // R23-N5 書き込み側：非整数の添字は範囲の問題ではなく型の問題。
+              if (!Number.isInteger(index))
+                api.fail("添字は整数型でなければなりません", node, "CompileError");
+              if (index < 0 || index >= current.length)
                 api.fail("文字列の有効範囲外への書き込みです", node, "未定義動作");
               const ch = cast(v, "char", s, node, api);
               const next =
@@ -2632,9 +3138,18 @@ export function createCFamily({ id, name, extensions, language }) {
             if (managed && a.k === "index") {
               let array = api.read(a.target, s),
                 index = api.read(a.indexes[0], s);
+              // R23-N5 書き込み側：非整数の添字を範囲外と誤診しない。
+              if (
+                managed &&
+                typeof index === "string" &&
+                index.length === 1 &&
+                typeOf(a.indexes[0], s) === "char"
+              )
+                index = index.charCodeAt(0);
+              if (!Number.isInteger(index))
+                api.fail("添字は整数型でなければなりません", node, "CompileError");
               if (
                 !Array.isArray(array) ||
-                !Number.isInteger(index) ||
                 index < 0 ||
                 index >= array.length
               )
@@ -2675,7 +3190,7 @@ export function createCFamily({ id, name, extensions, language }) {
                   mem = s.model.memory[ptr.object];
                 if (next.offset < 0 || next.offset > mem.values.length)
                   api.fail(
-                    "配列の先頭～一つ先を超えるポインタ演算",
+                    "配列の先頭〜一つ先を超えるポインタ演算",
                     node,
                     "未定義動作",
                   );
@@ -2700,8 +3215,20 @@ export function createCFamily({ id, name, extensions, language }) {
                 a = a.charCodeAt(0);
               if (rt === "char" && lt !== "string" && typeof b === "string")
                 b = b.charCodeAt(0);
-              if (op === "+" && (lt === "string" || rt === "string"))
-                return csConcatText(a, lt) + csConcatText(b, rt);
+              if (op === "+" && (lt === "string" || rt === "string")) {
+                // P-N1: 文字列連結は実体を作る前に長さを見積もる。C系の
+                // 契約はフェーズ1（P-N3）で「上限で日本語の理由を付けて
+                // 停止」と定まっているため、ホストが実際に死ぬのを待たず
+                // 上限 200,000 で決定的に同じ停止を発生させる。
+                const ta = csConcatText(a, lt),
+                  tb = csConcatText(b, rt);
+                if (ta.length + tb.length > 200000)
+                  throw hostErrorAsPractice(
+                    new RangeError("Invalid string length"),
+                    node?.line,
+                  );
+                return ta + tb;
+              }
               if (["==", "!=", "<", ">", "<=", ">="].includes(op)) {
                 const cat = (t, v) =>
                   v === null
@@ -2793,9 +3320,33 @@ export function createCFamily({ id, name, extensions, language }) {
               typeof a === "string" &&
               typeof b === "string" &&
               (node.k === "assign" ? s.types[callName(node.target)] === "string" : [lt, rt].includes("string"))
-            )
-              return String(a ?? "") + String(b ?? "");
+            ) {
+              // P-N1: C++ の std::string 連結も同じ上限・同じ停止契約
+              // （P-N3 のホスト例外漏れの発生源自体を断つ）。
+              const ta = String(a ?? ""),
+                tb = String(b ?? "");
+              if (ta.length + tb.length > 200000)
+                throw hostErrorAsPractice(
+                  new RangeError("Invalid string length"),
+                  node?.line,
+                );
+              return ta + tb;
+            }
             const arithmetic = arithmeticType(lt, rt, s);
+            // D5 根因：C／C++ では % の被演算子は整数型でなければならず、
+            // 浮動小数点数同士の剰余はコンパイルエラー。fmod 相当の値を
+            // 黙って返していた。C# では浮動小数点の % も定義済みのため
+            // managed は対象外。
+            if (
+              !managed &&
+              op === "%" &&
+              (["double", "float"].includes(lt) || ["double", "float"].includes(rt))
+            )
+              api.fail(
+                "剰余演算子 % の被演算子は整数型でなければなりません",
+                node,
+                "CompileError",
+              );
             if (op === "<<" || op === ">>") {
               if (typeof a !== "number" || typeof b !== "number")
                 api.fail("シフト演算の型が一致しません", node, "CompileError");
@@ -2814,7 +3365,7 @@ export function createCFamily({ id, name, extensions, language }) {
                 api.fail("シフト演算の安全整数範囲外です", node, "未確認");
               const x = BigInt(a);
               let result = op === "<<" ? x << BigInt(count) : x >> BigInt(count);
-              if (arithmetic.startsWith("unsigned")) {
+              if (arithmetic.startsWith("unsigned") || ["uint", "ulong"].includes(arithmetic)) {
                 result = BigInt.asUintN(bits, result);
                 if (result > BigInt(Number.MAX_SAFE_INTEGER))
                   api.fail("シフト結果が安全整数範囲外です", node, "未確認");
@@ -2850,7 +3401,7 @@ export function createCFamily({ id, name, extensions, language }) {
                     : op === "|"
                       ? BigInt(a) | BigInt(b)
                       : BigInt(a) ^ BigInt(b);
-                result = arithmetic.startsWith("unsigned")
+                result = arithmetic.startsWith("unsigned") || ["uint", "ulong"].includes(arithmetic)
                   ? BigInt.asUintN(bits, result)
                   : BigInt.asIntN(bits, result);
                 if (!Number.isSafeInteger(Number(result)))
@@ -2895,8 +3446,12 @@ export function createCFamily({ id, name, extensions, language }) {
                 y = BigInt(b),
                 value = op === "+" ? x + y : op === "-" ? x - y : x * y,
                 bits = BigInt(width(type, s)),
-                min = -(1n << (bits - 1n)),
-                max = (1n << (bits - 1n)) - 1n;
+                // D3 兄弟表面：C# の uint／ulong 演算は符号なし範囲で
+                // 折り返す。符号付きの min／max で判定すると uint の
+                // 加算が int の範囲で誤って折り返されていた。
+                unsignedArith = ["uint", "ulong"].includes(type),
+                min = unsignedArith ? 0n : -(1n << (bits - 1n)),
+                max = unsignedArith ? (1n << bits) - 1n : (1n << (bits - 1n)) - 1n;
               if (value < min || value > max) {
                 if (!managed)
                   api.fail("符号付き整数のオーバーフロー", node, "未定義動作");
@@ -2908,7 +3463,9 @@ export function createCFamily({ id, name, extensions, language }) {
                     node,
                     constant ? "CompileError" : "OverflowException",
                   );
-                value = BigInt.asIntN(Number(bits), value);
+                value = unsignedArith
+                  ? BigInt.asUintN(Number(bits), value)
+                  : BigInt.asIntN(Number(bits), value);
               }
               if (
                 value > BigInt(Number.MAX_SAFE_INTEGER) ||
@@ -2983,6 +3540,9 @@ export function createCFamily({ id, name, extensions, language }) {
               api.write(args[1], ok ? parsed : 0, s, node);
               return ok;
             }
+            // D13：引数を評価する前に未順序の競合を検査する。
+            if (!managed && name === "printf")
+              checkUnsequencedArgs(args, node, api);
             let values = args.map((a) => api.read(a, s));
             if (name === "Console.ReadLine") {
               if (!managed) api.fail("未対応の関数です", node);
@@ -3067,7 +3627,7 @@ export function createCFamily({ id, name, extensions, language }) {
                   );
                 // RG-04 追加表面（R21-N6）: 非有限値の %f は C の実物表記
                 // （inf／-inf／nan）。JS の toFixed が返す "Infinity" を出さない。
-                return type === "f" ? (!Number.isFinite(v) ? (Number.isNaN(v) ? "nan" : v > 0 ? "inf" : "-inf") : Object.is(v, -0) ? "-0.000000" : Number(v).toFixed(6)) : type === "c" ? String.fromCharCode(v) : String(v);
+                return type === "f" ? (!Number.isFinite(v) ? (Number.isNaN(v) ? "nan" : v > 0 ? "inf" : "-inf") : Object.is(v, -0) ? "-0.000000" : formatFixed6(Number(v))) : type === "c" ? String.fromCharCode(v) : String(v);
               });
               if (i !== rest.length)
                 api.fail("printfの書式または引数の数は未対応です", node);
@@ -3076,7 +3636,32 @@ export function createCFamily({ id, name, extensions, language }) {
               return new TextEncoder().encode(text).length;
             }
             if (name === "abs") {
+              // D14 兄弟表面：実 C# にグローバル関数 abs は無い。
+              if (managed)
+                api.fail(
+                  "C# に abs 関数はありません（Math.Abs は未対応です）",
+                  node,
+                  "CompileError",
+                );
               let v = values[0];
+              if (isUnknown(v)) return v;
+              // D4 根因：abs は引数を int 化せず Math.abs をそのまま
+              // 返していたため、%d で 5.5 が表示されていた。C では
+              // 引数が int へ変換されてから絶対値を取る。C++ では
+              // double オーバーロードが選ばれ結果は double のまま
+              // （%d で表示すれば型不一致として停止する）。
+              const argType = typeOf(args[0], s);
+              if (["float", "double"].includes(argType)) {
+                if (language === "cpp") return Math.abs(v);
+                const t = Math.trunc(v);
+                if (!Number.isFinite(t) || t < -2147483648 || t > 2147483647)
+                  api.fail(
+                    "浮動小数点から整数への変換が範囲外です",
+                    node,
+                    "未定義動作",
+                  );
+                v = t;
+              }
               if (v === -2147483648)
                 api.fail("absの結果がintで表せません", node, "未定義動作");
               return Math.abs(v);
@@ -3086,7 +3671,7 @@ export function createCFamily({ id, name, extensions, language }) {
           action(n, s, api) {
             if (n.action === "cout") {
               let text = n.values
-                .map((v) => { const value = api.read(v, s); const vt = typeOf(v, s); return typeof value === "boolean" ? String(Number(value)) : vt === "char" ? String.fromCharCode(value) : isPtr(value) && s.model.memory[value.object]?.type === "char" ? cString(value, s, api, n) : typeof value === "number" ? (Object.is(value, -0) ? "-0" : vt === "double" || vt === "float" || !Number.isInteger(value) ? cppGText(value) : String(value)) : formatValue(transformDisplay(value)); })
+                .map((v) => { const value = api.read(v, s); const vt = typeOf(v, s); return typeof value === "boolean" ? String(Number(value)) : ["char", "signed char", "unsigned char"].includes(vt) ? String.fromCharCode(value) : isPtr(value) && s.model.memory[value.object]?.type === "char" ? cString(value, s, api, n) : typeof value === "number" ? (Object.is(value, -0) ? "-0" : vt === "double" || vt === "float" || !Number.isInteger(value) ? cppGText(value) : String(value)) : formatValue(transformDisplay(value)); })
                 .join("");
               s.outputs.push({ channel: "cout", text, line: n.line });
               api.note(s, n, "標準出力へ出します：" + text);
@@ -3120,6 +3705,10 @@ export function createCFamily({ id, name, extensions, language }) {
             },
           ],
         };
+        // P-N3：実行境界でもホスト例外の生文言を漏らさない（文字列の
+        // 倍増などで V8 の RangeError が semantics 内から出る経路）。
+        for (const key of ["step", "read", "write", "binary", "call", "action"])
+          if (semantics[key]) semantics[key] = guardHostErrors(semantics[key]);
         const result = executeProgram(nodes, model, semantics, limits);
         if (result.paths) {
           // User-defined names (C# class names and their field names) can
@@ -3138,7 +3727,8 @@ export function createCFamily({ id, name, extensions, language }) {
         }
         return result;
       } catch (e) {
-        return sourceFailure(e);
+        // P-N3：解析・後処理段階のホスト例外も日本語の停止理由へ変換する。
+        return sourceFailure(hostErrorAsPractice(e, e?.line));
       }
     },
   };

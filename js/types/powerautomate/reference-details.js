@@ -12,7 +12,7 @@ export const referenceDetails = {
   },
   "Display input dialog": {
     "returns": "UserInputとButtonPressed。本モデルの入力は未確定",
-    "source": "https://learn.microsoft.com/en-us/power-automate/desktop-flows/actions-reference/display#displayinputdialog",
+    "source": "https://learn.microsoft.com/en-us/power-automate/desktop-flows/actions-reference/display#inputdialog",
     "description": "入力ダイアログで得る文字列と押されたボタンを扱います。本モデルでは入力値を捏造しません。"
   },
   "If": {
@@ -27,12 +27,12 @@ export const referenceDetails = {
   },
   "Else if": {
     "returns": "戻り値なし（宣言または制御文）",
-    "source": "https://learn.microsoft.com/en-us/power-automate/desktop-flows/actions-reference/conditionals#else-if",
+    "source": "https://learn.microsoft.com/en-us/power-automate/desktop-flows/actions-reference/conditionals#elseif",
     "description": "前のIfやElse ifの条件がすべて成立せず、この条件が成立した場合のブロックです。条件を複数段つなげられます。"
   },
   "End": {
     "returns": "戻り値なし（宣言または制御文）",
-    "source": "https://learn.microsoft.com/en-us/power-automate/desktop-flows/actions-reference/loops",
+    "source": "https://learn.microsoft.com/en-us/power-automate/desktop-flows/actions-reference/flowcontrol#end",
     "description": "条件ブロックまたはループの終わりです。"
   },
   "Loop": {
@@ -57,7 +57,7 @@ export const referenceDetails = {
   },
   "Write text to file": {
     "returns": "出力変数なし。モデルファイルの内容を更新",
-    "source": "https://learn.microsoft.com/en-us/power-automate/desktop-flows/actions-reference/file#writetexttofile",
+    "source": "https://learn.microsoft.com/en-us/power-automate/desktop-flows/actions-reference/file#writetext",
     "description": "テキストを指定先へ書き込み、追記または上書きします。本モデルのファイルだけを更新します。"
   },
   "Read text from file": {
@@ -72,7 +72,7 @@ export const referenceDetails = {
   },
   "Display message": {
     "returns": "ButtonPressed（本モデルはメッセージの出力のみ）",
-    "source": "https://learn.microsoft.com/en-us/power-automate/desktop-flows/actions-reference/display#displaymessage",
+    "source": "https://learn.microsoft.com/en-us/power-automate/desktop-flows/actions-reference/display#showmessagedialog",
     "description": "メッセージダイアログを表示する操作を、アプリの出力として説明します。"
   }
 };

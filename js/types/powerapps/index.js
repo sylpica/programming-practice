@@ -95,15 +95,15 @@ const reference = rows([
   [
     "Sum",
     "集計",
-    "Sum(Table, Formula)",
-    "各行で数式を評価し合計します。",
+    "Sum(Table, Formula) または Sum(NumericalFormula1 [, NumericalFormula2, ...])",
+    "テーブル形では各行で数式を評価し合計します。数値形では、渡した数値の式をすべて合計します。",
     "Sum(Items, Value)",
   ],
   [
     "Filter",
     "テーブル",
-    "Filter(Table, Condition)",
-    "条件を満たす行を抽出します。",
+    "Filter(Table, Formula1 [, Formula2, ...])",
+    "条件を満たす行を抽出します。複数の数式を渡すと、すべてを満たす行を抽出します（Andで結合されます）。",
     "Filter(Items, Value > 1)",
     "委任できる条件はデータソースと演算子に依存します。委任できないクエリは既定500件（設定で最大2,000件）の取得範囲で評価され、結果が欠ける場合があります。このモデルは明示したローカルデータだけを評価します。",
   ],
@@ -117,10 +117,10 @@ const reference = rows([
   [
     "Patch",
     "レコード",
-    "Patch(Source, Base, Changes)",
-    "モデルデータソースの既存レコードを更新または追加します。",
+    "Patch(Source, BaseRecord, ChangeRecord1 [, ChangeRecord2, ...])",
+    "モデルデータソースの既存レコードを更新または追加します。変更レコードを複数渡すと、統合して適用します（同じ項目は後ろのレコードが優先されます）。",
     'Patch(Orders, Defaults(Orders), {Name:"A"})',
-    "サーバーが採番するIDは捏造しません。",
+    "サーバが採番するIDは捏造しません。",
   ],
   [
     "Defaults",
@@ -155,10 +155,10 @@ const reference = rows([
   [
     "Value",
     "型変換",
-    "Value(Text)",
-    "明示した10進数文字列を数値へ変換します。",
+    "Value(Text [, LanguageTag])",
+    "明示した10進数文字列を数値へ変換します。入力がBlankまたは空文字列の場合はBlankを返します。",
     "Value(Input1.Text)",
-    "地域依存書式は未対応です。",
+    "言語タグはen-USのみ対応します。地域依存書式は未対応です。",
   ],
   ["Blank", "欠損", "Blank()", "空白値を返します。", "Set(Answer, Blank())"],
   [
@@ -171,21 +171,22 @@ const reference = rows([
   [
     "Notify",
     "入出力",
-    "Notify(Message)",
-    "通知をモデルの出力へ追加します。",
+    "Notify(Message [, NotificationType [, Timeout]])",
+    "通知をモデルの出力へ追加します。NotificationTypeで通知の種類（既定はInformation）、Timeoutで表示時間（既定は10秒）を指定できます。",
     'Notify("保存しました")',
+    "このモデルでは通知の種類と表示時間は、出力のテキストには反映しません。",
   ],
   [
     "And",
     "論理",
-    "And(Logical1 [, Logical2, ...])",
+    "And(LogicalFormula1, LogicalFormula2 [, LogicalFormula3, ...])",
     "すべての引数が真のとき真を返します（関数形）。演算子のAndや&&でも同じ意味になります。",
     "And(1 < 2, 2 < 3)",
   ],
   [
     "Or",
     "論理",
-    "Or(Logical1 [, Logical2, ...])",
+    "Or(LogicalFormula1, LogicalFormula2 [, LogicalFormula3, ...])",
     "いずれかの引数が真のとき真を返します（関数形）。演算子のOrや||でも同じ意味になります。",
     "Or(false, 1 < 2)",
   ],
@@ -279,12 +280,28 @@ function lowerBehavior(expr, line = expr.line || 1) {
     ["if", "switch"].includes(callName(expr.args[1].target).toLowerCase())
   ) {
     let branch = expr.args[1],
-      args = branch.args;
+      args = [...branch.args];
+    // D-1: If の既定値なし・Switch の既定値なしは Blank を返すのが
+    // Power Fx の規則（各項目の returns 欄どおり）。Set の動作数式化で
+    // 「該当なし」の経路に Set 自体が存在しないと、変数が未定義のまま
+    // になり後続参照が未定義エラーになる（Set(R, Blank()) や
+    // UpdateContext 経由では R=null で登録されるのと不整合）。該当なし
+    // の経路には Set(名前, Blank()) を補い、変数を Blank として定義する。
+    let branchName = callName(branch.target).toLowerCase(),
+      hasFallback =
+        branchName === "if" ? args.length % 2 === 1 : args.length % 2 === 0;
+    if (!hasFallback)
+      args.push({
+        k: "call",
+        target: { k: "var", name: "Blank", line },
+        args: [],
+        line,
+      });
     let wrapped = {
       ...branch,
       args: args.map((v, i) => (name === "switch" ? v : v)),
     };
-    if (callName(branch.target).toLowerCase() === "if")
+    if (branchName === "if")
       wrapped.args = args.map((v, i) =>
         i % 2 || (i === args.length - 1 && args.length % 2)
           ? { ...expr, args: [expr.args[0], v] }
@@ -559,19 +576,43 @@ export const definition = {
         s.bindingDepth = 1;
         for (let [target, text] of Object.entries(s.model.bindings || {})) {
           let [name, prop] = target.split(".");
-          if (!s.model.controls[name])
+          let controlKey = Object.keys(s.model.controls || {}).find(
+            (k) => k.toLowerCase() === name.toLowerCase(),
+          );
+          if (!controlKey)
             api.fail("bindingのコントロールがありません：" + name, { line: 1 });
           try {
-            s.model.controls[name][prop] = api.read(
+            s.model.controls[controlKey][prop] = api.read(
               parseExpression(text, "fx"),
               s,
             );
           } catch (e) {
-            if (/未定義/.test(e.message)) s.model.controls[name][prop] = null;
+            if (/未定義/.test(e.message))
+              s.model.controls[controlKey][prop] = null;
             else throw e;
           }
         }
         s.bindingDepth = 0;
+      }
+      // NX-N3/N4/N15 共通根因: Power Fx の識別子は大文字小文字を区別しない
+      // （syntax.caseSensitive: false）。読み取り側（read）は不区別に照合する
+      // のに書き込み側が書かれた通りのキーで別エントリを作ると、説明・
+      // groups と読み戻しが食い違う。名前で引く全ての表面は ciKey で既存
+      // キーへ寄せ、別表記の重複キーは作らない／残さない。
+      function ciKey(obj, name) {
+        if (!obj || typeof obj !== "object") return undefined;
+        return Object.keys(obj).find(
+          (k) => k.toLowerCase() === String(name).toLowerCase(),
+        );
+      }
+      function ciDropDuplicates(obj, keepKey, name) {
+        if (!obj || typeof obj !== "object") return;
+        for (let k of Object.keys(obj))
+          if (
+            k !== keepKey &&
+            k.toLowerCase() === String(name).toLowerCase()
+          )
+            delete obj[k];
       }
       let semantics = {
         dialect: "fx",
@@ -601,12 +642,25 @@ export const definition = {
             // casing are the Boolean literals.
             if (lower === "true") return { handled: true, value: true };
             if (lower === "false") return { handled: true, value: false };
+            // RA-57: NotificationType は Notify の第2引数で使う列挙で、
+            // NotificationType.Success のようなメンバー参照で値を得る。
+            if (lower === "notificationtype")
+              return {
+                handled: true,
+                value: {
+                  Information: "Information",
+                  Success: "Success",
+                  Warning: "Warning",
+                  Error: "Error",
+                },
+              };
             let key = Object.keys(s.vars).find(
               (k) => k.toLowerCase() === a.name.toLowerCase(),
             );
             if (key !== undefined) return { handled: true, value: s.vars[key] };
-            if (Object.hasOwn(s.model.screens || {}, a.name))
-              return { handled: true, value: { screen: a.name } };
+            let screenKey = ciKey(s.model.screens || {}, a.name);
+            if (screenKey !== undefined)
+              return { handled: true, value: { screen: screenKey } };
             if (lower === "thisrecord") {
               // RG-16: ThisRecord only exists inside a record scope
               // (ForAll / Filter / Sum / LookUp formulas). At the top level
@@ -619,6 +673,27 @@ export const definition = {
                 a,
               );
             }
+          }
+          if (a.k === "member") {
+            // 同根の表面: メンバー名（Input1.text、ThisRecord.VALUE 等）も
+            // 識別子として大文字小文字を区別しない。完全一致がある場合は
+            // 共有コアの処理に任せ、大小だけ違う場合のみここで解決する。
+            let x;
+            try {
+              x = api.read(a.target, s);
+            } catch {
+              return null;
+            }
+            // D-2: Blank レコードの全フィールドも Blank（Microsoft Learn
+            // AsType/IsType）。LookUp の不一致結果や Blank() へのドット
+            // 参照はエラーでなく Blank を返す。共有コアの「空のオブジェ
+            // クトは参照できません」に落とさない。
+            if (x === null) return { handled: true, value: null };
+            if (isUnknown(x) || typeof x !== "object") return null;
+            if (Object.hasOwn(x, a.name)) return null;
+            let memberKey = ciKey(x, a.name);
+            if (memberKey !== undefined)
+              return { handled: true, value: x[memberKey] };
           }
           return null;
         },
@@ -713,8 +788,9 @@ export const definition = {
             blank: [0, 0],
             isblank: [1, 1],
             not: [1, 1],
-            and: [1, Infinity],
-            or: [1, Infinity],
+            // RA-53: And／Or は Learn の書式どおり第2引数が必須（最低2引数）。
+            and: [2, Infinity],
+            or: [2, Infinity],
             if: [2, Infinity],
             switch: [3, Infinity],
             set: [2, 2],
@@ -723,19 +799,24 @@ export const definition = {
             sequence: [1, 3],
             forall: [2, 2],
             countrows: [1, 1],
-            sum: [2, 2],
-            filter: [2, 2],
+            // RA-55: Sum はテーブル形と数値可変長形の両方を受ける。
+            sum: [1, Infinity],
+            // RA-54: Filter は複数の条件式を受け、And で結合する。
+            filter: [2, Infinity],
             lookup: [2, 3],
             clear: [1, 1],
             collect: [2, Infinity],
             clearcollect: [2, Infinity],
             defaults: [1, 1],
-            patch: [3, 3],
+            // RA-56: Patch は複数の変更レコードを受け、統合して適用する。
+            patch: [3, Infinity],
             navigate: [1, 1],
             reset: [1, 1],
-            notify: [1, 1],
+            // RA-57: Notify は NotificationType／Timeout を任意で受ける。
+            notify: [1, 3],
             text: [1, 3],
-            value: [1, 1],
+            // RA-58: Value は言語タグを任意で受ける。
+            value: [1, 2],
           };
           if (arity[fn]) {
             let [min, max] = arity[fn];
@@ -828,20 +909,25 @@ export const definition = {
               let n = key(0),
                 v = get(1);
               if (
-                Object.hasOwn(s.model.controls, n) ||
-                Object.hasOwn(s.model.collections, n)
+                ciKey(s.model.controls, n) !== undefined ||
+                ciKey(s.model.collections, n) !== undefined
               )
                 api.fail(
                   "コントロール／コレクションと同じ変数名は使えません",
                   node,
                 );
-              s.vars[n] = structuredClone(v);
-              s.model.variables[n] = s.vars[n];
+              // NX-N3: 既存変数と大小だけ違う名前は同一変数として既存
+              // キーを更新する（別エントリを作らない）。
+              let varKey = ciKey(s.model.variables, n) ?? n;
+              ciDropDuplicates(s.vars, varKey, n);
+              ciDropDuplicates(s.model.variables, varKey, n);
+              s.vars[varKey] = structuredClone(v);
+              s.model.variables[varKey] = s.vars[varKey];
               recalc(s, api);
               api.note(
                 s,
                 node,
-                `${n} に ${formatValue(v)} を設定し、表示数式を再計算します`,
+                `${varKey} に ${formatValue(v)} を設定し、表示数式を再計算します`,
               );
               return null;
             }
@@ -857,8 +943,20 @@ export const definition = {
                   node,
                 );
               screen.context ??= {};
-              Object.assign(screen.context, fields);
-              Object.assign(s.vars, fields);
+              // NX-N15: コンテキスト変数も大小不区別の同一性で既存キー
+              // を更新する（別項目を作らない）。s.vars 側も同じキーに
+              // 寄せ、読み戻しが旧値にならないようにする。
+              if (fields && typeof fields === "object") {
+                for (let [fieldName, fieldValue] of Object.entries(fields)) {
+                  let ctxKey = ciKey(screen.context, fieldName) ?? fieldName;
+                  screen.context[ctxKey] = fieldValue;
+                  ciDropDuplicates(s.vars, ctxKey, fieldName);
+                  s.vars[ctxKey] = fieldValue;
+                }
+              } else {
+                Object.assign(screen.context, fields);
+                Object.assign(s.vars, fields);
+              }
               recalc(s, api);
               return null;
             }
@@ -880,17 +978,85 @@ export const definition = {
                 .filter((v) => v !== null)
                 .map((v) => (typeof v === "object" ? v : { Value: v }));
             }
-            case "countrows":
-              return get(0).length;
-            case "sum":
-              return rowEval(get(0), args[1]).reduce(
-                (a, b) => a + Number(b ?? 0),
-                0,
-              );
+            case "countrows": {
+              // D-4: テーブルでない引数は、他のテーブル関数（Sum／Filter／
+              // ForAll の rowEval ガード）と揃えて「テーブルが必要です」で
+              // 止める。ガードが無いと null.length のホスト例外が汎用文に
+              //化けて、真因（テーブルでないこと）が伝わらない。
+              let table = get(0);
+              if (!Array.isArray(table)) api.fail("テーブルが必要です", node);
+              return table.length;
+            }
+            case "sum": {
+              // RA-55: テーブル形 Sum(Table, Formula) と、数値可変長形
+              // Sum(NumericalFormula1, ...) の両方に対応する。第1引数が
+              // テーブルならテーブル形、Blank ならテーブル形の誤りとして
+              // 「テーブルが必要です」で止める（Sum(Blank(), Value) の
+              // 従来どおり）。それ以外は数値形として全引数を合計する。
+              let first = get(0);
+              if (Array.isArray(first)) {
+                if (args.length !== 2)
+                  api.fail(
+                    "Sum のテーブル形式は引数が2個必要です（テーブルと集計式）",
+                    node,
+                  );
+                return rowEval(first, args[1]).reduce(
+                  (a, b) => a + Number(b ?? 0),
+                  0,
+                );
+              }
+              if (first === null && args.length >= 2) {
+                // Blank が第1引数の2引数形は、テーブル形の誤り
+                // （Sum(Blank(), Value)）か、Blank を0として扱う数値形
+                // （Sum(Blank(), 5)）か、残りの引数が現在の範囲で数値に
+                // 評価できるかで判別する。列参照のように評価できない
+                // 場合はテーブル形とみなし「テーブルが必要です」で止める。
+                let rest = [];
+                let restOk = true;
+                for (let i = 1; i < args.length; i++) {
+                  try {
+                    rest.push(get(i));
+                  } catch {
+                    restOk = false;
+                    break;
+                  }
+                }
+                if (
+                  !restOk ||
+                  rest.some((v) => v !== null && typeof v !== "number")
+                )
+                  api.fail("テーブルが必要です", node);
+                return rest.reduce((a, b) => a + Number(b ?? 0), 0);
+              }
+              let total = 0;
+              for (let i = 0; i < args.length; i++) {
+                let v = i === 0 ? first : get(i);
+                if (isUnknown(v)) return v;
+                if (v === null) continue;
+                if (typeof v !== "number")
+                  api.fail(
+                    "Sum の数値形式の引数は数値である必要があります",
+                    node,
+                  );
+                total += v;
+              }
+              return total;
+            }
             case "filter":
             case "lookup": {
-              let table = get(0),
-                results = rowEval(table, args[1]);
+              let table = get(0);
+              // RA-54: Filter は複数の条件式を And で結合する。
+              if (fn === "filter" && args.length > 2) {
+                let condLists = args
+                  .slice(1)
+                  .map((formula) => rowEval(table, formula));
+                if (condLists.some((list) => list.some(isUnknown)))
+                  api.fail("未確定のFilter / LookUp条件は未対応です", node);
+                return table.filter((_, i) =>
+                  condLists.every((list) => list[i]),
+                );
+              }
+              let results = rowEval(table, args[1]);
               if (results.some(isUnknown))
                 api.fail("未確定のFilter / LookUp条件は未対応です", node);
               let selected = table.filter((_, i) => results[i]);
@@ -921,12 +1087,16 @@ export const definition = {
             case "clearcollect":
             case "collect": {
               let n = key(0);
-              if (Object.hasOwn(s.model.dataSources, n))
+              if (ciKey(s.model.dataSources, n) !== undefined)
                 api.fail(
                   "このモデルのCollect / Clearはコレクションだけに対応します",
                   node,
                 );
-              let old = s.model.collections[n] || [];
+              // NX-N4: コレクションも大小不区別の同一性で既存キーを
+              // 対象にする。Collect の追記先・ClearCollect の置き換え先・
+              // Clear の消去先はすべて既存キーへ寄せる。
+              let colKey = ciKey(s.model.collections, n) ?? n;
+              let old = s.model.collections[colKey] || [];
               if (fn !== "collect") old = [];
               for (let i = 1; i < args.length; i++) {
                 let value = get(i);
@@ -938,28 +1108,47 @@ export const definition = {
                       : [{ Value: value }]),
                 );
               }
-              s.model.collections[n] = old;
-              s.vars[n] = old;
+              ciDropDuplicates(s.model.collections, colKey, n);
+              s.model.collections[colKey] = old;
+              ciDropDuplicates(s.vars, colKey, n);
+              s.vars[colKey] = old;
               recalc(s, api);
-              api.note(s, node, `${n} のレコード数は ${old.length} です`);
+              api.note(s, node, `${colKey} のレコード数は ${old.length} です`);
               return fn === "clear" ? null : old;
             }
             case "defaults": {
-              let n = key(0);
+              let n = key(0),
+                defKey = ciKey(s.model.defaults, n) ?? n;
               return {
-                ...structuredClone(s.model.defaults[n] || {}),
-                __defaultSource: n,
+                ...structuredClone(s.model.defaults[defKey] || {}),
+                __defaultSource: defKey,
               };
             }
             case "patch": {
               let n = key(0),
                 base = get(1),
-                changes = get(2),
-                table = s.model.dataSources[n];
+                // RA-56: 変更レコードは複数渡せ、後ろが優先で統合される。
+                changes = {},
+                // 同根の表面: データソース名も大小不区別に解決する。
+                // Defaults 側の __defaultSource との照合も大小不区別。
+                dsKey = ciKey(s.model.dataSources, n),
+                table = dsKey !== undefined ? s.model.dataSources[dsKey] : undefined;
               if (!Array.isArray(table))
                 api.fail("モデルにデータソースがありません：" + n, node);
+              for (let i = 2; i < args.length; i++) {
+                let part = get(i);
+                if (!part || typeof part !== "object" || Array.isArray(part))
+                  api.fail(
+                    "Patch の変更レコードはレコードで指定してください",
+                    node,
+                  );
+                Object.assign(changes, part);
+              }
+              let isDefault =
+                typeof base?.__defaultSource === "string" &&
+                base.__defaultSource.toLowerCase() === n.toLowerCase();
               let result;
-              if (base?.__defaultSource === n) {
+              if (isDefault) {
                 result = { ...base, ...changes };
                 delete result.__defaultSource;
                 table.push(result);
@@ -972,7 +1161,7 @@ export const definition = {
               api.note(
                 s,
                 node,
-                `${n} のレコードを${base?.__defaultSource ? "追加" : "更新"}します`,
+                `${dsKey} のレコードを${isDefault ? "追加" : "更新"}します`,
               );
               recalc(s, api);
               return result;
@@ -990,7 +1179,11 @@ export const definition = {
             }
             case "reset": {
               let n = key(0),
-                control = s.model.controls[n];
+                controlKey = ciKey(s.model.controls, n),
+                control =
+                  controlKey !== undefined
+                    ? s.model.controls[controlKey]
+                    : undefined;
               if (!control) api.fail("モデルにコントロールがありません", node);
               control.Text = Object.hasOwn(control, "Default")
                 ? control.Default
@@ -998,13 +1191,44 @@ export const definition = {
               recalc(s, api);
               return null;
             }
-            case "notify":
+            case "notify": {
+              // RA-57: 第2引数 NotificationType（既定 Information）と
+              // 第3引数 Timeout（既定10秒）を受ける。種類と表示時間は
+              // このモデルでは出力テキストに反映しない（項目の注意書き
+              // で開示）が、値の妥当性は検証し、違う種類を名指しで止める。
+              let message = get(0);
+              if (args.length >= 2) {
+                let type = get(1);
+                if (
+                  !isUnknown(type) &&
+                  !["information", "success", "warning", "error"].includes(
+                    String(type).toLowerCase(),
+                  )
+                )
+                  api.fail(
+                    "Notify の NotificationType が正しくありません：" +
+                      formatValue(type),
+                    node,
+                  );
+              }
+              if (args.length >= 3) {
+                let timeout = get(2);
+                if (
+                  !isUnknown(timeout) &&
+                  (typeof timeout !== "number" || timeout < 0)
+                )
+                  api.fail(
+                    "Notify の Timeout は0以上の数値で指定してください",
+                    node,
+                  );
+              }
               s.outputs.push({
                 channel: "Notify",
-                text: formatValue(get(0)),
+                text: formatValue(message),
                 line: node.line,
               });
               return true;
+            }
             case "text": {
               let v = get(0);
               if (isUnknown(v)) return v;
@@ -1044,7 +1268,27 @@ export const definition = {
             case "value": {
               let v = get(0);
               if (isUnknown(v)) return v;
+              // RA-58: 第2引数の言語タグを受ける（Text と揃え、en-US
+              // のみ対応し、それ以外は名前を挙げて停止する）。
+              if (args.length >= 2) {
+                let tag = get(1);
+                if (typeof tag !== "string")
+                  api.fail(
+                    "Value の言語タグは文字列で指定してください",
+                    node,
+                  );
+                if (tag.toLowerCase() !== "en-us")
+                  api.fail(
+                    "Value の言語タグは未対応です（このモデルは en-US のみ対応）：" +
+                      tag,
+                    node,
+                  );
+              }
+              // D-3: 入力が Blank または空文字列なら Blank を返す
+              // （変換エラーにしない）。
+              if (v === null) return null;
               if (typeof v === "number") return v;
+              if (typeof v === "string" && v.trim() === "") return null;
               if (
                 typeof v !== "string" ||
                 !/^[-+]?(?:\d+(?:\.\d*)?|\.\d+)$/.test(v.trim())

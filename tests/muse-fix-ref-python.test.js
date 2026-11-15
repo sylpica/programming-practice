@@ -70,8 +70,8 @@ const FALLBACK_METHODS = [
 
 test("R22-ref python: totals after additions", () => {
   assert.equal(NEW_PY.length, 118);
-  assert.equal(py.reference.length, 160); // 42 + 118
-  assert.equal(cf.reference.length, 171); // 49 + 118 (Python伝播) + 4 (固有)
+  assert.equal(py.reference.length, 165); // 42 + 118 + 5 (R23-N6 math 定数)
+  assert.equal(cf.reference.length, 176); // 49 + 118 (Python伝播) + 4 (固有) + 5 (R23-N6 伝播)
 });
 
 test("R22-ref python: every new item exists and is supported", () => {
@@ -147,9 +147,9 @@ test("R22-ref python: method names resolve to their items", () => {
 
 test("R22-ref python: with text matches the partial-execution implementation", async () => {
   const w = py.reference.find((r) => r.name === "with");
-  assert.equal(w.supported, false); // REFONLY 分類は維持（挙動変更なし）
+  assert.equal(w.supported, true); // RA-20: 分類を実挙動（本文を実行する部分対応）に一致させた
   assert.match(w.caution, /部分対応/);
-  assert.match(w.caution, /本文は実行されます/);
+  assert.match(w.caution, /本文は実行される/);
   assert.doesNotMatch(w.caution, /未対応として停止します。$/);
   // 項目の使用例は部分実行の実態どおりエラーなく本文が実行される
   const e = REFERENCE.find((x) => x.id === "with");

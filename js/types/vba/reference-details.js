@@ -173,7 +173,7 @@ export const referenceDetails = {
     "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/ubound-function.md"
   },
   "Len": {
-    "returns": "Long（文字数等）。Null引数はNull",
+    "returns": "Long（文字列は文字数、変数は格納に必要なバイト数）。Null引数はNull",
     "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/len-function.md"
   },
   "Left": {
@@ -359,5 +359,9 @@ export const referenceDetails = {
   "Rem": {
     "returns": "戻り値なし（宣言または制御文）",
     "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/rem-statement.md"
+  },
+  "Attribute": {
+    "returns": "戻り値なし（宣言または制御文）",
+    "source": "https://learn.microsoft.com/en-us/openspecs/microsoft_general_purpose_programming_languages/ms-vbal/4599fae2-3f41-4e70-968e-2398741f446b"
   }
 };

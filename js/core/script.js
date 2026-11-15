@@ -1,4 +1,5 @@
 import { LIMITS, isUnknown, unknown, formatModelValue as formatValue } from "./contract.js";
+import { VALUE_LENGTH_LIMIT, truncateDisplayText } from "./presentation.js";
 import { refineCondition } from "./conditions.js";
 export class PracticeError extends Error {
   constructor(message, line = 1, category = "エラー") {
@@ -13,6 +14,37 @@ export function unsupported(text, line = 1) {
     line,
     "未対応",
   );
+}
+// M-N2：ホスト（V8）例外の学習者向け文言への変換層。
+// 評価はホストの演算子・API で行うため、BigInt 混在・BigInt の 0 除算・
+// 配列長の検証などではホスト例外がそのまま発生しうる。ホスト例外の英語
+// 文言を利用者向け停止理由へ流さないよう、例外の出口（run の catch、
+// executeProgram／simulateScript の catch）でここを通し、日本語の原因
+// 文言へ変換する。PracticeError はモデル側が意図して作った正当な停止
+// 理由なので変換しない（R の実物エラー文言の再現など、意図的な英語
+// 文言も PracticeError として作られている）。
+const HOST_ERROR_MESSAGES = [
+  [/^Cannot mix BigInt and other types/, "BigIntと通常の数値は混ぜて演算できません", "TypeError"],
+  [/^Division by zero$/, "0で割ることはできません", "RangeError"],
+  [/^Cannot convert a BigInt value to a number/, "BigIntを通常の数値として使うことはできません（Number()による明示的な変換が必要です）", "TypeError"],
+  [/^BigInts have no unsigned right shift/, "BigIntに符号なし右シフト（>>>）は使えません（>>を使ってください）", "TypeError"],
+  [/^Invalid array length/, "配列の長さが不正です（0以上の整数で指定してください）", "RangeError"],
+  [/^Maximum BigInt size exceeded/, "BigIntの大きさが上限を超えました", "RangeError"],
+  [/^Do not know how to serialize a BigInt/, "BigIntはJSONへ変換できません", "TypeError"],
+  [/^Assignment to constant variable/, "const で宣言した変数には再代入できません", "TypeError"],
+  [/^Cannot read properties of (?:null|undefined)/, "null / undefined のプロパティは参照できません", "TypeError"],
+  [/^Cannot set properties of (?:null|undefined)/, "null / undefined へ書き込めません", "TypeError"],
+];
+const GENERIC_HOST_ERROR_MESSAGE = "処理中に予期しないエラーが発生しました";
+export function toLearnerError(e) {
+  if (e instanceof PracticeError) return e;
+  const raw = e instanceof Error ? e.message : "";
+  for (const [pattern, message, category] of HOST_ERROR_MESSAGES) {
+    if (pattern.test(raw))
+      return new PracticeError(message, e?.line || 1, category);
+  }
+  // 未知のホスト例外は内部文言を出さず、汎用の日本語文言で受ける。
+  return new PracticeError(GENERIC_HOST_ERROR_MESSAGE, e?.line || 1, "エラー");
 }
 // RG-61（R18-N3）：不可視文字はそのまま原因表示に出すと空に見えるため、
 // 名称とコードポイントで可視化する。
@@ -146,6 +178,45 @@ export function tokenize(source, dialect = "js") {
       }
       line += source.slice(i, end + 2).split("\n").length - 1;
       i = end + 2;
+      continue;
+    }
+    if (dialect === "fx" && c === "'") {
+      // R23-N3: Power Fx の単一引用符は文字列ではなく、空白や特殊文字を
+      // 含む識別子を引用する記法（Microsoft Learn「Operators and data
+      // types」）。文字列として受理すると 'abc' が変数 abc の参照ではなく
+      // 文字列 "abc" になり、未定義名でも黙って誤値になる。識別子
+      // トークンとして読み、内部の '' は単一引用符1文字として扱う。
+      let text = "",
+        start = line;
+      i++;
+      let closed = false;
+      while (i < source.length) {
+        if (source[i] === "'") {
+          if (source[i + 1] === "'") {
+            text += "'";
+            i += 2;
+            continue;
+          }
+          i++;
+          closed = true;
+          break;
+        }
+        if (source[i] === "\n")
+          throw new PracticeError(
+            "引用識別子（'...'）の途中で改行されています",
+            start,
+            "SyntaxError",
+          );
+        text += source[i++];
+      }
+      if (!closed)
+        throw new PracticeError(
+          "引用識別子（'...'）が閉じられていません",
+          start,
+        );
+      if (text === "")
+        throw new PracticeError("引用識別子（'...'）が空です", start);
+      out.push({ v: text, k: "id", line: start });
       continue;
     }
     if (c === '"' || c === "'") {
@@ -951,6 +1022,40 @@ export function scanScript(code, refs, dialect = "js") {
     return [];
   }
 }
+// P-N1: 文字列連結の結果長を、実体を作る前に見積もるための長さ。
+// 配列は String() 化（要素のカンマ連結）の長さで数え、上限を超えた
+// 時点で打ち切る（巨大な実体を作らない）。
+function concatLength(v, depth = 0) {
+  if (typeof v === "string") return v.length;
+  if (Array.isArray(v)) {
+    if (depth > 8) return VALUE_LENGTH_LIMIT + 1;
+    let total = Math.max(0, v.length - 1);
+    for (const x of v) {
+      total += concatLength(x, depth + 1);
+      if (total > VALUE_LENGTH_LIMIT) return total;
+    }
+    return total;
+  }
+  if (v === null) return 4;
+  if (v === undefined) return 9;
+  if (typeof v === "object") return 15; // "[object Object]"
+  return String(v).length;
+}
+// P-N1: 連結結果が値サイズ上限を超える場合は、Python 系統と同じく
+// 未確定値へ倒す（連結を繰り返しても実体は二度と作られない）。
+function concatGuard(op, a, b, dialect) {
+  const isConcat =
+    (dialect === "js" && op === "+") ||
+    (dialect === "ahk" && (op === "." || op === ".concat")) ||
+    (dialect === "fx" && op === "&") ||
+    (op === "+" && typeof a === "string" && typeof b === "string");
+  if (!isConcat) return null;
+  if (typeof a !== "string" && typeof b !== "string" && dialect !== "ahk")
+    return null;
+  return concatLength(a) + concatLength(b) > VALUE_LENGTH_LIMIT
+    ? unknown("とても長い文字列")
+    : null;
+}
 export function baseBinary(op, a, b, dialect = "js") {
   if (isUnknown(a) || isUnknown(b))
     return {
@@ -959,6 +1064,8 @@ export function baseBinary(op, a, b, dialect = "js") {
       a,
       b,
     };
+  const guarded = concatGuard(op, a, b, dialect);
+  if (guarded) return guarded;
   if (dialect === "js") {
     if (op === "&&") return a && b;
     if (op === "||") return a || b;
@@ -1041,6 +1148,9 @@ export function executeProgram(nodes, model, semantics = {}, custom = {}) {
       kind = "limit";
       text = "手順数の上限で説明を停止しました";
     }
+    // P-N2: 手順テキスト（ステップごとの状態スナップショット）も表示用に
+    // 切り詰める。値そのものではなく表示だけを省略する。
+    text = truncateDisplayText(text);
     s.trace.push({
       line: n.line || 1,
       nodeId: n.nodeId,
@@ -1253,14 +1363,16 @@ export function executeProgram(nodes, model, semantics = {}, custom = {}) {
           check();
           next.push(...step(n, s, depth));
         } catch (e) {
-          let line = e.line > 1 ? e.line : n.line;
+          // M-N2：ホスト例外は変換層を通してから停止理由にする。
+          const pe = toLearnerError(e);
+          let line = pe.line > 1 ? pe.line : n.line;
           // RG-81（R21-N8）: カテゴリは category 欄が持つ。メッセージ側へ
           // 接頭辞を焼き込むと「カテゴリ：メッセージ」の合成で二重表示に
           // なるため、ここでは前置しない。
           s.error = {
             line,
-            message: e.message,
-            category: e.category || "エラー",
+            message: pe.message,
+            category: pe.category || "エラー",
           };
           noteError(s, n, s.error);
           s.halt = true;
@@ -1519,6 +1631,17 @@ export function executeProgram(nodes, model, semantics = {}, custom = {}) {
       case "each":
       case "repeat": {
         if (semantics.blockScopes) enterScope(s, n.init ? [n.init] : []);
+        // NX-N19 根因：each（C# foreach）の反復変数は loop() が vars へ
+        // 直接書くためスコープ記録に残らず、終了後も最終状態に残留した。
+        // for の初期化変数と同じく宣言として登録し、leaveScope で
+        // 除去（外側に同名があれば復元）されるようにする。blockScopes を
+        // 使わない種類（R 等、反復変数が残るのが正しい言語）は対象外。
+        if (semantics.blockScopes && n.k === "each" && n.name)
+          registerDeclaration(s, {
+            name: n.name,
+            type: n.varType,
+            line: n.line,
+          });
         let out = loop(n, s, depth);
         if (semantics.blockScopes) for (let state of out) leaveScope(state);
         return out;
@@ -1567,9 +1690,11 @@ export function executeProgram(nodes, model, semantics = {}, custom = {}) {
     if (semantics.blockScopes) enterScope(state, nodes);
     paths = run(nodes, [state]);
   } catch (e) {
+    // M-N2：ホスト例外は変換層を通してから停止理由にする。
+    const pe = toLearnerError(e);
     return {
       paths: [],
-      error: { line: e.line || 1, message: e.message, category: e.category },
+      error: { line: pe.line || 1, message: pe.message, category: pe.category },
       limits,
       truncated,
       operations,
@@ -1605,9 +1730,11 @@ export function simulateScript(source, model, semantics = {}, limits = {}) {
     let nodes = parser.program();
     return executeProgram(nodes, model, semantics, limits);
   } catch (e) {
+    // M-N2：ホスト例外は変換層を通してから停止理由にする。
+    const pe = toLearnerError(e);
     return {
       paths: [],
-      error: { line: e.line || 1, message: e.message, category: e.category },
+      error: { line: pe.line || 1, message: pe.message, category: pe.category },
       truncated: false,
       limits: { ...LIMITS, ...limits },
     };

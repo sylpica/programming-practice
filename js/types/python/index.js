@@ -16,11 +16,14 @@ const reference = REFERENCE.map((r) => ({
 for (const r of reference) {
   if (["open","str.format","random","json","os","datetime","numpy.array","pandas.DataFrame"].includes(r.name)) {
     r.supported = false;
-    r.caution += " このアプリのシミュレーションでは未対応として停止します。";
+    r.caution += "このアプリのシミュレーションでは未対応として停止する。";
   }
   if (r.name === "with") {
-    r.supported = false;
-    r.caution += " このアプリでは with は部分対応です：本文は実行されますが、__enter__／__exit__ の実際の処理や後始末は再現されず、as 変数には未確定値が入ります。open() と組み合わせた場合は open 自体が未対応のため停止します。";
+    // RA-20：with は本文を実行する部分対応であり、「未対応として停止する」参照専用分類
+    // （supported=false）とは実挙動が一致しない。分類を実挙動に合わせ supported=true とし、
+    // 部分対応の範囲は項目文面（reference.js の pitfalls）に一本化して開示する
+    // （従来は同じ注意書きが pitfalls とここの追記で二重になっていた）。
+    r.supported = true;
   }
   if (r.name === "filter") r.example = 'def even(x):\n    return x % 2 == 0\nprint(list(filter(even, range(6))))';
 }

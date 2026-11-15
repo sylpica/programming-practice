@@ -201,15 +201,15 @@ export const referenceDetails = {
     "source": "https://learn.microsoft.com/en-us/dotnet/api/system.string.empty"
   },
   "long.MaxValue": {
-    "returns": "long（未確定値として返ります）",
+    "returns": "long（実値は 9223372036854775807。モデルでは未確定値として返ります）",
     "source": "https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/builtin-types/integral-numeric-types"
   },
   "long.MinValue": {
-    "returns": "long（未確定値として返ります）",
+    "returns": "long（実値は -9223372036854775808。モデルでは未確定値として返ります）",
     "source": "https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/builtin-types/integral-numeric-types"
   },
   "ulong.MaxValue": {
-    "returns": "ulong（未確定値として返ります）",
+    "returns": "ulong（実値は 18446744073709551615。モデルでは未確定値として返ります）",
     "source": "https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/builtin-types/integral-numeric-types"
   }
 };

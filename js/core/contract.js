@@ -1,4 +1,4 @@
-import { unknownLabel } from "./presentation.js";
+import { unknownLabel, truncateDisplayText } from "./presentation.js";
 export const LIMITS = Object.freeze({
   paths: 2000,
   operations: 100000,
@@ -18,13 +18,19 @@ export const unknown = (source, id = source) => ({
 export function formatValue(v) {
   // RG-51：BigInt は実 JavaScript の表記（末尾 n）で表示する。
   if (typeof v === "bigint") return v.toString() + "n";
-  if (isUnknown(v)) return unknownLabel(v);
+  // P-N2: 未確定値の説明文も表示専用なので、合成が深い場合の長い説明は
+  // 省略記法つきで切り詰める（説明を合成し直すたびに倍増させない）。
+  if (isUnknown(v)) return truncateDisplayText(unknownLabel(v));
   if (v?.kind === "NA") return "NA（欠損値）";
   if (v?.kind === "uninitialized" || v?.kind === "js-uninitialized") return "未初期化";
   if (v?.kind === "pointer") return `モデル上の参照先 ${v.object}・要素位置 ${v.offset}（実アドレスではありません）`;
   if (v === undefined) return "未設定";
-  if (typeof v === "string") return v;
+  // P-N2: 表示専用の整形では、長い文字列を省略記法つきで切り詰める
+  // （状態スナップショットに値全体が複製されて肥大するのを防ぐ）。
+  if (typeof v === "string") return truncateDisplayText(v);
   if (v === null) return "null";
+  // オブジェクトの JSON は safe() 側で葉の文字列を切り詰めるため、
+  // ここでは合算の切り詰めをしない（構造そのものの表示を欠かさない）。
   return typeof v === "object" ? JSON.stringify(safe(v), null, 2) : String(v);
 }
 export function refsInTrace(path) {
@@ -33,12 +39,14 @@ export function refsInTrace(path) {
 
 function safe(v, seen = new Map(), path = "$") {
   if (typeof v === "bigint") return v.toString() + "n";
-  if (isUnknown(v)) return unknownLabel(v);
+  if (isUnknown(v)) return truncateDisplayText(unknownLabel(v));
   if (v?.kind === "NA") return "NA（欠損値）";
   if (v?.kind === "uninitialized" || v?.kind === "js-uninitialized") return "未初期化";
   if (v?.kind === "pointer") return `モデル上の参照先 ${v.object}・要素位置 ${v.offset}（実アドレスではありません）`;
   if (v === undefined) return "未設定";
   if (typeof v === "number" && !Number.isFinite(v)) return String(v);
+  // P-N2: 構造の中の文字列も表示では切り詰める（葉ごとの上限）。
+  if (typeof v === "string") return truncateDisplayText(v);
   if (v === null || typeof v !== "object") return v;
   if (seen.has(v)) return { 参照: seen.get(v) };
   seen.set(v, path);
@@ -78,5 +86,7 @@ export function formatModelValue(value) {
     const body = fields.map(([key, item]) => `${labels[key] || key}: ${show(item, depth + 1, path + "." + key)}`).join("\n");
     return [heading, body || "項目なし"].filter(Boolean).join("\n");
   }
-  return show(value);
+  // P-N2: 葉ごとの切り詰め後も、項目数が多いと合算が肥大しうるため、
+  // 表示全体にも上限をかける（省略したことは記法で明示する）。
+  return truncateDisplayText(show(value), 8000);
 }

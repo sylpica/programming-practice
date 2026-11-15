@@ -15,30 +15,30 @@ const ref = rows([
     "Transform: [MacroA, MacroB]",
     "テンプレート全体（Transform節を除く）を記載順に変換します。",
     "Transform: AddMetadata",
-    "実AWSのマクロ定義はモデルのmacrosと別です。",
+    "実AWSのマクロ定義はモデルのmacrosと別である。",
   ],
   [
     "Fn::Transform",
     "テンプレート",
     "Fn::Transform: {Name: 名前, Parameters: {...}}",
-    "同階層の兄弟とその子をfragmentとして渡します。",
+    "同階層の兄弟とその子をfragmentとして渡します（Fn::Transform自身はfragmentに含まれません）。",
     '{"Fn::Transform":{"Name":"AddMetadata","Parameters":{"Stage":"test"}}}',
-    "Parametersは事前評価されずに渡されます。",
+    "Parametersは事前評価されずに渡される。",
   ],
   [
     "fragment",
     "ハンドラ",
     'event["fragment"]',
-    "変換対象のテンプレート断片です。",
+    "変換対象のテンプレート断片です。トップレベルTransformではTransform節を除くテンプレート全体、Fn::Transformでは同階層の兄弟範囲（Fn::Transform自身を除く）が断片になります。",
     'fragment = event["fragment"]',
   ],
   [
     "params",
     "ハンドラ",
     'event["params"]',
-    "Fn::Transformで指定したマクロパラメーターです。",
+    "Fn::Transformで指定したマクロパラメータです。トップレベルTransformのマクロでは空が渡されます。",
     'event["params"].get("Stage", "dev")',
-    "カスタムLambdaマクロのトップレベルTransformではparamsは空です。Parametersを受け取るFn::Transformと区別します。AWS::Include等の組込みTransformは専用仕様で、本モデルでは未対応です。",
+    "カスタムLambdaマクロのトップレベルTransformではparamsは空である。Parametersを受け取るFn::Transformと区別する。AWS::Include等の組込みTransformは専用仕様で、本モデルでは未対応である。",
   ],
   [
     "requestId",
@@ -46,7 +46,7 @@ const ref = rows([
     'event["requestId"]',
     "受け取ったIDと同じ値を返します。",
     '"requestId": event["requestId"]',
-    "実際のIDを捏造しません。モデルで未指定なら未確定です。",
+    "実際のIDを捏造しない。モデルで未指定なら未確定である。",
   ],
   [
     "status",
@@ -61,7 +61,7 @@ const ref = rows([
     'event["region"]',
     "マクロが実行される AWS リージョンです。",
     'event["region"]',
-    "モデル既定は model-region です。実際のリージョン名は捏造しません。",
+    "モデル既定は model-region である。実際のリージョン名は捏造しない。",
   ],
   [
     "accountId",
@@ -69,7 +69,7 @@ const ref = rows([
     'event["accountId"]',
     "マクロを実行する AWS アカウントの ID です。",
     'event["accountId"]',
-    "モデル既定は model-account です。実際のアカウント ID は捏造しません。",
+    "モデル既定は model-account である。実際のアカウント ID は捏造しない。",
   ],
   [
     "transformId",
@@ -77,7 +77,7 @@ const ref = rows([
     'event["transformId"]',
     "呼び出されたマクロの名前（Transform で指定した名前）です。",
     'event["transformId"]',
-    "モデルでマクロを呼ぶときは、呼び出し側のマクロ名で上書きされて渡されます。",
+    "モデルでマクロを呼ぶときは、呼び出し側のマクロ名で上書きされて渡される。",
   ],
   [
     "errorMessage",
@@ -85,18 +85,51 @@ const ref = rows([
     '{"errorMessage": "理由"}',
     "マクロが失敗したときに理由を示す応答フィールドです。",
     '"errorMessage": "変換できませんでした"',
-    "status が success 以外のとき、失敗の理由として読み取られます。成功応答には不要です。",
+    "status が success 以外のとき、失敗の理由として読み取られる。成功応答には不要である。",
   ],
   [
     "templateParameterValues",
     "ハンドラ",
     'event["templateParameterValues"]',
-    "テンプレートパラメーターの評価済み値です。",
+    "テンプレートパラメータの評価済み値です。",
     'event["templateParameterValues"]',
-    "モデルにない実値は未確定です。",
+    "モデルにない実値は未確定である。",
   ],
 ]);
-for (const r of ref) if (!["Transform","Fn::Transform"].includes(r.name)) r.example = identity;
+// RA-23／RA-24: ハンドラ系の使用例は項目ごとに、その項目のフィールドを
+// 実際に読む例にする。以前は全項目が同一の成功ハンドラ（identity）で、
+// errorMessage／region／accountId／transformId／templateParameterValues
+// の例が対象フィールドを一度も使っていなかった。
+const handlerExamples = {
+  fragment: identity,
+  params: identity,
+  requestId: identity,
+  status: identity,
+  region: `def handler(event, context):
+    fragment = event["fragment"]
+    fragment["Metadata"] = {"Region": event["region"]}
+    return {"requestId": event["requestId"], "status": "success", "fragment": fragment}`,
+  accountId: `def handler(event, context):
+    fragment = event["fragment"]
+    fragment["Metadata"] = {"AccountId": event["accountId"]}
+    return {"requestId": event["requestId"], "status": "success", "fragment": fragment}`,
+  transformId: `def handler(event, context):
+    fragment = event["fragment"]
+    fragment["Metadata"] = {"TransformId": event["transformId"]}
+    return {"requestId": event["requestId"], "status": "success", "fragment": fragment}`,
+  templateParameterValues: `def handler(event, context):
+    fragment = event["fragment"]
+    fragment["Metadata"] = {"TemplateParameters": event["templateParameterValues"]}
+    return {"requestId": event["requestId"], "status": "success", "fragment": fragment}`,
+  // 失敗時は status を success 以外にして errorMessage で理由を返す。
+  // 既定モデル（断片が空でない）では成功側を通り、使用例として実行できる。
+  errorMessage: `def handler(event, context):
+    fragment = event["fragment"]
+    if not fragment:
+        return {"requestId": event["requestId"], "status": "failure", "errorMessage": "断片が空です", "fragment": fragment}
+    return {"requestId": event["requestId"], "status": "success", "fragment": fragment}`,
+};
+for (const r of ref) if (handlerExamples[r.name]) r.example = handlerExamples[r.name];
 const pythonRefs = pythonDefinition.reference.filter(r => !ref.some(f => f.name === r.name)).map(r => ({
   ...r,
   example: 'def handler(event, context):\n' + r.example.split('\n').map(line => '    ' + line).join('\n') + '\n    return {"requestId":event["requestId"],"status":"success","fragment":event["fragment"]}',
@@ -158,7 +191,7 @@ export const definition = {
         2,
       ),
       intro:
-        "Fn::Transformは同じオブジェクト内の兄弟要素を渡します。パラメーターは未評価で渡されます。",
+        "Fn::Transformは同じオブジェクト内の兄弟要素を渡します。パラメータは未評価で渡されます。",
       refs: ["Fn::Transform", "params", "fragment"],
     },
     {
@@ -178,7 +211,7 @@ export const definition = {
     ],
     [
       "断片（フラグメント）",
-      "マクロが受け取り、変換して返すテンプレートの一部です。",
+      "マクロが受け取り、変換して返すテンプレートの範囲です。トップレベルTransformではTransform節を除くテンプレート全体、Fn::Transformでは同階層の兄弟範囲（Fn::Transform自身を除く）が断片になります。",
     ],
     [
       "Lambdaハンドラ",
@@ -530,6 +563,25 @@ export const definition = {
             ? doc.Transform
             : [doc.Transform]
           : [];
+      // NX-N26: groups の「入力」はテンプレート全体ではなく、マクロへ
+      // 実際に渡された断片（Transform／Fn::Transform キー除去後）を示す。
+      // エンジン側のキー除去がマクロの仕事のように混ざらないようにする。
+      function stripTransformKeys(value, isRoot = false) {
+        if (Array.isArray(value))
+          return value.map((v) => stripTransformKeys(v));
+        if (!value || typeof value !== "object") return value;
+        let out = {};
+        for (let [k, v] of Object.entries(value)) {
+          if (k === "Fn::Transform") continue;
+          if (isRoot && k === "Transform") continue;
+          out[k] = stripTransformKeys(v);
+        }
+        return out;
+      }
+      const strippedInput = stripTransformKeys(original, true);
+      // トップレベル Transform へ渡す直前の断片をパスごとに保持する
+      // （Fn::Transform の変換まで済んだ状態が実際に渡される断片）。
+      const inputByState = new WeakMap();
       delete doc.Transform;
       states = await nested(doc);
       for (let transform of transforms) {
@@ -549,12 +601,18 @@ export const definition = {
             locations.get("/Transform") || 1,
             ["Transform"],
           );
+          let passedFragment =
+            inputByState.get(s) ?? structuredClone(s.fragment);
           done.push(
-            ...rs.map((r) => ({
-              ...r,
-              trace: [...s.trace, ...(Object.keys(spec.Parameters || {}).length ? [{line: locations.get("/Transform") || 1, text: "トップレベルのカスタムLambdaマクロではparamsは空です。ParametersはFn::Transformの入力と区別します。", kind: "step", refs: ["Transform", "params"]}] : []), ...r.trace],
-              outputs: [...s.outputs, ...r.outputs],
-            })),
+            ...rs.map((r) => {
+              let merged = {
+                ...r,
+                trace: [...s.trace, ...(Object.keys(spec.Parameters || {}).length ? [{line: locations.get("/Transform") || 1, text: "トップレベルのカスタムLambdaマクロではparamsは空です。ParametersはFn::Transformの入力と区別します。", kind: "step", refs: ["Transform", "params"]}] : []), ...r.trace],
+                outputs: [...s.outputs, ...r.outputs],
+              };
+              inputByState.set(merged, passedFragment);
+              return merged;
+            }),
           );
           if (done.length > LIMITS.paths) {
             truncated = true;
@@ -572,7 +630,10 @@ export const definition = {
             {
               title: "テンプレート断片",
               entries: [
-                ["入力", formatValue(original)],
+                [
+                  "入力",
+                  formatValue(inputByState.get(s) ?? strippedInput),
+                ],
                 [
                   "変換後",
                   s.error ? "エラーのため未確定" : formatValue(s.fragment),

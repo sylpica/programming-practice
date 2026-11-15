@@ -29,7 +29,7 @@
       ><button data-view="glossary">用語集</button>
     </nav>
     <main>
-      <p id="storageNotice" class="notice" hidden>
+      <p id="storageNotice" class="notice" role="alert" hidden>
         ブラウザへの保存ができませんでした。保存ボタンで下書きをファイルへ保存してください。
       </p>
       <section id="practice" class="view">
@@ -135,7 +135,7 @@
                   <div class="path-controls">
                     <button id="first" aria-label="先頭へ">|◀</button
                     ><button id="prev" aria-label="前のパス">◀</button
-                    ><strong id="counter"></strong
+                    ><strong id="counter" aria-live="polite" aria-atomic="true"></strong
                     ><button id="next" aria-label="次のパス">▶</button
                     ><button id="last" aria-label="末尾へ">▶|</button
                     ><label
@@ -188,7 +188,12 @@
                     placeholder="Range、文字列、繰り返し…"
                 /></label>
                 <div id="refList" class="ref-list"></div>
-                <article id="refDetail" class="ref-detail"></article>
+                <article
+                  id="refDetail"
+                  class="ref-detail"
+                  aria-live="polite"
+                  aria-atomic="true"
+                ></article>
               </div>
             </section>
             <section class="panel glossary-panel">
@@ -228,7 +233,7 @@
         <p id="supportText"></p>
         <p id="sourceLinks"></p>
         <p>
-          未確定のループは到達可能な0～2回の経路と継続可能性を表示します。最大2,000パス、探索100,000回、解析1.2秒の制限があります。実際のアプリ・AWS・Windows・ファイル・メールは操作しません。
+          未確定のループは到達可能な0〜2回の経路と継続可能性を表示します。最大2,000パス、探索100,000回、解析1.2秒の制限があります。実際のアプリ・AWS・Windows・ファイル・メールは操作しません。
         </p>
         <p>
           コード・フロー・モデル状態は種類別にこのブラウザへ保存します。初回オンライン表示後はオフラインでも利用できます。

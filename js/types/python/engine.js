@@ -58,6 +58,12 @@ const TYPE_ATTRS = {
 };
 for (const k of Object.keys(TYPE_ATTRS)) TYPE_ATTRS[k] = new Set(TYPE_ATTRS[k].split(' ').filter(Boolean));
 const MATH_CONST = { pi: Math.PI, e: Math.E, tau: 2 * Math.PI, inf: Infinity, nan: NaN };
+// 例外クラスの親子関係（CPython の例外階層のうち、このアプリで名前が現れる範囲）。
+// isinstance の例外照合に使う（RA-16 の開示とは別に、照合自体は階層どおりに行う）。
+const EXC_PARENTS = { BaseException: null, Exception: 'BaseException', ArithmeticError: 'Exception', ZeroDivisionError: 'ArithmeticError', OverflowError: 'ArithmeticError', AssertionError: 'Exception', AttributeError: 'Exception', EOFError: 'Exception', ImportError: 'Exception', ModuleNotFoundError: 'ImportError', LookupError: 'Exception', IndexError: 'LookupError', KeyError: 'LookupError', NameError: 'Exception', UnboundLocalError: 'NameError', OSError: 'Exception', FileNotFoundError: 'OSError', RuntimeError: 'Exception', NotImplementedError: 'RuntimeError', RecursionError: 'RuntimeError', StopIteration: 'Exception', TypeError: 'Exception', ValueError: 'Exception', UnicodeError: 'ValueError', KeyboardInterrupt: 'BaseException', SystemExit: 'BaseException' };
+const EXC_NAMES = new Set(Object.keys(EXC_PARENTS));
+// 型そのものを表す値か（int | str のような合併型や isinstance の第2引数の判定に使う）
+const isClassValue = (v) => !!v && typeof v === 'object' && (!!v.__union || !!v.__type || !!v.__class || (!!v.__builtin && (TYPE_BUILTINS.includes(v.__builtin) || EXC_NAMES.has(v.__builtin))));
 const BIG = () => ({ __unk: true, desc: 'とても大きな整数・この説明では正確に計算しません' });
 const ELLIPSIS = { __ellipsis: true };
 const isEllipsis = (v) => v === ELLIPSIS;
@@ -82,6 +88,7 @@ function typeName(v) {
   if (isTuple(v)) return 'tuple';
   if (isDict(v)) return 'dict';
   if (isSet(v)) return 'set';
+  if (v && v.__union) return 'types.UnionType';
   if (v && v.__builtin) return TYPE_BUILTINS.includes(v.__builtin) ? 'type' : 'builtin_function_or_method';
   if (isFunc(v)) return 'function';
   if (v && v.__range) return 'range';
@@ -274,6 +281,7 @@ function reprVal(v, depth) {
   if (isTuple(v)) return v.__tuple.length === 1 ? '(' + reprVal(v.__tuple[0], depth + 1) + ',)' : '(' + v.__tuple.map(x => reprVal(x, depth + 1)).join(', ') + ')';
   if (isDict(v)) { const ps = []; for (const e of v.__dict.values()) ps.push(reprVal(e.k, depth + 1) + ': ' + reprVal(e.v, depth + 1)); return '{' + ps.join(', ') + '}'; }
   if (isSet(v)) { if (!v.__set.length) return 'set()'; const ord = setOrder(v); if (ord) return '{' + ord.map(x => reprVal(x, depth + 1)).join(', ') + '}'; const inner = v.__set.map(x => reprVal(x, depth + 1)).join(', '); return /[（）]/.test(inner) ? '（集合・表示の並び順は実行時に決まります）' : '（集合 {' + inner + '}・表示の並び順は実行時に決まります）'; }
+  if (v && v.__union) return v.__union.map(x => (x && (x.__type || x.__builtin)) || (x && x.__class ? x.cname : 'type')).join(' | ');
   if (v && v.__type) return "<class '" + v.__type + "'>";
   if (v && v.__class) return "<class '" + v.cname + "'>";
   if (v && v.__instance) return '（モデルの ' + v.cls.cname + ' インスタンス）';
@@ -301,6 +309,15 @@ function setOrder(v) {
 }
 // Python の str の repr（' を含み " を含まなければ " で囲む。制御文字はエスケープ）
 function isPyWs(ch) { return /^[\s\x1c-\x1f\x85]$/.test(ch) && ch !== '\ufeff'; }
+// CPython の str.isdigit は Unicode の Digit プロパティ（Numeric_Type=Digit または Decimal）で決まる。
+// Nd 以外の Digit 文字の範囲は実 CPython 3.12 で全コードポイントを走査して得たもの（PY-02）。
+// 分数文字（½・¼ 等）は Numeric_Type=Numeric のみで Digit ではないため isdigit では False になる。
+const PY_DIGIT_EXTRA = [[0xB2, 0xB3], [0xB9, 0xB9], [0x1369, 0x1371], [0x19DA, 0x19DA], [0x2070, 0x2070], [0x2074, 0x2079], [0x2080, 0x2089], [0x2460, 0x2468], [0x2474, 0x247C], [0x2488, 0x2490], [0x24EA, 0x24EA], [0x24F5, 0x24FD], [0x24FF, 0x24FF], [0x2776, 0x277E], [0x2780, 0x2788], [0x278A, 0x2792], [0x10A40, 0x10A43], [0x10E60, 0x10E68], [0x11052, 0x1105A], [0x1F100, 0x1F10A]];
+function isPyDigit(ch) { if (/^\p{Nd}$/u.test(ch)) return true; const cp = ch.codePointAt(0); return PY_DIGIT_EXTRA.some(([a, b]) => cp >= a && cp <= b); }
+// 漢数字は Unicode の数値プロパティ（\p{N}）に含まれないが、CPython の isnumeric では True になる
+// （実 CPython 3.12 で1文字ずつ照合した常用の漢数字。リファレンスの「漢数字なども True」とも整合させる）。
+const PY_NUMERIC_EXTRA = new Set(Array.from('一二三四五六七八九十百千万億兆〇零壱弐参肆伍陸漆捌玖拾佰仟萬廿卅卌'));
+function isPyNumeric(ch) { return /^\p{N}$/u.test(ch) || PY_NUMERIC_EXTRA.has(ch); }
 // str.split / rsplit（sep=None は空白区切り。maxsplit は -1 で無制限）
 // タイトルケースが通常の大文字変換と異なる文字（合字と ǅ 系）。title()/capitalize() の先頭文字に使う
 const TITLECASE = { 'ﬀ': 'Ff', 'ﬁ': 'Fi', 'ﬂ': 'Fl', 'ﬃ': 'Ffi', 'ﬄ': 'Ffl', 'ﬅ': 'St', 'ﬆ': 'St', 'ǆ': 'ǅ', 'ǉ': 'ǈ', 'ǌ': 'ǋ', 'ǳ': 'ǲ', 'ǆ́': 'ǅ́' };
@@ -542,6 +559,18 @@ function lexText(text, lineNo) {
   const toks = [];
   let i = 0;
   const isDigit = (c) => c >= '0' && c <= '9';
+  // 数値リテラルの数字並び（digitpart）：数字の間にだけ単一の _ を許す（PEP 515／CPython の文法どおり）。
+  // 先頭・末尾・連続・小数点や指数記号に接する _ は不正で、呼び出し側が SyntaxError にする。
+  const scanDigitpart = (pos, digitOk) => {
+    if (pos >= text.length || !digitOk(text[pos])) return -1;
+    let p = pos + 1;
+    while (p < text.length) {
+      if (digitOk(text[p])) { p++; continue; }
+      if (text[p] === '_' && p + 1 < text.length && digitOk(text[p + 1])) { p += 2; continue; }
+      break;
+    }
+    return p;
+  };
   const isNameS = (c) => /^[\p{L}\p{Nl}_]$/u.test(c);
   const isNameC = (c) => /^[\p{L}\p{Mn}\p{Mc}\p{Nd}\p{Pc}\p{Nl}\u200c\u200d]$/u.test(c);
   while (i < text.length) {
@@ -602,21 +631,39 @@ function lexText(text, lineNo) {
       continue;
     }
     if (c === '0' && /[xXoObB]/.test(text[i + 1] || '')) {
-      const base = { x: 16, o: 8, b: 2 }[text[i + 1].toLowerCase()]; let j = i + 2;
-      while (j < text.length && /[0-9a-fA-F_]/.test(text[j])) j++;
+      // 基数リテラル：接頭辞の直後の _ は1つだけ、数字の間は単一の _ のみ可。基数に合わない数字や文字が続けば SyntaxError
+      // （従来は 0b102 を 2、0o18 を 1 のように、読める所までで黙って切り捨てていた。R23-N9）
+      const kindCh = text[i + 1].toLowerCase();
+      const base = { x: 16, o: 8, b: 2 }[kindCh];
+      const digitOk = kindCh === 'x' ? (ch) => /[0-9a-fA-F]/.test(ch) : kindCh === 'o' ? (ch) => ch >= '0' && ch <= '7' : (ch) => ch === '0' || ch === '1';
+      let j = i + 2;
+      if (text[j] === '_') j++;
+      const end = scanDigitpart(j, digitOk);
+      if (end < 0) throw new SimDiag(lineNo, 'SyntaxError', '数値の書き方が正しくありません', '');
+      j = end;
+      if (j < text.length && (isDigit(text[j]) || text[j] === '_' || isNameS(String.fromCodePoint(text.codePointAt(j))))) throw new SimDiag(lineNo, 'SyntaxError', '数値の書き方が正しくありません', '');
       const v = parseInt(text.slice(i + 2, j).replace(/_/g, ''), base);
-      if (Number.isNaN(v)) throw new SimDiag(lineNo, 'SyntaxError', '数値の書き方が正しくありません', '');
       toks.push({ t: 'NUM', v, f: false, line: lineNo }); i = j; continue;
     }
     if (isDigit(c) || (c === '.' && isDigit(text[i + 1] || ''))) {
-      let j = i, isF = false;
-      while (j < text.length && (isDigit(text[j]) || text[j] === '_')) j++;
-      const intPartEnd = j;
-      if (text[j] === '.') { isF = true; j++; while (j < text.length && isDigit(text[j])) j++; }
-      if (text[j] === 'e' || text[j] === 'E') { isF = true; j++; if (text[j] === '+' || text[j] === '-') j++; while (j < text.length && isDigit(text[j])) j++; }
-      const raw = text.slice(i, j).replace(/_/g, '');
+      // 10進リテラル：整数部・小数部・指数部はそれぞれ digitpart として読み、不正な _ や数字のない指数部は SyntaxError
+      // （従来は 1e を 1.0、1__0 を 10 のように黙って受理し、逆に正しい 1e1_0 や 1.5_0 を壊していた。R23-N9）
+      let j = i, isF = false, intPartEnd = i;
+      if (c === '.') { isF = true; j = scanDigitpart(i + 1, isDigit); }
+      else {
+        j = scanDigitpart(i, isDigit); intPartEnd = j;
+        if (text[j] === '.') { isF = true; j++; const fe = scanDigitpart(j, isDigit); if (fe > 0) j = fe; }
+      }
+      if (text[j] === 'e' || text[j] === 'E') {
+        let k = j + 1; if (text[k] === '+' || text[k] === '-') k++;
+        const ee = scanDigitpart(k, isDigit);
+        if (ee < 0) throw new SimDiag(lineNo, 'SyntaxError', '数値の書き方が正しくありません（指数部 e のあとには数字が必要です）', '');
+        isF = true; j = ee;
+      }
       let cx = false;
       if (text[j] === 'j' || text[j] === 'J') { cx = true; j++; }
+      if (j < text.length && (text[j] === '_' || isNameS(String.fromCodePoint(text.codePointAt(j))))) throw new SimDiag(lineNo, 'SyntaxError', '数値の書き方が正しくありません', '');
+      const raw = text.slice(i, cx ? j - 1 : j).replace(/_/g, '');
       // RG-11（Python 分）：先行ゼロのある10進整数リテラルは CPython では SyntaxError（0 だけが並ぶ場合と小数・指数・複素数は対象外）
       if (!isF && !cx) { const stripped = text.slice(i, intPartEnd).replace(/_/g, ''); if (stripped.length > 1 && stripped[0] === '0' && /[1-9]/.test(stripped)) throw new SimDiag(lineNo, 'SyntaxError', '先行ゼロのある整数リテラル「' + text.slice(i, j) + '」は Python では使えません（leading zeros in decimal integer literals are not permitted）', '8進数として書くなら 0o' + stripped.slice(1) + ' のように 0o を付けてください'); }
       toks.push({ t: 'NUM', v: parseFloat(raw), f: isF || cx, cx, line: lineNo });
@@ -874,6 +921,7 @@ function parseFor(lines, i, indent, tc) {
   const L = lines[i];
   tc.next(); // for
   const target = parseTarget(tc, L.line);
+  checkTarget(target, L.line, false);
   if (!tc.isName('in')) throw new SimDiag(L.line, 'SyntaxError', 'for のあとには「in」が必要です', '例：for x in [1, 2, 3]:');
   tc.next();
   const iter = parseExpr(tc, L.line);
@@ -912,11 +960,37 @@ function parseTarget(tc, line) {
   }
   return first;
 }
+// 代入・削除のターゲットとして書ける形かを構文段階で確かめる（R23-N11）。
+// CPython ではリテラル等への代入はコンパイル時に SyntaxError になり、右辺は評価されない。
+// 従来は検証が無く、1 = x のような行で右辺の未定義名への NameError という虚偽の帰属が出ていた。
+function checkTarget(t, line, del) {
+  if (!t) return;
+  switch (t.k) {
+    case 'name': case 'sub': case 'slice': case 'attr': return;
+    case 'ttuple': for (const it of t.items) checkTarget(it, line, del); return;
+    case 'tuple': case 'list': for (const it of t.items) checkTarget(it.e, line, del); return;
+    case 'starred': checkTarget(t.t, line, del); return;
+    case 'star': checkTarget(t.e, line, del); return;
+    case 'num': case 'str': case 'bool': case 'none': case 'ellipsis': case 'byteslit': case 'cxlit': case 'fstr':
+      throw new SimDiag(line, 'SyntaxError', (del ? 'リテラルは削除（del）できません（cannot delete literal）' : 'リテラルには代入できません（cannot assign to literal）'), (del ? '削除' : '代入') + 'の対象は変数名・添字・属性などにしてください');
+    case 'call':
+      throw new SimDiag(line, 'SyntaxError', (del ? '関数呼び出しの結果は削除（del）できません（cannot delete function call）' : '関数呼び出しの結果には代入できません（cannot assign to function call）'), '');
+    default:
+      throw new SimDiag(line, 'SyntaxError', 'この形には' + (del ? '削除（del）' : '代入') + 'できません', (del ? '削除' : '代入') + 'の対象は名前・添字・属性・並び（タプル）の形にしてください');
+  }
+}
 function parseSimpleStmts(tc, line) {
   const out = [];
+  // CPython の文法では「;」は文と文の区切りで、文の無い所（行頭・「;」の直後・ブロック先頭）に置けない。
+  // 末尾の「;」1つだけは許される（x = 1; は正しい）。従来は全位置の空文を黙って読み飛ばしていた（R23-N10）。
+  let needStmt = true;
   while (!tc.atEnd()) {
-    if (tc.eatOp(';')) continue;
+    if (tc.isOp(';')) {
+      if (needStmt) throw new SimDiag(line, 'SyntaxError', '「;」の前には文が必要です（空の文は書けません）', '「;」は文と文の区切り、または行末に1つだけ置けます');
+      tc.next(); needStmt = true; continue;
+    }
     out.push(parseSimple(tc, line));
+    needStmt = false;
     if (!tc.atEnd() && !tc.isOp(';')) throw new SimDiag(line, 'SyntaxError', '文の終わり方が正しくありません', '1行に複数の文を書くときは「;」で区切ってください');
   }
   return out;
@@ -930,7 +1004,7 @@ function parseSimple(tc, line) {
     if (t.v === 'pass') { tc.next(); return { k: 'pass', line }; }
     if (t.v === 'global' || t.v === 'nonlocal') { tc.next(); const names = []; while (!tc.atEnd() && !tc.isOp(';')) { const n = tc.next(); if (n.t === 'NAME') names.push(n.v); } return { k: 'global', kind: t.v, names, line }; }
     if (t.v === 'raise') { tc.next(); let e = null; if (!tc.atEnd() && !tc.isOp(';')) e = parseExpr(tc, line); while (!tc.atEnd() && !tc.isOp(';')) tc.next(); return { k: 'raise', e, line }; }
-    if (t.v === 'del') { tc.next(); const targets = []; do { targets.push(parsePostfix(tc, line)); } while (tc.eatOp(',')); return { k: 'del', targets, line }; }
+    if (t.v === 'del') { tc.next(); const targets = []; do { const tg = parsePostfix(tc, line); checkTarget(tg, line, true); targets.push(tg); } while (tc.eatOp(',')); return { k: 'del', targets, line }; }
     if (t.v === 'import' || t.v === 'from') { const parts = []; while (!tc.atEnd() && !tc.isOp(';')) { const x = tc.next(); parts.push(x.v); } return { k: 'import', text: parts.join(' ').replace(/ \. /g, '.').replace(/ ,/g, ','), line }; }
     if (t.v === 'assert') { tc.next(); const e = parseExpr(tc, line); const msg = tc.eatOp(',') ? parseExpr(tc, line) : null; return { k: 'assert', e, msg, line }; }
   }
@@ -958,10 +1032,12 @@ function parseSimple(tc, line) {
           tc.i = sv;
           break;
         }
+        for (const t of targets) checkTarget(t, line, false);
         const rhs = parseExprList(tc, line);
         if (targets.length === 1) return { k: 'assign', target: tgt, expr: rhs, line };
         return { k: 'assignmulti', targets, expr: rhs, line };
       }
+      checkTarget(tgt, line, false);
       const rhs = parseExprList(tc, line);
       return { k: 'aug', target: tgt, op: op.slice(0, -1), expr: rhs, line };
     }
@@ -1208,6 +1284,7 @@ function parseGens(tc, line) {
   while (tc.isName('for')) {
     tc.next();
     const target = parseTarget(tc, line);
+    checkTarget(target, line, false);
     if (!tc.isName('in')) throw new SimDiag(line, 'SyntaxError', '内包表記には in が必要です', '');
     tc.next();
     const iter = parseOr(tc, line);
@@ -1953,6 +2030,22 @@ class Interp {
     if (!silent) this.err(line, 'TypeError', typeName(v) + ' は繰り返し（for）に使えません', 'for にはリスト・文字列・range() などの「並び」を指定してください');
     return null;
   }
+  // iterable() の null は「値が未確定」「集合の並び順が未確定」「イテレータの展開失敗」
+  // 「確定した非イテラブル」を区別しない。順序が結果に影響しない用途（orderFreeOk）では集合も展開し、
+  // 確定した非イテラブルは CPython どおり TypeError で止める（PY-01／PY-03／PY-04 の根本原因への対処）。
+  // 未確定として扱うべき場合は null を返し、呼び出し側が従来どおり不明化・毒化する。
+  iterableChecked(v, line, orderFreeOk) {
+    if (isUnk(v)) return null;
+    let seq;
+    if (orderFreeOk) { const prev = this.orderFree; this.orderFree = true; seq = this.iterable(v, line, true); this.orderFree = prev; }
+    else seq = this.iterable(v, line, true);
+    if (seq !== null) return seq;
+    if (isIter(v)) return null; // 展開に失敗したイテレータは未確定
+    if (isSet(v)) return null; // 並び順が決まらない集合（orderFreeOk のときは上で展開済み）
+    if (isList(v) || isTuple(v) || typeof v === 'string' || isDict(v) || isView(v) || (v && v.__range)) return null; // 展開できるはずの形（防御的に未確定）
+    if (v && v.__instance) return null; // ユーザー定義クラスの __iter__ は再現範囲外のため未確定のまま
+    this.err(line, 'TypeError', typeName(v) + ' は繰り返しに使えません（イテラブルではありません）', '');
+  }
   // R22-N19：「*」の展開先が、確定した非イテラブル（数値・真偽値・None・
   // 関数など）のときは CPython と同じく TypeError で正直に停止する。
   // 値が不明な場合は従来どおり「実行時に決まる値」として扱う。
@@ -2223,6 +2316,7 @@ Interp.prototype.binOp0 = function (op, l, r, line) {
     this.typeErr(line, op, l, r);
   }
   if (op === '|' || op === '&' || op === '^' || op === '<<' || op === '>>') {
+    if (op === '|' && isClassValue(l) && isClassValue(r)) return { __union: [...(l.__union || [l]), ...(r.__union || [r])] }; // 型 | 型 は合併型（Python 3.10 以降、isinstance の第2引数に使える）
     if (isBool(l) && isBool(r) && op !== '<<' && op !== '>>') return BOOL(op === '|' ? (l.v || r.v) : op === '&' ? (l.v && r.v) : (l.v !== r.v));
     if (isSet(l) && isSet(r) && op !== '<<' && op !== '>>') {
       if (op === '|') { const a = l.__set.slice(); for (const x of r.__set) if (!a.some(y => eqVal(x, y) === true)) a.push(x); return SET(a); }
@@ -2487,6 +2581,42 @@ Interp.prototype.callFn = function (fv, args, env, line) {
 Interp.prototype.needHash = function (v, line) {
   if (!isUnk(v) && dictKeyId(v) === null) this.err(line, 'TypeError', typeName(v) + ' は集合の要素や辞書のキーにできません（ハッシュできない型です）', 'リストはタプルに変えると使えます');
 };
+// isinstance の第2引数（classinfo）の照合（PY-04）。戻り値：true／false／null（未確定）。
+// CPython どおりタプル・合併型は先頭から照合し、一致した時点で True を返し、
+// 型でない要素に行き当たったら TypeError で止める（isinstance(1, (int, 5)) は True、
+// isinstance(1, (str, 5)) は TypeError という遅延評価の挙動も含む）。
+Interp.prototype.isinstanceCheck = function (obj, ci, line) {
+  if (isUnk(ci)) return null;
+  if (isTuple(ci)) { for (const el of ci.__tuple) { const r = this.isinstanceCheck(obj, el, line); if (r !== false) return r; } return false; }
+  if (ci && ci.__union) { for (const el of ci.__union) { const r = this.isinstanceCheck(obj, el, line); if (r !== false) return r; } return false; }
+  if (ci && ci.__class) { if (isUnk(obj)) return null; return !!(obj && obj.__instance && obj.cls === ci); }
+  let name = null;
+  if (ci && ci.__type) name = ci.__type;
+  else if (ci && ci.__builtin) name = ci.__builtin;
+  if (name !== null) {
+    if (EXC_NAMES.has(name)) {
+      if (isUnk(obj)) return null;
+      if (!(obj && obj.__exc)) return false;
+      let k = obj.kind;
+      while (k) { if (k === name) return true; k = EXC_PARENTS[k]; }
+      return false;
+    }
+    if (TYPE_BUILTINS.includes(name) || name === 'NoneType' || name === 'enumerate' || name === 'zip' || name === 'map' || name === 'filter' || name === 'reversed' || name === 'slice' || name === 'bytearray' || name === 'memoryview') {
+      if (isUnk(obj)) return null;
+      return this.isinstanceOfType(obj, name);
+    }
+  }
+  this.err(line, 'TypeError', 'isinstance() の2つ目（型の指定）が型ではありません（型、型のタプル、または | でつないだ型を使ってください）', '');
+};
+// isinstance(obj, 型名) の本体。obj は確定値であることが前提。
+Interp.prototype.isinstanceOfType = function (obj, name) {
+  if (name === 'object') return true;
+  if (name === 'type') return !!(obj && (obj.__type || obj.__class || (obj.__builtin && isClassValue(obj))));
+  if (isIter(obj)) return obj.kind === name; // zip／map／filter／enumerate／reversed 等のイテレータ値
+  if (obj && (obj.__exc || obj.__instance || obj.__class || obj.__type || obj.__union || obj.__builtin)) return false; // 例外値・インスタンス・型そのもの等は組み込み型のインスタンスではない
+  if (isFunc(obj) || isMethodRef(obj)) return false;
+  return typeName(obj) === name || (name === 'int' && isBool(obj)); // bool は int のサブクラス
+};
 // key 関数の値を求める。不明が混ざれば null
 Interp.prototype.keyed = function (items, keyFn, env, line) {
   const out = [];
@@ -2676,7 +2806,7 @@ Interp.prototype.callBuiltin0 = function (name, args, kwargs, env, line, node) {
         if (isUnk(args[0])) return UNK();
         if (isDict(args[0])) { for (const [id, e] of args[0].__dict) d.__dict.set(id, e); }
         else {
-          const seq = this.iterable(args[0], line, true); if (seq === null) { this.err(line, 'TypeError', typeName(args[0]) + ' から dict() は作れません', ''); }
+          const seq = this.iterable(args[0], line, true); if (seq === null) { if (isSet(args[0])) return UNK(); this.err(line, 'TypeError', typeName(args[0]) + ' から dict() は作れません', ''); }
           for (const p of seq) { const kv = isList(p) ? p.__list : isTuple(p) ? p.__tuple : null; if (!kv || kv.length !== 2) this.err(line, 'ValueError', 'dict() には (キー, 値) の組の並びを渡してください', ''); if (isUnk(kv[0])) return UNK(); this.needHash(kv[0], line); dictSet(d, kv[0], kv[1]); }
         }
       }
@@ -2757,7 +2887,7 @@ Interp.prototype.callBuiltin0 = function (name, args, kwargs, env, line, node) {
       const lens = [], takers = []; // ITER 引数はカーソルを共有して1つずつ取る（zip(it, it) が [(1, 2), (3, 4)] になる）
       for (const a of args) {
         if (isIter(a)) { { this.materialize(a); if (a.failed) return UNK(); } lens.push(a.__iter.length - (a.pos || 0)); takers.push(() => ((a.pos || 0) < a.__iter.length ? a.__iter[(a.pos = (a.pos || 0) + 1) - 1] : EXH)); }
-        else { const seq = this.iterable(a, line, true); if (seq === null) return UNK(); lens.push(seq.length); let i = 0; takers.push(() => (i < seq.length ? seq[i++] : EXH)); }
+        else { const seq = this.iterableChecked(a, line, false); if (seq === null) return UNK(); lens.push(seq.length); let i = 0; takers.push(() => (i < seq.length ? seq[i++] : EXH)); }
       }
       if (kw.strict !== undefined && truthy(kw.strict) === true && lens.length > 1 && !lens.every(l => l === lens[0])) this.err(line, 'ValueError', 'zip(..., strict=True) では、並びの長さが揃っていないとエラーになります', '');
       const out = [];
@@ -2766,12 +2896,11 @@ Interp.prototype.callBuiltin0 = function (name, args, kwargs, env, line, node) {
     }
     case 'type': return isUnk(args[0]) ? UNK('型は実行時に決まります') : TYPEVAL(typeName(args[0]));
     case 'isinstance': {
-      const want = args[1];
-      if (want && want.__class) return BOOL(args[0]?.__instance && args[0].cls === want);
-      if (isUnk(args[0])) return UNK();
-      if (want && want.__type) return BOOL(typeName(args[0]) === want.__type || (want.__type === 'int' && isBool(args[0])));
-      if (want && want.__builtin) { const map = { int: 'int', float: 'float', str: 'str', bool: 'bool', list: 'list', dict: 'dict', tuple: 'tuple', set: 'set' }; const wn = map[want.__builtin]; if (wn) return BOOL(typeName(args[0]) === wn || (wn === 'int' && isBool(args[0]))); }
-      return UNK();
+      // 第2引数（型・型のタプル・合併型）を CPython どおり照合する（PY-04）。
+      // タプルは先頭から評価され、一致した時点で True、型でない要素に行き当たれば TypeError。
+      // 従来はタプルや不正な第2引数をすべて「実行時に決まる値」にしていた。
+      const r = this.isinstanceCheck(args[0], args[1], line);
+      return r === null ? UNK() : BOOL(r);
     }
     case 'ord': { const v = args[0]; if (isUnk(v)) return UNK(); if (typeof v === 'string' && Array.from(v).length === 1) return NUM(v.codePointAt(0), false); this.err(line, 'TypeError', 'ord() は1文字の文字列に使います', ''); return UNK(); }
     case 'chr': { const v = args[0]; if (isUnk(v)) return UNK(); const n = this.intIndex(v, line, 'chr() の引数'); if (!(n >= 0 && n <= 0x10FFFF)) this.err(line, 'ValueError', 'chr() の引数は 0〜1114111（0x10FFFF）の範囲にしてください', ''); return String.fromCodePoint(n); }
@@ -2883,7 +3012,7 @@ Interp.prototype.callMethod = function (obj, name, args, kwargs, env, line) {
         if (sepA === '') this.err(line, 'ValueError', '区切りに空文字列は使えません', '');
         return LIST(pySplit(obj, isNone(sepA) ? null : sepA, mx < 0 ? -1 : mx, name === 'rsplit'));
       }
-      case 'join': return S(() => { const seq = this.iterable(args[0], line, true); if (seq === null || seq.some(isUnk)) return UNK(); if (!seq.every(x => typeof x === 'string')) this.err(line, 'TypeError', 'join() は文字列の集まりに使います', '数値の集まりは str() で変えてから使ってください'); return seq.join(obj); }, 1, 1);
+      case 'join': return S(() => { const seq = this.iterableChecked(args[0], line, false); if (seq === null || seq.some(isUnk)) return UNK(); if (!seq.every(x => typeof x === 'string')) this.err(line, 'TypeError', 'join() は文字列の集まりに使います', '数値の集まりは str() で変えてから使ってください'); return seq.join(obj); }, 1, 1);
       case 'replace': return S(() => {
         if (args.some(isUnk)) return UNK();
         if (typeof args[0] !== 'string' || typeof args[1] !== 'string') this.err(line, 'TypeError', 'replace() には文字列を2つ渡してください', '');
@@ -2915,9 +3044,9 @@ Interp.prototype.callMethod = function (obj, name, args, kwargs, env, line) {
         if (at < 0) { if (name === 'index' || name === 'rindex') this.err(line, 'ValueError', '文字列「' + nd + '」は見つかりません', 'find() を使うと、無いときに -1 が返ります'); return NUM(-1, false); }
         return NUM(st + Array.from(sub.slice(0, at)).length, false);
       }, 1, 3);
-      case 'isdigit': return S(() => BOOL(/^[\p{Nd}\p{No}]+$/u.test(obj)), 0, 0);
+      case 'isdigit': return S(() => BOOL(obj.length > 0 && Array.from(obj).every(isPyDigit)), 0, 0);
       case 'isdecimal': return S(() => BOOL(/^\p{Nd}+$/u.test(obj)), 0, 0);
-      case 'isnumeric': return S(() => BOOL(/^\p{N}+$/u.test(obj)), 0, 0);
+      case 'isnumeric': return S(() => BOOL(obj.length > 0 && Array.from(obj).every(isPyNumeric)), 0, 0);
       case 'isalpha': return S(() => BOOL(/^[\p{L}\p{Alphabetic}]+$/u.test(obj)), 0, 0);
       case 'isalnum': return S(() => BOOL(/^[\p{L}\p{Alphabetic}\p{N}]+$/u.test(obj)), 0, 0);
       case 'isspace': return S(() => BOOL(obj.length > 0 && Array.from(obj).every(isPyWs)), 0, 0);
@@ -2931,7 +3060,7 @@ Interp.prototype.callMethod = function (obj, name, args, kwargs, env, line) {
   if (isList(obj)) {
     switch (name) {
       case 'append': if (args.length !== 1) arityErr('1 個必要'); obj.__list.push(args[0]); this.step(line, 'リストの末尾に ' + reprVal(args[0]) + ' を追加します（要素は ' + obj.__list.length + ' 個になりました）'); return NONE;
-      case 'extend': { if (args.length !== 1) arityErr('1 個必要'); const seq = this.iterable(args[0], line, true); if (seq === null) { poison(obj, '書き換えられたかもしれないリスト'); return NONE; } if (obj.__list.length + seq.length > 200000) { poison(obj, 'とても長いリスト'); return NONE; } for (const x of seq) obj.__list.push(x); this.step(line, 'リストに ' + seq.length + ' 個の要素を追加します（要素は ' + obj.__list.length + ' 個になりました）'); return NONE; }
+      case 'extend': { if (args.length !== 1) arityErr('1 個必要'); const seq = this.iterableChecked(args[0], line, false); if (seq === null) { poison(obj, '書き換えられたかもしれないリスト'); return NONE; } if (obj.__list.length + seq.length > 200000) { poison(obj, 'とても長いリスト'); return NONE; } for (const x of seq) obj.__list.push(x); this.step(line, 'リストに ' + seq.length + ' 個の要素を追加します（要素は ' + obj.__list.length + ' 個になりました）'); return NONE; }
       case 'insert': { if (args.length !== 2) arityErr('番号と値の2個必要'); if (isUnk(args[0])) { poison(obj, '書き換えられたかもしれないリスト'); return NONE; } if (!isNum(args[0]) && !isBool(args[0])) arityErr('番号と値の2個必要'); let i = Math.trunc(args[0].v); if (i < 0) i = Math.max(0, obj.__list.length + i); if (i > obj.__list.length) i = obj.__list.length; obj.__list.splice(i, 0, args[1]); this.step(line, 'リストの ' + i + ' 番目に ' + reprVal(args[1]) + ' を入れます'); return NONE; }
       case 'pop': { if (args.length > 1) arityErr('0〜1 個'); if (args.length && isUnk(args[0])) { if (!obj.__list.length) this.err(line, 'IndexError', '空のリストから pop() はできません', ''); obj.__list.pop(); for (let k = 0; k < obj.__list.length; k++) obj.__list[k] = UNK('取り出し後の要素'); return UNK('取り出した要素'); } const pi = args.length ? this.intIndex(args[0], line, 'pop() の番号') : null; if (!obj.__list.length) this.err(line, 'IndexError', '空のリストから pop() はできません', ''); let i = pi !== null ? pi : obj.__list.length - 1; if (i < 0) i += obj.__list.length; if (i < 0 || i >= obj.__list.length) this.err(line, 'IndexError', 'pop() の番号が範囲外です', ''); const v = obj.__list.splice(i, 1)[0]; this.step(line, 'リストから ' + reprVal(v) + ' を取り出して消します'); return v; }
       case 'remove': { if (args.length !== 1) arityErr('1 個必要'); if (isUnk(args[0])) { poison(obj, '書き換えられたかもしれないリスト'); return NONE; } const at = obj.__list.findIndex(x => eqVal(x, args[0]) === true); if (at < 0) this.err(line, 'ValueError', reprVal(args[0]) + ' はリストにありません', ''); obj.__list.splice(at, 1); this.step(line, 'リストから ' + reprVal(args[0]) + ' を消します'); return NONE; }
@@ -2963,7 +3092,7 @@ Interp.prototype.callMethod = function (obj, name, args, kwargs, env, line) {
         if (args.length) {
           const a0 = args[0]; if (isUnk(a0)) { this.diag(line, 'note', '注意', '更新に使う値が実行時に決まるため、辞書の中身は分からなくなります', ''); poison(obj, '更新されたかもしれない辞書'); return NONE; }
           if (isDict(a0)) { for (const e of a0.__dict.values()) dictSet(obj, e.k, e.v); }
-          else { const seq = this.iterable(a0, line, true); if (seq === null) this.err(line, 'TypeError', typeName(a0) + ' では辞書を更新できません', ''); for (const p of seq) { const kv = isList(p) ? p.__list : isTuple(p) ? p.__tuple : typeof p === 'string' ? Array.from(p) : null; if (!kv || kv.length !== 2) this.err(line, 'ValueError', 'update() には (キー, 値) の組の並びを渡してください', ''); this.needHash(kv[0], line); dictSet(obj, kv[0], kv[1]); } }
+          else { const seq = this.iterable(a0, line, true); if (seq === null) { if (isSet(a0)) { poison(obj, '更新されたかもしれない辞書'); return NONE; } this.err(line, 'TypeError', typeName(a0) + ' では辞書を更新できません', ''); } for (const p of seq) { const kv = isList(p) ? p.__list : isTuple(p) ? p.__tuple : typeof p === 'string' ? Array.from(p) : null; if (!kv || kv.length !== 2) this.err(line, 'ValueError', 'update() には (キー, 値) の組の並びを渡してください', ''); this.needHash(kv[0], line); dictSet(obj, kv[0], kv[1]); } }
         }
         for (const k of Object.keys(kwargs || {})) dictSet(obj, k, this.eval(kwargs[k], env));
         this.step(line, '辞書をまとめて更新します → ' + reprVal(obj)); return NONE;
@@ -2980,16 +3109,18 @@ Interp.prototype.callMethod = function (obj, name, args, kwargs, env, line) {
       case 'add': this.needHash(args[0], line); obj.__set.push(args[0]); if (!obj.__set.slice(0, -1).some(x => eqVal(x, args[0]) === true)) this.step(line, '集合に ' + reprVal(args[0]) + ' を追加します'); else obj.__set.pop(); return NONE;
       case 'remove': { if (isUnk(args[0])) { poison(obj, '書き換えられたかもしれない集合'); return NONE; } const at = obj.__set.findIndex(x => eqVal(x, args[0]) === true); if (at < 0) this.err(line, 'KeyError', reprVal(args[0]) + ' は集合にありません', ''); obj.__set.splice(at, 1); return NONE; }
       case 'discard': { if (isUnk(args[0])) { poison(obj, '書き換えられたかもしれない集合'); return NONE; } const at = obj.__set.findIndex(x => eqVal(x, args[0]) === true); if (at >= 0) obj.__set.splice(at, 1); return NONE; }
-      case 'update': { const seq = this.iterable(args[0], line, true); if (seq === null) { poison(obj, '書き換えられたかもしれない集合'); return NONE; } for (const x of seq) { this.needHash(x, line); if (!obj.__set.some(y => eqVal(x, y) === true)) obj.__set.push(x); } this.step(line, '集合に要素を追加します → ' + reprVal(obj)); return NONE; }
+      // 集合の演算メソッドは順序に依存しないため、引数の集合は並び順が未確定でも展開してよい（PY-01）。
+      // 引数は CPython どおり複数受け付け（union 等）、確定した非イテラブルは TypeError で止める（PY-04）。
+      case 'update': { for (const a of args) { const seq = this.iterableChecked(a, line, true); if (seq === null) { poison(obj, '書き換えられたかもしれない集合'); return NONE; } for (const x of seq) { this.needHash(x, line); if (!obj.__set.some(y => eqVal(x, y) === true)) obj.__set.push(x); } } this.step(line, '集合に要素を追加します → ' + reprVal(obj)); return NONE; }
       case 'clear': obj.__set.length = 0; this.step(line, '集合を空にします'); return NONE;
       case 'pop': { if (!obj.__set.length) this.err(line, 'KeyError', '空の集合から pop() はできません', ''); poison(obj, '要素が取り出された集合'); return UNK('取り出した要素'); }
-      case 'intersection_update': { const seq = this.iterable(args[0], line, true); if (seq === null) { poison(obj, '書き換えられたかもしれない集合'); return NONE; } const kept = obj.__set.filter(x => seq.some(y => eqVal(x, y) === true)); obj.__set.length = 0; for (const x of kept) obj.__set.push(x); return NONE; }
-      case 'difference_update': { const seq = this.iterable(args[0], line, true); if (seq === null) { poison(obj, '書き換えられたかもしれない集合'); return NONE; } const kept = obj.__set.filter(x => !seq.some(y => eqVal(x, y) === true)); obj.__set.length = 0; for (const x of kept) obj.__set.push(x); return NONE; }
-      case 'symmetric_difference_update': { const seq = this.iterable(args[0], line, true); if (seq === null) { poison(obj, '書き換えられたかもしれない集合'); return NONE; } const kept = obj.__set.filter(x => !seq.some(y => eqVal(x, y) === true)); const add = seq.filter(x => !obj.__set.some(y => eqVal(x, y) === true)); obj.__set.length = 0; for (const x of kept) obj.__set.push(x); for (const x of add) { this.needHash(x, line); if (!obj.__set.some(y => eqVal(x, y) === true)) obj.__set.push(x); } return NONE; }
-      case 'union': { const seq = this.iterable(args[0], line, true); if (seq === null) return UNK(); const out = obj.__set.slice(); for (const x of seq) if (!out.some(y => eqVal(x, y) === true)) out.push(x); return SET(out); }
-      case 'intersection': { const seq = this.iterable(args[0], line, true); if (seq === null) return UNK(); return SET(obj.__set.filter(x => seq.some(y => eqVal(x, y) === true))); }
-      case 'difference': { const seq = this.iterable(args[0], line, true); if (seq === null) return UNK(); return SET(obj.__set.filter(x => !seq.some(y => eqVal(x, y) === true))); }
-      case 'symmetric_difference': { const seq = this.iterable(args[0], line, true); if (seq === null) return UNK(); const kept = obj.__set.filter(x => !seq.some(y => eqVal(x, y) === true)); for (const x of seq) if (!obj.__set.some(y => eqVal(x, y) === true) && !kept.some(y => eqVal(x, y) === true)) kept.push(x); return SET(kept); }
+      case 'intersection_update': { for (const a of args) { const seq = this.iterableChecked(a, line, true); if (seq === null) { poison(obj, '書き換えられたかもしれない集合'); return NONE; } for (const x of seq) this.needHash(x, line); const kept = obj.__set.filter(x => seq.some(y => eqVal(x, y) === true)); obj.__set.length = 0; for (const x of kept) obj.__set.push(x); } return NONE; }
+      case 'difference_update': { for (const a of args) { const seq = this.iterableChecked(a, line, true); if (seq === null) { poison(obj, '書き換えられたかもしれない集合'); return NONE; } for (const x of seq) this.needHash(x, line); const kept = obj.__set.filter(x => !seq.some(y => eqVal(x, y) === true)); obj.__set.length = 0; for (const x of kept) obj.__set.push(x); } return NONE; }
+      case 'symmetric_difference_update': { if (args.length !== 1) arityErr('1 個必要'); const seq = this.iterableChecked(args[0], line, true); if (seq === null) { poison(obj, '書き換えられたかもしれない集合'); return NONE; } const kept = obj.__set.filter(x => !seq.some(y => eqVal(x, y) === true)); const add = seq.filter(x => !obj.__set.some(y => eqVal(x, y) === true)); obj.__set.length = 0; for (const x of kept) obj.__set.push(x); for (const x of add) { this.needHash(x, line); if (!obj.__set.some(y => eqVal(x, y) === true)) obj.__set.push(x); } return NONE; }
+      case 'union': { const out = obj.__set.slice(); for (const a of args) { const seq = this.iterableChecked(a, line, true); if (seq === null) return UNK(); for (const x of seq) { this.needHash(x, line); if (!out.some(y => eqVal(x, y) === true)) out.push(x); } } return SET(out); }
+      case 'intersection': { let cur = obj.__set.slice(); for (const a of args) { const seq = this.iterableChecked(a, line, true); if (seq === null) return UNK(); for (const x of seq) this.needHash(x, line); cur = cur.filter(x => seq.some(y => eqVal(x, y) === true)); } return SET(cur); }
+      case 'difference': { let cur = obj.__set.slice(); for (const a of args) { const seq = this.iterableChecked(a, line, true); if (seq === null) return UNK(); for (const x of seq) this.needHash(x, line); cur = cur.filter(x => !seq.some(y => eqVal(x, y) === true)); } return SET(cur); }
+      case 'symmetric_difference': { if (args.length !== 1) arityErr('1 個必要'); const seq = this.iterableChecked(args[0], line, true); if (seq === null) return UNK(); for (const x of seq) this.needHash(x, line); const kept = obj.__set.filter(x => !seq.some(y => eqVal(x, y) === true)); for (const x of seq) if (!obj.__set.some(y => eqVal(x, y) === true) && !kept.some(y => eqVal(x, y) === true)) kept.push(x); return SET(kept); }
       case 'copy': return SET(obj.__set.slice());
     }
   }

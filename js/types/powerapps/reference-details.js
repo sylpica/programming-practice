@@ -77,7 +77,7 @@ export const referenceDetails = {
     "source": "https://learn.microsoft.com/en-us/power-platform/power-fx/reference/function-text"
   },
   "Value": {
-    "returns": "数値（ホストにより数値型が異なる）",
+    "returns": "数値（ホストにより数値型が異なる）。入力がBlankまたは空文字列の場合はBlank",
     "source": "https://learn.microsoft.com/en-us/power-platform/power-fx/reference/function-value"
   },
   "Blank": {

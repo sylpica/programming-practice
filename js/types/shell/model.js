@@ -49,6 +49,17 @@ export function words(text, line = 1) {
   if (started) out.push(part);
   return out;
 }
+// SH-C1: Windows の予約デバイス名（Microsoft Learn「Naming Files, Paths,
+// and Namespaces」）。拡張子を付けても（nul.txt 等）、どのフォルダでも
+// デバイスとして扱われるため、通常ファイルとして作ってはならない。
+export function reservedDeviceName(path) {
+  const base = String(path).split("\\").at(-1),
+    stem = base.split(".")[0].toUpperCase();
+  if (["CON", "PRN", "AUX", "NUL", "CONIN$", "CONOUT$"].includes(stem))
+    return stem;
+  if (/^(?:COM|LPT)[1-9]$/.test(stem)) return stem;
+  return null;
+}
 export function windowsPath(path, cwd = "C:\\Practice", line = 1) {
   if (isUnknown(path)) return path;
   path = unquote(String(path)).replaceAll("/", "\\");
@@ -235,6 +246,10 @@ export function writeFile(state, path, content, line = 1, append = false) {
   )
     e.content = unknown("追記後のモデルファイル内容", path + ":append");
   else e.content = (append ? e.content : "") + content;
+  // P-N1（蓄積の成長経路）: 追記の繰り返しでファイル内容が値サイズ上限を
+  // 超えたら、実体を保持せず未確定値へ倒す（値の大きさの上限の対象にする）。
+  if (typeof e.content === "string" && e.content.length > 200000)
+    e.content = unknown("とても長いファイル内容", path + ":toolong");
   if (typeof e.content === "string")
     e.length = new TextEncoder().encode(e.content).length;
   else delete e.length;

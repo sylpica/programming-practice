@@ -6,7 +6,10 @@ let active = getDefinition("vba"),
   glossary = active.glossary || [];
 let drafts = {},
   editorPlugin = null,
-  storageBlocked = false;
+  storageBlocked = false,
+  // S-N2: 保全書き込みに失敗した原文。save() のたびに再試行し、
+  // 全て成功するまで破損データを上書きしない（保全設計は維持する）。
+  pendingRecoveries = [];
 try {
   let raw = localStorage.getItem("programming-practice-v3");
   if (raw) {
@@ -27,6 +30,10 @@ try {
         localStorage.setItem("programming-practice-recovery-v3", raw);
       } catch {
         storageBlocked = true;
+        pendingRecoveries.push({
+          key: "programming-practice-recovery-v3",
+          raw,
+        });
       }
     }
   }
@@ -48,14 +55,21 @@ if (!Object.keys(drafts).length) {
         localStorage.setItem("programming-practice-recovery-v2", migrated.raw);
       } catch {
         storageBlocked = true;
+        pendingRecoveries.push({
+          key: "programming-practice-recovery-v2",
+          raw: migrated.raw,
+        });
       }
     }
   } catch {}
 }
 if (!drafts.vba) {
   try {
-    let legacy = JSON.parse(localStorage.getItem("vba-practice-v1"));
-    if (legacy) drafts.vba = legacy;
+    // S-N3: v1 分岐も v2/v3 と同等に形状検証する。文字列・配列などを
+    // 無検証で取り込むと数字キーとして下書きへ混入・永続化するため、
+    // 判定は純関数 parseLegacyV1 に寄せる。
+    let migrated = parseLegacyV1(localStorage.getItem("vba-practice-v1"));
+    if (migrated.kind === "draft") drafts.vba = migrated.draft;
   } catch {}
 }
 // RG-86: 起動時点の下書きスナップショット。save() はこれを基準に
@@ -186,12 +200,25 @@ function save() {
   );
   drafts = mergeDraftsForSave(baseDrafts, drafts, storedDrafts, active.id);
   try {
-    if (storageBlocked) throw Error("保存データを保護しています");
+    if (storageBlocked) {
+      // S-N2: 一過性の保全失敗でセッション中ラッチさせず、保存のたびに
+      // 保全書き込みを再試行する。全て保全できるまでは従来どおり
+      // 破損データを上書きしない。
+      pendingRecoveries = retryPendingRecoveries(
+        pendingRecoveries,
+        localStorage,
+      );
+      if (pendingRecoveries.length)
+        throw Error("保存データを保護しています");
+      storageBlocked = false;
+    }
     localStorage.setItem(
       "programming-practice-v3",
       JSON.stringify({ active: active.id, drafts }),
     );
     baseDrafts = structuredClone(drafts);
+    // S-N1: 保存が成功したら保存失敗の通知を消す。
+    $("storageNotice").hidden = true;
   } catch {
     $("storageNotice").hidden = false;
   }
@@ -351,6 +378,46 @@ function parseLegacyV2(raw) {
   )
     return { kind: "drafts", drafts: interim.drafts, active: interim.active };
   return { kind: "recovery", raw };
+}
+// S-N3: 旧形式 v1 保存データの移行判定（純関数）。v1 は下書きエントリ
+// 自体（{code, model,...}）であり、退避先キーの仕組みがないため、
+// オブジェクト（配列でない）場合のみ { kind: "draft" } として取り込み、
+// 文字列・配列・数値・真偽値・壊れた JSON は移行対象外として無視する。
+function parseLegacyV1(raw) {
+  if (!raw) return { kind: "empty" };
+  let interim;
+  try {
+    interim = JSON.parse(raw);
+  } catch {
+    return { kind: "empty" };
+  }
+  if (interim && typeof interim === "object" && !Array.isArray(interim))
+    return { kind: "draft", draft: interim };
+  return { kind: "empty" };
+}
+// S-N2: 保全書き込みの再試行（純関数）。storage は setItem を持つ
+// ストレージ互換オブジェクト。書き込めた分は落とし、失敗した分だけを
+// 残りとして返す。呼び出し側は残りが空になるまで通常保存へ進まない。
+function retryPendingRecoveries(pending, storage) {
+  let remaining = [];
+  for (let item of pending || []) {
+    try {
+      storage.setItem(item.key, item.raw);
+    } catch {
+      remaining.push(item);
+    }
+  }
+  return remaining;
+}
+// A-N7: prefers-reduced-motion が有効な場合はスムーズスクロールを使わない。
+function preferredScrollBehavior() {
+  let reduced = false;
+  try {
+    reduced = !!globalThis.matchMedia?.(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
+  } catch {}
+  return reduced ? "auto" : "smooth";
 }
 // RG-86: 複数タブ保存競合のマージ（純関数）。base はこのタブが起動時に
 // 読み込んだ下書き、mine はこのタブのメモリ内下書き、stored は保存直前に
@@ -559,7 +626,10 @@ function showRef(name) {
   if (!r) return;
   $("refDetail").replaceChildren(...refArticle(r, true).childNodes);
   if ($("practice").hidden) showView("practice");
-  $("refDetail").scrollIntoView({ behavior: "smooth", block: "nearest" });
+  $("refDetail").scrollIntoView({
+    behavior: preferredScrollBehavior(),
+    block: "nearest",
+  });
 }
 function renderRefs() {
   let q = $("referenceSearch").value.toLowerCase();
@@ -640,7 +710,10 @@ function jumpLine(line, nodeId) {
   $("lineNumbers").style.paddingBottom = editor.clientHeight + "px";
   editor.scrollTop = Math.max(0, (line - 1) * lh);
   syncScroll();
-  editor.scrollIntoView({ behavior: "smooth", block: "center" });
+  editor.scrollIntoView({
+    behavior: preferredScrollBehavior(),
+    block: "center",
+  });
 }
 function errorDescription(error) {
   const { category, message } = error;
@@ -679,12 +752,16 @@ function applyResult(r) {
       "説明する処理がありません。コードまたはフローを入力してください。";
   }
   $("pathNav").hidden = !paths.length;
+  // A-N5: 打ち切りの事実と詳細は視覚表示 (#limit) だけでなく、
+  // live region (#resultStatus) の文言にも含め、支援技術へ伝える。
+  const limitText = r.truncated
+    ? `最大${r.limits?.paths ?? LIMITS.paths}件までです。すべての分岐パスは表示されていません。${r.reasons?.join("、") || "探索上限"}により打ち切りました。`
+    : "";
   $("resultStatus").textContent =
-    `${paths.length}件のパス · ${active.model.title}に基づく説明`;
+    `${paths.length}件のパス · ${active.model.title}に基づく説明` +
+    (limitText ? `。${limitText}` : "");
   $("limit").hidden = !r.truncated;
-  if (r.truncated)
-    $("limit").textContent =
-      `最大${r.limits?.paths ?? LIMITS.paths}件までです。すべての分岐パスは表示されていません。${r.reasons?.join("、") || "探索上限"}により打ち切りました。`;
+  if (r.truncated) $("limit").textContent = limitText;
   renderPath();
 }
 function run() {
@@ -717,8 +794,12 @@ function run() {
       clearTimeout(watchdog);
       worker.terminate();
       $("run").disabled = false;
+      // P-N1 副次表面: onerror は開始失敗だけでなく実行中の異常終了
+      // （メモリ不足で Worker が死ぬ場合など）でも発火する。「開始でき
+      // ません」「開き直してください」という原因と合わない文言にせず、
+      // どちらの場合でも成り立つ案内にする。
       $("resultStatus").textContent =
-        "解析用Workerを開始できません。HTTP(S)でアプリを開き直してください。";
+        "解析用Workerでエラーが発生しました。コードを小さくして再実行してください。";
     };
     worker.postMessage({ id, code, model, typeId: active.id });
     watchdog = setTimeout(() => {

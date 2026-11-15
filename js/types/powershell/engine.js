@@ -23,6 +23,10 @@ import {
   inputValue,
 } from "../shell/model.js";
 import { parsePS, PSParser } from "./parser.js";
+import {
+  VALUE_LENGTH_LIMIT,
+  truncateDisplayText,
+} from "../../core/presentation.js";
 const object = (properties, type = "PSCustomObject") =>
   type === "Hashtable"
     ? hash(Object.entries(properties))
@@ -76,13 +80,16 @@ export function psFormat(v) {
   if (typeof v === "boolean") return v ? "True" : "False";
   if (typeof v === "number") return numberText(v, { line: 1 }, true);
   if (isObject(v))
-    return (
-      v.psType === "Hashtable" ? [...v.entries] : Object.entries(v.properties)
-    )
-      .map(([k, x]) => `${k} : ${psFormat(x)}`)
-      .join("\n");
-  if (Array.isArray(v)) return "@(" + v.map(psFormat).join(", ") + ")";
-  return String(v);
+    return truncateDisplayText(
+      (v.psType === "Hashtable" ? [...v.entries] : Object.entries(v.properties))
+        .map(([k, x]) => `${k} : ${psFormat(x)}`)
+        .join("\n"),
+    );
+  // P-N2: 表示専用の整形では、長い文字列・大きな配列の表示を省略記法
+  // つきで切り詰める（状態スナップショットの肥大防止。値は変えない）。
+  if (Array.isArray(v))
+    return truncateDisplayText("@(" + v.map(psFormat).join(", ") + ")");
+  return truncateDisplayText(String(v));
 }
 function truth(v) {
   if (isUnknown(v)) return v;
@@ -102,6 +109,31 @@ function numeric(v, node) {
     return Number(v);
   fail("数値へ変換できません：" + psFormat(v), node.line, "RuntimeException");
 }
+// P-N1: 値の「総内容量」の見積もり。状態スナップショットの転送
+// （structuredClone）では、同じ文字列への参照でも要素ごとに複製される
+// ため、要素数だけでは配列の実サイズを抑えられない。大きな文字列を
+// 多数含む配列は内容量で見積もる（上限超過時点で打ち切る）。
+function contentSize(v, budget = VALUE_LENGTH_LIMIT, depth = 0) {
+  if (v == null || isUnknown(v) || depth > 8) return 0;
+  if (typeof v === "string") return v.length;
+  if (Array.isArray(v)) {
+    let total = 0;
+    for (const x of v) {
+      total += contentSize(x, budget - total, depth + 1);
+      if (total > budget) return total;
+    }
+    return total;
+  }
+  if (typeof v === "object") {
+    let total = 0;
+    for (const x of Object.values(v)) {
+      total += contentSize(x, budget - total, depth + 1);
+      if (total > budget) return total;
+    }
+    return total;
+  }
+  return String(v).length;
+}
 function text(v, node) {
   if (isUnknown(v)) return v;
   if (v == null) return "";
@@ -109,7 +141,18 @@ function text(v, node) {
   if (typeof v === "boolean") return v ? "True" : "False";
   if (Array.isArray(v)) {
     if (v.some(isUnknown)) return unknown("配列を展開した文字列");
-    return v.map((x) => text(x, node)).join(" ");
+    // P-N1: 配列の文字列化も、連結前に累積長を見積もる（同じ大きな要素を
+    // 多数含む配列で実体が爆発しないようにする）。
+    let total = 0,
+      parts = [];
+    for (const x of v) {
+      const part = text(x, node);
+      if (isUnknown(part)) return part;
+      total += part.length + 1;
+      if (total > VALUE_LENGTH_LIMIT) return unknown("とても長い文字列");
+      parts.push(part);
+    }
+    return parts.join(" ");
   }
   if (isObject(v)) {
     if (v.psType === "Hashtable") return "System.Collections.Hashtable";
@@ -132,12 +175,16 @@ function property(v, key, node) {
       if (lower === "count") return v.entries.size;
       if (lower === "keys") return [...v.entries.keys()];
       if (lower === "values") return [...v.entries.values()];
-      if (lower === "length") return 1;
+      // NX-N17: ハッシュテーブルに Length はない（実物では $null）。
+      if (lower === "length") return null;
       return null;
     }
     const k = ciKey(v.properties, key);
     if (k !== undefined) return v.properties[k];
-    if (lower === "count" || lower === "length") return 1;
+    if (lower === "count") return 1;
+    // NX-N17: Length を持たないオブジェクト（フォルダ等）の Length は
+    // 捏造せず $null。Count の 1 は実物と一致するため維持する。
+    if (lower === "length") return null;
     // R22-N13: モデル化オブジェクト（FileInfo等）の存在しないプロパティは
     // 実物どおり決定的に $null。モデルに明示された値が未確定値の場合
     // （例：内容未指定ファイルの Length）は上の ciKey 経由で保持される。
@@ -145,11 +192,13 @@ function property(v, key, node) {
   }
   if (lower === "count") return v == null ? 0 : Array.isArray(v) ? v.length : 1;
   if (lower === "length")
+    // NX-N17: Length があるのは文字列と配列だけ。それ以外のスカラー
+    // （数値・真偽値・オブジェクト等）は $null。
     return v == null
       ? 0
       : typeof v === "string" || Array.isArray(v)
         ? v.length
-        : 1;
+        : null;
   if (Array.isArray(v))
     return v.flatMap((x) => enumerate(property(x, key, node)));
   return null;
@@ -230,6 +279,18 @@ export function simulatePowerShell(source, model, limits) {
       }
       return states;
     }
+    // P-N1（識別子の成長経路）: 未確定値の id は被演算子の id を連結して
+    // 合成されるため、同じ値同士の連結（$s + $s）を繰り返すと id 文字列
+    // 自体が倍々で爆発する（実測で 6,700 万文字）。合成 id は長さ上限で
+    // 切り、末尾に内容ハッシュを付けて別系統の id と衝突させない。
+    function capUnknownId(id) {
+      id = String(id);
+      if (id.length <= 512) return id;
+      let h = 5381;
+      for (let i = 0; i < id.length; i++)
+        h = ((h * 33) ^ id.charCodeAt(i)) >>> 0;
+      return id.slice(0, 448) + ":h" + h.toString(16) + ":" + id.length;
+    }
     function get(s, name) {
       const lower = name.toLowerCase();
       if (lower === "true") return true;
@@ -238,6 +299,26 @@ export function simulatePowerShell(source, model, limits) {
       if (["_", "psitem"].includes(lower)) return s.ps.items.at(-1) ?? null;
       if (lower === "?") return s.ps.success;
       if (lower === "lastexitcode") return s.model.lastExitCode ?? null;
+      // R23-N1: 自動変数を未定義変数の「$null」規則に落とさない。
+      // $PWD はモデルの現在フォルダを保持する PathInfo（Get-Location と同じ）。
+      if (lower === "pwd") return object({ Path: s.model.cwd }, "PathInfo");
+      // $PSVersionTable は常に値を持つ読み取り専用ハッシュテーブル。
+      // バージョンはこのモデルの根拠（PowerShell 7.4／Core）だけを保持する。
+      if (lower === "psversiontable")
+        return hash([
+          ["PSVersion", "7.4"],
+          ["PSEdition", "Core"],
+        ]);
+      // $HOME は実環境で決まるホームフォルダのパス。値を捏造せず
+      // 未確定値として返す（利用者が代入した場合はその値を優先する）。
+      if (lower === "home") {
+        const assigned = ciGet(s.vars, name);
+        if (assigned !== undefined) return assigned;
+        return {
+          ...unknown("$HOME（ホームフォルダ）の実行時の値", "ps:home"),
+          valueType: "string",
+        };
+      }
       return ciGet(s.vars, name) ?? null;
     }
     function set(s, target, v, n, api) {
@@ -252,6 +333,8 @@ export function simulatePowerShell(source, model, limits) {
             "_",
             "psitem",
             "lastexitcode",
+            "pwd",
+            "psversiontable",
             "ofs",
             "erroractionpreference",
             "outputencoding",
@@ -294,6 +377,31 @@ export function simulatePowerShell(source, model, limits) {
       fail("この添字・プロパティへ代入できません", n.line, "RuntimeException");
     }
     function binary(op, a, b, s, n, api) {
+      // SH-P3: -f（書式演算子）は宣言どおり未対応だが、括弧不足など
+      // 無関係な原因ではなく演算子を名指して止める。
+      if (op === "-f") fail("未対応：書式演算子 -f", n.line);
+      // SH-P3: 包含演算子 -contains／-notcontains／-in／-notin（-c／-i 変種を含む）。
+      // 要素ごとの -eq（-c のとき -ceq）で判定する（about_Comparison_Operators）。
+      const containsMatch = op.match(/^-(c|i)?(not)?(contains|in)$/);
+      if (containsMatch) {
+        const eqOp = containsMatch[1] === "c" ? "-ceq" : "-eq",
+          collection = containsMatch[3] === "contains" ? a : b,
+          needle = containsMatch[3] === "contains" ? b : a;
+        if (isUnknown(collection) || isUnknown(needle))
+          fail("未確認：未確定値に対する " + op + " の比較", n.line, "未確認");
+        const items = Array.isArray(collection) ? collection : [collection];
+        let found = false;
+        for (const item of items) {
+          const v = truth(binary(eqOp, item, needle, s, n, api));
+          if (isUnknown(v))
+            fail("未確認：要素の比較結果が確定していません", n.line, "未確認");
+          if (v === true) {
+            found = true;
+            break;
+          }
+        }
+        return containsMatch[2] ? !found : found;
+      }
       if (["-and", "-or"].includes(op)) {
         const x = truth(a),
           y = truth(b);
@@ -327,8 +435,8 @@ export function simulatePowerShell(source, model, limits) {
       ) {
         const sensitive = /^-c/.test(op),
           base = op.replace(/^-[ci]?/, "");
-        if (Array.isArray(a))
-          return a.filter((x) => {
+        if (Array.isArray(a)) {
+          const filtered = a.filter((x) => {
             const v = truth(binary(op, x, b, s, n, api));
             if (isUnknown(v))
               fail(
@@ -338,6 +446,11 @@ export function simulatePowerShell(source, model, limits) {
               );
             return v === true;
           });
+          // SH-P2: 一致なしのフィルタ結果は「出力なし（AutomationNull）」で、
+          // 代入先は $null になる。空配列を返すと代入経路だけが
+          // $null との区別を崩すため、undefined（出力なし）で表す。
+          return filtered.length ? filtered : undefined;
+        }
         if (isUnknown(a) || isUnknown(b)) {
           if (a?.compound || b?.compound)
             fail("未確認：複合文字列の未確定比較", n.line, "未確認");
@@ -493,7 +606,7 @@ export function simulatePowerShell(source, model, limits) {
           return {
             ...unknown(
               "実行時の文字列連結",
-              a.id + ":concat:" + String(b?.id || b),
+              capUnknownId(a.id + ":concat:" + String(b?.id || b)),
             ),
             valueType: "string",
             compound: true,
@@ -508,9 +621,32 @@ export function simulatePowerShell(source, model, limits) {
           valueType: "number",
         };
       }
-      if (op === "+" && Array.isArray(a))
+      // P-N1: 配列連結も値の大きさの上限の対象にする（倍々連結で実体を
+      // 爆発させず、未確定値へ倒す）。要素数に加えて総内容量でも見積もる
+      // （大きな文字列への参照を多数含む配列は、スナップショット転送で
+      // 要素ごとに複製され実サイズが爆発するため）。
+      if (op === "+" && Array.isArray(a)) {
+        const total = a.length + (Array.isArray(b) ? b.length : 1);
+        if (
+          total > VALUE_LENGTH_LIMIT ||
+          contentSize(a) + contentSize(b) > VALUE_LENGTH_LIMIT
+        )
+          return unknown("とても長い配列");
         return [...a, ...(Array.isArray(b) ? b : [b])];
-      if (op === "+" && typeof a === "string") return a + text(b, n);
+      }
+      if (op === "+" && typeof a === "string") {
+        const tb = text(b, n);
+        if (isUnknown(tb)) return tb;
+        // P-N1: 文字列連結は実体を作る前に長さを見積もり、上限を超える
+        // 結果は Python 系統と同じく未確定値へ倒す。
+        if (a.length + tb.length > VALUE_LENGTH_LIMIT)
+          return {
+            ...unknown("とても長い文字列"),
+            valueType: "string",
+            compound: true,
+          };
+        return a + tb;
+      }
       if (op === "*" && (typeof a === "string" || Array.isArray(a))) {
         // R22-N12: 文字列×整数・配列×整数は繰返し
         // （about_Arithmetic_Operators）。右辺は整数へ変換される。
@@ -596,6 +732,14 @@ export function simulatePowerShell(source, model, limits) {
           i = 0,
           unknownParts = [];
         while (i < a.value.length) {
+          // P-N1（連結以外の成長経路）: 展開文字列は変数値を繰り返し埋め
+          // 込めるため、累積長が上限を超えたら実体を作らず未確定値へ倒す。
+          if (result.length > VALUE_LENGTH_LIMIT)
+            return {
+              ...unknown("とても長い文字列"),
+              valueType: "string",
+              compound: true,
+            };
           const c = a.value[i];
           if (c === "`") {
             const e = a.value[++i];
@@ -674,7 +818,9 @@ export function simulatePowerShell(source, model, limits) {
           return {
             ...unknown(
               "実行時に展開する文字列",
-              a.value + ":" + unknownParts.map((v) => v.id).join(":"),
+              capUnknownId(
+                a.value + ":" + unknownParts.map((v) => v.id).join(":"),
+              ),
             ),
             valueType: "string",
             compound: true,
@@ -737,6 +883,13 @@ export function simulatePowerShell(source, model, limits) {
         if (isObject(v) && v.psType === "Hashtable")
           return v.entries.get(hashKey(v, i)) ?? null;
         if (Array.isArray(v) || typeof v === "string") {
+          // SH-P7: 範囲（1..2）など整数の配列による添字は正規の構文。
+          // 要素ごとに取り出して配列で返す（範囲外は $null）。
+          if (Array.isArray(i)) {
+            if (!i.every((x) => Number.isInteger(x)))
+              fail("整数の添字が必要です", a.line, "RuntimeException");
+            return i.map((x) => v[x < 0 ? v.length + x : x] ?? null);
+          }
           if (!Number.isInteger(i))
             fail("整数の添字が必要です", a.line, "RuntimeException");
           return v[i < 0 ? v.length + i : i] ?? null;
@@ -871,7 +1024,7 @@ export function simulatePowerShell(source, model, limits) {
       if (!fn)
         for (const key of Object.keys(params))
           if (!known[name].includes(key))
-            fail("未対応のパラメーター：" + canonical + " -" + key, c.line);
+            fail("未対応のパラメータ：" + canonical + " -" + key, c.line);
       const maxArgs = {
         "get-location": 0,
         "set-location": 1,
@@ -926,7 +1079,7 @@ export function simulatePowerShell(source, model, limits) {
                 ? read(param.value, s, api)
                 : null;
           if (param.type === "bool")
-            fail("未対応：bool型の関数パラメーター変換", c.line);
+            fail("未対応：bool型の関数パラメータ変換", c.line);
           if (param.type)
             v = read(
               {
@@ -943,7 +1096,7 @@ export function simulatePowerShell(source, model, limits) {
         for (const key of Object.keys(params))
           if (!fn.params.some((x) => x.name.toLowerCase() === key))
             fail(
-              "関数のパラメーターがありません：" + key,
+              "関数のパラメータがありません：" + key,
               c.line,
               "RuntimeException",
             );
@@ -986,9 +1139,14 @@ export function simulatePowerShell(source, model, limits) {
           return [{ s, values: [] }];
         }
         const separator = p("separator", 100, " "),
-          values = Object.hasOwn(params, "object")
-            ? enumerate(params.object)
-            : args;
+          // NX-N27: 位置引数の配列形（"a","b"）も要素へ展開してから
+          // separator で連結する。展開しないと配列の文字列化（空白区切り）
+          // がそのまま画面出力になり -Separator が無視される。
+          values = (
+            Object.hasOwn(params, "object")
+              ? enumerate(params.object)
+              : args
+          ).flatMap(enumerate);
         const parts = values.map((v) => text(v, c));
         s.outputs.push({
           channel: "Write-Host",
@@ -1467,15 +1625,19 @@ export function simulatePowerShell(source, model, limits) {
         const evaluated = [];
         for (const st of active)
           for (const r of pipeline(n.collection, st, api)) {
-            const items =
-              r.values.length === 1 &&
-              r.values[0] === null &&
-              !(
-                Object.hasOwn(r, "expressionValue") &&
-                Array.isArray(r.expressionValue)
-              )
-                ? []
-                : r.values;
+            // SH-P6: $null に対する foreach は変数を $null として1回実行する
+            // （about_Foreach）。空配列 @() の0回と区別するため、式の値そのもの
+            // （expressionValue）で判定する。出力なし（AutomationNull）も
+            // 代入すると $null になるため $null と同じ1回にする。
+            let items;
+            if (Object.hasOwn(r, "expressionValue")) {
+              const ev = r.expressionValue;
+              items = Array.isArray(ev)
+                ? r.values
+                : ev === undefined
+                  ? [null]
+                  : [ev];
+            } else items = r.values;
             r.s.ps.loops.push({ items, index: 0 });
             evaluated.push(r.s);
           }
@@ -1551,8 +1713,12 @@ export function simulatePowerShell(source, model, limits) {
         return [s];
       }
       if (n.k === "param") fail("paramは関数の先頭でだけ対応します", n.line);
-      if (n.k === "pipeline")
+      if (n.k === "pipeline") {
+        // SH-P5（同根）：++／-- の単独文はパイプラインへ出力しないため、
+        // 「最後に評価したパイプライン」を書き換えない。
+        const prevPipeline = s.ps.lastPipeline;
         return pipeline(n.pipe, s, api).map((r) => {
+          if (n.suppress) r.s.ps.lastPipeline = prevPipeline;
           if (!n.suppress) emit(r.s, r.values, n, api);
           api.note(
             r.s,
@@ -1566,8 +1732,13 @@ export function simulatePowerShell(source, model, limits) {
           );
           return r.s;
         });
-      if (n.k === "assign")
+      }
+      if (n.k === "assign") {
+        // SH-P5: 代入はパイプラインへ何も出力しないため、右辺の評価が
+        // 「最後に評価したパイプライン」を書き換えないよう戻す。
+        const prevPipeline = s.ps.lastPipeline;
         return pipeline(n.value, s, api).map((r) => {
+          r.s.ps.lastPipeline = prevPipeline;
           let v = Object.hasOwn(r, "expressionValue")
             ? r.expressionValue
             : scalar(r.values);
@@ -1578,6 +1749,7 @@ export function simulatePowerShell(source, model, limits) {
           api.note(r.s, n, "代入します：" + psFormat(v));
           return r.s;
         });
+      }
       if (n.k === "if") {
         n = { ...n, refs: ["if"] };
         const out = [];

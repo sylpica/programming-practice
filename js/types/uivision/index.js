@@ -51,6 +51,29 @@ const encode = (Commands) =>
     null,
     2,
   );
+// RA-61: assertText／verifyText のパターン照合（Selenium IDE の pattern
+// 規則）。glob（*／?）を基本に、exact:／regexp:／regexpi: 接頭辞を扱う。
+function uiTextMatches(actual, pattern, node, api) {
+  if (pattern.startsWith("exact:")) return actual === pattern.slice(6);
+  if (pattern.startsWith("regexp:") || pattern.startsWith("regexpi:")) {
+    let insensitive = pattern.startsWith("regexpi:");
+    try {
+      return new RegExp(
+        pattern.slice(insensitive ? 8 : 7),
+        insensitive ? "i" : "",
+      ).test(actual);
+    } catch {
+      api.fail("assertText：パターンの正規表現が不正です", node);
+    }
+  }
+  let source = "^";
+  for (let ch of pattern) {
+    if (ch === "*") source += "[\\s\\S]*";
+    else if (ch === "?") source += "[\\s\\S]";
+    else source += ch.replace(/[.*+^${}()|[\]\\]/g, "\\$&");
+  }
+  return new RegExp(source + "$").test(actual);
+}
 const cmd = (Command, Target = "", Value = "") => ({ Command, Target, Value });
 for (const r of reference) {
   const sample = palette.find(p => p.name === r.name).sample;
@@ -117,7 +140,7 @@ reference.push({
   category: "組み込み変数",
   syntax: "${!statusOK}",
   description:
-    "直前のコマンドが成功したかを表す組み込み変数です。成功でtrue、エラーでfalseになります。",
+    "コマンドの成否を表す組み込み変数です。エラーになった場合や、storeText／storeValueで要素が見つからず#LNFになった場合にfalseになります。falseは成功したコマンドでは自動では戻らず、storeでtrueを保存すると手動で戻せます。",
   example: encode([
     cmd("open", "https://example.test/form"),
     cmd("store", "0", "count"),
@@ -257,7 +280,12 @@ export const definition = {
   scan(code) {
     try {
       return [
-        ...new Set(JSON.parse(code).Commands.map((c) => c.Command)),
+        ...new Set(
+          JSON.parse(code).Commands.map((c) =>
+            // D-5: 製品綴り elseIf は項目名 elseif として数える。
+            c.Command === "elseIf" ? "elseif" : c.Command,
+          ),
+        ),
       ].filter((n) => reference.some((r) => r.name === n));
     } catch {
       return [];
@@ -272,6 +300,11 @@ export const definition = {
           ({
             if: "if",
             elseif: "elseif",
+            // D-5: 製品の正綴りは elseIf（公式ドキュメント／コマンド
+            // 一覧）。elseif だけを通すと elseIf は通常コマンド扱いに
+            // 落ち、if の本体に紛れて黙って無視されていた。分岐として
+            // 受理し、項目名は elseif に寄せる。
+            elseIf: "elseif",
             else: "else",
             end: "end",
             endIf: "end",
@@ -281,6 +314,17 @@ export const definition = {
             forEach: "unsupported-block",
           })[n] || "action",
       });
+      // D-5（refs 側）: 分岐ノードの refs は実際のコマンド名（elseIf）
+      // のまま付くため、リファレンス項目名（elseif）に寄せてから実行
+      // する（リンク・チップ解決が綴り違いで外れないように）。
+      (function normalizeElseIfRefs(list) {
+        for (let n of list || []) {
+          if (Array.isArray(n.refs))
+            n.refs = n.refs.map((r) => (r === "elseIf" ? "elseif" : r));
+          normalizeElseIfRefs(n.body);
+          normalizeElseIfRefs(n.otherwise);
+        }
+      })(nodes);
       const semantics = {
         dialect: "js",
         initialize(s) {
@@ -353,6 +397,8 @@ export const definition = {
             if (!e && !optional) api.fail("モデルに要素がありません：" + target, n);
             return e;
           }
+          // D-6: エラーで止まらない失敗（#LNF）を記録するフラグ。
+          let softFail = false;
           try {
             switch (n.action) {
               case "open":
@@ -378,7 +424,11 @@ export const definition = {
                 let e = element();
                 s.model.clicks ??= [];
                 s.model.clicks.push(target);
-                if (e.onClick?.setText)
+                // NX-N24: 効果が定義されている場合だけその効果・遷移先を
+                // 述べ、無い場合は「定義されていません」と正直に伝える
+                // （起きていない効果を主張しない）。
+                let effects = [];
+                if (e.onClick?.setText) {
                   for (let [k, v] of Object.entries(e.onClick.setText)) {
                     let destination = s.model.pages[s.model.url].elements[k];
                     if (!destination)
@@ -388,15 +438,20 @@ export const definition = {
                       );
                     destination.text = v;
                   }
+                  effects.push("モデルに定義された効果を反映します");
+                }
                 if (e.href) {
                   if (!s.model.pages[e.href])
                     api.fail("リンク先がモデルにありません", n);
                   s.model.url = e.href;
+                  effects.push(`リンク先 ${e.href} へ遷移します`);
                 }
                 api.note(
                   s,
                   n,
-                  `${target} をクリックし、モデルに定義された効果を反映します`,
+                  effects.length
+                    ? `${target} をクリックし、${effects.join("、")}`
+                    : `${target} をクリックします（モデルに効果は定義されていません）`,
                 );
                 break;
               }
@@ -412,6 +467,11 @@ export const definition = {
               case "storeValue": {
                 const e = element(true);
                 s.vars[String(value)] = !e ? "#LNF" : n.action === "storeValue" ? (e.value ?? "") : ["input", "select", "textarea"].includes(e.tag?.toLowerCase()) ? "" : (e.text ?? "");
+                // D-6: ロケーター不一致（#LNF）はエラーで止まらないが、
+                // !statusOK は false になる（公式ドキュメント／Changelog
+                // V5.3.17）。成功扱いのまま true を返すと、後続の状態
+                // 判定が誤る。
+                if (!e) softFail = true;
                 api.note(s, n, `${value} に ${e ? "モデル要素の値" : "#LNF（ロケーター不一致）"}を保存します`);
                 break;
               }
@@ -440,15 +500,29 @@ export const definition = {
               case "continue":
                 if (!s.loopDepth) api.fail("ループ外では使用できません", n);
                 s.signal = n.action;
-                api.note(s, n, n.action);
+                // NX-N25: コマンド名そのままではなく、実際の動作を
+                // 日本語で説明する（共有コア／Power Automate の文と同文）。
+                api.note(
+                  s,
+                  n,
+                  n.action === "break"
+                    ? "ループを抜けます"
+                    : "次の繰り返しへ進みます",
+                );
                 break;
               case "assertText": {
                 let actual = element().text;
                 if (isUnknown(actual) || isUnknown(value))
                   api.fail("assertTextの結果は実行時に決まるため未確認です", n);
-                if (actual !== value)
+                // RA-61: 期待値は「完全一致」ではなくパターンとして
+                // 照合する（公式 assertText／verifyText ページ）。glob
+                // 形式（* は任意の文字列、? は任意の1文字）を基本とし、
+                // exact: 接頭辞では完全一致、regexp:／regexpi: 接頭辞
+                // では正規表現として照合する。ワイルドカードを含まない
+                // glob は完全一致と同じ結果になる。
+                if (!uiTextMatches(String(actual), String(value), n, api))
                   api.fail("assertText：テキストが一致しません", n);
-                api.note(s, n, "テキストが一致します");
+                api.note(s, n, "テキストがパターンと一致します");
                 break;
               }
               default:
@@ -457,7 +531,19 @@ export const definition = {
                   n,
                 );
             }
-            s.vars["!statusOK"] = true;
+            // D-6: #LNF のときは false。あわせて公式ドキュメントの
+            // とおり、false は成功したコマンドでは自動では true に
+            // 戻らない（store で true を保存すれば手動で戻せる）。
+            // store で !statusOK 自体へ保存した場合は、その値を尊重する。
+            if (
+              n.action === "store" &&
+              String(value) === "!statusOK" &&
+              (target === "true" || target === "false")
+            )
+              s.vars["!statusOK"] = target === "true";
+            else if (softFail || s.vars["!statusOK"] === false)
+              s.vars["!statusOK"] = false;
+            else s.vars["!statusOK"] = true;
           } catch (e) {
             s.vars["!statusOK"] = false;
             if (s.vars["!errorIgnore"] === "true") {

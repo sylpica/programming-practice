@@ -1,4 +1,18 @@
 // Learner-facing labels. Never change the value or identity used by an engine.
+// P-N1: 値の大きさの上限（Python 系統の既存ガードと同じ 200,000）。
+// 文字列・配列などの値がこの上限を超えたら、実体を作らず未確定値へ倒す。
+export const VALUE_LENGTH_LIMIT = 200000;
+// P-N2: 状態スナップショット等の表示専用文字列の上限。超えた分は、
+// 省略したことが分かる記法つきで切り詰める（値そのものは変えない）。
+export const DISPLAY_LENGTH_LIMIT = 2000;
+export function truncateDisplayText(text, limit = DISPLAY_LENGTH_LIMIT) {
+  if (typeof text !== "string" || text.length <= limit) return text;
+  const head = Math.floor(limit / 2);
+  return (
+    text.slice(0, head) +
+    `…（全${text.length}文字のうち先頭${head}文字のみ表示し、残りは省略しました）`
+  );
+}
 export function unknownLabel(value) {
   return "実行時に決まる：" + unknownDescription(value);
 }

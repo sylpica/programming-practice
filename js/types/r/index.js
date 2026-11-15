@@ -67,7 +67,7 @@ const reference = rows([
     "c(1, 2, 3)",
     "値をまとめ、共通の型へ変換したベクトルを作ります。",
     "x <- c(10, 20, 30)",
-    "型階層：logical → numeric → character。このモデルは複素数・rawを扱いません。",
+    "型階層：logical → numeric → characterです。このモデルは複素数・rawを扱いません。",
   ],
   [
     "sum",
@@ -75,7 +75,7 @@ const reference = rows([
     "sum(x, na.rm = FALSE)",
     "ベクトルの合計を返します。",
     "sum(c(1, 2, 3))",
-    "NAを除くにはna.rm=TRUE。",
+    "NAを除くにはna.rm=TRUEを指定します。",
   ],
   [
     "mean",
@@ -97,7 +97,7 @@ const reference = rows([
     "sd(x, na.rm = FALSE)",
     "標本標準偏差を返します。",
     "sd(c(1, 2, 3))",
-    "分母はn-1。要素が1個以下ならNAです。",
+    "分母はn-1です。要素が1個以下ならNAです。",
   ],
   [
     "length",
@@ -131,9 +131,9 @@ const reference = rows([
     "data.frame",
     "データフレーム",
     'data.frame(name = c("A","B"), score = c(3,5))',
-    "同じ行数の列を持つ表を作ります。データフレームへの四則演算・比較は、列ごとの要素演算として行われます。",
+    "同じ行数の列を持つ表を作ります。データフレームへの演算は列ごとの要素演算として行われますが、四則演算ができるのは数値列（numeric／logical）のみで、文字列などの列を含むデータフレームへの四則演算はエラーになります。比較も列の型の組み合わせに制約があります。",
     "df <- data.frame(x = c(1,2), y = c(3,4))",
-    "列長は整数倍ならリサイクルします。因子・行名の詳細は未対応。",
+    "列長は整数倍ならリサイクルします。因子・行名の詳細は未対応です。",
   ],
   [
     "nrow",
@@ -212,7 +212,7 @@ const reference = rows([
     "if (条件) { … } else { … }／値 <- if (条件) 式 else 式",
     "長さ1でNAでない条件を評価します。文としてだけでなく、選択した式の値を返す式としても使えます（elseがなく条件が不成立ならNULL）。",
     'if (mean(x) > 5) { print("大") }',
-    "長さ2以上の条件はエラー。",
+    "長さ2以上の条件はエラーです。",
   ],
   [
     "for",
@@ -263,7 +263,7 @@ const reference = rows([
     "$",
     "データフレーム",
     "df$列名",
-    "データフレームの列を名前で取り出します。存在しない列はNULLです。代入（df$列 <- 値）で列の追加や置換もできます。",
+    "データフレームの列を名前で取り出します。名前の部分一致も行われ、接頭辞として一意に定まる略名でも列が取り出せます。部分一致でも見つからない列はNULLです。代入（df$列 <- 値）で列の追加や置換もできます（代入では部分一致は行われません）。",
     "df <- data.frame(x = c(1, 2))\ndf$x",
   ],
   [
@@ -284,7 +284,7 @@ const reference = rows([
     "NA",
     "欠損値",
     "NA",
-    "欠損を表す長さ1の論理値です。演算や比較に使うと結果もNAになります。欠損かどうかはis.naで調べます。",
+    "欠損を表す長さ1の論理値です。原則として演算や比較に使うと結果もNAになりますが、例外もあります（NA | TRUE は TRUE、NA & FALSE は FALSE、NA ^ 0 は 1 になります）。欠損かどうかはis.naで調べます。",
     "x <- c(1, NA)",
   ],
   [
@@ -333,7 +333,7 @@ const reference = rows([
     "%/%",
     "演算子",
     "x %/% y",
-    "整数除算（商の整数部分）を返します。",
+    "floor除算（負の無限大方向へ丸めた商）を返します。例えば -7 %/% 3 は -2 ではなく -3 です。",
     "7 %/% 3",
   ],
   [
@@ -402,6 +402,9 @@ function coerce(values) {
   return values;
 }
 function truth(v, line) {
+  // R-01: if / while / if式の条件は長さ1の論理値でなければならない
+  // （?Control）。数値・文字列は論理値へ黙って強制せず、実 R どおり
+  // "argument is not interpretable as logical" で停止する。
   let a = vec(v);
   if (a.length !== 1)
     throw new PracticeError(
@@ -410,6 +413,21 @@ function truth(v, line) {
     );
   if (isNA(a[0]) || Number.isNaN(a[0]))
     throw new PracticeError("missing value where TRUE/FALSE needed", line);
+  if (typeof a[0] !== "boolean")
+    throw new PracticeError("argument is not interpretable as logical", line);
+  return a[0];
+}
+// ?Logic: ! / & / | / && / || では数値が論理値へ強制される（0=FALSE、
+// それ以外=TRUE）。条件（truth）とは扱いが異なるため、&& / || 専用の
+// 強制を使う。戻り値は true / false / NA のいずれか。
+function logicOperand(v, line) {
+  let a = vec(v);
+  if (a.length !== 1)
+    throw new PracticeError(
+      a.length ? "the condition has length > 1" : "argument is of length zero",
+      line,
+    );
+  if (isMissing(a[0])) return NA;
   if (typeof a[0] === "string")
     throw new PracticeError("argument is not interpretable as logical", line);
   return Boolean(a[0]);
@@ -556,7 +574,7 @@ export const definition = {
     description:
       "base Rの数値・logical・characterベクトル、NA、データフレーム、1始まりの添字、リサイクルをモデル化します。",
     support:
-      "因子、S3/S4、パッケージ、行名、複素数・raw、integer型の演算上限、ユーザー関数等は未対応です。乱数とreadlineは未確定値として扱います。",
+      "因子、S3/S4、パッケージ、行名、複素数・raw、integer型の演算上限、ユーザ関数等は未対応です。乱数とreadlineは未確定値として扱います。",
     sources: [
       {
         title: "R公式 Arithmetic",
@@ -587,7 +605,7 @@ export const definition = {
           error: {
             line: ft.line,
             message:
-              "この構文は説明に対応していません：ユーザー関数定義（function）",
+              "この構文は説明に対応していません：ユーザ関数定義（function）",
             category: "未対応",
           },
           truncated: false,
@@ -615,7 +633,7 @@ export const definition = {
         read(a, s, api) {
           // RG-14: a function definition is unsupported, by that name.
           if (a.k === "call" && a.target?.k === "var" && a.target.name === "function")
-            unsupported("ユーザー関数定義（function）", a.line);
+            unsupported("ユーザ関数定義（function）", a.line);
           if (
             a.k === "var" &&
             FUNCTION_NAMES.has(a.name) &&
@@ -651,6 +669,33 @@ export const definition = {
               ),
             };
           }
+          if (a.k === "binary" && (a.op === "&&" || a.op === "||")) {
+            // R-01 兄弟表面の分離：&& / || は ?Logic により数値を論理値へ
+            // 強制する（条件の truth とは別扱い）。共有基盤の短絡評価は
+            // semantics.truth（条件用）を使うため、ここで先に評価する。
+            // 左辺が未確定なら従来経路（基盤側）に委ねる。
+            let x = api.read(a.a, s);
+            if (isUnknown(x)) return null;
+            const lx = logicOperand(x, a.line);
+            if (a.op === "&&" && lx === false)
+              return { handled: true, value: false };
+            if (a.op === "||" && lx === true)
+              return { handled: true, value: true };
+            let y = api.read(a.b, s);
+            if (isUnknown(y))
+              return { handled: true, value: unknown("論理演算の結果による") };
+            const ly = logicOperand(y, a.line);
+            if (a.op === "&&") {
+              if (lx === false || ly === false)
+                return { handled: true, value: false };
+              if (isNA(lx) || isNA(ly)) return { handled: true, value: NA };
+              return { handled: true, value: true };
+            }
+            if (lx === true || ly === true)
+              return { handled: true, value: true };
+            if (isNA(lx) || isNA(ly)) return { handled: true, value: NA };
+            return { handled: true, value: false };
+          }
           if (a.k === "var" && a.name === "NA")
             return { handled: true, value: NA };
           if (a.k === "var" && a.name === "NaN")
@@ -660,9 +705,21 @@ export const definition = {
           if (a.k === "member") {
             let x = api.read(a.target, s);
             if (x?.kind === "data.frame") {
-              if (!Object.hasOwn(x.columns, a.name))
-                return { handled: true, value: null };
-              return { handled: true, value: x.columns[a.name] };
+              if (Object.hasOwn(x.columns, a.name))
+                return { handled: true, value: x.columns[a.name] };
+              // R-02 / RA-42：$ は部分一致を行う（?Extract：x$name は
+              // x[["name", exact = FALSE]] と等価）。完全一致が無く、
+              // 接頭辞として一意に定まる列が1つだけある場合にその列を
+              // 返す。候補が複数ある場合と無い場合は NULL。
+              // 代入側（$<-）では部分一致を行わない（write 側は完全一致）。
+              if (a.name) {
+                const matches = Object.keys(x.columns).filter((k) =>
+                  k.startsWith(a.name),
+                );
+                if (matches.length === 1)
+                  return { handled: true, value: x.columns[matches[0]] };
+              }
+              return { handled: true, value: null };
             }
           }
           if (a.k === "index") {
@@ -861,8 +918,20 @@ export const definition = {
               (_, i) => from + (to >= from ? i : -i),
             );
           }
-          if (op === "&&" || op === "||")
-            return baseBinary(op, truth(a, node.line), truth(b, node.line));
+          if (op === "&&" || op === "||") {
+            // 通常は read 側で評価済み。直接呼ばれた場合も ?Logic の
+            // 強制（数値→論理）で評価し、条件用の truth は使わない。
+            const lx = logicOperand(a, node.line),
+              ly = logicOperand(b, node.line);
+            if (op === "&&") {
+              if (lx === false || ly === false) return false;
+              if (isNA(lx) || isNA(ly)) return NA;
+              return true;
+            }
+            if (lx === true || ly === true) return true;
+            if (isNA(lx) || isNA(ly)) return NA;
+            return false;
+          }
           let x = vec(a),
             y = vec(b);
           // RG-14: %in% is a match against the whole right-hand table,
@@ -977,6 +1046,29 @@ export const definition = {
               args.flatMap((a, i) => (a.argName ? [[a.argName, vals[i]]] : [])),
             ),
             pos = vals.filter((_, i) => !args[i].argName);
+          // R23-N4：必須引数（既定値のない第1引数）を欠いた呼び出しは、
+          // 実 R どおり "argument "x" is missing, with no default" で
+          // 停止する。欠落を undefined のまま流すと formatValue の
+          // 「未設定」表示や長さ1ベクトル化で値が捏造されてしまう。
+          // 対象は各関数の公式 Usage で第1引数に既定値がないもの。
+          // c / cat / data.frame / sum は ... が空でも正しく、
+          // readline は prompt に既定値があるため対象外。
+          const REQUIRED_FIRST = {
+            print: "x", length: "x", "is.na": "x", "as.numeric": "x",
+            "as.character": "x", nrow: "x", ncol: "x", names: "x",
+            rep: "x", mean: "x", median: "x", sd: "x",
+            seq_len: "length.out", "read.csv": "file",
+            rnorm: "n", runif: "n", sample: "x",
+          };
+          if (
+            Object.hasOwn(REQUIRED_FIRST, name) &&
+            !pos.length &&
+            !Object.hasOwn(named, REQUIRED_FIRST[name])
+          )
+            api.fail(
+              `argument "${REQUIRED_FIRST[name]}" is missing, with no default`,
+              node,
+            );
           if (["readline", "rnorm", "runif", "sample"].includes(name))
             return api.freshUnknown(name + "の実行時の値", s);
           // RG-80（R21-N4）: 出力系（print／cat）は未知値でも行自体を消さない。

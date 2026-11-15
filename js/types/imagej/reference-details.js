@@ -28,7 +28,7 @@ export const referenceDetails = {
     "source": "https://imagej.net/ij/developer/macro/functions2.html#getTitle"
   },
   "getInfo": {
-    "source": "https://imagej.net/ij/developer/macro/functions2.html#getInfo"
+    "source": "https://imagej.net/ij/developer/macro/functions2.html"
   },
   "getImageID": {
     "source": "https://imagej.net/ij/developer/macro/functions2.html#getImageID"
@@ -115,7 +115,7 @@ export const referenceDetails = {
     "source": "https://imagej.net/ij/developer/macro/functions2.html#selectionType"
   },
   "roiManager": {
-    "source": "https://imagej.net/ij/developer/macro/functions2.html#roiManager"
+    "source": "https://imagej.net/ij/developer/macro/functions2.html"
   },
   "Roi.getBounds": {
     "source": "https://imagej.net/ij/developer/macro/functions2.html#Roi.getBounds"
@@ -283,7 +283,7 @@ export const referenceDetails = {
     "source": "https://imagej.net/ij/developer/macro/functions2.html#getString"
   },
   "Dialog.create": {
-    "source": "https://imagej.net/ij/developer/macro/functions2.html#Dialog.create"
+    "source": "https://imagej.net/ij/developer/macro/functions2.html"
   },
   "Dialog.addNumber": {
     "source": "https://imagej.net/ij/developer/macro/functions2.html#Dialog.addNumber"
@@ -307,6 +307,9 @@ export const referenceDetails = {
     "source": "https://imagej.net/ij/developer/macro/functions2.html#Dialog.getChoice"
   },
   "lengthOf": {
+    "source": "https://imagej.net/ij/developer/macro/functions2.html#lengthOf"
+  },
+  ".length": {
     "source": "https://imagej.net/ij/developer/macro/functions2.html#lengthOf"
   },
   "substring": {
@@ -358,10 +361,10 @@ export const referenceDetails = {
     "source": "https://imagej.net/ij/developer/macro/functions2.html#Math.max"
   },
   "minOf": {
-    "source": "https://imagej.net/ij/developer/macro/functions2.html#minOf"
+    "source": "https://imagej.net/ij/developer/macro/functions2.html"
   },
   "maxOf": {
-    "source": "https://imagej.net/ij/developer/macro/functions2.html#maxOf"
+    "source": "https://imagej.net/ij/developer/macro/functions2.html"
   },
   "isNaN": {
     "source": "https://imagej.net/ij/developer/macro/functions2.html#isNaN"
@@ -505,13 +508,13 @@ export const referenceDetails = {
     "source": "https://imagej.net/ij/developer/macro/functions2.html#Math.atan"
   },
   "Math.sinh": {
-    "source": "https://imagej.net/ij/developer/macro/functions2.html#Math.sinh"
+    "source": "https://imagej.net/ij/developer/macro/functions2.html"
   },
   "Math.cosh": {
-    "source": "https://imagej.net/ij/developer/macro/functions2.html#Math.cosh"
+    "source": "https://imagej.net/ij/developer/macro/functions2.html"
   },
   "Math.tanh": {
-    "source": "https://imagej.net/ij/developer/macro/functions2.html#Math.tanh"
+    "source": "https://imagej.net/ij/developer/macro/functions2.html"
   },
   "Math.pow": {
     "source": "https://imagej.net/ij/developer/macro/functions2.html#Math.pow"
@@ -535,10 +538,10 @@ export const referenceDetails = {
     "source": "https://imagej.net/ij/developer/macro/functions2.html#String.pad"
   },
   "contains": {
-    "source": "https://imagej.net/ij/developer/macro/functions2.html#contains"
+    "source": "https://imagej.net/ij/developer/macro/functions2.html"
   },
   "charAt": {
-    "source": "https://imagej.net/ij/developer/macro/functions2.html#charAt"
+    "source": "https://imagej.net/ij/developer/macro/functions2.html"
   },
   "matches": {
     "source": "https://imagej.net/ij/developer/macro/functions2.html#matches"

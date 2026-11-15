@@ -3,8 +3,16 @@
   --deep: #134f3d;
   --pale: #edf5ef;
   --ink: #263c34;
-  --muted: #6a7c73;
+  /* A-N1: #6a7c73 は全背景で AA (4.5:1) 未達だったため濃くした。
+     再計算値: 白 5.37 / ページ背景 4.98 / シート見出し背景 4.77 / 出力背景 4.90 */
+  --muted: #5c6f63;
   --border: #dce5df;
+  /* A-N4: 入力欄・ボタン・セルなど操作要素の識別に必要な境界線専用色。
+     装飾的な区切り線 (--border) と分け、白に対して 3.64:1 (基準 3:1) を満たす */
+  --border-strong: #7a8a7e;
+  /* A-N3: フォーカス表示色。#e7ad42 は白 2.01:1 で基準 3:1 未達だった。
+     再計算値: 白 3.62 / ページ背景 3.36 / pale 背景 3.26 */
+  --focus: #b07d1a;
   --bg: #f5f7f3;
   --white: #fff;
   --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
@@ -39,7 +47,7 @@ select {
   cursor: pointer;
 }
 button {
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-strong);
   background: #fff;
   color: var(--ink);
   border-radius: 7px;
@@ -49,7 +57,8 @@ button {
 }
 button:hover {
   background: var(--pale);
-  border-color: #9fbdab;
+  /* A-N4 兄弟表面: 旧 #9fbdab は白に対して 2.03:1 で 3:1 未達だった */
+  border-color: var(--green);
 }
 button:disabled {
   opacity: 0.4;
@@ -61,7 +70,7 @@ input:focus-visible,
 textarea:focus-visible,
 select:focus-visible,
 summary:focus-visible {
-  outline: 3px solid #e7ad42;
+  outline: 3px solid var(--focus);
   outline-offset: 2px;
 }
 a {
@@ -99,7 +108,7 @@ pre {
 }
 input,
 select {
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-strong);
   border-radius: 6px;
   padding: 7px 9px;
   min-width: 0;
@@ -278,7 +287,8 @@ main {
 .editor-wrap pre {
   padding: 16px 9px 16px 13px;
   margin: 0;
-  color: #a1b0a6;
+  /* A-N2: 旧 #a1b0a6 は背景 #f2f5f0 に対して 2.06:1。--muted で 4.88:1 */
+  color: var(--muted);
   text-align: right;
   font: 13px/24px var(--mono);
   background: #f2f5f0;
@@ -465,7 +475,8 @@ main {
 }
 .sheet td,
 .sheet th {
-  border: 1px solid #dde6de;
+  /* A-N4: 旧 #dde6de は白に対して 1.28:1。--border-strong で 3.64:1 */
+  border: 1px solid var(--border-strong);
   text-align: center;
   padding: 0;
 }
@@ -497,7 +508,8 @@ main {
   align-content: start;
 }
 .chip {
-  border: 1px solid #cdded0;
+  /* A-N4 兄弟表面: 旧 #cdded0 は白に対して 1.40:1 で 3:1 未達だった */
+  border: 1px solid var(--border-strong);
   background: #f3f8f0;
   color: var(--green);
   border-radius: 5px;
@@ -956,7 +968,7 @@ footer p {
 #modelJson {
   width: 100%;
   min-height: 210px;
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-strong);
   border-radius: 6px;
   padding: 9px;
   font: 11px/1.7 var(--mono);
@@ -985,14 +997,14 @@ footer p {
 }
 .action-list li {
   padding: 12px;
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-strong);
   border-radius: 7px;
   margin: 8px 0;
   background: #fbfcfa;
   min-width: 0;
 }
 .action-list li.selected {
-  outline: 3px solid #e7ad42;
+  outline: 3px solid var(--focus);
   outline-offset: -3px;
 }
 .action-row-head {

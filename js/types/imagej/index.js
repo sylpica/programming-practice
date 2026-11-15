@@ -12,7 +12,7 @@ const reference = functions.map((r) => ({
   supported: true,
 }));
 const exampleSetup = {
-  selectImage:'id=getImageID();',makeSelection:'xs=newArray(0,10,10); ys=newArray(0,0,10);',getResult:'run("Measure");',isNaN:'run("Measure");',
+  selectImage:'id=getImageID();',makeSelection:'xs=newArray(0,10,10); ys=newArray(0,0,10);',getResult:'run("Measure");',getResultLabel:'run("Measure");',isNaN:'run("Measure");',
   getFileList:'dir=getDirectory("フォルダ");',"File.append":'name="sample";',"File.exists":'path="/model/sample.tif";',
   showStatus:'i=1; n=3;',showProgress:'i=1; n=3;',lengthOf:'name="sample"; arr=newArray(1,2);',
   indexOf:'name="sample_1";',startsWith:'name="ctrl_1";',endsWith:'name="sample.tif";',replace:'name="sample 1";',split:'name="sample_1";',
@@ -22,11 +22,11 @@ const exampleSetup = {
 for (const r of reference) if (Object.prototype.hasOwnProperty.call(exampleSetup, r.name)) r.example = exampleSetup[r.name] + "\n" + r.example;
 reference.find(r=>r.name === "File.exists").example = 'print(File.exists("/model/sample.tif"));';
 reference.find(r=>r.name === "open").example = 'open("/model/input/image1.tif");';
-const unmodeledReferences = new Set(["getValue", "setColor", "drawLine", "getPixelSize", "getLut", "getDateAndTime", "getLocationAndSize", "getDisplayedArea", "getSelectionCoordinates", "getLine", "getCursorLoc", "Roi.getBounds", "Roi.getCoordinates", "Roi.contains", "Roi.move", "Roi.translate", "Roi.setStrokeWidth", "Roi.setStrokeColor", "Roi.setFillColor", "Roi.setName", "Roi.getName", "Roi.setPosition", "Roi.getPosition", "Roi.getProperty", "Roi.setProperty", "RoiManager.select", "RoiManager.selectByName", "RoiManager.getName", "RoiManager.getIndex", "RoiManager.delete", "setForegroundColor", "File.open", "File.append", "runMacro"]);
+const unmodeledReferences = new Set(["getValue", "setColor", "drawLine", "getPixelSize", "getLut", "getDateAndTime", "getLocationAndSize", "getDisplayedArea", "getSelectionCoordinates", "getLine", "getCursorLoc", "Roi.getBounds", "Roi.getCoordinates", "Roi.contains", "Roi.move", "Roi.translate", "Roi.setStrokeWidth", "Roi.setStrokeColor", "Roi.setFillColor", "Roi.setName", "Roi.getName", "Roi.setPosition", "Roi.getPosition", "Roi.getProperty", "Roi.setProperty", "RoiManager.select", "RoiManager.selectByName", "RoiManager.getName", "RoiManager.getIndex", "RoiManager.delete", "setForegroundColor", "File.open", "File.append", "runMacro", "Math.sinh", "Math.cosh", "Math.tanh"]);
 for (const r of reference) {
-  if (unmodeledReferences.has(r.name)) { r.supported=false; r.caution += " このアプリでは未確認として停止します。"; }
+  if (unmodeledReferences.has(r.name)) { r.supported=false; r.caution += "このアプリでは未確認として停止する。"; }
   if (["setPixel","setMinAndMax"].includes(r.name)) r.example = r.example.replace(/updateDisplay\(\);?/g, "");
-  if (r.name === "getProfile") r.example = "prof=getProfile(); print(prof);";
+  if (r.name === "getProfile") r.example = "makeLine(0, 0, 100, 0);\nprof=getProfile(); print(prof);"; /* D10: 選択なしでは実 ImageJ でもエラーになるため、直線 ROI を作る前置きを含める */
 }
 export const definition = {
   id: "imagej",
@@ -38,7 +38,7 @@ export const definition = {
     id: "ij-" + i,
     title: t.name,
     code: t.code,
-    intro: [t.prep, ...t.guide].join(" "),
+    intro: [t.prep, ...t.guide].join(""),
     refs: reference
       .filter((r) => t.code.includes(r.name + "("))
       .map((r) => r.name),

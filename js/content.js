@@ -44,7 +44,7 @@ End Sub`,
     MsgBox total
 End Sub`,
     intro:
-      "1から5までを加算します。Nextでカウンターが増え、終了時にはiが6になることも追えます。",
+      "1から5までを加算します。Nextでカウンタが増え、終了時にはiが6になることも追えます。",
     refs: ["For", "Next", "Cells", "MsgBox"],
   },
   {
@@ -57,7 +57,7 @@ End Sub`,
     Next cell
 End Sub`,
     intro:
-      "For Eachは範囲内のセルを順に取り出します。Setで扱うオブジェクトと通常の値の違いを学べます。",
+      "For Eachは範囲内のセルを順に取り出します。ループ変数cellには各セルの参照がそのまま渡されるため、オブジェクト変数への通常の代入で必要なSetは、For Eachでは書きません。",
     refs: ["For Each", "Range", "Value", "Set"],
   },
   {
@@ -145,7 +145,7 @@ const rows = [
     "Dim n As Long",
     "32ビットの符号付き整数。初期値は0です。",
     "Dim total As Long",
-    "範囲は-2147483648～2147483647。超えるとエラー6です。",
+    "範囲は-2147483648〜2147483647です。超えるとエラー6です。",
     1,
   ],
   [
@@ -154,7 +154,7 @@ const rows = [
     "Dim n As Integer",
     "16ビットの符号付き整数です。",
     "Dim n As Integer",
-    "範囲は-32768～32767。大きな行番号にはLongを使います。",
+    "範囲は-32768〜32767です。大きな行番号にはLongを使います。",
     1,
   ],
   [
@@ -199,7 +199,7 @@ const rows = [
     'Range("A1").Value',
     "セルやセル範囲を表すオブジェクトです。",
     'Range("A1:A3").Value = 100',
-    "本アプリではA1:C5の単一シートのみ。複数セルのValue読み取りは未対応です。",
+    "本アプリではA1:C5の単一シートのみです。複数セルのValue読み取りは未対応です。",
     1,
   ],
   [
@@ -208,7 +208,7 @@ const rows = [
     "Cells(行, 列).Value",
     "行番号・列番号でセルを指定します。番号は1始まりです。",
     'Cells(2, 3).Value = "完了"',
-    "Cells(2, 3)はC2。モデルシート範囲外は未対応と表示します。",
+    "Cells(2, 3)はC2です。モデルシート範囲外は未対応と表示します。",
     1,
   ],
   [
@@ -271,7 +271,7 @@ const rows = [
     "Dim ws As Worksheet",
     "ワークシートを表す型です。",
     'Set ws = ThisWorkbook.Worksheets("Sheet1")',
-    "宣言と未設定エラーのみ対応。実シートの取得・操作は未対応です。",
+    "宣言と未設定エラーのみ対応します。実シートの取得・操作は未対応です。",
     0,
   ],
   [
@@ -280,7 +280,7 @@ const rows = [
     'Worksheets("シート名")',
     "ブックのワークシート一覧にアクセスします。",
     'Worksheets("Sheet1").Range("A1").Value = 1',
-    "名前が存在しないとエラー9。シミュレーションは未対応です。",
+    "名前が存在しないとエラー9です。シミュレーションは未対応です。",
     0,
   ],
   [
@@ -289,7 +289,7 @@ const rows = [
     "Dim wb As Workbook",
     "Excelブックを表す型です。",
     "Set wb = ThisWorkbook",
-    "宣言と未設定エラーのみ対応。ブック操作は未対応です。",
+    "宣言と未設定エラーのみ対応します。ブック操作は未対応です。",
     0,
   ],
   [
@@ -316,7 +316,7 @@ const rows = [
     "ActiveWorkbook",
     "現在アクティブなブックです。",
     "Debug.Print ActiveWorkbook.Name",
-    "ユーザー操作で変わります。シミュレーション未対応です。",
+    "ユーザ操作で変わります。シミュレーション未対応です。",
     0,
   ],
   [
@@ -343,7 +343,7 @@ const rows = [
     "If 条件 Then … ElseIf 条件 Then … Else … End If",
     "成立した最初の条件のブロックを実行します。",
     'If n > 0 Then\n    MsgBox "正"\nEnd If',
-    "複数行形式のみ対応。Nullの条件は成立しません。",
+    "複数行形式のみ対応します。Nullの条件は成立しません。",
     1,
   ],
   [
@@ -368,9 +368,9 @@ const rows = [
     "Next",
     "繰り返し",
     "Next i",
-    "カウンターをStep分増やし、Forの条件へ戻ります。",
+    "カウンタをStep分増やし、Forの条件へ戻ります。",
     "Next i",
-    "終了時のカウンターは通常、終了値を超えた値です。",
+    "終了時のカウンタは通常、終了値を超えた値です。",
     1,
   ],
   [
@@ -379,7 +379,7 @@ const rows = [
     "For Each item In 集合 … Next item",
     "配列やRangeの要素を順番に扱います。",
     'For Each cell In Range("A1:A5")\n    cell.Value = 1\nNext cell',
-    "配列はVariant、RangeはVariantまたはObject型の変数を使います。",
+    "配列の要素変数はVariantのみです。コレクション（Rangeを含む）の要素変数はVariant、Object、または要素の特定の型（例：Range）を使えます。",
     1,
   ],
   [
@@ -396,8 +396,8 @@ const rows = [
     "繰り返し",
     "Exit For",
     "最も内側のFor / For Eachから抜けます。",
-    "If i = 3 Then\n    Exit For\nEnd If",
-    "カウンターを増やさずループの次へ進みます。",
+    "For i = 1 To 5\n    If i = 3 Then\n        Exit For\n    End If\nNext i",
+    "カウンタを増やさずループの次へ進みます。",
     1,
   ],
   [
@@ -433,7 +433,7 @@ const rows = [
     "Debug.Print 式, 式",
     "VBEのイミディエイトウィンドウへ出力します。",
     'Debug.Print "合計", total',
-    "アプリでは出力欄に表示。タブ位置やセミコロン書式は未対応です。",
+    "アプリでは出力欄に表示します。タブ位置やセミコロン書式は未対応です。",
     1,
   ],
   [
@@ -442,7 +442,7 @@ const rows = [
     "MsgBox メッセージ",
     "メッセージダイアログを表示します。",
     'MsgBox "完了"',
-    "本アプリはメッセージ1引数の文のみ。押したボタンの返り値は扱いません。",
+    "本アプリはメッセージ1引数の文のみです。押したボタンの戻り値は扱いません。",
     1,
   ],
   [
@@ -460,7 +460,7 @@ const rows = [
     "On Error Resume Next / On Error GoTo 0",
     "実行時エラーを無視して次の文へ進むか、通常の停止に戻します。",
     "On Error Resume Next",
-    "GoTo ラベル形式のハンドラーは未対応。構文エラーは無視しません。",
+    "GoTo ラベル形式のハンドラーは未対応です。構文エラーは無視しません。",
     1,
   ],
   [
@@ -487,7 +487,7 @@ const rows = [
     "Option Base 0 / Option Base 1",
     "配列宣言で省略した添字下限を指定します。",
     "Option Base 1\nDim items(3) As String",
-    "明示した下限は優先されます。多次元・動的配列は未対応です。",
+    "明示した下限は優先されます。多次元配列は未対応です。動的配列は宣言のみ対応し、要素参照・ReDimは未対応です。",
     1,
   ],
   [
@@ -520,10 +520,10 @@ const rows = [
   [
     "Len",
     "文字列",
-    "Len(文字列)",
-    "文字数を返します。",
+    "Len(文字列／変数)",
+    "文字列の文字数、または変数を格納するのに必要なバイト数を返します。",
     'Debug.Print Len("Excel")',
-    "NullにはNull。バイト数を調べるLenBは未対応です。",
+    "型付き変数では格納バイト数を返します（例：Integer変数は2、Long変数は4、Double変数は8）。Variantの値は文字列として文字数を返します。NullにはNullを返します。バイト数を調べるLenBは未対応です。",
     1,
   ],
   [
@@ -550,7 +550,7 @@ const rows = [
     "Mid(文字列, 開始位置[, 文字数])",
     "1始まりの位置から文字を取り出します。",
     'Debug.Print Mid("Excel", 2, 2)',
-    "開始位置0以下はエラー5。Mid文による置換は未対応です。",
+    "開始位置0以下はエラー5です。Mid文による置換は未対応です。",
     1,
   ],
   [
@@ -592,10 +592,10 @@ const rows = [
   [
     "InStr",
     "文字列",
-    "InStr(文字列, 検索文字)",
+    "InStr([開始位置, ]文字列, 検索文字[, 比較方法])",
     "最初に一致した位置を1始まりで返します。",
     'Debug.Print InStr("Excel", "c")',
-    "見つからなければ0。本アプリは2引数形式のみです。",
+    "見つからなければ0を返します。開始位置と、比較方法（0=大文字小文字を区別、1=区別しない）を指定できます。比較方法の-1（Option Compare依存）は未対応です。",
     1,
   ],
   [
@@ -613,7 +613,7 @@ const rows = [
     "CInt(値)",
     "Integerへ変換します。",
     "Debug.Print CInt(2.5)",
-    "ちょうど.5は偶数への丸め。範囲外はエラー6です。",
+    "ちょうど.5は偶数への丸めです。範囲外はエラー6です。",
     1,
   ],
   [
@@ -631,7 +631,7 @@ const rows = [
     "CDbl(値)",
     "Doubleへ変換します。",
     'Debug.Print CDbl("12.5")',
-    "数値にできない文字列はエラー13です。地域依存書式は未対応。",
+    "数値にできない文字列はエラー13です。地域依存書式は未対応です。",
     1,
   ],
   [
@@ -640,7 +640,7 @@ const rows = [
     "Val(文字列)",
     "文字列の先頭にある数値部分を読みます。",
     'Debug.Print Val("12abc")',
-    "小数点はピリオド。16進数・型接尾辞はこのモデルでは未対応です。",
+    "小数点はピリオドです。16進数・型接尾辞はこのモデルでは未対応です。",
     1,
   ],
   [
@@ -685,7 +685,7 @@ const rows = [
     "Int(数値)",
     "負の無限大方向へ整数化します。",
     "Debug.Print Int(-1.8)",
-    "結果は-2。Fixとは負数で異なります。",
+    "結果は-2です。Fixとは負数で異なります。",
     1,
   ],
   [
@@ -703,7 +703,7 @@ const rows = [
     "Round(数値[, 桁数])",
     "指定した小数桁数に丸めます。",
     "Debug.Print Round(2.5)",
-    "VBAは偶数丸め。ExcelのROUND関数と違うことがあります。",
+    "VBAは偶数丸めです。ExcelのROUND関数と違うことがあります。",
     1,
   ],
   [
@@ -730,7 +730,7 @@ const rows = [
     "Dim x As Single",
     "単精度の浮動小数点数です。初期値は0です。",
     "Dim x As Single",
-    "範囲は約-3.402823E38～3.402823E38。Doubleより精度が低く、代入時に単精度へ丸められます。",
+    "範囲は約-3.402823E38〜3.402823E38です。Doubleより精度が低く、代入時に単精度へ丸められます。",
     1,
   ],
   [
@@ -782,7 +782,7 @@ const rows = [
     "CurDir",
     "入出力",
     "CurDir",
-    "現在のフォルダーのパスを返します。",
+    "現在のフォルダのパスを返します。",
     "x = CurDir",
     "引数（ドライブ指定）は未対応です。実際のパスは推測せず、実行時に決まる値として表示します。",
     1,
@@ -836,9 +836,9 @@ const rows = [
     "Nothing",
     "定数",
     "Nothing",
-    "オブジェクト変数がどのオブジェクトも参照していない状態を表します。",
+    "オブジェクト変数がどのオブジェクトも参照していない状態を表します。Setで代入して参照を解き、変数 Is Nothing で参照していないかを判定できます。",
     "Dim obj As Object\nSet obj = Nothing",
-    "代入にはSetが必要です。通常の代入や値としての使用はエラー91になります。",
+    "代入にはSetが必要です。通常の代入の右辺など値式の位置で使うとエラー91になりますが、Is Nothing による判定は正規の使い方でエラーにはなりません（本アプリでは Is Nothing は未対応として停止します）。",
     1,
   ],
   [
@@ -940,6 +940,15 @@ const rows = [
     "アポストロフィ（'）で始めるコメントと同じです。文の後ろに置くときはコロンで区切ります。",
     1,
   ],
+  [
+    "Attribute",
+    "文",
+    "Attribute 属性名 = 値",
+    "モジュールの先頭（モジュールヘッダー）に置き、モジュール名などの特性を指定します。実行される文ではありません。",
+    "Attribute VB_Name = \"Module1\"\nx = 1",
+    "このアプリでは、エクスポートされたモジュールを読み込めるようにAttribute行を受け入れて読み飛ばします。属性の値が実行やモデルに反映されることはありません。",
+    1,
+  ],
 ];
 export const reference = rows.map(
   ([name, category, syntax, description, example, caution, supported]) => ({
@@ -977,21 +986,36 @@ export const glossary = [
     "実行時に決まる値のことです。このアプリでは値を仮定して作らず、未確定のまま扱って、到達可能な分岐をすべて表示します。",
   ],
 ];
+// P-N4: 照合用の並び替え・小文字化・分割は、呼び出しのたびにやり直すと
+// パス列挙後の後処理がトレース件数×参照数に比例して肥大する（実測では
+// エンジン本体より後処理が重かった）。参照表は不変なので一度だけ
+// 事前計算し、usedReferences は照合だけを行う。
+const REFERENCE_PIECES = [...reference]
+  .sort((a, b) => b.name.length - a.name.length)
+  .map((r) => ({
+    name: r.name,
+    pieces: r.name.toLowerCase().match(/[\w]+|\./g),
+  }));
 export function usedReferences(tokens) {
   let found = [];
+  // P-N4: トークンの小文字化も呼び出しごとに一度だけ行う（参照ごとに
+  // 繰り返さない）。
+  const lowered = tokens.map((t) =>
+    t.type === "string" ? null : t.v.toLowerCase(),
+  );
   for (let i = 0; i < tokens.length; i++) {
     if (tokens[i].type !== "id") continue;
-    for (let r of [...reference].sort(
-      (a, b) => b.name.length - a.name.length,
-    )) {
-      let pieces = r.name.toLowerCase().match(/[\w]+|\./g),
-        slice = tokens.slice(i, i + pieces.length);
-      if (
-        slice.length === pieces.length &&
-        slice.every(
-          (t, j) => t.type !== "string" && t.v.toLowerCase() === pieces[j],
-        )
-      ) {
+    for (let r of REFERENCE_PIECES) {
+      let pieces = r.pieces;
+      if (i + pieces.length > tokens.length) continue;
+      let match = true;
+      for (let j = 0; j < pieces.length; j++) {
+        if (lowered[i + j] === null || lowered[i + j] !== pieces[j]) {
+          match = false;
+          break;
+        }
+      }
+      if (match) {
         if (!found.includes(r.name)) found.push(r.name);
         break;
       }

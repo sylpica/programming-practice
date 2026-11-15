@@ -5,6 +5,9 @@ import { getDefinition } from '../js/types/registry.js';
 // R22 リファレンス完全性修正（ImageJ 担当分）の検証。
 // 第1層41件＋第2層 Dialog.* 18件＝59件が項目として存在し、supported で、
 // 使用例がエンジンでエラーなく実行でき、コード内での使用が項目に解決されること。
+// 修正バッチ2（funcheck）裁定：Math.sinh/cosh/tanh は実 ImageJ に存在しない関数と
+// 一次情報で確定したため、項目は残したまま supported=false へ是正した。
+// そのため下の LAYER1 からは外し、別テストで未対応分類を固定する。
 const d = getDefinition('imagej');
 const run = async (code) => d.simulate(code, structuredClone(d.model.defaults));
 const errors = (r) => [r.error, ...(r.paths || []).map((p) => p.error)].filter(Boolean);
@@ -16,7 +19,7 @@ const LAYER1 = [
   'getBoundingRect',
   'Math.abs', 'Math.sqrt', 'Math.exp', 'Math.log', 'Math.log10', 'Math.floor',
   'Math.sin', 'Math.cos', 'Math.tan', 'Math.asin', 'Math.acos', 'Math.atan',
-  'Math.sinh', 'Math.cosh', 'Math.tanh', 'Math.pow', 'Math.atan2', 'Math.sqr', 'Math.round',
+  'Math.pow', 'Math.atan2', 'Math.sqr', 'Math.round',
   'String.trim', 'String.join', 'String.pad',
   'contains', 'charAt', 'matches',
   'PI', 'File.separator',
@@ -44,9 +47,9 @@ function resolveReferenceName(name, referenceNames) {
   return null;
 }
 
-test('ref-imagej: 追加59件がすべて存在し supported で出典を持つ', () => {
-  assert.equal(ADDED.length, 59);
-  assert.equal(new Set(ADDED).size, 59);
+test('ref-imagej: 追加56件がすべて存在し supported で出典を持つ', () => {
+  assert.equal(ADDED.length, 56);
+  assert.equal(new Set(ADDED).size, 56);
   for (const name of ADDED) {
     const r = byName.get(name);
     assert.ok(r, `項目がありません: ${name}`);
@@ -54,7 +57,15 @@ test('ref-imagej: 追加59件がすべて存在し supported で出典を持つ'
     assert.ok(r.source && r.source.includes('imagej.net'), `出典がありません: ${name}`);
     assert.ok(r.description && r.returns && r.example, `必須フィールド不足: ${name}`);
   }
-  assert.equal(d.reference.length, 200);
+  assert.equal(d.reference.length, 201);
+});
+
+test('ref-imagej: Math.sinh/cosh/tanh は実在しないため未対応項目として残る', () => {
+  for (const name of ['Math.sinh', 'Math.cosh', 'Math.tanh']) {
+    const r = byName.get(name);
+    assert.ok(r, `項目がありません: ${name}`);
+    assert.equal(r.supported, false, `${name} は supported=false のはず`);
+  }
 });
 
 for (const name of ADDED) test(`ref-imagej runnable example: ${name}`, async () => {

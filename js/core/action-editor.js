@@ -131,7 +131,18 @@ export function createActionEditor({
           render();
           let card = root.querySelector(`[data-action-index="${index}"]`);
           card?.focus({ preventScroll: true });
-          card?.scrollIntoView({ behavior: "smooth", block: "start" });
+          // A-N7: prefers-reduced-motion が有効な場合は即時スクロールにする
+          // (js/app.js の preferredScrollBehavior と同じ判定)。
+          let reducedMotion = false;
+          try {
+            reducedMotion = !!globalThis.matchMedia?.(
+              "(prefers-reduced-motion: reduce)",
+            ).matches;
+          } catch {}
+          card?.scrollIntoView({
+            behavior: reducedMotion ? "auto" : "smooth",
+            block: "start",
+          });
         },
         destroy() {
           root.replaceChildren();

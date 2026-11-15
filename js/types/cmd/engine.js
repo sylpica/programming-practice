@@ -16,6 +16,7 @@ import {
   listFiles,
   fileDisplay,
   windowsPath,
+  reservedDeviceName,
   inputValue,
   sourceError,
   writeFile,
@@ -70,7 +71,12 @@ function value(text, s) {
     );
   }
   let out = text;
-  for (const k of keys) out = out.replaceAll(k, String(s.cmd.slots[k]));
+  for (const k of keys) {
+    out = out.replaceAll(k, String(s.cmd.slots[k]));
+    // P-N1: スロット解決後の文字列も値サイズ上限の対象にする（上限を
+    // 超えたら実体を保持せず未確定値へ倒す）。
+    if (out.length > CMD_VALUE_LIMIT) return unknown("とても長い文字列");
+  }
   return out;
 }
 // Dynamic variables (%ERRORLEVEL%, %CD%, ...) yield the internal value
@@ -88,9 +94,19 @@ function dynamicValue(name, s, api) {
       : unknown(name + " の実行時の値");
   return "";
 }
+// P-N1: cmd の成長は「展開後のコマンド文字列」の中で起きる（%S%%S% の
+// 繰り返し）。展開結果が値サイズ上限を超えたら、実体を作り続けず理由を
+// 明示して停止する（上限を引き上げても OOM しないための根治）。
+const CMD_VALUE_LIMIT = 200000;
 function percent(text, s, api, node) {
   let out = "";
   for (let i = 0; i < text.length; i++) {
+    if (out.length > CMD_VALUE_LIMIT)
+      fail(
+        "展開後の文字列が長すぎます（上限は200000文字です）",
+        node.line,
+        "limit",
+      );
     if (text[i] !== "%") {
       out += text[i];
       continue;
@@ -143,14 +159,27 @@ function percent(text, s, api, node) {
   return out;
 }
 function delayed(text, s, node, api) {
+  // P-N1: 遅延展開・for変数展開でも、置換後の累積長を見積もり、上限を
+  // 超える場合は実体を作らず理由を明示して停止する。
+  let estimate = text.length;
+  const track = (piece) => {
+    estimate += String(piece).length;
+    if (estimate > CMD_VALUE_LIMIT)
+      fail(
+        "展開後の文字列が長すぎます（上限は200000文字です）",
+        node.line,
+        "limit",
+      );
+    return piece;
+  };
   text = text.replace(/%%([a-z])/gi, (_, name) => {
     if (!Object.hasOwn(s.cmd.loops, name))
       fail("未対応：未束縛のfor変数／callによる二重展開", node.line);
-    return slot(s.cmd.loops[name], s);
+    return track(slot(s.cmd.loops[name], s));
   });
   if (s.cmd.delayed)
     text = text.replace(/!([^!]*)!/g, (_, name) =>
-      slot(dynamicValue(name, s, api), s),
+      track(slot(dynamicValue(name, s, api), s)),
     );
   let out = "",
     quote = false;
@@ -377,6 +406,15 @@ export function simulateCmd(source, model, limits) {
               .filter((o) => o.channel === "stdout")
               .map((o) => o.text + (o.raw ? "" : "\r\n"))
               .join("");
+          // SH-C1: NUL デバイスへの出力は破棄し、ファイルは作らない。
+          if (n.device === "NUL") {
+            api.note(
+              s,
+              { ...n, refs: ["リダイレクト"] },
+              "出力を予約デバイス NUL へ破棄します",
+            );
+            return;
+          }
           writeFile(s, n.path, text, n.line, true);
           api.note(
             s,
@@ -500,10 +538,41 @@ export function simulateCmd(source, model, limits) {
                 if (!target || /[<>|]/.test(target))
                   fail("未対応：複合リダイレクト", n.line);
                 const path = windowsPath(value(target, s), s.model.cwd, n.line);
-                writeFile(s, path, "", n.line, append);
+                // SH-C1: 予約デバイス名は通常ファイルとして作らない。
+                // NUL は破棄、CON／CONOUT$ は画面（標準出力）そのもの、
+                // それ以外のデバイスは対象を名指して未対応とする。
+                const device = reservedDeviceName(path);
+                if (device === "CONIN$")
+                  fail(
+                    "未対応：予約デバイス名 CONIN$ への出力リダイレクト",
+                    n.line,
+                  );
+                if (device && !["NUL", "CON", "CONOUT$"].includes(device))
+                  fail(
+                    "未対応：予約デバイス名 " + device + " への出力リダイレクト",
+                    n.line,
+                  );
+                if (device === "CON" || device === "CONOUT$") {
+                  api.note(
+                    s,
+                    { ...n, refs: ["リダイレクト"] },
+                    "予約デバイス CON へ出力します（画面表示のまま）",
+                  );
+                  pushNodes(
+                    s,
+                    commands(raw.slice(0, i), n.line, true).map((c) => ({
+                      ...c,
+                      redirected: true,
+                    })),
+                  );
+                  return;
+                }
+                if (device !== "NUL")
+                  writeFile(s, path, "", n.line, append);
                 s.tasks.push({
                   k: "redirect-end",
                   path,
+                  device,
                   start: s.outputs.length,
                   line: n.line,
                 });
@@ -520,7 +589,14 @@ export function simulateCmd(source, model, limits) {
           }
         }
 
-        if (/^if\s/i.test(raw)) {
+        if (/^if(?:\s|$)/i.test(raw)) {
+          // M-N4(e): 単独の if は「未対応のコマンド」ではなく引数不足。
+          if (!raw.slice(3).trim())
+            fail(
+              "ifには条件と実行するコマンドが必要です",
+              n.line,
+              "SyntaxError",
+            );
           const c = partsIf(raw.slice(3), n);
           c.a = delayed(c.a, s, n, api);
           if (c.b) c.b = delayed(c.b, s, n, api);
@@ -540,7 +616,14 @@ export function simulateCmd(source, model, limits) {
             return r.s;
           });
         }
-        if (/^for\s/i.test(raw)) {
+        if (/^for(?:\s|$)/i.test(raw)) {
+          // M-N4(e): 単独の for は「未対応のコマンド」ではなく引数不足。
+          if (!raw.slice(3).trim())
+            fail(
+              "forにはループ変数、対象の一覧と実行するコマンドが必要です",
+              n.line,
+              "SyntaxError",
+            );
           const m = raw.match(
             /^for\s+(\/L\s+)?%%([a-z])\s+in\s*\(([^)]*)\)\s+do\s+([\s\S]+)$/i,
           );
@@ -627,13 +710,16 @@ export function simulateCmd(source, model, limits) {
                 n,
                 "コマンド表示を " + arg.toLowerCase() + " にします",
               );
-            } else if (!arg)
+            } else if (!arg) {
+              // SH-C2: 引数なし echo は現在の設定を標準出力へ表示する
+              // （Microsoft Learn「echo」）。trace だけに残さない。
               api.note(
                 s,
                 n,
                 "ECHO設定を確認します：" + (s.cmd.echo ? "on" : "off"),
               );
-            else output(value(arg, s));
+              output("ECHO は " + (s.cmd.echo ? "ON" : "OFF") + " です。");
+            } else output(value(arg, s));
             break;
           case "set": {
             if (/^\/a\s+/i.test(arg)) {
@@ -678,7 +764,14 @@ export function simulateCmd(source, model, limits) {
             }
             const v = value(text.slice(at + 1), s);
             ciSet(s.vars, key, v === "" ? undefined : v);
-            api.note(s, n, key + " を設定します：" + formatValue(v));
+            // NX-N28: set X= は空文字列の設定ではなく変数の削除（未定義化）。
+            api.note(
+              s,
+              n,
+              v === ""
+                ? key + " を未定義にします（削除します）"
+                : key + " を設定します：" + formatValue(v),
+            );
             break;
           }
           case "setlocal":
@@ -705,6 +798,9 @@ export function simulateCmd(source, model, limits) {
           }
           case "goto": {
             const label = arg.replace(/^:/, "").toLowerCase();
+            // M-N4(d): ラベル自体がない場合は「見つからない」ではなく不足。
+            if (!arg.trim() || !label)
+              fail("gotoにはラベルが必要です", n.line, "SyntaxError");
             api.note(s, n, "ラベル " + arg + " へ移動します");
             if (label === "eof") {
               returning(s, n);
@@ -718,7 +814,10 @@ export function simulateCmd(source, model, limits) {
           case "call": {
             const args = words(arg, n.line),
               label = args.shift();
-            if (!label?.startsWith(":"))
+            // M-N4 同根: ラベル自体がない場合は不足を伝える。
+            if (!label)
+              fail("callには呼び出し先ラベルが必要です", n.line, "SyntaxError");
+            if (!label.startsWith(":"))
               fail(
                 "未対応：外部バッチのcall（同一ファイルの :label のみ）",
                 n.line,
@@ -851,7 +950,10 @@ export function simulateCmd(source, model, limits) {
                   e.path.toLowerCase().startsWith(prefix) &&
                   maskRegex.test(e.path.slice(e.path.lastIndexOf("\\") + 1)),
               );
-              for (const e of entries) output(e.path);
+              // SH-C3: 不一致・不存在でも実 cmd どおり表示する。
+              if (entries.length)
+                for (const e of entries) output(e.path);
+              else output("ファイルが見つかりません");
               s.cmd.errorlevel = entries.length ? 0 : 1;
               api.note(
                 s,
@@ -870,12 +972,19 @@ export function simulateCmd(source, model, limits) {
             );
             if (isUnknown(entries))
               fail("未確認：dirのパターン", n.line, "未確認");
-            for (const e of entries)
-              output(e.path.slice(e.path.lastIndexOf("\\") + 1));
+            // SH-C3: 不一致・不存在でも実 cmd どおり表示する
+            // （ERRORLEVEL 1 で継続する点は従来どおり）。
+            if (entries.length)
+              for (const e of entries)
+                output(e.path.slice(e.path.lastIndexOf("\\") + 1));
+            else output("ファイルが見つかりません");
             s.cmd.errorlevel = entries.length ? 0 : 1;
             break;
           }
           case "type": {
+            // M-N4(c): 引数なしは「ファイルがない」ではなく不足を伝える。
+            if (!arg.trim())
+              fail("typeにはファイル名が必要です", n.line, "SyntaxError");
             // Trailing whitespace is an argument delimiter, not part
             // of the file name (R22-N3, incl. the space before a pipe).
             const e = fsEntry(s, value(arg.trim(), s), n.line);
@@ -897,13 +1006,35 @@ export function simulateCmd(source, model, limits) {
             break;
           }
           case "md":
-          case "mkdir":
-            for (const path of words(arg, n.line)) {
-              makeDirectory(s, value(path, s), n.line);
+          case "mkdir": {
+            // M-N4(f): 引数なしを無言で成功させない（del／rd と揃える）。
+            const mdPaths = words(arg, n.line);
+            if (!mdPaths.length)
+              fail(name + "にはフォルダ名が必要です", n.line, "SyntaxError");
+            for (const path of mdPaths) {
+              const resolved = value(path, s);
+              // SH-C1 追随：予約デバイス名はフォルダ名として作らない。
+              // 中間フォルダも作成対象なので、解決済みパスの全要素を見る
+              // （md nul\sub で nul フォルダが捏造される経路を含む）。
+              if (!isUnknown(resolved)) {
+                const full = windowsPath(resolved, s.model.cwd, n.line);
+                for (const part of full.split("\\").slice(1)) {
+                  const device = reservedDeviceName(part);
+                  if (device)
+                    fail(
+                      "未対応：予約デバイス名 " +
+                        device +
+                        " のフォルダ作成（デバイス名はフォルダ名として使えません）",
+                      n.line,
+                    );
+                }
+              }
+              makeDirectory(s, resolved, n.line);
             }
             s.cmd.errorlevel = 0;
             api.note(s, n, "モデルにフォルダを作成します");
             break;
+          }
           case "rd":
           case "rmdir": {
             const args = words(arg, n.line),
@@ -974,10 +1105,36 @@ export function simulateCmd(source, model, limits) {
           case "ren":
           case "rename": {
             const args = words(arg, n.line);
+            // M-N4(b): 引数不足は「未対応の形式」ではなく不足を伝える。
+            if (args.length < 2)
+              fail(
+                name + "には元のパスと新しい名前が必要です",
+                n.line,
+                "SyntaxError",
+              );
             if (args.length !== 2 || /[\\/:*?]/.test(unquote(args[1])))
               fail("未対応：renは単一パスと新しい名前のみ", n.line);
             const from = windowsPath(value(args[0], s), s.model.cwd, n.line),
               to = from.slice(0, from.lastIndexOf("\\") + 1) + unquote(args[1]);
+            // SH-C1 追随：ren の新名は「内容の書き込み先」ではなく
+            // 「付ける名前」なので、デバイス名は NUL／CON を含め全て
+            // 名前を挙げて停止する（デバイス名のファイルを作らない）。
+            const renSrcDevice = reservedDeviceName(from),
+              renDstDevice = reservedDeviceName(to);
+            if (renSrcDevice)
+              fail(
+                "未対応：予約デバイス名 " +
+                  renSrcDevice +
+                  " の名前変更（デバイスは名前変更できません）",
+                n.line,
+              );
+            if (renDstDevice)
+              fail(
+                "未対応：予約デバイス名 " +
+                  renDstDevice +
+                  " への名前変更（デバイス名はファイル名として使えません）",
+                n.line,
+              );
             copyEntry(s, from, to, n.line, true, false);
             s.cmd.errorlevel = 0;
             api.note(s, n, "モデル内の名前を変更します：" + to);
@@ -988,12 +1145,117 @@ export function simulateCmd(source, model, limits) {
             const args = words(arg, n.line),
               overwrite = args.some((x) => /^\/y$/i.test(x)),
               paths = args.filter((x) => !/^\/y$/i.test(x));
+            // M-N4(b): 引数不足は「未対応の形式」ではなく不足を伝える。
+            if (paths.length < 2)
+              fail(
+                name +
+                  "には" +
+                  (name === "move" ? "移動元と移動先" : "コピー元とコピー先") +
+                  "が必要です",
+                n.line,
+                "SyntaxError",
+              );
             if (paths.length !== 2 || paths.some((x) => /[?*+]/.test(x)))
               fail("未対応：copy/moveは単一のコピー元・コピー先のみ", n.line);
+            const fromValue = value(paths[0], s),
+              toValue = value(paths[1], s);
+            // SH-C1 追随：コピー／移動先が予約デバイス名の場合は
+            // リダイレクトと同じ方針（NUL は破棄してファイルを作らない、
+            // CON／CONOUT$ は画面出力、その他は名前を挙げて未対応停止）。
+            // コピー元がデバイス名の場合も、通常ファイルとして扱わず
+            // 名前を挙げて停止する（copy con の対話入力や copy nul の
+            // 空ファイル作成はモデル化しない）。
+            let deviceHandled = null;
+            if (!isUnknown(fromValue)) {
+              const srcDevice = reservedDeviceName(
+                windowsPath(fromValue, s.model.cwd, n.line),
+              );
+              if (srcDevice)
+                fail(
+                  "未対応：予約デバイス名 " +
+                    srcDevice +
+                    " からの" +
+                    (name === "move" ? "移動" : "コピー") +
+                    "（デバイスからの読み取り）",
+                  n.line,
+                );
+            }
+            if (!isUnknown(fromValue) && !isUnknown(toValue)) {
+              const destPath = windowsPath(toValue, s.model.cwd, n.line),
+                destEntry = fsEntry(s, destPath, n.line);
+              // 既存フォルダ宛はフォルダ内へ元名で入る通常経路であり、
+              // デバイス判定は最終的な書き込み先に対してだけ行う。
+              if (destEntry?.type !== "directory") {
+                const device = reservedDeviceName(destPath);
+                if (device) {
+                  const source = fsEntry(s, fromValue, n.line);
+                  if (isUnknown(source))
+                    fail(
+                      "未確認：コピー／移動の対象",
+                      n.line,
+                      "未確認",
+                    );
+                  if (!source)
+                    fail(
+                      "モデルにコピー／移動元がありません",
+                      n.line,
+                      "実行エラー",
+                    );
+                  if (source.type === "directory")
+                    fail(
+                      "未対応：予約デバイス名 " +
+                        device +
+                        " へのフォルダの" +
+                        (name === "move" ? "移動" : "コピー"),
+                      n.line,
+                    );
+                  if (device === "NUL") {
+                    if (name === "move")
+                      removeEntry(s, source.path, n.line);
+                    deviceHandled = { device, path: destPath };
+                  } else if (device === "CON" || device === "CONOUT$") {
+                    if (
+                      source.content === undefined ||
+                      isUnknown(source.content)
+                    )
+                      fail(
+                        "未確認：コピー／移動元ファイルの内容がモデルにありません",
+                        n.line,
+                        "未確認",
+                      );
+                    output(source.content, true);
+                    if (name === "move")
+                      removeEntry(s, source.path, n.line);
+                    deviceHandled = { device, path: destPath };
+                  } else
+                    fail(
+                      "未対応：予約デバイス名 " +
+                        device +
+                        " への" +
+                        (name === "move" ? "移動" : "コピー"),
+                      n.line,
+                    );
+                }
+              }
+            }
+            if (deviceHandled) {
+              s.cmd.errorlevel = 0;
+              api.note(
+                s,
+                n,
+                deviceHandled.device === "NUL"
+                  ? "予約デバイス NUL へ" +
+                    (name === "move" ? "移動" : "コピー") +
+                    "します（出力は破棄され、ファイルは作られません）"
+                  : "予約デバイス CON へ出力します（画面表示）：" +
+                    deviceHandled.path,
+              );
+              break;
+            }
             const to = copyEntry(
               s,
-              value(paths[0], s),
-              value(paths[1], s),
+              fromValue,
+              toValue,
               n.line,
               name === "move",
               overwrite,
@@ -1025,7 +1287,10 @@ export function simulateCmd(source, model, limits) {
               fail("未対応：findのオプション " + badOption, n.line);
             const insensitive = args.some((x) => /^\/i$/i.test(x)),
               pos = args.filter((x) => !/^\//.test(x));
-            if (!pos.length || !pos[0].startsWith('"'))
+            // M-N4(a): 引数ゼロは引用符の問題ではなく検索文字列自体の不足。
+            if (!pos.length)
+              fail("findには検索文字列が必要です", n.line, "SyntaxError");
+            if (!pos[0].startsWith('"'))
               fail(
                 "findの検索文字列は二重引用符で囲んでください",
                 n.line,

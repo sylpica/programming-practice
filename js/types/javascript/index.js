@@ -28,7 +28,7 @@ const reference = rows([
     'document.querySelector("#id")',
     "モデルに明示したセレクターに対応する最初の要素を返します。",
     'document.querySelector("#result").textContent = "完了";',
-    "一般のCSS探索は未対応。model.selectorsで対応を指定できます。",
+    "一般のCSS探索は未対応です。model.selectorsで対応を指定できます。",
   ],
   [
     "document.createElement",
@@ -156,7 +156,7 @@ const reference = rows([
     "break",
     "制御",
     "break;",
-    "最も内側のループを直ちに終了します。",
+    "最も内側のループ、switch文、またはラベル付き文を直ちに終了します。",
     "for (let i = 0; i < 5; i++) { if (i === 2) { break; } }",
   ],
   [
@@ -179,7 +179,7 @@ const reference = rows([
     "123n",
     "任意精度の整数です。末尾にnを付けたリテラルで表し、BigInt同士の演算ができます。通常の数値と混ぜて演算することはできません。",
     "10n + 20n",
-    "BigInt(...)というコンストラクタ呼び出しはこのモデルでは未実装です。リテラルとBigInt同士の演算だけに対応します。",
+    "関数としてのBigInt(...)呼び出し（値の変換）はこのモデルでは未実装です。BigIntはコンストラクタではなく、new BigInt()は実JavaScriptでもエラーになります。リテラルとBigInt同士の演算だけに対応します。",
   ],
   [
     "オブジェクトリテラル",
@@ -269,8 +269,33 @@ const reference = rows([
   ],
 ]);
 const referenceNames = new Set(reference.map((r) => r.name));
+// JS-01：実 JavaScript に存在するグローバルオブジェクト名。これらへの
+// メンバー呼び出し・プロパティ参照が未対応の場合に、基盤側の変数解決へ
+// 落として「未定義の名前：Math」等の虚偽の ReferenceError にしない。
+const GLOBAL_OBJECTS = new Set([
+  "Math", "JSON", "console", "Array", "Object", "Number", "String",
+  "Boolean", "Symbol", "BigInt", "Date", "RegExp", "Error", "TypeError",
+  "RangeError", "SyntaxError", "ReferenceError", "Map", "Set", "WeakMap",
+  "WeakSet", "Promise", "Reflect", "Proxy", "Intl", "globalThis",
+  "window", "ArrayBuffer", "DataView",
+]);
 const exampleSetup = {"console.log":"let total=3;",appendChild:'const p=document.createElement("p");',push:"const values=[1,2,3];",pop:"const values=[1,2,3]; let last;",join:"const values=[1,2,3];",if:"let score=2;",for:"let total=0;"};
 for (const r of reference) if (exampleSetup[r.name]) r.example = exampleSetup[r.name] + "\n" + r.example;
+// P-N1: 配列の総内容量の見積もり（上限超過時点で打ち切る）。状態
+// スナップショットの転送では同じ文字列への参照でも要素ごとに複製
+// されるため、要素数だけでは配列の実サイズを抑えられない。
+function arrayContentSize(v, budget = 200000, depth = 0) {
+  if (typeof v === "string") return v.length;
+  if (Array.isArray(v) && depth <= 4) {
+    let total = 0;
+    for (const x of v) {
+      total += arrayContentSize(x, budget - total, depth + 1);
+      if (total > budget) return total;
+    }
+    return total;
+  }
+  return 0;
+}
 function convertedUnknown(value, conversion) {
   return { ...unknown(conversion + "の入力による", conversion + ":" + value.id),
     rootId: value.rootId || value.id, conversion,
@@ -495,6 +520,10 @@ export const definition = {
         },
         increment(value, node, s, api) {
           if (isUnknown(value)) api.fail("未確定値の増減は未確認です", node, "未確認");
+          // M-N2 兄弟表面：BigInt は Number() へ通すと型が通常の数値に
+          // 化けてしまう。実 JavaScript どおり BigInt のまま増減する。
+          if (typeof value === "bigint")
+            return { previous: value, next: value + (node.op === "++" ? 1n : -1n) };
           const previous = Number(value);
           return { previous, next: previous + (node.op === "++" ? 1 : -1) };
         },
@@ -542,6 +571,18 @@ export const definition = {
             api.fail("JavaScriptに数値の型接尾辞はありません", a, "SyntaxError");
           if (a.k === "var" && s.vars[a.name]?.kind === "js-uninitialized")
             api.fail("初期化前のlet / constは参照できません", a, "ReferenceError");
+          // JS-01 兄弟表面：グローバルオブジェクト名そのものの参照も
+          // 「未定義の名前」にしない。値はモデル化しないため未確定値
+          // として正直に扱う。
+          if (
+            a.k === "var" &&
+            !Object.hasOwn(s.vars, a.name) &&
+            GLOBAL_OBJECTS.has(a.name)
+          )
+            return {
+              handled: true,
+              value: unknown("グローバルオブジェクト " + a.name + " の値"),
+            };
           if (a.k === "var" && ["True", "False", "TRUE", "FALSE", "NULL", "None", "Blank"].includes(a.name) && !Object.hasOwn(s.vars, a.name))
             api.fail("未定義の名前：" + a.name, a, "ReferenceError");
           if (a.k === "unary" && ["not", "&", "*"].includes(a.op))
@@ -562,6 +603,20 @@ export const definition = {
             }
             if (["__proto__","constructor","prototype"].includes(a.name))
               api.fail("このプロパティはモデルでは未対応です", a, "未対応");
+            // JS-01 兄弟表面：Math.PI のような実在グローバルのプロパティ
+            // 参照も「未定義の名前」にしない（名前は存在し、プロパティが
+            // モデル未対応であることが正しい理由）。
+            if (
+              a.target?.k === "var" &&
+              !Object.hasOwn(s.vars, a.target.name) &&
+              GLOBAL_OBJECTS.has(a.target.name)
+            )
+              api.fail(
+                "このJavaScriptプロパティは説明に対応していません：" +
+                  callName(a),
+                a,
+                "未対応",
+              );
             let value = api.read(a.target, s);
             if (value == null)
               api.fail(
@@ -593,7 +648,7 @@ export const definition = {
           if (a.k === "var" && s.vars[a.name]?.kind === "js-uninitialized")
             api.fail("初期化前のlet / constへは代入できません", node, "ReferenceError");
           if (a.k === "var" && s.types[a.name] === "const")
-            api.fail("Assignment to constant variable", node, "TypeError");
+            api.fail("const で宣言した変数には再代入できません", node, "TypeError");
           if (a.k === "member" || a.k === "index") {
             let obj = api.read(a.target, s);
             if (isUnknown(obj)) api.fail("未確定オブジェクトへの書き込みは未確認です", node, "未確認");
@@ -603,6 +658,41 @@ export const definition = {
               api.fail("プリミティブ値へは書き込めません", node, "TypeError");
             let key = a.k === "member" ? a.name : api.read(a.indexes[0], s);
             if (isUnknown(key)) api.fail("未確定の添字への書き込みは未確認です", node, "未確認");
+            // P-N1（配列の成長経路）: 巨大な添字への書き込みで疎な配列の
+            // 実体（長さ）が爆発しないよう、要素数の上限で止める。
+            // length への直接代入による拡張も同じ表面として塞ぐ。ただし
+            // length の不正値（負数・小数・2^32以上・非数）は既存の
+            // 「配列の長さが不正です」検証に委ね、ここでは有効な配列長
+            // （0以上2^32-1以下の整数）で上限を超える場合だけを止める。
+            if (
+              (Array.isArray(obj) &&
+                typeof key === "number" &&
+                Number.isInteger(key) &&
+                key >= 200000) ||
+              (Array.isArray(obj) &&
+                key === "length" &&
+                typeof v === "number" &&
+                Number.isInteger(v) &&
+                v > 200000 &&
+                v <= 4294967295)
+            )
+              api.fail(
+                "配列の要素数が上限（200000）を超えます",
+                node,
+                "RangeError",
+              );
+            // P-N1: 大きな文字列を多数の要素へ書く経路も内容量で抑える。
+            if (
+              Array.isArray(obj) &&
+              typeof v === "string" &&
+              v.length &&
+              arrayContentSize(obj) + v.length > 200000
+            )
+              api.fail(
+                "配列の内容量が上限（200000文字相当）を超えます",
+                node,
+                "RangeError",
+              );
             if (["__proto__", "constructor", "prototype"].includes(key))
               api.fail("このプロパティはモデルでは未対応です", node);
             obj[key] = v;
@@ -661,7 +751,13 @@ export const definition = {
             case "String": {
               if (!args.length) return "";
               let v = api.read(args[0], s);
-              return isUnknown(v) ? convertedUnknown(v, "String") : String(v);
+              if (isUnknown(v)) return convertedUnknown(v, "String");
+              // P-N1: 文字列化の結果も値サイズ上限の対象にする（大きな
+              // 配列の文字列化などで実体が爆発しないようにする）。
+              const text = String(v);
+              return text.length > 200000
+                ? { ...unknown("とても長い文字列"), valueType: "string" }
+                : text;
             }
             case "Boolean": {
               let v = api.read(args[0], s);
@@ -687,19 +783,67 @@ export const definition = {
               if (containsBigInt(v))
                 api.fail("BigIntはJSONへ変換できません", node, "TypeError");
               try {
-                return JSON.stringify(displayValue(v));
+                const json = JSON.stringify(displayValue(v));
+                // P-N1: JSON 文字列も値サイズ上限の対象にする。
+                return json !== undefined && json.length > 200000
+                  ? { ...unknown("とても長い文字列"), valueType: "string" }
+                  : json;
               } catch {
                 api.fail("循環参照はJSONへ変換できません", node, "TypeError");
               }
             }
           }
           if (node.target.k === "member") {
+            // JS-01：Math.max / JSON.parse 等、実在するグローバル
+            // オブジェクトの未対応メンバー呼び出しは、オブジェクト名を
+            // 「未定義」とする虚偽の ReferenceError ではなく、関数名を
+            // 挙げて未対応として停止する（isNaN 等と同じ正直な経路）。
+            if (
+              node.target.target?.k === "var" &&
+              !Object.hasOwn(s.vars, node.target.target.name) &&
+              GLOBAL_OBJECTS.has(node.target.target.name)
+            )
+              api.fail(
+                "このJavaScript関数は説明に対応していません：" + name,
+                node,
+              );
             let object = api.read(node.target.target, s),
               method = node.target.name;
             if (Array.isArray(object)) {
-              if (method === "push") return object.push(...values());
+              if (method === "push") {
+                const vals = values();
+                // P-N1: 大きな文字列を多数積む経路も内容量で抑える。
+                if (
+                  vals.some((v) => typeof v === "string" && v.length) &&
+                  arrayContentSize(object) + arrayContentSize(vals) > 200000
+                )
+                  api.fail(
+                    "配列の内容量が上限（200000文字相当）を超えます",
+                    node,
+                    "RangeError",
+                  );
+                return object.push(...vals);
+              }
               if (method === "pop") return object.pop();
-              if (method === "join") return object.join(values()[0]);
+              if (method === "join") {
+                // P-N1: join の結果長を要素ごとに見積もる（区切り文字を
+                // 含め、上限を超える場合は実体を作らず未確定値へ倒す）。
+                const sepArg = values()[0];
+                const sep = sepArg === undefined ? "," : String(sepArg);
+                let total = 0;
+                for (let i = 0; i < object.length; i++) {
+                  const el = object[i];
+                  total +=
+                    (el === null || el === undefined || isUnknown(el)
+                      ? 0
+                      : typeof el === "string"
+                        ? el.length
+                        : String(el).length) + (i ? sep.length : 0);
+                  if (total > 200000)
+                    return { ...unknown("とても長い文字列"), valueType: "string" };
+                }
+                return object.join(sepArg);
+              }
             }
             if (method === "appendChild") {
               let child = api.read(args[0], s);

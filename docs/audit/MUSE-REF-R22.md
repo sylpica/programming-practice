@@ -2,7 +2,7 @@
 
 第22ラウンド付随監査（`reference-completeness-round22.md`）で検出されたリファレンスの漏れ（確実368名＋部分漏れ96名）と §5 の文面不整合について、追加・変更した全項目の一次情報の根拠と裁定を記録する個票。種類別の担当記録（`docs/audit/ref-r22/` 配下の各班フラグメント）をそのまま編纂したもので、各項目の書式・意味は表中の公式資料で照合済み。追加・変更した項目の文面は、照合個票 `docs/audit/reference-r2.json`（従来13種類、最終905行）および `docs/audit/reference-r6.json`（新規2種類、最終73行）と同期している（ビルド後の定義オブジェクトからの抽出で生成し、完全一致を機械検証済み）。
 
-注記：reference-r2.json の既存行のうち7行は、本修正以前から sha256 が fields の再計算値と一致していない（過去の編集で sha が追随しなかったもの）。テストは sha256 を参照しないため影響はないが、記録として残す。新規・変更行の sha256 は「fields をキーソートした JSON の sha256」で統一した（既存行の大多数と同一方式）。
+注記（sha256・修正バッチ2で是正）：reference-r2.json の sha256 の方式は「fields オブジェクトをキーソートした JSON（UTF-8、ensure_ascii=False、json.dumps 既定の区切り）の sha256」である。修正バッチ2で機械再計算したところ、sha256 を持つ898行全てがこの方式で再現一致し、不一致は0行だった（従来の本注記にあった「既存行のうち7行は再計算値と一致していない」との記述は、正しい直列化では成り立たないため是正する）。真の欠陥は sha256 自体を欠く7行（javascript/let・const・var、c/return、cpp/return、csharp/return、uivision/Number）のみであり、この7行は修正バッチ2で同方式により算出して補完し、r2 全行を自己整合化する（補完はコーディネーターが統合時に実施）。なお reference-r6.json は行ごとの sha256 欄を持たず、公式原稿の sourceSHA256 を別途記録する形式である。テストは sha256 を参照しないため機能影響はない。
 
 
 
@@ -63,7 +63,7 @@
 
 ## リファレンス完全性修正 R22 — ImageJ 担当記録
 
-- 対象リスト：`reference-completeness-round22.md` の「ImageJ」節（第1層41件・第2層 Dialog.* 18件）＋備考の SIM_EXTRA のみの6件。
+- 対象リスト：`reference-completeness-round22.md` の「ImageJ」節（第1層41件・第2層 Dialog.* 18件）＋備考の SIM_EXTRA のみの7件（当初列挙の6件に String.format を加えた実数。修正バッチ2で是正）。
 - 一次情報：imagej.net「Built-in Macro Functions」（https://imagej.net/ij/developer/macro/functions.html 、項目別出典は functions2.html の当該アンカーを各項目の source に設定）。
 - 変更ファイル：`js/types/imagej/reference-data.js`（項目59件追加）、`js/types/imagej/reference-details.js`（出典59件追加）、`js/types/imagej/engine.js`（PI の call ケース1件追加、下記）、`js/types/imagej/index.js`（exampleSetup の継承プロパティ対策1行、下記）、`tests/muse-fix-ref-imagej.test.js`（新規）。
 - 結果：ImageJ リファレンス総数 141件 → **200件**（対応 107→166件／参照専用 34件は不変）。追加59件は全件 supported=true。
@@ -74,8 +74,8 @@
 |---|---:|---|
 | 第1層（エンジンに実処理あり・項目なし） | 41 | 全件を項目追加（supported） |
 | 第2層（Dialog.* 汎用受理のみ） | 18 | 全件を項目追加（supported）。注意書きに「Dialog. 接頭辞が汎用モデルで受理され、値は実行時に決まる」旨を明記 |
-| SIM_EXTRA のみ（実装なし） | 6 | 全件を非漏れとして裁定（項目は追加しない） |
-| 合計 | 65 | 追加59件／非漏れ6件 |
+| SIM_EXTRA のみ（実装なし） | 7 | 全件を非漏れとして裁定（項目は追加しない） |
+| 合計 | 66 | 追加59件／非漏れ7件 |
 
 ## 第1層 41件の裁定
 
@@ -150,9 +150,9 @@
 | 17 | Dialog.setInsets | 追加 | `Dialog.setInsets(top, left, bottom)`（次に追加する項目の余白を上書き） |
 | 18 | Dialog.setLocation | 追加 | `Dialog.setLocation(x, y)`（ダイアログの表示位置を設定） |
 
-## SIM_EXTRA のみの6件の裁定（非漏れ・項目は追加しない）
+## SIM_EXTRA のみの7件の裁定（非漏れ・項目は追加しない）
 
-6件とも静的チェックの誤検出防止ホワイトリスト SIM_EXTRA にのみ載り、エンジンに実処理（case）が無い。実行時は「未確認：モデルで未対応」として正直に停止するため、項目の追加はしない（追加すると supported の幽霊項目になる）。
+7件とも静的チェックの誤検出防止ホワイトリスト SIM_EXTRA（String.format は SIM_OFFICIAL にも）に載り、エンジンに実処理（case）が無い。実行時は「未確認：モデルで未対応」として正直に停止するため、項目の追加はしない（追加すると supported の幽霊項目になる）。当初列挙は6件で String.format が漏れていたため、修正バッチ2で7件に是正した（String.format も他6件と同一に未確認で停止することを検証で確認済み）。
 
 | 名前 | 裁定 | 理由 |
 |---|---|---|
@@ -162,6 +162,7 @@
 | screenWidth | 非漏れ（追加しない） | 同上 |
 | screenHeight | 非漏れ（追加しない） | 同上 |
 | getBoolean | 非漏れ（追加しない） | 同上（公式には存在する関数だが、本アプリのエンジンに実装が無い） |
+| String.format | 非漏れ（追加しない） | SIM_EXTRA／SIM_OFFICIAL に載るが case が無く、他6件と同一に未確認で停止する（修正バッチ2で列挙に追加） |
 
 ## 付随する最小修正（js/types/imagej/** の範囲内）
 
@@ -553,7 +554,7 @@ A_AhkPath、A_AhkVersion、A_AllowMainWindow、A_AppData、A_AppDataCommon、A_A
 | unsigned long | 項目追加 | 同上。別名 unsigned long int、`unsigned long long` の unsigned long への畳み込み受理を明記 |
 | unsigned short | 項目追加 | 同上。別名 unsigned short int を明記 |
 | unsigned char | 項目追加 | 同上。char と別型で符号なしが保証される旨を明記 |
-| signed char | 項目追加 | 同上。`signed` 単独（= int）との違いを含め、char と別型である旨を明記 |
+| signed char | 項目追加 | 同上。char と別型である旨と、符号付きが保証される旨を明記（なお signed 単独・signed int・signed long int・signed short int の4形は項目文面には言及がなく、受理のカバーは正名 int の項目と DEVELOPMENT.md の受理宣言による。修正バッチ2で記録を実物に合わせて是正） |
 | do | 項目追加 | do-while は実装済みでトレース refs が `do` を出す。cppreference C do |
 | sizeof | 項目追加 | 型形式・式形式とも実装済み。モデルサイズ表（char・bool=1、short=2、int・float=4、double=8、long は longBits）と結果型（size_t 相当）を本文に明記。cppreference C sizeof |
 | キャスト | 項目追加（項目名「キャスト」） | C形式キャスト `(型)式` が実装済み。書式は cppreference C cast operator（`( type-name ) expression`、実在を確認）で照合。C では (bool) キャスト未対応である旨を注意書きに明記 |
@@ -608,14 +609,14 @@ C 共通17件（long、float、char、short、bool、unsigned int、unsigned lon
 | 区分 | 件数 | 裁定 |
 |---|---|---|
 | 実値で返る（int.MaxValue=2147483647、uint.MaxValue=4294967295、Math.PI、String.Empty 等） | 16 | 個別項目を追加。returns に実値を記録し、使用例 `Console.WriteLine(名前);` を実走確認 |
-| 未確定値で返る（`long.MaxValue`、`long.MinValue`、`ulong.MaxValue`） | 3 | 個別項目を追加し、**未確定値として返る旨と実値**（9223372036854775807／-9223372036854775808／18446744073709551615）を注意書きと returns に明記 |
+| 未確定値で返る（`long.MaxValue`、`long.MinValue`、`ulong.MaxValue`） | 3 | 個別項目を追加し、**未確定値として返る旨**を注意書きと returns に、**実値**（9223372036854775807／-9223372036854775808／18446744073709551615）は注意書きに明記（returns には数値を載せず旨のみ。修正バッチ2で記録を実物に合わせて是正） |
 
 ## 第2層：else／cin の裁定
 
 | 名前 | 対象 | 裁定 | 理由 |
 |---|---|---|---|
 | else | C／C++／C# 共通 | 非漏れ化（if 項目へ文面追記） | 修正前の if 項目は構文行に `else { … }` を含むのみで、本文が else の動作を説明していなかったため「不足」と判定。共有の if 項目の説明文を「条件が真なら if のブロック、偽なら else のブロック（あれば）を実行します。else if で条件を連ねることもできます。」へ追記し、3言語とも解消。テストで description／syntax の else 言及を固定 |
-| cin（std::cin） | C++ | 非漏れ（独立項目は設けない） | 実装上の用途は getline の第1引数に限られ、`cin >> x` の抽出演算子は未実装（シフト演算として解釈され停止）。getline 項目の本文・注意書きに「std::cin はこの関数の第1引数としてだけ使う」「抽出演算子は未実装」を明記したため、独立項目なしでカバー済みと裁定 |
+| cin（std::cin） | C++ | 非漏れ（独立項目は設けない） | 実装上の用途は getline の第1引数に限られ、`cin >> x` の抽出演算子は未実装（シフト演算として解釈され、未確定値のシフト式として評価されるため停止はせず、代入先の変数は更新されないまま完走する。修正バッチ2で記録を実挙動に合わせて是正）。getline 項目の本文・注意書きに「std::cin はこの関数の第1引数としてだけ使う」「抽出演算子は未実装」を明記したため、独立項目なしでカバー済みと裁定 |
 
 ## 名前解決の確認
 
@@ -813,7 +814,7 @@ C 共通17件（long、float、char、short、bool、unsigned int、unsigned lon
 | 自動変数 `$?` | 個別項目を追加 | 直前のコマンド／パイプラインの成否を保持 | 同上 |
 | 自動変数 `$LASTEXITCODE` | 個別項目を追加 | モデルでは外部プログラムを実行しないため、明示した初期値のみ保持する旨を明記（DEVELOPMENT.md の宣言と一致） | 同上 |
 | 自動変数 `$args` | 個別項目を追加 | 関数の余分な引数を保持（engine が `args` へ格納する実装に対応） | 同上 |
-| 型変換（キャスト）5型 `[string]`・`[bool]`／`[boolean]`・`[int]`／`[int32]`・`[double]`・`[pscustomobject]`（第1層） | 1項目「型変換（キャスト）」に束ねて追加。各型名（別表記を含む全7表記）を構文・本文に明記 | parser の cast 解析と engine の変換処理に対応。テンプレート ps-transform が使う [pscustomobject] も含む | Microsoft Learn about_Type_Operators https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_type_operators?view=powershell-7.4 |
+| 型変換（キャスト）5型 `[string]`・`[bool]`／`[boolean]`・`[int]`／`[int32]`・`[double]`・`[pscustomobject]`（第1層） | 1項目「型変換（キャスト）」に束ねて追加。構文には5表記（[string]・[int]・[double]・[bool]・[pscustomobject]）を明記し、別表記 [boolean]／[int32] は本文のみに明記（全7表記は本文でカバー。修正バッチ2で記録を実物に合わせて是正） | parser の cast 解析と engine の変換処理に対応。テンプレート ps-transform が使う [pscustomobject] も含む | Microsoft Learn about_Type_Operators https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_type_operators?view=powershell-7.4 |
 | 論理演算子4形 `-and`・`-or`・`-not`・`!`（第1層） | 独立項目「論理演算子」を追加 | 既存の唯一の演算子項目「比較演算子」は比較のみで論理を含まないため分離 | Microsoft Learn about_Logical_Operators https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_logical_operators?view=powershell-7.4 |
 | 算術・代入演算子11形 `+`・`-`・`*`・`/`・`%`・`+=`・`-=`・`*=`・`/=`・`++`・`--`（第2層） | 1項目「算術・代入演算子」に束ねて追加。全11形を構文行に明記 | parser／engine の実装に対応。++／-- はモデル対応範囲として後置形式である旨を本文に明記 | Microsoft Learn about_Arithmetic_Operators／about_Assignment_Operators https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_arithmetic_operators?view=powershell-7.4 |
 | 定数 `$true`・`$false`（第2層） | `変数` 項目の本文に `$null` と並べて追記 | 自動変数として about_Automatic_Variables に定義される定数であり、変数の項目で $null と並記するのが学習者の到達経路として自然なため | Microsoft Learn about_Automatic_Variables／about_Variables https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_variables?view=powershell-7.4 |

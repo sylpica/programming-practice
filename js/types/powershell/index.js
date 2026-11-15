@@ -142,8 +142,8 @@ const data = [
   [
     "Remove-Item",
     "ファイル",
-    "Remove-Item パス [-Recurse]",
-    "モデルからファイル・フォルダを削除します。別名ri・rmでも同じ処理をします。構文行の基本形のほかに、確認なしで削除する-Forceも実装されています。",
+    "Remove-Item パス [-Recurse] [-Force]",
+    "モデルからファイル・フォルダを削除します。別名ri・rmでも同じ処理をします。フォルダとその中身をまとめて削除する-Recurse、確認なしで削除する-Forceも実装されています。",
     "New-Item temp.txt -ItemType File\nRemove-Item temp.txt",
     "microsoft.powershell.management/remove-item",
     "成功ストリームへの出力なし",
@@ -179,7 +179,7 @@ const data = [
     "Test-Path",
     "ファイル",
     "Test-Path パス [-PathType Leaf/Container]",
-    "モデル内のパスの存在を判定します。",
+    "モデル内のパスの存在を判定します。-PathType Leafを指定するとファイルのときだけ、Containerを指定するとフォルダのときだけTrueになります（省略時はどちらでも、存在すればTrueです）。",
     "Test-Path notes.txt",
     "microsoft.powershell.management/test-path",
     "Boolean",
@@ -265,7 +265,7 @@ const constructs = [
   ],
   [
     "変数",
-    " $name = 値",
+    "$name = 値",
     "変数名は大文字小文字を区別しません。未定義変数は、この非StrictModeモデルでは$nullです。組み込みの定数として、真を表す$true、偽を表す$false、値がないことを表す$nullがあります（$nullは未定義変数の値でもあります）。",
     '$Name="Alice"\n$name',
     "about_variables",
@@ -292,9 +292,16 @@ const constructs = [
     "about_hash_tables",
   ],
   [
+    "プロパティ",
+    ".Length / .Count / .Extension / .Keys / .Values / .PSIsContainer / .Path",
+    "オブジェクトのプロパティを参照します。Lengthは文字列・配列の長さ（フォルダなど長さを持たないオブジェクトでは$null）、Countは要素数（単一のオブジェクトでは1、$nullでは0）です。Extensionはファイル名の拡張子、Keys／Valuesはハッシュテーブルのキー／値の一覧、PSIsContainerはフォルダかどうか、Pathは場所を表すオブジェクトのパスです。存在しないプロパティは$nullになります。",
+    '$h=@{A=1; B=2}\n$h.Keys\n$h.Values\n"abc".Length\n@(1,2,3).Count\n(Get-Location).Path',
+    "about_properties",
+  ],
+  [
     "比較演算子",
-    "-eq -ne -gt -ge -lt -le -like -match",
-    "左辺の型に応じて比較します。文字列比較の既定は大文字小文字を区別しません。",
+    "-eq -ne -gt -ge -lt -le -like -notlike -match -notmatch -ceq -cne -ieq -ine",
+    "左辺の型に応じて比較します。文字列比較の既定は大文字小文字を区別しません。否定形の-notlike・-notmatch、大文字小文字を区別する-ceq・-cne、区別しないことを明示する-ieq・-ineも使えます。",
     '"Hello" -eq "hello"\n"abc.txt" -like "*.txt"\n"abc123" -match "[0-9]+"',
     "about_comparison_operators",
   ],
@@ -308,14 +315,14 @@ const constructs = [
   [
     "$_",
     "$_",
-    "自動変数です。パイプライン処理のブロックの中で、現在処理しているオブジェクトを表します。$PSItemと同じ値です。",
+    "自動変数です。パイプライン処理のブロックの中で、現在処理しているオブジェクトを表します。switchの節の中では判定中の値を表すなど、パイプライン以外の場面でも現在のオブジェクトを表します。$PSItemと同じ値です。",
     "1..3 | ForEach-Object { $_ * 2 }",
     "about_automatic_variables",
   ],
   [
     "$PSItem",
     "$PSItem",
-    "自動変数です。パイプライン処理のブロックの中で、現在処理しているオブジェクトを表します。$_と同じ値です。",
+    "自動変数です。パイプライン処理のブロックの中で、現在処理しているオブジェクトを表します。switchの節の中では判定中の値を表すなど、パイプライン以外の場面でも現在のオブジェクトを表します。$_と同じ値です。",
     "1..3 | ForEach-Object { $PSItem + 1 }",
     "about_automatic_variables",
   ],
@@ -341,8 +348,36 @@ const constructs = [
     "about_automatic_variables",
   ],
   [
+    "$Matches",
+    "$Matches",
+    "自動変数です。-match演算子が一致したときに、一致全体とキャプチャグループを保持するハッシュテーブルで、$Matches[0]が一致全体、$Matches[1]以降が各グループの文字列です。-notmatchや、一致しなかった-matchでは更新されません。",
+    '"abc123" -match "[0-9]+"\n$Matches[0]',
+    "about_automatic_variables",
+  ],
+  [
+    "$PWD",
+    "$PWD",
+    "自動変数です。現在の場所（カレントフォルダ）を表すPathInfoオブジェクトで、Pathプロパティが現在のフォルダのパスです。Set-Locationで移動すると追随します。Get-Locationの戻り値と同じ内容です。",
+    "$PWD.Path",
+    "about_automatic_variables",
+  ],
+  [
+    "$PSVersionTable",
+    "$PSVersionTable",
+    "自動変数です。PowerShellのバージョン情報を保持する読み取り専用のハッシュテーブルです。このモデルではPSVersion（このモデルの根拠とする7.4）とPSEdition（Core）を保持します。",
+    "$PSVersionTable.PSVersion",
+    "about_automatic_variables",
+  ],
+  [
+    "$HOME",
+    "$HOME",
+    "自動変数です。現在のユーザのホームフォルダのパスを表します。実環境で決まる値のため、このモデルでは値を固定せず、実行時に決まる値として扱います。",
+    "$HOME",
+    "about_automatic_variables",
+  ],
+  [
     "型変換（キャスト）",
-    "[string]値 / [int]値 / [double]値 / [bool]値 / [pscustomobject]@{…}",
+    "[string]値 / [int]値 / [int32]値 / [double]値 / [bool]値 / [boolean]値 / [pscustomobject]@{…}",
     "値の前に型名を角括弧で書くと、その型へ変換します。[string]は文字列化、[int]（[int32]とも書けます）は整数化、[double]は小数化、[bool]（[boolean]とも書けます）は真偽値化します。[pscustomobject]はハッシュテーブルをプロパティを持つオブジェクトへ変換します。",
     '[int]"42" + 1\n[string]7\n[pscustomobject]@{Name="A"}',
     "about_type_operators",
@@ -356,8 +391,8 @@ const constructs = [
   ],
   [
     "算術・代入演算子",
-    "値 + 値 / 値 - 値 / 値 * 値 / 値 / 値 / 値 % 値 / $x += 値 / $x -= 値 / $x *= 値 / $x /= 値 / $x++ / $x--",
-    "加算+、減算-、乗算*、除算/、剰余%で計算します。+=・-=・*=・/=は計算結果を変数へ代入する複合代入です。++は変数を1増やし、--は1減らします（このモデルでは後置形式に対応します）。",
+    "値 + 値 / 値 - 値 / 値 * 値 / 値 / 値 / 値 % 値 / $x += 値 / $x -= 値 / $x *= 値 / $x /= 値 / $x++ / $x-- / ++$x / --$x",
+    "加算+、減算-、乗算*、除算/、剰余%で計算します。+=・-=・*=・/=は計算結果を変数へ代入する複合代入です。++は変数を1増やし、--は1減らします（前置形式 ++$x・--$x と後置形式 $x++・$x-- の両方に対応します。前置形式では増減後の値、後置形式では増減前の値が式の値になります）。",
     "$x=10\n$x += 5\n$x\n$x++\n$x",
     "about_arithmetic_operators",
   ],
@@ -414,7 +449,7 @@ export const definition = {
       level: "基礎",
       code: '$record=@{Name="Alice"; Score=80}\n$numbers=@(2,4,6)\n$record["Name"]\n$numbers[1]\n$numbers.Count',
       intro: "キーによる参照と0始まりの添字を使います。結果はAlice・4・3です。",
-      refs: ["配列", "ハッシュテーブル", "変数"],
+      refs: ["配列", "ハッシュテーブル", "変数", "プロパティ"],
     },
     {
       id: "ps-files",
@@ -430,6 +465,7 @@ export const definition = {
         "Select-Object",
         "比較演算子",
         "パイプライン",
+        "プロパティ",
       ],
     },
     {
@@ -496,7 +532,7 @@ export const definition = {
     ],
     [
       "自動変数",
-      "$_／$PSItemは現在のパイプライン項目を表します。$?は直近の成功状態、$LASTEXITCODEは外部プロセスの終了コードで、このモデルでは初期値を保持します。",
+      "$_／$PSItemは現在のパイプライン項目を表します。$?は直近の成功状態、$LASTEXITCODEは外部プロセスの終了コードで、このモデルでは初期値を保持します。$PWDは現在のフォルダ、$PSVersionTableはバージョン情報、$HOMEはホームフォルダを表します。",
     ],
     ["仮想FS", "入力モデルに明示したフォルダとファイルだけを操作します。"],
     [
@@ -520,7 +556,7 @@ export const definition = {
     description:
       "式・コマンド引数・オブジェクトパイプラインを分け、成功ストリームと画面出力を区別する部分モデルです。",
     support:
-      "掲載コマンドレットと構文の基本形。$_/$PSItem、$?、初期値の$LASTEXITCODE。未対応：外部コマンド、モジュール、並列／非同期、一般の.NETメソッド、プロバイダー、.NET固有正規表現、複雑なパラメーターセット、数値範囲外、未確定値を変換する複雑な式。ファイル系はエラーで停止します。",
+      "掲載コマンドレットと構文の基本形。$_/$PSItem、$?、初期値の$LASTEXITCODE、$PWD、$PSVersionTable、実行時に決まる$HOME。未対応：外部コマンド、モジュール、並列／非同期、一般の.NETメソッド、プロバイダー、.NET固有正規表現、複雑なパラメータセット、数値範囲外、未確定値を変換する複雑な式。ファイル系はエラーで停止します。",
     sources: [
       {
         title: "Microsoft PowerShell 7.4",

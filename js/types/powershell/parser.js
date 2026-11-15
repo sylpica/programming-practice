@@ -18,10 +18,21 @@ export function tokenizePS(source) {
       line++;
       continue;
     }
-    if (/[ \t]/.test(c)) {
+    // R23-N8: BOM（U+FEFF）は実PowerShellが .ps1 で受理するとおり読み飛ばし、
+    // NBSP（U+00A0）は区切りとして扱う。貼り付け由来の不可視文字が
+    // 「見えない原因」で利用者を止めないようにするため。
+    if (c === "\uFEFF") {
       i++;
       continue;
     }
+    if (/[ \t\u00A0]/.test(c)) {
+      i++;
+      continue;
+    }
+    // SEM-4／SH-P3追記：:: は対象（.NET型の静的メンバー）を名指して止める。
+    // ":" 1文字だけの原因表示にしない。
+    if (source.startsWith("::", i))
+      fail("未対応：.NET型の静的メンバーアクセス（::）", line);
     if (source.startsWith("<#", i)) {
       const end = source.indexOf("#>", i + 2);
       if (end < 0)
@@ -101,7 +112,17 @@ export function tokenizePS(source) {
       push("word", relative[0], start);
       continue;
     }
-    const number = source.slice(i).match(/^(?:\d+(?:\.\d+)?(?:e[+-]?\d+)?)/i);
+    // R23-N2 追随: 2進リテラル（0b…）は実 PowerShell の数値リテラルに
+    // 存在しないため、"0" と "b101" に黙って分割して誤値や虚偽原因に
+    // せず、リテラル自体を名指して未対応で止める。
+    const binary = source.slice(i).match(/^0b[01]+/i);
+    if (binary) fail("未対応：2進数リテラル（" + binary[0] + "）", line);
+    // R23-N2: 16進接頭辞 0x と単位接尾辞（KB／MB／GB／TB／PB）も
+    // 数値リテラルの一部として取り込む。取り込まないと "0" と "x1F" の
+    // ように黙って分割され、誤値や虚偽原因になる。
+    const number = source
+      .slice(i)
+      .match(/^(?:0x[0-9a-f]+|\d+(?:\.\d+)?(?:e[+-]?\d+)?)(?:kb|mb|gb|tb|pb)?/i);
     if (number) {
       i += number[0].length;
       push("number", number[0], start);
@@ -116,42 +137,125 @@ export function tokenizePS(source) {
     const op = source
       .slice(i)
       .match(
-        /^(?:-(?:c|i)?(?:notlike|notmatch|eq|ne|ge|gt|le|lt|like|match)\b|-(?:and|or|not|contains|in|f)\b|\+\+|--|\+=|-=|\*=|\/=|\.\.|@\(|@\{|\$\(|[+\-*\/%=<>!|&.,;(){}\[\]:])/i,
+        /^(?:-(?:c|i)?(?:notlike|notmatch|eq|ne|ge|gt|le|lt|like|match)\b|-(?:c|i)?(?:notcontains|contains|notin|in)\b|-(?:and|or|not|f)\b|\+\+|--|\+=|-=|\*=|\/=|\.\.|@\(|@\{|\$\(|[+\-*\/%=<>!|&.,;(){}\[\]:?])/i,
       );
     if (op) {
       i += op[0].length;
       push(op[0] === ";" ? "sep" : "op", op[0], start);
       continue;
     }
-    fail("未対応のPowerShell構文：" + c, line);
+    // R23-N8: 不可視文字は文字そのものではなくコードポイントで名指す。
+    fail(
+      "未対応のPowerShell構文：" +
+        (/[\x00-\x1F\x7F-\x9F\u00AD\u200B-\u200F\u202A-\u202E\u2060]/.test(c)
+          ? "U+" +
+            c.codePointAt(0).toString(16).toUpperCase().padStart(4, "0") +
+            "（不可視文字）"
+          : c),
+      line,
+    );
   }
   ts.push({ k: "eof", v: "<eof>", line, start: i, end: i });
   return ts;
 }
+// M-N1: パラメーターの値不足と未対応を区別するための、コマンドレット別の
+// 値必須パラメーター表（engine.js の known 表と対応する値パラメーターのみ。
+// スイッチは stage() 側で先に処理されるため含めない）。
+const psAlias = {
+  echo: "write-output",
+  gci: "get-childitem",
+  ls: "get-childitem",
+  dir: "get-childitem",
+  where: "where-object",
+  "?": "where-object",
+  foreach: "foreach-object",
+  "%": "foreach-object",
+  select: "select-object",
+  sort: "sort-object",
+  measure: "measure-object",
+  cd: "set-location",
+  pwd: "get-location",
+  cat: "get-content",
+  gc: "get-content",
+  sc: "set-content",
+  ac: "add-content",
+  ni: "new-item",
+  ri: "remove-item",
+  rm: "remove-item",
+  ren: "rename-item",
+  cp: "copy-item",
+  mv: "move-item",
+};
+const psValueParams = {
+  "write-output": ["inputobject"],
+  "write-host": ["object", "separator"],
+  "read-host": ["prompt"],
+  "get-childitem": ["path", "filter"],
+  "where-object": ["filterscript"],
+  "foreach-object": ["process"],
+  "select-object": ["property", "first", "last", "skip", "expandproperty"],
+  "sort-object": ["property"],
+  "measure-object": ["property"],
+  "get-location": [],
+  "set-location": ["path"],
+  "test-path": ["path", "pathtype"],
+  "get-content": ["path"],
+  "set-content": ["path", "value"],
+  "add-content": ["path", "value"],
+  "new-item": ["path", "name", "itemtype", "value"],
+  "remove-item": ["path"],
+  "rename-item": ["path", "newname"],
+  "copy-item": ["path", "destination"],
+  "move-item": ["path", "destination"],
+};
 const prec = {
   "-or": 1,
   "-and": 2,
-  "-eq": 3,
-  "-ne": 3,
-  "-gt": 3,
-  "-ge": 3,
-  "-lt": 3,
-  "-le": 3,
-  "-like": 3,
-  "-notlike": 3,
-  "-match": 3,
-  "-notmatch": 3,
-  "-ceq": 3,
-  "-cne": 3,
-  "-ieq": 3,
-  "-ine": 3,
   "+": 4,
   "-": 4,
   "*": 5,
   "/": 5,
   "%": 5,
+  // SH-P3: -f は未対応だが、優先順位表に無いと式の途中で止まって
+  // 「) が必要です」という虚偽原因になる。パースは通し、評価側で
+  // 「未対応：書式演算子 -f」と名指す。
+  "-f": 5,
   "..": 6,
 };
+// SH-P3: 比較演算子は -c／-i 変種と包含演算子（-contains／-in 系）まで
+// 優先順位表に載せる。字句解析だけが受理して優先順位表に無いと、
+// 括弧内などで「) が必要です」という無関係な原因で止まっていた。
+for (const base of [
+  "eq",
+  "ne",
+  "gt",
+  "ge",
+  "lt",
+  "le",
+  "like",
+  "notlike",
+  "match",
+  "notmatch",
+  "contains",
+  "notcontains",
+  "in",
+  "notin",
+])
+  for (const prefix of ["-", "-c", "-i"]) prec[prefix + base] = 3;
+// R23-N2: 数値リテラル文字列（0x 接頭辞・単位接尾辞つき）を値へ変換する。
+export function psNumber(text) {
+  const m = String(text).match(
+    /^(0x[0-9a-f]+|\d+(?:\.\d+)?(?:e[+-]?\d+)?)(kb|mb|gb|tb|pb)?$/i,
+  );
+  if (!m) return Number(text);
+  let v = /^0x/i.test(m[1]) ? parseInt(m[1], 16) : Number(m[1]);
+  if (m[2])
+    v *=
+      { kb: 1024, mb: 1024 ** 2, gb: 1024 ** 3, tb: 1024 ** 4, pb: 1024 ** 5 }[
+        m[2].toLowerCase()
+      ];
+  return v;
+}
 export class PSParser {
   constructor(source, line = 1) {
     this.source = source;
@@ -264,7 +368,7 @@ export class PSParser {
         if (!["string", "number", "word"].includes(value.k))
           fail("未対応：switchの条件形式", value.line);
         cases.push({
-          value: value.k === "number" ? Number(value.v) : value.v,
+          value: value.k === "number" ? psNumber(value.v) : value.v,
           isDefault: value.k === "word" && value.v.toLowerCase() === "default",
           body: this.block(),
         });
@@ -369,7 +473,7 @@ export class PSParser {
           const p = this.take().v.toLowerCase();
           if (Object.hasOwn(params, p))
             fail(
-              "パラメーターが重複しています：" + p,
+              "パラメータが重複しています：" + p,
               token.line,
               "SyntaxError",
             );
@@ -392,23 +496,35 @@ export class PSParser {
             const next = this.ts[this.i];
             // R22-N17: 値のないパラメーターは <eof> 等の汎用エラーにせず、
             // コマンド名とパラメーター名を名指しする。
+            // M-N1: ただし原因は区別する。対応パラメーターは「値が必要」、
+            // 真に未対応のパラメーターだけを「未対応のパラメーター」とし、
+            // カテゴリも値がある場合（engine 側の判定）と揃える。
             if (
               !next ||
               [";", "|", ")", "}", ",", "<eof>"].includes(next.v) ||
               (next.v === "-" && this.ts[this.i + 1]?.k === "word")
-            )
+            ) {
+              const canonical =
+                psAlias[name.toLowerCase()] || name.toLowerCase(),
+                knownParams = psValueParams[canonical];
+              if (knownParams && !knownParams.includes(p))
+                fail(
+                  "未対応のパラメータ：" + name + " -" + p,
+                  token.line,
+                );
               fail(
-                "未対応のパラメーター：" + name + " -" + p,
+                name + " -" + p + " の値が必要です",
                 token.line,
-                "SyntaxError",
+                "ParameterBindingException",
               );
+            }
             try {
               params[p] = this.argument();
             } catch (e) {
               // R22-N15: パラメーター値の汎用パースエラーは対象を名指しする。
               if (/未対応または不正なPowerShellの式/.test(e.message))
                 fail(
-                  "未対応または不正なパラメーター値：" +
+                  "未対応または不正なパラメータ値：" +
                     name +
                     " -" +
                     p +
@@ -462,7 +578,10 @@ export class PSParser {
       this.take();
       return { k: "literal", value: t.v, line: t.line };
     }
-    if (t.k === "word" || ["*", "?"].includes(t.v)) {
+    // NX-N8: var トークンは bareword として取り込まない。
+    // 特に $? は v が "?" のためワイルドカード分岐に誤って入り、文字列 "?"
+    // になっていた。自動変数として式側で評価させる。
+    if (t.k !== "var" && (t.k === "word" || ["*", "?"].includes(t.v))) {
       let text = this.take().v,
         end = this.ts[this.i - 1].end;
       while (
@@ -483,7 +602,7 @@ export class PSParser {
       line = t.line;
     let a;
     if (t.k === "number") {
-      const v = Number(t.v);
+      const v = psNumber(t.v);
       if (
         !Number.isFinite(v) ||
         (Number.isInteger(v) && !Number.isSafeInteger(v))
@@ -525,7 +644,7 @@ export class PSParser {
           fail("未対応：ハッシュテーブルのキー", key.line);
         this.take("=");
         entries.push([
-          key.k === "number" ? Number(key.v) : key.v,
+          key.k === "number" ? psNumber(key.v) : key.v,
           this.pipeline(),
         ]);
         if (!this.peek(";")) break;
@@ -560,9 +679,21 @@ export class PSParser {
         a = { k: "post", op: this.take().v, target: a, line };
         continue;
       }
-      const op = this.ts[this.i]?.v.toLowerCase(),
+      const opToken = this.ts[this.i],
+        op = opToken?.v.toLowerCase(),
         p = prec[op];
-      if (p === undefined || p < min) break;
+      if (p === undefined || p < min) {
+        // SH-P3（同根の一掃）：単一トークンの -演算子が優先順位表に無いまま
+        // ここで黙って止まると、呼び出し側が「) が必要です」等と
+        // 無関係な原因を表示する。演算子を名指して止める。
+        if (opToken?.k === "op" && /^-[a-z]/i.test(opToken.v))
+          fail(
+            "未対応または不正なPowerShellの式：" + opToken.v,
+            opToken.line,
+            "SyntaxError",
+          );
+        break;
+      }
       this.take();
       a = { k: "binary", op, a, b: this.expr(p + 1), line };
     }

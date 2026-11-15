@@ -43,7 +43,7 @@ export const definition = {
     description:
       "単一シート A1:C5 に対するVBAの部分意味論。Variantと宣言型、配列、分岐、ループ、実行時エラーを区別します。",
     support:
-      "単一Sub、Dim、代入、If / ElseIf / Else、Select Case、For / For Each、Do、Exit、固定1次元配列、On Error Resume Next / GoTo 0。未対応：複数シート・外部ブック・With・GoToラベル・1行If・動的配列・未確定Step・非線形条件など。",
+      "単一Sub、Dim、代入、If / ElseIf / Else、Select Case、For / For Each、Do、Exit、固定1次元配列、On Error Resume Next / GoTo 0。未対応：複数シート・外部ブック・With・GoToラベル・1行If・動的配列の要素参照・ReDim（宣言のみ対応）・未確定Step・非線形条件など。",
     sources: [
       {
         title: "Microsoft VBA言語リファレンス",
@@ -61,8 +61,23 @@ export const definition = {
   async simulate(code, model, limits) {
     const { simulate } = await import("../../engine.js");
     let r = simulate(code, model, limits);
+    // P-N4: 使用関数解決はパス列挙の後処理で、エンジンの時間上限の対象外
+    // だった。トレースの tokens は文ごとに同じ内容が繰り返される
+    // （分岐時の structuredClone で配列の同一性は失われる）ため、内容を
+    // キーに解決結果を再利用し、後処理の総量を「相異なる文の数」に
+    // 比例する量まで圧縮する（トレース件数には比例させない）。
+    const refsCache = new Map();
     for (let p of r.paths) {
-      for (let t of p.trace) t.refs = usedReferences(t.tokens || []);
+      for (let t of p.trace) {
+        const tokens = t.tokens || [];
+        const key = tokens.map((x) => x.type + ":" + x.v).join("\u0001");
+        let refs = refsCache.get(key);
+        if (!refs) {
+          refs = usedReferences(tokens);
+          refsCache.set(key, refs);
+        }
+        t.refs = refs;
+      }
       p.groups = [
         {
           title: "変数",

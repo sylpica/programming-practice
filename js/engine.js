@@ -1,4 +1,8 @@
-import { unknownLabel } from "./core/presentation.js";
+import {
+  unknownLabel,
+  truncateDisplayText,
+  VALUE_LENGTH_LIMIT,
+} from "./core/presentation.js";
 /* Buildless, deterministic VBA teaching interpreter. Never evaluates user JavaScript. */
 export const LIMITS = Object.freeze({
   paths: 2000,
@@ -54,19 +58,25 @@ export function typeLabel(type) {
   );
 }
 export function display(v) {
-  if (v?.kind === "unknown") return unknownLabel(v);
+  // P-N2: 未確定値の説明も表示専用なので、合成が深い場合の長い説明は
+  // 省略記法つきで切り詰める（値の同一性・制約情報は変えない）。
+  if (v?.kind === "unknown") return truncateDisplayText(unknownLabel(v));
   if (v?.kind === "empty") return "Empty";
   if (v?.kind === "null") return "Null";
   if (v?.kind === "nothing") return "Nothing";
   if (v?.kind === "range") return `Range("${v.cells.join(":")}")`;
   if (v?.kind === "array")
-    return `[${v.values.map(display).join(", ")}]（${v.low}～${v.low + v.values.length - 1}）`;
+    return truncateDisplayText(
+      `[${v.values.map(display).join(", ")}]（${v.low}〜${v.low + v.values.length - 1}）`,
+    );
   if (typeof v === "number") return vbaNumberString(v);
   // RG-04（R5-N4／R6-N5・統合裁定）: 実 VBA の表示は Boolean が True／False、
   // 文字列は引用符なし。旧表示（小文字 true／false、引用符つき文字列）は
   // 既存テストが固定していたが、台帳の受け入れ条件（実物表記の一致）を
   // 優先して是正した。
-  if (typeof v === "string") return v;
+  // P-N2: 表示専用の整形では長い文字列を省略記法つきで切り詰める
+  // （代入のたびに値全体が手順テキストへ複製されて肥大するのを防ぐ）。
+  if (typeof v === "string") return truncateDisplayText(v);
   if (typeof v === "boolean") return v ? "True" : "False";
   return String(v);
 }
@@ -671,15 +681,20 @@ const num = (v) => {
     return Number(v);
   fail("型が一致しません", 13);
 };
-const str = (v) =>
-  v?.kind === "empty"
-    ? ""
-    : v === true
-      ? "True"
-      : v === false
-        ? "False"
-        : String(v);
+const str = (v) => {
+  if (v?.kind === "empty") return "";
+  // F-VBA-02: 数値の文字列化は表示と同じ VBA 既定変換（有効数字15桁）を使う。
+  // JS の String(数値) の全桁文字列（"0.30000000000000004" 等）を返さない。
+  if (typeof v === "number") return vbaNumberString(v);
+  // F-VBA-03: 配列・オブジェクト等の内部表現を JS の String(obj)
+  // （"[object Object]"）で文字列化して捏造しない。実 VBA はエラー13。
+  if (typeof v === "object" && v !== null) fail("型が一致しません", 13);
+  return v === true ? "True" : v === false ? "False" : String(v);
+};
 const bool = (v) => {
+  // F-VBA-01: 条件位置（および Boolean への変換）で Null は黙って False に
+  // せず、実 VBA どおりエラー94で停止する。
+  if (v?.kind === "null") fail("Null の使い方が不正です", 94);
   // RG-74（R20-N4）: 実 VBA の条件変換（CBool と同じ規則）では、文字列
   // "True"／"False" は大小を区別せず真偽値に変換される。
   if (typeof v === "string") {
@@ -687,13 +702,11 @@ const bool = (v) => {
     if (t === "true") return true;
     if (t === "false") return false;
   }
-  return v?.kind === "null"
+  return v?.kind === "empty"
     ? false
-    : v?.kind === "empty"
-      ? false
-      : typeof v === "boolean"
-        ? v
-        : num(v) !== 0;
+    : typeof v === "boolean"
+      ? v
+      : num(v) !== 0;
 };
 function binary(op, a, b) {
   if (a?.kind === "null" || b?.kind === "null") {
@@ -729,11 +742,22 @@ function binary(op, a, b) {
       ">=": cmp >= 0,
     }[op];
   }
-  if (op === "&") return str(a) + str(b);
+  // P-N1: 文字列連結は、実体を作る前に長さを見積もり、上限を超える
+  // 結果は Python 系統と同じく未確定値へ倒す（倍々連結での OOM 防止）。
+  if (op === "&") {
+    const sa = str(a),
+      sb = str(b);
+    if (sa.length + sb.length > VALUE_LENGTH_LIMIT)
+      return unknown("とても長い文字列");
+    return sa + sb;
+  }
   if (op === "+" && a?.kind === "empty") return b?.kind === "empty" ? 0 : b;
   if (op === "+" && b?.kind === "empty") return a;
-  if (op === "+" && typeof a === "string" && typeof b === "string")
+  if (op === "+" && typeof a === "string" && typeof b === "string") {
+    if (a.length + b.length > VALUE_LENGTH_LIMIT)
+      return unknown("とても長い文字列");
     return a + b;
+  }
   if (["and", "or", "xor"].includes(op)) {
     if (typeof a === "boolean" && typeof b === "boolean")
       return op === "and" ? a && b : op === "or" ? a || b : a !== b;
@@ -750,6 +774,10 @@ function binary(op, a, b) {
   }
   let x = num(a),
     y = num(b);
+  // F-VBA-09: 負の底に整数でない指数を使う ^ は、オーバーフロー(6)ではなく
+  // 実 VBA どおりエラー5（底に負数を使えるのは指数が整数の場合のみ）。
+  if (op === "^" && x < 0 && !Number.isInteger(y))
+    fail("プロシージャの呼び出し、または引数が不正です", 5);
   if (["/", "\\", "mod"].includes(op) && y === 0) fail("0 で除算しました", 11);
   // RG-31: \ と Mod は被演算子を丸めてから除算する。丸めた後の除数が 0 なら
   // どちらもエラー11（0除算）であり、Mod だけオーバーフロー(6)にしない。
@@ -868,12 +896,12 @@ function expressionType(a, s) {
     let x = expressionType(a.a, s),
       y = expressionType(a.b, s);
     if (x === "variant" && y === "variant") return "variant";
-    // RG-12: 文字列リテラル＋数値型の + は数値演算（結果は Double 扱い）
+    // RG-12／F-VBA-10: 文字列（リテラル・String型変数・文字列を返す式）＋
+    // 数値型の + は数値演算（結果は Double 扱い）
     if (a.op === "+") {
-      const numericT = (t) => !["string", "variant"].includes(t),
-        aStrLit = a.a.k === "lit" && typeof a.a.v === "string",
-        bStrLit = a.b.k === "lit" && typeof a.b.v === "string";
-      if ((aStrLit && numericT(y)) || (bStrLit && numericT(x)))
+      const numericT = (t) =>
+        ["integer", "long", "double", "single", "boolean"].includes(t);
+      if ((x === "string" && numericT(y)) || (y === "string" && numericT(x)))
         return "double";
     }
     if (a.op === "+" && (x === "string" || y === "string")) return "string";
@@ -911,16 +939,26 @@ function expressionBinary(a, s) {
   if (x?.kind === "null" || y?.kind === "null") return binary(op, x, y);
   const numeric = (t) => !["string", "variant"].includes(t);
   if (op === "+") {
-    // RG-12: 文字列リテラルと数値の + は VBA の古典規則で数値化して加算する
-    // （"5" + 3 = 8、"a" + 3 は型エラー13）。宣言された String 型変数と数値型の
-    // 組み合わせ（従来テストで確定した仕様）は対象外で、従来どおりエラー13／連結になる。
-    const aStrLit = a.a.k === "lit" && typeof a.a.v === "string",
-      bStrLit = a.b.k === "lit" && typeof a.b.v === "string";
-    if ((aStrLit && typeof y === "number") || (bStrLit && typeof x === "number"))
+    // RG-12／F-VBA-10: 片方が文字列でもう片方が数値なら、文字列を数値へ
+    // 変換して加算するのが VBA の + の古典規則（"5" + 3 = 8、変換できない
+    // 文字列はエラー13）。対象は文字列リテラルだけでなく、String 型変数や
+    // 文字列を返す式・Variant に格納された文字列も同じで、宣言型によって
+    // 規則を変えない（RG-12 の VBA 側方針どおり暗黙変換を実装する）。
+    // 両方とも文字列のときだけ連結になる。
+    const numericT = (t) =>
+      ["integer", "long", "double", "single", "boolean"].includes(t);
+    const isNumVal = (v) => typeof v === "number" || typeof v === "boolean";
+    if (
+      (typeof x === "string" && isNumVal(y)) ||
+      (typeof y === "string" && isNumVal(x))
+    )
       return binary(op, x, y);
     if (
-      (aStrLit && isU(y) && numeric(yt)) ||
-      (bStrLit && isU(x) && numeric(xt))
+      (isU(x) || isU(y)) &&
+      ((xt === "string" && numericT(yt)) ||
+        (yt === "string" && numericT(xt)) ||
+        (xt === "string" && isNumVal(y)) ||
+        (yt === "string" && isNumVal(x)))
     )
       return unknown(`${display(x)} + ${display(y)}`, {
         op,
@@ -928,8 +966,6 @@ function expressionBinary(a, s) {
         b: y,
         valueType: "double",
       });
-    if ((xt === "string" && numeric(yt)) || (yt === "string" && numeric(xt)))
-      fail("型が一致しません", 13);
     if (xt === "string" || yt === "string") {
       if (isU(x) || isU(y))
         return unknown(`${display(x)} + ${display(y)}`, {
@@ -979,7 +1015,7 @@ function evalExpr(a, s) {
         rnd: ["Rnd による乱数（0以上1未満）", "double"],
         timer: ["実行時の午前0時からの経過秒数（Timer）", "double"],
         command: ["起動時に渡された引数文字列（Command）", "string"],
-        curdir: ["現在のフォルダー（CurDir）", "string"],
+        curdir: ["現在のフォルダ（CurDir）", "string"],
         freefile: ["使用可能な次のファイル番号（FreeFile）", "long"],
         doevents: ["DoEvents の戻り値", "long"],
         imestatus: ["IME の状態（IMEStatus）", "long"],
@@ -1035,7 +1071,10 @@ function evalExpr(a, s) {
       if (a.target.k !== "id") unsupported("オブジェクトのメソッド呼び出し");
       let name = a.target.name;
       if (name === "inputbox") {
-        if (args.length < 1 || args.length > 3)
+        // F-VBA-08: InputBox は prompt 以外にも title／default／xpos／ypos／
+        // helpfile／context まで最大7引数が有効。4引数以降を個数エラー(450)
+        // で拒否しない（戻り値が未確定値である点は従来どおり）。
+        if (args.length < 1 || args.length > 7)
           fail("引数の数が一致していません", 450);
         return unknown("InputBox の入力による", {
           symbol: `input-${s.inputId++}`,
@@ -1100,16 +1139,11 @@ function evalExpr(a, s) {
       }
       if (name === "cells") {
         if (args.length !== 2) unsupported("Cells は行・列の2引数のみ対応");
-        let r = num(args[0]),
-          c = num(args[1]);
-        if (
-          !Number.isInteger(r) ||
-          !Number.isInteger(c) ||
-          r < 1 ||
-          r > 5 ||
-          c < 1 ||
-          c > 3
-        )
+        // F-VBA-06（同根の兄弟表面）: 行・列は Long 引数なので、小数は
+        // VBA の暗黙変換（銀行丸め）で整数化してから範囲判定する。
+        let r = roundEven(num(args[0])),
+          c = roundEven(num(args[1]));
+        if (r < 1 || r > 5 || c < 1 || c > 3)
           unsupported("モデルシートは A1:C5 のみ対応");
         return { kind: "range", cells: [String.fromCharCode(64 + c) + r] };
       }
@@ -1118,12 +1152,10 @@ function evalExpr(a, s) {
         let arr = s.vars[name];
         if (arr?.kind !== "array") fail("型が一致しません", 13);
         if (args.length !== 1) unsupported("多次元配列");
-        let index = num(args[0]);
-        if (
-          !Number.isInteger(index) ||
-          index < arr.low ||
-          index >= arr.low + arr.values.length
-        )
+        // F-VBA-06: 添字は Long への暗黙変換（銀行丸め）を受ける。
+        // 整数でないことを理由にエラー9にはしない。
+        let index = roundEven(num(args[0]));
+        if (index < arr.low || index >= arr.low + arr.values.length)
           fail("インデックスが有効範囲にありません", 9);
         return arr.values[index - arr.low];
       }
@@ -1143,8 +1175,16 @@ function evalExpr(a, s) {
         );
       }
       if (args.some((v) => v?.kind === "null")) {
-        if (["cstr", "cint", "clng", "cdbl"].includes(name))
+        // F-VBA-05: Null の扱いは関数ごとに異なる。一括で Null を返して
+        // 関数固有の規則を上書きしない。
+        // ・CStr／CInt／CLng／CDbl／Val はエラー94（値を取得できない）
+        // ・Replace は文書の戻り値表で「Null ならエラー」と明記（94とする）
+        // ・IsNumeric は Boolean を返す関数なので Null には False
+        // ・上記以外（Len／Left／Right／Mid／Trim／UCase／LCase／Abs／Int／
+        //   Fix／Round／InStr 等）は各関数の文書どおり Null を返す
+        if (["cstr", "cint", "clng", "cdbl", "val", "replace"].includes(name))
           fail("Null の使い方が不正です", 94);
+        if (name === "isnumeric") return false;
         return NULL;
       }
       const arity = {
@@ -1166,21 +1206,39 @@ function evalExpr(a, s) {
         isnumeric: [1, 1],
         round: [1, 2],
         replace: [3, 6],
-        instr: [2, 2],
+        instr: [2, 4],
       };
       if (!arity[name]) unsupported(`関数 ${name}`);
       if (args.length < arity[name][0] || args.length > arity[name][1])
         fail("引数の数が一致していません", 450);
       let [x, y, z] = args;
-      if (name === "len") return str(x).length;
+      if (name === "len") {
+        // F-VBA-04／RA-3: Len には2形式ある。文字列は文字数、型付き変数は
+        // その格納に必要なバイト数（Integer=2／Long=4／Single=4／
+        // Double=8／Boolean=2）。Variant は文字列として文字数を返す。
+        // 配列は文字列化できずエラー13（str の規則と同根）。
+        if (x?.kind === "array") fail("型が一致しません", 13);
+        let argNode = a.args[0];
+        if (argNode?.k === "id") {
+          const sizes = {
+            integer: 2,
+            long: 4,
+            single: 4,
+            double: 8,
+            boolean: 2,
+          };
+          let t = s.types[argNode.name];
+          if (t in sizes) return sizes[t];
+        }
+        return str(x).length;
+      }
       if (["left", "right", "mid"].includes(name)) {
-        let n = num(y);
-        if (
-          n < 0 ||
-          !Number.isInteger(n) ||
-          (name === "mid" && n < 1) ||
-          (z !== undefined && num(z) < 0)
-        )
+        // F-VBA-06: 文字数・開始位置・長さは Long 引数なので、先に暗黙変換
+        // （銀行丸め）してから範囲を判定する。整数でないことを理由に
+        // エラー5にはせず、長さを切り捨てで黙って誤値を返すこともしない。
+        let n = roundEven(num(y)),
+          m = z === undefined ? undefined : roundEven(num(z));
+        if (n < 0 || (name === "mid" && n < 1) || (m !== undefined && m < 0))
           fail("プロシージャの呼び出し、または引数が不正です", 5);
         return name === "left"
           ? str(x).slice(0, n)
@@ -1188,7 +1246,7 @@ function evalExpr(a, s) {
             ? n
               ? str(x).slice(-n)
               : ""
-            : str(x).slice(n - 1, z === undefined ? undefined : n - 1 + num(z));
+            : str(x).slice(n - 1, m === undefined ? undefined : n - 1 + m);
       }
       if (name === "trim") return str(x).replace(/^ +| +$/g, "");
       if (name === "lcase") return str(x).toLowerCase();
@@ -1208,16 +1266,21 @@ function evalExpr(a, s) {
           .match(/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)/);
         return m ? Number(m[0]) : 0;
       }
-      if (name === "isnumeric")
-        return (
-          typeof x !== "boolean" &&
-          !x?.kind &&
-          str(x).trim() !== "" &&
-          Number.isFinite(Number(x))
-        );
+      if (name === "isnumeric") {
+        // F-VBA-05: Empty は数値文脈では 0 として扱われるため True。
+        // Null は上の関数別規則で False を返済み。Boolean は False、
+        // 配列等の値そのものは数値として評価できないため False
+        // （文字列化して捏造しない）。
+        if (x?.kind === "empty") return true;
+        if (x?.kind) return false;
+        if (typeof x === "boolean") return false;
+        if (typeof x === "number") return true;
+        return str(x).trim() !== "" && Number.isFinite(Number(x));
+      }
       if (name === "round") {
-        let dp = y === undefined ? 0 : num(y);
-        if (!Number.isInteger(dp) || dp < 0 || dp > 15)
+        // F-VBA-06: 桁数は Long 引数として銀行丸めで変換してから判定する。
+        let dp = y === undefined ? 0 : roundEven(num(y));
+        if (dp < 0 || dp > 15)
           fail("プロシージャの呼び出し、または引数が不正です", 5);
         return roundEven(num(x) * 10 ** dp) / 10 ** dp;
       }
@@ -1228,12 +1291,13 @@ function evalExpr(a, s) {
         let source = str(x),
           findText = str(y),
           replacement = str(z);
-        let start = args[3] === undefined ? 1 : num(args[3]),
-          count = args[4] === undefined ? -1 : num(args[4]),
-          compare = args[5] === undefined ? 0 : num(args[5]);
-        if (!Number.isInteger(start) || start < 1)
+        // F-VBA-06: start／count／compare は整数引数として銀行丸めで変換する。
+        let start = args[3] === undefined ? 1 : roundEven(num(args[3])),
+          count = args[4] === undefined ? -1 : roundEven(num(args[4])),
+          compare = args[5] === undefined ? 0 : roundEven(num(args[5]));
+        if (start < 1)
           fail("プロシージャの呼び出し、または引数が不正です", 5);
-        if (!Number.isInteger(count) || count < -1)
+        if (count < -1)
           fail("プロシージャの呼び出し、または引数が不正です", 5);
         if (compare === -1)
           unsupported("Replace の compare 引数 -1（Option Compare 依存）");
@@ -1242,6 +1306,21 @@ function evalExpr(a, s) {
         if (start > source.length) return "";
         let working = source.slice(start - 1);
         if (findText === "" || count === 0) return working;
+        // P-N1（連結以外の成長経路）: Replace は置換文字列を出現回数だけ
+        // 繰り返すため、短い入力でも結果が爆発しうる。出現回数の上限
+        // （重ならない出現は対象文字列長／検索文字列長以下）から結果長を
+        // 見積もり、上限を超える場合は実体を作らず未確定値へ倒す。
+        {
+          const maxHits =
+            count === -1
+              ? Math.floor(working.length / findText.length)
+              : Math.min(count, Math.floor(working.length / findText.length));
+          if (
+            working.length + maxHits * replacement.length >
+            VALUE_LENGTH_LIMIT
+          )
+            return unknown("とても長い文字列");
+        }
         let haystack = compare === 1 ? working.toLowerCase() : working,
           needle = compare === 1 ? findText.toLowerCase() : findText,
           out = "",
@@ -1256,7 +1335,38 @@ function evalExpr(a, s) {
         }
         return out + working.slice(pos);
       }
-      if (name === "instr") return str(x).indexOf(str(y)) + 1;
+      if (name === "instr") {
+        // F-VBA-07／F-VBA-08: InStr([start], string1, string2, [compare]) の
+        // 全形式に対応する。戻り値規則は文書どおりで、string1 が空文字列
+        // なら string2 の内容によらず 0、string2 が空文字列なら start を
+        // 返す。start／compare は整数引数として銀行丸めで変換する（F-VBA-06）。
+        let startPos = 1,
+          s1,
+          s2,
+          compare = 0;
+        if (args.length === 2) {
+          s1 = str(x);
+          s2 = str(y);
+        } else {
+          startPos = roundEven(num(x));
+          s1 = str(y);
+          s2 = str(z);
+          compare = args[3] === undefined ? 0 : roundEven(num(args[3]));
+        }
+        if (startPos < 1)
+          fail("プロシージャの呼び出し、または引数が不正です", 5);
+        if (compare === -1)
+          unsupported("InStr の compare 引数 -1（Option Compare 依存）");
+        if (compare !== 0 && compare !== 1)
+          fail("プロシージャの呼び出し、または引数が不正です", 5);
+        if (s1.length === 0) return 0;
+        if (s2.length === 0) return startPos;
+        if (startPos > s1.length) return 0;
+        let haystack = compare === 1 ? s1.toLowerCase() : s1,
+          needle = compare === 1 ? s2.toLowerCase() : s2,
+          at = haystack.indexOf(needle, startPos - 1);
+        return at < 0 ? 0 : at + 1;
+      }
       break;
     }
   }
@@ -1273,6 +1383,13 @@ function assign(target, v, s, set = false) {
         fail("オブジェクトが必要です", 424);
     } else v = value(v, s);
     s.vars[name] = cast(v, type);
+    // P-N1 最終防衛: どの生成経路から来た文字列でも、上限を超える実体は
+    // 変数へ保持しない（未確定値として保持する）。
+    if (
+      typeof s.vars[name] === "string" &&
+      s.vars[name].length > VALUE_LENGTH_LIMIT
+    )
+      s.vars[name] = unknown("とても長い文字列");
     s.types[name] = type;
     return `${name} ← ${display(s.vars[name])}`;
   }
@@ -1282,16 +1399,16 @@ function assign(target, v, s, set = false) {
     s.vars[target.target.name]?.kind === "array"
   ) {
     let arr = s.vars[target.target.name],
-      idx = num(value(evalExpr(target.args[0], s), s));
+      // F-VBA-06（書込側の兄弟表面）: 添字は読取側と同じく銀行丸めで変換する。
+      idx = roundEven(num(value(evalExpr(target.args[0], s), s)));
     if (target.args.length !== 1) unsupported("多次元配列");
-    if (
-      !Number.isInteger(idx) ||
-      idx < arr.low ||
-      idx >= arr.low + arr.values.length
-    )
+    if (idx < arr.low || idx >= arr.low + arr.values.length)
       fail("インデックスが有効範囲にありません", 9);
-    arr.values[idx - arr.low] = cast(value(v, s), arr.type || "variant");
-    return `${target.target.name}(${idx}) ← ${display(v)}`;
+    // NX-N9: 説明文は未変換の値ではなく、格納された（型変換後の）値を引用する。
+    // スカラー代入が格納後の s.vars[name] を表示するのと同じ規則にそろえる。
+    let stored = cast(value(v, s), arr.type || "variant");
+    arr.values[idx - arr.low] = stored;
+    return `${target.target.name}(${idx}) ← ${display(stored)}`;
   }
   let obj = target;
   if (target.k === "member" && ["value", "value2"].includes(target.name))
@@ -1659,10 +1776,11 @@ export function simulate(source, model = {}, custom = {}) {
               )
             )
               unsupported("Dim の配列添字は定数式のみ対応");
-            let low = num(evalExpr(d.bounds[0], s)),
-              high = num(evalExpr(d.bounds[1], s));
-            if (!Number.isInteger(low) || !Number.isInteger(high) || high < low)
-              fail("インデックスが有効範囲にありません", 9);
+            // F-VBA-06（同根の兄弟表面）: 配列の境界も Long への暗黙変換
+            // （銀行丸め）を受けてから判定する。
+            let low = roundEven(num(evalExpr(d.bounds[0], s))),
+              high = roundEven(num(evalExpr(d.bounds[1], s)));
+            if (high < low) fail("インデックスが有効範囲にありません", 9);
             if (high - low > 10000) unsupported("配列要素は10001個まで");
             s.vars[d.name] = {
               kind: "array",
@@ -1799,6 +1917,10 @@ export function simulate(source, model = {}, custom = {}) {
                 if (result === true) break;
               }
             } else result = true;
+            // Select Case では Null との比較結果（Null）は「一致しない」扱いで
+            // Case Else へ進むのが実 VBA の規則であり、If 条件位置の
+            // エラー94（F-VBA-01）とは切り分ける。
+            if (result?.kind === "null") result = false;
             let branches = choose(st, result, {
               ...n,
               line: c.line,
@@ -1963,7 +2085,14 @@ export function simulate(source, model = {}, custom = {}) {
         }
         for (let r of choices) {
           if (!r.yes) {
-            note(r.s, n, `${count}回実行してループを終了します`);
+            // NX-N18: 後判定 Do では終了判定は Loop 行で行われるため、終了注記も
+            // Do 行ではなく Loop 行（endLine / endTokens）に帰属させる。
+            // 前判定 Do・For・For Each は条件のある行（n）への帰属が正しいため変えない。
+            note(
+              r.s,
+              n.post ? { line: n.endLine, tokens: n.endTokens } : n,
+              `${count}回実行してループを終了します`,
+            );
             done.push(r.s);
             continue;
           }

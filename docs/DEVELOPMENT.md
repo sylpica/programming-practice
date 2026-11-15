@@ -1,6 +1,6 @@
-# 本体開発の実装範囲（2026-11-14 JST）
+# 本体開発の実装範囲（2026-11-15 JST）
 
-本体初版と監査修正後の対応範囲です。独立第1ラウンドを経て、Museの統合・裁定に基づく第2ラウンド修正中です。二重監査の収束は宣言していません。
+本体初版と監査修正後の対応範囲です。Muse／Codexの独立監査は第22ラウンド（CodexはR6）まで実施され、各修正バッチ（RG-87〜RG-144）を適用済みです。二重監査の収束は宣言していません。
 
 ## 共通基盤
 
@@ -12,7 +12,7 @@
 
 | 種類           | 本体で実装した範囲                                                                                                         | 主な未対応・未確認                                                                                                          |
 | -------------- | -------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| Excel VBA      | 従来のASTエンジン、モデルシート、宣言型／Variant、配列、If / Select Case / For / For Each / Do、Exit、On Error、出力       | 実Excel、複数シート・外部ブック、With、GoToラベル、動的配列、未知Step、複雑な未知値比較                                     |
+| Excel VBA      | 従来のASTエンジン、モデルシート、宣言型／Variant、配列、If / Select Case / For / For Each / Do、Exit、On Error、出力       | 実Excel、複数シート・外部ブック、With、GoToラベル、動的配列の要素参照・ReDim（宣言のみ対応）、未知Step、複雑な未知値比較                                     |
 | ImageJ         | 既存アプリのパーサ・評価器・200リファレンス・10テンプレート、画像／画素／ROI／測定表モデル                                 | 実画像、プラグイン、実ファイル。画像フィルター等は自然言語の動作説明と明示したモデル上の近似で、実画素結果は捏造しない      |
 | CloudFormation | JSON / YAML、Transformの記載順、Fn::Transformの兄弟スコープ、Pythonハンドラ、requestId／status／fragmentの検査、前後比較   | 実AWS、SAM／Include、IAM、YAML短縮タグ、一般的なテンプレート妥当性・リソース検証                                            |
 | Power Automate | Desktopの変数・If / Else・Loop / For each / Loop condition・Exit loop、モデルファイル／メール、アクション編集              | 製品エクスポート形式ではない学習用JSON。コネクター、実送信、UI自動化、詳細な例外処理設定                                    |
@@ -24,7 +24,7 @@
 | C              | モデルABI、宣言・配列・ポインタ・スコープ寿命、If / For / While、printf、整数演算                                          | 動的確保、構造体、ユーザー関数、多次元、複雑な宣言。精度外の64ビット計算と処理系依存変換は停止                    |
 | C++            | 上記の基礎C系構文、cout、ポインタ／配列、同じ型の変数へのint&参照、std::stringの基本連結                                                                                    | STL、一般のクラス・テンプレート、オーバーロード、RAII、動的確保等                                                           |
 | C#             | int演算、unchecked／checked、配列例外、単純フィールドのクラス・参照共有、Console                                           | LINQ、一般のコンストラクタ・継承・プロパティ、unsafe、ユーザー関数、一般の.NET API                                          |
-| JavaScript     | 基本宣言・If / For / While、typeof、型変換、配列・参照、モデルDOM読書き・要素作成                                                  | 関数定義、コールバック／イベント、非同期、fetch、一般のDOM API、BigInt・Symbol等                                            |
+| JavaScript     | 基本宣言・If / For / While、typeof、型変換、配列・参照、モデルDOM読書き・要素作成、BigInt リテラルと BigInt 同士の演算                                                  | 関数定義、コールバック／イベント、非同期、fetch、一般のDOM API、Symbol等                                            |
 
 ## 開発中の確認
 
@@ -40,7 +40,7 @@
 
 ## 未実施の検証
 
-各実製品（Excel、ImageJ、Windows AutoHotkey、Power Platform、AWS、.NET）やR本体との全面的な自動差分試験、iOS実機でのインストール試験、Museとの独立二重監査は未実施です。13種類とも「全構文／全APIに対応」とは扱いません。
+各実製品（Excel、ImageJ、Windows AutoHotkey、Power Platform、AWS、.NET）やR本体との全面的な自動差分試験、iOS実機でのインストール試験は未実施です。Museとの独立二重監査は第22ラウンドまで実施済みですが、収束判定は未実施です。全種類とも「全構文／全APIに対応」とは扱いません。
 
 ## Codex独立監査の修正節目1（2026-11-14）
 
@@ -146,10 +146,12 @@ PowerShell 7.4を根拠にするWindowsパス・UTF-8／CRLFの部分モデル�
 
 最終のリファレンス件数（種類別）：Excel VBA 90、ImageJ 200、CloudFormation 171（固有11＋Python委譲160）、Power Automate 15、AutoHotkey 26、UI.Vision 22、Power Apps 28、Python 160、R 44、C 26、C++ 31、C# 53、JavaScript 39、cmd 28、PowerShell 45。合計 **978件（対応917／参照専用61）**。
 
+その後の修正バッチ2（2026-11-15）で、VBA Attribute・ImageJ `.length`・Python math 定数5件（CloudFormation 伝播5件を含む）・PowerShell 自動変数とプロパティ項目の追加、ImageJ Math.sinh/cosh/tanh の未対応分類への是正、Python `with` の対応分類への是正等を行い、現在の件数は次のとおり：Excel VBA 91、ImageJ 201、CloudFormation 176（固有11＋Python委譲165）、Power Automate 15、AutoHotkey 26、UI.Vision 22、Power Apps 28、Python 165、R 44、C 26、C++ 31、C# 53、JavaScript 39、cmd 28、PowerShell 50。合計 **995件（対応933／参照専用62）**。照合個票は `docs/audit/reference-r2.json` 917行／`docs/audit/reference-r6.json` 78行。詳細は `docs/audit/MUSE-FIX-BATCH2.md`。
+
 この修正で確定した宣言事項：
 
-- Python：次の組み込み名は PY_BUILTINS の受理のみで専用処理はなく、呼び出すと未対応として停止します（リファレンス項目はありません）：ascii、breakpoint、bytearray、bytes、callable、classmethod、compile、complex、delattr、dir、eval、exec、frozenset、getattr、globals、hasattr、hash、help、id、issubclass、locals、memoryview、object、property、setattr、slice、staticmethod、super、vars。例外クラス名（Exception、ValueError 等25件）は項目化し、raise 文と try のハンドラ照合で処理します（コンストラクタ呼び出しを値として使う形は未対応）。また TYPE_ATTRS に載る次のメソッドは参照のみ受理され、呼び出しは未対応として停止します（リファレンス項目はありません）：str の casefold、center、encode、expandtabs、format_map、isprintable、istitle、ljust、maketrans、partition、removeprefix、removesuffix、rjust、rpartition、splitlines、swapcase、translate、zfill、dict の fromkeys、set の isdisjoint、issubset、issuperset、int の as_integer_ratio、bit_count、bit_length、conjugate、from_bytes、is_integer、to_bytes、float の as_integer_ratio、conjugate、fromhex、is_integer、bool の as_integer_ratio、bit_count、bit_length、conjugate、from_bytes、is_integer、to_bytes。with 文は部分対応です（本文は実行し、as 変数には未確定値が入り、__enter__／__exit__ の処理や後始末は再現しません。open との組み合わせは open 自体が未対応のため停止します）。
+- Python：次の組み込み名は PY_BUILTINS の受理のみで専用処理はなく、呼び出すと未対応として停止します（リファレンス項目はありません）：ascii、breakpoint、bytearray、bytes、callable、classmethod、compile、complex、delattr、dir、eval、exec、frozenset、getattr、globals、hasattr、hash、help、id、issubclass、locals、memoryview、object、property、setattr、slice、staticmethod、super、vars。例外クラス名（Exception、ValueError 等25件）は項目化し、raise 文と try のハンドラ照合で処理します（コンストラクタ呼び出しを値として使う形は未対応）。また TYPE_ATTRS に載る次のメソッドは参照のみ受理され、呼び出しは未対応として停止します（リファレンス項目はありません）：str の casefold、center、encode、expandtabs、format_map、isprintable、istitle、ljust、maketrans、partition、removeprefix、removesuffix、rjust、rpartition、splitlines、swapcase、translate、zfill、dict の fromkeys、set の isdisjoint、issubset、issuperset、int の as_integer_ratio、bit_count、bit_length、conjugate、from_bytes、is_integer、to_bytes、float の as_integer_ratio、conjugate、fromhex、hex、is_integer、bool の as_integer_ratio、bit_count、bit_length、conjugate、from_bytes、is_integer、to_bytes。with 文は部分対応です（本文は実行し、as 変数には未確定値が入り、__enter__／__exit__ の処理や後始末は再現しません。open との組み合わせは open 自体が未対応のため停止します）。
 - JavaScript：`length`（配列・文字列のプロパティ）は意図的除外とする。使用中チップの refs には含めないことをテストで明示検証している設計判断（`tests/muse-fix-core.test.js`）に基づき、リファレンス項目は設けない。プロパティ自体の読み取りはモデルで対応している。
 - AutoHotkey：組み込み変数 A_* は、A_Index を個別項目とし、その他の実装済み110件は束ね項目「A_*（組み込み変数）」に集約する。scan は実装済みの A_* 名を束ね項目（A_Index は個別項目）へ解決する。明示的に未対応の21件（A_LoopField 等）は項目化も解決もしない。
-- ImageJ：`Dialog.` 接頭辞の汎用受理（ステップ表示＋未確定値）で処理される18件は項目化し、汎用モデルである旨を注意書きに明記した。SIM_EXTRA のみの6件（getMetadata 等）は実装がなく実行時に未確認として停止するため、項目化しない。
+- ImageJ：`Dialog.` 接頭辞の汎用受理（ステップ表示＋未確定値）で処理される18件は項目化し、汎用モデルである旨を注意書きに明記した。SIM_EXTRA のみの7件（getMetadata、String.format 等）は実装がなく実行時に未確認として停止するため、項目化しない。
 - C 系：unsigned／signed の複合型名による変数宣言は対応済み（キャスト節の記述も本節で是正）。C# の符号なし型（byte／uint／ushort）は、代入時の変換で対応する符号付き型の範囲を超える値を停止するモデル制限があり、該当項目の注意書きに明記した。

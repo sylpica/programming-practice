@@ -394,13 +394,24 @@ export const definition = {
               );
               break;
             case "Increase variable": {
+              // M-N6: 変数が存在しない場合は型の問題と区別し、不存在を
+              // 先に名指しする（%Undefined% 参照時の文言と揃える）。
+              if (!Object.hasOwn(s.vars, a.target))
+                api.fail("変数がありません：" + a.target, n);
               if (
                 typeof s.vars[a.target] !== "number" ||
                 typeof value !== "number"
               )
                 api.fail("数値型の変数と増分が必要です", n);
               s.vars[a.target] += value;
-              api.note(s, n, `${a.target} を ${s.vars[a.target]} に増やします`);
+              // NX-N16: 説明の動詞は実際の増減方向に合わせる（増分が
+              // 負なら減少、0 なら不変であり、「増やします」ではない）。
+              if (value > 0)
+                api.note(s, n, `${a.target} を ${s.vars[a.target]} に増やします`);
+              else if (value < 0)
+                api.note(s, n, `${a.target} を ${s.vars[a.target]} に減らします`);
+              else
+                api.note(s, n, `${a.target} は ${s.vars[a.target]} のまま変わりません`);
               break;
             }
             case "Display input dialog":

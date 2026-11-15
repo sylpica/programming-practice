@@ -198,7 +198,8 @@ test("RG-29 scan of all template intros: preserve legacy links and reject mid-wo
   // RG-58 で let／const／var の項目が増え、解説文からのリンクが4件増えた（83→87）。
   // リファレンス完全性修正（RG-116〜RG-135）で A_Index／PI／return／TypeError／$／NA の
   // 項目が増え、解説文中の正当な言及がリンク化されて6件増えた（87→93）。
-  assert.equal(legacyLinks, 93);
+  // 修正バッチ2の T-1 是正で each テンプレートの intro が For Each へ2回言及するようになり1件増えた（93→94）。
+  assert.equal(legacyLinks, 94);
   assert.ok(total >= legacyLinks);
 });
 

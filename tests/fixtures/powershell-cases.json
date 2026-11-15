@@ -128,7 +128,7 @@
   ["explicit null array", "@($null).Count", [["1"]]],
   ["void array", "@(Write-Host \"host\").Count", [["0"]]],
   ["null foreach array", "$n=0;foreach($x in @($null)){$n++};$n", [["1"]]],
-  ["null foreach scalar", "$n=0;foreach($x in $null){$n++};$n", [["0"]]],
+  ["null foreach scalar", "$n=0;foreach($x in $null){$n++};$n", [["1"]]],
   ["null pipeline", "$null|ForEach-Object {1}", [["1"]]],
   ["measure null", "($null|Measure-Object).Count", [["0"]]],
   ["select null", "@($null|Select-Object -First 1).Count", [["0"]]],

@@ -38,7 +38,7 @@ export const referenceDetails = {
   },
   "data.frame": {
     "returns": "データフレーム",
-    "source": "https://stat.ethz.ch/R-manual/R-devel/library/base/html/dataframe.html"
+    "source": "https://stat.ethz.ch/R-manual/R-devel/library/base/html/data.frame.html"
   },
   "nrow": {
     "returns": "行数。次元がなければNULL",
@@ -109,7 +109,7 @@ export const referenceDetails = {
     "source": "https://stat.ethz.ch/R-manual/R-devel/library/base/html/match.html"
   },
   "$": {
-    "returns": "列のベクトル。存在しない列はNULL",
+    "returns": "列のベクトル（部分一致で一意に定まる場合を含む）。部分一致でも見つからない列はNULL",
     "source": "https://stat.ethz.ch/R-manual/R-devel/library/base/html/Extract.html"
   },
   "[": {
@@ -149,7 +149,7 @@ export const referenceDetails = {
     "source": "https://stat.ethz.ch/R-manual/R-devel/library/base/html/Arithmetic.html"
   },
   "%/%": {
-    "returns": "商（整数除算）の数値ベクトル",
+    "returns": "floor除算の商の数値ベクトル",
     "source": "https://stat.ethz.ch/R-manual/R-devel/library/base/html/Arithmetic.html"
   },
   "NaN": {

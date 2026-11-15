@@ -1,7 +1,7 @@
 // Return contracts and primary documentation for the supported teaching subset.
 export const referenceDetails = {
   "Transform": {
-    "returns": "テンプレート節（記載順にマクロを適用）",
+    "returns": "変換後のテンプレート全体（Transform節を除く）",
     "source": "https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/template-macros-author.html"
   },
   "Fn::Transform": {
@@ -41,7 +41,7 @@ export const referenceDetails = {
     "source": "https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/template-macros-author.html"
   },
   "templateParameterValues": {
-    "returns": "評価済みテンプレートパラメーター",
+    "returns": "評価済みテンプレートパラメータ",
     "source": "https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/template-macros-author.html"
   }
 };

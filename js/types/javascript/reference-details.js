@@ -117,7 +117,7 @@ export const referenceDetails = {
     "source": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/continue"
   },
   "typeof": {
-    "returns": "型を表す文字列（\"number\"、\"string\"、\"bigint\"、\"boolean\"、\"undefined\"、\"object\"、\"function\"のいずれか）",
+    "returns": "型を表す文字列（\"number\"、\"string\"、\"bigint\"、\"boolean\"、\"undefined\"、\"object\"、\"function\"、\"symbol\"のいずれか）",
     "source": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/typeof"
   },
   "BigInt": {
@@ -126,7 +126,7 @@ export const referenceDetails = {
   },
   "オブジェクトリテラル": {
     "returns": "新しいオブジェクト",
-    "source": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object"
+    "source": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Object_initializer"
   },
   "id": {
     "returns": "文字列（要素のID。設定がなければ空文字列）",
