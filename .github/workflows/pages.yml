@@ -30,8 +30,20 @@ jobs:
             const {data} = await github.rest.repos.get(context.repo);
             core.setOutput('enabled', String(data.has_pages));
             if (!data.has_pages) core.warning('GitHub Pages is disabled. Select Settings > Pages > Source: GitHub Actions, then run this workflow again.');
+  validate-shells:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Compare shell cases with real PowerShell and cmd
+        run: python tests/shell-native-audit.py --require-both
   deploy:
-    needs: validate
+    needs: [validate, validate-shells]
     if: needs.validate.outputs.pages_enabled == 'true'
     runs-on: ubuntu-latest
     permissions:

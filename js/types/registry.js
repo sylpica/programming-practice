@@ -1,3 +1,5 @@
+import { definition as cmd } from './cmd/index.js';
+import { definition as powershell } from './powershell/index.js';
 import { definition as vba } from "./vba/index.js";
 import { definition as imagej } from "./imagej/index.js";
 import { definition as cloudformation } from "./cloudformation/index.js";
@@ -25,6 +27,8 @@ export const definitions = [
   cpp,
   csharp,
   javascript,
+  cmd,
+  powershell,
 ];
 export function getDefinition(id) {
   return definitions.find((d) => d.id === id) || definitions[0];

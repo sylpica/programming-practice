@@ -1,0 +1,881 @@
+import {
+  LIMITS,
+  isUnknown,
+  unknown,
+  formatValue,
+} from "../../core/contract.js";
+import { shellRuntime, pushNodes } from "../shell/runtime.js";
+import {
+  fail,
+  ciGet,
+  ciSet,
+  unquote,
+  words,
+  initFiles,
+  fsEntry,
+  listFiles,
+  fileDisplay,
+  windowsPath,
+  inputValue,
+  sourceError,
+  writeFile,
+  makeDirectory,
+  removeEntry,
+  copyEntry,
+  parentDirectory,
+} from "../shell/model.js";
+import { commands, block, commandRefs } from "./parser.js";
+import { arithmetic } from "./arithmetic.js";
+function slot(value, s) {
+  if (!isUnknown(value)) return String(value ?? "");
+  const key = "__CMD_VALUE_" + Object.keys(s.cmd.slots).length + "__";
+  s.cmd.slots[key] = value;
+  return key;
+}
+function value(text, s) {
+  if (Object.hasOwn(s.cmd.slots, text)) return s.cmd.slots[text];
+  const keys = Object.keys(s.cmd.slots).filter((k) => text.includes(k));
+  return keys.length
+    ? unknown(
+        "環境変数を展開した文字列",
+        keys.map((k) => s.cmd.slots[k].id).join(":") +
+          ":" +
+          text.replace(/__CMD_VALUE_\d+__/g, "?"),
+      )
+    : text;
+}
+function percent(text, s, api, node) {
+  let out = "";
+  for (let i = 0; i < text.length; i++) {
+    if (text[i] !== "%") {
+      out += text[i];
+      continue;
+    }
+    if (text[i + 1] === "%") {
+      out += text.slice(i, i + 3);
+      i += 2;
+      continue;
+    }
+    let m = text.slice(i).match(/^%~([1-9])/);
+    if (m) {
+      out += slot(unquote(s.cmd.args[Number(m[1]) - 1] || ""), s);
+      i += m[0].length - 1;
+      continue;
+    }
+    m = text.slice(i).match(/^%([0-9])/);
+    if (m) {
+      out += slot(
+        m[1] === "0" ? "practice.cmd" : s.cmd.args[Number(m[1]) - 1] || "",
+        s,
+      );
+      i++;
+      continue;
+    }
+    const end = text.indexOf("%", i + 1);
+    if (end < 0) fail("未対応：単独の % または展開修飾子", node.line);
+    const name = text.slice(i + 1, end);
+    if (name.includes(":"))
+      fail("未対応：環境変数の部分文字列・置換展開", node.line);
+    let v = ciGet(s.vars, name);
+    if (v === undefined) {
+      if (/^cd$/i.test(name)) v = s.model.cwd;
+      else if (/^errorlevel$/i.test(name)) v = s.cmd.errorlevel;
+      else if (/^(random|date|time)$/i.test(name))
+        v = api.freshUnknown(name + " の実行時の値", s);
+      else v = "";
+    }
+    out += slot(v, s);
+    i = end;
+  }
+  return out;
+}
+function delayed(text, s, node) {
+  text = text.replace(/%%([a-z])/gi, (_, name) => {
+    if (!Object.hasOwn(s.cmd.loops, name))
+      fail("未対応：未束縛のfor変数／callによる二重展開", node.line);
+    return slot(s.cmd.loops[name], s);
+  });
+  if (s.cmd.delayed)
+    text = text.replace(/!([^!]*)!/g, (_, name) =>
+      slot(ciGet(s.vars, name) ?? "", s),
+    );
+  let out = "",
+    quote = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (c === '"') quote = !quote;
+    if (c === "^" && !quote && i + 1 < text.length) {
+      if (text[i + 1] === "\n") {
+        i++;
+        continue;
+      }
+      out += text[++i];
+    } else out += c;
+  }
+  return out;
+}
+function partsIf(text, node) {
+  let negate = false,
+    insensitive = false;
+  for (let i = 0; i < 2; i++) {
+    if (/^not\s+/i.test(text)) {
+      negate = !negate;
+      text = text.replace(/^not\s+/i, "");
+    }
+    if (/^\/i\s+/i.test(text)) {
+      insensitive = true;
+      text = text.replace(/^\/i\s+/i, "");
+    }
+  }
+  let m = text.match(
+    /^(exist|errorlevel|defined)\s+("[^"]*"|\S+)\s+([\s\S]+)$/i,
+  );
+  if (m)
+    return { op: m[1].toLowerCase(), a: m[2], body: m[3], negate, insensitive };
+  m = text.match(
+    /^("[^"]*"|[^\s=]+)\s*(==|EQU|NEQ|LSS|LEQ|GTR|GEQ)\s*("[^"]*"|\S+)\s+([\s\S]+)$/i,
+  );
+  if (!m) fail("未対応または不正なif条件です", node.line);
+  return {
+    op: m[2].toUpperCase(),
+    a: m[1],
+    b: m[3],
+    body: m[4],
+    negate,
+    insensitive,
+  };
+}
+function compare(c, s, node) {
+  let a = value(c.a, s),
+    b = value(c.b || "", s),
+    v;
+  if (c.op === "defined") v = ciGet(s.vars, a) !== undefined;
+  else if (c.op === "exist") {
+    v = isUnknown(a)
+      ? unknown("指定したモデルパスの存在", a.id + ":exist")
+      : !!fsEntry(s, a, node.line);
+  } else if (c.op === "errorlevel") {
+    a = s.cmd.errorlevel;
+    b = Number(c.a);
+    if (!Number.isInteger(b))
+      fail("if errorlevelには整数が必要です", node.line, "SyntaxError");
+    v = isUnknown(a)
+      ? { ...unknown("終了コードによる"), op: ">=", a, b }
+      : a >= b;
+  } else {
+    let op = c.op;
+    if (op !== "==" && !isUnknown(a) && !isUnknown(b)) {
+      if (!/^[+-]?\d+$/.test(a) || !/^[+-]?\d+$/.test(b))
+        fail(
+          "未対応：数値でないEQU等の比較（文字列には == を使用）",
+          node.line,
+        );
+      a = Number(a);
+      b = Number(b);
+      if (!Number.isSafeInteger(a) || !Number.isSafeInteger(b))
+        fail("未確認：比較の数値範囲外", node.line, "未確認");
+    }
+    if (c.insensitive) {
+      if (isUnknown(a) || isUnknown(b))
+        fail("未確認：未確定文字列の /I 比較", node.line, "未確認");
+      a = String(a).toUpperCase();
+      b = String(b).toUpperCase();
+    }
+    const mapped = {
+      "==": "=",
+      EQU: "=",
+      NEQ: "<>",
+      LSS: "<",
+      LEQ: "<=",
+      GTR: ">",
+      GEQ: ">=",
+    }[op];
+    v =
+      isUnknown(a) || isUnknown(b)
+        ? { ...unknown("展開した環境変数の比較"), op: mapped, a, b }
+        : mapped === "="
+          ? a === b
+          : mapped === "<>"
+            ? a !== b
+            : mapped === "<"
+              ? a < b
+              : mapped === "<="
+                ? a <= b
+                : mapped === ">"
+                  ? a > b
+                  : a >= b;
+  }
+  return c.negate
+    ? isUnknown(v)
+      ? { ...unknown("条件の否定"), op: "!", a: v }
+      : !v
+    : v;
+}
+export function simulateCmd(source, model, limits) {
+  try {
+    if (
+      typeof source !== "string" ||
+      source.length > Math.min(LIMITS.source, limits?.source || LIMITS.source)
+    )
+      fail("cmdコードは100000文字以内で指定してください", 1, "limit");
+    const nodes = commands(source.replace(/\r\n?/g, "\n")),
+      labels = Object.create(null);
+    nodes.forEach((n, i) => {
+      if (/^:[^:]/.test(n.raw)) {
+        const name = n.raw.slice(1).trim().split(/\s/)[0].toLowerCase();
+        if (Object.hasOwn(labels, name))
+          fail("未対応：重複ラベル " + name, n.line);
+        labels[name] = i + 1;
+      }
+    });
+    function program(pc) {
+      return { k: "program-counter", pc, line: nodes[pc]?.line || 1 };
+    }
+    function returning(s, node) {
+      const frame = s.cmd.calls.pop(),
+        depth = frame?.localDepth || 0;
+      while (s.cmd.locals.length > depth) {
+        const prev = s.cmd.locals.pop();
+        s.vars = prev.vars;
+        s.cmd.delayed = prev.delayed;
+      }
+      if (frame) {
+        s.tasks = frame.tasks;
+        s.cmd.args = frame.args;
+      } else {
+        s.tasks = [];
+        s.halt = true;
+      }
+    }
+    return shellRuntime(
+      [program(0)],
+      model,
+      (s, api) => {
+        initFiles(s);
+        for (const [k, v] of Object.entries(s.vars)) {
+          if (v !== null && typeof v === "object" && !isUnknown(v))
+            fail(
+              "モデル環境変数は文字列・数値・真偽値または未確定値で指定してください：" +
+                k,
+              1,
+              "モデルエラー",
+            );
+          ciSet(s.vars, k, isUnknown(v) ? v : String(v ?? ""));
+        }
+        s.cmd = {
+          errorlevel: s.model.errorlevel ?? 0,
+          echo: false,
+          delayed: false,
+          args: s.model.args || [],
+          calls: [],
+          locals: [],
+          loops: {},
+          slots: {},
+        };
+      },
+      (n, s, api) => {
+        if (n.k === "redirect-end") {
+          const entries = s.outputs.splice(n.start),
+            text = entries
+              .filter((o) => o.channel === "stdout")
+              .map((o) => o.text + (o.raw ? "" : "\r\n"))
+              .join("");
+          writeFile(s, n.path, text, n.line, true);
+          api.note(
+            s,
+            { ...n, refs: ["リダイレクト"] },
+            "出力をモデルファイルへ書き込みます：" + n.path,
+          );
+          return;
+        }
+        if (n.k === "pipe-end") {
+          const entries = s.outputs.splice(n.start);
+          if (entries.some((o) => o.uncertain))
+            fail(
+              "未確認：パイプの入力文字列が確定していません",
+              n.line,
+              "未確認",
+            );
+          s.cmd.stdin = entries
+            .filter((o) => o.channel === "stdout")
+            .map((o) => o.text + (o.raw ? "" : "\r\n"))
+            .join("");
+          s.vars = n.vars;
+          s.model.cwd = n.cwd;
+          s.tasks.push({
+            k: "pipe-restore",
+            vars: structuredClone(n.vars),
+            cwd: n.cwd,
+            line: n.line,
+          });
+          pushNodes(s, commands(n.next, n.line, true));
+          return;
+        }
+        if (n.k === "pipe-restore") {
+          s.vars = n.vars;
+          s.model.cwd = n.cwd;
+          delete s.cmd.stdin;
+          return;
+        }
+        if (n.k === "program-counter") {
+          if (n.pc >= nodes.length) return returning(s, n);
+          s.tasks.push(program(n.pc + 1), nodes[n.pc]);
+          return;
+        }
+        if (n.k === "restore-loop") {
+          if (n.had) s.cmd.loops[n.name] = n.previous;
+          else delete s.cmd.loops[n.name];
+          return;
+        }
+        if (n.k === "for-iteration") {
+          const num = n.numeric ? n.start + n.index * n.step : undefined;
+          if (
+            n.numeric
+              ? n.step > 0
+                ? num > n.end
+                : num < n.end
+              : n.index >= n.items.length
+          )
+            return;
+          if (n.index >= api.limits.iterations) {
+            api.stop(s, n, "ループ回数の上限");
+            return;
+          }
+          const had = Object.hasOwn(s.cmd.loops, n.name),
+            previous = s.cmd.loops[n.name];
+          s.cmd.loops[n.name] = n.numeric ? String(num) : n.items[n.index];
+          s.tasks.push(
+            { ...n, index: n.index + 1 },
+            { k: "restore-loop", name: n.name, had, previous, line: n.line },
+          );
+          pushNodes(s, n.body);
+          return;
+        }
+        if (!n.expanded) {
+          const expanded = percent(n.raw, s, api, n);
+          pushNodes(s, commands(expanded, n.line, true));
+          return;
+        }
+        let raw = n.raw.trimStart().replace(/^@/, "");
+        n = { ...n, refs: commandRefs(raw) };
+        if (!raw || raw.startsWith(":") || /^rem(?:\s|$)/i.test(raw)) return;
+        if (!n.redirected) {
+          let quote = false,
+            depth = 0;
+          for (let i = 0; i < raw.length; i++) {
+            const ch = raw[i];
+            if (ch === "^" && !quote) {
+              i++;
+              continue;
+            }
+            if (ch === '"') quote = !quote;
+            if (!quote) {
+              if (ch === "(") depth++;
+              if (ch === ")") depth--;
+              if (!depth && ch === "|") {
+                if (raw[i + 1] === "|")
+                  fail("未対応：条件付きコマンド連結 ||", n.line);
+                s.tasks.push({
+                  k: "pipe-end",
+                  start: s.outputs.length,
+                  next: raw.slice(i + 1),
+                  vars: structuredClone(s.vars),
+                  cwd: s.model.cwd,
+                  line: n.line,
+                });
+                pushNodes(s, commands(raw.slice(0, i), n.line, true));
+                api.note(
+                  s,
+                  { ...n, refs: ["パイプ"] },
+                  "標準出力を次のコマンドへ渡します",
+                );
+                return;
+              }
+              if (!depth && (ch === ">" || ch === "<")) {
+                if (ch === "<") fail("未対応：入力リダイレクト <", n.line);
+                if (/\d$/.test(raw.slice(0, i)))
+                  fail("未対応：番号つき出力リダイレクト", n.line);
+                const append = raw[i + 1] === ">",
+                  offset = append ? 2 : 1;
+                const target = unquote(
+                  delayed(raw.slice(i + offset).trim(), s, n),
+                );
+                if (!target || /[<>|]/.test(target))
+                  fail("未対応：複合リダイレクト", n.line);
+                const path = windowsPath(value(target, s), s.model.cwd, n.line);
+                writeFile(s, path, "", n.line, append);
+                s.tasks.push({
+                  k: "redirect-end",
+                  path,
+                  start: s.outputs.length,
+                  line: n.line,
+                });
+                pushNodes(
+                  s,
+                  commands(raw.slice(0, i), n.line, true).map((c) => ({
+                    ...c,
+                    redirected: true,
+                  })),
+                );
+                return;
+              }
+            }
+          }
+        }
+
+        if (/^if\s/i.test(raw)) {
+          const c = partsIf(raw.slice(3), n);
+          c.a = delayed(c.a, s, n);
+          if (c.b) c.b = delayed(c.b, s, n);
+          const yes = block(c.body, n.line);
+          let no = [];
+          if (yes.rest) {
+            if (!/^else\s+/i.test(yes.rest))
+              fail("ifブロックの後はelseだけに対応します", n.line);
+            const other = block(yes.rest.replace(/^else\s+/i, ""), yes.endLine);
+            if (other.rest) fail("elseの後に未対応の文字があります", n.line);
+            no = other.nodes;
+          }
+          const v = compare(c, s, n);
+          api.note(s, n, "ifの条件を判定します");
+          return api.choose(s, v, n).map((r) => {
+            pushNodes(r.s, r.yes ? yes.nodes : no);
+            return r.s;
+          });
+        }
+        if (/^for\s/i.test(raw)) {
+          const m = raw.match(
+            /^for\s+(\/L\s+)?%%([a-z])\s+in\s*\(([^)]*)\)\s+do\s+([\s\S]+)$/i,
+          );
+          if (!m) fail("未対応または不正なfor形式（基本形と /L のみ）", n.line);
+          const body = block(m[4], n.line);
+          if (body.rest) fail("forの後に未対応の文字があります", n.line);
+          const frame = {
+            k: "for-iteration",
+            name: m[2],
+            body: body.nodes,
+            index: 0,
+            line: n.line,
+            numeric: !!m[1],
+          };
+          if (frame.numeric) {
+            const nums = m[3].split(",").map((x) => Number(x.trim()));
+            if (
+              nums.length !== 3 ||
+              nums.some((x) => !Number.isSafeInteger(x)) ||
+              nums[1] === 0
+            )
+              fail(
+                "for /L は整数の開始値,0以外の増分,終了値が必要です",
+                n.line,
+              );
+            [frame.start, frame.step, frame.end] = nums;
+          } else {
+            frame.items = [];
+            for (const item of words(m[3], n.line)) {
+              if (/[?*]/.test(item)) {
+                const entries = listFiles(s, item, n.line);
+                frame.items.push(
+                  ...entries
+                    .filter((e) => e.type === "file")
+                    .map((e) => e.path.slice(e.path.lastIndexOf("\\") + 1)),
+                );
+              } else frame.items.push(item);
+            }
+          }
+          api.note(s, n, "forの列挙を開始します");
+          s.tasks.push(frame);
+          return;
+        }
+        raw = delayed(raw, s, n);
+        if (raw.startsWith("(")) {
+          const b = block(raw, n.line);
+          if (b.rest) fail("未対応：ブロック後の連結", n.line);
+          pushNodes(s, b.nodes);
+          return;
+        }
+        const m = raw.match(/^(echo\.|[\w]+)(?:\s+([\s\S]*))?$/i);
+        if (!m) fail("未対応：cmdの構文 " + raw, n.line);
+        const name = m[1].toLowerCase(),
+          arg = m[2] ?? "";
+        if (/[<>|]/.test(arg) && name !== "set")
+          fail("未対応：パイプライン・リダイレクト", n.line);
+        function output(v, raw = false) {
+          s.outputs.push({
+            channel: "stdout",
+            text: isUnknown(v) ? formatValue(v) : String(v),
+            uncertain: isUnknown(v),
+            raw,
+            line: n.line,
+          });
+          api.note(
+            s,
+            n,
+            "出力します：" + (isUnknown(v) ? formatValue(v) : String(v)),
+          );
+        }
+        switch (name) {
+          case "echo.":
+            output("");
+            break;
+          case "echo":
+            if (/^(on|off)$/i.test(arg)) {
+              s.cmd.echo = arg.toLowerCase() === "on";
+              api.note(
+                s,
+                n,
+                "コマンド表示を " + arg.toLowerCase() + " にします",
+              );
+            } else if (!arg)
+              api.note(
+                s,
+                n,
+                "ECHO設定を確認します：" + (s.cmd.echo ? "on" : "off"),
+              );
+            else output(value(arg, s));
+            break;
+          case "set": {
+            if (/^\/a\s+/i.test(arg)) {
+              const result = arithmetic(
+                arg.replace(/^\/a\s+/i, ""),
+                s.vars,
+                n.line,
+              );
+              s.cmd.errorlevel = 0;
+              api.note(
+                s,
+                { ...n, refs: ["set", "set /a"] },
+                "32ビット整数の式を評価します：" + result,
+              );
+              break;
+            }
+            const input = /^\/p\s+/i.test(arg),
+              text = unquote(input ? arg.replace(/^\/p\s+/i, "") : arg),
+              at = text.indexOf("=");
+            if (!arg) {
+              api.note(s, n, "環境変数は下の終了状態で確認できます");
+              break;
+            }
+            if (at <= 0) fail("未対応：setの接頭辞検索／不正な代入", n.line);
+            const key = text.slice(0, at);
+            if (input) {
+              const candidates = inputValue(s, key, api, n, key + " の入力");
+              if (!candidates.length)
+                fail("入力候補は1つ以上必要です", n.line, "モデルエラー");
+              if (candidates.length > api.limits.paths)
+                api.stop(s, n, "入力候補のパス数上限");
+              return candidates.slice(0, api.limits.paths).map((v) => {
+                const st = structuredClone(s);
+                if (v !== "") ciSet(st.vars, key, isUnknown(v) ? v : String(v));
+                api.note(
+                  st,
+                  n,
+                  key + " への入力をモデル化します：" + formatValue(v),
+                );
+                return st;
+              });
+            }
+            const v = value(text.slice(at + 1), s);
+            ciSet(s.vars, key, v === "" ? undefined : v);
+            api.note(s, n, key + " を設定します：" + formatValue(v));
+            break;
+          }
+          case "setlocal":
+            if (
+              !/^(EnableDelayedExpansion|DisableDelayedExpansion)?$/i.test(arg)
+            )
+              fail("未対応：このsetlocalオプション", n.line);
+            s.cmd.locals.push({
+              vars: structuredClone(s.vars),
+              delayed: s.cmd.delayed,
+            });
+            if (arg) s.cmd.delayed = /^Enable/i.test(arg);
+            s.cmd.errorlevel = arg ? 0 : 1;
+            api.note(s, n, "環境変数と遅延展開設定を局所化します");
+            break;
+          case "endlocal": {
+            const prev = s.cmd.locals.pop();
+            if (!prev)
+              fail("対応するsetlocalがありません", n.line, "実行エラー");
+            s.vars = prev.vars;
+            s.cmd.delayed = prev.delayed;
+            api.note(s, n, "局所環境を戻します");
+            break;
+          }
+          case "goto": {
+            const label = arg.replace(/^:/, "").toLowerCase();
+            api.note(s, n, "ラベル " + arg + " へ移動します");
+            if (label === "eof") {
+              returning(s, n);
+              break;
+            }
+            if (!Object.hasOwn(labels, label))
+              fail("ラベルが見つかりません：" + arg, n.line, "実行エラー");
+            s.tasks = [program(labels[label])];
+            break;
+          }
+          case "call": {
+            const args = words(arg, n.line),
+              label = args.shift();
+            if (!label?.startsWith(":"))
+              fail(
+                "未対応：外部バッチのcall（同一ファイルの :label のみ）",
+                n.line,
+              );
+            const key = label.slice(1).toLowerCase();
+            if (!Object.hasOwn(labels, key))
+              fail("call先ラベルがありません：" + label, n.line, "実行エラー");
+            if (s.cmd.calls.length >= api.limits.depth) {
+              api.stop(s, n, "callの深さ上限");
+              break;
+            }
+            s.cmd.calls.push({
+              tasks: s.tasks,
+              args: s.cmd.args,
+              localDepth: s.cmd.locals.length,
+            });
+            s.tasks = [program(labels[key])];
+            s.cmd.args = args;
+            api.note(s, n, "サブルーチン " + label + " を呼び出します");
+            break;
+          }
+          case "exit": {
+            const mm = arg.match(/^(\/b)?\s*(-?\d+)?$/i);
+            if (!mm) fail("未対応：exitの引数", n.line);
+            if (mm[2] !== undefined) s.cmd.errorlevel = Number(mm[2]);
+            api.note(s, n, "バッチの処理を終了／復帰します");
+            if (mm[1]) returning(s, n);
+            else {
+              s.tasks = [];
+              s.halt = true;
+            }
+            break;
+          }
+          case "pause":
+            output("続行するには何かキーを押してください . . .");
+            api.note(s, n, "入力があったものとしてモデル上で続行します");
+            break;
+          case "cd":
+          case "chdir": {
+            if (!arg) {
+              output(s.model.cwd);
+              break;
+            }
+            const target = windowsPath(
+                value(arg.replace(/^\/d\s+/i, ""), s),
+                s.model.cwd,
+                n.line,
+              ),
+              entry = fsEntry(s, target, n.line);
+            if (isUnknown(entry))
+              fail("未確認：現在フォルダの移動先", n.line, "未確認");
+            if (!entry || entry.type !== "directory") {
+              s.cmd.errorlevel = 1;
+              fail("モデルに移動先フォルダがありません", n.line, "実行エラー");
+            }
+            if (
+              target.slice(0, 2) !== s.model.cwd.slice(0, 2) &&
+              !/^\/d\s/i.test(arg)
+            )
+              fail("未対応：/dを伴わないドライブをまたぐcd", n.line);
+            s.model.cwd = target;
+            s.cmd.errorlevel = 0;
+            api.note(s, n, "現在フォルダを " + target + " にします");
+            break;
+          }
+          case "dir": {
+            if (!/^\/b(?:\s|$)/i.test(arg))
+              fail(
+                "未対応：dirは日時・実物のサイズを捏造しない /b 形式のみ",
+                n.line,
+              );
+            const pattern = arg.replace(/^\/b\s*/i, "") || "*",
+              target = fsEntry(s, pattern, n.line);
+            const entries = listFiles(
+              s,
+              target?.type === "directory"
+                ? windowsPath(pattern, s.model.cwd, n.line) + "\\*"
+                : pattern,
+              n.line,
+            );
+            if (isUnknown(entries))
+              fail("未確認：dirのパターン", n.line, "未確認");
+            for (const e of entries)
+              output(e.path.slice(e.path.lastIndexOf("\\") + 1));
+            s.cmd.errorlevel = entries.length ? 0 : 1;
+            break;
+          }
+          case "type": {
+            const e = fsEntry(s, value(arg, s), n.line);
+            if (isUnknown(e))
+              fail(
+                "未確認：typeのファイルが確定していません",
+                n.line,
+                "未確認",
+              );
+            if (!e || e.type !== "file")
+              fail("モデルにファイルがありません", n.line, "実行エラー");
+            if (e.content === undefined)
+              fail(
+                "未確認：typeのファイル内容がモデルにありません",
+                n.line,
+                "未確認",
+              );
+            output(e.content, true);
+            break;
+          }
+          case "md":
+          case "mkdir":
+            for (const path of words(arg, n.line)) {
+              makeDirectory(s, value(path, s), n.line);
+            }
+            s.cmd.errorlevel = 0;
+            api.note(s, n, "モデルにフォルダを作成します");
+            break;
+          case "rd":
+          case "rmdir": {
+            const args = words(arg, n.line),
+              recursive = args.some((x) => /^\/s$/i.test(x));
+            if (recursive && !args.some((x) => /^\/q$/i.test(x)))
+              fail(
+                "未確認：rd /sの確認には /q を明示してください",
+                n.line,
+                "未確認",
+              );
+            const paths = args.filter((x) => !/^\/[sq]$/i.test(x));
+            if (paths.length !== 1)
+              fail("rdには1つのフォルダを指定してください", n.line);
+            const e = fsEntry(s, value(paths[0], s), n.line);
+            if (!e || e.type !== "directory")
+              fail("モデルにフォルダがありません", n.line, "実行エラー");
+            removeEntry(s, paths[0], n.line, recursive);
+            s.cmd.errorlevel = 0;
+            api.note(s, n, "モデルからフォルダを削除します");
+            break;
+          }
+          case "del":
+          case "erase": {
+            const args = words(arg, n.line),
+              quiet = args.some((x) => /^\/q$/i.test(x)),
+              patterns = args.filter((x) => !/^\/q$/i.test(x));
+            if (!patterns.length) fail("delにファイル名が必要です", n.line);
+            for (const pattern of patterns) {
+              if (/^(?:\*|\*\.\*)$/.test(unquote(pattern)) && !quiet)
+                fail(
+                  "未確認：全件削除の確認には /q を明示してください",
+                  n.line,
+                  "未確認",
+                );
+              for (const e of listFiles(s, pattern, n.line))
+                if (e.type === "file") removeEntry(s, e.path, n.line);
+            }
+            api.note(s, n, "モデルから一致するファイルを削除します");
+            break;
+          }
+          case "ren":
+          case "rename": {
+            const args = words(arg, n.line);
+            if (args.length !== 2 || /[\\/:*?]/.test(unquote(args[1])))
+              fail("未対応：renは単一パスと新しい名前のみ", n.line);
+            const from = windowsPath(value(args[0], s), s.model.cwd, n.line),
+              to = from.slice(0, from.lastIndexOf("\\") + 1) + unquote(args[1]);
+            copyEntry(s, from, to, n.line, true, false);
+            s.cmd.errorlevel = 0;
+            api.note(s, n, "モデル内の名前を変更します：" + to);
+            break;
+          }
+          case "copy":
+          case "move": {
+            const args = words(arg, n.line),
+              overwrite = args.some((x) => /^\/y$/i.test(x)),
+              paths = args.filter((x) => !/^\/y$/i.test(x));
+            if (paths.length !== 2 || paths.some((x) => /[?*+]/.test(x)))
+              fail("未対応：copy/moveは単一のコピー元・コピー先のみ", n.line);
+            const to = copyEntry(
+              s,
+              value(paths[0], s),
+              value(paths[1], s),
+              n.line,
+              name === "move",
+              overwrite,
+            );
+            s.cmd.errorlevel = 0;
+            api.note(
+              s,
+              n,
+              "モデル内で" +
+                (name === "move" ? "移動" : "コピー") +
+                "します：" +
+                to,
+            );
+            break;
+          }
+          case "cls":
+            s.outputs = [];
+            api.note(s, n, "モデルの出力をクリアします");
+            break;
+          case "find": {
+            const args = words(arg, n.line),
+              insensitive = args.some((x) => /^\/i$/i.test(x)),
+              pos = args.filter((x) => !/^\/i$/i.test(x));
+            if (!pos.length || !pos[0].startsWith('"'))
+              fail(
+                "findの検索文字列は二重引用符で囲んでください",
+                n.line,
+                "SyntaxError",
+              );
+            const query = unquote(pos.shift());
+            let text = s.cmd.stdin;
+            if (pos.length) {
+              if (pos.length !== 1) fail("未対応：findの複数ファイル", n.line);
+              text = fsEntry(s, pos[0], n.line)?.content;
+            }
+            if (typeof text !== "string")
+              fail(
+                "未確認：findの入力内容がモデルにありません",
+                n.line,
+                "未確認",
+              );
+            const lines = text
+              .replace(/\r\n/g, "\n")
+              .replace(/\n$/, "")
+              .split("\n")
+              .filter((l) =>
+                (insensitive ? l.toLowerCase() : l).includes(
+                  insensitive ? query.toLowerCase() : query,
+                ),
+              );
+            for (const l of lines) output(l);
+            s.cmd.errorlevel = lines.length ? 0 : 1;
+            api.note(s, n, "文字列を含む行を選びます");
+            break;
+          }
+          default:
+            fail("未対応のcmdコマンド：" + name, n.line);
+        }
+      },
+      (s) => [
+        {
+          title: "環境変数",
+          entries: Object.entries(s.vars).map(([k, v]) => [k, formatValue(v)]),
+        },
+        {
+          title: "バッチの終了状態",
+          entries: [
+            ["ERRORLEVEL", formatValue(s.cmd.errorlevel)],
+            ["現在フォルダ", s.model.cwd],
+            ["コマンド表示", s.cmd.echo ? "on" : "off"],
+            ["遅延展開", s.cmd.delayed ? "有効" : "無効"],
+          ],
+        },
+        {
+          title: "仮想ファイル一覧",
+          entries: [["モデルのツリー", fileDisplay(s.model.files)]],
+        },
+      ],
+      limits,
+    );
+  } catch (e) {
+    return sourceError(e);
+  }
+}

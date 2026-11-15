@@ -25,7 +25,7 @@ with sync_playwright() as p:
  ]:
   c=b.new_context();page=c.new_page();errs=[];page.on('pageerror',lambda e:errs.append(str(e)))
   page.add_init_script('if(!sessionStorage.once){localStorage.setItem('+json.dumps(key)+','+json.dumps(raw)+');sessionStorage.once="1"}')
-  page.goto(URL);page.wait_for_function('document.querySelectorAll("#macroType option").length===13');page.wait_for_function('!document.querySelector("#run").disabled')
+  page.goto(URL);page.wait_for_function('document.querySelectorAll("#macroType option").length>0');page.wait_for_function('!document.querySelector("#run").disabled')
   assert not errs,errs
   if recovery:assert page.evaluate('(k)=>localStorage.getItem(k)',recovery)==raw
   if key=='macro-practice-v2':assert page.evaluate('(k)=>localStorage.getItem(k)',key)==raw

@@ -2,7 +2,7 @@
 import {Worker} from 'node:worker_threads';
 import {definitions} from '../js/types/registry.js';
 import fs from 'node:fs';
-const loops={vba:'Do While True\nLoop',imagej:'while(1){}',cloudformation:'{"Items":'+ '['.repeat(70)+'0'+']'.repeat(70)+'}',powerautomate:JSON.stringify({actions:[{action:'Loop condition',condition:'true'},{action:'End'}]}),autohotkey:'Loop {\n}',uivision:JSON.stringify({Commands:[{Command:'while',Target:'true'},{Command:'end'}]}),powerapps:'Set(X, ForAll(Sequence(10001), Value))',python:'while True:\n    pass',r:'while(TRUE) {}',c:'int n=0; while(1){ n++; }',cpp:'int n=0; while(1){ n++; }',csharp:'int n=0; while(true){ n++; }',javascript:'while(true) {}'};
+const loops={cmd:':again\ngoto again',powershell:'while ($true) {}',vba:'Do While True\nLoop',imagej:'while(1){}',cloudformation:'{"Items":'+ '['.repeat(70)+'0'+']'.repeat(70)+'}',powerautomate:JSON.stringify({actions:[{action:'Loop condition',condition:'true'},{action:'End'}]}),autohotkey:'Loop {\n}',uivision:JSON.stringify({Commands:[{Command:'while',Target:'true'},{Command:'end'}]}),powerapps:'Set(X, ForAll(Sequence(10001), Value))',python:'while True:\n    pass',r:'while(TRUE) {}',c:'int n=0; while(1){ n++; }',cpp:'int n=0; while(1){ n++; }',csharp:'int n=0; while(true){ n++; }',javascript:'while(true) {}'};
 const chars='{}[]();"\'\\@#$🙂あ\n012abc+-*/';let seed=Number(process.env.FUZZ_SEED||72641);const random=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed;};
 const common=['','@@@','{'.repeat(90), '"unterminated','a'.repeat(100001),'// 日本語🙂\n','let 😀=1;','let 日本語=1;',...Array.from({length:Number(process.env.FUZZ_RANDOM_CASES||32)},()=>Array.from({length:50},()=>chars[random()%chars.length]).join(''))];
 const results=[];

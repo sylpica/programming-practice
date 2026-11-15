@@ -33,7 +33,7 @@ with sync_playwright() as p:
  switch('uivision');page.locator('#template').select_option('ui-form');done();assert page.locator('#builder .action-list li').count()==5
  page.locator('#builder select').select_option('echo');page.locator('#builder button').filter(has_text='＋ 追加').click();assert page.locator('#builder .action-list li').count()==6
  page.locator('#run').click();done();buttons=page.locator('#trace button').filter(has_text='ログへ出力');buttons.last.click();assert page.locator('#builder li.selected').count()==1
- # Mobile and desktop: 13 tools x 4 views x 2 widths.
+ # Mobile and desktop: all registered tools x 4 views x 2 widths.
  layouts=0
  for width in [375,1440]:
   page.set_viewport_size({'width':width,'height':900})

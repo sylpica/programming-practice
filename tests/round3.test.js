@@ -49,9 +49,10 @@ test('round3 postfix trace distinguishes side effect and expression value',async
 test('round3 all templates final and trace presentation crosscheck',async()=>{for(const d of definitions)for(const t of d.templates){const r=await run(d.id,t.code,t.model);if(d.id!=='cloudformation')assert.doesNotMatch(text(r),/"kind"\s*:|__class|__defaultSource|\(model\)|（model）|実行時に決まる（実行時に決まる/,d.id+'/'+t.id);}});
 for(const [code,expected] of [['MsgBox "2" + "3"',['5']],['MsgBox "2" + 3',['5']],['if "Ab" != "ab" {\nMsgBox "bad"\n} else {\nMsgBox "ok"\n}',['ok']],['if "Ab" !== "ab" {\nMsgBox "ok"\n}',['ok']]])test('round3 AHK numeric and equality oracle '+code,async()=>{const r=await run('autohotkey',code,{...getDefinition('autohotkey').model.defaults,event:null});assert.deepEqual(errors(r),[]);assert.deepEqual(r.paths[0].outputs.map(o=>o.text),expected);});
 for(const [code,category] of [['x := 1/0','ZeroDivisionError'],['x := 3\nx /= 0','ZeroDivisionError'],['x := "abc"+1','TypeError'],['x := 7//2','未対応'],['x := 2^3','未対応']])test('round3 AHK must not invent numeric results '+code,async()=>{const r=await run('autohotkey',code,{...getDefinition('autohotkey').model.defaults,event:null});assert.equal(errors(r)[0].category,category);});
-test('round3 all 441 reference texts still match the source-reviewed record',()=>{
+test('round3 all previously reviewed reference texts still match their source record',()=>{
  const reviewed=JSON.parse(fs.readFileSync(new URL('../docs/audit/reference-r2.json',import.meta.url)));
- const current=definitions.flatMap(d=>d.reference.map(r=>({kind:d.id,name:r.name,supported:r.supported,fields:Object.fromEntries(['description','returns','caution','example','source'].map(k=>[k,r[k]||'']))})));
+ const reviewedKinds=new Set(reviewed.map(r=>r.kind));
+ const current=definitions.filter(d=>reviewedKinds.has(d.id)).flatMap(d=>d.reference.map(r=>({kind:d.id,name:r.name,supported:r.supported,fields:Object.fromEntries(['description','returns','caution','example','source'].map(k=>[k,r[k]||'']))})));
  assert.equal(current.length,reviewed.length);
  for(const row of current){const source=reviewed.find(r=>r.kind===row.kind&&r.name===row.name);assert.ok(source,row.kind+'/'+row.name);assert.deepEqual(row.fields,source.fields);}
 });

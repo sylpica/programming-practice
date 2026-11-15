@@ -168,18 +168,22 @@ test("RG-29 no links inside words, correct links preserved", () => {
   assert.deepEqual(linksOf("", pyNames), []);
 });
 
-test("RG-29 scan of all 88 template intros: 0 mid-word links, 87 links", () => {
+test("RG-29 scan of all template intros: preserve legacy links and reject mid-word links", () => {
+  const legacyKinds = new Set(JSON.parse(fs.readFileSync(new URL("../docs/audit/reference-r2.json",import.meta.url))).map(r=>r.kind));
   let templates = 0,
     total = 0,
-    midWord = 0;
+    midWord = 0, legacyTemplates = 0, legacyLinks = 0;
   for (const d of definitions) {
     const names = d.reference.map((r) => r.name);
     for (const t of d.templates) {
       templates++;
+      const legacy = legacyKinds.has(d.id);
+      if (legacy) legacyTemplates++;
       let pos = 0;
       for (const s of linkSegments(t.intro, names)) {
         if (s.name) {
           total++;
+          if (legacy) legacyLinks++;
           const before = t.intro[pos - 1] || "",
             after = t.intro[pos + s.name.length] || "";
           if (isWordChar(before) || isWordChar(after)) midWord++;
@@ -188,10 +192,12 @@ test("RG-29 scan of all 88 template intros: 0 mid-word links, 87 links", () => {
       }
     }
   }
-  assert.equal(templates, 88);
+  assert.equal(templates, definitions.reduce((n,d)=>n+d.templates.length,0));
+  assert.equal(legacyTemplates,88);
   assert.equal(midWord, 0);
   // RG-58 で let／const／var の項目が増え、解説文からのリンクが4件増えた（83→87）。
-  assert.equal(total, 87);
+  assert.equal(legacyLinks, 87);
+  assert.ok(total >= legacyLinks);
 });
 
 // ---- RG-35: CR-only pasted source is normalized at the simulate entry ----
