@@ -7493,9 +7493,9 @@
    "returns": "数値定数（0）",
    "caution": "文字列定数ではなく数値の定数です。",
    "example": "Debug.Print vbBinaryCompare",
-   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/miscellaneous-constants.md"
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/instr-function.md"
   },
-  "sha256": "fd9ba4b637473ca5954b5cc8b00b2a1dbf946d0241bb6c15a71873eace2a34e1",
+  "sha256": "0e46ab7006e0c10ad8e73b28a033576dd80983fe1d825d7e5d9fab98a8a630e1",
   "description": "照合済",
   "returns": "照合済",
   "caution": "照合済（モデル固有の限定は実装・試験で確認）"
@@ -7509,9 +7509,9 @@
    "returns": "数値定数（1）",
    "caution": "文字列定数ではなく数値の定数です。",
    "example": "Debug.Print vbTextCompare",
-   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/miscellaneous-constants.md"
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/instr-function.md"
   },
-  "sha256": "cd0eb0ac74c0f5d7afabe7fef46277d827c384e4c897b1ce999e3a70ccef057a",
+  "sha256": "68df46906f5012c2775faaf9a12e4288b4150e72ad3cde27e511374c284daecf",
   "description": "照合済",
   "returns": "照合済",
   "caution": "照合済（モデル固有の限定は実装・試験で確認）"
@@ -7525,9 +7525,9 @@
    "returns": "数値定数（2）",
    "caution": "Excel の InStr／Replace では使えず、compare に渡すとエラー5になります（定数自体の値は2です）。",
    "example": "Debug.Print vbDatabaseCompare",
-   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/miscellaneous-constants.md"
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/instr-function.md"
   },
-  "sha256": "a5b7b033f85102b3943a15255320b5498058fe295bb0855f5e85668ee39aff82",
+  "sha256": "4b2d2f42a7af62ed011bf08a5ca6a3ef7a3f133e80060af2c6fee02a61793380",
   "description": "照合済",
   "returns": "照合済",
   "caution": "照合済（モデル固有の限定は実装・試験で確認）"
@@ -8933,9 +8933,9 @@
    "returns": "数値定数（8）",
    "caution": "SetAttr では使えません。",
    "example": "Debug.Print vbVolume",
-   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/getattr-function.md"
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/dir-function.md"
   },
-  "sha256": "bde0f1e3d626c90be20b93a5c46a2ea4acc2ef6b153719717bf374a0577d160a",
+  "sha256": "f27d9589225a572372793fb6028fa985104989321de0b8f20564518edfa7dc19",
   "description": "照合済",
   "returns": "照合済",
   "caution": "照合済（モデル固有の限定は実装・試験で確認）"
@@ -8945,13 +8945,13 @@
   "name": "vbDirectory",
   "supported": true,
   "fields": {
-   "description": "フォルダ（ディレクトリ）の属性を表す定数です。GetAttr／SetAttr／Dir で使います。",
+   "description": "フォルダ（ディレクトリ）の属性を表す定数です。GetAttr／Dir で使います。",
    "returns": "数値定数（16）",
    "caution": "組み込み定数です。同名の変数は宣言できません。",
    "example": "Debug.Print vbDirectory",
    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/getattr-function.md"
   },
-  "sha256": "2482abb7ce39633c43e7d8a9cdb83f41300ed432daddd68d16aee31cea573b61",
+  "sha256": "211501f8b7328c17f2b60f9429c3307995415bc3dce7ae5d890a86ba7ac01e15",
   "description": "照合済",
   "returns": "照合済",
   "caution": "照合済（モデル固有の限定は実装・試験で確認）"
@@ -12878,11 +12878,11 @@
   "fields": {
    "description": "整数演算のオーバーフローを検査せず、ビット幅で折り返して計算することを明示します。C# の既定の動作でもあります。",
    "returns": "戻り値なし（宣言または制御文）",
-   "caution": "checked と対の指定です。実 C# では、定数式の算術オーバーフローは unchecked では折り返し（checked ではコンパイルエラー CS0220）、範囲外の定数変換は unchecked でも CS0031 で拒否されます。このモデルでは、定数式のオーバーフローは算術形・変換形とも停止します（モデルの制限）。",
+   "caution": "checked と対の指定です。実 C# では、定数式の算術オーバーフローは unchecked では折り返し（checked と既定ではコンパイルエラー CS0220）、範囲外の定数キャストも unchecked では折り返し（checked と既定ではコンパイルエラー CS0221）、キャストなしの暗黙の定数変換だけは unchecked でも CS0031 で拒否されます。このモデルでは、定数キャストは実 C# どおり（unchecked では折り返し、それ以外は CS0221 で停止）ですが、定数式の算術オーバーフローは unchecked でも停止します（モデルの制限）。",
    "example": "using System;\nclass Program {\n    static void Main() {\nint n = 2147483647;\nunchecked { n = n + 1; }\n    }\n}",
    "source": "https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/statements/checked-and-unchecked"
   },
-  "sha256": "0f54f5e5bf86b9576d868041ac791ac85ab0c40721c9e73cb46b77b60d771410"
+  "sha256": "f63c473b4f2d72d270f9fa4fe45c75ac8359e6cf6a7c27ac349518f07e29e7d3"
  },
  {
   "kind": "csharp",
@@ -16003,5 +16003,1838 @@
    "source": "https://docs.python.org/ja/3.12/library/constants.html#__debug__"
   },
   "sha256": "d676729cea496b5600877b04980ac202aa3ce2f8d10cd165cd9fa26546a9306e"
+ },
+ {
+  "kind": "vba",
+  "name": "vbUpperCase",
+  "supported": true,
+  "fields": {
+   "description": "文字列を大文字に変換することを表す定数です。StrConv の conversion 引数に使います。",
+   "returns": "数値定数（1）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbUpperCase",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/strconv-constants.md"
+  },
+  "sha256": "9a8716f8401d3cefc410ea99d3c141be7158484dc5b4ee4f0ff3a9938ef1c89f"
+ },
+ {
+  "kind": "vba",
+  "name": "vbLowerCase",
+  "supported": true,
+  "fields": {
+   "description": "文字列を小文字に変換することを表す定数です。StrConv の conversion 引数に使います。",
+   "returns": "数値定数（2）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbLowerCase",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/strconv-constants.md"
+  },
+  "sha256": "2d681a026228aa7b15148b9c179a77d7a0500672294f33afe91c94b6576841ce"
+ },
+ {
+  "kind": "vba",
+  "name": "vbProperCase",
+  "supported": true,
+  "fields": {
+   "description": "文字列内の各単語の先頭の文字を大文字に変換することを表す定数です。StrConv の conversion 引数に使います。",
+   "returns": "数値定数（3）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbProperCase",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/strconv-constants.md"
+  },
+  "sha256": "fc57f9bfe7f56865f174fb38c3886a669ef5c10e94fe6c01726d1947804b0268"
+ },
+ {
+  "kind": "vba",
+  "name": "vbWide",
+  "supported": true,
+  "fields": {
+   "description": "文字列内の半角（1バイト）文字を全角（2バイト）文字に変換することを表す定数です。StrConv の conversion 引数に使います。",
+   "returns": "数値定数（4）",
+   "caution": "東アジアのロケールで使います。適用できないロケールでは実行時エラーになります。",
+   "example": "Debug.Print vbWide",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/strconv-constants.md"
+  },
+  "sha256": "5be05a45d311b402326b944b3487b2590b3d98fce49665e7431071d6c1fbdb31"
+ },
+ {
+  "kind": "vba",
+  "name": "vbNarrow",
+  "supported": true,
+  "fields": {
+   "description": "文字列内の全角（2バイト）文字を半角（1バイト）文字に変換することを表す定数です。StrConv の conversion 引数に使います。",
+   "returns": "数値定数（8）",
+   "caution": "東アジアのロケールで使います。適用できないロケールでは実行時エラーになります。",
+   "example": "Debug.Print vbNarrow",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/strconv-constants.md"
+  },
+  "sha256": "0cb65b566d0106edd74fe2af3919df34e37b87e4cad57b50fdc679cb8c37b4ad"
+ },
+ {
+  "kind": "vba",
+  "name": "vbKatakana",
+  "supported": true,
+  "fields": {
+   "description": "文字列内のひらがなをカタカナに変換することを表す定数です。StrConv の conversion 引数に使います。",
+   "returns": "数値定数（16）",
+   "caution": "日本語ロケールでのみ使います。",
+   "example": "Debug.Print vbKatakana",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/strconv-constants.md"
+  },
+  "sha256": "bea015579beda6a6ecff60732d7a10070182df288d14810fbde6cfd9eed55b2d"
+ },
+ {
+  "kind": "vba",
+  "name": "vbHiragana",
+  "supported": true,
+  "fields": {
+   "description": "文字列内のカタカナをひらがなに変換することを表す定数です。StrConv の conversion 引数に使います。",
+   "returns": "数値定数（32）",
+   "caution": "日本語ロケールでのみ使います。",
+   "example": "Debug.Print vbHiragana",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/strconv-constants.md"
+  },
+  "sha256": "12bcccdd0a863a88ad5938cf076ea782b11882dbcf0a88e60b6dcd35b38c0097"
+ },
+ {
+  "kind": "vba",
+  "name": "vbUnicode",
+  "supported": true,
+  "fields": {
+   "description": "文字列をシステムの既定コードページで Unicode に変換することを表す定数です。StrConv の conversion 引数に使います。",
+   "returns": "数値定数（64）",
+   "caution": "Macintosh では使えません。",
+   "example": "Debug.Print vbUnicode",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/strconv-constants.md"
+  },
+  "sha256": "107970a472472d796b9158b8af597d3fbb19023e067b43f933e46852e69092b6"
+ },
+ {
+  "kind": "vba",
+  "name": "vbFromUnicode",
+  "supported": true,
+  "fields": {
+   "description": "文字列を Unicode からシステムの既定コードページに変換することを表す定数です。StrConv の conversion 引数に使います。",
+   "returns": "数値定数（128）",
+   "caution": "Macintosh では使えません。",
+   "example": "Debug.Print vbFromUnicode",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/strconv-constants.md"
+  },
+  "sha256": "9f06fa020581f9997688df9f1e96a56034f00ee23ac69ab9de496cd72ad29f17"
+ },
+ {
+  "kind": "vba",
+  "name": "vbSimplifiedChinese",
+  "supported": true,
+  "fields": {
+   "description": "文字列を簡体字中国語に変換することを表す定数です。StrConv の conversion 引数に使います。",
+   "returns": "数値定数（256）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbSimplifiedChinese",
+   "source": "https://learn.microsoft.com/en-us/dotnet/api/microsoft.visualbasic.vbstrconv?view=net-8.0"
+  },
+  "sha256": "4e656b40c6973646bba6de4858b8daf215b839958c7fabb6ae177d3410421fc6"
+ },
+ {
+  "kind": "vba",
+  "name": "vbTraditionalChinese",
+  "supported": true,
+  "fields": {
+   "description": "文字列を繁体字中国語に変換することを表す定数です。StrConv の conversion 引数に使います。",
+   "returns": "数値定数（512）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbTraditionalChinese",
+   "source": "https://learn.microsoft.com/en-us/dotnet/api/microsoft.visualbasic.vbstrconv?view=net-8.0"
+  },
+  "sha256": "ff174dc07627dd8b2bd0ca78568ca55b03471a5182a50a9806af4f39862e0a55"
+ },
+ {
+  "kind": "vba",
+  "name": "vbLinguisticCasing",
+  "supported": true,
+  "fields": {
+   "description": "大文字・小文字の変換規則をファイルシステム規則から言語規則へ切り替えることを表す定数です。StrConv の conversion 引数に vbUpperCase／vbLowerCase と組み合わせて使います。",
+   "returns": "数値定数（1024）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbLinguisticCasing",
+   "source": "https://learn.microsoft.com/en-us/dotnet/api/microsoft.visualbasic.vbstrconv?view=net-8.0"
+  },
+  "sha256": "53e58eb2401059f72c08f452a83af90e2138a25327435da3781c9f4bf28d95d1"
+ },
+ {
+  "kind": "vba",
+  "name": "vbHide",
+  "supported": true,
+  "fields": {
+   "description": "ウィンドウを隠し、フォーカスを隠れたウィンドウへ渡すことを表す定数です。Shell の引数に使います。",
+   "returns": "数値定数（0）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbHide",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/shell-constants.md"
+  },
+  "sha256": "7d705cf5cfd14500867c7744f6d94fde0d7ceefe0d31fb3ac64791e41d509afd"
+ },
+ {
+  "kind": "vba",
+  "name": "vbNormalFocus",
+  "supported": true,
+  "fields": {
+   "description": "フォーカスを持ち、元のサイズと位置に復元されたウィンドウを表す定数です。Shell の引数に使います。",
+   "returns": "数値定数（1）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbNormalFocus",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/shell-constants.md"
+  },
+  "sha256": "3e2957cdfc930ca82a772f337177066c3f1f4696f8854919a550fe2c46d9d3e9"
+ },
+ {
+  "kind": "vba",
+  "name": "vbMinimizedFocus",
+  "supported": true,
+  "fields": {
+   "description": "フォーカスを持つアイコン（最小化）としてウィンドウを表示することを表す定数です。Shell の引数に使います。",
+   "returns": "数値定数（2）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbMinimizedFocus",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/shell-constants.md"
+  },
+  "sha256": "26bae1d50d4986534e9ca24e551a0cf84f831bb7465f73fd7a344dbcdf7263c4"
+ },
+ {
+  "kind": "vba",
+  "name": "vbMaximizedFocus",
+  "supported": true,
+  "fields": {
+   "description": "フォーカスを持つ最大化したウィンドウを表す定数です。Shell の引数に使います。",
+   "returns": "数値定数（3）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbMaximizedFocus",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/shell-constants.md"
+  },
+  "sha256": "242e3086ba41a14480bf068e44c759ba9f37e45e58dcd1e3b38e5d8fda8a5082"
+ },
+ {
+  "kind": "vba",
+  "name": "vbNormalNoFocus",
+  "supported": true,
+  "fields": {
+   "description": "ウィンドウを直近のサイズと位置に復元し、現在アクティブなウィンドウはそのままにすることを表す定数です。Shell の引数に使います。",
+   "returns": "数値定数（4）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbNormalNoFocus",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/shell-constants.md"
+  },
+  "sha256": "d3291c14508485d54c1fe1b9ea4d7b60bc50ba29c7e53e7611adca181f513c05"
+ },
+ {
+  "kind": "vba",
+  "name": "vbMinimizedNoFocus",
+  "supported": true,
+  "fields": {
+   "description": "ウィンドウをアイコン（最小化）として表示し、現在アクティブなウィンドウはそのままにすることを表す定数です。Shell の引数に使います。",
+   "returns": "数値定数（6）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbMinimizedNoFocus",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/shell-constants.md"
+  },
+  "sha256": "163dabb86b5376877d0b3c3fb5e9b5b7c5858ed5a3088fcc4f25794268c53786"
+ },
+ {
+  "kind": "vba",
+  "name": "vbMethod",
+  "supported": true,
+  "fields": {
+   "description": "メソッドが呼び出されたことを表す定数です。CallByName の引数に使います。",
+   "returns": "数値定数（1）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbMethod",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/calltype-constants.md"
+  },
+  "sha256": "33f52ff96716effa4b5a7961ed00a51a2913f71831ada2d412ff35dfeebed2a1"
+ },
+ {
+  "kind": "vba",
+  "name": "vbGet",
+  "supported": true,
+  "fields": {
+   "description": "Property Get プロシージャであることを表す定数です。CallByName の引数に使います。",
+   "returns": "数値定数（2）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbGet",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/calltype-constants.md"
+  },
+  "sha256": "e8a1404e93afb0e19e9df04bbf36a3a3565fdcce1200e8be2409c8b60d695185"
+ },
+ {
+  "kind": "vba",
+  "name": "vbLet",
+  "supported": true,
+  "fields": {
+   "description": "Property Let プロシージャであることを表す定数です。CallByName の引数に使います。",
+   "returns": "数値定数（4）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbLet",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/calltype-constants.md"
+  },
+  "sha256": "6f22ba40ba257ade7da68a32cae43183a6864b7c330693bdc076d290f55dc05d"
+ },
+ {
+  "kind": "vba",
+  "name": "vbSet",
+  "supported": true,
+  "fields": {
+   "description": "Property Set プロシージャであることを表す定数です。CallByName の引数に使います。",
+   "returns": "数値定数（8）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbSet",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/calltype-constants.md"
+  },
+  "sha256": "8426a1c73cca1d68d0acfef1cae74d4581008c4ba51f639a4e1983c3582a09c4"
+ },
+ {
+  "kind": "vba",
+  "name": "vbIMEModeNoControl",
+  "supported": true,
+  "fields": {
+   "description": "IME の状態が「制御しない（既定）」であることを表す定数です。IMEStatus 関数の戻り値です。",
+   "returns": "数値定数（0）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbIMEModeNoControl",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/imestatus-constants.md"
+  },
+  "sha256": "37471d8d09b2891c03c1755ebe5261a576697686ef6be4207b8ae903ddd6e388"
+ },
+ {
+  "kind": "vba",
+  "name": "vbIMEModeOn",
+  "supported": true,
+  "fields": {
+   "description": "IME の状態が「オン」であることを表す定数です。IMEStatus 関数の戻り値です。",
+   "returns": "数値定数（1）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbIMEModeOn",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/imestatus-constants.md"
+  },
+  "sha256": "74768629d8adb6e6e1ca077c45b555a669f6e313795aa889a34340e9be362d7f"
+ },
+ {
+  "kind": "vba",
+  "name": "vbIMEModeOff",
+  "supported": true,
+  "fields": {
+   "description": "IME の状態が「オフ」であることを表す定数です。IMEStatus 関数の戻り値です。",
+   "returns": "数値定数（2）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbIMEModeOff",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/imestatus-constants.md"
+  },
+  "sha256": "0cf85574ef271236c95ef05e15de61390c657d64758aa57b7b53cee750302e39"
+ },
+ {
+  "kind": "vba",
+  "name": "vbIMEModeDisable",
+  "supported": true,
+  "fields": {
+   "description": "IME の状態が「無効」であることを表す定数です。IMEStatus 関数の戻り値です。",
+   "returns": "数値定数（3）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbIMEModeDisable",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/imestatus-constants.md"
+  },
+  "sha256": "cab8391c39a599a321b0de727ca03785540b479bc80ea038e9cfbb6892f3df29"
+ },
+ {
+  "kind": "vba",
+  "name": "vbIMEModeHiragana",
+  "supported": true,
+  "fields": {
+   "description": "IME の状態が「全角ひらがな」であることを表す定数です。IMEStatus 関数の戻り値です。",
+   "returns": "数値定数（4）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbIMEModeHiragana",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/imestatus-constants.md"
+  },
+  "sha256": "544b1e5e5948bd031497af591a798e69770e3b1a4e5de7cf5a333a29410f2c56"
+ },
+ {
+  "kind": "vba",
+  "name": "vbIMEModeKatakana",
+  "supported": true,
+  "fields": {
+   "description": "IME の状態が「全角カタカナ」であることを表す定数です。IMEStatus 関数の戻り値です。",
+   "returns": "数値定数（5）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbIMEModeKatakana",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/imestatus-constants.md"
+  },
+  "sha256": "b1965fb3c8341edbbf2d64e695498f0af15c8b4c3881c97fef2e3c39d0f1ed1a"
+ },
+ {
+  "kind": "vba",
+  "name": "vbIMEModeKatakanaHalf",
+  "supported": true,
+  "fields": {
+   "description": "IME の状態が「半角カタカナ」であることを表す定数です。IMEStatus 関数の戻り値です。",
+   "returns": "数値定数（6）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbIMEModeKatakanaHalf",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/imestatus-constants.md"
+  },
+  "sha256": "bde105f3cd3a776916824b5e5a2a3fa35834e5ed4efd856b7d4f2a8b950b8dfc"
+ },
+ {
+  "kind": "vba",
+  "name": "vbIMEModeAlphaFull",
+  "supported": true,
+  "fields": {
+   "description": "IME の状態が「全角英数」であることを表す定数です。IMEStatus 関数の戻り値です。",
+   "returns": "数値定数（7）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbIMEModeAlphaFull",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/imestatus-constants.md"
+  },
+  "sha256": "b0b07a83a678ae6027da1fdcc7020b399b7ffb62441f995acc3a27390cd7af41"
+ },
+ {
+  "kind": "vba",
+  "name": "vbIMEModeAlpha",
+  "supported": true,
+  "fields": {
+   "description": "IME の状態が「半角英数」であることを表す定数です。IMEStatus 関数の戻り値です。",
+   "returns": "数値定数（8）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbIMEModeAlpha",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/imestatus-constants.md"
+  },
+  "sha256": "2698742bc539ee97e38663254f525a5bf6c5b1cea7aef7bbb541edd1b9d80781"
+ },
+ {
+  "kind": "vba",
+  "name": "vbIMEModeHangulFull",
+  "supported": true,
+  "fields": {
+   "description": "IME の状態が「全角ハングル」であることを表す定数です。IMEStatus 関数の戻り値です。",
+   "returns": "数値定数（9）",
+   "caution": "韓国語ロケールの値です。",
+   "example": "Debug.Print vbIMEModeHangulFull",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/imestatus-constants.md"
+  },
+  "sha256": "d1824f4e9899d1f97d0b15390ea456ea746867d9be7ea4cbc29d6ce78253eeec"
+ },
+ {
+  "kind": "vba",
+  "name": "vbIMEModeHangul",
+  "supported": true,
+  "fields": {
+   "description": "IME の状態が「半角ハングル」であることを表す定数です。IMEStatus 関数の戻り値です。",
+   "returns": "数値定数（10）",
+   "caution": "韓国語ロケールの値です。",
+   "example": "Debug.Print vbIMEModeHangul",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/imestatus-constants.md"
+  },
+  "sha256": "85a2535f67f40fcdef08d47b9d5e1ee809d8ec89ee4d0da5aaa57fdae9d9f49b"
+ },
+ {
+  "kind": "vba",
+  "name": "vbFormControlMenu",
+  "supported": true,
+  "fields": {
+   "description": "ユーザがフォームのコントロールメニューから［閉じる］を選んだことを表す定数です。UserForm の QueryClose イベントの引数の値です。",
+   "returns": "数値定数（0）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbFormControlMenu",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/queryclose-constants.md"
+  },
+  "sha256": "f6db42284db8f5f6cb0e721f455371153c9f83ba315c93e8a23f4eadea05001a"
+ },
+ {
+  "kind": "vba",
+  "name": "vbFormCode",
+  "supported": true,
+  "fields": {
+   "description": "コードから Unload ステートメントが呼び出されたことを表す定数です。UserForm の QueryClose イベントの引数の値です。",
+   "returns": "数値定数（1）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbFormCode",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/queryclose-constants.md"
+  },
+  "sha256": "743f971c00b5683ab1e8e7044e0c9a1c045a26d55a3b1f8035bdb00bf0e20208"
+ },
+ {
+  "kind": "vba",
+  "name": "vbAppWindows",
+  "supported": true,
+  "fields": {
+   "description": "現在の Windows セッションが終了しようとしていることを表す定数です。UserForm の QueryClose イベントの引数の値です。",
+   "returns": "数値定数（2）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbAppWindows",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/queryclose-constants.md"
+  },
+  "sha256": "f7ee78fc5852dc2cf6421fba61803238427f33c3654e9d11f08a3e326f5be6f3"
+ },
+ {
+  "kind": "vba",
+  "name": "vbAppTaskManager",
+  "supported": true,
+  "fields": {
+   "description": "Windows タスクマネージャーがアプリケーションを閉じようとしていることを表す定数です。UserForm の QueryClose イベントの引数の値です。",
+   "returns": "数値定数（3）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbAppTaskManager",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/queryclose-constants.md"
+  },
+  "sha256": "3b1fd4016502d7d6d5566393ab303f82ec045d25f39242e4c72f3cf8427141f3"
+ },
+ {
+  "kind": "vba",
+  "name": "vbModeless",
+  "supported": true,
+  "fields": {
+   "description": "UserForm がモードレスであることを表す定数です。Show メソッドの引数に使います。",
+   "returns": "数値定数（0）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbModeless",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/form-constants.md"
+  },
+  "sha256": "c6d556112040c627d2f621c1dc2d8e05c3427db889790c24d6f3548579fbe4ef"
+ },
+ {
+  "kind": "vba",
+  "name": "vbModal",
+  "supported": true,
+  "fields": {
+   "description": "UserForm がモーダル（既定）であることを表す定数です。Show メソッドの引数に使います。",
+   "returns": "数値定数（1）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbModal",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/form-constants.md"
+  },
+  "sha256": "69e93db039224cfa13611cfbd68b27aa7e3ce385f17792354e5220d0fd4adde0"
+ },
+ {
+  "kind": "vba",
+  "name": "vbCalGreg",
+  "supported": true,
+  "fields": {
+   "description": "グレゴリオ暦が使われることを表す定数です。",
+   "returns": "数値定数（0）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbCalGreg",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/calendar-constants.md"
+  },
+  "sha256": "726c68a48d22113a01e23ee834f17d38b54a23901b0b8a8a3f83da45156f2434"
+ },
+ {
+  "kind": "vba",
+  "name": "vbCalHijri",
+  "supported": true,
+  "fields": {
+   "description": "ヒジュラ暦が使われることを表す定数です。",
+   "returns": "数値定数（1）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbCalHijri",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/calendar-constants.md"
+  },
+  "sha256": "b2792dc86ff52dcfe244165a5e4cc64c3ab9706182e542397e62e3e6926b370c"
+ },
+ {
+  "kind": "vba",
+  "name": "vbUseCompareOption",
+  "supported": true,
+  "fields": {
+   "description": "Option Compare ステートメントの設定を使って比較することを表す比較定数です。InStr／Replace の compare 引数に使います。",
+   "returns": "数値定数（-1）",
+   "caution": "このアプリの InStr／Replace では compare に -1 を渡すと未対応として停止します（定数自体の値は -1 です）。",
+   "example": "Debug.Print vbUseCompareOption",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/instr-function.md"
+  },
+  "sha256": "621ae95326f6be8399a0f8e777ac880cca55ba3b22c85cb44088f72ade8e3d83"
+ },
+ {
+  "kind": "vba",
+  "name": "vbKeyLButton",
+  "supported": true,
+  "fields": {
+   "description": "マウスの左ボタンのキーコードを表す定数です。",
+   "returns": "数値定数（1）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbKeyLButton",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "sha256": "c60538c04f8391eff632a694c4fa76c86ce14ce077354a50605e670c2f4b5bc1"
+ },
+ {
+  "kind": "vba",
+  "name": "vbKeyRButton",
+  "supported": true,
+  "fields": {
+   "description": "マウスの右ボタンのキーコードを表す定数です。",
+   "returns": "数値定数（2）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbKeyRButton",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "sha256": "9e4083eac8ea25074bc6eb3a5228db1616b40b0e3a5ce951178ba63bdcf7cb49"
+ },
+ {
+  "kind": "vba",
+  "name": "vbKeyCancel",
+  "supported": true,
+  "fields": {
+   "description": "CANCEL キーのキーコードを表す定数です。",
+   "returns": "数値定数（3）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbKeyCancel",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "sha256": "34eb65817d9c019becf6f35ab08fd4d51bc9c76937a389e598080965416c81a7"
+ },
+ {
+  "kind": "vba",
+  "name": "vbKeyMButton",
+  "supported": true,
+  "fields": {
+   "description": "マウスの中央ボタンのキーコードを表す定数です。",
+   "returns": "数値定数（4）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbKeyMButton",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "sha256": "f918fd9a0e8bddc1f97f58920fce0dd001c958a254973dcf0e8f4e9450665392"
+ },
+ {
+  "kind": "vba",
+  "name": "vbKeyBack",
+  "supported": true,
+  "fields": {
+   "description": "BACKSPACE キーのキーコードを表す定数です。",
+   "returns": "数値定数（8）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbKeyBack",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "sha256": "7ab8053689d2c62d8c5c694b6ea4a2f2e9b62dc5812e2e46b6d412b2a48860be"
+ },
+ {
+  "kind": "vba",
+  "name": "vbKeyTab",
+  "supported": true,
+  "fields": {
+   "description": "TAB キーのキーコードを表す定数です。",
+   "returns": "数値定数（9）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbKeyTab",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "sha256": "1b048ae5d0c8d9d081dc45094be2fa0e2a83d2594b1b8c970ef71f2e6baeb721"
+ },
+ {
+  "kind": "vba",
+  "name": "vbKeyClear",
+  "supported": true,
+  "fields": {
+   "description": "CLEAR キーのキーコードを表す定数です。",
+   "returns": "数値定数（12）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbKeyClear",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "sha256": "dff7ddd97e1a1bf349afffd4554a50d1dac8787b14edbbe9f04b3fc944c74ba5"
+ },
+ {
+  "kind": "vba",
+  "name": "vbKeyReturn",
+  "supported": true,
+  "fields": {
+   "description": "ENTER キーのキーコードを表す定数です。",
+   "returns": "数値定数（13）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbKeyReturn",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "sha256": "363d71b16f402e23c3678e21c2b1876a795bf35d24606139871da83c1d0a1ba7"
+ },
+ {
+  "kind": "vba",
+  "name": "vbKeyShift",
+  "supported": true,
+  "fields": {
+   "description": "SHIFT キーのキーコードを表す定数です。",
+   "returns": "数値定数（16）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbKeyShift",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "sha256": "e55b42af960fb7cac7b26231df2077a85f6c2576470b10e132bba2431a533a75"
+ },
+ {
+  "kind": "vba",
+  "name": "vbKeyControl",
+  "supported": true,
+  "fields": {
+   "description": "CTRL キーのキーコードを表す定数です。",
+   "returns": "数値定数（17）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbKeyControl",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "sha256": "8575d6d34c8acb0d5aa5c1de5235d6e5365b1a3ef9a3cb1916e27f61f9c814ce"
+ },
+ {
+  "kind": "vba",
+  "name": "vbKeyMenu",
+  "supported": true,
+  "fields": {
+   "description": "MENU キーのキーコードを表す定数です。",
+   "returns": "数値定数（18）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbKeyMenu",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "sha256": "2836de7dc2037226191388e18ac5a3215db71d538e5d151ae4c25f90686934b9"
+ },
+ {
+  "kind": "vba",
+  "name": "vbKeyPause",
+  "supported": true,
+  "fields": {
+   "description": "PAUSE キーのキーコードを表す定数です。",
+   "returns": "数値定数（19）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbKeyPause",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "sha256": "420ec48ccdcf6174993aa126d8f4cebb7298f42bf6d85ac05cf3adf970dfd726"
+ },
+ {
+  "kind": "vba",
+  "name": "vbKeyCapital",
+  "supported": true,
+  "fields": {
+   "description": "CAPS LOCK キーのキーコードを表す定数です。",
+   "returns": "数値定数（20）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbKeyCapital",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "sha256": "008185a5f567f2e63c6f0c0f50bb33015a2362d32d7b48ea97facaa3ede22d88"
+ },
+ {
+  "kind": "vba",
+  "name": "vbKeyEscape",
+  "supported": true,
+  "fields": {
+   "description": "ESC キーのキーコードを表す定数です。",
+   "returns": "数値定数（27）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbKeyEscape",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "sha256": "fb40d1d3ad7a610aa8cd576e885465f4ab0b5936186e0db4b7d409b2f269a11c"
+ },
+ {
+  "kind": "vba",
+  "name": "vbKeySpace",
+  "supported": true,
+  "fields": {
+   "description": "スペースキーのキーコードを表す定数です。",
+   "returns": "数値定数（32）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbKeySpace",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "sha256": "3693ec24a79398433bf3e4acce22d06a2af9ee526f1b5df7b1f384c1848383fa"
+ },
+ {
+  "kind": "vba",
+  "name": "vbKeyPageUp",
+  "supported": true,
+  "fields": {
+   "description": "PAGE UP キーのキーコードを表す定数です。",
+   "returns": "数値定数（33）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbKeyPageUp",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "sha256": "6599e835cf0006d90df7b450cd10ac1d4d93046ccbf912daf35e81f73129947d"
+ },
+ {
+  "kind": "vba",
+  "name": "vbKeyPageDown",
+  "supported": true,
+  "fields": {
+   "description": "PAGE DOWN キーのキーコードを表す定数です。",
+   "returns": "数値定数（34）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbKeyPageDown",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "sha256": "adc2cefc26660862bad738d611fa9f864af172164244b6ca0055b4eb9c813904"
+ },
+ {
+  "kind": "vba",
+  "name": "vbKeyEnd",
+  "supported": true,
+  "fields": {
+   "description": "END キーのキーコードを表す定数です。",
+   "returns": "数値定数（35）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbKeyEnd",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "sha256": "d6fe7b795f5fb8b4ad6e412fd45b9f7e98f6fb874a4ba8e78bae84b582834388"
+ },
+ {
+  "kind": "vba",
+  "name": "vbKeyHome",
+  "supported": true,
+  "fields": {
+   "description": "HOME キーのキーコードを表す定数です。",
+   "returns": "数値定数（36）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbKeyHome",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "sha256": "6239a85c059703fa5cebf82f2ab0c22555feb51b4855079fc38b9de292bba0c2"
+ },
+ {
+  "kind": "vba",
+  "name": "vbKeyLeft",
+  "supported": true,
+  "fields": {
+   "description": "左矢印キーのキーコードを表す定数です。",
+   "returns": "数値定数（37）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbKeyLeft",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "sha256": "1b39266270c2a2829393f971fb71713c96ef821490249c0d36ba9152def309a5"
+ },
+ {
+  "kind": "vba",
+  "name": "vbKeyUp",
+  "supported": true,
+  "fields": {
+   "description": "上矢印キーのキーコードを表す定数です。",
+   "returns": "数値定数（38）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbKeyUp",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "sha256": "f134d60d6b022b1e671b0f259fd9ffe2bf776a3701092f75414f63a77cc73c58"
+ },
+ {
+  "kind": "vba",
+  "name": "vbKeyRight",
+  "supported": true,
+  "fields": {
+   "description": "右矢印キーのキーコードを表す定数です。",
+   "returns": "数値定数（39）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbKeyRight",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "sha256": "fc7073347b5aba6f152449601fff3e242afccb8f2cbd238fa077c3f42b5e2a1c"
+ },
+ {
+  "kind": "vba",
+  "name": "vbKeyDown",
+  "supported": true,
+  "fields": {
+   "description": "下矢印キーのキーコードを表す定数です。",
+   "returns": "数値定数（40）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbKeyDown",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "sha256": "0d2066eb8eb387bf02be0b6b3f8fe05b9b57850fe90a2b648adb2f2f3ffc250d"
+ },
+ {
+  "kind": "vba",
+  "name": "vbKeySelect",
+  "supported": true,
+  "fields": {
+   "description": "SELECT キーのキーコードを表す定数です。",
+   "returns": "数値定数（41）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbKeySelect",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "sha256": "c0251bb22094efc5cee34cd9d4a03c5f02083abc1f7228aa83c1e319093feb7e"
+ },
+ {
+  "kind": "vba",
+  "name": "vbKeyPrint",
+  "supported": true,
+  "fields": {
+   "description": "PRINT SCREEN キーのキーコードを表す定数です。",
+   "returns": "数値定数（42）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbKeyPrint",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "sha256": "a42d2044e879cbd3075bf1e8c0e7f610c5b484a7b21be82dac46585758eb68cc"
+ },
+ {
+  "kind": "vba",
+  "name": "vbKeyExecute",
+  "supported": true,
+  "fields": {
+   "description": "EXECUTE キーのキーコードを表す定数です。",
+   "returns": "数値定数（43）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbKeyExecute",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "sha256": "e001ed9a9de7290a2162ede724cf671b624ef34e387743d1af04481b2e0ca027"
+ },
+ {
+  "kind": "vba",
+  "name": "vbKeySnapshot",
+  "supported": true,
+  "fields": {
+   "description": "SNAPSHOT キーのキーコードを表す定数です。",
+   "returns": "数値定数（44）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbKeySnapshot",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "sha256": "683378870a7ea583105ff96ec1da767484a1de867483b08a7c892eea86a33cf8"
+ },
+ {
+  "kind": "vba",
+  "name": "vbKeyInsert",
+  "supported": true,
+  "fields": {
+   "description": "INSERT キーのキーコードを表す定数です。",
+   "returns": "数値定数（45）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbKeyInsert",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "sha256": "3e1c568a2c36f9bb7da07a1ea2154591efb01e6a8b3424d7789006726f2c8d19"
+ },
+ {
+  "kind": "vba",
+  "name": "vbKeyDelete",
+  "supported": true,
+  "fields": {
+   "description": "DELETE キーのキーコードを表す定数です。",
+   "returns": "数値定数（46）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbKeyDelete",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "sha256": "c8e7ec0ed0ef761862cbbab41537c4887aca551f1d151d38744b875cd037141e"
+ },
+ {
+  "kind": "vba",
+  "name": "vbKeyHelp",
+  "supported": true,
+  "fields": {
+   "description": "HELP キーのキーコードを表す定数です。",
+   "returns": "数値定数（47）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbKeyHelp",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "sha256": "e4102892ead0fe61a6162d8f5d73e066c9208d6326a31d382916e0b86b34ac4b"
+ },
+ {
+  "kind": "vba",
+  "name": "vbKeyNumlock",
+  "supported": true,
+  "fields": {
+   "description": "NUM LOCK キーのキーコードを表す定数です。",
+   "returns": "数値定数（144）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbKeyNumlock",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "sha256": "6ede4a41dbeff02da816021767f8d908e5da70d784adc6d0501d4fd57af14d62"
+ },
+ {
+  "kind": "vba",
+  "name": "vbKeyA",
+  "supported": true,
+  "fields": {
+   "description": "A キーのキーコードを表す定数です（ASCII コードと同じ値です）。",
+   "returns": "数値定数（65）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbKeyA",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "sha256": "7f987d6e994260b05580a91f18f60f93b557a6948f956d2cd90ef740bf2d2886"
+ },
+ {
+  "kind": "vba",
+  "name": "vbKeyB",
+  "supported": true,
+  "fields": {
+   "description": "B キーのキーコードを表す定数です（ASCII コードと同じ値です）。",
+   "returns": "数値定数（66）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbKeyB",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "sha256": "ff0f80743fa9621b4cf95d169598fb38ae1a4115e8e572fccd8d3d5916a4aa5f"
+ },
+ {
+  "kind": "vba",
+  "name": "vbKeyC",
+  "supported": true,
+  "fields": {
+   "description": "C キーのキーコードを表す定数です（ASCII コードと同じ値です）。",
+   "returns": "数値定数（67）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbKeyC",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "sha256": "5e405f0a22b9f1052ada211d2be13c9e950d6cae6439509ee2607f949501a1b0"
+ },
+ {
+  "kind": "vba",
+  "name": "vbKeyD",
+  "supported": true,
+  "fields": {
+   "description": "D キーのキーコードを表す定数です（ASCII コードと同じ値です）。",
+   "returns": "数値定数（68）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbKeyD",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "sha256": "540fc1d242d7b7abd17b25723814278c30e6c680f71b140eb40c51aa8eddb347"
+ },
+ {
+  "kind": "vba",
+  "name": "vbKeyE",
+  "supported": true,
+  "fields": {
+   "description": "E キーのキーコードを表す定数です（ASCII コードと同じ値です）。",
+   "returns": "数値定数（69）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbKeyE",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "sha256": "d3144d603555ab47156f99e1d0fa0ffb5b67d60c3b3b103dec71c10684f27772"
+ },
+ {
+  "kind": "vba",
+  "name": "vbKeyF",
+  "supported": true,
+  "fields": {
+   "description": "F キーのキーコードを表す定数です（ASCII コードと同じ値です）。",
+   "returns": "数値定数（70）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbKeyF",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "sha256": "7affd10dcbef465a5ff0f9de5919f3222563a13b9c51976a5fc5c68954a6d88e"
+ },
+ {
+  "kind": "vba",
+  "name": "vbKeyG",
+  "supported": true,
+  "fields": {
+   "description": "G キーのキーコードを表す定数です（ASCII コードと同じ値です）。",
+   "returns": "数値定数（71）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbKeyG",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "sha256": "2e204928a229cf547e73639e8b6535355afd90f35b957619157fe99d2a3100c6"
+ },
+ {
+  "kind": "vba",
+  "name": "vbKeyH",
+  "supported": true,
+  "fields": {
+   "description": "H キーのキーコードを表す定数です（ASCII コードと同じ値です）。",
+   "returns": "数値定数（72）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbKeyH",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "sha256": "e8fca2505506b18b8754e7b8aa1e115c79bcca448514a6d9c421775bbea3b658"
+ },
+ {
+  "kind": "vba",
+  "name": "vbKeyI",
+  "supported": true,
+  "fields": {
+   "description": "I キーのキーコードを表す定数です（ASCII コードと同じ値です）。",
+   "returns": "数値定数（73）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbKeyI",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "sha256": "3055807d2209dea1c36fec1702d950792f15c3adf527bce74f924d7c10873c62"
+ },
+ {
+  "kind": "vba",
+  "name": "vbKeyJ",
+  "supported": true,
+  "fields": {
+   "description": "J キーのキーコードを表す定数です（ASCII コードと同じ値です）。",
+   "returns": "数値定数（74）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbKeyJ",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "sha256": "08463c3a53e964ecf5925762d4fdf5c7be7e472d90ea176d337aaf2b64ccc34b"
+ },
+ {
+  "kind": "vba",
+  "name": "vbKeyK",
+  "supported": true,
+  "fields": {
+   "description": "K キーのキーコードを表す定数です（ASCII コードと同じ値です）。",
+   "returns": "数値定数（75）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbKeyK",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "sha256": "10315c6fef2ef218d35ff05a4ea462eb5d642b35058d894016331f689ab77541"
+ },
+ {
+  "kind": "vba",
+  "name": "vbKeyL",
+  "supported": true,
+  "fields": {
+   "description": "L キーのキーコードを表す定数です（ASCII コードと同じ値です）。",
+   "returns": "数値定数（76）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbKeyL",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "sha256": "7c12f8b0445657983b1b12a903312a87381e1d48fd84927fe0fdbd0dee8d1f78"
+ },
+ {
+  "kind": "vba",
+  "name": "vbKeyM",
+  "supported": true,
+  "fields": {
+   "description": "M キーのキーコードを表す定数です（ASCII コードと同じ値です）。",
+   "returns": "数値定数（77）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbKeyM",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "sha256": "12f3c93781cde2b7be1f3423078ba2e3aad5a873edcd01e1a481851d150f1382"
+ },
+ {
+  "kind": "vba",
+  "name": "vbKeyN",
+  "supported": true,
+  "fields": {
+   "description": "N キーのキーコードを表す定数です（ASCII コードと同じ値です）。",
+   "returns": "数値定数（78）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbKeyN",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "sha256": "7af53ce59ab7c8ba68e2999c110cb5d1b72686fac183e7a26cb8a237c30eb509"
+ },
+ {
+  "kind": "vba",
+  "name": "vbKeyO",
+  "supported": true,
+  "fields": {
+   "description": "O キーのキーコードを表す定数です（ASCII コードと同じ値です）。",
+   "returns": "数値定数（79）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbKeyO",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "sha256": "b87634a4530ca5436b6df6273ec2ad1b38906da06d5ae8b2fbca305c10e59808"
+ },
+ {
+  "kind": "vba",
+  "name": "vbKeyP",
+  "supported": true,
+  "fields": {
+   "description": "P キーのキーコードを表す定数です（ASCII コードと同じ値です）。",
+   "returns": "数値定数（80）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbKeyP",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "sha256": "e3172d62b013b182350780bf063492a7a65e0aabfc59993c924f2ab8881446d2"
+ },
+ {
+  "kind": "vba",
+  "name": "vbKeyQ",
+  "supported": true,
+  "fields": {
+   "description": "Q キーのキーコードを表す定数です（ASCII コードと同じ値です）。",
+   "returns": "数値定数（81）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbKeyQ",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "sha256": "84a97bba58ef479bfeac45be2557a31b6427251334761061a919390b55c36076"
+ },
+ {
+  "kind": "vba",
+  "name": "vbKeyR",
+  "supported": true,
+  "fields": {
+   "description": "R キーのキーコードを表す定数です（ASCII コードと同じ値です）。",
+   "returns": "数値定数（82）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbKeyR",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "sha256": "f1b22e00fa11a9fa90ac6ddd44c94c23f2c9b3abedcfd6a4c618dd041291da85"
+ },
+ {
+  "kind": "vba",
+  "name": "vbKeyS",
+  "supported": true,
+  "fields": {
+   "description": "S キーのキーコードを表す定数です（ASCII コードと同じ値です）。",
+   "returns": "数値定数（83）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbKeyS",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "sha256": "30f3c6586fdf49f5186e717c251784a9d2b6f2cc525ba6e4a1fb0feccc63562b"
+ },
+ {
+  "kind": "vba",
+  "name": "vbKeyT",
+  "supported": true,
+  "fields": {
+   "description": "T キーのキーコードを表す定数です（ASCII コードと同じ値です）。",
+   "returns": "数値定数（84）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbKeyT",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "sha256": "84e5a1cdf21a6740877a6b7f76901b28a252f30a84c84417201b7be19258ce3a"
+ },
+ {
+  "kind": "vba",
+  "name": "vbKeyU",
+  "supported": true,
+  "fields": {
+   "description": "U キーのキーコードを表す定数です（ASCII コードと同じ値です）。",
+   "returns": "数値定数（85）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbKeyU",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "sha256": "4f7042b3b6c20470818fbe9e46858957b369eda4ec5f39312f3c718bfc89d228"
+ },
+ {
+  "kind": "vba",
+  "name": "vbKeyV",
+  "supported": true,
+  "fields": {
+   "description": "V キーのキーコードを表す定数です（ASCII コードと同じ値です）。",
+   "returns": "数値定数（86）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbKeyV",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "sha256": "ebcb718094220fb02ba504ffedcee398f165ec2ddf673200f1765a8c510f88b6"
+ },
+ {
+  "kind": "vba",
+  "name": "vbKeyW",
+  "supported": true,
+  "fields": {
+   "description": "W キーのキーコードを表す定数です（ASCII コードと同じ値です）。",
+   "returns": "数値定数（87）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbKeyW",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "sha256": "8a5bf4da0f0e48d7859fed1e67c832d7cd14462b48d8d4cde00b1edd2f95a04c"
+ },
+ {
+  "kind": "vba",
+  "name": "vbKeyX",
+  "supported": true,
+  "fields": {
+   "description": "X キーのキーコードを表す定数です（ASCII コードと同じ値です）。",
+   "returns": "数値定数（88）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbKeyX",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "sha256": "af4799c2fb6cfeebad581f0af622bf54d4313dc08277a6b5de08c7ac349346e1"
+ },
+ {
+  "kind": "vba",
+  "name": "vbKeyY",
+  "supported": true,
+  "fields": {
+   "description": "Y キーのキーコードを表す定数です（ASCII コードと同じ値です）。",
+   "returns": "数値定数（89）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbKeyY",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "sha256": "37f0915f61d9e918861e25f81c8d9d483ea29cec60bb99ef1e64aa56d0d3f871"
+ },
+ {
+  "kind": "vba",
+  "name": "vbKeyZ",
+  "supported": true,
+  "fields": {
+   "description": "Z キーのキーコードを表す定数です（ASCII コードと同じ値です）。",
+   "returns": "数値定数（90）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbKeyZ",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "sha256": "2b0ade927d0b3885c298342cd62676229ffec8b097e5f3d9080d2288db831587"
+ },
+ {
+  "kind": "vba",
+  "name": "vbKey0",
+  "supported": true,
+  "fields": {
+   "description": "0 キーのキーコードを表す定数です（ASCII コードと同じ値です）。",
+   "returns": "数値定数（48）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbKey0",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "sha256": "e8a7a4622be2e4943e3f98256a1f24629d9f398fd3c1092e55850ba1f6d54a67"
+ },
+ {
+  "kind": "vba",
+  "name": "vbKey1",
+  "supported": true,
+  "fields": {
+   "description": "1 キーのキーコードを表す定数です（ASCII コードと同じ値です）。",
+   "returns": "数値定数（49）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbKey1",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "sha256": "51605a932fa3699fe2381ddcbc20b6121fc6d5a79c771f63842596bb6041db9a"
+ },
+ {
+  "kind": "vba",
+  "name": "vbKey2",
+  "supported": true,
+  "fields": {
+   "description": "2 キーのキーコードを表す定数です（ASCII コードと同じ値です）。",
+   "returns": "数値定数（50）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbKey2",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "sha256": "264ab0d61b5f0800a16974d89132348b26802ad6601b4234fbc7cb0a73c323b4"
+ },
+ {
+  "kind": "vba",
+  "name": "vbKey3",
+  "supported": true,
+  "fields": {
+   "description": "3 キーのキーコードを表す定数です（ASCII コードと同じ値です）。",
+   "returns": "数値定数（51）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbKey3",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "sha256": "1f5abdefc07fd676a2f573810c9e2e77210fa5b42b8c2c61a61fad806f55c1be"
+ },
+ {
+  "kind": "vba",
+  "name": "vbKey4",
+  "supported": true,
+  "fields": {
+   "description": "4 キーのキーコードを表す定数です（ASCII コードと同じ値です）。",
+   "returns": "数値定数（52）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbKey4",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "sha256": "26d2c8b3011ffbbe45b4e26dc8a684521e20b94e3e9542fe735ebd418f4cb2c1"
+ },
+ {
+  "kind": "vba",
+  "name": "vbKey5",
+  "supported": true,
+  "fields": {
+   "description": "5 キーのキーコードを表す定数です（ASCII コードと同じ値です）。",
+   "returns": "数値定数（53）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbKey5",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "sha256": "32ec166ba8d2f5803b2bd8997797eea2638f0af79f7db103f2c50737baeceafb"
+ },
+ {
+  "kind": "vba",
+  "name": "vbKey6",
+  "supported": true,
+  "fields": {
+   "description": "6 キーのキーコードを表す定数です（ASCII コードと同じ値です）。",
+   "returns": "数値定数（54）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbKey6",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "sha256": "3e26622498ee3e1ad02243b4420257e5dd45f03a35a9ffdd096f15977591a041"
+ },
+ {
+  "kind": "vba",
+  "name": "vbKey7",
+  "supported": true,
+  "fields": {
+   "description": "7 キーのキーコードを表す定数です（ASCII コードと同じ値です）。",
+   "returns": "数値定数（55）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbKey7",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "sha256": "fb0a3b368f3b8335cb90e43b028b152ba400b639bfd9f37f7ca5e03031c6250c"
+ },
+ {
+  "kind": "vba",
+  "name": "vbKey8",
+  "supported": true,
+  "fields": {
+   "description": "8 キーのキーコードを表す定数です（ASCII コードと同じ値です）。",
+   "returns": "数値定数（56）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbKey8",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "sha256": "09d159cb6da9c8ccc836e6aabc2b1941e790f0ed809d5a5a4e71cc8cfd79a542"
+ },
+ {
+  "kind": "vba",
+  "name": "vbKey9",
+  "supported": true,
+  "fields": {
+   "description": "9 キーのキーコードを表す定数です（ASCII コードと同じ値です）。",
+   "returns": "数値定数（57）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbKey9",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "sha256": "9fd2476cd32b1fc4e59609d2d99fb0508fad835099dafb20ef763b15ff75a1fe"
+ },
+ {
+  "kind": "vba",
+  "name": "vbKeyNumpad0",
+  "supported": true,
+  "fields": {
+   "description": "テンキーの 0 キーのキーコードを表す定数です。",
+   "returns": "数値定数（96）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbKeyNumpad0",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "sha256": "7b25efd509bae8d4bffaaf2f93a3a6a400f09744ee93afc2b118019edb35901e"
+ },
+ {
+  "kind": "vba",
+  "name": "vbKeyNumpad1",
+  "supported": true,
+  "fields": {
+   "description": "テンキーの 1 キーのキーコードを表す定数です。",
+   "returns": "数値定数（97）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbKeyNumpad1",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "sha256": "a11485e23ac83f48a3899889215e0833c1fe889735772043fef9cabc482096fc"
+ },
+ {
+  "kind": "vba",
+  "name": "vbKeyNumpad2",
+  "supported": true,
+  "fields": {
+   "description": "テンキーの 2 キーのキーコードを表す定数です。",
+   "returns": "数値定数（98）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbKeyNumpad2",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "sha256": "b7a7d7fc21a58b47a5941ea1584f74fbe09f879b7cf7c7dc3240cf835aea4c52"
+ },
+ {
+  "kind": "vba",
+  "name": "vbKeyNumpad3",
+  "supported": true,
+  "fields": {
+   "description": "テンキーの 3 キーのキーコードを表す定数です。",
+   "returns": "数値定数（99）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbKeyNumpad3",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "sha256": "3a838e07a7cbe378316e6db40f9c3db64ca398176a7aa38c5177d449f298e737"
+ },
+ {
+  "kind": "vba",
+  "name": "vbKeyNumpad4",
+  "supported": true,
+  "fields": {
+   "description": "テンキーの 4 キーのキーコードを表す定数です。",
+   "returns": "数値定数（100）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbKeyNumpad4",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "sha256": "32b7cf10dc232c3c97da14700000acfa28182a8691483a535f9bddf42500994b"
+ },
+ {
+  "kind": "vba",
+  "name": "vbKeyNumpad5",
+  "supported": true,
+  "fields": {
+   "description": "テンキーの 5 キーのキーコードを表す定数です。",
+   "returns": "数値定数（101）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbKeyNumpad5",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "sha256": "a464ae57b8a9e1f07800861bbc5f0211787550f48f31a966743d0b3bf242a198"
+ },
+ {
+  "kind": "vba",
+  "name": "vbKeyNumpad6",
+  "supported": true,
+  "fields": {
+   "description": "テンキーの 6 キーのキーコードを表す定数です。",
+   "returns": "数値定数（102）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbKeyNumpad6",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "sha256": "e48065f435ea6f13a92f873af6968b27ced1c74fbe50f168d02f3de2cf0962d8"
+ },
+ {
+  "kind": "vba",
+  "name": "vbKeyNumpad7",
+  "supported": true,
+  "fields": {
+   "description": "テンキーの 7 キーのキーコードを表す定数です。",
+   "returns": "数値定数（103）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbKeyNumpad7",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "sha256": "d73ab7b36e98f60f9b3ad0f6fa9486528372f0f8dbf26839841a7dc63278b07e"
+ },
+ {
+  "kind": "vba",
+  "name": "vbKeyNumpad8",
+  "supported": true,
+  "fields": {
+   "description": "テンキーの 8 キーのキーコードを表す定数です。",
+   "returns": "数値定数（104）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbKeyNumpad8",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "sha256": "2e1f09a59a2b1422b81a5279adaf3b932a9e6c4e65b1623735e83f461c18bb54"
+ },
+ {
+  "kind": "vba",
+  "name": "vbKeyNumpad9",
+  "supported": true,
+  "fields": {
+   "description": "テンキーの 9 キーのキーコードを表す定数です。",
+   "returns": "数値定数（105）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbKeyNumpad9",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "sha256": "90e4595c9dbf67353dfc8fae5996ee6979d7ce86db4dd05f55dce60a7c87fe57"
+ },
+ {
+  "kind": "vba",
+  "name": "vbKeyMultiply",
+  "supported": true,
+  "fields": {
+   "description": "テンキーの *（乗算）キーのキーコードを表す定数です。",
+   "returns": "数値定数（106）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbKeyMultiply",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "sha256": "4055637ac5628f0383591aee01be67532f60dc67ce37ff34470c6400b9fb5e37"
+ },
+ {
+  "kind": "vba",
+  "name": "vbKeyAdd",
+  "supported": true,
+  "fields": {
+   "description": "テンキーの +（加算）キーのキーコードを表す定数です。",
+   "returns": "数値定数（107）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbKeyAdd",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "sha256": "c5344c0b025be18e00b0e506a9c381ba0bedeb753dea33e85e3538a409ac14a9"
+ },
+ {
+  "kind": "vba",
+  "name": "vbKeySeparator",
+  "supported": true,
+  "fields": {
+   "description": "テンキーの ENTER キーのキーコードを表す定数です。",
+   "returns": "数値定数（108）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbKeySeparator",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "sha256": "6f4def0aec662a07cb5ffc8bc36aff449ecfe8d86cc8bbc1e7dd25215c3238da"
+ },
+ {
+  "kind": "vba",
+  "name": "vbKeySubtract",
+  "supported": true,
+  "fields": {
+   "description": "テンキーの -（減算）キーのキーコードを表す定数です。",
+   "returns": "数値定数（109）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbKeySubtract",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "sha256": "b665bda31c2d3dd0d9ff5d32cf7db934b5c85321153987e37fb048f6d060816e"
+ },
+ {
+  "kind": "vba",
+  "name": "vbKeyDecimal",
+  "supported": true,
+  "fields": {
+   "description": "テンキーの .（小数点）キーのキーコードを表す定数です。",
+   "returns": "数値定数（110）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbKeyDecimal",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "sha256": "7a0987869f9b791f38e1b6f09c5aeeec68f5d321413f635991fdefc2df011e97"
+ },
+ {
+  "kind": "vba",
+  "name": "vbKeyDivide",
+  "supported": true,
+  "fields": {
+   "description": "テンキーの /（除算）キーのキーコードを表す定数です。",
+   "returns": "数値定数（111）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbKeyDivide",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "sha256": "26a2249af2feae4f80141205079b1a70c21e2f1fb9fb563bad3d79878125895b"
+ },
+ {
+  "kind": "vba",
+  "name": "vbKeyF1",
+  "supported": true,
+  "fields": {
+   "description": "F1 キーのキーコードを表す定数です。",
+   "returns": "数値定数（112）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbKeyF1",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "sha256": "b39f1362d2360f52ee7c6b1203857bc69a2dd879e90df446d82e3e1856e74fd9"
+ },
+ {
+  "kind": "vba",
+  "name": "vbKeyF2",
+  "supported": true,
+  "fields": {
+   "description": "F2 キーのキーコードを表す定数です。",
+   "returns": "数値定数（113）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbKeyF2",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "sha256": "32d1b2ff9de43b16786cf65580e3c91baaf8d2f764307c8ea0cf9d9dab905a4d"
+ },
+ {
+  "kind": "vba",
+  "name": "vbKeyF3",
+  "supported": true,
+  "fields": {
+   "description": "F3 キーのキーコードを表す定数です。",
+   "returns": "数値定数（114）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbKeyF3",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "sha256": "8313d2f969f3d70bfd3238e2670bbdfc4d4f780ed1a57b71bcb63024a6a3c5cc"
+ },
+ {
+  "kind": "vba",
+  "name": "vbKeyF4",
+  "supported": true,
+  "fields": {
+   "description": "F4 キーのキーコードを表す定数です。",
+   "returns": "数値定数（115）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbKeyF4",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "sha256": "a9ad1f8425d022864b2c0c4cb32095afab2a4da507fe55e3d80fab4f38801c0e"
+ },
+ {
+  "kind": "vba",
+  "name": "vbKeyF5",
+  "supported": true,
+  "fields": {
+   "description": "F5 キーのキーコードを表す定数です。",
+   "returns": "数値定数（116）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbKeyF5",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "sha256": "4cc57bf31d9afd4e830d33e80b6ca8669d53932019d901010d4c969a9a10cba0"
+ },
+ {
+  "kind": "vba",
+  "name": "vbKeyF6",
+  "supported": true,
+  "fields": {
+   "description": "F6 キーのキーコードを表す定数です。",
+   "returns": "数値定数（117）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbKeyF6",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "sha256": "7dea48a9f7420fb81f82e143a5aba3b5602a4f76bc72e58670e04f94448a2db0"
+ },
+ {
+  "kind": "vba",
+  "name": "vbKeyF7",
+  "supported": true,
+  "fields": {
+   "description": "F7 キーのキーコードを表す定数です。",
+   "returns": "数値定数（118）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbKeyF7",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "sha256": "e5876b16037121e5e1068c134f928a4682d9098778315f7e20db485b203ef782"
+ },
+ {
+  "kind": "vba",
+  "name": "vbKeyF8",
+  "supported": true,
+  "fields": {
+   "description": "F8 キーのキーコードを表す定数です。",
+   "returns": "数値定数（119）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbKeyF8",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "sha256": "4bde4390f93b4fabac81d5794915d42e72cf7a8aca691c404929a6e4bcc450a1"
+ },
+ {
+  "kind": "vba",
+  "name": "vbKeyF9",
+  "supported": true,
+  "fields": {
+   "description": "F9 キーのキーコードを表す定数です。",
+   "returns": "数値定数（120）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbKeyF9",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "sha256": "168e1c0fe80d0f61457ed4c7be7adcfe2249fd3ec517e2ef418d5aac602f6277"
+ },
+ {
+  "kind": "vba",
+  "name": "vbKeyF10",
+  "supported": true,
+  "fields": {
+   "description": "F10 キーのキーコードを表す定数です。",
+   "returns": "数値定数（121）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbKeyF10",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "sha256": "98d919ebc83516cb952da1d20e93871a361c2cd97191b0894db861bc275ec7be"
+ },
+ {
+  "kind": "vba",
+  "name": "vbKeyF11",
+  "supported": true,
+  "fields": {
+   "description": "F11 キーのキーコードを表す定数です。",
+   "returns": "数値定数（122）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbKeyF11",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "sha256": "b466b04084033a492e9c715cd1f2dd9034bcd86da42adbd2bec06c5cd7b1a004"
+ },
+ {
+  "kind": "vba",
+  "name": "vbKeyF12",
+  "supported": true,
+  "fields": {
+   "description": "F12 キーのキーコードを表す定数です。",
+   "returns": "数値定数（123）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbKeyF12",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "sha256": "7cf002d8a3dc68f764e3e32c287bf64dd2d980de967729b6e466c2b814e6d41d"
+ },
+ {
+  "kind": "vba",
+  "name": "vbKeyF13",
+  "supported": true,
+  "fields": {
+   "description": "F13 キーのキーコードを表す定数です。",
+   "returns": "数値定数（124）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbKeyF13",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "sha256": "46595d9f6a2c96c255f126010a03cdd059d27a0ae547c919096831d55a2b2cdb"
+ },
+ {
+  "kind": "vba",
+  "name": "vbKeyF14",
+  "supported": true,
+  "fields": {
+   "description": "F14 キーのキーコードを表す定数です。",
+   "returns": "数値定数（125）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbKeyF14",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "sha256": "0c711ab608325c2b1056f2ace59bc8e670ebd62bf0c9b6f5888b7e7e95e71fd3"
+ },
+ {
+  "kind": "vba",
+  "name": "vbKeyF15",
+  "supported": true,
+  "fields": {
+   "description": "F15 キーのキーコードを表す定数です。",
+   "returns": "数値定数（126）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbKeyF15",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "sha256": "6ed866c205ee1fa6f54c88cdc52f2b0ca9861646a92be30d11951ae6feaf2b4e"
+ },
+ {
+  "kind": "vba",
+  "name": "vbKeyF16",
+  "supported": true,
+  "fields": {
+   "description": "F16 キーのキーコードを表す定数です。",
+   "returns": "数値定数（127）",
+   "caution": "組み込み定数です。同名の変数は宣言できません。",
+   "example": "Debug.Print vbKeyF16",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "sha256": "86090a69ebb77c8f47e71eae20d3a6fed8c5cebf50436ef25e381767f1031c87"
  }
 ]

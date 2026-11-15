@@ -519,7 +519,12 @@ export class PSParser {
       while (this.peek("[")) {
         const before = this.i,
           bc = this.bracketContent();
-        if (!/^(CmdletBinding|OutputType)\s*\(/i.test(bc.text.trim())) {
+        // R28-N6: [CmdletBinding] の括弧なし形も文法 B.2.4 の属性の
+        // 正規形であるため、括弧つき形と同様に属性として読む。
+        if (
+          !/^CmdletBinding\s*(\(|$)/i.test(bc.text.trim()) &&
+          !/^OutputType\s*\(/i.test(bc.text.trim())
+        ) {
           this.i = before;
           break;
         }
@@ -599,7 +604,8 @@ export class PSParser {
     while (!this.peek(")")) {
       let type = null,
         validateSet = null,
-        mandatory = false;
+        mandatory = false,
+        validateNotNull = false;
       const aliases = [];
       // R27-N4: 型制約とパラメータ属性（B.2.4 attribute）は複数並べて
       // 書ける（例：[Parameter(Mandatory=$true)][ValidateSet('a','b')]
@@ -610,6 +616,29 @@ export class PSParser {
         const bc = this.bracketContent(),
           text = bc.text.trim();
         if (!text.includes("(")) {
+          // R28-N6: 括弧なし属性（文法 B.2.4 の attribute は引数なしの
+          // 形も正規形である）。[Parameter] 等の既知の属性名は型名では
+          // なく属性として読む。従来は一律に型名として保持され、呼び出し
+          // 時の型変換で「未対応の型変換：[Parameter]」と誤帰属していた。
+          // Parameter（括弧なし）は Mandatory 指定なしの属性であり、
+          // ValidateNotNull 系は束縛値の検証として記録する。Allow 系は
+          // 値の変換に影響しない宣言として受理する。
+          const bare = text.replace(/\s+/g, "").toLowerCase();
+          if (bare === "parameter" || bare === "cmdletbinding") continue;
+          if (
+            bare === "validatenotnull" ||
+            bare === "validatenotnullorempty" ||
+            bare === "validatenotnullorwhitespace"
+          ) {
+            validateNotNull = true;
+            continue;
+          }
+          if (
+            bare === "allownull" ||
+            bare === "allowemptystring" ||
+            bare === "allowemptycollection"
+          )
+            continue;
           type = text.replace(/\s+/g, "");
           continue;
         }
@@ -672,6 +701,7 @@ export class PSParser {
         value,
         validateSet,
         mandatory,
+        validateNotNull,
         aliases,
         line: t.line,
       });
@@ -1063,7 +1093,16 @@ export class PSParser {
           line,
           "未確認",
         );
-      a = { k: "literal", value: v, line };
+      // R28-N3: 小数リテラル（小数点・指数を含む形）は .NET では double
+      // として扱われる。値そのものは JS の数値に畳まれるため、由来を
+      // dbl フラグとして保持し、engine 側の浮動小数点判定に使う
+      // （16進リテラルは整数なので、e を含んでも対象外）。
+      a = {
+        k: "literal",
+        value: v,
+        line,
+        dbl: !/^0x/i.test(t.v) && /[.eE]/.test(t.v),
+      };
       // R25-N12: 引数モード（argGlued）でカンマ要素等として読まれる
       // 数値にも接着判定を効かせる。隣接演算子列を文字列として取り込み、
       // 後続処理（メンバー・二項演算子）へは渡さない。
@@ -1236,7 +1275,72 @@ export class PSParser {
     while (true) {
       if (this.peek(".")) {
         this.take();
-        const key = this.take();
+        const key = this.ts[this.i];
+        // R28-N5: member-name（文法 B.2）は simple-name のほかに
+        // string-literal（$h.'k'／$h."k"）、variable（$h.$name）、
+        // ( expression )（$h.('k')）の生成を持つ。名前が存在するのに
+        // 「プロパティ名が必要です」と名指すのは虚偽原因であるため、
+        // これらを正規形として受理する。静的に決まる名前は name、
+        // 実行時に決まる名前は nameExpr として保持し、engine 側で
+        // 解決する。二重引用符でも展開（$）を含まない名前は静的に決まる。
+        if (key.k === "string") {
+          this.take();
+          a =
+            key.quote === '"' && key.v.includes("$")
+              ? {
+                  k: "member",
+                  target: a,
+                  name: null,
+                  nameExpr: {
+                    k: "string",
+                    value: key.v,
+                    quote: '"',
+                    line: key.line,
+                  },
+                  line,
+                }
+              : { k: "member", target: a, name: key.v, line };
+          if (this.peek("("))
+            fail("未対応：.NETメソッド呼び出し " + key.v, line);
+          continue;
+        }
+        if (key.k === "var") {
+          this.take();
+          a = {
+            k: "member",
+            target: a,
+            name: null,
+            nameExpr: { k: "var", name: key.v, line: key.line },
+            line,
+          };
+          if (this.peek("("))
+            fail("未対応：.NETメソッド呼び出し $" + key.v, line);
+          continue;
+        }
+        if (key.v === "(") {
+          const open = this.take(),
+            savedGlued = this.argGlued,
+            savedComma = this.noComma;
+          this.argGlued = 0;
+          this.noComma = 0;
+          let pipe;
+          try {
+            pipe = this.pipeline();
+          } finally {
+            this.argGlued = savedGlued;
+            this.noComma = savedComma;
+          }
+          this.take(")");
+          a = {
+            k: "member",
+            target: a,
+            name: null,
+            nameExpr: { k: "subexpression", pipe, line: open.line },
+            line,
+          };
+          continue;
+        }
+        this.take();
         if (key.k !== "word")
           fail("プロパティ名が必要です", key.line, "SyntaxError");
         let name = key.v;
@@ -1246,19 +1350,27 @@ export class PSParser {
         // 後では最初の「-」以降を演算子側へ戻す。戻し分を再トークン化して
         // 現在位置へ差し込むことで、接着した減算（$h.k-1）・後置 --・
         // 比較（$h.k-eq 10）が実物どおり演算子として解釈される。
-        const dash = name.indexOf("-");
-        if (dash >= 0) {
-          const restTokens = tokenizePS(name.slice(dash)).filter(
+        // R28-N2: 同じ字句規則を「/」にも広げる。相対パスの字句規則が
+        // 「k/2」全体を1単語として取り込むため、接着した除算（$h.k/2）が
+        // 存在しないメンバー名として黙って $null 化していた（$h.k/0 の
+        // 無言化・$h.k/-2 の誤値・条件の誤分岐を含む）。「\」と、パス形に
+        // 取り込まれた後続メンバー区切り「.」も同じ境界であり、simple-name
+        // の構成文字でない最初の文字以降を再トークン化して演算子・区切り
+        // 側へ戻す（引用符付き名前は文字列トークン側で処理済みのため、
+        // ハイフン等を含む実在キーは従来どおり添字・引用形で読める）。
+        const cut = name.search(/[-/\\.]/);
+        if (cut > 0) {
+          const restTokens = tokenizePS(name.slice(cut)).filter(
             (x) => x.k !== "eof",
           );
-          const base = key.start + dash;
+          const base = key.start + cut;
           for (const x of restTokens) {
             x.start += base;
             x.end += base;
             x.line = key.line;
           }
           this.ts.splice(this.i, 0, ...restTokens);
-          name = name.slice(0, dash);
+          name = name.slice(0, cut);
         }
         a = { k: "member", target: a, name, line };
         if (this.peek("(")) fail("未対応：.NETメソッド呼び出し " + name, line);
@@ -1369,6 +1481,27 @@ export class PSParser {
       } else {
         a = { k: "binary", op, a, b: this.expr(p + 1), line };
       }
+    }
+    // R28-N7: 三項（条件）演算子（言語仕様 7.4。PowerShell 7 以降の
+    // 正規の演算子）。優先順位は全二項演算子より下であるため、最も
+    // 緩い水準（min <= 1）でだけ読み、分岐は完全な式として読む。
+    // 「?」はコマンド位置では Where-Object の別名として stage 側が
+    // 扱い、式の値の後に現れる場合だけが三項演算子になる。従来は
+    // この読みが無く、括弧が揃っているのに呼び出し側が「) が必要です」
+    // という虚偽原因で止まっていた。
+    if (min <= 1 && this.peek("?")) {
+      this.take();
+      const thenBranch = this.expr(0);
+      if (!this.peek(":"))
+        fail(": が必要です", this.ts[this.i]?.line || line, "SyntaxError");
+      this.take();
+      a = {
+        k: "ternary",
+        test: a,
+        then: thenBranch,
+        else: this.expr(0),
+        line,
+      };
     }
     this.depth--;
     return a;

@@ -1057,7 +1057,76 @@ const VBA_ENUM_CONSTANTS = {
   // VbFileAttribute（GetAttr function）
   vbnormal: 0, vbreadonly: 1, vbhidden: 2, vbsystem: 4, vbvolume: 8,
   vbdirectory: 16, vbarchive: 32, vbalias: 64,
+  // R28-N9: RG-220 の列挙外だった定数族の完成。値は Microsoft Learn の
+  // 各定数ページ（Constants (Visual Basic for Applications) 索引配下）で確定した：
+  // VbStrConv（StrConv constants／StrConv function。vbSimplifiedChinese／
+  // vbTraditionalChinese／vbLinguisticCasing は StrConv constants の表には無く、
+  // Microsoft Learn の VbStrConv 列挙ページが Visual Basic 定数との等価を明記）、
+  // VbAppWinStyle（Shell constants）、VbCallType（CallType constants）、
+  // VbIMEStatus（IMEStatus constants）、QueryClose constants、
+  // Form constants、Calendar constants、Keycode constants。
+  // vbUseCompareOption は InStr function の Settings 表（Comparison constants）。
+  // VbStrConv
+  vbuppercase: 1, vblowercase: 2, vbpropercase: 3, vbwide: 4, vbnarrow: 8,
+  vbkatakana: 16, vbhiragana: 32, vbunicode: 64, vbfromunicode: 128,
+  vbsimplifiedchinese: 256, vbtraditionalchinese: 512, vblinguisticcasing: 1024,
+  // VbAppWinStyle（Shell constants）
+  vbhide: 0, vbnormalfocus: 1, vbminimizedfocus: 2, vbmaximizedfocus: 3,
+  vbnormalnofocus: 4, vbminimizednofocus: 6,
+  // VbCallType
+  vbmethod: 1, vbget: 2, vblet: 4, vbset: 8,
+  // VbIMEStatus
+  vbimemodenocontrol: 0, vbimemodeon: 1, vbimemodeoff: 2, vbimemodedisable: 3,
+  vbimemodehiragana: 4, vbimemodekatakana: 5, vbimemodekatakanahalf: 6,
+  vbimemodealphafull: 7, vbimemodealpha: 8, vbimemodehangulfull: 9,
+  vbimemodehangul: 10,
+  // QueryClose constants
+  vbformcontrolmenu: 0, vbformcode: 1, vbappwindows: 2, vbapptaskmanager: 3,
+  // Form constants
+  vbmodeless: 0, vbmodal: 1,
+  // Calendar constants
+  vbcalgreg: 0, vbcalhijri: 1,
+  // Comparison constants（残り。InStr function の Settings 表）
+  vbusecompareoption: -1,
+  // Keycode constants（主表＋A-Z＋0-9＋テンキー＋ファンクションキー、全99名）
+  vbkeylbutton: 1, vbkeyrbutton: 2, vbkeycancel: 3, vbkeymbutton: 4,
+  vbkeyback: 8, vbkeytab: 9, vbkeyclear: 12, vbkeyreturn: 13, vbkeyshift: 16,
+  vbkeycontrol: 17, vbkeymenu: 18, vbkeypause: 19, vbkeycapital: 20,
+  vbkeyescape: 27, vbkeyspace: 32, vbkeypageup: 33, vbkeypagedown: 34,
+  vbkeyend: 35, vbkeyhome: 36, vbkeyleft: 37, vbkeyup: 38, vbkeyright: 39,
+  vbkeydown: 40, vbkeyselect: 41, vbkeyprint: 42, vbkeyexecute: 43,
+  vbkeysnapshot: 44, vbkeyinsert: 45, vbkeydelete: 46, vbkeyhelp: 47,
+  vbkeynumlock: 144,
+  vbkeya: 65, vbkeyb: 66, vbkeyc: 67, vbkeyd: 68, vbkeye: 69, vbkeyf: 70,
+  vbkeyg: 71, vbkeyh: 72, vbkeyi: 73, vbkeyj: 74, vbkeyk: 75, vbkeyl: 76,
+  vbkeym: 77, vbkeyn: 78, vbkeyo: 79, vbkeyp: 80, vbkeyq: 81, vbkeyr: 82,
+  vbkeys: 83, vbkeyt: 84, vbkeyu: 85, vbkeyv: 86, vbkeyw: 87, vbkeyx: 88,
+  vbkeyy: 89, vbkeyz: 90,
+  vbkey0: 48, vbkey1: 49, vbkey2: 50, vbkey3: 51, vbkey4: 52, vbkey5: 53,
+  vbkey6: 54, vbkey7: 55, vbkey8: 56, vbkey9: 57,
+  vbkeynumpad0: 96, vbkeynumpad1: 97, vbkeynumpad2: 98, vbkeynumpad3: 99,
+  vbkeynumpad4: 100, vbkeynumpad5: 101, vbkeynumpad6: 102, vbkeynumpad7: 103,
+  vbkeynumpad8: 104, vbkeynumpad9: 105, vbkeymultiply: 106, vbkeyadd: 107,
+  vbkeyseparator: 108, vbkeysubtract: 109, vbkeydecimal: 110, vbkeydivide: 111,
+  vbkeyf1: 112, vbkeyf2: 113, vbkeyf3: 114, vbkeyf4: 115, vbkeyf5: 116,
+  vbkeyf6: 117, vbkeyf7: 118, vbkeyf8: 119, vbkeyf9: 120, vbkeyf10: 121,
+  vbkeyf11: 122, vbkeyf12: 123, vbkeyf13: 124, vbkeyf14: 125, vbkeyf15: 126,
+  vbkeyf16: 127,
 };
+// R28-N8: 組み込み定数への代入・同名宣言・ループ変数化のガード対象。
+// evalExpr の id 解決が s.vars より先に定数を引くため、書き込み側に
+// ガードが無いと「trace・最終状態は代入後の値、読み戻しは定数値」という
+// 矛盾が起きていた。実 VBA では定数への代入はコンパイルエラー
+// （Assignment to constant not permitted）で実行自体が始まらない。
+// 文字列定数（vbCrLf 等、evalExpr で個別に解決する分）も対象に含める。
+const VBA_BUILTIN_CONSTANT_NAMES = new Set([
+  ...Object.keys(VBA_ENUM_CONSTANTS),
+  "vbcrlf", "vbcr", "vblf", "vbnewline", "vbnullchar", "vbnullstring",
+  "vbtab", "vbformfeed", "vbverticaltab",
+]);
+const isVbaBuiltinConstant = (name) => VBA_BUILTIN_CONSTANT_NAMES.has(name);
+const failConstAssign = (name) =>
+  fail(`定数 ${name} には代入できません（組み込み定数への代入はエラーです）`);
 function evalExpr(a, s) {
   switch (a.k) {
     case "lit":
@@ -1484,6 +1553,12 @@ function evalExpr(a, s) {
 function assign(target, v, s, set = false) {
   if (target.k === "id") {
     let name = target.name;
+    // R28-N8: 定数への代入（Let／Set を含む）は Option Explicit の
+    // 未定義判定より先に定数として名指しする。従来は黙って s.vars へ
+    // 書き込み（読み戻しは定数が優先されるため出力と矛盾した）、
+    // Option Explicit 下では「変数が定義されていません」の虚偽原因に
+    // 化けていた。
+    if (isVbaBuiltinConstant(name)) failConstAssign(name);
     if (s.explicit && !(name in s.vars))
       fail(`変数が定義されていません：${name}`);
     let type = s.types[name] || "variant";
@@ -1866,6 +1941,14 @@ function simulateImpl(source, model = {}, custom = {}) {
             );
             continue;
           }
+          // R28-N8: 組み込み定数と同名の変数は宣言できない（定数側の
+          // 読み取りが優先され、宣言・代入が黙って無効化される同根表面）。
+          // 各定数ページの「同名の定数は定義できない」旨と、既存項目の
+          // caution「同名の変数は宣言できません」の主張に合わせる。
+          if (isVbaBuiltinConstant(d.name))
+            fail(
+              `定数 ${d.name} と同じ名前の変数は宣言できません（組み込み定数です）`,
+            );
           if (d.name in s.types)
             fail(`同じ変数が重複して宣言されています：${d.name}`);
           s.types[d.name] = d.type;
@@ -2126,6 +2209,16 @@ function simulateImpl(source, model = {}, custom = {}) {
     return done;
   }
   function loop(n, s, depth) {
+    // R28-N8: 定数を For／For Each の反復変数にすることは定数への代入と
+    // 同じである。For は assign 経由でも止まるが、For Each は s.vars へ
+    // 直接書く経路のため、ここで一括して名指しする（参照渡しの代入先に
+    // 定数が来る表面も、このモデルではループ変数が該当する）。
+    if (
+      (n.k === "for" || n.k === "each") &&
+      n.name &&
+      isVbaBuiltinConstant(n.name)
+    )
+      failConstAssign(n.name);
     let values, start, end, step, collection;
     if (n.k === "for") {
       start = value(evalExpr(n.from, s), s);

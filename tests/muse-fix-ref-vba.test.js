@@ -20,7 +20,8 @@ const errors = (r) =>
 
 test("ref-r22 VBA: all 24 missing names are individual supported entries", () => {
   // 修正バッチ6（R27-N7）で VBA 組み込み定数94件を項目化したため 91 → 185。
-  assert.equal(vba.reference.length, 185, "66 existing + 25 new + batch6 constants 94");
+  // 修正バッチ7（R28-N9）で列挙外の定数族141件を追加したため 185 → 326。
+  assert.equal(vba.reference.length, 326, "66 existing + 25 new + batch6 constants 94 + batch7 constants 141");
   for (const name of NEW_NAMES) {
     const r = byName.get(name);
     assert.ok(r, name + " must exist as its own reference entry");

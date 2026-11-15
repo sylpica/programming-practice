@@ -59,7 +59,12 @@ const enumerate = (v) => (v === undefined ? [] : Array.isArray(v) ? v : [v]);
 const scalar = (values) =>
   values.length === 0 ? null : values.length === 1 ? values[0] : values;
 function numberText(v, n = { line: 1 }, display = false) {
-  if (!Number.isFinite(v)) fail("未確認：非有限数の文字列化", n.line, "未確認");
+  // R28-N3: 非有限数が値として現れるのは、IEEE 754 の浮動小数点演算
+  // （小数形の 0 除算・0 剰余）の確定結果に限る（binary 参照。それ以外
+  // の非有限化は従来どおり演算側で未確認として止める）。実 PowerShell
+  // の文字列表記は "Infinity"／"-Infinity"／"NaN" であり、出力・
+  // 最終状態の表示もそれに合わせる（RG-223 の JSON 往復規則と一致）。
+  if (!Number.isFinite(v)) return String(v);
   if (Math.abs(v) >= 1e15) {
     if (display) return String(v);
     fail("未確認：大きな整数と浮動小数点の文字列化", n.line, "未確認");
@@ -75,6 +80,40 @@ function numberText(v, n = { line: 1 }, display = false) {
     );
   }
   return String(rounded);
+}
+// R28-N3（RG-223 と同型の処置）：実行完了後の最終状態スナップショット
+// に限り、非有限数を実 PowerShell の文字列表現（"Infinity" 等）へ
+// 置き換える。vars の JSON 往復が出力・groups の表示と一致することが
+// 判定基準。ハッシュテーブル（Map）と PSCustomObject の構造は保ち、
+// 未確定値はそのまま返す。
+function psFiniteSafe(v, seen = new Map()) {
+  if (typeof v === "number") return Number.isFinite(v) ? v : String(v);
+  if (!v || typeof v !== "object" || isUnknown(v)) return v;
+  if (seen.has(v)) return seen.get(v);
+  if (Array.isArray(v)) {
+    const out = [];
+    seen.set(v, out);
+    for (const x of v) out.push(psFiniteSafe(x, seen));
+    return out;
+  }
+  if (v.kind === "ps-object" && v.psType === "Hashtable") {
+    const out = { kind: "ps-object", psType: "Hashtable", entries: new Map() };
+    seen.set(v, out);
+    for (const [k, x] of v.entries) out.entries.set(k, psFiniteSafe(x, seen));
+    return out;
+  }
+  if (v.kind === "ps-object") {
+    const out = { ...v, properties: {} };
+    seen.set(v, out);
+    for (const [k, x] of Object.entries(v.properties ?? {}))
+      out.properties[k] = psFiniteSafe(x, seen);
+    return out;
+  }
+  // vars コンテナ等の素のオブジェクトは、値側だけを変換して複製する。
+  const out = {};
+  seen.set(v, out);
+  for (const [k, x] of Object.entries(v)) out[k] = psFiniteSafe(x, seen);
+  return out;
 }
 export function psFormat(v) {
   if (isUnknown(v)) return formatValue(v);
@@ -392,6 +431,69 @@ export function simulatePowerShell(source, model, limits) {
       }
       return ciGet(s.vars, name) ?? null;
     }
+    // R28-N5: 実行時に決まるメンバー名（引用符の展開・変数・括弧式）を
+    // 解決する。静的な名前（name）はそのまま返す。
+    function memberKey(a, s, api) {
+      if (!a.nameExpr) return a.name;
+      const v = read(a.nameExpr, s, api);
+      if (isUnknown(v))
+        fail("未確認：プロパティ名が確定していません", a.line, "未確認");
+      if (v === null || v === undefined)
+        fail("プロパティ名が $null です", a.line, "RuntimeException");
+      return v;
+    }
+    // R28-N3: 式が .NET の double（小数）由来かどうかを、リテラルの
+    // 由来（parser の dbl フラグ）・[double] キャスト・変数の代入由来
+    // （s.ps.dbl）・値そのものの形（非整数の数値、小数形の数値文字列）
+    // から判定する。JS の数値は 1.0 と 1 を区別できないため、由来を
+    // 辿れない場合は値の形で判定し、それでも整数形なら整数として扱う。
+    function numericStringIsDouble(v) {
+      const t = v.trim();
+      return (
+        /^[+-]?(?:\d+\.\d*|\.\d+|\d+)(?:e[+-]?\d+)?$/i.test(t) &&
+        /[.e]/i.test(t)
+      );
+    }
+    function exprIsDouble(node, s) {
+      if (!node || typeof node !== "object") return false;
+      if (node.k === "literal") return node.dbl === true;
+      if (node.k === "cast") {
+        const t = String(node.type).toLowerCase().replace(/\s+/g, "");
+        return t === "double" || t === "system.double";
+      }
+      if (node.k === "var") {
+        const v = ciGet(s.vars, node.name);
+        if (typeof v === "number")
+          return (
+            !Number.isInteger(v) || !!s.ps?.dbl?.[node.name.toLowerCase()]
+          );
+        if (typeof v === "string") return numericStringIsDouble(v);
+        return false;
+      }
+      if (node.k === "binary")
+        return (
+          ["+", "-", "*", "/", "%"].includes(node.op) &&
+          (exprIsDouble(node.a, s) || exprIsDouble(node.b, s))
+        );
+      if (node.k === "unary") return exprIsDouble(node.arg, s);
+      if (node.k === "subexpression") {
+        const stages = node.pipe?.stages;
+        return stages?.length === 1 && stages[0].k === "expression"
+          ? exprIsDouble(stages[0].value, s)
+          : false;
+      }
+      if (node.k === "post" || node.k === "pre")
+        return exprIsDouble(node.target, s);
+      if (node.k === "ternary")
+        return exprIsDouble(node.then, s) || exprIsDouble(node.else, s);
+      return false;
+    }
+    // R28-N3: 非整数の数値を変数へ代入したら小数の由来を記録する
+    // （整数値の代入での記録の付け替えは代入文側で行う）。
+    function markDouble(s, name, v) {
+      if (typeof v === "number" && !Number.isInteger(v))
+        (s.ps.dbl ??= {})[name.toLowerCase()] = true;
+    }
     function set(s, target, v, n, api) {
       (s.pendingRefs ??= []).push("変数");
       if (target.k === "var") {
@@ -414,6 +516,13 @@ export function simulatePowerShell(source, model, limits) {
         )
           fail("未対応：自動変数への代入", n.line);
         ciSet(s.vars, target.name, v);
+        // R28-N3: 小数の由来（s.ps.dbl）を値の形に合わせて保つ。
+        // 非整数の数値は確実に小数であり、数値でない値への代入では
+        // 由来は消える。整数値の場合は由来が値から決まらないため、
+        // 代入文側の由来判定に委ねる（ここでは付け替えない）。
+        markDouble(s, target.name, v);
+        if (typeof v !== "number" && s.ps.dbl)
+          delete s.ps.dbl[target.name.toLowerCase()];
         return;
       }
       // R26-N2（防御層）: ++／--・代入の対象が変数・プロパティ・添字の
@@ -428,7 +537,10 @@ export function simulatePowerShell(source, model, limits) {
           "RuntimeException",
         );
       const host = read(target.target, s, api),
-        key = target.k === "member" ? target.name : read(target.index, s, api);
+        key =
+          target.k === "member"
+            ? memberKey(target, s, api)
+            : read(target.index, s, api);
       if (isUnknown(host) || isUnknown(key))
         fail("未確認：代入先が確定していません", n.line, "未確認");
       if (isObject(host) && host.psType === "Hashtable") {
@@ -458,7 +570,7 @@ export function simulatePowerShell(source, model, limits) {
       }
       fail("この添字・プロパティへ代入できません", n.line, "RuntimeException");
     }
-    function binary(op, a, b, s, n, api) {
+    function binary(op, a, b, s, n, api, floatCtx = false) {
       // SH-P3: -f（書式演算子）は宣言どおり未対応だが、括弧不足など
       // 無関係な原因ではなく演算子を名指して止める。
       if (op === "-f") fail("未対応：書式演算子 -f", n.line);
@@ -863,10 +975,31 @@ export function simulatePowerShell(source, model, limits) {
         // 実物の挙動であり、数値文字列（2 * "3" = 6）は従来どおり変換される。
         // 配列×配列も同様に数値変換の失敗で停止する（実物でもエラー）。
       }
+      const rawA = a,
+        rawB = b;
       a = numeric(a, n);
       b = numeric(b, n);
-      if ((op === "/" || op === "%") && b === 0)
-        fail("0による除算です", n.line, "RuntimeException");
+      // R28-N3: 0 除算・0 剰余の扱いは型で決まる（Microsoft Learn
+      // DivideByZeroException：例外が発生するのは整数値または Decimal
+      // 値を 0 で割った場合であり、浮動小数点値では IEEE 754 の規則で
+      // ±Infinity／NaN になる）。被演算子のどちらかが小数（double）
+      // 由来なら浮動小数点演算として非有限値を返し、整数同士の場合
+      // だけ従来どおり「0による除算です」で止める。小数の判定は、
+      // 呼び出し側が式の由来から求めた floatCtx、変換前の値の形
+      // （非整数の数値・小数形の数値文字列）、変換後の非整数性による。
+      let ieeeZero = false;
+      if ((op === "/" || op === "%") && b === 0) {
+        const floating =
+          floatCtx ||
+          (typeof rawA === "number" && !Number.isInteger(rawA)) ||
+          (typeof rawB === "number" && !Number.isInteger(rawB)) ||
+          (typeof rawA === "string" && numericStringIsDouble(rawA)) ||
+          (typeof rawB === "string" && numericStringIsDouble(rawB)) ||
+          !Number.isInteger(a) ||
+          !Number.isInteger(b);
+        if (!floating) fail("0による除算です", n.line, "RuntimeException");
+        ieeeZero = true;
+      }
       const v =
         op === "+"
           ? a + b
@@ -881,7 +1014,7 @@ export function simulatePowerShell(source, model, limits) {
                   : undefined;
       if (v === undefined) fail("未対応の演算子：" + op, n.line);
       if (
-        !Number.isFinite(v) ||
+        (!Number.isFinite(v) && !ieeeZero) ||
         (Number.isInteger(v) && !Number.isSafeInteger(v))
       )
         fail("未確認：PowerShell演算のモデル数値範囲外", n.line, "未確認");
@@ -904,6 +1037,24 @@ export function simulatePowerShell(source, model, limits) {
         : values[0].values.length
           ? scalar(values[0].values)
           : undefined;
+    }
+    // R28-N4: ++／-- の評価。++ は about_Assignment_Operators のとおり
+    // 「数値であるか、数値へ変換可能でなければならない」演算であり、
+    // 文字列の代入先では数値へ変換してから増やす（'5'++ → 6）。
+    // 通常の + 演算は文字列では連結になる（$s += 1 の '51' は実物
+    // どおり）ため、文字列の場合だけ -- と同じ数値変換経路を通す。
+    // 変換できない文字列（'abc'・''）は変換エラーで止まる。
+    function incDec(v, op, s, n, api) {
+      if (op === "++" && typeof v === "string") {
+        const updated = numeric(v, n) + 1;
+        if (
+          !Number.isFinite(updated) ||
+          (Number.isInteger(updated) && !Number.isSafeInteger(updated))
+        )
+          fail("未確認：PowerShell演算のモデル数値範囲外", n.line, "未確認");
+        return updated;
+      }
+      return binary(op === "++" ? "+" : "-", v, 1, s, n, api);
     }
     function read(a, s, api) {
       api.check();
@@ -1097,7 +1248,15 @@ export function simulatePowerShell(source, model, limits) {
         if (type === "double") return numeric(v, a);
         fail("未対応の型変換：[" + a.type + "]", a.line);
       }
-      if (a.k === "member") return property(read(a.target, s, api), a.name, a);
+      if (a.k === "member")
+        return property(read(a.target, s, api), memberKey(a, s, api), a);
+      if (a.k === "ternary") {
+        // R28-N7: 三項演算子。選ばれた側だけを評価する（実物どおりの
+        // 短絡）。条件が未確定値の場合は捏造せず未確定値として返す。
+        const tv = truth(read(a.test, s, api));
+        if (isUnknown(tv)) return { ...unknown("三項演算子の条件") };
+        return tv ? read(a.then, s, api) : read(a.else, s, api);
+      }
       if (a.k === "index") {
         const v = read(a.target, s, api),
           i = read(a.index, s, api);
@@ -1146,13 +1305,7 @@ export function simulatePowerShell(source, model, limits) {
         const v = read(a.target, s, api);
         if (isUnknown(v))
           fail("未確認：未確定値のインクリメント", a.line, "未確認");
-        set(
-          s,
-          a.target,
-          binary(a.op === "++" ? "+" : "-", v, 1, s, a, api),
-          a,
-          api,
-        );
+        set(s, a.target, incDec(v, a.op, s, a, api), a, api);
         return v;
       }
       if (a.k === "pre") {
@@ -1167,14 +1320,7 @@ export function simulatePowerShell(source, model, limits) {
         const v = read(a.target, s, api);
         if (isUnknown(v))
           fail("未確認：未確定値のインクリメント", a.line, "未確認");
-        const updated = binary(
-          a.op === "++" ? "+" : "-",
-          v,
-          1,
-          s,
-          a,
-          api,
-        );
+        const updated = incDec(v, a.op, s, a, api);
         set(s, a.target, updated, a, api);
         return updated;
       }
@@ -1195,7 +1341,10 @@ export function simulatePowerShell(source, model, limits) {
         }
         if (a.op === "-and" && truth(x) === false) return false;
         if (a.op === "-or" && truth(x) === true) return true;
-        return binary(a.op, x, read(a.b, s, api), s, a, api);
+        // R28-N3: 小数の由来は右辺の評価（副作用）より前に、現在の
+        // 状態で判定する。
+        const floatCtx = exprIsDouble(a.a, s) || exprIsDouble(a.b, s);
+        return binary(a.op, x, read(a.b, s, api), s, a, api, floatCtx);
       }
       fail("未対応：PowerShell式 " + a.k, a.line);
     }
@@ -1337,7 +1486,11 @@ export function simulatePowerShell(source, model, limits) {
           vars: s.vars,
           signal: s.ps.signal,
           functions: s.ps.functions,
+          // R28-N3: 小数の由来の記録も呼び出しフレームと一緒に保つ
+          // （引数名と外側の変数名が重なっても由来が漏れないように）。
+          dbl: s.ps.dbl,
         });
+        s.ps.dbl = { ...(s.ps.dbl ?? {}) };
         s.vars = { ...s.vars };
         s.ps.functions = { ...s.ps.functions };
         for (let i = 0; i < fn.params.length; i++) {
@@ -1403,7 +1556,19 @@ export function simulatePowerShell(source, model, limits) {
                 "ParameterBindingValidationException",
               );
           }
+          // R28-N6: ValidateNotNull 系の括弧なし属性は、束縛された値が
+          // $null でないことを検証する（実物は
+          // ParameterBindingValidationException で停止する）。
+          if (param.validateNotNull && supplied && v === null)
+            fail(
+              "パラメータの値が検証属性 ValidateNotNull に一致しません：$" +
+                param.name +
+                " に $null は指定できません",
+              c.line,
+              "ParameterBindingValidationException",
+            );
           ciSet(s.vars, param.name, v);
+          markDouble(s, param.name, v);
         }
         for (const key of Object.keys(params))
           if (
@@ -1424,6 +1589,7 @@ export function simulatePowerShell(source, model, limits) {
           r.s.vars = frame.vars;
           r.s.ps.signal = frame.signal;
           r.s.ps.functions = frame.functions;
+          if (frame.dbl !== undefined) r.s.ps.dbl = frame.dbl;
           return r;
         });
       }
@@ -2164,8 +2330,16 @@ export function simulatePowerShell(source, model, limits) {
               done.push(current);
               continue;
             }
-            if (n.k === "foreach")
+            if (n.k === "foreach") {
               ciSet(current.vars, n.name, frame.items[frame.index]);
+              // R28-N3: ループ変数も小数の由来の対象にする。
+              markDouble(current, n.name, frame.items[frame.index]);
+              if (
+                typeof frame.items[frame.index] !== "number" &&
+                current.ps.dbl
+              )
+                delete current.ps.dbl[n.name.toLowerCase()];
+            }
             frame.index++;
             api.note(
               current,
@@ -2234,8 +2408,43 @@ export function simulatePowerShell(source, model, limits) {
             : scalar(r.values);
           if (v === undefined) v = null;
           if (n.op !== "=")
-            v = binary(n.op[0], read(n.target, r.s, api), v, r.s, n, api);
+            v = binary(
+              n.op[0],
+              read(n.target, r.s, api),
+              v,
+              r.s,
+              n,
+              api,
+              exprIsDouble(n.target, r.s) ||
+                exprIsDouble(
+                  n.value.stages?.length === 1 &&
+                    n.value.stages[0].k === "expression"
+                    ? n.value.stages[0].value
+                    : null,
+                  r.s,
+                ),
+            );
           set(r.s, n.target, v, n, api);
+          // R28-N3: 整数値の代入では、右辺（複合代入では対象と右辺）の
+          // 由来で小数の記録を付け替える（$x = 1.0 の後に $x = 1 と
+          // 代入し直したら、以降の $x/0 は整数の 0 除算に戻る）。
+          if (
+            n.target.k === "var" &&
+            typeof v === "number" &&
+            Number.isInteger(v)
+          ) {
+            const valueNode =
+              n.value.stages?.length === 1 &&
+              n.value.stages[0].k === "expression"
+                ? n.value.stages[0].value
+                : null;
+            const isDbl =
+              n.op === "="
+                ? exprIsDouble(valueNode, r.s)
+                : exprIsDouble(n.target, r.s) || exprIsDouble(valueNode, r.s);
+            if (isDbl) (r.s.ps.dbl ??= {})[n.target.name.toLowerCase()] = true;
+            else if (r.s.ps.dbl) delete r.s.ps.dbl[n.target.name.toLowerCase()];
+          }
           api.note(r.s, n, "代入します：" + psFormat(v));
           return r.s;
         });
@@ -2408,7 +2617,7 @@ export function simulatePowerShell(source, model, limits) {
       return states;
     }
     let sDepth = 0;
-    return shellRuntime(
+    const result = shellRuntime(
       [{ k: "ps-program", body: nodes, line: 1 }],
       model,
       (s) => {
@@ -2419,6 +2628,8 @@ export function simulatePowerShell(source, model, limits) {
         s.ps = {
           functions: {},
           calls: [],
+          // R28-N3: 小数（double）由来の変数名の記録（小文字名→true）。
+          dbl: {},
           streams: [[]],
           items: [],
           loops: [],
@@ -2461,6 +2672,10 @@ export function simulatePowerShell(source, model, limits) {
       ],
       limits,
     );
+    // R28-N3: 最終状態の vars は、非有限数を文字列表現へ置き換えた
+    // スナップショットにする（psFiniteSafe。出力・groups と一致させる）。
+    for (const p of result.paths || []) p.vars = psFiniteSafe(p.vars);
+    return result;
   } catch (e) {
     // R25-N3: 外側 catch の無変換素通しを是正する（cmd の RG-173 と同形）。
     // PS の著作者エラーは全て shell/model.js の fail() 経由の PracticeError

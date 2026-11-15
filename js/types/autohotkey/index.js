@@ -740,6 +740,40 @@ function ahkLineStartsStatement(code) {
     code,
   );
 }
+// R28-N1：行頭演算子による行継続（continuation prefix）の判定。
+// AutoHotkey v2 公式ドキュメント（Scripts.htm「Splitting a Long Line」
+// ／Language.htm の Line continuation）は「カンマまたは式演算子
+// （++ と -- を除く）で始まる行は、直上の行と自動的に結合される。
+// 結合は、直上の行が実際に式を含むかどうかを問わない」と定める。
+// 複合代入・代入（:= 等）で始まる行は二項演算子の継続ではないため
+// 除き、単項専用の ! ～ や参照の単独形も、二項として繋がらないため
+// 対象に含めない（!= は比較として含める）。単語演算子 and／or／in／
+// is も式演算子として含める（文頭に単独で現れることはない）。
+function ahkLineStartsContinuation(maskedTrimmed) {
+  const s = maskedTrimmed;
+  if (!s) return false;
+  if (s.startsWith("++") || s.startsWith("--")) return false;
+  if (s.startsWith("::")) return false;
+  if (/^(:=|\+=|-=|\*=|\/=|\/\/=|\.=|&=|\|=|\^=|<<=|>>=|>>>=|=>)/.test(s))
+    return false;
+  if (/^(,|\.|\*\*|\/\/|<<|>>>|>>|&&|\|\||==|!=|<=|>=|[-+*\/%^&|<>?:])/.test(s))
+    return true;
+  if (/^(and|or|in|is)\b/i.test(s)) return true;
+  return false;
+}
+// 行継続の結合先として妥当な行か。ブロックの開閉行・ホットキー行・
+// ラベル行・ディレクティブ行へは結合しない（公式も継続演算子は
+// ホットストリング／ディレクティブには使えないと定める）。
+function ahkContinuationTargetOk(maskedTrimmed) {
+  if (!maskedTrimmed) return false;
+  if (maskedTrimmed.startsWith("#")) return false;
+  if (maskedTrimmed.endsWith("{") || maskedTrimmed.endsWith("}"))
+    return false;
+  if (maskedTrimmed.endsWith("::")) return false;
+  if (/^[\p{ID_Start}_][\p{ID_Continue}_]*\s*:$/u.test(maskedTrimmed))
+    return false;
+  return true;
+}
 function phaseB(source) {
   let inBlock = false;
   // R27-N15：行継続の妥当性検査。前の有意な行が未完の式で終わって
@@ -753,47 +787,112 @@ function phaseB(source) {
   // よる継続）は対象外とする。
   let prevIncompleteLine = 0;
   let enclosureDepth = 0;
-  return source
-    .split("\n")
-    .map((line, idx) => {
-      let text, analysisCode;
-      if (inBlock) {
-        const end = line.indexOf("*/");
-        if (end < 0) return line;
-        inBlock = false;
-        const rest = line.slice(end + 2);
-        text = line.slice(0, end + 2) + transformCodeLine(rest).text;
-        analysisCode = splitCodeComment(rest).code;
-      } else {
-        const { code } = splitCodeComment(line);
-        analysisCode = code;
-        if (
-          prevIncompleteLine &&
-          enclosureDepth === 0 &&
-          code.trim() &&
-          ahkLineStartsStatement(code)
-        )
-          throw new PracticeError(
-            `式が途中で終わっています：${prevIncompleteLine}行目の式が未完成のまま、次の文が始まっています`,
-            prevIncompleteLine,
-            "SyntaxError",
-          );
+  // R28-N1：行頭演算子の継続行の結合先（直近の有意な行）。結合は
+  // 書換後の行に対して行い、継続の断片は結合先の行末コメントの前へ
+  // 挿入する。継続行そのものは空行として残し、後続の行番号を
+  // ずらさない。空行・コメント行は結合先を更新しない（RG-228 の
+  // 有意な行の扱いと揃える）。
+  let mergeTarget = null;
+  const out = [];
+  const lines = source.split("\n");
+  for (let idx = 0; idx < lines.length; idx++) {
+    const line = lines[idx];
+    let text, analysisCode, pendingTarget = null;
+    if (inBlock) {
+      const end = line.indexOf("*/");
+      if (end < 0) {
+        out.push(line);
+        continue;
+      }
+      inBlock = false;
+      const rest = line.slice(end + 2);
+      text = line.slice(0, end + 2) + transformCodeLine(rest).text;
+      analysisCode = splitCodeComment(rest).code;
+      // ブロックコメントの終了行にコードが続く場合は、その行への
+      // 結合（コメント前への挿入）が成立しないため結合先にしない。
+      // コードが続かない場合は結合先を維持する。
+      if (analysisCode.trim()) mergeTarget = null;
+    } else {
+      const { code, comment } = splitCodeComment(line);
+      analysisCode = code;
+      const maskedLine = maskAhkStrings(code);
+      const trimmedLine = maskedLine.trim();
+      if (
+        mergeTarget &&
+        enclosureDepth === 0 &&
+        trimmedLine &&
+        ahkLineStartsContinuation(trimmedLine) &&
+        ahkContinuationTargetOk(mergeTarget.maskedTrimmed)
+      ) {
         const r = transformCodeLine(line);
         inBlock = r.opensBlock;
-        text = r.text;
+        const contCode = r.text
+          .slice(0, r.text.length - comment.length)
+          .trim();
+        const targetText = out[mergeTarget.outIdx];
+        const head = targetText
+          .slice(0, mergeTarget.codeLen)
+          .replace(/\s+$/, "");
+        const tail = targetText.slice(mergeTarget.codeLen);
+        // メンバー継続（.名前）は空白を挟むと連結演算子（.concat）に
+        // 化けるため、ドットの前には空白を入れない。それ以外の演算子
+        // は単語演算子（and／or 等）の融合を避けて空白で繋ぐ。
+        const sep = /^\.[\p{ID_Start}_]/u.test(contCode) ? "" : " ";
+        out[mergeTarget.outIdx] =
+          head + sep + contCode + (tail ? " " + tail : "");
+        mergeTarget = {
+          ...mergeTarget,
+          codeLen: head.length + sep.length + contCode.length,
+        };
+        for (const ch of maskedLine) {
+          if (ch === "(" || ch === "[") enclosureDepth++;
+          else if (ch === ")" || ch === "]")
+            enclosureDepth = Math.max(0, enclosureDepth - 1);
+        }
+        prevIncompleteLine = ahkLineEndsIncomplete(trimmedLine)
+          ? idx + 1
+          : 0;
+        out.push("");
+        continue;
       }
-      const masked = maskAhkStrings(analysisCode);
-      for (const ch of masked) {
-        if (ch === "(" || ch === "[") enclosureDepth++;
-        else if (ch === ")" || ch === "]")
-          enclosureDepth = Math.max(0, enclosureDepth - 1);
-      }
-      const trimmed = masked.trim();
-      if (trimmed)
-        prevIncompleteLine = ahkLineEndsIncomplete(trimmed) ? idx + 1 : 0;
-      return text;
-    })
-    .join("\n");
+      if (
+        prevIncompleteLine &&
+        enclosureDepth === 0 &&
+        code.trim() &&
+        // R28-N12：次の行がブロック閉じ } で始まる場合も、未完の式は
+        // 継続先を持たないため同じ専用文言で帰属させる。従来はこの
+        // 形だけ検査に届かず、パーサ側の「式を解釈できません：}」と
+        // いう誤帰属になっていた。
+        (ahkLineStartsStatement(code) || code.trim().startsWith("}"))
+      )
+        throw new PracticeError(
+          `式が途中で終わっています：${prevIncompleteLine}行目の式が未完成のまま、次の文が始まっています`,
+          prevIncompleteLine,
+          "SyntaxError",
+        );
+      const r = transformCodeLine(line);
+      inBlock = r.opensBlock;
+      text = r.text;
+      if (trimmedLine)
+        pendingTarget = {
+          outIdx: out.length,
+          codeLen: text.length - comment.length,
+          maskedTrimmed: trimmedLine,
+        };
+    }
+    const masked = maskAhkStrings(analysisCode);
+    for (const ch of masked) {
+      if (ch === "(" || ch === "[") enclosureDepth++;
+      else if (ch === ")" || ch === "]")
+        enclosureDepth = Math.max(0, enclosureDepth - 1);
+    }
+    const trimmed = masked.trim();
+    if (trimmed)
+      prevIncompleteLine = ahkLineEndsIncomplete(trimmed) ? idx + 1 : 0;
+    if (pendingTarget) mergeTarget = pendingTarget;
+    out.push(text);
+  }
+  return out.join("\n");
 }
 // Minimal AHK lexer used by the preparation passes (prescan and phaseC).
 // It mirrors the shared tokenizer's token boundaries closely enough for

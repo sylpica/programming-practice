@@ -110,7 +110,8 @@ test("D1-4 Attribute is an individual supported reference entry like Rem", () =>
   assert.match(attr.example, /Attribute VB_Name = "Module1"/);
   // 修正バッチ6（R27-N7）で VBA 組み込み定数94件を項目化したため 91 → 185。
   // 内訳：RG-204 で定義済みの10定数＋今回定義した84定数（Microsoft 公式の各列挙で確定）。
-  assert.equal(vba.reference.length, 185, "90 existing + Attribute + batch6 constants 94");
+  // 修正バッチ7（R28-N9）で列挙外の定数族141件を追加したため 185 → 326。
+  assert.equal(vba.reference.length, 326, "90 existing + Attribute + batch6 constants 94 + batch7 constants 141");
 });
 
 test("D1-4 Attribute example and module-header code run without error", async () => {
@@ -134,13 +135,13 @@ test("D1-4 reference-r2.json carries the matching Attribute row and no sha256 ch
   const rows = JSON.parse(readFileSync(new URL("../docs/audit/reference-r2.json", import.meta.url), "utf8"));
   // 統合後の総数: 905 existing + Attribute + ImageJ .length（D1-1）+ Python math 定数5件とその CloudFormation 伝播5件（R23-N6）
   // 修正バッチ6統合: R27-N20 の Python 組み込み定数3件＋その CloudFormation 伝播3件と、R27-N7 の VBA 定数94件を追加したため 1007 → 1107。
-  assert.equal(rows.length, 1107, "905 existing + Attribute + .length + math constants x2 kinds + batch3 数値の属性 x2 kinds + batch4 pyref exceptions x2 kinds + batch6 python constants x2 kinds + batch6 VBA constants 94");
+  assert.equal(rows.length, 1248, "905 existing + Attribute + .length + math constants x2 kinds + batch3 数値の属性 x2 kinds + batch4 pyref exceptions x2 kinds + batch6 python constants x2 kinds + batch6 VBA constants 94 + batch7 VBA constants 141");
   const row = rows.find((r) => r.kind === "vba" && r.name === "Attribute");
   assert.ok(row, "Attribute row must exist in reference-r2.json");
   assert.equal(row.supported, true);
   for (const field of ["description", "returns", "caution", "example", "source"])
     assert.equal(row.fields[field], attr[field], `reference-r2 Attribute.${field} must match the definition`);
-  assert.equal(rows.filter((r) => r.kind === "vba").length, 185); // バッチ6で定数94件を追加（91 + 94）
+  assert.equal(rows.filter((r) => r.kind === "vba").length, 326); // バッチ6で定数94件を追加（91 + 94）、バッチ7で定数141件を追加（185 + 141）
   // 既存行の sha256 は触らない: Rem 行の記録が従来どおりであること
   const rem = rows.find((r) => r.kind === "vba" && r.name === "Rem");
   assert.equal(rem.sha256, "6e6cd356a5317df07d53b20a5a826ca5169823906e2699b235b045d9381199de");

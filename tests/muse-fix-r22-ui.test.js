@@ -210,7 +210,7 @@ test("R22-N26 references without a caution render no empty caution element", () 
       total++;
       if (!r.caution) empty++;
     }
-  assert.equal(total, 1186); // 995 + 包含演算子（R24-N4）+ 数値の属性（R24 §3.2）+ プロパティ .Name/.FullName は既存項目への追記のため増減なし、比較演算子は既存項目の拡張 + 修正バッチ4 Python追随班の例外44件×2種（Python＋CloudFormation伝播）+ 修正バッチ6 R27-N20 組み込み定数3件×2種（同）+ R27-N7 VBA 定数94件
+  assert.equal(total, 1327); // 995 + 包含演算子（R24-N4）+ 数値の属性（R24 §3.2）+ プロパティ .Name/.FullName は既存項目への追記のため増減なし、比較演算子は既存項目の拡張 + 修正バッチ4 Python追随班の例外44件×2種（Python＋CloudFormation伝播）+ 修正バッチ6 R27-N20 組み込み定数3件×2種（同）+ R27-N7 VBA 定数94件 + 修正バッチ7 R28-N9 VBA 定数141件
   assert.ok(empty > 0, "expected some references without a caution");
   assert.ok(
     appSource.includes('...(r.caution ? [el("p", r.caution, "caution")] : [])'),

@@ -202,7 +202,9 @@ test("D3 C# unsigned declarations and promotion use the unsigned range", async (
 test("SEM-3 C# unsigned assignment wraps instead of storing -1", async () => {
   assert.equal(output(await first("csharp", `uint u = 0; u = u - 1; Console.WriteLine(u);`)), "4294967295");
   assert.equal(output(await first("csharp", `ushort s = 65535; Console.WriteLine((ushort)(s + 1));`)), "0");
-  assert.equal(output(await first("csharp", `Console.WriteLine((byte)300);`)), "44");
+  // R28-N22 で是正：定数キャスト (byte)300 は実 C# では CS0221 のため、
+  // 実行時値のキャストの折り返しは変数経由で確認する（意図は不変）。
+  assert.equal(output(await first("csharp", `int n = 300; Console.WriteLine((byte)n);`)), "44");
   assert.equal(output(await first("csharp", `byte b = 255; b++; Console.WriteLine(b);`)), "0");
   assert.equal(output(await first("csharp", `ushort s = 65535; s++; Console.WriteLine(s);`)), "0");
   assert.equal(output(await first("csharp", `uint u = 4294967295u; u++; Console.WriteLine(u);`)), "0");

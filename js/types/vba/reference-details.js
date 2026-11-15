@@ -326,15 +326,15 @@ export const referenceDetails = {
   },
   "vbBinaryCompare": {
     "returns": "数値定数（0）",
-    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/miscellaneous-constants.md"
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/instr-function.md"
   },
   "vbTextCompare": {
     "returns": "数値定数（1）",
-    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/miscellaneous-constants.md"
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/instr-function.md"
   },
   "vbDatabaseCompare": {
     "returns": "数値定数（2）",
-    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/miscellaneous-constants.md"
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/instr-function.md"
   },
   "vbCr": {
     "returns": "String（キャリッジリターン Chr(13)）",
@@ -686,7 +686,7 @@ export const referenceDetails = {
   },
   "vbVolume": {
     "returns": "数値定数（8）",
-    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/getattr-function.md"
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/dir-function.md"
   },
   "vbDirectory": {
     "returns": "数値定数（16）",
@@ -707,6 +707,570 @@ export const referenceDetails = {
   "vbTab": {
     "returns": "String（タブ文字 Chr(9)）",
     "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/miscellaneous-constants.md"
+  },
+  "vbUpperCase": {
+    "returns": "数値定数（1）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/strconv-constants.md"
+  },
+  "vbLowerCase": {
+    "returns": "数値定数（2）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/strconv-constants.md"
+  },
+  "vbProperCase": {
+    "returns": "数値定数（3）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/strconv-constants.md"
+  },
+  "vbWide": {
+    "returns": "数値定数（4）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/strconv-constants.md"
+  },
+  "vbNarrow": {
+    "returns": "数値定数（8）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/strconv-constants.md"
+  },
+  "vbKatakana": {
+    "returns": "数値定数（16）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/strconv-constants.md"
+  },
+  "vbHiragana": {
+    "returns": "数値定数（32）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/strconv-constants.md"
+  },
+  "vbUnicode": {
+    "returns": "数値定数（64）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/strconv-constants.md"
+  },
+  "vbFromUnicode": {
+    "returns": "数値定数（128）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/strconv-constants.md"
+  },
+  "vbSimplifiedChinese": {
+    "returns": "数値定数（256）",
+    "source": "https://learn.microsoft.com/en-us/dotnet/api/microsoft.visualbasic.vbstrconv?view=net-8.0"
+  },
+  "vbTraditionalChinese": {
+    "returns": "数値定数（512）",
+    "source": "https://learn.microsoft.com/en-us/dotnet/api/microsoft.visualbasic.vbstrconv?view=net-8.0"
+  },
+  "vbLinguisticCasing": {
+    "returns": "数値定数（1024）",
+    "source": "https://learn.microsoft.com/en-us/dotnet/api/microsoft.visualbasic.vbstrconv?view=net-8.0"
+  },
+  "vbHide": {
+    "returns": "数値定数（0）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/shell-constants.md"
+  },
+  "vbNormalFocus": {
+    "returns": "数値定数（1）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/shell-constants.md"
+  },
+  "vbMinimizedFocus": {
+    "returns": "数値定数（2）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/shell-constants.md"
+  },
+  "vbMaximizedFocus": {
+    "returns": "数値定数（3）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/shell-constants.md"
+  },
+  "vbNormalNoFocus": {
+    "returns": "数値定数（4）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/shell-constants.md"
+  },
+  "vbMinimizedNoFocus": {
+    "returns": "数値定数（6）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/shell-constants.md"
+  },
+  "vbMethod": {
+    "returns": "数値定数（1）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/calltype-constants.md"
+  },
+  "vbGet": {
+    "returns": "数値定数（2）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/calltype-constants.md"
+  },
+  "vbLet": {
+    "returns": "数値定数（4）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/calltype-constants.md"
+  },
+  "vbSet": {
+    "returns": "数値定数（8）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/calltype-constants.md"
+  },
+  "vbIMEModeNoControl": {
+    "returns": "数値定数（0）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/imestatus-constants.md"
+  },
+  "vbIMEModeOn": {
+    "returns": "数値定数（1）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/imestatus-constants.md"
+  },
+  "vbIMEModeOff": {
+    "returns": "数値定数（2）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/imestatus-constants.md"
+  },
+  "vbIMEModeDisable": {
+    "returns": "数値定数（3）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/imestatus-constants.md"
+  },
+  "vbIMEModeHiragana": {
+    "returns": "数値定数（4）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/imestatus-constants.md"
+  },
+  "vbIMEModeKatakana": {
+    "returns": "数値定数（5）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/imestatus-constants.md"
+  },
+  "vbIMEModeKatakanaHalf": {
+    "returns": "数値定数（6）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/imestatus-constants.md"
+  },
+  "vbIMEModeAlphaFull": {
+    "returns": "数値定数（7）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/imestatus-constants.md"
+  },
+  "vbIMEModeAlpha": {
+    "returns": "数値定数（8）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/imestatus-constants.md"
+  },
+  "vbIMEModeHangulFull": {
+    "returns": "数値定数（9）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/imestatus-constants.md"
+  },
+  "vbIMEModeHangul": {
+    "returns": "数値定数（10）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/imestatus-constants.md"
+  },
+  "vbFormControlMenu": {
+    "returns": "数値定数（0）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/queryclose-constants.md"
+  },
+  "vbFormCode": {
+    "returns": "数値定数（1）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/queryclose-constants.md"
+  },
+  "vbAppWindows": {
+    "returns": "数値定数（2）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/queryclose-constants.md"
+  },
+  "vbAppTaskManager": {
+    "returns": "数値定数（3）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/queryclose-constants.md"
+  },
+  "vbModeless": {
+    "returns": "数値定数（0）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/form-constants.md"
+  },
+  "vbModal": {
+    "returns": "数値定数（1）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/form-constants.md"
+  },
+  "vbCalGreg": {
+    "returns": "数値定数（0）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/calendar-constants.md"
+  },
+  "vbCalHijri": {
+    "returns": "数値定数（1）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/calendar-constants.md"
+  },
+  "vbUseCompareOption": {
+    "returns": "数値定数（-1）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/instr-function.md"
+  },
+  "vbKeyLButton": {
+    "returns": "数値定数（1）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "vbKeyRButton": {
+    "returns": "数値定数（2）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "vbKeyCancel": {
+    "returns": "数値定数（3）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "vbKeyMButton": {
+    "returns": "数値定数（4）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "vbKeyBack": {
+    "returns": "数値定数（8）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "vbKeyTab": {
+    "returns": "数値定数（9）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "vbKeyClear": {
+    "returns": "数値定数（12）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "vbKeyReturn": {
+    "returns": "数値定数（13）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "vbKeyShift": {
+    "returns": "数値定数（16）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "vbKeyControl": {
+    "returns": "数値定数（17）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "vbKeyMenu": {
+    "returns": "数値定数（18）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "vbKeyPause": {
+    "returns": "数値定数（19）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "vbKeyCapital": {
+    "returns": "数値定数（20）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "vbKeyEscape": {
+    "returns": "数値定数（27）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "vbKeySpace": {
+    "returns": "数値定数（32）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "vbKeyPageUp": {
+    "returns": "数値定数（33）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "vbKeyPageDown": {
+    "returns": "数値定数（34）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "vbKeyEnd": {
+    "returns": "数値定数（35）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "vbKeyHome": {
+    "returns": "数値定数（36）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "vbKeyLeft": {
+    "returns": "数値定数（37）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "vbKeyUp": {
+    "returns": "数値定数（38）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "vbKeyRight": {
+    "returns": "数値定数（39）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "vbKeyDown": {
+    "returns": "数値定数（40）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "vbKeySelect": {
+    "returns": "数値定数（41）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "vbKeyPrint": {
+    "returns": "数値定数（42）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "vbKeyExecute": {
+    "returns": "数値定数（43）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "vbKeySnapshot": {
+    "returns": "数値定数（44）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "vbKeyInsert": {
+    "returns": "数値定数（45）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "vbKeyDelete": {
+    "returns": "数値定数（46）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "vbKeyHelp": {
+    "returns": "数値定数（47）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "vbKeyNumlock": {
+    "returns": "数値定数（144）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "vbKeyA": {
+    "returns": "数値定数（65）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "vbKeyB": {
+    "returns": "数値定数（66）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "vbKeyC": {
+    "returns": "数値定数（67）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "vbKeyD": {
+    "returns": "数値定数（68）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "vbKeyE": {
+    "returns": "数値定数（69）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "vbKeyF": {
+    "returns": "数値定数（70）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "vbKeyG": {
+    "returns": "数値定数（71）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "vbKeyH": {
+    "returns": "数値定数（72）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "vbKeyI": {
+    "returns": "数値定数（73）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "vbKeyJ": {
+    "returns": "数値定数（74）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "vbKeyK": {
+    "returns": "数値定数（75）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "vbKeyL": {
+    "returns": "数値定数（76）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "vbKeyM": {
+    "returns": "数値定数（77）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "vbKeyN": {
+    "returns": "数値定数（78）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "vbKeyO": {
+    "returns": "数値定数（79）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "vbKeyP": {
+    "returns": "数値定数（80）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "vbKeyQ": {
+    "returns": "数値定数（81）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "vbKeyR": {
+    "returns": "数値定数（82）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "vbKeyS": {
+    "returns": "数値定数（83）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "vbKeyT": {
+    "returns": "数値定数（84）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "vbKeyU": {
+    "returns": "数値定数（85）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "vbKeyV": {
+    "returns": "数値定数（86）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "vbKeyW": {
+    "returns": "数値定数（87）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "vbKeyX": {
+    "returns": "数値定数（88）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "vbKeyY": {
+    "returns": "数値定数（89）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "vbKeyZ": {
+    "returns": "数値定数（90）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "vbKey0": {
+    "returns": "数値定数（48）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "vbKey1": {
+    "returns": "数値定数（49）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "vbKey2": {
+    "returns": "数値定数（50）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "vbKey3": {
+    "returns": "数値定数（51）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "vbKey4": {
+    "returns": "数値定数（52）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "vbKey5": {
+    "returns": "数値定数（53）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "vbKey6": {
+    "returns": "数値定数（54）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "vbKey7": {
+    "returns": "数値定数（55）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "vbKey8": {
+    "returns": "数値定数（56）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "vbKey9": {
+    "returns": "数値定数（57）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "vbKeyNumpad0": {
+    "returns": "数値定数（96）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "vbKeyNumpad1": {
+    "returns": "数値定数（97）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "vbKeyNumpad2": {
+    "returns": "数値定数（98）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "vbKeyNumpad3": {
+    "returns": "数値定数（99）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "vbKeyNumpad4": {
+    "returns": "数値定数（100）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "vbKeyNumpad5": {
+    "returns": "数値定数（101）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "vbKeyNumpad6": {
+    "returns": "数値定数（102）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "vbKeyNumpad7": {
+    "returns": "数値定数（103）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "vbKeyNumpad8": {
+    "returns": "数値定数（104）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "vbKeyNumpad9": {
+    "returns": "数値定数（105）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "vbKeyMultiply": {
+    "returns": "数値定数（106）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "vbKeyAdd": {
+    "returns": "数値定数（107）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "vbKeySeparator": {
+    "returns": "数値定数（108）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "vbKeySubtract": {
+    "returns": "数値定数（109）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "vbKeyDecimal": {
+    "returns": "数値定数（110）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "vbKeyDivide": {
+    "returns": "数値定数（111）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "vbKeyF1": {
+    "returns": "数値定数（112）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "vbKeyF2": {
+    "returns": "数値定数（113）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "vbKeyF3": {
+    "returns": "数値定数（114）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "vbKeyF4": {
+    "returns": "数値定数（115）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "vbKeyF5": {
+    "returns": "数値定数（116）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "vbKeyF6": {
+    "returns": "数値定数（117）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "vbKeyF7": {
+    "returns": "数値定数（118）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "vbKeyF8": {
+    "returns": "数値定数（119）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "vbKeyF9": {
+    "returns": "数値定数（120）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "vbKeyF10": {
+    "returns": "数値定数（121）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "vbKeyF11": {
+    "returns": "数値定数（122）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "vbKeyF12": {
+    "returns": "数値定数（123）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "vbKeyF13": {
+    "returns": "数値定数（124）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "vbKeyF14": {
+    "returns": "数値定数（125）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "vbKeyF15": {
+    "returns": "数値定数（126）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
+  },
+  "vbKeyF16": {
+    "returns": "数値定数（127）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
   },
   "And": {
     "returns": "Boolean（論理積）または数値（ビットごとのAND）",

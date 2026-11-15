@@ -504,18 +504,25 @@ export const definition = {
   },
 };
 function resolve(v, s, api) {
-  if (typeof v === "string" && /^%[\s\S]*%$/.test(v)) {
+  // R28-N13: 包み判定は前後の空白を取り除いた形で行う。生文字列のまま
+  // 判定すると、空白で挟んだ "%N% + 1%" 形が包み判定をすり抜けて通常の
+  // 文字列補間に落ち、数値式のつもりが黙って文字列化していた（条件側は
+  // unwrapPercentWrapped が trim 済みで判定するため空白形でも停止する
+  // 対照があり、値側だけが不揃いだった）。判定・包み外し・式の解釈は
+  // 全て trim 済みの文字列で統一する。
+  const t = typeof v === "string" ? v.trim() : v;
+  if (typeof t === "string" && /^%[\s\S]*%$/.test(t)) {
     // R27-N9: 先頭が %変数% 参照で始まる形（"%N% + 1%" 等）は包み形では
     // ない。先頭の %…% は変数参照として消費されるため、末尾の % は式の
     // 終端ではなく、包みを外すと閉じ % が剰余演算子に化けて黙って誤値に
     // なる。実 PAD でも解釈エラーになる形なので、名前を挙げて停止する。
     // 単独の %変数% 参照そのもの（"%N%"）は従来どおり変数の値として読む。
-    if (startsWithPercentVariable(v) && !/^%[A-Za-z_]\w*%$/.test(v.trim()))
+    if (startsWithPercentVariable(t) && !/^%[A-Za-z_]\w*%$/.test(t))
       throw new PracticeError(
         "%変数% で始まる文字列は式として解釈できません（式全体を %…% で包む場合は、内側の変数名を % なしで書いてください）",
         1,
       );
-    return api.read(parseExpression(v.slice(1, -1)), s);
+    return api.read(parseExpression(t.slice(1, -1)), s);
   }
   return interpolate(v, s);
 }

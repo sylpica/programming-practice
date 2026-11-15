@@ -81,7 +81,7 @@
 
 | 種類 | テンプレート | 基礎 | 実践 | 応用 | 現在のリファレンス数 |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| Excel VBA | 8 | 3 | 3 | 2 | 185 |
+| Excel VBA | 8 | 3 | 3 | 2 | 326 |
 | ImageJマクロ | 10 | 5 | 1 | 4 | 201 |
 | AWS CloudFormation Macros | 6 | 2 | 2 | 2 | 224 |
 | Power Automate | 6 | 2 | 2 | 2 | 15 |
@@ -97,4 +97,4 @@
 | コマンドプロンプト | 8 | 2 | 3 | 3 | 28 |
 | PowerShell | 8 | 2 | 3 | 3 | 51 |
 
-現在は104テンプレート／1186リファレンス（対応1124・参照専用62。修正バッチ6で VBA 定数94件と Python 組み込み定数3件（CloudFormation 伝播を含む）を追加した現在値。その前は修正バッチ4（Python追随班）で Python 例外44件（CloudFormation 伝播を含む）を追加した1086件。それ以前は修正バッチ3後の998件で、修正バッチ2の995件から、PowerShell 包含演算子の新設・Python 数値の属性の新設（CloudFormation 伝播を含む）で +3。リファレンス完全性修正で978件となった後、修正バッチ2で VBA Attribute・ImageJ `.length`・Python math 定数（CloudFormation 伝播を含む）・PowerShell プロパティ等の追加と分類是正を経た内訳で、種類別の内訳は本表のとおり。経緯は `docs/DEVELOPMENT.md` の「リファレンス完全性修正」節と `docs/audit/MUSE-FIX-BATCH2.md` を参照）。追加63件は公式原稿と掲載文面を照合し、[reference-r6.json](reference-r6.json)に公式原稿のコミットとハッシュを記録した。既存441件のCodex照合はR2、Muse追加7件の経緯と448件へのレビュー記録更新は統合済み監査記録に属する。511件すべてを今回新たに全文レビューしたとは扱わない。
+現在は104テンプレート／1327リファレンス（対応1265・参照専用62。修正バッチ7で VBA 定数141件を追加した現在値。その前は修正バッチ6で VBA 定数94件と Python 組み込み定数3件（CloudFormation 伝播を含む）を追加した現在値。その前は修正バッチ4（Python追随班）で Python 例外44件（CloudFormation 伝播を含む）を追加した1086件。それ以前は修正バッチ3後の998件で、修正バッチ2の995件から、PowerShell 包含演算子の新設・Python 数値の属性の新設（CloudFormation 伝播を含む）で +3。リファレンス完全性修正で978件となった後、修正バッチ2で VBA Attribute・ImageJ `.length`・Python math 定数（CloudFormation 伝播を含む）・PowerShell プロパティ等の追加と分類是正を経た内訳で、種類別の内訳は本表のとおり。経緯は `docs/DEVELOPMENT.md` の「リファレンス完全性修正」節と `docs/audit/MUSE-FIX-BATCH2.md` を参照）。追加63件は公式原稿と掲載文面を照合し、[reference-r6.json](reference-r6.json)に公式原稿のコミットとハッシュを記録した。既存441件のCodex照合はR2、Muse追加7件の経緯と448件へのレビュー記録更新は統合済み監査記録に属する。511件すべてを今回新たに全文レビューしたとは扱わない。

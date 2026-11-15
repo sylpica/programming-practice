@@ -229,6 +229,13 @@ function truthy(v) {
   if (isTuple(v)) return v.__tuple.length > 0;
   if (isDict(v)) return v.__dict.size > 0;
   if (isSet(v)) return v.__set.length > 0;
+  // R28-N16：__len__ を持つ残りの型も長さで判定する（docs.python.org 3.12
+  // 「真値判定」：長さ0は偽）。range は要素数の配列で保持し、辞書ビューは
+  // 元の辞書の要素数に追随する（ビューはライブ）。従来はこの2型が型表から
+  // 漏れて末尾の return true に落ち、空でも常に True になっていた。
+  // イテレータ（__iter 系）は __len__ を持たないため従来どおり常に True。
+  if (v && v.__range) return v.__range.length > 0;
+  if (isView(v)) return v.__view.__dict.size > 0;
   return true;
 }
 function pyFloatRepr(x) {

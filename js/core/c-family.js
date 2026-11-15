@@ -780,9 +780,29 @@ function parse(source, language, deadline) {
         }
         unsupported("new " + typeName + "[] のこの形式は未対応です", start.line);
       }
-      let count = this.expr();
+      // R28-N19：式位置の new でも多次元（new int[2,2]）とジャグ
+      // （new int[2][]）を読めるようにする（宣言経路と同形）。
+      let counts = [this.expr()];
+      while (this.peek(",")) {
+        this.take();
+        counts.push(this.expr());
+      }
       this.take("]");
+      let jaggedSuffix = 0;
+      while (this.peek("[")) {
+        const saveJag = this.i;
+        this.take();
+        if (this.peek("]")) {
+          this.take();
+          jaggedSuffix++;
+        } else {
+          this.i = saveJag;
+          break;
+        }
+      }
       if (this.peek("{")) {
+        if (counts.length > 1 || jaggedSuffix > 0)
+          unsupported("new による多次元／ジャグ配列の初期化子は未対応です", start.line);
         this.take();
         let values = [];
         while (!this.peek("}")) {
@@ -793,9 +813,26 @@ function parse(source, language, deadline) {
         this.take("}");
         // R24-N11 根因：宣言長が捨てられ、要素数との不一致を検証できて
         // いなかった。size として保持し、評価時に CS0847 相当で止める。
-        return { ...meta, k: "array", values, size: count };
+        return { ...meta, k: "array", values, size: counts[0] };
       }
-      return { ...meta, k: "construct", name: typeName + "[]", args: [count] };
+      if (counts.length > 1) {
+        if (jaggedSuffix > 0)
+          unsupported("new " + typeName + "[,] の後に [] を続ける形式は未対応です", start.line);
+        return {
+          ...meta,
+          k: "construct",
+          name: typeName + "[" + ",".repeat(counts.length - 1) + "]",
+          args: counts,
+        };
+      }
+      if (jaggedSuffix > 0)
+        return {
+          ...meta,
+          k: "construct",
+          name: typeName + "[]".repeat(jaggedSuffix + 1),
+          args: counts,
+        };
+      return { ...meta, k: "construct", name: typeName + "[]", args: counts };
     }
     if (this.peek("(")) {
       this.take();
@@ -928,9 +965,12 @@ function parse(source, language, deadline) {
   //   する。停止自体は正しいため、真因を名指して停止する。要素位置
   //   の波括弧に複数要素が入る形も g++ では変換エラーになる。
   // - C#：波括弧の入れ子は従来どおり実行側の型検査に委ねる（不変）。
-  const normalizeBracedInit = (value, { isArray, baseType, line }) => {
+  const normalizeBracedInit = (value, { isArray, baseType, line, multiDim = false }) => {
     if (!["c", "cpp"].includes(language) || value?.k !== "array")
       return value;
+    // R28-N19：多次元配列では入れ子の波括弧は「行」の初期化子であり、
+    // 要素を包む波括弧の剥がし対象ではない。そのまま実行側へ渡す。
+    if (multiDim) return value;
     const emptyElem = () =>
       baseType === "string"
         ? { k: "literal", value: "", line }
@@ -982,6 +1022,18 @@ function parse(source, language, deadline) {
     }
     // スカラー形
     if (language === "cpp") {
+      // R28-N21：std::string の二重波括弧 {{"hi"}} は g++ 13.3 実測で
+      // 合法（コンストラクタへ渡る初期化子リストの波括弧であり、
+      // スカラーへの過剰な波括弧ではない）。単一要素の入れ子が文字列
+      // リテラル（または通常の要素列）へほどける場合だけ1段剥がす。
+      // 三重 {{{"hi"}}} は g++ でも変換エラーになるため剥がさない。
+      if (
+        baseType === "string" &&
+        value.values.length === 1 &&
+        value.values[0]?.k === "array" &&
+        !value.values[0].values.some((el) => el?.k === "array")
+      )
+        return value.values[0];
       if (value.values.some((el) => el?.k === "array"))
         throw new PracticeError(
           "スカラーの初期化子に波括弧が多すぎます（too many braces around scalar initializer）",
@@ -1107,14 +1159,55 @@ function parse(source, language, deadline) {
       // 型の直後の []（C# 形式の配列型）は基本型の一部として全ての
       // 宣言子に共通する。それ以外の修飾（* ／ & ／ [長さ]）と初期化子
       // は宣言子ごとのものとして読み直す。
-      let baseArray = false;
+      let baseArray = false,
+        baseArrayKind = null,
+        baseArrayRank = 0;
       if (this.peek("[")) {
-        const saveBracket = this.i;
-        this.take();
-        if (this.peek("]")) {
+        if (language === "csharp") {
+          // R28-N19 根因：C# の多次元配列型（int[,]）とジャグ配列型
+          // （int[][]）の接尾辞を読まず、宣言子側で「変数名が必要です」
+          // という虚偽原因になっていた。型接尾辞として全形を読む。
+          const saveAll = this.i;
+          const suffixes = [];
+          let suffixOk = true;
+          while (this.peek("[")) {
+            this.take();
+            let commas = 0;
+            while (this.peek(",")) {
+              this.take();
+              commas++;
+            }
+            if (!this.peek("]")) {
+              suffixOk = false;
+              break;
+            }
+            this.take();
+            suffixes.push(commas);
+          }
+          if (!suffixOk) this.i = saveAll;
+          else if (suffixes.length === 1 && suffixes[0] === 0) baseArray = true;
+          else if (suffixes.length === 1 && suffixes[0] >= 1) {
+            baseArray = true;
+            baseArrayKind = "rect";
+            baseArrayRank = suffixes[0] + 1;
+          } else if (suffixes.length >= 2 && suffixes.every((c) => c === 0)) {
+            baseArray = true;
+            baseArrayKind = "jagged";
+            baseArrayRank = suffixes.length;
+          } else if (suffixes.length) {
+            unsupported(
+              "この配列型の形式は未対応です：" + type + suffixes.map((c) => "[" + ",".repeat(c) + "]").join(""),
+              t.line,
+            );
+          }
+        } else {
+          const saveBracket = this.i;
           this.take();
-          baseArray = true;
-        } else this.i = saveBracket;
+          if (this.peek("]")) {
+            this.take();
+            baseArray = true;
+          } else this.i = saveBracket;
+        }
       }
       // R27-N11 根因：宣言パーサが宣言子を1つしか読まず、カンマの位置で
       // 「; が必要です」という虚偽原因になっていた。C／C++／C# の基本
@@ -1124,6 +1217,9 @@ function parse(source, language, deadline) {
       const declarators = [];
       for (;;) {
         let array = baseArray,
+          arrayKind = baseArrayKind,
+          arrayRank = baseArrayRank,
+          dims = null,
           size = null,
           pointer = false,
           referenceAlias = false;
@@ -1138,10 +1234,25 @@ function parse(source, language, deadline) {
         let name = this.take();
         if (name.k !== "id") throw new PracticeError("変数名が必要です", t.line);
         if (this.peek("[")) {
-          this.take();
-          size = this.peek("]") ? null : this.expr();
-          this.take("]");
+          // R28-N19 根因：宣言子の角括弧を1つしか読まず、2つ目の "["
+          // の位置で「; が必要です」という虚偽原因になっていた。
+          // C／C++ の多次元配列（int a[2][2] 等）は次元を全て読み、
+          // dims として保持する（実行側で平坦化して扱う）。
+          dims = [];
+          while (this.peek("[")) {
+            this.take();
+            dims.push(this.peek("]") ? null : this.expr());
+            this.take("]");
+          }
+          size = dims[0];
           array = true;
+          if (language === "csharp") {
+            // C# で次元サイズ付きの宣言子（int a[2]）は実物でも不正。
+            // 従来の受理範囲（1次元）は変えず、多次元だけ真因を名指す。
+            if (dims.length >= 2)
+              unsupported("C#では配列のサイズは型側ではなく new で指定します（int[,] の形で書いてください）", t.line);
+            dims = null;
+          }
         }
         let value = null;
         if (this.peek("(")) {
@@ -1174,12 +1285,12 @@ function parse(source, language, deadline) {
               "SyntaxError",
             );
           value = parseBracedInit(this);
-          value = normalizeBracedInit(value, { isArray: array, baseType: type, line: t.line });
+          value = normalizeBracedInit(value, { isArray: array, baseType: type, line: t.line, multiDim: Array.isArray(dims) && dims.length >= 2 });
         } else if (this.peek("=")) {
           this.take();
           if (this.peek("{")) {
             value = parseBracedInit(this);
-            value = normalizeBracedInit(value, { isArray: array, baseType: type, line: t.line });
+            value = normalizeBracedInit(value, { isArray: array, baseType: type, line: t.line, multiDim: Array.isArray(dims) && dims.length >= 2 });
           } else if (this.peek("new")) {
             this.take();
             let typeName = this.take().v;
@@ -1197,19 +1308,59 @@ function parse(source, language, deadline) {
                     t.line,
                   );
               } else {
-                let count = this.expr();
+                // R28-N19：new int[2,2]（多次元）と new int[2][]（ジャグ）
+                // の次元列・接尾辞も読む。
+                let counts = [this.expr()];
+                while (this.peek(",")) {
+                  this.take();
+                  counts.push(this.expr());
+                }
                 this.take("]");
+                let jaggedSuffix = 0;
+                while (this.peek("[")) {
+                  const saveJag = this.i;
+                  this.take();
+                  if (this.peek("]")) {
+                    this.take();
+                    jaggedSuffix++;
+                  } else {
+                    this.i = saveJag;
+                    break;
+                  }
+                }
                 if (this.peek("{")) {
+                  if (counts.length > 1 || jaggedSuffix > 0)
+                    unsupported("new による多次元／ジャグ配列の初期化子は未対応です", t.line);
                   value = parseBracedInit(this);
                   // R24-N11 根因（宣言経路も同じ）：宣言長を保持する。
-                  value = { ...value, size: count };
+                  value = { ...value, size: counts[0] };
+                  array = true;
+                  size = null;
+                } else if (counts.length > 1) {
+                  if (jaggedSuffix > 0)
+                    unsupported("new " + typeName + "[,] の後に [] を続ける形式は未対応です", t.line);
+                  value = {
+                    k: "construct",
+                    name: typeName + "[" + ",".repeat(counts.length - 1) + "]",
+                    args: counts,
+                    line: t.line,
+                  };
+                  array = true;
+                  size = null;
+                } else if (jaggedSuffix > 0) {
+                  value = {
+                    k: "construct",
+                    name: typeName + "[]".repeat(jaggedSuffix + 1),
+                    args: counts,
+                    line: t.line,
+                  };
                   array = true;
                   size = null;
                 } else
                   value = {
                     k: "construct",
                     name: typeName + "[]",
-                    args: [count],
+                    args: counts,
                     line: t.line,
                   };
               }
@@ -1231,6 +1382,9 @@ function parse(source, language, deadline) {
           name: name.v,
           type,
           array,
+          arrayKind,
+          arrayRank,
+          dims,
           size,
           pointer,
           referenceAlias,
@@ -1973,7 +2127,7 @@ export function createCFamily({ id, name, extensions, language }) {
       "unchecked { … } / unchecked(式)",
       "整数演算のオーバーフローを検査せず、ビット幅で折り返して計算することを明示します。C# の既定の動作でもあります。",
       "int n = 2147483647;\nunchecked { n = n + 1; }",
-      "checked と対の指定です。実 C# では、定数式の算術オーバーフローは unchecked では折り返し（checked ではコンパイルエラー CS0220）、範囲外の定数変換は unchecked でも CS0031 で拒否されます。このモデルでは、定数式のオーバーフローは算術形・変換形とも停止します（モデルの制限）。",
+      "checked と対の指定です。実 C# では、定数式の算術オーバーフローは unchecked では折り返し（checked と既定ではコンパイルエラー CS0220）、範囲外の定数キャストも unchecked では折り返し（checked と既定ではコンパイルエラー CS0221）、キャストなしの暗黙の定数変換だけは unchecked でも CS0031 で拒否されます。このモデルでは、定数キャストは実 C# どおり（unchecked では折り返し、それ以外は CS0221 で停止）ですが、定数式の算術オーバーフローは unchecked でも停止します（モデルの制限）。",
     ],
     [
       "new",
@@ -2326,6 +2480,37 @@ export function createCFamily({ id, name, extensions, language }) {
                 "未定義動作",
               );
         }
+        // R28-N23 根因：最終状態グループ（モデルメモリ）の表示は、生の
+        // 数値をそのまま formatValue（JSON 整形）へ渡すため、非有限数が
+        // JS 式表記（"Infinity"／"NaN"）になり、C／C++ の言語別表記
+        // （inf／-inf／nan）で統一された出力・vars・model.memory の
+        // スナップショットと一致しなかった。表示専用に、非有限数だけを
+        // スナップショットと同じ文字列表現へ置き換える（実行中の値や
+        // model.memory の生値は変えない）。
+        function displayNonFinite(v) {
+          if (typeof v === "number")
+            return Number.isFinite(v)
+              ? v
+              : managed
+                ? String(v)
+                : Number.isNaN(v)
+                  ? "nan"
+                  : v > 0
+                    ? "inf"
+                    : "-inf";
+          if (Array.isArray(v)) return v.map((x) => displayNonFinite(x));
+          if (
+            v &&
+            typeof v === "object" &&
+            !v.kind &&
+            !v.__class
+          ) {
+            const o = {};
+            for (const k of Object.keys(v)) o[k] = displayNonFinite(v[k]);
+            return o;
+          }
+          return v;
+        }
         function transformDisplay(v) {
           if (typeof v === "boolean")
             return managed ? (v ? "True" : "False") : v;
@@ -2427,6 +2612,21 @@ export function createCFamily({ id, name, extensions, language }) {
             return arithmeticType(l, r, s);
           }
           if (a.k === "index") {
+            // R28-N19：多次元配列への部分添字（a[1] で行を取り出す形）
+            // の結果型は要素型の配列。完全添字は従来どおり要素型。
+            if (!managed) {
+              let chainLen = 0,
+                curT = a;
+              while (curT?.k === "index") {
+                chainLen++;
+                curT = curT.target;
+              }
+              if (curT?.k === "var") {
+                const memT = s.model.memory[s.addresses?.[curT.name]];
+                if (memT?.dims && chainLen < memT.dims.length)
+                  return (memT.type || "int") + "[]";
+              }
+            }
             const targetType = s.types[callName(a.target)]?.replace(/\[\]|\*/g, "");
             if (targetType === "string") return "char";
             return targetType || "int";
@@ -3039,7 +3239,17 @@ export function createCFamily({ id, name, extensions, language }) {
                 return [s];
               }
               delete s.references[n.name];
-              let type = n.type + (n.pointer ? "*" : n.array ? "[]" : "");
+              let type =
+                n.type +
+                (n.pointer
+                  ? "*"
+                  : n.arrayKind === "rect"
+                    ? "[" + ",".repeat((n.arrayRank || 2) - 1) + "]"
+                    : n.arrayKind === "jagged"
+                      ? "[]".repeat(n.arrayRank || 2)
+                      : n.array
+                        ? "[]"
+                        : "");
               // RG-06 追加表面（R21-N3）: 初期化子の中で自変数は宣言済みに
               // 見えるのが実 C／C++／C# の規則。先に未初期化として登録して
               // から初期化子を読むことで、自己参照が「未定義の名前」ではなく
@@ -3227,6 +3437,190 @@ export function createCFamily({ id, name, extensions, language }) {
                         "CompileError",
                       );
                   });
+                }
+                // R28-N19（C#）：多次元配列（矩形）の初期化。値は行の配列
+                // として保持し、要素ごとに宣言本体と同じ定数変換チェック
+                // を効かせる。行の長さが揃わない初期化子は実 C# でも
+                // コンパイルエラーになるため、その旨を名指して停止する。
+                if (managed && n.arrayKind === "rect") {
+                  if (v === uninitialized)
+                    api.fail("配列長を指定してください", n);
+                  if (!Array.isArray(v))
+                    api.fail("配列初期化子が必要です", n);
+                  const castRect = (val, node) => {
+                    if (Array.isArray(val))
+                      return val.map((x, i) => castRect(x, node?.values?.[i]));
+                    return cast(
+                      val,
+                      n.type,
+                      s,
+                      node ? { ...n, value: node } : n,
+                      api,
+                    );
+                  };
+                  const shapeOf = (val) => {
+                    if (!Array.isArray(val)) return [];
+                    const first = shapeOf(val[0]);
+                    for (const row of val)
+                      if (JSON.stringify(shapeOf(row)) !== JSON.stringify(first))
+                        return null;
+                    return [val.length, ...first];
+                  };
+                  if (shapeOf(v) === null)
+                    api.fail(
+                      "配列初期化子の要素数が一致しません（多次元配列では各行の長さを揃えてください）",
+                      n,
+                      "CompileError",
+                    );
+                  const rectVals = castRect(v, n.value);
+                  s.vars[n.name] = rectVals;
+                  allocate(s, n.name, rectVals, n.type);
+                  s.types[n.name] = type;
+                  api.note(
+                    s,
+                    n,
+                    `${n.name} を ${type} として用意します：${fmtFor(s.vars[n.name], type)}`,
+                  );
+                  return [s];
+                }
+                // R28-N19（C#）：ジャグ配列の初期化。要素は配列または
+                // null（new int[2][] の各行は null）だけを許す。
+                if (managed && n.arrayKind === "jagged") {
+                  if (v === uninitialized)
+                    api.fail("配列長を指定してください", n);
+                  if (!Array.isArray(v))
+                    api.fail("配列初期化子が必要です", n);
+                  for (const el of v)
+                    if (el !== null && !Array.isArray(el))
+                      api.fail(
+                        "ジャグ配列の要素は配列または null でなければなりません",
+                        n,
+                        "CompileError",
+                      );
+                  s.vars[n.name] = v;
+                  allocate(s, n.name, v, n.type);
+                  s.types[n.name] = type;
+                  api.note(
+                    s,
+                    n,
+                    `${n.name} を ${type} として用意します：${fmtFor(s.vars[n.name], type)}`,
+                  );
+                  return [s];
+                }
+                // R28-N19（C／C++）：多次元配列。次元を全て読み、要素は
+                // 行優先（row-major）で平坦化して1つのメモリオブジェクト
+                // に保持する（dims を併せて保持し、添字アクセスで使う）。
+                // 入れ子波括弧は行の初期化子、平坦な並びは先頭からの
+                // 詰め込み、不足分は 0 埋め（実物の集約初期化どおり）。
+                if (!managed && Array.isArray(n.dims) && n.dims.length >= 2) {
+                  const dimVals = n.dims.map((d) => (d ? api.read(d, s) : null));
+                  for (const dv of dimVals)
+                    if (
+                      dv !== null &&
+                      (!Number.isInteger(dv) || dv < 0 || dv > 10000)
+                    )
+                      api.fail("配列長が不正または上限を超えています", n);
+                  if (dimVals.slice(1).some((dv) => dv === null))
+                    api.fail("配列長を指定してください", n);
+                  const rowSize = dimVals
+                    .slice(1)
+                    .reduce((a, b) => a * b, 1);
+                  const padVal = n.type === "bool" ? false : 0;
+                  let flat;
+                  if (v === uninitialized) {
+                    if (dimVals[0] === null)
+                      api.fail("配列長を指定してください", n);
+                    flat = Array.from(
+                      { length: dimVals.reduce((a, b) => a * b, 1) },
+                      () => uninitialized,
+                    );
+                  } else if (!Array.isArray(v)) {
+                    api.fail("配列初期化子が必要です", n);
+                  } else {
+                    flat = [];
+                    const appendGroup = (list, dimsLeft) => {
+                      const subSize =
+                        dimsLeft.length > 1
+                          ? dimsLeft.slice(1).reduce((a, b) => a * b, 1)
+                          : 1;
+                      for (const el of list) {
+                        if (Array.isArray(el)) {
+                          while (flat.length % subSize !== 0) flat.push(padVal);
+                          appendGroup(el, dimsLeft.slice(1));
+                        } else if (typeof el === "string" && n.type === "char") {
+                          if ([...el].some((c) => c.codePointAt(0) > 127))
+                            api.fail(
+                              "このモデルのchar文字列はASCIIに限定します",
+                              n,
+                              "未対応",
+                            );
+                          while (flat.length % subSize !== 0) flat.push(padVal);
+                          const bytes = [...el].map((c) => c.charCodeAt(0));
+                          if (bytes.length > subSize)
+                            api.fail(
+                              "文字配列の初期化子が多すぎます（文字列が行の長さを超えています）",
+                              n,
+                              "CompileError",
+                            );
+                          if (language === "cpp" && bytes.length === subSize)
+                            api.fail(
+                              "C++の文字配列には終端ヌル文字の領域も必要です",
+                              n,
+                              "CompileError",
+                            );
+                          flat.push(...bytes);
+                          while (flat.length % subSize !== 0) flat.push(0);
+                        } else flat.push(el);
+                      }
+                    };
+                    appendGroup(v, dimVals);
+                    if (dimVals[0] === null)
+                      dimVals[0] = Math.ceil(flat.length / rowSize);
+                    const total = dimVals.reduce((a, b) => a * b, 1);
+                    if (flat.length > total)
+                      api.fail("配列初期化子が多すぎます", n);
+                    while (flat.length < total) flat.push(padVal);
+                  }
+                  flat = flat.map((x) =>
+                    x === uninitialized ? x : cast(x, n.type, s, n, api),
+                  );
+                  const memId = allocate(s, n.name, flat, n.type);
+                  s.model.memory[memId].dims = dimVals;
+                  s.vars[n.name] = { kind: "pointer", object: memId, offset: 0 };
+                  s.types[n.name] = type;
+                  api.note(
+                    s,
+                    n,
+                    `${n.name} を ${type} として用意します：${fmtFor(s.vars[n.name], type)}`,
+                  );
+                  return [s];
+                }
+                // R28-N20 根因：char 配列に文字列リテラルを2つ以上並べる
+                // 波括弧初期化（char s[] = {"hi", "x"};）は、gcc／g++ 実測
+                // では excess elements（要素過剰）のエラーになる形だが、
+                // 要素を数値として cast する経路で「数値型が一致しません」
+                // という誤った理由になっていた。真因を名指して停止する。
+                // 文字リテラル（'h' 等）の並びは対象外（合法）。
+                {
+                  const initElemNodes = Array.isArray(n.value?.values)
+                    ? n.value.values
+                    : [];
+                  if (
+                    !managed &&
+                    n.type === "char" &&
+                    initElemNodes.length > 1 &&
+                    initElemNodes.some(
+                      (el) =>
+                        el?.k === "literal" &&
+                        typeof el.value === "string" &&
+                        el.quote !== "'",
+                    )
+                  )
+                    api.fail(
+                      "文字配列の初期化子に要素が多すぎます（excess elements in char array initializer）：文字列リテラルは1つだけ指定できます",
+                      n,
+                      "CompileError",
+                    );
                 }
                 // R27-N17 根因：char 配列の波括弧で包んだ文字列初期化
                 // （char s[] = {"hi"};）は gcc／g++ ともに合法だが、配列
@@ -3710,6 +4104,23 @@ export function createCFamily({ id, name, extensions, language }) {
               const wrapped = unsigned
                 ? BigInt.asUintN(bits, n)
                 : BigInt.asIntN(bits, n);
+              // R28-N22 根因：定数キャストも実行時キャストと同じ折り返し
+              // で処理され、通常（既定）文脈の (byte)300 が黙って 44 に
+              // なっていた。実 C#（dotnet 8.0.428 実測）では、定数式の
+              // キャストが範囲外の場合、既定・checked 文脈ではコンパイル
+              // エラー CS0221、明示 unchecked 文脈でのみ折り返す。変数等
+              // の実行時値のキャストは従来どおり（既定は折り返し、
+              // checked は OverflowException）。
+              if (
+                wrapped !== n &&
+                s.checkMode !== "unchecked" &&
+                isConstantIntegerExpr(a.arg)
+              )
+                api.fail(
+                  `定数値 '${Math.trunc(v)}' は '${target}' へ変換できません（CS0221：定数キャストが範囲外です。unchecked を使うと折り返します）`,
+                  a,
+                  "CompileError",
+                );
               if (s.checked && wrapped !== n)
                 api.fail("整数へのキャストが範囲外です", a, "OverflowException");
               if (!Number.isSafeInteger(Number(wrapped)))
@@ -3739,12 +4150,34 @@ export function createCFamily({ id, name, extensions, language }) {
             if (a.k === "construct") {
               if (!managed)
                 api.fail("動的確保／クラスの生成はこのモデルでは未対応です", a);
+              if (a.name.includes("[") && a.name.includes(",")) {
+                // R28-N19：new int[2,2] 等の多次元（矩形）配列は、次元
+                // ごとの入れ子配列を要素型の既定値で満たして作る。
+                const dims = a.args.map((x) => api.read(x, s));
+                for (const dn of dims)
+                  if (!Number.isInteger(dn) || dn < 0 || dn > 10000)
+                    api.fail("配列サイズが不正です", a);
+                const baseType = a.name.slice(0, a.name.indexOf("["));
+                const fillRect = (ds) =>
+                  ds.length === 1
+                    ? Array.from({ length: ds[0] }, () =>
+                        baseType === "bool"
+                          ? false
+                          : baseType === "string"
+                            ? null
+                            : 0,
+                      )
+                    : Array.from({ length: ds[0] }, () => fillRect(ds.slice(1)));
+                return { handled: true, value: fillRect(dims) };
+              }
               if (a.name.endsWith("[]")) {
                 let n = api.read(a.args[0], s);
                 if (!Number.isInteger(n) || n < 0 || n > 10000)
                   api.fail("配列サイズが不正です", a);
                 const type = a.name.slice(0, -2);
-                return { handled: true, value: Array(n).fill(type === "bool" ? false : type === "string" ? null : 0) };
+                // R28-N19：ジャグ配列（int[][] 等）の要素は配列型であり、
+                // 既定値は 0 ではなく null（実 C# どおり）。
+                return { handled: true, value: Array(n).fill(type === "bool" ? false : type === "string" || type.endsWith("[]") ? null : 0) };
               }
               if (!classes[a.name])
                 api.fail(
@@ -3780,6 +4213,88 @@ export function createCFamily({ id, name, extensions, language }) {
               return { handled: true, value };
             }
             if (a.k === "index") {
+              // R28-N19（C#）：a[1,1] のような多次元（矩形）添字は、
+              // indexes に全次元が入る。入れ子配列を順にたどる。
+              if (managed && a.indexes.length > 1) {
+                let target = api.read(a.target, s);
+                if (target === null)
+                  api.fail("null参照です", a, "NullReferenceException");
+                let curVal = target;
+                for (let d = 0; d < a.indexes.length; d++) {
+                  let iv = api.read(a.indexes[d], s);
+                  if (
+                    typeof iv === "string" &&
+                    iv.length === 1 &&
+                    typeOf(a.indexes[d], s) === "char"
+                  )
+                    iv = iv.charCodeAt(0);
+                  if (!Number.isInteger(iv))
+                    api.fail("添字は整数型でなければなりません", a, "CompileError");
+                  if (!Array.isArray(curVal) || iv < 0 || iv >= curVal.length)
+                    api.fail("配列範囲外です", a, "IndexOutOfRangeException");
+                  curVal = curVal[iv];
+                }
+                return { handled: true, value: curVal };
+              }
+              // R28-N19（C／C++）：a[1][1] のような連鎖添字は、次元を
+              // 保持するメモリオブジェクトに対して行優先の平坦オフ
+              // セットへ畳む。次元より添字が少ない場合は行へのポインタ
+              // を返す（char 行を %s で読む等の実物の振る舞いに合う）。
+              if (!managed) {
+                let chain = [];
+                let curNode = a;
+                while (curNode?.k === "index") {
+                  chain.unshift(curNode);
+                  curNode = curNode.target;
+                }
+                if (curNode?.k === "var") {
+                  const rootPtr = s.vars[curNode.name];
+                  const mem0 = isPtr(rootPtr)
+                    ? s.model.memory[rootPtr.object]
+                    : null;
+                  if (mem0?.dims && mem0.dims.length >= 2) {
+                    const idxVals = chain.map((nd) =>
+                      api.read(nd.indexes[0], s),
+                    );
+                    for (const iv of idxVals) {
+                      if (isUnknown(iv))
+                        api.fail("未確定の添字によるメモリ参照は未対応です", a);
+                      if (!Number.isInteger(iv))
+                        api.fail(
+                          "添字は整数型でなければなりません",
+                          a,
+                          "CompileError",
+                        );
+                    }
+                    if (idxVals.length > mem0.dims.length)
+                      api.fail("添字の数が次元の数を超えています", a, "CompileError");
+                    let offset = rootPtr.offset;
+                    for (let d = 0; d < idxVals.length; d++) {
+                      const iv = idxVals[d];
+                      if (iv < 0 || iv >= mem0.dims[d])
+                        api.fail("配列の範囲外の添字です", a, "未定義動作");
+                      offset +=
+                        iv *
+                        mem0.dims.slice(d + 1).reduce((x, y) => x * y, 1);
+                    }
+                    if (idxVals.length < mem0.dims.length)
+                      return {
+                        handled: true,
+                        value: { kind: "pointer", object: rootPtr.object, offset },
+                      };
+                    const memObj = deref(
+                      { kind: "pointer", object: rootPtr.object, offset },
+                      s,
+                      api,
+                      a,
+                    );
+                    const value = memObj.values[offset];
+                    if (value?.kind === "uninitialized")
+                      api.fail("未初期化の配列要素です", a, "未定義動作");
+                    return { handled: true, value };
+                  }
+                }
+              }
               let target = api.read(a.target, s),
                 index = api.read(a.indexes[0], s);
               if (isUnknown(index))
@@ -3901,8 +4416,20 @@ export function createCFamily({ id, name, extensions, language }) {
                   handled: true,
                   value: unknown(`未確定の対象の ${a.name}`),
                 };
-              if (a.name === "Length" && Array.isArray(obj))
+              if (a.name === "Length" && Array.isArray(obj)) {
+                // R28-N19：矩形配列の Length は全要素数（実 C# どおり）。
+                // ジャグ配列は従来どおり外側の長さ。
+                let rootNodeL = a.target;
+                while (rootNodeL?.k === "index") rootNodeL = rootNodeL.target;
+                const rootTypeL =
+                  rootNodeL?.k === "var" ? s.types[rootNodeL.name] : null;
+                if (rootTypeL && rootTypeL.includes(",]")) {
+                  const countAll = (x) =>
+                    Array.isArray(x) ? x.reduce((acc, y) => acc + countAll(y), 0) : 1;
+                  return { handled: true, value: countAll(obj) };
+                }
                 return { handled: true, value: obj.length };
+              }
               if (typeof obj === "string") {
                 if (a.name === "Length")
                   return { handled: true, value: obj.length };
@@ -3994,32 +4521,72 @@ export function createCFamily({ id, name, extensions, language }) {
               return true;
             }
             if (managed && a.k === "index") {
-              let array = api.read(a.target, s),
-                index = api.read(a.indexes[0], s);
+              // R28-N19：a[1,1]（矩形）／a[0][1]（ジャグ連鎖）の書き込み
+              // にも対応する。対象の入れ子配列を全添字でたどり、最後の
+              // 添字の位置へ要素型で cast して書き込む。ジャグの行代入
+              // （a[0] = new int[]{...}）は配列そのものを割り当てる。
+              let rootNode = a;
+              while (rootNode?.k === "index") rootNode = rootNode.target;
+              const rootNameW =
+                rootNode?.k === "var" ? rootNode.name : callName(a.target);
+              let array = api.read(a.target, s);
               // R25-N28：null 配列への要素代入は IndexOutOfRangeException
               // ではなく NullReferenceException（dotnet 実測。読み取り
               // 添字・.Length と同じ経路に揃える）。
               if (array === null)
                 api.fail("null参照です", node, "NullReferenceException");
+              // 連鎖形（a[0][1]）では a.target の読み取りが対象の行を
+              // 返すため、ここでの array は最終コンテナそのものになる。
+              // a[1,1] 形では indexes が全次元を持つため、最後の1つを
+              // 残してたどる。
+              let container = array;
+              let index;
+              if (a.indexes.length > 1) {
+                container = array;
+                for (let d = 0; d < a.indexes.length - 1; d++) {
+                  let iv = api.read(a.indexes[d], s);
+                  if (
+                    typeof iv === "string" &&
+                    iv.length === 1 &&
+                    typeOf(a.indexes[d], s) === "char"
+                  )
+                    iv = iv.charCodeAt(0);
+                  if (!Number.isInteger(iv))
+                    api.fail("添字は整数型でなければなりません", node, "CompileError");
+                  if (!Array.isArray(container) || iv < 0 || iv >= container.length)
+                    api.fail("配列範囲外です", node, "IndexOutOfRangeException");
+                  container = container[iv];
+                  if (container === null)
+                    api.fail("null参照です", node, "NullReferenceException");
+                }
+                index = api.read(a.indexes[a.indexes.length - 1], s);
+                var lastIdxNode = a.indexes[a.indexes.length - 1];
+              } else {
+                index = api.read(a.indexes[0], s);
+                var lastIdxNode = a.indexes[0];
+              }
               // R23-N5 書き込み側：非整数の添字を範囲外と誤診しない。
               if (
-                managed &&
                 typeof index === "string" &&
                 index.length === 1 &&
-                typeOf(a.indexes[0], s) === "char"
+                typeOf(lastIdxNode, s) === "char"
               )
                 index = index.charCodeAt(0);
               if (!Number.isInteger(index))
                 api.fail("添字は整数型でなければなりません", node, "CompileError");
               if (
-                !Array.isArray(array) ||
+                !Array.isArray(container) ||
                 index < 0 ||
-                index >= array.length
+                index >= container.length
               )
                 api.fail("配列範囲外です", node, "IndexOutOfRangeException");
-              const type = s.types[callName(a.target)]?.replace(/\[\]$/, "");
+              const type = s.types[rootNameW]?.replace(/(\[\]|\[,*\])+$/, "");
               if (!type) api.fail("この配列要素型の推定は未対応です", node, "未対応");
-              array[index] = cast(v, type, s, node, api);
+              container[index] =
+                Array.isArray(v) ||
+                (v === null && (type === "string" || classes[type]))
+                  ? v
+                  : cast(v, type, s, node, api);
               return true;
             }
             if (managed && a.k === "member") {
@@ -4359,12 +4926,19 @@ export function createCFamily({ id, name, extensions, language }) {
             if (managed && ["checked", "unchecked"].includes(name)) {
               if (args.length !== 1)
                 api.fail(name + " 式は1つの引数を取ります", node);
-              const old = s.checked;
+              const old = s.checked,
+                oldMode = s.checkMode;
               s.checked = name === "checked";
+              // R28-N22：定数式の規則は「既定」と「明示 unchecked」で
+              // 異なる（既定は checked 相当の CS0221、明示 unchecked は
+              // 折り返し）。s.checked だけでは両者を区別できないため、
+              // 明示文脈を別に保持する。
+              s.checkMode = name;
               try {
                 return api.read(args[0], s);
               } finally {
                 s.checked = old;
+                s.checkMode = oldMode;
               }
             }
             if (language === "cpp" && name === "getline") {
@@ -4596,10 +5170,15 @@ export function createCFamily({ id, name, extensions, language }) {
             }
             if (["checked", "unchecked"].includes(n.action)) {
               if (!managed) api.fail("C#以外では使えません", n);
-              let old = s.checked;
+              let old = s.checked,
+                oldMode = s.checkMode;
               s.checked = n.action === "checked";
+              s.checkMode = n.action;
               let results = api.run(n.body, [s]);
-              for (let state of results) state.checked = old;
+              for (let state of results) {
+                state.checked = old;
+                state.checkMode = oldMode;
+              }
               return results;
             }
           },
@@ -4617,7 +5196,7 @@ export function createCFamily({ id, name, extensions, language }) {
                 : "モデルメモリ（実アドレスではありません）",
               entries: Object.entries(p.model.memory).map(([k, v]) => [
                 k,
-                `${v.name}（${v.type}、${v.alive ? "有効" : "寿命終了"}）：${formatValue(transformDisplay(v.values))}`,
+                `${v.name}（${v.type}、${v.alive ? "有効" : "寿命終了"}）：${formatValue(transformDisplay(displayNonFinite(v.values)))}`,
               ]),
             },
           ],

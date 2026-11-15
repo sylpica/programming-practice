@@ -748,7 +748,13 @@ export class ScriptParser {
         let pattern = null;
         try {
           pattern = this.parseArrayPattern(t.line);
-        } catch {
+        } catch (e) {
+          // R28-N15：閉じ括弧の直後が = なら分割代入として書かれて
+          // いるため、RG-227 の名指し（残余への既定値・裸の残余）を
+          // 握り潰さず伝播させる。それ以外は従来どおりリテラルとして
+          // 読み直す（本物のスプレッド要素等の帰属を変えない）。
+          if (this.isRestNamingError(e) && this.patternFollowedByAssign(saveI - 1))
+            throw e;
           pattern = null;
         }
         if (pattern && this.peek("=")) {
@@ -790,7 +796,12 @@ export class ScriptParser {
         let pattern = null;
         try {
           pattern = this.parseObjectPattern(t.line);
-        } catch {
+        } catch (e) {
+          // R28-N15：配列形と同じく、分割代入として書かれた形では
+          // RG-227 の名指しを伝播させる（従来は握り潰されてレコード
+          // として読み直され「: が必要です」等の虚偽原因になっていた）。
+          if (this.isRestNamingError(e) && this.patternFollowedByAssign(saveI - 1))
+            throw e;
           pattern = null;
         }
         if (pattern && this.peek("=")) {
@@ -1078,6 +1089,39 @@ export class ScriptParser {
     }
     this.take("{");
     return this.parseObjectPattern(line);
+  }
+  // R28-N15：RG-227 の名指しエラー（残余要素への既定値・裸の残余）か。
+  // 投機的なパターン読みでは通常の式（配列・オブジェクトリテラル）と
+  // 区別がつかないため握り潰すが、パターンの閉じ括弧の直後が = で
+  // ある場合は分割代入として書かれたことが確定するので、その場合は
+  // 名指しエラーをそのまま伝播させる（宣言位置の帰属と揃える）。
+  isRestNamingError(e) {
+    return (
+      e instanceof PracticeError &&
+      typeof e.message === "string" &&
+      e.message.includes("分割代入の残余要素（...）")
+    );
+  }
+  // from（開き括弧トークンの位置）から対応する閉じ括弧を探し、その
+  // 直後（改行を除く）が代入の = かどうかを返す。文字列・識別子等の
+  // 内容トークン（k を持つもの）は括弧として数えない。
+  patternFollowedByAssign(from) {
+    let depth = 0;
+    for (let j = from; j < this.ts.length; j++) {
+      const tok = this.ts[j];
+      if (!tok || tok.v === "<eof>") return false;
+      if (tok.k) continue;
+      if (["[", "{", "("].includes(tok.v)) depth++;
+      else if (["]", "}", ")"].includes(tok.v)) {
+        depth--;
+        if (depth === 0) {
+          let n = j + 1;
+          while (this.ts[n]?.v === "\n" && !this.ts[n]?.k) n++;
+          return this.ts[n]?.v === "=";
+        }
+      }
+    }
+    return false;
   }
   parseArrayPattern(line) {
     const pattern = { k: "arrayPattern", elements: [], invalid: null, line };
@@ -1578,13 +1622,43 @@ export class ScriptParser {
       let pattern = null;
       try {
         pattern = this.parsePatternRoot(line);
-      } catch {
+      } catch (e) {
+        // R28-N15：文位置でも、パターンの閉じ括弧の直後が = なら
+        // 分割代入として書かれているため RG-227 の名指しを伝播させる。
+        if (
+          this.isRestNamingError(e) &&
+          this.patternFollowedByAssign(paren ? save + 1 : save)
+        )
+          throw e;
         pattern = null;
       }
       if (pattern && this.peek("=")) {
         this.checkPattern(pattern, false, line);
         this.take();
         const value = this.exprCtx(1);
+        if (paren && this.peek(",")) {
+          // R28-N14：文位置の括弧グループで、先頭要素が分割代入の
+          // シーケンス（([a] = [1], x = 2) 等）は、括弧内のカンマも
+          // カンマ演算子として読む。従来は単独形しか想定しておらず、
+          // 最初の代入の直後のカンマで「) が必要です」という虚偽原因
+          // になっていた（括弧は揃っている）。括弧の外側のカンマ列も
+          // 従来どおり式文のカンマ演算子として続ける。
+          let left = { k: "destructureExpr", pattern, value, line };
+          while (this.peek(",")) {
+            this.take();
+            left = { k: "comma", a: left, b: this.exprCtx(1), line };
+          }
+          this.take(")");
+          while (this.peek(",")) {
+            this.take();
+            left = { k: "comma", a: left, b: this.exprCtx(1), line };
+          }
+          if (
+            !["\n", ";", "}", ")", "<eof>", "else"].includes(this.ts[this.i]?.v)
+          )
+            unsupported("代入の区切りが必要です", line);
+          return { k: "expression", value: left, line };
+        }
         if (paren) this.take(")");
         // R27-N12：文頭のカンマ列はカンマ演算子（式文）として続ける。
         if (this.dialect === "js" && this.peek(",")) {

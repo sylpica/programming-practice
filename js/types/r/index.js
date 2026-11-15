@@ -30,6 +30,15 @@ const NA = { kind: "NA" },
   flat = (v) => vec(v).flat(),
   isNaNVal = (v) => typeof v === "number" && Number.isNaN(v),
   isMissing = (v) => isNA(v) || isNaNVal(v),
+  // R28-N17：データフレームの行数の正本。実 R では行数は row.names 属性が
+  // 保持し、dim.data.frame は .row_names_info（row.names の長さ）から行数を
+  // 返す（公式ソース dataframe.R）。列が0本になっても行数が残るよう、
+  // rowNames があればその長さを、無ければ最初の列の長さを正本とする。
+  // 最後の列を削除する際は write 側で rowNames を実体化してから列を消す。
+  dfNrow = (v) =>
+    Array.isArray(v?.rowNames)
+      ? v.rowNames.length
+      : (Object.values(v?.columns ?? {})[0]?.length ?? 0),
   namesOf = (v) => (Array.isArray(v) && Array.isArray(v.names) ? v.names : null),
   withNames = (arr, names) => {
     if (names && names.some((n) => n !== null && n !== undefined && n !== ""))
@@ -51,9 +60,13 @@ const show = (v) =>
             .join(", ") +
           ")"
         : v?.kind === "data.frame"
-        ? Object.entries(v.columns)
-            .map(([k, x]) => k + ": " + show(x))
-            .join("\n")
+        ? Object.keys(v.columns).length
+          ? Object.entries(v.columns)
+              .map(([k, x]) => k + ": " + show(x))
+              .join("\n")
+          : // R28-N17：0列のデータフレームは print.data.frame どおり
+            // 「0 columns and N rows」の形で示す（従来は空文字列だった）。
+            `data frame with 0 columns and ${dfNrow(v)} rows`
         : typeof v === "boolean"
           ? v
             ? "TRUE"
@@ -94,7 +107,7 @@ const csvCellText = (v) => {
 // テキストとして読み直す場合に使う）。
 const dfToCsvText = (df) => {
   const names = Object.keys(df.columns),
-    n = names.length ? (df.columns[names[0]]?.length ?? 0) : 0;
+    n = dfNrow(df);
   let out = names.map(csvCellText).join(",") + "\n";
   for (let i = 0; i < n; i++)
     out += names.map((k) => csvCellText(df.columns[k][i])).join(",") + "\n";
@@ -1048,6 +1061,9 @@ export const definition = {
                         return [k, x.columns[k]];
                       }),
                     ),
+                    // R28-N17：列の選択では行数は不変。rowNames（行数の
+                    // 正本）を引き継ぎ、0列選択でも行数が残るようにする。
+                    ...(x.rowNames ? { rowNames: x.rowNames } : {}),
                   },
                 };
               }
@@ -1063,12 +1079,21 @@ export const definition = {
                   return [k, subset(x.columns[k], indexes[0])];
                 }),
               );
+              // R28-N17：行の選択では rowNames も同じ添字で選択し、行数の
+              // 正本が結果の行数と一致し続けるようにする。
+              const subRowNames = x.rowNames
+                ? [...subset(x.rowNames, indexes[0])]
+                : undefined;
               return {
                 handled: true,
                 value:
                   colKeys.length === 1
                     ? cols[colKeys[0]]
-                    : { kind: "data.frame", columns: cols },
+                    : {
+                        kind: "data.frame",
+                        columns: cols,
+                        ...(subRowNames ? { rowNames: subRowNames } : {}),
+                      },
               };
             }
             if (a.double) {
@@ -1097,10 +1122,26 @@ export const definition = {
               // "replacement has incompatible rows" で停止していた。
               // 存在しない列への NULL 代入は実 R でも無言の無操作。
               if (v === null) {
+                // R28-N17：最後の列を消す前に行数を rowNames へ実体化する。
+                // 実 R では行数は row.names 属性が保持するため、0列になって
+                // も行数は残る。従来は行数を最初の列から導出していたため、
+                // 唯一の列の削除で行数ごと失われていた。
+                if (
+                  Object.hasOwn(target.columns, a.name) &&
+                  Object.keys(target.columns).length === 1 &&
+                  !Array.isArray(target.rowNames)
+                )
+                  target.rowNames = Array.from(
+                    { length: target.columns[a.name]?.length ?? 0 },
+                    (_, i) => String(i + 1),
+                  );
                 delete target.columns[a.name];
                 return true;
               }
-              let n = Object.values(target.columns)[0]?.length || vec(v).length,
+              // R28-N17：行数は dfNrow（rowNames 優先）で数える。0列でも
+              // 行数が残っていればそれが正本になり、行数不一致の列追加が
+              // 通らなくなる。0行×0列のときだけ追加する列が行数を決める。
+              let n = dfNrow(target) || vec(v).length,
                 values = vec(v);
               if (!values.length || n % values.length)
                 api.fail("replacement has incompatible rows", node);
@@ -1210,7 +1251,7 @@ export const definition = {
               api.fail(`この演算はデータフレームには対応していません：${op}`, node);
             const self = this;
             const applyCols = (d, other, flip) => {
-              const nrow = vec(Object.values(d.columns)[0] ?? []).length;
+              const nrow = dfNrow(d);
               if (
                 Array.isArray(other) &&
                 other.length !== 1 &&
@@ -1231,13 +1272,14 @@ export const definition = {
                       : self.binary(op, col, other, node, s, api),
                   ]),
                 ),
+                ...(d.rowNames ? { rowNames: d.rowNames } : {}),
               };
             };
             if (isDF(a) && isDF(b)) {
               const an = Object.keys(a.columns),
                 bn = Object.keys(b.columns);
-              const arows = vec(a.columns[an[0]] ?? []).length,
-                brows = vec(b.columns[bn[0]] ?? []).length;
+              const arows = dfNrow(a),
+                brows = dfNrow(b);
               if (an.length !== bn.length || arows !== brows)
                 api.fail("only defined for equally-sized data frames", node);
               return {
@@ -1248,6 +1290,7 @@ export const definition = {
                     self.binary(op, a.columns[name], b.columns[bn[i]], node, s, api),
                   ]),
                 ),
+                ...(a.rowNames ? { rowNames: a.rowNames } : {}),
               };
             }
             return isDF(a) ? applyCols(a, b, false) : applyCols(b, a, true);
@@ -1818,7 +1861,11 @@ export const definition = {
               const rowNames = named["row.names"];
               if (rowNames !== undefined && rowNames !== null) {
                 const rn = vec(rowNames);
-                if (rn.length !== n)
+                // R28-N17：列が無い場合は行数を row.names 自体が決める
+                // （実 R の data.frame(row.names = ...) は0列×N行を作る）。
+                // 従来は行数を列の長さから導出するため、この形が虚偽の
+                // 長さエラーになっていた。
+                if (rn.length !== n && Object.keys(cols).length)
                   api.fail(
                     "row names supplied are of the wrong length",
                     node,
@@ -1845,9 +1892,9 @@ export const definition = {
               };
             }
             case "nrow":
-              return x?.kind === "data.frame"
-                ? Object.values(x.columns)[0]?.length || 0
-                : null;
+              // R28-N17：行数は dfNrow（rowNames＝実 R の row.names 属性
+              // 相当を優先）で数え、0列でも保持される。
+              return x?.kind === "data.frame" ? dfNrow(x) : null;
             case "ncol":
               return x?.kind === "data.frame"
                 ? Object.keys(x.columns).length
@@ -2351,6 +2398,178 @@ export const definition = {
             // R26-N6 で対象を ?Reserved の定数全て（RESERVED_CONSTANTS）
             // へ拡張した。上の複合代入を含む検証と重なるが、文言・分類は
             // 同一である。
+            // R28-N18：関数呼び出し形の代入先は、R では置換関数（replacement
+            // function）の代入形であり一律に不正ではない。?names の Usage に
+            // names(x) <- value が明記された names だけを実装し、それ以外の
+            // 置換関数（colnames／rownames／length 等、読み取り自体が未対応の
+            // ものを含む）は関数名を挙げて未対応と名指す。従来は全て
+            // 「関数呼び出しの結果には代入できません」という虚偽原因で
+            // 停止していた。names(x)[i] <- 値 の部分更新（?names の examples
+            // が示す一般規則）も同じ経路で処理する。
+            if (
+              n.target?.k === "call" ||
+              (n.target?.k === "index" && n.target.target?.k === "call")
+            ) {
+              const callNode = n.target.k === "call" ? n.target : n.target.target,
+                fname =
+                  callNode.target?.k === "var" ? callNode.target.name : null;
+              if (fname !== "names")
+                api.fail(
+                  `代入先が不正です：${fname ? fname + "()" : "関数呼び出し"}への代入（置換関数 ${fname ? fname + "<-" : "…<-"}）は説明に対応していません`,
+                  n,
+                  "SyntaxError",
+                );
+              if ((callNode.args || []).length !== 1)
+                api.fail("names への代入は names(対象) の形で指定してください", n, "SyntaxError");
+              const inner = callNode.args[0];
+              if (!["var", "member"].includes(inner?.k))
+                api.fail(
+                  "代入先が不正です：names() の引数は変数（またはデータフレームの列）で指定してください",
+                  n,
+                  "SyntaxError",
+                );
+              // 予約定数への再束縛は不可（NULL は値そのものが対象で、
+              // names(NULL) <- NULL の無操作と長さエラーを下で裁定する）。
+              if (
+                inner.k === "var" &&
+                inner.name !== "NULL" &&
+                RESERVED_CONSTANTS.includes(inner.name)
+              )
+                api.fail(
+                  `代入先が不正です：${inner.name} には代入できません`,
+                  n,
+                  "SyntaxError",
+                );
+              // 代入先の検証・読み取りは右辺より先（未定義名を先に名指す）。
+              const obj = api.read(inner, s);
+              if (isUnknown(obj))
+                api.fail("未確定の値には名前を設定できません", n);
+              const v = api.read(n.value, s);
+              if (isUnknown(v))
+                api.fail("未確定の名前は設定できません", n);
+              // 部分更新 names(x)[i] <- 値 は、現在の名前へ添字代入した
+              // 結果を names(x) <- 結果 として適用する（実 R の一般規則）。
+              let effective = v;
+              if (n.target.k === "index") {
+                if (n.target.indexes.length !== 1 || n.target.indexes[0] === null)
+                  api.fail("names() への部分代入は添字1つで指定してください", n, "SyntaxError");
+                const idx = vec(api.read(n.target.indexes[0], s))[0];
+                if (!Number.isInteger(idx) || idx < 1)
+                  api.fail("subscript out of bounds", n);
+                const cur =
+                  obj?.kind === "data.frame"
+                    ? Object.keys(obj.columns)
+                    : (namesOf(obj) ?? Array.from(
+                        { length: Array.isArray(obj) ? obj.length : obj === null ? 0 : 1 },
+                        () => null,
+                      ));
+                const cand = [...cur];
+                while (cand.length < idx) cand.push(null);
+                const el0 = v === null ? null : vec(v)[0];
+                cand[idx - 1] =
+                  el0 === null || el0 === undefined || isNA(el0)
+                    ? null
+                    : typeof el0 === "boolean"
+                      ? el0
+                        ? "TRUE"
+                        : "FALSE"
+                      : String(el0);
+                effective = cand;
+              }
+              const label = exprLabel(callNode) || "names(...)";
+              if (obj?.kind === "data.frame") {
+                if (effective === null)
+                  api.fail(
+                    "names() への代入でデータフレームの列名を全て外す形は説明に対応していません（このモデルでは列名が列の正本のため）",
+                    n,
+                    "SyntaxError",
+                  );
+                if (!Array.isArray(effective) && typeof effective === "object")
+                  api.fail("names への代入の値が不正です", n);
+                const vals = vec(effective),
+                  ncol = Object.keys(obj.columns).length;
+                if (vals.length > ncol)
+                  api.fail(
+                    `'names' attribute [${vals.length}] must be the same length as the vector [${ncol}]`,
+                    n,
+                  );
+                // 公式ソース attrib.c の namesgets：value は as.character
+                // で強制し、短い場合は NA で埋める。データフレームの NA の
+                // 列名は本モデル（列名がキー）では表現できないため、R でも
+                // 名前なしの同義プレースホルダとされる "" で表す。
+                const newNames = Array.from({ length: ncol }, (_, i) => {
+                  const el = vals[i];
+                  if (el === undefined || el === null || isNA(el)) return "";
+                  return typeof el === "string" ? el : String(el);
+                });
+                if (new Set(newNames).size !== newNames.length)
+                  api.fail(
+                    "重複した列名はこのモデルでは表現できません（実 R では重複した列名も許されますが、列名をキーとする表現のため名指しで停止します）",
+                    n,
+                  );
+                const oldCols = obj.columns;
+                obj.columns = Object.fromEntries(
+                  Object.keys(oldCols).map((k, i) => [newNames[i], oldCols[k]]),
+                );
+                api.note(s, n, `${label} に ${show(v)} を代入します`);
+                return [s];
+              }
+              if (obj === null) {
+                // 実 R の特例：存在しない名前の除去（names(NULL) <- NULL）
+                // だけは無操作で受理し、それ以外は長さ0との不一致で停止。
+                if (effective === null) {
+                  api.note(s, n, `${label} に ${show(v)} を代入します`);
+                  return [s];
+                }
+                api.fail(
+                  `'names' attribute [${vec(effective).length}] must be the same length as the vector [0]`,
+                  n,
+                );
+              }
+              // ベクトル（配列・スカラー・NA）。長さは要素数（スカラーは1）。
+              const isArr = Array.isArray(obj),
+                len = isArr ? obj.length : 1;
+              if (effective === null) {
+                if (isArr) delete obj.names;
+                api.note(s, n, `${label} に ${show(v)} を代入します`);
+                return [s];
+              }
+              const vals = vec(effective);
+              if (vals.length > len)
+                api.fail(
+                  `'names' attribute [${vals.length}] must be the same length as the vector [${len}]`,
+                  n,
+                );
+              // namesgets どおり as.character で強制し、短い value は
+              // NA（本モデルの名前なし表現 null）で埋める。
+              const newNames = Array.from({ length: len }, (_, i) => {
+                const el = vals[i];
+                if (el === undefined || el === null || isNA(el)) return null;
+                return typeof el === "string"
+                  ? el
+                  : typeof el === "boolean"
+                    ? el
+                      ? "TRUE"
+                      : "FALSE"
+                    : String(el);
+              });
+              if (isArr) {
+                if (newNames.some((x) => x !== null && x !== "")) obj.names = newNames;
+                else delete obj.names;
+                // member（df$列）の場合は列の配列そのものへ付けた名前が
+                // データフレーム側からも見える（参照を共有するため）。
+                api.note(s, n, `${label} に ${show(v)} を代入します`);
+                return [s];
+              }
+              // スカラー・NA は長さ1ベクトルとして包んで名前を持たせる。
+              // NA のセンチネル自体は共有物なので絶対に変更しない。
+              const wrapped = [obj];
+              if (newNames.some((x) => x !== null && x !== "")) wrapped.names = newNames;
+              if (inner.k === "var") s.vars[inner.name] = wrapped;
+              else api.write(inner, wrapped, s, n);
+              api.note(s, n, `${label} に ${show(v)} を代入します`);
+              return [s];
+            }
             if (!["var", "index", "member"].includes(n.target?.k)) {
               const form =
                 {

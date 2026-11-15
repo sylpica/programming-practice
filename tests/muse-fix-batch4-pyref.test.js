@@ -150,7 +150,7 @@ const r2 = JSON.parse(
 );
 
 test("F-02(pyref): reference-r2 rows for python/cloudformation are fully in sync (fields + sha256)", () => {
-  assert.equal(r2.length, 1107); // 919 + python 44 + cloudformation 44 + 修正バッチ6 R27-N20 python 3 + cloudformation 伝播3（統合時に追加）+ R27-N7 VBA 定数94
+  assert.equal(r2.length, 1248); // 919 + python 44 + cloudformation 44 + 修正バッチ6 R27-N20 python 3 + cloudformation 伝播3（統合時に追加）+ R27-N7 VBA 定数94 + 修正バッチ7 R28-N9 VBA 定数141
   for (const [kind, def] of [
     ["python", py],
     ["cloudformation", cf],
@@ -229,8 +229,8 @@ for (const [label, code, expect] of HANDLER_CASES) {
   });
 }
 
-test("except-handler: totals across all definitions stay 1186 after the propagation", () => {
+test("except-handler: totals across all definitions stay 1327 after the propagation", () => {
   let n = 0;
   for (const d of definitions) n += d.reference.length;
-  assert.equal(n, 1186); // 1086 + 修正バッチ6 R27-N20 組み込み定数3件×2種（Python＋CloudFormation伝播）+ R27-N7 VBA 定数94件
+  assert.equal(n, 1327); // 1086 + 修正バッチ6 R27-N20 組み込み定数3件×2種（Python＋CloudFormation伝播）+ R27-N7 VBA 定数94件 + 修正バッチ7 R28-N9 VBA 定数141件
 });

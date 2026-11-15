@@ -178,5 +178,14 @@
   ["param alias attribute", "function f { param([Alias('x')]$a=5) $a }\nf -x 7", [["7"]]],
   ["argument mode incomplete numeric token", "Write-Output 123abc", [["123abc"]]],
   ["argument mode incomplete real token", "Write-Output 1.5.2", [["1.5.2"]]],
-  ["argument mode incomplete hex token", "Write-Output 0x", [["0x"]]]
+  ["argument mode incomplete hex token", "Write-Output 0x", [["0x"]]],
+  ["member glued division", "$h=@{k=10}\nWrite-Output ($h.k/2)", [["5"]]],
+  ["member glued division by negative", "$h=@{k=10}\nWrite-Output ($h.k/-2)", [["-5"]]],
+  ["float division by zero", "Write-Output (1.0/0)", [["Infinity"]]],
+  ["float modulo by zero", "Write-Output (5.5 % 0)", [["NaN"]]],
+  ["quoted member name", "$h=@{k=10}\nWrite-Output ($h.'k')", [["10"]]],
+  ["variable member name", "$n='k'\n$h=@{k=10}\nWrite-Output ($h.$n)", [["10"]]],
+  ["string increment converts to number", "$s='5'\n$s++\nWrite-Output $s", [["6"]]],
+  ["bare parameter attribute", "function f { param([Parameter] $x) $x }\nf 42", [["42"]]],
+  ["ternary operator", "Write-Output ($true ? 1 : 2)\nWrite-Output ($false ? 1 : 2)", [["1", "2"]]]
 ]
