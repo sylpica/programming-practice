@@ -60,6 +60,203 @@ const show = (v) =>
                     ? "NaN"
                     : String(v)
               : formatValue(v);
+// R25-N24：仮想ファイルストアには2つの表現が混在する。種まきファイルは
+// パース済みの data.frame オブジェクト、cat(file=) で書いたファイルは
+// 生のテキスト文字列である。read.csv は後者も実 R（?read.table）どおり
+// テキストとしてパースしなければならない（従来はオブジェクト前提で
+// 文字列を無変換に返し、生文字列がそのまま値になっていた）。
+// read.csv の既定値（公式 Usage）：header=TRUE、sep=","、quote="\"",
+// dec="."、fill=TRUE、comment.char=""。列は type.convert 相当の変換で
+// logical／integer／numeric／character のいずれかになり、引用された
+// "42" も数値列になる。空フィールドは logical／数値列では NA、
+// character 列では "" のまま。ヘッダー行のフィールド数がデータ行より
+// 1つ少ない場合は先頭列が行名になる。入力が空ならエラー、ヘッダーの
+// みなら0行のデータフレーム。
+const csvCellText = (v) => {
+  if (isNA(v) || v === null || v === undefined) return "NA";
+  if (typeof v === "boolean") return v ? "TRUE" : "FALSE";
+  if (typeof v === "number")
+    return v === Infinity ? "Inf" : v === -Infinity ? "-Inf" : Number.isNaN(v) ? "NaN" : String(v);
+  const s = String(v);
+  return /[",\n\r]/.test(s) ? '"' + s.replaceAll('"', '""') + '"' : s;
+};
+// パース済み data.frame を CSV テキストへ戻す（cat の append が種まき
+// ファイルへ追記する場合と、read.csv(header=FALSE) で種まきファイルを
+// テキストとして読み直す場合に使う）。
+const dfToCsvText = (df) => {
+  const names = Object.keys(df.columns),
+    n = names.length ? (df.columns[names[0]]?.length ?? 0) : 0;
+  let out = names.map(csvCellText).join(",") + "\n";
+  for (let i = 0; i < n; i++)
+    out += names.map((k) => csvCellText(df.columns[k][i])).join(",") + "\n";
+  return out;
+};
+function parseCsvText(text, opts = {}) {
+  const sep = typeof opts.sep === "string" && opts.sep ? opts.sep[0] : ",",
+    quoteSet = new Set(typeof opts.quote === "string" ? opts.quote : '"'),
+    dec = typeof opts.dec === "string" && opts.dec ? opts.dec : ".",
+    fill = opts.fill !== false,
+    header = opts.header !== false,
+    naStrings = new Set(
+      (Array.isArray(opts.naStrings) ? opts.naStrings : ["NA"]).map(String),
+    ),
+    checkNames = opts.checkNames !== false;
+  let src = String(text);
+  if (Number.isInteger(opts.skip) && opts.skip > 0)
+    src = src.split("\n").slice(opts.skip).join("\n");
+  // 区切り・引用符・改行（\n／\r\n／\r、引用符内の改行を含む）を解釈する。
+  const records = [];
+  let record = [],
+    field = "",
+    quoted = false,
+    inQuotes = false,
+    quoteChar = null,
+    fieldTouched = false;
+  const endField = () => {
+    record.push({ value: field, quoted });
+    field = "";
+    quoted = false;
+    fieldTouched = false;
+  };
+  const endRecord = () => {
+    endField();
+    records.push(record);
+    record = [];
+  };
+  for (let i = 0; i < src.length; i++) {
+    const ch = src[i];
+    if (inQuotes) {
+      if (ch === quoteChar) {
+        if (src[i + 1] === quoteChar) {
+          field += quoteChar;
+          i++;
+        } else inQuotes = false;
+      } else field += ch;
+      continue;
+    }
+    if (!fieldTouched && field === "" && quoteSet.has(ch)) {
+      inQuotes = true;
+      quoteChar = ch;
+      quoted = true;
+      fieldTouched = true;
+    } else if (ch === sep) endField();
+    else if (ch === "\n") endRecord();
+    else if (ch === "\r") {
+      if (src[i + 1] === "\n") i++;
+      endRecord();
+    } else {
+      field += ch;
+      fieldTouched = true;
+    }
+  }
+  if (fieldTouched || field !== "" || record.length) endRecord();
+  // blank.lines.skip=TRUE（既定）：空行は読み飛ばす。
+  const rowsIn = records.filter(
+    (r) => !(r.length === 1 && !r[0].quoted && r[0].value.trim() === ""),
+  );
+  if (!rowsIn.length) throw new Error("no lines available in input");
+  let colNames,
+    dataRows = rowsIn,
+    rowNames = null;
+  if (header) {
+    const head = rowsIn[0];
+    dataRows = rowsIn.slice(1);
+    // ヘッダーがデータ行より1フィールド少ない場合は先頭列が行名。
+    if (dataRows.length && dataRows[0].length === head.length + 1) {
+      rowNames = dataRows.map((r) => r[0].value);
+      dataRows = dataRows.map((r) => r.slice(1));
+    }
+    colNames = head.map((f) => f.value);
+  } else {
+    const width = Math.max(...rowsIn.map((r) => r.length));
+    colNames = Array.from({ length: width }, (_, i) => "V" + (i + 1));
+  }
+  if (Array.isArray(opts.colNames) && opts.colNames.length)
+    colNames = opts.colNames.map(String);
+  const width = colNames.length;
+  const limited =
+    Number.isInteger(opts.nrows) && opts.nrows >= 0
+      ? dataRows.slice(0, opts.nrows)
+      : dataRows;
+  const padded = limited.map((r, i) => {
+    if (r.length > width)
+      throw new Error(`line ${i + 1} did not have ${width} elements`);
+    if (r.length < width) {
+      if (!fill) throw new Error(`line ${i + 1} did not have ${width} elements`);
+      return [...r, ...Array.from({ length: width - r.length }, () => ({ value: "", quoted: false }))];
+    }
+    return r;
+  });
+  const makeName = (name, seen) => {
+    let out = name.replace(/[^\p{L}\p{N}._]/gu, ".");
+    if (out === "") out = "X";
+    if (/^[0-9]/.test(out) || /^\.[0-9]/.test(out)) out = "X" + out;
+    if (checkNames) {
+      let base = out,
+        k = 1;
+      while (seen.has(out)) out = base + "." + k++;
+      seen.add(out);
+    }
+    return out;
+  };
+  const seen = new Set();
+  const finalNames = colNames.map((n) => (checkNames ? makeName(n, seen) : n));
+  const columns = {};
+  for (let c = 0; c < width; c++) {
+    const cells = padded.map((r) => r[c]),
+      trimmed = cells.map((f) => f.value.trim()),
+      isMiss = trimmed.map((t) => t === "" || naStrings.has(t)),
+      present = trimmed.filter((_, i) => !isMiss[i]);
+    const LOGICALS = {
+      TRUE: true, T: true, True: true, true: true,
+      FALSE: false, F: false, False: false, false: false,
+    };
+    const numericText = (t) => {
+      const norm = dec === "." ? t : t.replaceAll(dec, ".");
+      if (norm === "NaN") return NaN;
+      if (norm === "Inf" || norm === "+Inf" || norm === "Infinity") return Infinity;
+      if (norm === "-Inf" || norm === "-Infinity") return -Infinity;
+      if (!/^[+-]?(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?$/.test(norm)) return null;
+      return Number(norm);
+    };
+    let kind = "character";
+    if (!present.length) kind = "logical";
+    else if (present.every((t) => Object.hasOwn(LOGICALS, t))) kind = "logical";
+    else if (
+      present.every(
+        (t) =>
+          /^[+-]?\d+$/.test(t) &&
+          Number.isSafeInteger(Number(t)) &&
+          Math.abs(Number(t)) <= 2147483647,
+      )
+    )
+      kind = "integer";
+    else if (present.every((t) => numericText(t) !== null)) kind = "numeric";
+    columns[finalNames[c]] = cells.map((f, i) => {
+      if (kind === "character") return naStrings.has(f.value) ? NA : f.value;
+      if (isMiss[i]) return NA;
+      if (kind === "logical") return LOGICALS[trimmed[i]];
+      if (trimmed[i] === "NaN" && kind === "numeric") return NaN;
+      return numericText(trimmed[i]);
+    });
+  }
+  const df = { kind: "data.frame", columns };
+  // row.names 引数（read.csv では ... 経由）：列番号／列名／ベクトル。
+  if (opts.rowNames !== undefined && opts.rowNames !== null) {
+    const rn = opts.rowNames;
+    if (Array.isArray(rn)) rowNames = rn.map((v) => (isNA(v) || v === null ? "NA" : String(v)));
+    else if (typeof rn === "number" || typeof rn === "string") {
+      const key =
+        typeof rn === "number" ? finalNames[rn - 1] : finalNames.includes(String(rn)) ? String(rn) : undefined;
+      if (key !== undefined) {
+        rowNames = columns[key].map((v) => (isNA(v) ? "NA" : String(v)));
+        delete columns[key];
+      }
+    }
+  }
+  if (rowNames) df.rowNames = rowNames.map(String);
+  return df;
+}
 const reference = rows([
   [
     "c",
@@ -508,12 +705,61 @@ function subset(values, index) {
   }
   return withNames(out, outNames);
 }
-const targetName = (a) =>
-  a?.k === "var"
-    ? a.name
-    : a?.k === "member"
-      ? targetName(a.target) + "." + a.name
-      : "";
+// R25-N14：添字代入の説明が対象を特定できるよう、添字式のラベルも
+// 生成する（NX-N23 の裁定：添字代入の説明は対象を特定すること）。
+// 空添字（x[]／df$a[] 等）は全要素の置換である旨をラベルに含める。
+const exprLabel = (a) => {
+  if (!a || typeof a !== "object") return "";
+  switch (a.k) {
+    case "literal":
+      return typeof a.value === "string"
+        ? `"${a.value}"`
+        : (a.raw ?? String(a.value));
+    case "var":
+      return a.name;
+    case "member":
+    case "index":
+      return targetName(a);
+    case "call": {
+      const t = exprLabel(a.target);
+      if (!t) return "";
+      const parts = (a.args || []).map((x) => exprLabel(x));
+      if (parts.some((p) => p === "")) return "";
+      return `${t}(${parts.join(", ")})`;
+    }
+    case "binary": {
+      const l = exprLabel(a.a),
+        r = exprLabel(a.b);
+      return l && r ? `${l} ${a.op} ${r}` : "";
+    }
+    case "unary": {
+      const x = exprLabel(a.arg);
+      return x ? `${a.op}${x}` : "";
+    }
+    default:
+      return "";
+  }
+};
+const targetName = (a) => {
+  if (a?.k === "var") return a.name;
+  if (a?.k === "member") {
+    const t = targetName(a.target);
+    return t ? t + "." + a.name : "";
+  }
+  if (a?.k === "index") {
+    const t = targetName(a.target);
+    if (!t) return "";
+    const empty =
+      a.indexes.length === 0 || a.indexes.every((i) => i === null);
+    if (empty) return `${t}[]（全要素）`;
+    const parts = a.indexes.map((i) => (i === null ? "" : exprLabel(i)));
+    if (parts.some((p) => p === "")) return "";
+    return a.double
+      ? `${t}[[${parts.join(", ")}]]`
+      : `${t}[${parts.join(", ")}]`;
+  }
+  return "";
+};
 export const definition = {
   id: "r",
   name: "R",
@@ -1308,10 +1554,18 @@ export const definition = {
                   api.fail("catの file は文字列で指定してください", node);
                 if (fname !== "") {
                   s.model.files ??= {};
+                  // R25-N24 兄弟表面：種まきファイル（パース済みの
+                  // data.frame）への append は、その CSV テキスト表現へ
+                  // 追記する形にする（従来は文字列でないことを理由に
+                  // 既存内容を黙って捨てていた）。
+                  const existing = s.model.files[fname];
                   const prev =
-                    named.append === true &&
-                    typeof s.model.files[fname] === "string"
-                      ? s.model.files[fname]
+                    named.append === true
+                      ? typeof existing === "string"
+                        ? existing
+                        : existing?.kind === "data.frame"
+                          ? dfToCsvText(existing)
+                          : ""
                       : "";
                   s.model.files[fname] = prev + text;
                   api.note(s, node, `ファイル ${fname} へ書き出します`);
@@ -1593,10 +1847,85 @@ export const definition = {
                 outPairs.map((p) => p[1]),
               );
             }
-            case "read.csv":
+            case "read.csv": {
               if (!Object.hasOwn(s.model.files || {}, x))
                 api.fail("モデルにファイルがありません：" + x, node);
-              return structuredClone(s.model.files[x]);
+              // R25-N24：ファイルの表現で経路を分ける。文字列（cat で
+              // 書いたテキスト、モデル JSON で文字列として与えた
+              // ファイル）は ?read.table の read.csv 既定値でパースし、
+              // パース済みオブジェクト（種まき）は従来どおり返す。
+              // 仮引数は read.csv(file, header=TRUE, sep=",", quote="\"",
+              // dec=".", fill=TRUE, comment.char="", ...) の順。
+              const optScalar = (key, posIdx, fallback) => {
+                const v = named[key] ?? (posIdx === null ? undefined : pos[posIdx]);
+                const s = v === undefined ? undefined : vec(v)[0];
+                return s === undefined || isNA(s) ? fallback : s;
+              };
+              const csvOpts = {
+                header: optScalar("header", 1, true) !== false,
+                sep: optScalar("sep", 2, ","),
+                quote: optScalar("quote", 3, '"'),
+                dec: optScalar("dec", 4, "."),
+                fill: optScalar("fill", 5, true) !== false,
+                naStrings:
+                  named["na.strings"] === undefined
+                    ? ["NA"]
+                    : vec(named["na.strings"]).map(String),
+                checkNames: optScalar("check.names", null, true) !== false,
+                colNames:
+                  named["col.names"] === undefined
+                    ? undefined
+                    : vec(named["col.names"]),
+                rowNames: named["row.names"],
+                skip: named.skip,
+                nrows: named.nrows,
+              };
+              const stored = s.model.files[x];
+              if (typeof stored === "string") {
+                try {
+                  return parseCsvText(stored, csvOpts);
+                } catch (e) {
+                  api.fail(e.message, node);
+                }
+              }
+              if (stored?.kind === "data.frame" && csvOpts.header === false) {
+                // 種まきファイルの header=FALSE は、見出し行をデータの
+                // 1行目としてテキストとして読み直した結果にする。
+                try {
+                  return parseCsvText(dfToCsvText(stored), csvOpts);
+                } catch (e) {
+                  api.fail(e.message, node);
+                }
+              }
+              const cloned = structuredClone(stored);
+              if (cloned?.kind === "data.frame") {
+                if (Array.isArray(csvOpts.colNames) && csvOpts.colNames.length) {
+                  const keys = Object.keys(cloned.columns);
+                  cloned.columns = Object.fromEntries(
+                    keys.map((k, i) => [String(csvOpts.colNames[i] ?? k), cloned.columns[k]]),
+                  );
+                }
+                if (csvOpts.rowNames !== undefined && csvOpts.rowNames !== null) {
+                  const rn = csvOpts.rowNames,
+                    keys = Object.keys(cloned.columns),
+                    key =
+                      typeof rn === "number"
+                        ? keys[rn - 1]
+                        : typeof rn === "string" && keys.includes(rn)
+                          ? rn
+                          : undefined;
+                  if (Array.isArray(rn))
+                    cloned.rowNames = rn.map(String);
+                  else if (key !== undefined) {
+                    cloned.rowNames = cloned.columns[key].map((v) =>
+                      isNA(v) ? "NA" : String(v),
+                    );
+                    delete cloned.columns[key];
+                  }
+                }
+              }
+              return cloned;
+            }
             default:
               api.fail("このR関数は説明に対応していません：" + name, node);
           }
@@ -1670,6 +1999,41 @@ export const definition = {
             return [...done, ...active];
           }
           if (n.k === "assign" && !["+=", "-=", "*=", "/="].includes(n.op)) {
+            // R25-N8（R 分）：この step は共有基盤の assign を迂回するため、
+            // 基盤側の代入ターゲット検証（R24-N12）が届かず、右辺を先に
+            // 読んで未定義名を誤って指していた（1 <- x 等）。また予約
+            // リテラル（TRUE／FALSE／NULL）は var ノードとして運ばれ、
+            // NULL <- 5 が黙って受理されていた。右辺の評価より前に、
+            // 基盤と同じ形の検証をここで行う（T／F は R では再代入可能な
+            // 変数なので対象に含めない）。
+            if (
+              n.target?.k === "var" &&
+              ["TRUE", "FALSE", "NULL"].includes(n.target.name)
+            )
+              api.fail(
+                `代入先が不正です：${n.target.name} には代入できません`,
+                n,
+                "SyntaxError",
+              );
+            if (!["var", "index", "member"].includes(n.target?.k)) {
+              const form =
+                {
+                  literal: "リテラル",
+                  call: "関数呼び出しの結果",
+                  binary: "演算の結果",
+                  array: "配列リテラル",
+                  record: "オブジェクトリテラル",
+                  post: "++ / -- の結果",
+                  unary: "単項演算の結果",
+                  cond: "条件式の結果",
+                  nullish: "条件式の結果",
+                }[n.target?.k] || "この式";
+              api.fail(
+                `代入先が不正です：${form}には代入できません`,
+                n,
+                "SyntaxError",
+              );
+            }
             const v = api.read(n.value, s);
             api.write(n.target, v, s, n);
             api.note(

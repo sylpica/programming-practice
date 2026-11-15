@@ -3,6 +3,8 @@ import { REFERENCE } from "./reference.js";
 import { TEMPLATES } from "./templates.js";
 import { GLOSSARY } from "./glossary.js";
 import { LIMITS } from "../../core/contract.js";
+import { toLearnerError } from "../../core/script.js";
+import { sourceFailure } from "../../core/data.js";
 const reference = REFERENCE.map((r) => ({
   ...r,
   name: r.id,
@@ -79,16 +81,24 @@ export const definition = {
     }
   },
   async simulate(code, model, limits) {
-    let engine = await import("./engine.js");
-    if (code.length > LIMITS.source)
-      return {
-        paths: [],
-        error: { line: 1, message: "コードは100000文字以内にしてください" },
-      };
-    let raw = engine.simulatePythonPaths(code, {
-      initial: model.globals || {},
-    });
-    return normalize(raw, code, definition);
+    try {
+      let engine = await import("./engine.js");
+      if (code.length > LIMITS.source)
+        return {
+          paths: [],
+          error: { line: 1, message: "コードは100000文字以内にしてください" },
+        };
+      let raw = engine.simulatePythonPaths(code, {
+        initial: model.globals || {},
+      });
+      return normalize(raw, code, definition);
+    } catch (e) {
+      // R25-N5（RG-173 の確立パターン）：変換層を持たない独自ラッパーだったため、
+      // モデル全体が null のとき等にホスト例外が呼び出し側へ投げ返され、Worker 経由で
+      // 生文言が表示されていた。著作者エラー（PracticeError）は素通しし、それ以外は
+      // toLearnerError で学習者向け日本語文言へ変換して結果として返す。
+      return sourceFailure(toLearnerError(e));
+    }
   },
 };
 function callsByLine(code) {

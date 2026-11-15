@@ -1055,7 +1055,7 @@ function simRunProgram(code, forkCtl, model){
         case "startsWith": { var sw = o.indexOf(String(av[0])) === 0; return mode === 1 ? (sw ? "true" : "false") : (sw ? 1 : 0); }
         case "endsWith": { var suf = String(av[0]); var ew = suf === "" ? true : o.slice(-suf.length) === suf; return mode === 1 ? (ew ? "true" : "false") : (ew ? 1 : 0); }
         case "charAt": { var ci = simInt(num(av[0], e.line)); if (simIsUnk(ci)) return SIM_UNK; if (ci < 0 || ci >= o.length) throw simErr(e.line, "charAt の位置（" + ci + "）が文字列の長さ（" + o.length + "）を超えています", "ImageJ ではここでエラーになり止まります。"); return mode === 1 ? o.charAt(ci) : o.charCodeAt(ci); }
-        case "indexOf": return o.indexOf(String(av[0]), typeof av[1] === "number" ? simInt(av[1]) : 0);
+        case "indexOf": return o.indexOf(String(av[0]), typeof simNumArg(av[1]) === "number" ? simInt(simNumArg(av[1])) : 0);
         case "lastIndexOf": return o.lastIndexOf(String(av[0]));
         case "matches": { try { var mt = new RegExp("^(?:" + String(av[0]) + ")$").test(o); return mode === 1 ? (mt ? "true" : "false") : (mt ? 1 : 0); } catch (ex2) { return SIM_UNK; } }
         case "toUpperCase": return o.toUpperCase();
@@ -1063,7 +1063,8 @@ function simRunProgram(code, forkCtl, model){
         case "trim": return o.trim();
         case "toString": return o;
         case "substring": {
-          var bi = typeof av[0] === "number" ? simInt(av[0]) : av[0], bj = av.length > 1 ? (typeof av[1] === "number" ? simInt(av[1]) : av[1]) : o.length;
+          /* R25-N22: メソッド形も関数形と同じく、位置の文字列数値を数値として解釈する */
+          var bi = typeof simNumArg(av[0]) === "number" ? simInt(simNumArg(av[0])) : av[0], bj = av.length > 1 ? (typeof simNumArg(av[1]) === "number" ? simInt(simNumArg(av[1])) : av[1]) : o.length;
           if (typeof bi !== "number" || typeof bj !== "number" || bi < 0 || bj < bi || bj > o.length)
             throw simErr(e.line, "substring の範囲（" + bi + "〜" + bj + "）が文字列の長さ（" + o.length + "）を超えています", "ImageJ ではここでエラーになり止まります。lengthOf で長さを確認してください。");
           return o.substring(bi, bj);
@@ -1446,6 +1447,18 @@ function simInt(v){
   if (v < -2147483648) return -2147483648;
   return Math.trunc(v);
 }
+/* R25-N22: ImageJ マクロの数値引数は Variable の数値変換を経て渡されるため、
+   数値として読める文字列（"1" や "2" など）も数値として解釈される。配列添字・
+   getPixel／setPixel の文字列座標で既に採っている解釈（num() と同じ parseFloat
+   方式）に、substring／charCodeAt／indexOf／roiManager("select")／setSlice／
+   Stack.setPosition／getHistogram の範囲引数を統一する。数値として読めない
+   文字列はそのまま返し、呼び出し側の従来の型判定に委ねる。 */
+function simNumArg(v){
+  if (typeof v !== "string") return v;
+  if (v.trim() === "") return v;
+  var x = parseFloat(v);
+  return isNaN(x) ? v : x;
+}
 function simBuiltin(S, e, args, refs, H){
   var name = e.name, line = e.line, step = H.step, warn = H.warn;
   if (["setPixel","setResult","setThreshold","setAutoThreshold","setSlice","Stack.setPosition","rename","makeRectangle","makeOval","makeLine","makePolygon","makeSelection","setMinAndMax","newImage","changeValues"].includes(name) && args.some(simIsUnk))
@@ -1467,9 +1480,12 @@ function simBuiltin(S, e, args, refs, H){
     }
     case "run": return simRunCmd(S, args.length ? args[0] : "", args.length > 1 ? args[1] : "", line, H);
     case "getTitle": { var im = needImg("getTitle()"); step(line, "画像のタイトル「" + im.title + "」を取得します"); return im.title; }
-    case "nSlices": { var imN = img(); return imN ? imN.slices : 0; }
-    case "nImages": return S.images.length;
-    case "nResults": return S.results.length;
+    case "nSlices": { if (e.args.length) throw simErr(line, "nSlices の引数の数が違います", "nSlices は定義済み変数で、引数は取りません（括弧も省略できます）。ImageJ では引数つきの呼び出しはエラーになり止まります。"); var imN = img(); return imN ? imN.slices : 0; }
+    /* R25-N20: nImages／nSlices／nResults は引数を取らない定義済み変数（括弧の
+       有無だけが任意）。引数つき呼び出しは実 ImageJ ではエラーになるため、
+       黙って受理して値を返さない。 */
+    case "nImages": if (e.args.length) throw simErr(line, "nImages の引数の数が違います", "nImages は定義済み変数で、引数は取りません（括弧も省略できます）。ImageJ では引数つきの呼び出しはエラーになり止まります。"); return S.images.length;
+    case "nResults": if (e.args.length) throw simErr(line, "nResults の引数の数が違います", "nResults は定義済み変数で、引数は取りません（括弧も省略できます）。ImageJ では引数つきの呼び出しはエラーになり止まります。"); return S.results.length;
     case "PI": return Math.PI;
     case "Array.copy": return Array.isArray(args[0]) ? args[0].slice() : SIM_UNK;
     case "getWidth": { var im2 = needImg("getWidth()"); step(line, "画像の幅 " + (typeof im2.w === "number" ? im2.w + " px" : "（不明）") + " を取得します"); return typeof im2.w === "number" ? im2.w : SIM_UNK; }
@@ -1478,9 +1494,18 @@ function simBuiltin(S, e, args, refs, H){
     case "bitDepth": { var im4 = needImg("bitDepth()"); step(line, "ビット深度 " + im4.bit + " を取得します"); return im4.bit; }
     case "isOpen": {
       var found = false;
+      /* R25-N15: 数値引数は simInt 切捨て後の ID で照合されるため、説明も変換前の
+         生引数ではなく、照合に使われた変換後の ID（解決できればタイトルも）で
+         引用する（setSlice／setPixel／selectImage の説明と揃える）。 */
+      var openDesc = "画像「" + simFmt(args[0]) + "」";
       if (typeof args[0] === "string") found = S.images.some(function(x){ return x.title === args[0]; });
-      else if (typeof args[0] === "number"){ var iid = simInt(args[0]); found = iid < 0 ? (-iid - 1) < S.images.length : (iid - 1) < S.images.length && iid > 0; }
-      step(line, "画像「" + simFmt(args[0]) + "」が開かれているか → " + (found ? "開かれています" : "開かれていません"));
+      else if (typeof args[0] === "number"){
+        var iid = simInt(args[0]);
+        found = iid < 0 ? (-iid - 1) < S.images.length : (iid - 1) < S.images.length && iid > 0;
+        var oidx = iid > 0 ? iid - 1 : -iid - 1;
+        openDesc = "画像 ID " + iid + (found && S.images[oidx] ? "（「" + S.images[oidx].title + "」）" : "");
+      }
+      step(line, openDesc + "が開かれているか → " + (found ? "開かれています" : "開かれていません"));
       return found ? 1 : 0;
     }
     case "selectImage": {
@@ -1596,6 +1621,19 @@ function simBuiltin(S, e, args, refs, H){
     }
     case "Array.sort": {
       var ar = args[0];
+      /* R25-N21: 実 ImageJ の Array.sort（Functions.java の sortArray）は配列変数を
+         要求し（getArray）、非配列ではエラーで止まる。Array.getStatistics と同じく
+         原因を名指して止め、入力を「ソート結果」としてそのまま返さない。
+         値が未確定のときは従来どおり未確定として扱う。 */
+      if (simIsUnk(ar)) return SIM_UNK;
+      if (!Array.isArray(ar))
+        throw simErr(line, "Array.sort の引数が配列ではありません", "Array.sort は配列変数を並べ替える関数です。数値や文字列そのものは並べ替えられません。ImageJ ではここでエラーになり止まります。");
+      if (args.length > 1 && !simIsUnk(args[1])){
+        if (!Array.isArray(args[1]))
+          throw simErr(line, "Array.sort の第2引数が配列ではありません", "同時に並べ替える2つ目の配列も、配列変数でなければなりません。ImageJ ではここでエラーになり止まります。");
+        if (args[1].length !== ar.length)
+          throw simErr(line, "Array.sort の2つの配列の長さが違います", "同時に並べ替える配列同士は同じ長さでなければなりません（Functions.java の \"Arrays must have same length\"）。");
+      }
       /* 文字列は大文字小文字を区別しない順序（String.CASE_INSENSITIVE_ORDER） */
       function cmpIJ(x, y){
         if (typeof x === "string" && typeof y === "string"){ var a = x.toLowerCase(), b = y.toLowerCase(); return a < b ? -1 : a > b ? 1 : 0; }
@@ -1644,8 +1682,9 @@ function simBuiltin(S, e, args, refs, H){
     case "toUpperCase": return typeof args[0] === "string" ? args[0].toUpperCase() : SIM_UNK;
     case "charCodeAt": {
       /* D7: 位置が範囲外なら NaN を返さずエラーで止める（実 ImageJ の checkIndex の挙動） */
-      if (typeof args[0] !== "string" || typeof args[1] !== "number") return SIM_UNK;
-      var cix = simInt(args[1]);
+      /* R25-N22: 位置の文字列数値（"1" など）は simNumArg で数値として解釈する */
+      if (typeof args[0] !== "string" || typeof simNumArg(args[1]) !== "number") return SIM_UNK;
+      var cix = simInt(simNumArg(args[1]));
       if (cix < 0 || cix >= args[0].length)
         throw simErr(line, "charCodeAt の位置（" + cix + "）が文字列の長さ（" + args[0].length + "）の範囲外です", "位置は 0〜" + (args[0].length - 1) + " で指定します。ImageJ ではここでエラーになり止まります。");
       return args[0].charCodeAt(cix);
@@ -1664,10 +1703,12 @@ function simBuiltin(S, e, args, refs, H){
       }
       return fcc;
     }
-    case "indexOf": return typeof args[0] === "string" ? args[0].indexOf(String(args[1]), typeof args[2] === "number" ? simInt(args[2]) : 0) : SIM_UNK;
+    case "indexOf": return typeof args[0] === "string" ? args[0].indexOf(String(args[1]), typeof simNumArg(args[2]) === "number" ? simInt(simNumArg(args[2])) : 0) : SIM_UNK;
     case "substring": {
       if (typeof args[0] !== "string") return SIM_UNK;
-      var sb = args[0], bi = typeof args[1] === "number" ? simInt(args[1]) : args[1], bj = args.length > 2 ? (typeof args[2] === "number" ? simInt(args[2]) : args[2]) : sb.length;
+      /* R25-N22: 開始・終了位置の文字列数値（"1" など）は simNumArg で数値として
+         解釈する。型で弾いて「範囲超過」という虚偽の原因を表示しない。 */
+      var sb = args[0], bi = typeof simNumArg(args[1]) === "number" ? simInt(simNumArg(args[1])) : args[1], bj = args.length > 2 ? (typeof simNumArg(args[2]) === "number" ? simInt(simNumArg(args[2])) : args[2]) : sb.length;
       if (typeof bi !== "number" || typeof bj !== "number" || bi < 0 || bj < bi || bj > sb.length)
         throw simErr(line, "substring の範囲（" + bi + "〜" + bj + "）が文字列の長さ（" + sb.length + "）を超えています", "ImageJ ではここでエラーになり止まります。lengthOf で長さを確認してください。");
       return sb.substring(bi, bj);
@@ -1756,6 +1797,12 @@ function simBuiltin(S, e, args, refs, H){
     case "getNumber": step(line, "数値の入力ダイアログが出ます。入力された値は実行時に決まります"); return SIM_UNK;
     case "getString": step(line, "文字列の入力ダイアログが出ます。入力された値は実行時に決まります"); return SIM_UNK;
     case "newImage": {
+      /* R25-N20: Functions.java の newImage() は5引数（depth まで）か7引数
+         （channels／slices／frames）のどちらかで、6引数の形式はない。6個目は
+         黙って破棄せず、引数個数のエラーで止める（静的チェックの {min:5,max:7}
+         をすり抜ける形のため、Math.min と同じく実行時にも検証する）。 */
+      if (args.length === 6)
+        throw simErr(line, "newImage の引数の数が違います", "書式は newImage(title, type, width, height, depth) の5個か、チャンネル・スライス・フレームを指定する7個で、6個の形式はありません。ImageJ ではここでエラーになり止まります。");
       /* R24-N6（D11 の残存表面）: Functions.java の newImage() は width／height／
          depth（7引数形式では channels／slices／frames）をすべて (int) 切捨て
          変換し、width<1 || height<1 で interp.error("Width or height < 1") と
@@ -1926,6 +1973,19 @@ function simBuiltin(S, e, args, refs, H){
     }
     case "getHistogram": {
       var imC = needImg("getHistogram");
+      /* R25-N20: 任意引数 histMin／histMax は組でのみ現れる（Functions.java は
+         片方だけの4引数形では引数読み取りが破綻しエラーになる）。第4引数を
+         黙って破棄せず、引数個数のエラーで止める。 */
+      if (args.length === 4)
+        throw simErr(line, "getHistogram の引数の数が違います", "任意引数の histMin と histMax は組で指定します。引数は 3 個（範囲指定なし）か 5 個（範囲指定あり）で、4 個の形式はありません。ImageJ ではここでエラーになり止まります。");
+      /* R25-N20 併記: 5引数形の histMin／histMax は Functions.java では実際に
+         使われる（getStatistics に範囲を渡して階級を切る）。8bit・RGB 画像では
+         範囲指定自体がエラー（"16 or 32-bit image required to set histMin and
+         histMax"）。16bit・32bit では下の専用経路で範囲どおりに集計する。 */
+      var hMin = args.length >= 5 ? simNumArg(args[3]) : null, hMax = args.length >= 5 ? simNumArg(args[4]) : null;
+      var hRangeOk = args.length >= 5 && typeof hMin === "number" && typeof hMax === "number" && hMax > hMin;
+      if (args.length >= 5 && !simIsUnk(args[3]) && !simIsUnk(args[4]) && (imC.bit === 8 || imC.bit === 24))
+        throw simErr(line, "getHistogram の histMin／histMax は 16bit・32bit 画像でのみ指定できます", "8bit・RGB 画像で階級範囲を指定すると、ImageJ では \"16 or 32-bit image required to set histMin and histMax\" エラーになり止まります。");
       if (simIsUnk(args[2])){
         if (refs[0]) writeRef(S, refs[0], SIM_UNK);
         if (refs[1]) writeRef(S, refs[1], SIM_UNK);
@@ -1944,6 +2004,31 @@ function simBuiltin(S, e, args, refs, H){
         if (refs[0]) writeRef(S, refs[0], SIM_UNK);
         if (refs[1]) writeRef(S, refs[1], SIM_UNK);
         step(line, "ヒストグラムを取得します（この画像は分布が不明なため、値は実行時に決まります）");
+        return SIM_UNK;
+      }
+      if (args.length >= 5){
+        if (!hRangeOk){
+          if (refs[0]) writeRef(S, refs[0], SIM_UNK);
+          if (refs[1]) writeRef(S, refs[1], SIM_UNK);
+          step(line, "ヒストグラムを取得します（階級範囲 histMin／histMax が確定できないため、値は実行時に決まります）");
+          return SIM_UNK;
+        }
+        /* 範囲指定時は buckets（値域ごとの割合）を [histMin, histMax] の階級へ
+           重なり割合で配分する。範囲外の画素は実 ImageJ でも数えられないため、
+           合計を総画素数へ寄せる調整はしない。values は階級の開始値。 */
+        var inc = (hMax - hMin) / nBins, countsR = [], valuesR = [];
+        for (var bk = 0; bk < nBins; bk++){ countsR.push(0); valuesR.push(hMin + bk * inc); }
+        imC.buckets.forEach(function(b){
+          var bw = b[1] - b[0] + 1;
+          for (var bk2 = 0; bk2 < nBins; bk2++){
+            var ov = Math.min(b[1] + 1, hMin + (bk2 + 1) * inc) - Math.max(b[0], hMin + bk2 * inc);
+            if (ov > 0) countsR[bk2] += b[2] / 100 * total * (ov / bw);
+          }
+        });
+        countsR = countsR.map(function(cv){ return Math.round(cv); });
+        if (refs[0]) writeRef(S, refs[0], valuesR);
+        if (refs[1]) writeRef(S, refs[1], countsR);
+        step(line, "ヒストグラム（" + nBins + " 区間、範囲 " + simFmt(hMin) + "〜" + simFmt(hMax) + "）を取得します。範囲外の画素は数えられません");
         return SIM_UNK;
       }
       var counts = [], values = [], per = 256 / nBins;
@@ -1986,6 +2071,18 @@ function simBuiltin(S, e, args, refs, H){
     }
     case "makeLine": {
       needImg(name);
+      /* R25-N20（一次情報で裁定）: Functions.java の makeLine は3形式のみ。
+         4引数＝直線、5引数＝第5引数が線幅の直線（公式ドキュメントにも
+         makeLine(x1, y1, x2, y2, lineWidth) と明記）、6引数以上の偶数個＝
+         折れ線の座標対。7個・9個のような奇数個（5を除く）は、余った座標の
+         読み取りでカンマ期待エラーになるため、黙って直線にしない。 */
+      if (args.length === 5){
+        S.roi = { type: "line", x: args[0], y: args[1], w: Math.abs(args[2] - args[0]), h: Math.abs(args[3] - args[1]) };
+        step(line, "(" + simFmt(args[0]) + ", " + simFmt(args[1]) + ") から (" + simFmt(args[2]) + ", " + simFmt(args[3]) + ") へ線幅 " + simFmt(typeof args[4] === "number" ? Math.round(args[4]) : args[4]) + " の直線 ROI を作成します");
+        return SIM_UNK;
+      }
+      if (args.length % 2 !== 0)
+        throw simErr(line, "makeLine の引数の数が違います", "makeLine は座標の組（偶数個）か、座標4個＋線幅1個（計5個）で指定します。" + args.length + " 個では最後の座標の組が揃いません。ImageJ ではここでエラーになり止まります。");
       if (args.length >= 6 && args.length % 2 === 0){
         /* 折れ線の頂点は Functions.java の makeLine が (int)Math.round で
            整数化する（4引数の直線形の座標は double のままなので対象外）。
@@ -2003,7 +2100,27 @@ function simBuiltin(S, e, args, refs, H){
       return SIM_UNK;
     }
     /* makePolygon の頂点は (int)Math.round で整数化される（Functions.java） */
-    case "makePolygon": needImg(name); S.roi = { type: "polygon", x: typeof args[0] === "number" ? Math.round(args[0]) : args[0], y: typeof args[1] === "number" ? Math.round(args[1]) : args[1], w: SIM_UNK, h: SIM_UNK }; step(line, "頂点 " + Math.floor(args.length / 2) + " 個の多角形 ROI を作成します"); return SIM_UNK;
+    case "makePolygon": {
+      needImg(name);
+      /* R25-N19: Functions.java の makePolygon は全頂点を PolygonRoi に保持し、
+         外接矩形は全頂点から決まる。第1頂点だけを保持して残りを破棄せず、
+         makeSelection("polygon")／makeLine 折れ線形と同じく、全頂点の
+         最小・範囲で外接矩形を計算する。座標の組が揃わない奇数個は、実物では
+         引数読み取りが破綻してエラーになるため、余りを黙って捨てない。 */
+      if (args.length % 2 !== 0)
+        throw simErr(line, "makePolygon の引数の数が違います", "makePolygon は x, y の組で頂点を指定します。" + args.length + " 個では最後の頂点の組が揃いません。ImageJ ではここでエラーになり止まります。");
+      var xsP = [], ysP = [];
+      for (var ppi = 0; ppi + 1 < args.length; ppi += 2){
+        xsP.push(typeof args[ppi] === "number" ? Math.round(args[ppi]) : args[ppi]);
+        ysP.push(typeof args[ppi + 1] === "number" ? Math.round(args[ppi + 1]) : args[ppi + 1]);
+      }
+      if (xsP.length && xsP.every(function(v){ return typeof v === "number"; }) && ysP.every(function(v){ return typeof v === "number"; }))
+        S.roi = { type: "polygon", x: Math.min.apply(null, xsP), y: Math.min.apply(null, ysP), w: Math.max.apply(null, xsP) - Math.min.apply(null, xsP), h: Math.max.apply(null, ysP) - Math.min.apply(null, ysP) };
+      else
+        S.roi = { type: "polygon", x: xsP[0], y: ysP[0], w: SIM_UNK, h: SIM_UNK };
+      step(line, "頂点 " + xsP.length + " 個の多角形 ROI を作成します");
+      return SIM_UNK;
+    }
     case "makeSelection": {
       needImg(name);
       var selKind = typeof args[0] === "string" ? args[0].trim().toLowerCase() : "";
@@ -2044,7 +2161,7 @@ function simBuiltin(S, e, args, refs, H){
       /* R24-N18: Functions.java の setSlice() は n = (int)getArg() と切捨て
          変換する。小数のスライス番号という状態は存在しないため、変換後の
          整数で範囲判定と保持を行う（範囲外の扱いは従来どおり警告して保持）。 */
-      var imG = needImg("setSlice"); var nn = typeof args[0] === "number" ? simInt(args[0]) : args[0];
+      var imG = needImg("setSlice"); var nn = typeof simNumArg(args[0]) === "number" ? simInt(simNumArg(args[0])) : args[0]; /* R25-N22: 文字列数値も数値として解釈する */
       if (typeof nn === "number" && (nn < 1 || nn > imG.slices)) warn(line, "setSlice(" + nn + ") はスライス数 " + imG.slices + " の範囲外です", "ImageJ では範囲外の指定は無視されるか、端に寄せられます。");
       else { imG.slice = nn; step(line, "表示スライスを " + nn + " 枚目に切り替えます"); }
       return SIM_UNK;
@@ -2052,10 +2169,31 @@ function simBuiltin(S, e, args, refs, H){
     case "getSliceNumber": { var imH = needImg("getSliceNumber"); step(line, "現在のスライス番号 " + imH.slice + " を取得します"); return imH.slice; }
     case "Stack.getPosition": {
       var imI = needImg(name);
-      if (refs[0]) writeRef(S, refs[0], 1); if (refs[1]) writeRef(S, refs[1], imI.slice); if (refs[2]) writeRef(S, refs[2], 1);
-      step(line, "スタック内の現在位置（チャンネル 1、スライス " + imI.slice + "、フレーム 1）を変数に入れます"); return SIM_UNK;
+      /* R25-N18: 保持している実位置（チャンネル／スライス／フレーム）を返す。
+         チャンネル・フレームに常時 1 を書き込むことはしない。 */
+      var gpc = typeof imI.channel === "number" ? imI.channel : 1, gpf = typeof imI.frame === "number" ? imI.frame : 1;
+      if (refs[0]) writeRef(S, refs[0], gpc); if (refs[1]) writeRef(S, refs[1], imI.slice); if (refs[2]) writeRef(S, refs[2], gpf);
+      step(line, "スタック内の現在位置（チャンネル " + gpc + "、スライス " + imI.slice + "、フレーム " + gpf + "）を変数に入れます"); return SIM_UNK;
     }
-    case "Stack.setPosition": { var imJ = needImg(name); var spos = typeof args[1] === "number" ? simInt(args[1]) : args[1]; if (typeof spos === "number" && spos >= 1 && spos <= imJ.slices) imJ.slice = spos; step(line, "スタックの表示位置を切り替えます"); return SIM_UNK; }
+    case "Stack.setPosition": {
+      var imJ = needImg(name);
+      /* R25-N18: Functions.java の setPosition は3引数すべてを (int) 変換して
+         img.setPosition(channel, slice, frame) に渡す。チャンネル／フレームを
+         黙って破棄せず、スライスと同じ規律（simInt 切捨て＋次元の範囲内なら
+         保持、範囲外はその次元だけ現位置を保つ）で3次元すべてを保持する。
+         R25-N22: 文字列数値の引数も simNumArg で数値として解釈する。 */
+      var spc = typeof simNumArg(args[0]) === "number" ? simInt(simNumArg(args[0])) : args[0];
+      var spos = typeof simNumArg(args[1]) === "number" ? simInt(simNumArg(args[1])) : args[1];
+      var spf = typeof simNumArg(args[2]) === "number" ? simInt(simNumArg(args[2])) : args[2];
+      var maxC = typeof imJ.channels === "number" ? imJ.channels : 1;
+      var maxZ = typeof imJ.zdim === "number" ? imJ.zdim : imJ.slices;
+      var maxF = typeof imJ.frames === "number" ? imJ.frames : 1;
+      if (typeof spc === "number" && spc >= 1 && spc <= maxC) imJ.channel = spc;
+      if (typeof spos === "number" && spos >= 1 && spos <= maxZ) imJ.slice = spos;
+      if (typeof spf === "number" && spf >= 1 && spf <= maxF) imJ.frame = spf;
+      step(line, "スタックの表示位置をチャンネル " + (typeof imJ.channel === "number" ? imJ.channel : 1) + "、スライス " + imJ.slice + "、フレーム " + (typeof imJ.frame === "number" ? imJ.frame : 1) + " に切り替えます");
+      return SIM_UNK;
+    }
     case "getPixel": {
       var imK = needImg("getPixel");
       if(args[0]<0||args[1]<0||args[0]>=imK.w||args[1]>=imK.h)return 0;
@@ -2094,6 +2232,16 @@ function simBuiltin(S, e, args, refs, H){
       return SIM_UNK;
     }
     case "getResult": {
+      /* R25-N20（一次情報で裁定）: Functions.java の getResult は第3引数に
+         結果表のタイトル（文字列）を取る形が実在する（getResult(column, row,
+         "Title")）。数値の第3引数はタイトルとして解釈され、該当する表が
+         なければ "table not found" 相当のエラーになる。黙って破棄せず、
+         このモデルにある唯一の結果表「Results」以外は名指しで止める。 */
+      if (args.length > 2 && !simIsUnk(args[2])){
+        var gtitle = typeof args[2] === "string" ? args[2] : simFmt(args[2]);
+        if (gtitle !== "Results")
+          throw simErr(line, "getResult で指定された結果表「" + gtitle + "」が見つかりません", "第3引数は結果表のタイトル（文字列）です。このモデルにある結果表は「Results」だけです。ImageJ でも、存在しないタイトルの表を指定するとエラーになり止まります。");
+      }
       var gri = args.length > 1 ? args[1] : null;
       if (gri === null || gri === undefined) gri = S.results.length - 1;
       if (typeof gri !== "number" || simIsUnk(gri)){ step(line, "結果表の値を取得します（行が実行時に決まるため、値は省略します）"); return SIM_UNK; }
@@ -2169,7 +2317,7 @@ function simRoiManager(S, e, args, H){
   var cmd = String(args[0] || "").toLowerCase(), line = e.line, step = H.step, warn = H.warn;
   if (cmd === "count"){ step(line, "ROI Manager の登録数は " + S.roiList.length + " 件です"); return S.roiList.length; }
   if (cmd === "select"){
-    var ix = typeof args[1] === "number" ? simInt(args[1]) : args[1]; /* 選択番号も (int) 切捨て変換。小数の番号で roiList[1.5] のような undefined を ROI にしない */
+    var ix = typeof simNumArg(args[1]) === "number" ? simInt(simNumArg(args[1])) : args[1]; /* 選択番号も (int) 切捨て変換。小数の番号で roiList[1.5] のような undefined を ROI にしない。R25-N22: 文字列数値（"0" など）も数値として解釈する */
     if (typeof ix !== "number" || ix < 0 || ix >= S.roiList.length){ warn(line, "roiManager(\"select\", " + simFmt(ix) + ") の番号が登録数 " + S.roiList.length + " の範囲外です", "ImageJ では選択が変わらないか、エラーになります。ループの上限と登録数を確認してください。"); return SIM_UNK; }
     S.roi = S.roiList[ix]; step(line, "ROI Manager の " + ix + " 番目の ROI を選択します"); return SIM_UNK;
   }

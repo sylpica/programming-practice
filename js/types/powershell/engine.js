@@ -24,6 +24,7 @@ import {
   reservedDeviceName,
 } from "../shell/model.js";
 import { parsePS, PSParser } from "./parser.js";
+import { toLearnerError } from "../../core/script.js";
 import {
   VALUE_LENGTH_LIMIT,
   truncateDisplayText,
@@ -83,12 +84,27 @@ export function psFormat(v) {
   // R24-N14: バージョンオブジェクトは、その文字列表記（"7.4"）で表示する。
   if (isObject(v) && v.displayText !== undefined)
     return truncateDisplayText(String(v.displayText));
-  if (isObject(v))
+  if (isObject(v)) {
+    // R25-N16: 入れ子オブジェクトを平らに展開すると、入れ子側の
+    // プロパティ行と親自身の同名プロパティ行が同一文字列で二重に並ぶ
+    // ことがある（PathInfo では Drive.Provider の展開行と PathInfo 自身の
+    // Provider 行がどちらも「Provider : Name : FileSystem」になる）。
+    // 表示合成の段階で、同一の「名前 : 値」行は後の（親自身の）出現を
+    // 残して1回だけにし、各プロパティが1回だけ並ぶ形にする。保持する
+    // 値そのものは変更しない。区切り「 : 」を含まない行（複数行文字列の
+    // 継続行等）は重複判定の対象にしない。
+    const lines = (
+      v.psType === "Hashtable" ? [...v.entries] : Object.entries(v.properties)
+    ).flatMap(([k, x]) => `${k} : ${psFormat(x)}`.split("\n"));
     return truncateDisplayText(
-      (v.psType === "Hashtable" ? [...v.entries] : Object.entries(v.properties))
-        .map(([k, x]) => `${k} : ${psFormat(x)}`)
+      lines
+        .filter(
+          (line, idx) =>
+            !line.includes(" : ") || lines.lastIndexOf(line) === idx,
+        )
         .join("\n"),
     );
+  }
   // P-N2: 表示専用の整形では、長い文字列・大きな配列の表示を省略記法
   // つきで切り詰める（状態スナップショットの肥大防止。値は変えない）。
   if (Array.isArray(v))
@@ -2292,6 +2308,14 @@ export function simulatePowerShell(source, model, limits) {
       limits,
     );
   } catch (e) {
-    return sourceError(e);
+    // R25-N3: 外側 catch の無変換素通しを是正する（cmd の RG-173 と同形）。
+    // PS の著作者エラーは全て shell/model.js の fail() 経由の PracticeError
+    // （日本語文面＋カテゴリ）であり、toLearnerError は PracticeError を
+    // そのまま通すため著作者エラーは素通しになる。一方、循環ハッシュ
+    // テーブルによる RangeError、モデル null の TypeError、関数値・
+    // Symbol 値の DataCloneError 等のホスト例外は、学習者向け日本語文言と
+    // 真実のカテゴリへ変換してから返す（従来は生文言＋虚偽の既定カテゴリ
+    // SyntaxError で漏出していた）。
+    return sourceError(toLearnerError(e));
   }
 }

@@ -150,6 +150,22 @@ export function tokenizePS(source) {
           "SyntaxError",
         );
       }
+      // R25-N10: 数値リテラルの直後に「.＋数字」が続く形（1.5.2／1.5e2.3／
+      // 0x1F.2 等）は、リテラルの継続として不正である（言語仕様 B.1.9.2 の
+      // 数値リテラル文法にこの形はない）。直後1文字が英数字・_ の場合だけを
+      // 見ていた従来の末尾検証では「.」が網を抜け、1.5 と .2 の2トークンに
+      // 割れて文位置では黙って2文に分割され、括弧位置では「) が必要です」
+      // という虚偽原因になっていた。字句段階でリテラル全体を名指して止める。
+      // 範囲（1..3 の「..」は次の文字も「.」）とメンバーアクセス
+      // （5.ToString() の「.＋英字」）は対象外であり、従来どおり扱う。
+      if (after === "." && /[0-9]/.test(rest[number[0].length + 1] ?? "")) {
+        const literal = rest.match(/^[0-9A-Za-z_.]+/)[0];
+        fail(
+          "未対応または不正な数値リテラル：" + literal,
+          line,
+          "SyntaxError",
+        );
+      }
       i += number[0].length;
       push("number", number[0], start);
       continue;
@@ -296,6 +312,11 @@ export class PSParser {
     // R24-N3: param 定義の既定値など、カンマが区切りとして働く文脈では
     // カンマ演算子の消費を抑止するためのカウンタ。
     this.noComma = 0;
+    // R25-N12: 引数モードの式解析中だけ立てるカウンタ。この間は数値
+    // リテラルに接着した演算子形を文字列として読む（oneArgument 参照）。
+    // 括弧内・添字内・キャスト被演算子は式モードに戻るため、その範囲では
+    // expr() 側で一時的に下ろす。
+    this.argGlued = 0;
   }
   peek(v) {
     return this.ts[this.i]?.v === v;
@@ -677,22 +698,58 @@ export class PSParser {
       }
       return { k: "literal", value: text, line: t.line };
     }
-    const first = this.expr(7);
-    // §3.3 既知残存の是正：引数モードでも範囲演算子は式として受理する
-    // （Write-Output 1..3 は実 PowerShell では 1,2,3 を出力する。
-    // 代入形・括弧形は従来から正常だった）。左辺は expr(7) が範囲の
-    // 手前で止まるため、ここで範囲として組み立てる。
-    if (this.peek("..")) {
-      this.take();
-      return {
-        k: "binary",
-        op: "..",
-        a: first,
-        b: this.expr(7),
-        line: t.line,
-      };
+    // R25-N12: 引数モードでは、数値リテラルに空白なく接着した演算子形
+    // （1+2／3-2／2*3／6/2／10%3 等）は式ではなく単一の文字列引数として
+    // 渡る。根拠は一次情報：言語仕様 B.1.7 の generic-token はこれらの
+    // 記号を含む連続文字列を1トークンとして認め、about_Parsing は
+    // 引数モードの入力を構文として解釈できない限り文字列として扱う。
+    // 単語で始まる接着形（a+b／hello-world）が word 側の接着処理で
+    // 1トークンになるのと対称に、数値で始まる接着形も隣接トークン列を
+    // そのまま文字列として取り込む。空白で独立した演算子トークンの
+    // 規則（R24-N31）や式位置の解釈には触れない。範囲（1..3 の「..」は
+    // 対象演算子に含めないため、下の範囲構築が従来どおり働く。
+    if (t.k === "number") {
+      const next = this.ts[this.i + 1];
+      if (
+        next?.k === "op" &&
+        ["+", "-", "*", "/", "%"].includes(next.v) &&
+        next.start === t.end
+      ) {
+        let text = this.take().v,
+          end = this.ts[this.i - 1].end;
+        while (
+          this.ts[this.i]?.start === end &&
+          ![";", "|", ")", "}", "<eof>", ","].includes(this.ts[this.i].v)
+        ) {
+          text += this.take().v;
+          end = this.ts[this.i - 1].end;
+        }
+        return { k: "literal", value: text, line: t.line };
+      }
     }
-    return first;
+    // カンマで区切られた後続要素（1,2+3 の 2+3 等）も含め、この引数の
+    // 式解析の間は argGlued を立て、expr() 側の接着判定を効かせる。
+    this.argGlued++;
+    try {
+      const first = this.expr(7);
+      // §3.3 既知残存の是正：引数モードでも範囲演算子は式として受理する
+      // （Write-Output 1..3 は実 PowerShell では 1,2,3 を出力する。
+      // 代入形・括弧形は従来から正常だった）。左辺は expr(7) が範囲の
+      // 手前で止まるため、ここで範囲として組み立てる。
+      if (this.peek("..")) {
+        this.take();
+        return {
+          k: "binary",
+          op: "..",
+          a: first,
+          b: this.expr(7),
+          line: t.line,
+        };
+      }
+      return first;
+    } finally {
+      this.argGlued--;
+    }
   }
   expr(min = 0) {
     if (++this.depth > 64)
@@ -712,44 +769,106 @@ export class PSParser {
           "未確認",
         );
       a = { k: "literal", value: v, line };
+      // R25-N12: 引数モード（argGlued）でカンマ要素等として読まれる
+      // 数値にも接着判定を効かせる。隣接演算子列を文字列として取り込み、
+      // 後続処理（メンバー・二項演算子）へは渡さない。
+      if (this.argGlued > 0) {
+        const next = this.ts[this.i];
+        if (
+          next?.k === "op" &&
+          ["+", "-", "*", "/", "%"].includes(next.v) &&
+          next.start === t.end
+        ) {
+          let text = t.v,
+            end = t.end;
+          while (
+            this.ts[this.i]?.start === end &&
+            ![";", "|", ")", "}", "<eof>", ","].includes(this.ts[this.i].v)
+          ) {
+            text += this.take().v;
+            end = this.ts[this.i - 1].end;
+          }
+          this.depth--;
+          return { k: "literal", value: text, line };
+        }
+      }
     } else if (t.k === "string")
       a = { k: "string", value: t.v, quote: t.quote, line };
     else if (t.k === "var") a = { k: "var", name: t.v, line };
-    else if (["-", "+", "!", "-not"].includes(t.v.toLowerCase()))
+    else if (["-", "+", "!", "-not"].includes(t.v.toLowerCase())) {
       // R24-N3: 単項演算子の被演算子はカンマ演算子を含まない
       // （-1,2 は (-1) と 2 の配列であり、-(1,2) ではないため）。
-      a = { k: "unary", op: t.v.toLowerCase(), arg: this.expr(8), line };
-    else if (t.v === "++" || t.v === "--")
+      // R25-N12: 被演算子は数値で始まる接着形の対象外（-3 等の負数形の
+      // 現行挙動を変えないため、接着判定は下ろす）。
+      const savedGlued = this.argGlued;
+      this.argGlued = 0;
+      let unaryArg;
+      try {
+        unaryArg = this.expr(8);
+      } finally {
+        this.argGlued = savedGlued;
+      }
+      a = { k: "unary", op: t.v.toLowerCase(), arg: unaryArg, line };
+    } else if (t.v === "++" || t.v === "--") {
       // R22-N16: 前置インクリメント／デクリメント。
-      a = { k: "pre", op: t.v, target: this.expr(8), line };
+      const savedGlued = this.argGlued;
+      this.argGlued = 0;
+      let preTarget;
+      try {
+        preTarget = this.expr(8);
+      } finally {
+        this.argGlued = savedGlued;
+      }
+      a = { k: "pre", op: t.v, target: preTarget, line };
+    }
     else if (t.v === "(" || t.v === "$(") {
-      const pipe = this.pipeline();
+      // R25-N12: 括弧内は式モードに戻るため、接着判定を一時的に下ろす。
+      const savedGlued = this.argGlued;
+      this.argGlued = 0;
+      let pipe;
+      try {
+        pipe = this.pipeline();
+      } finally {
+        this.argGlued = savedGlued;
+      }
       this.take(")");
       a = { k: "subexpression", pipe, line };
     } else if (t.v === "@(") {
+      const savedGlued = this.argGlued;
+      this.argGlued = 0;
       const values = [];
-      this.skip();
-      while (!this.peek(")")) {
-        values.push(this.pipeline());
-        if (!this.peek(";")) break;
+      try {
         this.skip();
+        while (!this.peek(")")) {
+          values.push(this.pipeline());
+          if (!this.peek(";")) break;
+          this.skip();
+        }
+      } finally {
+        this.argGlued = savedGlued;
       }
       this.take(")");
       a = { k: "array-pipelines", values, line };
     } else if (t.v === "@{") {
+      const savedGlued = this.argGlued;
+      this.argGlued = 0;
       const entries = [];
-      this.skip();
-      while (!this.peek("}")) {
-        const key = this.take();
-        if (!["word", "string", "number"].includes(key.k))
-          fail("未対応：ハッシュテーブルのキー", key.line);
-        this.take("=");
-        entries.push([
-          key.k === "number" ? psNumber(key.v) : key.v,
-          this.pipeline(),
-        ]);
-        if (!this.peek(";")) break;
+      try {
         this.skip();
+        while (!this.peek("}")) {
+          const key = this.take();
+          if (!["word", "string", "number"].includes(key.k))
+            fail("未対応：ハッシュテーブルのキー", key.line);
+          this.take("=");
+          entries.push([
+            key.k === "number" ? psNumber(key.v) : key.v,
+            this.pipeline(),
+          ]);
+          if (!this.peek(";")) break;
+          this.skip();
+        }
+      } finally {
+        this.argGlued = savedGlued;
       }
       this.take("}");
       a = { k: "hashtable", entries, line };
@@ -757,7 +876,16 @@ export class PSParser {
       const type = this.take().v;
       this.take("]");
       // R24-N3: キャストの被演算子もカンマ演算子を含まない（単項と同様）。
-      a = { k: "cast", type, arg: this.expr(8), line };
+      // R25-N12: 被演算子は式モードのため接着判定を下ろす。
+      const savedGlued = this.argGlued;
+      this.argGlued = 0;
+      let castArg;
+      try {
+        castArg = this.expr(8);
+      } finally {
+        this.argGlued = savedGlued;
+      }
+      a = { k: "cast", type, arg: castArg, line };
     } else
       fail("未対応または不正なPowerShellの式：" + t.v, line, "SyntaxError");
     while (true) {
@@ -772,7 +900,15 @@ export class PSParser {
       }
       if (this.peek("[")) {
         this.take();
-        const index = this.expr();
+        // R25-N12: 添字内は式モードのため接着判定を一時的に下ろす。
+        const savedGlued = this.argGlued;
+        this.argGlued = 0;
+        let index;
+        try {
+          index = this.expr();
+        } finally {
+          this.argGlued = savedGlued;
+        }
         this.take("]");
         a = { k: "index", target: a, index, line };
         continue;
@@ -820,9 +956,34 @@ export class PSParser {
       }
       if (p < min) break;
       this.take();
-      // R24-N3: 範囲の右辺はカンマ列にしない（1..3, 4 は (1..3) と 4 の
-      // 配列であり、1..(3,4) ではないため、右辺は expr(8) で読む）。
-      a = { k: "binary", op, a, b: this.expr(op === ".." ? 8 : p + 1), line };
+      if (op === "..") {
+        // R25-N2（R24-N3 の裁定を是正）：範囲演算子の右辺も左辺と対称に
+        // array-literal-expression（カンマ列）として読む。根拠は一次情報：
+        // PowerShell 言語仕様 Appendix A の文法 B.2.3 は
+        // 「range-expression: array-literal-expression |
+        //   range-expression .. array-literal-expression」と定め、両辺とも
+        // カンマ列を取るとし、about_Operator_Precedence でもカンマは
+        // 「..」より上位である。したがって 1..3,4 は 1..(3,4) と parse され、
+        // 複数要素配列から整数への変換が失敗して変換エラーで止まるのが
+        // 実物の挙動である（括弧明示形 1..(3,4) の現行挙動とも一致する）。
+        // バッチ3 RG-166 の旧裁定コメント（「1..3, 4 は (1..3) と 4 の配列
+        // であり、1..(3,4) ではない」）は文法 B.2.3 と逆であったため、
+        // 右辺を expr(8) で読む抑止は撤回する。要素は左辺のカンマ収集と
+        // 同じく expr(8) で読み、param 既定値などカンマが区切りの文脈
+        // （noComma）では従来どおり収集しない。
+        let b = this.expr(8);
+        if (this.peek(",") && !this.noComma) {
+          const values = [b];
+          while (this.peek(",")) {
+            this.take();
+            values.push(this.expr(8));
+          }
+          b = { k: "array", values, line };
+        }
+        a = { k: "binary", op, a, b, line };
+      } else {
+        a = { k: "binary", op, a, b: this.expr(p + 1), line };
+      }
     }
     this.depth--;
     return a;

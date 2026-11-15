@@ -108,3 +108,7 @@ LBound／UBound の次元引数を実装（次元1を返し、範囲外の次元
 - 個票・文書：docs/audit/reference-r2.json、docs/audit/reference-r6.json、docs/DEVELOPMENT.md、docs/audit/REQUIREMENTS.md、docs/audit/muse/consolidated-residual-register.md、PROGRESS.md（本報告書の数値へ追随）、precache.js（再生成）
 - 新規テスト：tests/muse-fix-batch3-cfamily.test.js、-coremisc、-imagej、-psengine、-psfollow、-psparser、-python、-r、-script、-vba（計10ファイル）
 - 既存テストの期待値是正（統合担当のみ、根拠は各ファイル内のコメントに明記）：tests/muse-fix-batch2-fc-python.test.js（件数 165→166／176→177／個票 917→919、RA-16／RA-17 を R24-N7 の実挙動へ書き換え）、tests/muse-fix-batch2-fc-vba.test.js（個票 917→919）、tests/muse-fix-batch2-fc-shell.test.js（PowerShell 50→51／個票 r6 78→79、copy 元 NUL を §3.3 再裁定により停止対象から除外）、tests/muse-fix-batch2-fc-flow2.test.js（個票 917→919）、tests/muse-fix-r22-ui.test.js（総数 995→998）、tests/muse-fix-ref-python.test.js（Python 165→166／CloudFormation 176→177）
+
+## 訂正記録（2026-11-15、修正バッチ4・文書／F-02班）
+
+- 本報告書 §RG-170 の N23 項にある「モジュールの公開名（定数5＋関数62）」の「関数62」は**誤記**であり、実測は**関数56**です（公開名集合は定数5＋関数56＝61件）。第25ラウンド監査（f01b班）が正本の実物（実 CPython の `dir(math)`）・実装（`js/types/python/engine.js` の MATH_CONST 5件／MATH_FUNCS 56件）とも56件で一致することを確認済みであり、本訂正の追記にあたっても実装テーブルの件数を再実測して一致を確認しました。本文は書き換えず、本セクションを訂正記録として追加します。

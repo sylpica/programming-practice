@@ -68,7 +68,7 @@
 - JavaScript：typeof（未宣言名とTDZを区別）とReferenceError表示。戻り値のない出力文の重複説明を除去。
 - AutoHotkey：SetTitleMatchModeが変更前のモードを返す。UI.Vision：storeText/storeValueのロケーター不一致は#LNFを保存して継続する。
 - CloudFormation：TransformのName/Parametersオブジェクトと配列内オブジェクトを解析する。カスタムLambdaのトップレベルparamsは公式のevent仕様に従い空にする。AWS::IncludeのトップレベルParametersは専用の組込み仕様であり、このモデルでは実装しない。Fn::Transformのparamsとは混同しない。
-- リファレンスは説明・戻り値・注意点を一次資料へ対応付ける。戻り値と公式資料リンクも表示する。対応／参照専用の区別は維持（現行は対応936件／参照専用62件）。静的説明文の照合と、任意コード・全引数の実環境互換性は別である。個票はdocs/audit/REFERENCE-R2.mdとMUSE-REF-R22.mdを参照。
+- リファレンスは説明・戻り値・注意点を一次資料へ対応付ける。戻り値と公式資料リンクも表示する。対応／参照専用の区別は維持（現行は対応1024件／参照専用62件）。静的説明文の照合と、任意コード・全引数の実環境互換性は別である。個票はdocs/audit/REFERENCE-R2.mdとMUSE-REF-R22.mdを参照。
 
 新アイコンはMuse側の25e40db以降で反映済み。636f8d0でmanifest変更後のprecache再生成も完了し、Codex第3ラウンドではPNGの実体・寸法を確認して保持する。
 
@@ -149,6 +149,8 @@ PowerShell 7.4を根拠にするWindowsパス・UTF-8／CRLFの部分モデル�
 その後の修正バッチ2（2026-11-15）で、VBA Attribute・ImageJ `.length`・Python math 定数5件（CloudFormation 伝播5件を含む）・PowerShell 自動変数とプロパティ項目の追加、ImageJ Math.sinh/cosh/tanh の未対応分類への是正、Python `with` の対応分類への是正等を行い、現在の件数は次のとおり：Excel VBA 91、ImageJ 201、CloudFormation 176（固有11＋Python委譲165）、Power Automate 15、AutoHotkey 26、UI.Vision 22、Power Apps 28、Python 165、R 44、C 26、C++ 31、C# 53、JavaScript 39、cmd 28、PowerShell 50。合計 **995件（対応933／参照専用62）**。照合個票は `docs/audit/reference-r2.json` 917行／`docs/audit/reference-r6.json` 78行。詳細は `docs/audit/MUSE-FIX-BATCH2.md`。
 
 その後の修正バッチ3（2026-11-15）で、PowerShell「包含演算子」の新設と比較演算子項目の全綴り拡張（R24-N4）、PowerShell「プロパティ」項目への `.Name`／`.FullName` 追記（R24-N16）、Python「数値の属性」の新設（第24ラウンド報告書 §3.2 の裁定＝項目化。CloudFormation 伝播を含む）を行い、現在の件数は次のとおり：Excel VBA 91、ImageJ 201、CloudFormation 177（固有11＋Python委譲166）、Power Automate 15、AutoHotkey 26、UI.Vision 22、Power Apps 28、Python 166、R 44、C 26、C++ 31、C# 53、JavaScript 39、cmd 28、PowerShell 51。合計 **998件（対応936／参照専用62）**。照合個票は `docs/audit/reference-r2.json` 919行／`docs/audit/reference-r6.json` 79行。詳細は `docs/audit/MUSE-FIX-BATCH3.md`。
+
+**F-02 の到達性基準（修正バッチ4で明文化、2026-11-15）**：束ね項目は「各名前から検索・チップで到達できる場合のみ項目あり」と数える。ここでいう検索による到達とは、アプリのリファレンス検索の述語そのもの（`js/app.js` の `renderRefs`／`fullRefs` が使う、name／category／description／syntax を対象とする小文字部分一致）で、その名前をクエリとして自項目がヒットすること（名前解決できること）を指す。**syntax 欄に綴りが列挙されているだけでは到達とはみなさない**（第25ラウンド R25-N7：述語が syntax を対象にしていなかったため、PowerShell「比較演算子」の基本形8綴り・「プロパティ」のドット付き9綴り・Python「数値の属性」のドット付き4綴りが検索で自項目に到達できなかった）。修正バッチ4で検索述語に syntax を含め、「比較演算子」の description にも基本形8綴りを列挙した。是正後の到達性は、syntax 欄の綴り一覧から抽出した全束ね項目の全名前について、名前単位の機械照合で未到達ゼロを回帰テスト（`tests/muse-fix-batch4-docs.test.js`）に固定する。
 
 この修正で確定した宣言事項：
 

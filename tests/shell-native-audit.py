@@ -3,13 +3,22 @@ import json,os,subprocess,tempfile,shutil,sys,base64
 from pathlib import Path
 root=Path(__file__).resolve().parents[1]
 fixtures=json.loads((root/'tests/fixtures/powershell-cases.json').read_text(encoding='utf-8'))
+# Expected-error cases (R25-N2 follow-up): entries are
+# [name, code, simulator error pattern]. For these, success is bidirectional:
+# the real shell MUST report an error and the simulator MUST stop naming the
+# cause (the simulator side is asserted in tests/muse-fix-batch4-ps.test.js
+# against the same fixture's pattern). If either side succeeds, the case
+# fails. They are counted in expected_total exactly like normal fixtures,
+# so a missing runtime still shows up as skipped, never as a silent pass.
+error_fixtures=json.loads((root/'tests/fixtures/powershell-error-cases.json').read_text(encoding='utf-8'))
+all_ps_cases=[(n,c,e,False) for n,c,e in fixtures]+[(n,c,p,True) for n,c,p in error_fixtures]
 pwsh=os.environ.get('PWSH_PATH') or shutil.which('pwsh')
 if "--require-both" in sys.argv:
  assert pwsh and shutil.which("cmd.exe"), "Both native shells must be installed"
 materials=json.loads(subprocess.check_output(['node','--input-type=module','-e',"import {definitions} from './js/types/registry.js';console.log(JSON.stringify(definitions.filter(d=>['cmd','powershell'].includes(d.id)).flatMap(d=>[...d.templates.map(t=>({kind:d.id,name:t.id,code:t.code})),...d.reference.map(r=>({kind:d.id,name:r.name,code:r.example}))])));"],cwd=root,text=True,encoding='utf-8'))
 records=[];failures=[]
 with tempfile.TemporaryDirectory(prefix='practice-shell-native-') as temp:
- sandbox=Path(temp);cases=sandbox/'cases.json';cases.write_text(json.dumps([{'name':n,'code':c,'index':i}for i,(n,c,e)in enumerate(fixtures)],ensure_ascii=False),encoding='utf-8')
+ sandbox=Path(temp);cases=sandbox/'cases.json';cases.write_text(json.dumps([{'name':n,'code':c,'index':i}for i,(n,c,e,x)in enumerate(all_ps_cases)],ensure_ascii=False),encoding='utf-8')
  if pwsh:
   script=r'''
 [Console]::OutputEncoding=[System.Text.UTF8Encoding]::new($false)
@@ -38,7 +47,14 @@ ConvertTo-Json -InputObject $result -Depth 14 -Compress
   proc=subprocess.run([pwsh,'-NoLogo','-NoProfile','-NonInteractive','-EncodedCommand',base64.b64encode(script.encode('utf-16le')).decode('ascii')],env=env,capture_output=True,text=True,encoding='utf-8',timeout=60)
   assert proc.returncode==0,proc.stderr
   native=json.loads(proc.stdout)
-  for (name,code,expected),row in zip(fixtures,native):
+  for (name,code,expected,expect_error),row in zip(all_ps_cases,native):
+   if expect_error:
+    # The real shell must fail this case; a successful run is a failure
+    # here (the simulator side of the pair is checked by the Node tests).
+    matched='error' in row
+    if not matched:failures.append((name,'expected a native error, got success',row))
+    records.append({'kind':'powershell','name':name,'passed':matched})
+    continue
    if 'error' in row:
     failures.append((name,row));continue
    def text(v):
@@ -108,7 +124,7 @@ Path('work/audit/shell-native-results.json').write_text(json.dumps(records,ensur
 # passed:false summary, and a non-zero exit -- with or without
 # --require-both. When both runtimes are present nothing is skipped and
 # the behaviour (including the Windows CI --require-both job) is unchanged.
-expected={'powershell':len(fixtures)+sum(1 for e in materials if e['kind']=='powershell'),'cmd':len(cmd_cases)+sum(1 for e in materials if e['kind']=='cmd')}
+expected={'powershell':len(fixtures)+len(error_fixtures)+sum(1 for e in materials if e['kind']=='powershell'),'cmd':len(cmd_cases)+sum(1 for e in materials if e['kind']=='cmd')}
 executed={'powershell':sum(r['kind']=='powershell'for r in records),'cmd':sum(r['kind']=='cmd'for r in records)}
 skipped={kind:expected[kind]-executed[kind] for kind in expected}
 skipped_total=sum(skipped.values());expected_total=sum(expected.values())

@@ -130,13 +130,16 @@ export const definition = {
     return found;
   },
   async simulate(code, model) {
-    if (code.length > LIMITS.source)
-      return {
-        paths: [],
-        error: { line: 1, message: "コードは100000文字以内にしてください" },
-      };
-    let engine = await import("./engine.js");
     try {
+      // R25-N6: 長さ検査を try の内側へ移す。try の外にあると
+      // simulate(null) 等で code.length の TypeError がガードつき
+      // catch（RG-173）を通らず投げ返されてしまう。
+      if (code.length > LIMITS.source)
+        return {
+          paths: [],
+          error: { line: 1, message: "コードは100000文字以内にしてください" },
+        };
+      let engine = await import("./engine.js");
       let raw = engine.simRunPaths(code, model);
       let list = raw.single ? [raw.single] : raw.paths;
       let truncated = !!raw.truncated || list.some((r) => r.incomplete);

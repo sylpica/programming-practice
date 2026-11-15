@@ -94,7 +94,23 @@ function transformNumberLiteral(raw, suffix, language, line) {
       // D3 兄弟表面：u 接尾辞の型情報を落とすと uint リテラルが int
       // として扱われ、uint 同士の演算が long へ昇格して折り返さない。
       // C 側の ((unsigned int)…) と同じくキャスト形で型を保持する。
-      if (sl === "u") return `((uint)${digits})`;
+      // R25-N25：u 接尾辞リテラルの型は仕様どおり「uint、ulong の順に
+      // 収まる型」。uint の範囲を超える値を uint のキャスト形で包むと
+      // 評価時に 2^32 の剰余へ切り捨てられて黙った誤値になるため、
+      // 範囲を超える場合は ulong のキャスト形で型を保持する
+      // （dotnet 実測：4294967296u の型は ulong、uint への代入は
+      // CS0266、ulong／double への代入と式の値はそのまま）。
+      if (sl === "u") {
+        let big = null;
+        try {
+          big = BigInt(digits);
+        } catch {
+          big = null;
+        }
+        if (big !== null && big > 4294967295n)
+          return `((ulong)${digits})`;
+        return `((uint)${digits})`;
+      }
     }
     unsupported(`数値リテラル ${raw}${suffix} の接尾辞 ${suffix} は未対応です`, line);
   }
@@ -408,6 +424,40 @@ function transformSource(source, language, deadline) {
           unsupported(`2進数リテラル ${raw} に 0/1 以外の数字があります`, line);
         if (/^0[oO]/.test(raw) && /[89]/.test(raw))
           unsupported(`8進数リテラル ${raw} に 8/9 が含まれています`, line);
+        // R25-N11（C家族分）：不完全な数値リテラル（1e／1e+／1.5e／
+        // 0x／123abc／0x1Fg 等）は、核だけを通常の数値として切り取り
+        // 残りを別トークンに化けさせると、後段で「; が必要です」と
+        // いう虚偽原因（セミコロンは実際に書かれている）になる。
+        // 字句の段階（この変換層が C家族の字句の所在）でリテラル
+        // 自体を名指して停止する。正当な接尾辞（1e5f／1.5e-3 等）は
+        // raw／suffix として消費済みのため対象にならない。ドット＋
+        // 数字の継続（1e5.5／1.5.2）もリテラル自体の誤りであり、
+        // ドット＋識別子（10.ToString() のメンバーアクセス）は対象外。
+        {
+          const afterNum = srest.slice(suffix.length);
+          if (/^[A-Za-z0-9_]/.test(afterNum)) {
+            let badTail = afterNum.match(/^[A-Za-z0-9_]+/)?.[0] || "";
+            if (
+              /[eE]$/.test(raw + suffix + badTail) &&
+              /^[+-]/.test(afterNum.slice(badTail.length))
+            )
+              badTail += afterNum[badTail.length];
+            throw new PracticeError(
+              `数値リテラルの書き方が不正です：${raw}${suffix}${badTail}`,
+              line,
+              "SyntaxError",
+            );
+          }
+          if (afterNum[0] === "." && /[0-9]/.test(afterNum[1] || "")) {
+            const badTail =
+              "." + (afterNum.slice(1).match(/^[0-9]+/)?.[0] || "");
+            throw new PracticeError(
+              `数値リテラルの書き方が不正です：${raw}${suffix}${badTail}`,
+              line,
+              "SyntaxError",
+            );
+          }
+        }
         out += transformNumberLiteral(raw, suffix, language, line);
         advance(i + raw.length + suffix.length);
         continue;
@@ -481,6 +531,21 @@ function parse(source, language, deadline) {
   }
   let pendingDecls = [];
   if (language === "csharp") {
+    // R25-N27 の判定用：`_` が通常の変数として宣言されているか
+    // （型名の直後に `_` が来る宣言形）をトークン列から先に見る。
+    // 宣言済みの `_` への `out _` はその変数への代入として扱い、
+    // 未宣言の場合の `out _` だけをディスカードとして扱う。
+    const underscoreDeclared = (() => {
+      const typeWords = ["int", "long", "double", "float", "short", "uint", "ulong", "ushort", "byte", "sbyte", "char", "bool", "string", "var"];
+      for (let t = 1; t < p.ts.length; t++)
+        if (
+          p.ts[t].v === "_" &&
+          p.ts[t].k === "id" &&
+          typeWords.includes(p.ts[t - 1]?.v)
+        )
+          return true;
+      return false;
+    })();
     for (let i = 2; i < p.ts.length; i++) {
       if (
         p.ts[i].v !== "TryParse" ||
@@ -490,6 +555,39 @@ function parse(source, language, deadline) {
       )
         continue;
       const baseType = p.ts[i - 2].v;
+      // R25-N26：第2引数が存在するのに out で始まらない呼び出しは、
+      // 実 C# では CS1620 のコンパイルエラー（dotnet 実測）。out の
+      // 有無は実行時には区別できない（書き換えで out が取り除かれる）
+      // ため、トークン段階で検証し、左辺ではなく引数そのものを
+      // 名指して停止する。引数が1つだけの形は従来どおり呼び出し側の
+      // 形式エラーに委ねる。
+      {
+        let depth = 0,
+          close = -1;
+        const commas = [];
+        for (let j = i + 1; j < p.ts.length; j++) {
+          const v = p.ts[j].v;
+          if (v === "(") depth++;
+          else if (v === ")") {
+            depth--;
+            if (depth === 0) {
+              close = j;
+              break;
+            }
+          } else if (depth === 1 && v === ",") commas.push(j);
+          else if (v === "<eof>") break;
+        }
+        if (close > 0 && commas.length) {
+          let a2 = commas[0] + 1;
+          while (p.ts[a2]?.v === "\n") a2++;
+          if (a2 < close && p.ts[a2]?.v !== "out")
+            throw new PracticeError(
+              `${baseType}.TryParse の第2引数は out キーワードを付けて渡す必要があります（CS1620）`,
+              p.ts[i].line,
+              "CompileError",
+            );
+        }
+      }
       let depth = 0;
       for (let j = i + 1; j < p.ts.length; j++) {
         const v = p.ts[j].v;
@@ -502,6 +600,20 @@ function parse(source, language, deadline) {
           const n1 = p.ts[j + 1],
             n2 = p.ts[j + 2];
           p.ts.splice(j, 1);
+          // R25-N27：`out _` は C# 7 以降のディスカードで合法
+          // （dotnet 実測で True を返す）。宣言されていない `_` を
+          // 変数として書き込もうとすると「変数が宣言されていません」
+          // という虚偽理由になるため、専用マーカーへ置き換え、
+          // 呼び出し側で書き込みを省略する（変数は生成しない）。
+          // 宣言済みの `_` は通常の変数として扱い対象にしない。
+          if (
+            n1?.v === "_" &&
+            !underscoreDeclared &&
+            (n2?.v === ")" || n2?.v === ",")
+          ) {
+            p.ts[j] = { v: "__tryParseDiscard", k: "id", line: n1.line };
+            break;
+          }
           if (
             n1?.k === "id" &&
             n2?.k === "id" &&
@@ -1286,6 +1398,41 @@ function parse(source, language, deadline) {
     return n;
   };
   const nodes = [...pendingDecls, ...p.program()];
+  // R25-N8（C家族分）：キーワードリテラル（true／false／null／
+  // nullptr）は共有パーサでは k:"var" ノードとして運ばれるため、
+  // 共有 executeProgram の代入ターゲット検証（書き込み可能な形は
+  // var／index／member のみ）を素通りし、`true = x;` が右辺の名前を
+  // 誤って指したり、`true = 5;` が書き込み先の未宣言エラーに化け
+  // たりしていた。言語のキーワードをリテラルノードへ分類し直し、
+  // 検証が右辺評価より前に代入先を名指せるようにする。宣言名・
+  // メンバー名は文字列フィールドであり var ノードではないため
+  // 影響しない。
+  {
+    const keywordLiterals =
+      language === "csharp"
+        ? { true: true, false: false, null: null }
+        : language === "cpp"
+          ? { true: true, false: false, nullptr: null }
+          : { true: true, false: false };
+    const convertKeywords = (x) => {
+      if (!x || typeof x !== "object") return;
+      if (Array.isArray(x)) {
+        for (const el of x) convertKeywords(el);
+        return;
+      }
+      if (
+        x.k === "var" &&
+        Object.hasOwn(keywordLiterals, x.name)
+      ) {
+        x.k = "literal";
+        x.value = keywordLiterals[x.name];
+        delete x.name;
+        return;
+      }
+      for (const v of Object.values(x)) convertKeywords(v);
+    };
+    convertKeywords(nodes);
+  }
   // P-N4：構文解析の段階も時間上限の対象にする（段階末でも検査する）。
   if (deadline !== undefined && performance.now() > deadline)
     throw new PracticeError(
@@ -2554,6 +2701,110 @@ export function createCFamily({ id, name, extensions, language }) {
           }
           api.fail("終端のヌル文字がない文字列の読み取り", node, "未定義動作");
         }
+        // R25-N8（C家族分）：C#（managed）の代入は semantics.step／
+        // read が右辺を先に読む経路のため、共有 executeProgram の
+        // 代入ターゲット検証（右辺評価より前に形を名指す）に届く前に
+        // 右辺のエラーを誤帰属していた。同じ検証を右辺評価の前に
+        // ここでも行う。C# は実 csc の最初の診断 CS0131（左辺が
+        // 変数・プロパティ・インデクサーでない）に相当する文面で
+        // 名指す。C／C++ の通常代入は共有検証が同じ文面
+        // （SyntaxError）で処理するため、ここは managed と
+        // C／C++ の %= 経路だけが通る。
+        function validateAssignTarget(target, node, api) {
+          if (!target) return;
+          if (["var", "index", "member"].includes(target.k)) return;
+          if (!managed && target.k === "unary" && target.op === "*")
+            return;
+          const form =
+            {
+              literal: "リテラル",
+              call: "関数呼び出しの結果",
+              binary: "演算の結果",
+              array: "配列リテラル",
+              record: "オブジェクトリテラル",
+              post: "++ / -- の結果",
+              unary: "単項演算の結果",
+              cond: "条件式の結果",
+              ternary: "条件式の結果",
+              nullish: "条件式の結果",
+              cast: "キャストの結果",
+            }[target.k] || "この式";
+          if (managed)
+            api.fail(
+              `代入先が不正です：${form}には代入できません。代入の左辺は変数、プロパティ、またはインデクサーでなければなりません（CS0131）`,
+              node,
+              "CompileError",
+            );
+          api.fail(
+            `代入先が不正です：${form}には代入できません（Invalid left-hand side in assignment）`,
+            node,
+            "SyntaxError",
+          );
+        }
+        // R25-N14（C家族の同根表面）：代入の narration は代入先を
+        // 特定する（NX-N23 の裁定。他エンジンでは「a[2] に 99 を
+        // 代入します」の形）。共有 callName は var／member しか
+        // 返さないため、ポインタ逆参照（*(p + 1) = 99 等）の代入が
+        // 「対象 に 99 を代入します」と代入先を特定できていなかった。
+        // AHK 班の処置（RG-55 系）と同じく、代入先を AST の形から
+        // レンダリングする。レンダリングできない形は空を返し、
+        // 呼び出し側が従来の表示へフォールバックする。
+        function targetLabel(a) {
+          if (!a || typeof a !== "object") return "";
+          switch (a.k) {
+            case "literal":
+              return typeof a.value === "string"
+                ? `"${a.value}"`
+                : String(a.value);
+            case "var":
+              return a.name;
+            case "member": {
+              const t = targetLabel(a.target);
+              return t ? `${t}.${a.name}` : "";
+            }
+            case "index": {
+              const t = targetLabel(a.target);
+              if (!t) return "";
+              const parts = (a.indexes || []).map(targetLabel);
+              if (!parts.length || parts.some((p) => p === "")) return "";
+              return `${t}[${parts.join(", ")}]`;
+            }
+            case "binary": {
+              const l = targetLabel(a.a),
+                r = targetLabel(a.b);
+              return l && r ? `${l} ${a.op} ${r}` : "";
+            }
+            case "unary": {
+              const x = targetLabel(a.arg);
+              if (!x) return "";
+              // 逆参照の被演算子が二項式なら括弧で形を保つ
+              // （*(p + 1) を *p + 1 と表示しない）。
+              return a.op === "*" && a.arg.k === "binary"
+                ? `*(${x})`
+                : `${a.op}${x}`;
+            }
+            case "post": {
+              const x = targetLabel(a.target);
+              return x ? `${x}${a.op}` : "";
+            }
+            case "pre": {
+              const x = targetLabel(a.target);
+              return x ? `${a.op}${x}` : "";
+            }
+            case "cast": {
+              const x = targetLabel(a.arg);
+              return x ? `(${a.type})${x}` : "";
+            }
+            case "call": {
+              const t = targetLabel(a.target);
+              if (!t) return "";
+              const args = (a.args || []).map(targetLabel);
+              return args.some((x) => x === "") ? "" : `${t}(${args.join(", ")})`;
+            }
+            default:
+              return "";
+          }
+        }
         const semantics = {
           dialect: language,
           blockScopes: true,
@@ -2592,7 +2843,33 @@ export function createCFamily({ id, name, extensions, language }) {
             return Boolean(v);
           },
           step(n, s, api) {
-            if (n.k === "assign" && (managed || n.op === "%=")) {
+            // R25-N28：null 配列の foreach は「未確定または配列でない
+            // 繰り返し対象」（未対応）ではなく NullReferenceException
+            // （dotnet 実測）。共有 loop() の配列検査より前に、確定した
+            // null を名指す。コレクション式の読み取りに副作用のある
+            // 形（呼び出し等）は対象にせず、従来の経路へ委ねる。
+            if (managed && n.k === "each") {
+              const c = n.collection;
+              let collIsNull = false;
+              if (c?.k === "var" && Object.hasOwn(s.vars, c.name))
+                collIsNull = s.vars[c.name] === null;
+              else if (c?.k === "literal") collIsNull = c.value === null;
+              else if (c && ["member", "index"].includes(c.k))
+                collIsNull = api.read(c, s) === null;
+              if (collIsNull)
+                api.fail("null参照です", n, "NullReferenceException");
+            }
+            if (n.k === "assign") {
+              // R25-N14（C家族の同根表面）：文として届く代入（C／C++
+              // では主にポインタ逆参照への代入と %= 形）は、従来は
+              // managed と %= だけをここで処理し、それ以外は共有
+              // executeProgram の narration（callName が空になる形は
+              // 「対象」）に委ねていた。代入先を特定する narration を
+              // C家族側で一貫させるため、文の代入は全てここで処理
+              // する。処理内容（右辺評価→複合演算→書き込み）は
+              // 共有側と同一で、検証は validateAssignTarget が
+              // 右辺評価より前に行う（R25-N8）。
+              validateAssignTarget(n.target, n, api);
               let v = api.read(n.value, s);
               if (n.op && n.op !== "=")
                 v = semantics.binary(
@@ -2607,7 +2884,7 @@ export function createCFamily({ id, name, extensions, language }) {
               api.note(
                 s,
                 n,
-                `${callName(n.target) || "対象"} に ${fmtFor(v, s.types[callName(n.target)])} を代入します`,
+                `${targetLabel(n.target) || callName(n.target) || "対象"} に ${fmtFor(v, s.types[callName(n.target)])} を代入します`,
               );
               return [s];
             }
@@ -2698,6 +2975,65 @@ export function createCFamily({ id, name, extensions, language }) {
                         "CompileError",
                       );
                 }
+                // R25-N29：波括弧初期化の整数定数→符号なし狭型の
+                // narrowing も g++ ではエラー（実測：unsigned int
+                // {-1}、unsigned char {300}、unsigned short {70000}、
+                // unsigned long {-1}、unsigned int {4294967296} が
+                // 全て narrowing conversion エラー）。従来は cast の
+                // 剰余変換で黙ってラップしていた（70000 は printf の
+                // 書式不一致という誤った理由で停止）。定数要素だけを
+                // 対象とし、変数要素の警告・切り捨て受理（g++ 一致）
+                // と C 側（narrowing の概念なし・gcc 一致）は変えない。
+                if (
+                  language === "cpp" &&
+                  Array.isArray(n.value?.values) &&
+                  ["unsigned int", "unsigned long", "unsigned short", "unsigned char", "unsigned"].includes(n.type)
+                ) {
+                  const isConstInt = (el) => {
+                    if (!el || typeof el !== "object") return false;
+                    if (el.k === "literal")
+                      return (
+                        typeof el.value === "number" &&
+                        Number.isInteger(el.value) &&
+                        (/^0[xXbBoO]/.test(String(el.raw || "")) ||
+                          !/[.eE]/.test(
+                            String(el.raw || "").replace(/[uUlLfF]+$/, ""),
+                          ))
+                      );
+                    if (el.k === "unary" && ["-", "+", "~"].includes(el.op))
+                      return isConstInt(el.arg);
+                    if (el.k === "binary")
+                      return isConstInt(el.a) && isConstInt(el.b);
+                    if (el.k === "cast")
+                      return (
+                        !["float", "double"].includes(el.type) &&
+                        isConstInt(el.arg)
+                      );
+                    return false;
+                  };
+                  const unsignedMax = {
+                    "unsigned char": 255,
+                    "unsigned short": 65535,
+                    "unsigned int": 4294967295,
+                    unsigned: 4294967295,
+                    // unsigned long は 2^64-1 が上限で、モデルで安全に
+                    // 表せる整数は全て収まる。負値だけが対象になる。
+                    "unsigned long": Infinity,
+                  }[n.type];
+                  n.value.values.forEach((el, idx) => {
+                    if (!isConstInt(el)) return;
+                    const val = Array.isArray(v) ? v[idx] : undefined;
+                    if (
+                      typeof val === "number" &&
+                      (val < 0 || val > unsignedMax)
+                    )
+                      api.fail(
+                        `波括弧初期化で整数の定数 ${val} を ${n.type} へ縮小変換（narrowing）はできません`,
+                        n,
+                        "CompileError",
+                      );
+                  });
+                }
                 if (!managed && n.type === "char" && typeof v === "string") {
                   if ([...v].some(c => c.codePointAt(0) > 127)) api.fail("このモデルのchar文字列はASCIIに限定します", n, "未対応");
                   const bytes = [...v].map(c => c.charCodeAt(0));
@@ -2771,6 +3107,99 @@ export function createCFamily({ id, name, extensions, language }) {
                 // 空文字列として初期化済みになる（未初期化として扱わない）。
                 if (language === "cpp" && n.type === "string" && v === uninitialized)
                   v = "";
+                // R25-N29（スカラー形）：C++ のスカラー波括弧初期化
+                // （Type x = {値};）は配列と別経路で、従来は要素が
+                // 範囲内でも「数値型が一致しません」という汎用文言で
+                // 停止していた（g++ 実測では合法で値が入る）。要素を
+                // 取り出して通常の初期化として扱い、理由文を配列形と
+                // 揃える：浮動小数点定数→整数型と、符号なし型への
+                // 範囲外整数定数は narrowing として名指し、符号付き
+                // 型の範囲外は配列形と同じく cast の処理系依存の
+                // 停止に委ねる。空波括弧は値初期化（0／false／""）。
+                // C は対象外（従来の扱いを変えない）。
+                if (
+                  language === "cpp" &&
+                  v !== uninitialized &&
+                  Array.isArray(n.value?.values) &&
+                  Array.isArray(v)
+                ) {
+                  if (n.value.values.length === 0) {
+                    v =
+                      n.type === "bool"
+                        ? false
+                        : n.type === "string"
+                          ? ""
+                          : 0;
+                  } else if (n.value.values.length !== 1) {
+                    api.fail(
+                      "スカラーの波括弧初期化には要素が1つだけ必要です",
+                      n,
+                      "CompileError",
+                    );
+                  } else {
+                    const el = n.value.values[0],
+                      elVal = v[0];
+                    const constKind = (e) => {
+                      if (!e || typeof e !== "object") return null;
+                      if (e.k === "literal") {
+                        if (typeof e.value !== "number") return null;
+                        if (/^0[xXbBoO]/.test(String(e.raw || "")))
+                          return "int";
+                        return /[.eE]/.test(String(e.raw || ""))
+                          ? "float"
+                          : "int";
+                      }
+                      if (e.k === "unary" && ["-", "+"].includes(e.op))
+                        return constKind(e.arg);
+                      if (e.k === "binary") {
+                        const ka = constKind(e.a),
+                          kb = constKind(e.b);
+                        if (!ka || !kb) return null;
+                        return ka === "float" || kb === "float"
+                          ? "float"
+                          : "int";
+                      }
+                      if (e.k === "cast") {
+                        const inner = constKind(e.arg);
+                        if (!inner) return null;
+                        return ["float", "double"].includes(e.type)
+                          ? "float"
+                          : "int";
+                      }
+                      return null;
+                    };
+                    const kind = constKind(el);
+                    if (
+                      kind === "float" &&
+                      !["float", "double", "string"].includes(n.type)
+                    )
+                      api.fail(
+                        "波括弧初期化で浮動小数点の定数を整数型へ縮小変換（narrowing）はできません",
+                        n,
+                        "CompileError",
+                      );
+                    if (
+                      kind === "int" &&
+                      ["unsigned int", "unsigned long", "unsigned short", "unsigned char", "unsigned"].includes(n.type) &&
+                      typeof elVal === "number"
+                    ) {
+                      const max = {
+                        "unsigned char": 255,
+                        "unsigned short": 65535,
+                        "unsigned int": 4294967295,
+                        unsigned: 4294967295,
+                        "unsigned long": Infinity,
+                      }[n.type];
+                      if (elVal < 0 || elVal > max)
+                        api.fail(
+                          `波括弧初期化で整数の定数 ${elVal} を ${n.type} へ縮小変換（narrowing）はできません`,
+                          n,
+                          "CompileError",
+                        );
+                    }
+                    v = elVal;
+                  }
+                }
                 if (v !== uninitialized) v = cast(v, type, s, n, api);
                 s.vars[n.name] = v;
                 allocate(s, n.name, [v], type);
@@ -2813,6 +3242,7 @@ export function createCFamily({ id, name, extensions, language }) {
               };
             }
             if (a.k === "assign") {
+              validateAssignTarget(a.target, a, api);
               let v = api.read(a.value, s);
               if (a.op && a.op !== "=") {
                 const cur = api.read(a.target, s);
@@ -3308,6 +3738,11 @@ export function createCFamily({ id, name, extensions, language }) {
             if (managed && a.k === "index") {
               let array = api.read(a.target, s),
                 index = api.read(a.indexes[0], s);
+              // R25-N28：null 配列への要素代入は IndexOutOfRangeException
+              // ではなく NullReferenceException（dotnet 実測。読み取り
+              // 添字・.Length と同じ経路に揃える）。
+              if (array === null)
+                api.fail("null参照です", node, "NullReferenceException");
               // R23-N5 書き込み側：非整数の添字を範囲外と誤診しない。
               if (
                 managed &&
@@ -3686,12 +4121,20 @@ export function createCFamily({ id, name, extensions, language }) {
               // (it is normally uninitialized at this point).
               if (args.length !== 2)
                 api.fail("TryParse は（文字列, out 変数）の2引数形式のみ対応します", node, "未対応");
+              // R25-N27：`out _` ディスカード（解析段階でマーカーへ
+              // 置換済み）は書き込み先を持たない。変数を生成せず、
+              // 成否だけを返す。
+              const isDiscard =
+                args[1]?.k === "var" && args[1]?.name === "__tryParseDiscard";
+              const writeOut = (val) => {
+                if (!isDiscard) api.write(args[1], val, s, node);
+              };
               const text = api.read(args[0], s);
               // R24-N34：第1引数 null は例外ではなく変換失敗（False）。
               // 実 C# の TryParse は null を受け付け、false を返す
               // （dotnet 実測。"" が False であることと一貫させる）。
               if (text === null) {
-                api.write(args[1], 0, s, node);
+                writeOut(0);
                 return false;
               }
               if (typeof text !== "string")
@@ -3733,7 +4176,7 @@ export function createCFamily({ id, name, extensions, language }) {
                   parsed = Number(t.replace(/,/g, ""));
                 }
               }
-              api.write(args[1], ok ? parsed : 0, s, node);
+              writeOut(ok ? parsed : 0);
               return ok;
             }
             // D13：引数を評価する前に未順序の競合を検査する。

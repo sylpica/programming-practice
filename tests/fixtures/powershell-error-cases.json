@@ -1,0 +1,1 @@
+[["range right operand comma is a conversion error","Write-Output (1..3,4)","数値へ変換できません"]]

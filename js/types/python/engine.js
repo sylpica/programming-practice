@@ -64,17 +64,106 @@ const MATH_CONST = { pi: Math.PI, e: Math.E, tau: 2 * Math.PI, inf: Infinity, na
 // mathCall が確定計算するのは sqrt／fabs／floor／ceil（log 系は定義域
 // エラーの判定のみ）で、それ以外は属性形と同じく未確定値になる。
 const MATH_FUNCS = 'acos acosh asin asinh atan atan2 atanh cbrt ceil comb copysign cos cosh degrees dist erf erfc exp exp2 expm1 fabs factorial floor fmod frexp fsum gamma gcd hypot isclose isfinite isinf isnan isqrt lcm ldexp lgamma log log10 log1p log2 modf nextafter perm pow prod radians remainder sin sinh sqrt sumprod tan tanh trunc ulp'.split(' ');
-// 例外クラスの親子関係（CPython の例外階層のうち、このアプリで名前が現れる範囲）。
-// isinstance の例外照合に使う（RA-16 の開示とは別に、照合自体は階層どおりに行う）。
-const EXC_PARENTS = { BaseException: null, Exception: 'BaseException', ArithmeticError: 'Exception', ZeroDivisionError: 'ArithmeticError', OverflowError: 'ArithmeticError', AssertionError: 'Exception', AttributeError: 'Exception', EOFError: 'Exception', ImportError: 'Exception', ModuleNotFoundError: 'ImportError', LookupError: 'Exception', IndexError: 'LookupError', KeyError: 'LookupError', NameError: 'Exception', UnboundLocalError: 'NameError', OSError: 'Exception', FileNotFoundError: 'OSError', RuntimeError: 'Exception', NotImplementedError: 'RuntimeError', RecursionError: 'RuntimeError', StopIteration: 'Exception', TypeError: 'Exception', ValueError: 'Exception', UnicodeError: 'ValueError', KeyboardInterrupt: 'BaseException', SystemExit: 'BaseException' };
+// 例外クラスの親子関係（R25-N1 で全名収載に是正）。
+// 一次情報：docs.python.org 3.12「Built-in Exceptions」の例外階層（Exception hierarchy）
+// の全名と、実 CPython 3.12.3 の各クラスの __mro__（全69名を機械照合済み）。
+// 階層図の67名に、OSError の別名（同一クラス）である IOError／EnvironmentError を
+// 加えた69名を収載する。ExceptionGroup だけは BaseExceptionGroup と Exception の
+// 両方を親に持つ（多重継承）ため、親を配列で表す。
+// isinstance の例外照合にも使う（RA-16 の開示とは別に、照合自体は階層どおりに行う）。
+const EXC_PARENTS = {
+  BaseException: null,
+  BaseExceptionGroup: 'BaseException',
+  GeneratorExit: 'BaseException',
+  KeyboardInterrupt: 'BaseException',
+  SystemExit: 'BaseException',
+  Exception: 'BaseException',
+  ArithmeticError: 'Exception',
+  FloatingPointError: 'ArithmeticError',
+  OverflowError: 'ArithmeticError',
+  ZeroDivisionError: 'ArithmeticError',
+  AssertionError: 'Exception',
+  AttributeError: 'Exception',
+  BufferError: 'Exception',
+  EOFError: 'Exception',
+  ExceptionGroup: ['BaseExceptionGroup', 'Exception'],
+  ImportError: 'Exception',
+  ModuleNotFoundError: 'ImportError',
+  LookupError: 'Exception',
+  IndexError: 'LookupError',
+  KeyError: 'LookupError',
+  MemoryError: 'Exception',
+  NameError: 'Exception',
+  UnboundLocalError: 'NameError',
+  OSError: 'Exception',
+  BlockingIOError: 'OSError',
+  ChildProcessError: 'OSError',
+  ConnectionError: 'OSError',
+  BrokenPipeError: 'ConnectionError',
+  ConnectionAbortedError: 'ConnectionError',
+  ConnectionRefusedError: 'ConnectionError',
+  ConnectionResetError: 'ConnectionError',
+  FileExistsError: 'OSError',
+  FileNotFoundError: 'OSError',
+  InterruptedError: 'OSError',
+  IsADirectoryError: 'OSError',
+  NotADirectoryError: 'OSError',
+  PermissionError: 'OSError',
+  ProcessLookupError: 'OSError',
+  TimeoutError: 'OSError',
+  ReferenceError: 'Exception',
+  RuntimeError: 'Exception',
+  NotImplementedError: 'RuntimeError',
+  RecursionError: 'RuntimeError',
+  StopAsyncIteration: 'Exception',
+  StopIteration: 'Exception',
+  SyntaxError: 'Exception',
+  IndentationError: 'SyntaxError',
+  TabError: 'IndentationError',
+  SystemError: 'Exception',
+  TypeError: 'Exception',
+  ValueError: 'Exception',
+  UnicodeError: 'ValueError',
+  UnicodeDecodeError: 'UnicodeError',
+  UnicodeEncodeError: 'UnicodeError',
+  UnicodeTranslateError: 'UnicodeError',
+  Warning: 'Exception',
+  BytesWarning: 'Warning',
+  DeprecationWarning: 'Warning',
+  EncodingWarning: 'Warning',
+  FutureWarning: 'Warning',
+  ImportWarning: 'Warning',
+  PendingDeprecationWarning: 'Warning',
+  ResourceWarning: 'Warning',
+  RuntimeWarning: 'Warning',
+  SyntaxWarning: 'Warning',
+  UnicodeWarning: 'Warning',
+  UserWarning: 'Warning',
+  IOError: 'OSError',
+  EnvironmentError: 'OSError',
+};
 const EXC_NAMES = new Set(Object.keys(EXC_PARENTS));
-// R24-N7：except の照合は例外階層どおりに行う。発生した例外 kind が、
+// IOError／EnvironmentError は OSError と同一クラス（別名）。照合では同一視する。
+const EXC_ALIAS = { IOError: 'OSError', EnvironmentError: 'OSError' };
+const excCanon = (name) => EXC_ALIAS[name] || name;
+// R24-N7／R25-N1：except の照合は例外階層どおりに行う。発生した例外 kind が、
 // ハンドラに書かれたクラス自身かその子孫（親を辿って一致）なら捕捉する。
-// BaseException 直下の KeyboardInterrupt／SystemExit は Exception の子孫では
-// ないため、except Exception では捕捉されない（docs.python.org の例外階層）。
+// BaseException 直下の KeyboardInterrupt／SystemExit／GeneratorExit は Exception の
+// 子孫ではないため、except Exception では捕捉されない（docs.python.org の例外階層）。
+// ExceptionGroup の多重継承と別名の同一視にも対応するため、親はグラフとして辿る。
 function excMatches(kind, handlerType) {
-  let k = kind;
-  while (k) { if (k === handlerType) return true; k = EXC_PARENTS[k]; }
+  const target = excCanon(handlerType);
+  const seen = new Set();
+  const stack = [kind];
+  while (stack.length) {
+    const k = stack.pop();
+    if (!k || seen.has(k)) continue;
+    seen.add(k);
+    if (excCanon(k) === target) return true;
+    const p = EXC_PARENTS[k];
+    if (Array.isArray(p)) stack.push(...p);
+    else if (p) stack.push(p);
+  }
   return false;
 }
 // 型そのものを表す値か（int | str のような合併型や isinstance の第2引数の判定に使う）
@@ -853,25 +942,31 @@ function parseTry(lines, i, indent, tc) {
     const tcx = new TC(lexText(lines[cur].text, lines[cur].line));
     if (tcx.isName('except')) {
       tcx.next();
-      let types = null, asName = null;
+      let types = null, asName = null, expr = null;
       if (!tcx.isOp(':')) {
-        const names = [];
-        let depth = 0;
-        while (!tcx.atEnd()) {
-          const tk = tcx.peek();
-          if (tk.t === 'OP' && tk.v === ':' && depth === 0) break;
-          if (tk.t === 'NAME' && tk.v === 'as' && depth === 0) break;
-          if (tk.t === 'OP' && (tk.v === '(' || tk.v === '[')) depth++;
-          if (tk.t === 'OP' && (tk.v === ')' || tk.v === ']')) depth--;
-          if (tk.t === 'NAME' && !KEYWORDS.includes(tk.v)) names.push(tk.v);
-          tcx.next();
+        // バッチ4 Python追随：ハンドラ名の検証（未定義名→NameError／非例外→TypeError）と
+        // 変数経由ハンドラの解決のため、ハンドラ式を式 AST として保持する。
+        // except* は従来どおり except と同じ照合で扱う（グループの分割捕捉は未対応）。
+        if (tcx.isOp('*')) tcx.next();
+        expr = parseExpr(tcx, lines[cur].line);
+        if (tcx.isOp(',')) { // カッコなしタプル形 except A, B:
+          const items = [{ e: expr }];
+          while (tcx.eatOp(',')) {
+            if (tcx.isOp(':') || tcx.isName('as')) break;
+            items.push({ e: parseExpr(tcx, lines[cur].line) });
+          }
+          if (items.length > 1) expr = { k: 'tuple', items, line: lines[cur].line };
         }
-        types = names;
+        // types は名前だけの形のとき従来どおり名前一覧、それ以外は空（照合は expr で行う）
+        const flat = [];
+        const collect = (n) => { if (n.k === 'name') flat.push(n.name); else if (n.k === 'tuple') { for (const it of n.items) collect(it.e); } else flat.push(null); };
+        collect(expr);
+        types = flat.every(x => x !== null) ? flat : [];
         if (tcx.isName('as')) { tcx.next(); const an = tcx.next(); if (an.t === 'NAME') asName = an.v; }
       }
       tcx.expectOp(':', lines[cur].line);
       const sh = parseSuite(lines, cur, indent, tcx, lines[cur].line);
-      handlers.push({ types, asName, body: sh.body, line: lines[cur].line });
+      handlers.push({ types, asName, expr, body: sh.body, line: lines[cur].line });
       cur = sh.next; continue;
     }
     if (tcx.isName('else')) { tcx.next(); tcx.expectOp(':', lines[cur].line); const sh = parseSuite(lines, cur, indent, tcx, lines[cur].line); elseBody = sh.body; cur = sh.next; continue; }
@@ -1378,8 +1473,12 @@ class Env {
 }
 class Flow extends Error { constructor(kind, value) { super(kind); this.kind = kind; this.value = value; } }
 // try の except で捕まえられる診断か（エンジン内部の都合で出す診断と、文法エラーは捕まえられない）
+// R25-N1：ただし raise 文で明示的に発生させた例外（raised フラグ付き）は、
+// SyntaxError／IndentationError であっても実 CPython どおり except で捕捉できる。
+// 解析時に発生する構文・インデントの診断は従来どおり捕捉対象外（実 CPython でも
+// 構文エラーはコンパイル時に発生し、try では捕捉できない）。
 const NONCATCH_KINDS = new Set(['対応外', '説明の上限', '無限ループの疑い', 'SyntaxError', 'IndentationError']);
-function isCatchableDiag(e) { return e instanceof SimDiag && !NONCATCH_KINDS.has(e.kind); }
+function isCatchableDiag(e) { return e instanceof SimDiag && (e.raised === true || !NONCATCH_KINDS.has(e.kind)); }
 
 function exprSrc(n) {
   if (!n) return '';
@@ -1618,8 +1717,20 @@ class Interp {
         try { this.execBlock(s.body, env, ctx); }
         catch (e) { if (isCatchableDiag(e)) simErr = e; else pending = e; }
         if (simErr) {
-          const h = s.handlers.find(hh => hh.types === null || hh.types.some(t => excMatches(simErr.kind, t)));
-          if (!h) pending = simErr;
+          // バッチ4 Python追随：ハンドラは書かれた順に1つずつ評価・検証・照合する。
+          // 先行ハンドラが一致すれば後続は評価されない（実 CPython の評価タイミング）。
+          // ハンドラ式自体の誤り（未定義名→NameError／非例外→TypeError）は、元の例外に
+          // 代わって伝播する（finally は従来どおり実行され、外側の try で捕捉できる）。
+          let h = null, handlerErr = null;
+          for (const hh of s.handlers) {
+            if (hh.types === null && !hh.expr) { h = hh; break; } // 裸 except は常に一致する
+            if (!hh.expr) { if ((hh.types || []).some(t => excMatches(simErr.kind, t))) { h = hh; break; } continue; }
+            const res = this.resolveExceptHandler(hh, env, simErr.kind);
+            if (res.err) { handlerErr = res.err; break; }
+            if (res.match) { h = hh; break; }
+          }
+          if (handlerErr) pending = handlerErr;
+          else if (!h) pending = simErr;
           else {
             this.step(s.line, 'エラー（' + simErr.kind + '）が起きたので、except の中身を実行します');
             if (h.asName) env.set(h.asName, simErr.excStr != null ? EXC(simErr.kind, simErr.excStr, simErr.excRepr) : UNK('発生したエラー（' + simErr.kind + '）'));
@@ -1707,41 +1818,100 @@ class Interp {
       }
       case 'raise': {
         if (!s.e) { this.diag(s.line, 'note', '対応外', '引数のない raise はこの説明では解釈できません', ''); return; }
-        let kind = null, msg = '', excStr, excRepr;
-        if (s.e.k === 'call' && s.e.fn.k === 'name') {
-          kind = s.e.fn.name;
+        // R25-N1：raise する名前・値を検証する（docs.python.org「Built-in Exceptions」／
+        // 実 CPython 3.12 の規則）。実在の組み込み例外だけを受理し、未定義名は NameError、
+        // 例外クラスを継承しないクラス・値は TypeError で名指し停止する。
+        // ユーザー定義クラスは継承（class X(Exception): の形）がこのエンジンでは未対応
+        // （parseClass が「継承・メタクラスは未対応」で停止する）のため、例外を継承した
+        // ユーザー定義例外は作れず、通常クラスの raise は TypeError が実 CPython と一致する。
+        const throwExc = (kind, msg, excStr, excRepr) => {
+          const d = new SimDiag(s.line, kind, msg, '');
+          if (excStr !== undefined) { d.excStr = excStr; d.excRepr = excRepr || ''; }
+          d.raised = true; // raise 文で明示的に発生させた例外は SyntaxError 等でも except で捕捉できる
+          throw d;
+        };
+        const notException = (what) => this.err(s.line, 'TypeError', 'raise できるのは例外クラス（BaseException を継承したクラス）かそのインスタンスだけです（' + what + 'は例外ではありません）', 'raise には例外クラスの名前か、そのインスタンスを使ってください');
+        let headName = null, isCall = false;
+        if (s.e.k === 'call' && s.e.fn.k === 'name') { headName = s.e.fn.name; isCall = true; }
+        else if (s.e.k === 'name') headName = s.e.name;
+        if (headName === null) {
+          // リテラル等の確定値は例外ではない（実 CPython では TypeError）
+          if (['num', 'str', 'bool', 'none', 'ellipsis', 'list', 'tuple', 'dict', 'set'].includes(s.e.k)) notException('値 ' + exprSrc(s.e));
+          this.diag(s.line, 'note', '対応外', 'この形の raise はこの説明では解釈できません', ''); return;
+        }
+        const bound = env.get(headName);
+        if (bound === UNBOUND) this.err(s.line, 'UnboundLocalError', '関数の中で代入している変数「' + headName + '」を、代入する前に使っています（関数の中で代入した名前は、その関数のローカル変数になります）', '外側の変数を使いたいなら global ' + headName + ' と宣言するか、引数として渡してください');
+        if (bound && bound.__class) notException('クラス「' + headName + '」');
+        if (!isCall && bound && bound.__exc) throwExc(bound.kind, bound.text || bound.kind + ' を発生させました', bound.text, bound.argRepr || '');
+        let effName = headName;
+        if (bound && bound.__builtin) {
+          if (EXC_NAMES.has(bound.__builtin)) effName = bound.__builtin; // x = ValueError のような別名経由
+          else notException('「' + headName + '」');
+        } else if (bound !== undefined) {
+          // 変数に束縛された確定値・関数の raise。値が未確定なら断定できないため従来どおり対応外に倒す
+          if (isUnk(bound)) { this.diag(s.line, 'note', '対応外', 'この形の raise はこの説明では解釈できません', ''); return; }
+          if (!isCall) notException('「' + headName + '」の値（' + typeName(bound) + '）');
+          const v = this.eval(s.e, env); // 呼び出し不可なら TypeError で停止する
+          if (v && v.__exc) throwExc(v.kind, v.text || v.kind + ' を発生させました', v.text, v.argRepr || '');
+          if (isUnk(v)) { this.diag(s.line, 'note', '対応外', 'この形の raise はこの説明では解釈できません', ''); return; }
+          notException('「' + headName + '」の戻り値（' + typeName(v) + '）');
+        }
+        if (!EXC_NAMES.has(effName)) {
+          if (PY_BUILTINS.has(effName) || BUILTIN_NAMES.includes(effName)) notException('「' + effName + '」');
+          this.err(s.line, 'NameError', '変数「' + headName + '」はまだ作られていません（値が入っていません）', 'raise できるのは実在の例外クラスだけです。名前の綴り（大文字・小文字）が合っているか確認してください');
+        }
+        const kind = effName;
+        let msg = '', excStr, excRepr;
+        if (isCall) {
           const vals = s.e.args.map(a => this.eval(a.e, env));
           if (vals.length === 1 && !isUnk(vals[0])) { msg = strVal(vals[0]); excStr = msg; excRepr = reprVal(vals[0]); } // str(例外) は引数の文字列化と一致する
           else if (vals.length === 0) { excStr = ''; excRepr = ''; }
           else if (vals.length > 1 && vals.every(v => !isUnk(v))) { excStr = reprVal(TUPLE(vals)); excRepr = vals.map(v => reprVal(v)).join(', '); } // str はタプル表記、repr は引数を並べた形
           else if (vals.length) msg = '（実行時に決まる値）';
-        }
-        else if (s.e.k === 'name') { kind = s.e.name; excStr = ''; excRepr = ''; }
-        if (!kind) { this.diag(s.line, 'note', '対応外', 'この形の raise はこの説明では解釈できません', ''); return; }
-        this.err(s.line, kind, msg || kind + ' を発生させました', '', excStr, excRepr);
+        } else { excStr = ''; excRepr = ''; }
+        throwExc(kind, msg || kind + ' を発生させました', excStr, excRepr);
       }
       case 'import': {
-        if (!/^(?:import\s+math(?:\s+as\s+\w+)?|from\s+math\s+import\s+.+)$/.test((s.text || '').trim()))
+        const t = (s.text || '').trim();
+        const plainM = /^import\s+math(?:\s+as\s+(\w+))?\s*$/.exec(t);
+        const fromM = /^from\s+math\s+import\s+\(?(.+?)\)?\s*$/.exec(t);
+        if (!plainM && !fromM)
           this.err(s.line, '未対応', 'このモジュールの読み込みは未対応です。後続の結果は生成しません', '');
-        this.diag(s.line, 'note', 'import', 'import はこの説明では中身を読み込みません。import した名前は「実行時に決まる値」として扱います', '');
-        for (const nm of importNames(s.text || '')) env.set(nm, UNK('モジュール「' + nm + '」の内容'));
-        { const t = (s.text || '').trim(); let m;
-          if ((m = /^import\s+math(?:\s+as\s+(\w+))?\s*$/.exec(t))) { const u = UNK('モジュール「math」の内容'); u.mod = 'math'; env.set(m[1] || 'math', u); }
-          else if ((m = /^from\s+math\s+import\s+\(?(.+?)\)?\s*$/.exec(t))) {
-            // R24-N23：from-import でも属性形と同じ確定計算が効くよう、
-            // 定数は実値、関数は math モジュールへの束縛メソッド参照として
-            // 取り込む（従来は定数以外が汎用の未確定値になり、呼び出しても
-            // 確定計算されなかった）。import * は黙って何もしないのではなく、
-            // モジュールの公開名（定数と関数）を全て取り込む。
-            const mathMod = UNK('モジュール「math」の内容'); mathMod.mod = 'math';
-            const bindMath = (orig, alias) => { if (orig in MATH_CONST) env.set(alias, NUM(MATH_CONST[orig], true)); else env.set(alias, METHODREF(mathMod, orig)); };
-            for (const part of m[1].split(',')) {
-              const p = part.trim().split(/\s+as\s+/); const orig = p[0].trim();
-              if (orig === '*') { for (const c of Object.keys(MATH_CONST)) env.set(c, NUM(MATH_CONST[c], true)); for (const f of MATH_FUNCS) env.set(f, METHODREF(mathMod, f)); continue; }
-              if (!orig) continue;
-              bindMath(orig, (p[1] || p[0]).trim());
-            }
-          } }
+        // R25-N13：説明文面は実際の束縛挙動に合わせる。math の定数・関数は
+        // 「実行時に決まる値」ではなく、属性形と同じ決定的な扱いを受ける
+        // （確定計算できるのは sqrt／fabs／floor／ceil と定数で、それ以外は
+        // 属性形と同じく未確定値になる。mathCall／リファレンスの math 項目と一致）。
+        if (plainM) {
+          const alias = plainM[1] || 'math';
+          this.diag(s.line, 'note', 'import', 'math モジュールを読み込み、名前「' + alias + '」で使えるようにします。' + alias + '.sqrt のようにモジュールの定数・関数を使うと、決定的に計算できるもの（sqrt／fabs／floor／ceil と定数 pi／e／tau／inf／nan）はその値で計算し、それ以外は未確定値として扱います', '');
+          const u = UNK('モジュール「math」の内容'); u.mod = 'math'; env.set(alias, u);
+          return;
+        }
+        // R24-N23：from-import でも属性形と同じ確定計算が効くよう、
+        // 定数は実値、関数は math モジュールへの束縛メソッド参照として
+        // 取り込む。import * は黙って何もしないのではなく、
+        // モジュールの公開名（定数と関数）を全て取り込む。
+        // R25-N23：取り込む名前の実在を検証する。math に無い名前は
+        // 実 CPython と同じく ImportError で名指し停止する（従来は検証がなく、
+        // 実在しない名前まで束縛メソッド参照として捏造していた）。
+        const mathMod = UNK('モジュール「math」の内容'); mathMod.mod = 'math';
+        const parts = fromM[1].split(',').map(x => x.trim()).filter(x => x);
+        const isStar = parts.some(p => p.split(/\s+as\s+/)[0].trim() === '*');
+        if (isStar) {
+          this.diag(s.line, 'note', 'import', 'math モジュールの公開名（定数と関数）を全て取り込み、それぞれの名前で使えるようにします。定数は実値になり、関数は math の属性形と同じく、決定的に計算できるものはその値で計算します', '');
+        } else {
+          const desc = parts.map(p => { const q = p.split(/\s+as\s+/).map(x => x.trim()); return q.length > 1 ? q[0] + '（名前「' + q[1] + '」として）' : q[0]; }).join('、');
+          this.diag(s.line, 'note', 'import', 'math モジュールから ' + desc + 'を取り込み、束縛します。定数は実値になり、関数は math の属性形と同じく、決定的に計算できるものはその値で計算します', '');
+        }
+        for (const part of parts) {
+          const p = part.split(/\s+as\s+/); const orig = p[0].trim();
+          if (orig === '*') { for (const c of Object.keys(MATH_CONST)) env.set(c, NUM(MATH_CONST[c], true)); for (const f of MATH_FUNCS) env.set(f, METHODREF(mathMod, f)); continue; }
+          if (!orig) continue;
+          if (!(orig in MATH_CONST) && !MATH_FUNCS.includes(orig))
+            this.err(s.line, 'ImportError', 'math モジュールから「' + orig + '」は import できません（math にその名前はありません）', 'import する名前の綴りを確認してください（実在する名前だけが取り込めます）');
+          if (orig in MATH_CONST) env.set((p[1] || p[0]).trim(), NUM(MATH_CONST[orig], true));
+          else env.set((p[1] || p[0]).trim(), METHODREF(mathMod, orig));
+        }
         return;
       }
       case 'expr': {
@@ -2095,10 +2265,53 @@ function targetName(t) {
 }
 
 /* ============ 式の評価 ============ */
-const PY_BUILTINS = new Set('abs all any ascii bin bool breakpoint bytearray bytes callable chr classmethod compile complex delattr dict dir divmod enumerate eval exec filter float format frozenset getattr globals hasattr hash help hex id input int isinstance issubclass iter len list locals map max memoryview min next object oct open ord pow print property range repr reversed round set setattr slice sorted staticmethod str sum super tuple type vars zip Exception BaseException ValueError TypeError KeyError IndexError ZeroDivisionError NameError AttributeError RuntimeError StopIteration AssertionError ImportError ModuleNotFoundError OSError FileNotFoundError NotImplementedError ArithmeticError LookupError OverflowError RecursionError UnicodeError EOFError KeyboardInterrupt SystemExit'.split(' '));
+const PY_BUILTINS = new Set('abs all any ascii bin bool breakpoint bytearray bytes callable chr classmethod compile complex delattr dict dir divmod enumerate eval exec filter float format frozenset getattr globals hasattr hash help hex id input int isinstance issubclass iter len list locals map max memoryview min next object oct open ord pow print property range repr reversed round set setattr slice sorted staticmethod str sum super tuple type vars zip Exception BaseException ValueError TypeError KeyError IndexError ZeroDivisionError NameError AttributeError RuntimeError StopIteration AssertionError ImportError ModuleNotFoundError OSError FileNotFoundError NotImplementedError ArithmeticError LookupError OverflowError RecursionError UnicodeError EOFError KeyboardInterrupt SystemExit BaseExceptionGroup ExceptionGroup BlockingIOError BrokenPipeError BufferError BytesWarning ChildProcessError ConnectionAbortedError ConnectionError ConnectionRefusedError ConnectionResetError DeprecationWarning EncodingWarning EnvironmentError FileExistsError FloatingPointError FutureWarning GeneratorExit IOError ImportWarning IndentationError InterruptedError IsADirectoryError MemoryError NotADirectoryError PendingDeprecationWarning PermissionError ProcessLookupError ReferenceError ResourceWarning RuntimeWarning StopAsyncIteration SyntaxError SyntaxWarning SystemError TabError TimeoutError UnboundLocalError UnicodeDecodeError UnicodeEncodeError UnicodeTranslateError UnicodeWarning UserWarning Warning'.split(' '));
 const BUILTIN_NAMES = ['print', 'len', 'range', 'str', 'int', 'float', 'bool', 'list', 'tuple', 'dict', 'set', 'sum', 'min', 'max', 'abs', 'round', 'sorted', 'reversed', 'enumerate', 'zip', 'type', 'input', 'isinstance', 'ord', 'chr', 'divmod', 'pow', 'any', 'all', 'open'];
 BUILTIN_NAMES.push('repr', 'map', 'filter', 'hex', 'bin', 'oct', 'format', 'next', 'iter');
 const ARITY = { repr: [1, 1], map: [2, 99], filter: [2, 2], hex: [1, 1], bin: [1, 1], oct: [1, 1], format: [1, 2], print: [0, 99], len: [1, 1], range: [1, 3], str: [0, 1], int: [0, 2], float: [0, 1], bool: [0, 1], next: [1, 2], iter: [1, 1], list: [0, 1], tuple: [0, 1], set: [0, 1], dict: [0, 1], sum: [1, 2], min: [0, 99], max: [0, 99], abs: [1, 1], round: [1, 2], sorted: [1, 1], reversed: [1, 1], enumerate: [1, 2], zip: [0, 99], type: [1, 1], input: [0, 1], isinstance: [2, 2], ord: [1, 1], chr: [1, 1], divmod: [2, 2], pow: [2, 3], any: [1, 1], all: [1, 1], open: [1, 3] };
+
+// バッチ4 Python追随：except ハンドラ式の評価・検証（実 CPython 3.12.3 の規則を実走で確認）。
+// ハンドラ式は、例外が伝播してきたときに限り、書かれた順に評価される（try 本体で
+// 例外が起きなければ評価されない）。評価は「式全体の評価 → 各要素が例外クラスかの
+// 検証 → 発生した例外との階層照合」の順で、タプル形では全要素を評価・検証してから
+// 照合する（先頭要素が一致しても、後ろに未定義名があれば NameError、非例外があれば
+// TypeError になる）。未定義名は NameError、関数内の代入前参照は UnboundLocalError、
+// 例外クラスでない確定値は TypeError。値が実行時に決まる要素は判定できないため
+// 一致しないものとして扱い、断定できる誤りだけを名指しする。
+// 戻り値：{ match: boolean } | { err: SimDiag }
+Interp.prototype.resolveExceptHandler = function (hh, env, kind) {
+  const line = hh.line;
+  const elems = [];
+  const flatten = (n) => { if (n.k === 'tuple') { for (const it of n.items) flatten(it.e); } else elems.push(n); };
+  flatten(hh.expr);
+  const typeErr = (what) => new SimDiag(line, 'TypeError', 'except で捕捉できるのは例外クラス（BaseException を継承したクラス）かそのタプルだけです（' + what + 'は例外クラスではありません）', 'except には例外クラスの名前か、例外クラスを要素とするタプルを書いてください');
+  let firstEvalErr = null, firstTypeErr = null, matched = false;
+  for (const el of elems) {
+    if (el.k === 'call') {
+      // 呼び出し形はクラスのインスタンスを作るため、例外には使えない（実 CPython は TypeError）
+      let fv;
+      try { fv = this.eval(el.fn, env); }
+      catch (e) { if (!firstEvalErr && e instanceof SimDiag && isCatchableDiag(e)) firstEvalErr = e; continue; }
+      if (isUnk(fv) || isFunc(fv)) continue; // 呼び出し先・戻り値が判定できない形は断定しない
+      if (!firstTypeErr) firstTypeErr = typeErr('「' + exprSrc(el) + '」の値（クラスのインスタンス）');
+      continue;
+    }
+    let v;
+    try { v = this.eval(el, env); }
+    catch (e) { if (!firstEvalErr && e instanceof SimDiag && isCatchableDiag(e)) firstEvalErr = e; continue; }
+    if (isUnk(v)) { if (v.mod && !firstTypeErr) firstTypeErr = typeErr('モジュール「' + v.mod + '」'); continue; } // モジュールは確定して例外クラスではない。それ以外の未確定値は判定できない
+    if (v && v.__builtin) {
+      if (EXC_NAMES.has(v.__builtin)) { if (excMatches(kind, v.__builtin)) matched = true; }
+      else if (!firstTypeErr) firstTypeErr = typeErr('「' + v.__builtin + '」');
+      continue;
+    }
+    // 例外クラスそのものではない確定値（通常クラス・type() の結果・例外のインスタンス・数値・関数など）
+    if (!firstTypeErr) firstTypeErr = typeErr(el.k === 'name' ? '「' + el.name + '」の値（' + typeName(v) + '）' : '「' + exprSrc(el) + '」の値（' + typeName(v) + '）');
+  }
+  if (firstEvalErr) return { err: firstEvalErr };
+  if (firstTypeErr) return { err: firstTypeErr };
+  return { match: matched };
+};
 
 Interp.prototype.eval = function (n, env) {
   if (!n) return UNK();
@@ -2631,9 +2844,8 @@ Interp.prototype.isinstanceCheck = function (obj, ci, line) {
     if (EXC_NAMES.has(name)) {
       if (isUnk(obj)) return null;
       if (!(obj && obj.__exc)) return false;
-      let k = obj.kind;
-      while (k) { if (k === name) return true; k = EXC_PARENTS[k]; }
-      return false;
+      // R25-N1：except 照合と同じ完成した階層（excMatches）を使う
+      return excMatches(obj.kind, name);
     }
     if (TYPE_BUILTINS.includes(name) || name === 'NoneType' || name === 'enumerate' || name === 'zip' || name === 'map' || name === 'filter' || name === 'reversed' || name === 'slice' || name === 'bytearray' || name === 'memoryview') {
       if (isUnk(obj)) return null;

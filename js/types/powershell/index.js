@@ -301,7 +301,7 @@ const constructs = [
   [
     "比較演算子",
     "-eq -ne -gt -ge -lt -le -like -notlike -match -notmatch -ceq -cne -cgt -cge -clt -cle -clike -cnotlike -cmatch -cnotmatch -ieq -ine -igt -ige -ilt -ile -ilike -inotlike -imatch -inotmatch",
-    "左辺の型に応じて比較します。文字列比較の既定は大文字小文字を区別しません。否定形の-notlike・-notmatchもあります。全ての比較演算子には、大文字小文字を区別する-c接頭辞の形（-ceq・-cne・-cgt・-cge・-clt・-cle・-clike・-cnotlike・-cmatch・-cnotmatch）と、区別しないことを明示する-i接頭辞の形（-ieq・-ine・-igt・-ige・-ilt・-ile・-ilike・-inotlike・-imatch・-inotmatch）があり、接頭辞なしの形は-i形と同じく区別しません。",
+    "左辺の型に応じて比較します。基本形は-eq・-ne・-gt・-ge・-lt・-le・-like・-matchの8つで、否定形の-notlike・-notmatchもあります。文字列比較の既定は大文字小文字を区別しません。全ての比較演算子には、大文字小文字を区別する-c接頭辞の形（-ceq・-cne・-cgt・-cge・-clt・-cle・-clike・-cnotlike・-cmatch・-cnotmatch）と、区別しないことを明示する-i接頭辞の形（-ieq・-ine・-igt・-ige・-ilt・-ile・-ilike・-inotlike・-imatch・-inotmatch）があり、接頭辞なしの形は-i形と同じく区別しません。",
     '"Hello" -eq "hello"\n"abc.txt" -like "*.txt"\n"abc123" -match "[0-9]+"\n"a" -cgt "B"\n"ABC" -clike "a*"',
     "about_comparison_operators",
   ],

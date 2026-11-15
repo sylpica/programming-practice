@@ -1,7 +1,7 @@
 import { additionalTemplates } from "./additional-templates.js";
 import { load, JSON_SCHEMA } from "../../vendor/yaml.js";
 import { parseJsonLocated, sourceFailure, rows } from "../../core/data.js";
-import { PracticeError, charLabel } from "../../core/script.js";
+import { PracticeError, charLabel, toLearnerError } from "../../core/script.js";
 import { LIMITS, unknown, formatValue } from "../../core/contract.js";
 import { normalize, definition as pythonDefinition } from "../python/index.js";
 const identity = `def handler(event, context):
@@ -143,6 +143,67 @@ function firstCodeLine(code) {
     return line;
   }
   return "";
+}
+// R25-N4: 外側 catch のガード。バッチ3統合時裁定（台帳 RG-173 節）は、
+// 到達するエラーがすべて著作者エラーである前提で現行維持としたが、
+// 再帰 YAML エイリアス・モデル null・型違いマクロ等でホスト例外が
+// 実測で到達したため、著作者エラーだけを素通ししホスト例外だけを
+// 学習者向け文言へ変換する。
+// 著作者エラーの識別（実コードの全 throw 経路の確認に基づく）:
+//   (1) PracticeError（YAML／JSON／先頭文字等の検証が生成）
+//   (2) category を持つもの（組込み Transform の「未対応」等）
+//   (3) line を持つもの（未確認マクロ、Fn::Transform 指定不正、
+//       ハンドラのレスポンス検証エラーの再送出はいずれも
+//       Object.assign(Error, {line}) または {line, category} で作られる）
+//   (4) line／category を持たない残り3経路（テンプレート非オブジェクト、
+//       Transform 指定不正、変換の探索上限）は、いずれも plain Error
+//       （name === "Error"）に日本語の名前入り文面で作られる。
+// ホスト例外は RangeError／TypeError 等のサブクラスで文面は英語の
+// 生文言であり、(1)〜(4) のいずれにも一致しないため判別できる。
+// ゲッターが投げる任意エラー等も (1)〜(4) に一致しなければ変換される。
+function isAuthorError(e) {
+  if (e instanceof PracticeError) return true;
+  if (e?.category != null) return true;
+  if (typeof e?.line === "number") return true;
+  if (
+    e instanceof Error &&
+    e.name === "Error" &&
+    /[぀-ヿ一-鿿]/.test(e.message || "")
+  )
+    return true;
+  return false;
+}
+const CIRCULAR_TEMPLATE_MESSAGE =
+  "テンプレートに循環参照があります（YAMLエイリアスなどが自分自身を参照しています）。循環しない形に書き直してください";
+// R25-N4: js-yaml が作る循環オブジェクトグラフは、stripTransformKeys と
+// nested() の両方が循環検出なしに再帰しスタックを尽くすため、走査に
+// 入る前に反復走査（明示スタック）で循環だけを検出して原因を名指す。
+// 祖先集合は現在の経路分だけを保持するので、循環でない共有エイリアス
+// （同じアンカーを兄弟から参照する形）は誤検出しない。深さの上限は
+// 設けない（有限の深い入れ子は従来どおり処理し、万一スタックが
+// 尽きる場合は外側ガードが RangeError を日本語化する）。
+function assertNoCircularTemplate(root) {
+  if (!root || typeof root !== "object") return;
+  const ancestors = new Set();
+  const stack = [{ obj: root, values: null, index: 0, entered: false }];
+  while (stack.length) {
+    const frame = stack[stack.length - 1];
+    if (!frame.entered) {
+      frame.entered = true;
+      if (ancestors.has(frame.obj))
+        throw new PracticeError(CIRCULAR_TEMPLATE_MESSAGE, 1);
+      ancestors.add(frame.obj);
+      frame.values = Object.values(frame.obj);
+    }
+    if (frame.index >= frame.values.length) {
+      ancestors.delete(frame.obj);
+      stack.pop();
+      continue;
+    }
+    const child = frame.values[frame.index++];
+    if (child && typeof child === "object")
+      stack.push({ obj: child, values: null, index: 0, entered: false });
+  }
 }
 export const definition = {
   id: "cloudformation",
@@ -413,6 +474,9 @@ export const definition = {
       }
       if (!doc || typeof doc !== "object" || Array.isArray(doc))
         throw Error("テンプレートはオブジェクトで指定してください");
+      // R25-N4: 循環参照は後段の再帰走査（stripTransformKeys／nested）に
+      // 入る前にここで名指して止める。
+      assertNoCircularTemplate(doc);
       let states = [
           {
             fragment: structuredClone(doc),
@@ -472,15 +536,21 @@ export const definition = {
           fragment: p.response?.fragment,
         }));
       }
-      async function nested(value, path = "") {
+      async function nested(value, path = "", ancestors = new Set()) {
         if (++ops > 10000 || performance.now() - start > 1200)
           throw Error("変換の探索上限で停止しました");
         if (!value || typeof value !== "object")
           return [{ fragment: value, trace: [], outputs: [] }];
+        // R25-N4: 走査側の循環検出（事前検査の二重化）。祖先集合は
+        // 経路ごとに複製して渡すため、兄弟からの共有参照は誤検出しない。
+        if (ancestors.has(value))
+          throw new PracticeError(CIRCULAR_TEMPLATE_MESSAGE, 1);
+        const childAncestors = new Set(ancestors);
+        childAncestors.add(value);
         if (Array.isArray(value)) {
           let states = [{ fragment: [], trace: [], outputs: [] }];
           for (let [i, v] of value.entries()) {
-            let rs = await nested(v, path + "/" + i);
+            let rs = await nested(v, path + "/" + i, childAncestors);
             states = combine(states, rs, (s, r) => ({
                   fragment: [...s.fragment, r.fragment],
                   trace: [...s.trace, ...r.trace],
@@ -494,7 +564,7 @@ export const definition = {
         delete base["Fn::Transform"];
         let states = [{ fragment: base, trace: [], outputs: [] }];
         for (let [key, v] of Object.entries(base)) {
-          let rs = await nested(v, path + "/" + key);
+          let rs = await nested(v, path + "/" + key, childAncestors);
           states = combine(states, rs, (s, r) => ({
                 ...s,
                 fragment: { ...s.fragment, [key]: r.fragment },
@@ -566,15 +636,21 @@ export const definition = {
       // NX-N26: groups の「入力」はテンプレート全体ではなく、マクロへ
       // 実際に渡された断片（Transform／Fn::Transform キー除去後）を示す。
       // エンジン側のキー除去がマクロの仕事のように混ざらないようにする。
-      function stripTransformKeys(value, isRoot = false) {
-        if (Array.isArray(value))
-          return value.map((v) => stripTransformKeys(v));
+      function stripTransformKeys(value, isRoot = false, ancestors = new Set()) {
         if (!value || typeof value !== "object") return value;
+        // R25-N4: 事前検査（assertNoCircularTemplate）で循環は止まるが、
+        // この再帰自体にも祖先検出を持たせて二重に守る。
+        if (ancestors.has(value))
+          throw new PracticeError(CIRCULAR_TEMPLATE_MESSAGE, 1);
+        const childAncestors = new Set(ancestors);
+        childAncestors.add(value);
+        if (Array.isArray(value))
+          return value.map((v) => stripTransformKeys(v, false, childAncestors));
         let out = {};
         for (let [k, v] of Object.entries(value)) {
           if (k === "Fn::Transform") continue;
           if (isRoot && k === "Transform") continue;
-          out[k] = stripTransformKeys(v);
+          out[k] = stripTransformKeys(v, false, childAncestors);
         }
         return out;
       }
@@ -647,7 +723,11 @@ export const definition = {
         reasons: truncated ? ["変換経路の上限"] : [],
       };
     } catch (e) {
-      return sourceFailure(e);
+      // R25-N4: 著作者エラーは従来どおりバイト単位で素通しし、
+      // ホスト例外（RangeError／TypeError 等の生文言）だけを
+      // 学習者向け日本語文言へ変換する（isAuthorError の識別根拠は
+      // 同関数の定義箇所のコメント参照）。
+      return sourceFailure(isAuthorError(e) ? e : toLearnerError(e));
     }
   },
 };

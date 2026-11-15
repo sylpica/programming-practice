@@ -7621,11 +7621,11 @@
   "fields": {
    "description": "文字列の指定位置（0始まり）にある文字の Unicode 値を返す。逆の変換は fromCharCode を使う。",
    "returns": "文字の Unicode 値（数値）",
-   "caution": "index は 0 から lengthOf(string) までの範囲で指定する。",
+   "caution": "index は 0 から lengthOf(string) - 1 までの範囲で指定する。",
    "example": "c = charCodeAt(\"A\", 0);",
    "source": "https://imagej.net/ij/developer/macro/functions2.html#charCodeAt"
   },
-  "sha256": "0c46040d6650bf4e1ce59ad3bdd9e9d6583598c595fb0dd0f0d65e2f8b7b8890"
+  "sha256": "2d3ec9ff06a7a1e2dc227a39ae34d043a68266b49cd24f286aaeda4adb7cc84a"
  },
  {
   "kind": "imagej",
@@ -9864,6 +9864,578 @@
   "sha256": "3f25164801422012b1cc097ef22ca2e3be8953fa27fa132c29fdb0934d3e47fd"
  },
  {
+  "kind": "python",
+  "name": "BaseExceptionGroup",
+  "supported": true,
+  "fields": {
+   "description": "複数の無関係な例外をまとめて保持する例外グループの基底クラス（BaseException のサブクラス）。",
+   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
+   "caution": "コンストラクタは (メッセージ, 例外の並び) の2引数が必須で、空の並びや例外でない要素を渡すと実際の Python ではエラーになる。本アプリの raise では引数の個数・中身は検証しない。except* によるグループの分割捕捉は本アプリでは未対応。",
+   "example": "try:\n    raise ValueError(\"x\")\nexcept ValueError as e:\n    try:\n        raise BaseExceptionGroup(\"g\", [e])\n    except BaseExceptionGroup:\n        print(\"BaseExceptionGroupを捕捉\")",
+   "source": "https://docs.python.org/ja/3.12/library/exceptions.html#BaseExceptionGroup"
+  },
+  "sha256": "61bda88921f5ab108024c7fecb70b5aa646ffa1c81036bc6d72d92688686e0db"
+ },
+ {
+  "kind": "python",
+  "name": "ExceptionGroup",
+  "supported": true,
+  "fields": {
+   "description": "複数の無関係な例外をまとめる例外グループ（BaseExceptionGroup と Exception の両方のサブクラス）。包めるのは Exception のサブクラスだけ。",
+   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
+   "caution": "コンストラクタは (メッセージ, 例外の並び) の2引数が必須で、Exception のサブクラスでない例外を包むと実際の Python では TypeError になる。本アプリの raise では引数の個数・中身は検証しない。except* による分割捕捉は本アプリでは未対応で、通常の階層照合で捕捉する。",
+   "example": "try:\n    raise ValueError(\"x\")\nexcept ValueError as e:\n    try:\n        raise ExceptionGroup(\"g\", [e])\n    except ExceptionGroup:\n        print(\"ExceptionGroupを捕捉\")",
+   "source": "https://docs.python.org/ja/3.12/library/exceptions.html#ExceptionGroup"
+  },
+  "sha256": "4425843c2723f2f7a519aa7c10ec9099a72e7b30335e318ff7bab2c82d3889d5"
+ },
+ {
+  "kind": "python",
+  "name": "GeneratorExit",
+  "supported": true,
+  "fields": {
+   "description": "ジェネレータやコルーチンが閉じられるときに発生する例外（BaseException の一員）。generator.close() などで起きる。",
+   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
+   "caution": "エラーではないため Exception ではなく BaseException を直接継承し、except Exception では捕捉されない。ジェネレータがこの例外を無視して値を返そうとすると RuntimeError になる。",
+   "example": "try:\n    raise GeneratorExit(\"bad\")\nexcept GeneratorExit:\n    print(\"GeneratorExitを捕捉\")",
+   "source": "https://docs.python.org/ja/3.12/library/exceptions.html#GeneratorExit"
+  },
+  "sha256": "385adc420539af5f17bb40a75945f815f7198bfeb1ddfc0701f906ebd0bfdcff"
+ },
+ {
+  "kind": "python",
+  "name": "MemoryError",
+  "supported": true,
+  "fields": {
+   "description": "操作がメモリ不足で完了できないときに発生する例外（Exception のサブクラス）。オブジェクトを削除すれば回復できる場合がある。",
+   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
+   "caution": "メモリ管理の仕組み上、インタプリタが常に完全に回復できるとは限らない。大きなデータを一度に読み込む処理で起きやすい。",
+   "example": "try:\n    raise MemoryError(\"bad\")\nexcept MemoryError:\n    print(\"MemoryErrorを捕捉\")",
+   "source": "https://docs.python.org/ja/3.12/library/exceptions.html#MemoryError"
+  },
+  "sha256": "0f129ca6acc91f0e2f42c3a4d79e590a46870445ef473f31dfb9a25d691e4d9c"
+ },
+ {
+  "kind": "python",
+  "name": "BufferError",
+  "supported": true,
+  "fields": {
+   "description": "バッファ（buffer）関連の操作が実行できないときに発生する例外（Exception のサブクラス）。",
+   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
+   "caution": "バッファを公開しているオブジェクトがサイズ変更されるなど、バッファの前提が崩れた場合に起きる。通常のコードで直接扱うことは少ない。",
+   "example": "try:\n    raise BufferError(\"bad\")\nexcept BufferError:\n    print(\"BufferErrorを捕捉\")",
+   "source": "https://docs.python.org/ja/3.12/library/exceptions.html#BufferError"
+  },
+  "sha256": "5e9977a848385e5fc89666b7c01d78de06f32be39df4aad85631b054a1ff816c"
+ },
+ {
+  "kind": "python",
+  "name": "FloatingPointError",
+  "supported": true,
+  "fields": {
+   "description": "浮動小数点演算が失敗したときに発生する例外（ArithmeticError のサブクラス）。",
+   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
+   "caution": "現在の CPython では実際には使われていない（浮動小数点演算の失敗は通常チェックされない）。except ArithmeticError でも捕捉できる。",
+   "example": "try:\n    raise FloatingPointError(\"bad\")\nexcept FloatingPointError:\n    print(\"FloatingPointErrorを捕捉\")",
+   "source": "https://docs.python.org/ja/3.12/library/exceptions.html#FloatingPointError"
+  },
+  "sha256": "18380bb2ca7342e69248fb14464b79812c2980e8d44ee57b97cd1d422bbe0b99"
+ },
+ {
+  "kind": "python",
+  "name": "UnboundLocalError",
+  "supported": true,
+  "fields": {
+   "description": "関数の中で代入しているローカル変数を、代入前に参照したときに発生する例外（NameError のサブクラス）。",
+   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
+   "caution": "except NameError でも捕捉できる。本アプリでも、関数内で代入する名前を代入前に読むとこの例外になる。外側の変数を使いたい場合は global 宣言や引数で受け渡す。",
+   "example": "try:\n    raise UnboundLocalError(\"bad\")\nexcept UnboundLocalError:\n    print(\"UnboundLocalErrorを捕捉\")",
+   "source": "https://docs.python.org/ja/3.12/library/exceptions.html#UnboundLocalError"
+  },
+  "sha256": "883308a0c0c592590933cff02b924176a9ef7ddc0e29cfdc58875405213a6914"
+ },
+ {
+  "kind": "python",
+  "name": "ReferenceError",
+  "supported": true,
+  "fields": {
+   "description": "弱参照プロキシ（weakref.proxy() で作った参照）が、参照先がガベージコレクションで回収された後に使われたときに発生する例外（Exception のサブクラス）。",
+   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
+   "caution": "弱参照は参照先の生存を保証しないため、参照先が消えた後のアクセスで起きる。通常の強い参照では起きない。",
+   "example": "try:\n    raise ReferenceError(\"bad\")\nexcept ReferenceError:\n    print(\"ReferenceErrorを捕捉\")",
+   "source": "https://docs.python.org/ja/3.12/library/exceptions.html#ReferenceError"
+  },
+  "sha256": "b0fad496e871c34198da7d49f49eab2778f8e37284a21a18bf166310b0eb97ee"
+ },
+ {
+  "kind": "python",
+  "name": "SystemError",
+  "supported": true,
+  "fields": {
+   "description": "インタプリタが内部エラーを検出したときに発生する例外（Exception のサブクラス）。深刻ではない内部異常を示す。",
+   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
+   "caution": "自分のコードや利用中のパッケージに原因がないと考えられる場合は、使っている Python インタプリタの作者・保守者へ報告する対象になる。通常のコードで直接扱うことは少ない。",
+   "example": "try:\n    raise SystemError(\"bad\")\nexcept SystemError:\n    print(\"SystemErrorを捕捉\")",
+   "source": "https://docs.python.org/ja/3.12/library/exceptions.html#SystemError"
+  },
+  "sha256": "e6a0fd667d0825c959b9ee6c01a0ad9c1573284cf8755c78a009e9bf1ce590ce"
+ },
+ {
+  "kind": "python",
+  "name": "StopAsyncIteration",
+  "supported": true,
+  "fields": {
+   "description": "非同期イテレータの __anext__() が、要素が尽きたことを知らせるために発生させる例外（Exception のサブクラス）。",
+   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
+   "caution": "同期版の StopIteration に対応する非同期版。通常は async for が内部で処理するため、直接捕捉することは少ない。",
+   "example": "try:\n    raise StopAsyncIteration(\"bad\")\nexcept StopAsyncIteration:\n    print(\"StopAsyncIterationを捕捉\")",
+   "source": "https://docs.python.org/ja/3.12/library/exceptions.html#StopAsyncIteration"
+  },
+  "sha256": "5d142b1ab85321e8e7705c4ad9f165062ec7b3432b16eb241be2a349d420219a"
+ },
+ {
+  "kind": "python",
+  "name": "SyntaxError",
+  "supported": true,
+  "fields": {
+   "description": "構文（文法）の誤りをパーサが検出したときに発生する例外（Exception のサブクラス）。import 文や compile()／exec()／eval() の呼び出し、スクリプト読み込み時などに起きる。",
+   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
+   "caution": "実際の構文エラーは実行前の解析（コンパイル）時に発生するため、その場の try では捕捉できない。raise で明示的に発生させた SyntaxError は except で捕捉できる（本アプリでもこの区別どおり）。",
+   "example": "try:\n    raise SyntaxError(\"bad\")\nexcept SyntaxError:\n    print(\"SyntaxErrorを捕捉\")",
+   "source": "https://docs.python.org/ja/3.12/library/exceptions.html#SyntaxError"
+  },
+  "sha256": "b5ced501f42df1f0c62546be87eefaaf2137b9e8d6802ce412408b41b723601e"
+ },
+ {
+  "kind": "python",
+  "name": "IndentationError",
+  "supported": true,
+  "fields": {
+   "description": "インデントの誤りに関する構文エラーの基底クラス（SyntaxError のサブクラス）。",
+   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
+   "caution": "実際のインデントエラーは解析時に発生するため、その場の try では捕捉できない。raise で明示的に発生させた場合は except で捕捉できる。",
+   "example": "try:\n    raise IndentationError(\"bad\")\nexcept IndentationError:\n    print(\"IndentationErrorを捕捉\")",
+   "source": "https://docs.python.org/ja/3.12/library/exceptions.html#IndentationError"
+  },
+  "sha256": "df4a8afc39dba433b2cd7c5686464252b1b08db2096ce6e28cb96fb013221852"
+ },
+ {
+  "kind": "python",
+  "name": "TabError",
+  "supported": true,
+  "fields": {
+   "description": "インデントにタブとスペースが混在して一貫しないときに発生する例外（IndentationError のサブクラス）。",
+   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
+   "caution": "実際の TabError は解析時に発生するため、その場の try では捕捉できない。インデントはスペースに統一すると起きない。",
+   "example": "try:\n    raise TabError(\"bad\")\nexcept TabError:\n    print(\"TabErrorを捕捉\")",
+   "source": "https://docs.python.org/ja/3.12/library/exceptions.html#TabError"
+  },
+  "sha256": "0da77eb8432cb63cdc244356cd3d4f8d5c306920c91032fa10190e5731654513"
+ },
+ {
+  "kind": "python",
+  "name": "UnicodeDecodeError",
+  "supported": true,
+  "fields": {
+   "description": "Unicode の復号（デコード）中にエラーが起きたときに発生する例外（UnicodeError のサブクラス）。バイト列を指定した符号化方式で文字列に変換できない場合に起きる。",
+   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
+   "caution": "except UnicodeError や except ValueError でも捕捉できる。符号化方式の指定誤りや、想定と異なる符号化方式のデータが主な原因。",
+   "example": "try:\n    raise UnicodeDecodeError(\"utf-8\", b\"x\", 0, 1, \"bad\")\nexcept UnicodeDecodeError:\n    print(\"UnicodeDecodeErrorを捕捉\")",
+   "source": "https://docs.python.org/ja/3.12/library/exceptions.html#UnicodeDecodeError"
+  },
+  "sha256": "c490d29d4f7e4f90c3894a1a8e5717d6a3fb947dc2845b4a6b1054c7a86722ad"
+ },
+ {
+  "kind": "python",
+  "name": "UnicodeEncodeError",
+  "supported": true,
+  "fields": {
+   "description": "Unicode の符号化（エンコード）中にエラーが起きたときに発生する例外（UnicodeError のサブクラス）。文字列を指定した符号化方式で表せない文字が含まれる場合に起きる。",
+   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
+   "caution": "except UnicodeError や except ValueError でも捕捉できる。符号化方式で表せない文字（絵文字や特殊な記号など）が主な原因。",
+   "example": "try:\n    raise UnicodeEncodeError(\"ascii\", \"x\", 0, 1, \"bad\")\nexcept UnicodeEncodeError:\n    print(\"UnicodeEncodeErrorを捕捉\")",
+   "source": "https://docs.python.org/ja/3.12/library/exceptions.html#UnicodeEncodeError"
+  },
+  "sha256": "4f9600295cba1db8b5b268e14948dd9a46010197e54583a63673db7e24e530d7"
+ },
+ {
+  "kind": "python",
+  "name": "UnicodeTranslateError",
+  "supported": true,
+  "fields": {
+   "description": "Unicode の変換（str.translate() など）中にエラーが起きたときに発生する例外（UnicodeError のサブクラス）。",
+   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
+   "caution": "except UnicodeError や except ValueError でも捕捉できる。文字の対応付け（マッピング）の不備が主な原因。",
+   "example": "try:\n    raise UnicodeTranslateError(\"x\", 0, 1, \"bad\")\nexcept UnicodeTranslateError:\n    print(\"UnicodeTranslateErrorを捕捉\")",
+   "source": "https://docs.python.org/ja/3.12/library/exceptions.html#UnicodeTranslateError"
+  },
+  "sha256": "bb85d60e0ba3db87e7a7d1623cfdc1cb3626c629b257c656d67dcd1e1a127796"
+ },
+ {
+  "kind": "python",
+  "name": "BlockingIOError",
+  "supported": true,
+  "fields": {
+   "description": "ノンブロッキングに設定されたオブジェクトへの操作がブロックしてしまうときに発生する例外（OSError のサブクラス）。errno EAGAIN などに対応する。",
+   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
+   "caution": "except OSError でも捕捉できる。本アプリは実ファイルやソケットを実行しないため、主に raise／except の照合で使う。",
+   "example": "try:\n    raise BlockingIOError(\"bad\")\nexcept BlockingIOError:\n    print(\"BlockingIOErrorを捕捉\")",
+   "source": "https://docs.python.org/ja/3.12/library/exceptions.html#BlockingIOError"
+  },
+  "sha256": "a1b96b012c9c543f96d1c9f3e2503c1d5c2ee042e6884a94eb5dfbc1a1b18845"
+ },
+ {
+  "kind": "python",
+  "name": "ChildProcessError",
+  "supported": true,
+  "fields": {
+   "description": "子プロセスへの操作が失敗したときに発生する例外（OSError のサブクラス）。errno ECHILD に対応する。",
+   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
+   "caution": "except OSError でも捕捉できる。本アプリは実ファイルやソケットを実行しないため、主に raise／except の照合で使う。",
+   "example": "try:\n    raise ChildProcessError(\"bad\")\nexcept ChildProcessError:\n    print(\"ChildProcessErrorを捕捉\")",
+   "source": "https://docs.python.org/ja/3.12/library/exceptions.html#ChildProcessError"
+  },
+  "sha256": "e3a8d447a5d15192c543c74fca83d946a1071534bdd5d3096a1342dbe0f2db13"
+ },
+ {
+  "kind": "python",
+  "name": "ConnectionError",
+  "supported": true,
+  "fields": {
+   "description": "接続関連エラーの基底クラス（OSError のサブクラス）。BrokenPipeError・ConnectionAbortedError・ConnectionRefusedError・ConnectionResetError の親。",
+   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
+   "caution": "接続まわりのエラーをまとめて捕捉したい場合に使う。except OSError でも捕捉できる。本アプリは実ファイルやソケットを実行しないため、主に raise／except の照合で使う。",
+   "example": "try:\n    raise ConnectionError(\"bad\")\nexcept ConnectionError:\n    print(\"ConnectionErrorを捕捉\")",
+   "source": "https://docs.python.org/ja/3.12/library/exceptions.html#ConnectionError"
+  },
+  "sha256": "9353aa15152c901db200421dde5a398d2b12953ff3c2590d0171a0a0202c2111"
+ },
+ {
+  "kind": "python",
+  "name": "BrokenPipeError",
+  "supported": true,
+  "fields": {
+   "description": "読み手が閉じたパイプへ書き込もうとしたときや、書き込み側が shutdown されたソケットへ書き込もうとしたときに発生する例外（ConnectionError のサブクラス）。errno EPIPE／ESHUTDOWN に対応する。",
+   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
+   "caution": "except ConnectionError や except OSError でも捕捉できる。本アプリは実ファイルやソケットを実行しないため、主に raise／except の照合で使う。",
+   "example": "try:\n    raise BrokenPipeError(\"bad\")\nexcept BrokenPipeError:\n    print(\"BrokenPipeErrorを捕捉\")",
+   "source": "https://docs.python.org/ja/3.12/library/exceptions.html#BrokenPipeError"
+  },
+  "sha256": "adbb524d3fa0849847530ac8b49a538502be9c223a32532273ba32f84c651cbf"
+ },
+ {
+  "kind": "python",
+  "name": "ConnectionAbortedError",
+  "supported": true,
+  "fields": {
+   "description": "接続の試みが相手によって中断されたときに発生する例外（ConnectionError のサブクラス）。errno ECONNABORTED に対応する。",
+   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
+   "caution": "except ConnectionError や except OSError でも捕捉できる。本アプリは実ファイルやソケットを実行しないため、主に raise／except の照合で使う。",
+   "example": "try:\n    raise ConnectionAbortedError(\"bad\")\nexcept ConnectionAbortedError:\n    print(\"ConnectionAbortedErrorを捕捉\")",
+   "source": "https://docs.python.org/ja/3.12/library/exceptions.html#ConnectionAbortedError"
+  },
+  "sha256": "fadf9051cee6a48c0ad59f424f362eeba6ecd153740d641a02573076da5dbff1"
+ },
+ {
+  "kind": "python",
+  "name": "ConnectionRefusedError",
+  "supported": true,
+  "fields": {
+   "description": "接続の試みが相手によって拒否されたときに発生する例外（ConnectionError のサブクラス）。errno ECONNREFUSED に対応する。",
+   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
+   "caution": "サーバが起動していない、ポートが違う、といった場合に起きる。except ConnectionError や except OSError でも捕捉できる。本アプリは実ファイルやソケットを実行しないため、主に raise／except の照合で使う。",
+   "example": "try:\n    raise ConnectionRefusedError(\"bad\")\nexcept ConnectionRefusedError:\n    print(\"ConnectionRefusedErrorを捕捉\")",
+   "source": "https://docs.python.org/ja/3.12/library/exceptions.html#ConnectionRefusedError"
+  },
+  "sha256": "fe759a8005ab28594a8c0f78817146f245630391ee21b114f7d89a2f1740dd4d"
+ },
+ {
+  "kind": "python",
+  "name": "ConnectionResetError",
+  "supported": true,
+  "fields": {
+   "description": "接続が相手によってリセットされたときに発生する例外（ConnectionError のサブクラス）。errno ECONNRESET に対応する。",
+   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
+   "caution": "except ConnectionError や except OSError でも捕捉できる。本アプリは実ファイルやソケットを実行しないため、主に raise／except の照合で使う。",
+   "example": "try:\n    raise ConnectionResetError(\"bad\")\nexcept ConnectionResetError:\n    print(\"ConnectionResetErrorを捕捉\")",
+   "source": "https://docs.python.org/ja/3.12/library/exceptions.html#ConnectionResetError"
+  },
+  "sha256": "c0433512316c20f336e52a8483e50988202e319414111816444eea9fe643a6fc"
+ },
+ {
+  "kind": "python",
+  "name": "FileExistsError",
+  "supported": true,
+  "fields": {
+   "description": "既に存在するファイルやディレクトリを作ろうとしたときに発生する例外（OSError のサブクラス）。errno EEXIST に対応する。",
+   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
+   "caution": "except OSError でも捕捉できる。作成前に存在確認するか、存在してもよい作り方（exist_ok など）を使う。本アプリは実ファイルやソケットを実行しないため、主に raise／except の照合で使う。",
+   "example": "try:\n    raise FileExistsError(\"bad\")\nexcept FileExistsError:\n    print(\"FileExistsErrorを捕捉\")",
+   "source": "https://docs.python.org/ja/3.12/library/exceptions.html#FileExistsError"
+  },
+  "sha256": "679801253c0fb6c026bc3ed3ee6ec3ae243697d87bafdf57d56506c75e41bf8d"
+ },
+ {
+  "kind": "python",
+  "name": "InterruptedError",
+  "supported": true,
+  "fields": {
+   "description": "システムコールが到着したシグナルによって割り込まれたときに発生する例外（OSError のサブクラス）。errno EINTR に対応する。",
+   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
+   "caution": "現在の CPython は割り込まれたシステムコールを自動で再試行する（PEP 475）ため、シグナルハンドラが例外を発生させる場合などに限られる。except OSError でも捕捉できる。",
+   "example": "try:\n    raise InterruptedError(\"bad\")\nexcept InterruptedError:\n    print(\"InterruptedErrorを捕捉\")",
+   "source": "https://docs.python.org/ja/3.12/library/exceptions.html#InterruptedError"
+  },
+  "sha256": "84ff9820c8c705590ec07202b4833c123edb658770a784c38a9bd66026fefbcf"
+ },
+ {
+  "kind": "python",
+  "name": "IsADirectoryError",
+  "supported": true,
+  "fields": {
+   "description": "ディレクトリに対してファイル操作（os.remove() など）を要求したときに発生する例外（OSError のサブクラス）。errno EISDIR に対応する。",
+   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
+   "caution": "except OSError でも捕捉できる。パスがファイルではなくディレクトリを指していることが原因。本アプリは実ファイルやソケットを実行しないため、主に raise／except の照合で使う。",
+   "example": "try:\n    raise IsADirectoryError(\"bad\")\nexcept IsADirectoryError:\n    print(\"IsADirectoryErrorを捕捉\")",
+   "source": "https://docs.python.org/ja/3.12/library/exceptions.html#IsADirectoryError"
+  },
+  "sha256": "6834acbcc911cfb15b52d422b8c3344fdeac93fa95b6548310b74b668986e675"
+ },
+ {
+  "kind": "python",
+  "name": "NotADirectoryError",
+  "supported": true,
+  "fields": {
+   "description": "ディレクトリでないものに対してディレクトリ操作（os.listdir() など）を要求したときに発生する例外（OSError のサブクラス）。errno ENOTDIR に対応する。",
+   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
+   "caution": "except OSError でも捕捉できる。パスの途中にファイルが含まれている場合などに起きる。本アプリは実ファイルやソケットを実行しないため、主に raise／except の照合で使う。",
+   "example": "try:\n    raise NotADirectoryError(\"bad\")\nexcept NotADirectoryError:\n    print(\"NotADirectoryErrorを捕捉\")",
+   "source": "https://docs.python.org/ja/3.12/library/exceptions.html#NotADirectoryError"
+  },
+  "sha256": "5523d1d54d2e2df79f9ed0473aa10be97340e559b470d0c2eeab2f941bffa275"
+ },
+ {
+  "kind": "python",
+  "name": "PermissionError",
+  "supported": true,
+  "fields": {
+   "description": "適切なアクセス権がなく操作を実行できないときに発生する例外（OSError のサブクラス）。ファイルの権限不足などが典型。errno EACCES／EPERM などに対応する。",
+   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
+   "caution": "except OSError でも捕捉できる。ファイルやディレクトリの権限、読み取り専用属性などが原因。本アプリは実ファイルやソケットを実行しないため、主に raise／except の照合で使う。",
+   "example": "try:\n    raise PermissionError(\"bad\")\nexcept PermissionError:\n    print(\"PermissionErrorを捕捉\")",
+   "source": "https://docs.python.org/ja/3.12/library/exceptions.html#PermissionError"
+  },
+  "sha256": "d752dbb83d05ace1ace98f3d2183b897bc38f17fbab70692616dde149b558a93"
+ },
+ {
+  "kind": "python",
+  "name": "ProcessLookupError",
+  "supported": true,
+  "fields": {
+   "description": "指定したプロセスが存在しないときに発生する例外（OSError のサブクラス）。errno ESRCH に対応する。",
+   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
+   "caution": "except OSError でも捕捉できる。プロセス ID の指定誤りや、既に終了したプロセスへの操作で起きる。本アプリは実ファイルやソケットを実行しないため、主に raise／except の照合で使う。",
+   "example": "try:\n    raise ProcessLookupError(\"bad\")\nexcept ProcessLookupError:\n    print(\"ProcessLookupErrorを捕捉\")",
+   "source": "https://docs.python.org/ja/3.12/library/exceptions.html#ProcessLookupError"
+  },
+  "sha256": "53b140799305062e751085a0bd7f5a43d5858c27dd5ff6189360c8f7893c21f9"
+ },
+ {
+  "kind": "python",
+  "name": "TimeoutError",
+  "supported": true,
+  "fields": {
+   "description": "システム関数がシステムレベルでタイムアウトしたときに発生する例外（OSError のサブクラス）。errno ETIMEDOUT に対応する。",
+   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
+   "caution": "except OSError でも捕捉できる。接続や応答の待ち時間が上限を超えた場合に起きる。本アプリは実ファイルやソケットを実行しないため、主に raise／except の照合で使う。",
+   "example": "try:\n    raise TimeoutError(\"bad\")\nexcept TimeoutError:\n    print(\"TimeoutErrorを捕捉\")",
+   "source": "https://docs.python.org/ja/3.12/library/exceptions.html#TimeoutError"
+  },
+  "sha256": "5a18f8298ea1ec79c6dca9c92079de75e71d57b8f0dfc4d536e6a7db53dc8432"
+ },
+ {
+  "kind": "python",
+  "name": "Warning",
+  "supported": true,
+  "fields": {
+   "description": "警告カテゴリの基底クラス（Exception のサブクラス）。警告は通常、例外として発生させるのではなく warnings モジュールの仕組みで表示される。",
+   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
+   "caution": "警告カテゴリは Exception のサブクラスだが、通常のエラー処理とは別に warnings のフィルタで表示・無視が制御される。raise で発生させれば except でも捕捉できる。",
+   "example": "try:\n    raise Warning(\"bad\")\nexcept Warning:\n    print(\"Warningを捕捉\")",
+   "source": "https://docs.python.org/ja/3.12/library/exceptions.html#Warning"
+  },
+  "sha256": "f0a83222dd72c762a2255e4ed2ea9e0394c3fed07fe44c402a180d2ab761d188"
+ },
+ {
+  "kind": "python",
+  "name": "UserWarning",
+  "supported": true,
+  "fields": {
+   "description": "ユーザのコードが発生させる警告の基底クラス（Warning のサブクラス）。",
+   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
+   "caution": "warnings.warn() で警告を出すときの既定のカテゴリ。警告は既定では表示されるが、プログラムは止まらない。",
+   "example": "try:\n    raise UserWarning(\"bad\")\nexcept UserWarning:\n    print(\"UserWarningを捕捉\")",
+   "source": "https://docs.python.org/ja/3.12/library/exceptions.html#UserWarning"
+  },
+  "sha256": "45e3f5585cab0ddec2632e31f7f866c9c34b545aab42d8ffe9627b57b0d85847"
+ },
+ {
+  "kind": "python",
+  "name": "DeprecationWarning",
+  "supported": true,
+  "fields": {
+   "description": "非推奨になった機能に関する警告の基底クラス（Warning のサブクラス）。他の Python 開発者向けの警告。",
+   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
+   "caution": "既定では __main__ モジュール以外では無視される。開発モード（python -X dev）では表示される。",
+   "example": "try:\n    raise DeprecationWarning(\"bad\")\nexcept DeprecationWarning:\n    print(\"DeprecationWarningを捕捉\")",
+   "source": "https://docs.python.org/ja/3.12/library/exceptions.html#DeprecationWarning"
+  },
+  "sha256": "0ebcb98980c419c3a682dd51b844305e84ca333e03b3ad8472060a0ec5b23151"
+ },
+ {
+  "kind": "python",
+  "name": "PendingDeprecationWarning",
+  "supported": true,
+  "fields": {
+   "description": "将来非推奨になる予定だが、現時点では非推奨ではない機能に関する警告の基底クラス（Warning のサブクラス）。",
+   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
+   "caution": "既定では無視される。既に非推奨になった機能には DeprecationWarning の方が使われる。",
+   "example": "try:\n    raise PendingDeprecationWarning(\"bad\")\nexcept PendingDeprecationWarning:\n    print(\"PendingDeprecationWarningを捕捉\")",
+   "source": "https://docs.python.org/ja/3.12/library/exceptions.html#PendingDeprecationWarning"
+  },
+  "sha256": "37c67cc3e4d7d9a809b8be4b50daa8af33eea2e8e5227bccd05781e9390030ea"
+ },
+ {
+  "kind": "python",
+  "name": "FutureWarning",
+  "supported": true,
+  "fields": {
+   "description": "将来のバージョンで意味が変わる構文・機能に関する警告の基底クラス（Warning のサブクラス）。アプリケーションの利用者向けの警告。",
+   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
+   "caution": "利用者向けである点が、開発者向けの DeprecationWarning と異なる。",
+   "example": "try:\n    raise FutureWarning(\"bad\")\nexcept FutureWarning:\n    print(\"FutureWarningを捕捉\")",
+   "source": "https://docs.python.org/ja/3.12/library/exceptions.html#FutureWarning"
+  },
+  "sha256": "d163837af6013e6731e6523288da3f3a5812be59ff10088efc97a01b113af431"
+ },
+ {
+  "kind": "python",
+  "name": "ImportWarning",
+  "supported": true,
+  "fields": {
+   "description": "モジュールの import における間違いの可能性に関する警告の基底クラス（Warning のサブクラス）。",
+   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
+   "caution": "既定では無視される。開発モード（python -X dev）では表示される。",
+   "example": "try:\n    raise ImportWarning(\"bad\")\nexcept ImportWarning:\n    print(\"ImportWarningを捕捉\")",
+   "source": "https://docs.python.org/ja/3.12/library/exceptions.html#ImportWarning"
+  },
+  "sha256": "d868ad62c8ccbedeeda9f75340103d9f80d30e07c05c74ee77dd55bf4c7ba13b"
+ },
+ {
+  "kind": "python",
+  "name": "SyntaxWarning",
+  "supported": true,
+  "fields": {
+   "description": "疑わしい構文に関する警告の基底クラス（Warning のサブクラス）。",
+   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
+   "caution": "構文エラー（SyntaxError）とは別で、プログラムは止まらず警告だけが出る。",
+   "example": "try:\n    raise SyntaxWarning(\"bad\")\nexcept SyntaxWarning:\n    print(\"SyntaxWarningを捕捉\")",
+   "source": "https://docs.python.org/ja/3.12/library/exceptions.html#SyntaxWarning"
+  },
+  "sha256": "f8db713517fbacc9d83328defa23622e90b590d5f066045ac265ca49450e3566"
+ },
+ {
+  "kind": "python",
+  "name": "RuntimeWarning",
+  "supported": true,
+  "fields": {
+   "description": "疑わしい実行時動作に関する警告の基底クラス（Warning のサブクラス）。",
+   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
+   "caution": "ゼロ除算に近い浮動小数点の異常など、実行時の怪しい動作を知らせるために使われる。",
+   "example": "try:\n    raise RuntimeWarning(\"bad\")\nexcept RuntimeWarning:\n    print(\"RuntimeWarningを捕捉\")",
+   "source": "https://docs.python.org/ja/3.12/library/exceptions.html#RuntimeWarning"
+  },
+  "sha256": "23c39dc3a341f3d6c1a4070324c08a8ac638e823ccdbf4a3584cef266cc81987"
+ },
+ {
+  "kind": "python",
+  "name": "UnicodeWarning",
+  "supported": true,
+  "fields": {
+   "description": "Unicode に関する警告の基底クラス（Warning のサブクラス）。",
+   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
+   "caution": "文字列とバイト列の比較など、Unicode が関係する怪しい動作を知らせるために使われる。",
+   "example": "try:\n    raise UnicodeWarning(\"bad\")\nexcept UnicodeWarning:\n    print(\"UnicodeWarningを捕捉\")",
+   "source": "https://docs.python.org/ja/3.12/library/exceptions.html#UnicodeWarning"
+  },
+  "sha256": "82f7569fb9a8b65d5f4e05c53f313eec13ea7b22f978babdb85e23cf8a17b206"
+ },
+ {
+  "kind": "python",
+  "name": "EncodingWarning",
+  "supported": true,
+  "fields": {
+   "description": "符号化（エンコーディング）に関する警告の基底クラス（Warning のサブクラス）。Python 3.10 で追加された。",
+   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
+   "caution": "ロケール依存の既定エンコーディングの使用など、符号化方式が暗黙に決まる動作を知らせるために使われる。",
+   "example": "try:\n    raise EncodingWarning(\"bad\")\nexcept EncodingWarning:\n    print(\"EncodingWarningを捕捉\")",
+   "source": "https://docs.python.org/ja/3.12/library/exceptions.html#EncodingWarning"
+  },
+  "sha256": "353074252c3acd4646541c3f153c28dba2973399bf43a296355157fb4cdee5ba"
+ },
+ {
+  "kind": "python",
+  "name": "BytesWarning",
+  "supported": true,
+  "fields": {
+   "description": "bytes と bytearray に関する警告の基底クラス（Warning のサブクラス）。",
+   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
+   "caution": "文字列とバイト列の混同など、バイト列が関係する怪しい動作を知らせるために使われる。",
+   "example": "try:\n    raise BytesWarning(\"bad\")\nexcept BytesWarning:\n    print(\"BytesWarningを捕捉\")",
+   "source": "https://docs.python.org/ja/3.12/library/exceptions.html#BytesWarning"
+  },
+  "sha256": "fe058c4e17faa7638ff3aeba6b4cbe5fa9346936dbbcbc41604503f6330ff93b"
+ },
+ {
+  "kind": "python",
+  "name": "ResourceWarning",
+  "supported": true,
+  "fields": {
+   "description": "リソースの使用に関する警告の基底クラス（Warning のサブクラス）。Python 3.2 で追加された。",
+   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
+   "caution": "閉じられていないファイルなど、リソースの後始末漏れを知らせるために使われる。既定では無視される。",
+   "example": "try:\n    raise ResourceWarning(\"bad\")\nexcept ResourceWarning:\n    print(\"ResourceWarningを捕捉\")",
+   "source": "https://docs.python.org/ja/3.12/library/exceptions.html#ResourceWarning"
+  },
+  "sha256": "16c9834a640997bdaf8542d203facc504fc6b59c4b247ece87caef98357b7654"
+ },
+ {
+  "kind": "python",
+  "name": "IOError",
+  "supported": true,
+  "fields": {
+   "description": "OSError の別名（同一のクラス）。Python 3.3 で OSError に統合された。",
+   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
+   "caution": "IOError と OSError は同じクラスのため、raise した例外はどちらの名前の except でも捕捉できる（本アプリでも同一視する）。新しいコードでは OSError を使う。",
+   "example": "try:\n    raise IOError(\"bad\")\nexcept IOError:\n    print(\"IOErrorを捕捉\")",
+   "source": "https://docs.python.org/ja/3.12/library/exceptions.html#IOError"
+  },
+  "sha256": "8df96a6aae66e1b0150a11a69c6003b5c12fd562c2789cf1de17a7b7137a0dd7"
+ },
+ {
+  "kind": "python",
+  "name": "EnvironmentError",
+  "supported": true,
+  "fields": {
+   "description": "OSError の別名（同一のクラス）。Python 3.3 で OSError に統合された。",
+   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
+   "caution": "EnvironmentError と OSError は同じクラスのため、raise した例外はどちらの名前の except でも捕捉できる（本アプリでも同一視する）。新しいコードでは OSError を使う。",
+   "example": "try:\n    raise EnvironmentError(\"bad\")\nexcept EnvironmentError:\n    print(\"EnvironmentErrorを捕捉\")",
+   "source": "https://docs.python.org/ja/3.12/library/exceptions.html#EnvironmentError"
+  },
+  "sha256": "ab87de328e42f8177c8653b6869459c3f2d7bd24957a515f9ab1d616b0a530f4"
+ },
+ {
   "kind": "cloudformation",
   "name": "region",
   "supported": true,
@@ -9946,13 +10518,13 @@
   "name": "for",
   "supported": true,
   "fields": {
-   "description": "コレクションの要素を順に取り出し、Key（配列では1始まりの添字、オブジェクトではプロパティ名）とValue（要素の値）へ代入しながら本体を繰り返します。変数が1つだけのときは値だけを受け取ります。",
+   "description": "コレクションの要素を順に取り出し、Key（配列では1始まりの添字、オブジェクトではプロパティ名）とValue（要素の値）へ代入しながら本体を繰り返します。変数が1つだけのときは、配列では値だけを受け取りますが、オブジェクトではプロパティ名を受け取ります。",
    "returns": "戻り値なし（宣言または制御文）",
-   "caution": "繰り返し対象が未確定値や配列・オブジェクトでない場合は未対応として停止します。",
+   "caution": "繰り返し対象が未確定値や配列・オブジェクトでない場合は未対応として停止します。このアプリのモデルでは、オブジェクトに対する変数1つの形でも値を受け取ります（実物ではプロパティ名を受け取る点が異なります）。",
    "example": "^!n:: {\ntotal := 0\nfor idx, v in [10, 20] {\n total += v\n}\nMsgBox total\n}",
    "source": "https://www.autohotkey.com/docs/v2/lib/For.htm"
   },
-  "sha256": "acf8261950d3e96885264b0a9c2a93f653c63228b5a35e62c8cff2dce97308cb"
+  "sha256": "97fdf9ad0f26c390548ad92bb46f1c05aaa249f62e5115915825b80461421eee"
  },
  {
   "kind": "autohotkey",
@@ -13268,5 +13840,577 @@
    "source": "https://docs.python.org/ja/3.12/library/exceptions.html#SystemExit"
   },
   "sha256": "e94748db15be43e281f1236ef4c9da584824b4a62cfa8d82c62659fe2332fb0f"
+ },
+ {
+  "kind": "cloudformation",
+  "name": "BaseExceptionGroup",
+  "supported": true,
+  "fields": {
+   "description": "複数の無関係な例外をまとめて保持する例外グループの基底クラス（BaseException のサブクラス）。",
+   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
+   "caution": "コンストラクタは (メッセージ, 例外の並び) の2引数が必須で、空の並びや例外でない要素を渡すと実際の Python ではエラーになる。本アプリの raise では引数の個数・中身は検証しない。except* によるグループの分割捕捉は本アプリでは未対応。",
+   "example": "def handler(event, context):\n    try:\n        raise ValueError(\"x\")\n    except ValueError as e:\n        try:\n            raise BaseExceptionGroup(\"g\", [e])\n        except BaseExceptionGroup:\n            print(\"BaseExceptionGroupを捕捉\")\n    return {\"requestId\":event[\"requestId\"],\"status\":\"success\",\"fragment\":event[\"fragment\"]}",
+   "source": "https://docs.python.org/ja/3.12/library/exceptions.html#BaseExceptionGroup"
+  },
+  "sha256": "440af81fa33297ccaadc9993b0ed8045c490e04ed9df78a0c6108dfd08241c15"
+ },
+ {
+  "kind": "cloudformation",
+  "name": "ExceptionGroup",
+  "supported": true,
+  "fields": {
+   "description": "複数の無関係な例外をまとめる例外グループ（BaseExceptionGroup と Exception の両方のサブクラス）。包めるのは Exception のサブクラスだけ。",
+   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
+   "caution": "コンストラクタは (メッセージ, 例外の並び) の2引数が必須で、Exception のサブクラスでない例外を包むと実際の Python では TypeError になる。本アプリの raise では引数の個数・中身は検証しない。except* による分割捕捉は本アプリでは未対応で、通常の階層照合で捕捉する。",
+   "example": "def handler(event, context):\n    try:\n        raise ValueError(\"x\")\n    except ValueError as e:\n        try:\n            raise ExceptionGroup(\"g\", [e])\n        except ExceptionGroup:\n            print(\"ExceptionGroupを捕捉\")\n    return {\"requestId\":event[\"requestId\"],\"status\":\"success\",\"fragment\":event[\"fragment\"]}",
+   "source": "https://docs.python.org/ja/3.12/library/exceptions.html#ExceptionGroup"
+  },
+  "sha256": "da35e7c97d041b9f293e30e26dbb64bfcf97d4e33bc00aa346aa8d052c018007"
+ },
+ {
+  "kind": "cloudformation",
+  "name": "GeneratorExit",
+  "supported": true,
+  "fields": {
+   "description": "ジェネレータやコルーチンが閉じられるときに発生する例外（BaseException の一員）。generator.close() などで起きる。",
+   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
+   "caution": "エラーではないため Exception ではなく BaseException を直接継承し、except Exception では捕捉されない。ジェネレータがこの例外を無視して値を返そうとすると RuntimeError になる。",
+   "example": "def handler(event, context):\n    try:\n        raise GeneratorExit(\"bad\")\n    except GeneratorExit:\n        print(\"GeneratorExitを捕捉\")\n    return {\"requestId\":event[\"requestId\"],\"status\":\"success\",\"fragment\":event[\"fragment\"]}",
+   "source": "https://docs.python.org/ja/3.12/library/exceptions.html#GeneratorExit"
+  },
+  "sha256": "9b9bdf305d55c73341bac2d6f8ddde2b57cf0b9cdefb05880fd1cb748d4a5674"
+ },
+ {
+  "kind": "cloudformation",
+  "name": "MemoryError",
+  "supported": true,
+  "fields": {
+   "description": "操作がメモリ不足で完了できないときに発生する例外（Exception のサブクラス）。オブジェクトを削除すれば回復できる場合がある。",
+   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
+   "caution": "メモリ管理の仕組み上、インタプリタが常に完全に回復できるとは限らない。大きなデータを一度に読み込む処理で起きやすい。",
+   "example": "def handler(event, context):\n    try:\n        raise MemoryError(\"bad\")\n    except MemoryError:\n        print(\"MemoryErrorを捕捉\")\n    return {\"requestId\":event[\"requestId\"],\"status\":\"success\",\"fragment\":event[\"fragment\"]}",
+   "source": "https://docs.python.org/ja/3.12/library/exceptions.html#MemoryError"
+  },
+  "sha256": "a360bce38b0d3edf8e88b3aa4da5b1c738dd5107afedef98cc76b6cf9ef04388"
+ },
+ {
+  "kind": "cloudformation",
+  "name": "BufferError",
+  "supported": true,
+  "fields": {
+   "description": "バッファ（buffer）関連の操作が実行できないときに発生する例外（Exception のサブクラス）。",
+   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
+   "caution": "バッファを公開しているオブジェクトがサイズ変更されるなど、バッファの前提が崩れた場合に起きる。通常のコードで直接扱うことは少ない。",
+   "example": "def handler(event, context):\n    try:\n        raise BufferError(\"bad\")\n    except BufferError:\n        print(\"BufferErrorを捕捉\")\n    return {\"requestId\":event[\"requestId\"],\"status\":\"success\",\"fragment\":event[\"fragment\"]}",
+   "source": "https://docs.python.org/ja/3.12/library/exceptions.html#BufferError"
+  },
+  "sha256": "1c3f3ec6ff9303b30513f02a252c260bf72248c4d633b3d001dcef6e5c6d018a"
+ },
+ {
+  "kind": "cloudformation",
+  "name": "FloatingPointError",
+  "supported": true,
+  "fields": {
+   "description": "浮動小数点演算が失敗したときに発生する例外（ArithmeticError のサブクラス）。",
+   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
+   "caution": "現在の CPython では実際には使われていない（浮動小数点演算の失敗は通常チェックされない）。except ArithmeticError でも捕捉できる。",
+   "example": "def handler(event, context):\n    try:\n        raise FloatingPointError(\"bad\")\n    except FloatingPointError:\n        print(\"FloatingPointErrorを捕捉\")\n    return {\"requestId\":event[\"requestId\"],\"status\":\"success\",\"fragment\":event[\"fragment\"]}",
+   "source": "https://docs.python.org/ja/3.12/library/exceptions.html#FloatingPointError"
+  },
+  "sha256": "8d1cac127b6b2cc7269ee5783f5e051663029e337be85deb6416edb710a0c21f"
+ },
+ {
+  "kind": "cloudformation",
+  "name": "UnboundLocalError",
+  "supported": true,
+  "fields": {
+   "description": "関数の中で代入しているローカル変数を、代入前に参照したときに発生する例外（NameError のサブクラス）。",
+   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
+   "caution": "except NameError でも捕捉できる。本アプリでも、関数内で代入する名前を代入前に読むとこの例外になる。外側の変数を使いたい場合は global 宣言や引数で受け渡す。",
+   "example": "def handler(event, context):\n    try:\n        raise UnboundLocalError(\"bad\")\n    except UnboundLocalError:\n        print(\"UnboundLocalErrorを捕捉\")\n    return {\"requestId\":event[\"requestId\"],\"status\":\"success\",\"fragment\":event[\"fragment\"]}",
+   "source": "https://docs.python.org/ja/3.12/library/exceptions.html#UnboundLocalError"
+  },
+  "sha256": "b49b5e9dafcaa360b46a31d12d02367e2e6778585455abd38db74f810aa33103"
+ },
+ {
+  "kind": "cloudformation",
+  "name": "ReferenceError",
+  "supported": true,
+  "fields": {
+   "description": "弱参照プロキシ（weakref.proxy() で作った参照）が、参照先がガベージコレクションで回収された後に使われたときに発生する例外（Exception のサブクラス）。",
+   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
+   "caution": "弱参照は参照先の生存を保証しないため、参照先が消えた後のアクセスで起きる。通常の強い参照では起きない。",
+   "example": "def handler(event, context):\n    try:\n        raise ReferenceError(\"bad\")\n    except ReferenceError:\n        print(\"ReferenceErrorを捕捉\")\n    return {\"requestId\":event[\"requestId\"],\"status\":\"success\",\"fragment\":event[\"fragment\"]}",
+   "source": "https://docs.python.org/ja/3.12/library/exceptions.html#ReferenceError"
+  },
+  "sha256": "d2bdacdb7fdf74023f6cee2f2c99e3067bc564d520f01ce98a5c832fbce5f78d"
+ },
+ {
+  "kind": "cloudformation",
+  "name": "SystemError",
+  "supported": true,
+  "fields": {
+   "description": "インタプリタが内部エラーを検出したときに発生する例外（Exception のサブクラス）。深刻ではない内部異常を示す。",
+   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
+   "caution": "自分のコードや利用中のパッケージに原因がないと考えられる場合は、使っている Python インタプリタの作者・保守者へ報告する対象になる。通常のコードで直接扱うことは少ない。",
+   "example": "def handler(event, context):\n    try:\n        raise SystemError(\"bad\")\n    except SystemError:\n        print(\"SystemErrorを捕捉\")\n    return {\"requestId\":event[\"requestId\"],\"status\":\"success\",\"fragment\":event[\"fragment\"]}",
+   "source": "https://docs.python.org/ja/3.12/library/exceptions.html#SystemError"
+  },
+  "sha256": "27f1f37b0e1dc1533e5fcbd34baafe05a8b635f2df9aebe6524b587690307f13"
+ },
+ {
+  "kind": "cloudformation",
+  "name": "StopAsyncIteration",
+  "supported": true,
+  "fields": {
+   "description": "非同期イテレータの __anext__() が、要素が尽きたことを知らせるために発生させる例外（Exception のサブクラス）。",
+   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
+   "caution": "同期版の StopIteration に対応する非同期版。通常は async for が内部で処理するため、直接捕捉することは少ない。",
+   "example": "def handler(event, context):\n    try:\n        raise StopAsyncIteration(\"bad\")\n    except StopAsyncIteration:\n        print(\"StopAsyncIterationを捕捉\")\n    return {\"requestId\":event[\"requestId\"],\"status\":\"success\",\"fragment\":event[\"fragment\"]}",
+   "source": "https://docs.python.org/ja/3.12/library/exceptions.html#StopAsyncIteration"
+  },
+  "sha256": "cee83c1114258c0e16f38854bc1d7ccf5b16bf1433e325efa17a05c5c2f7ad26"
+ },
+ {
+  "kind": "cloudformation",
+  "name": "SyntaxError",
+  "supported": true,
+  "fields": {
+   "description": "構文（文法）の誤りをパーサが検出したときに発生する例外（Exception のサブクラス）。import 文や compile()／exec()／eval() の呼び出し、スクリプト読み込み時などに起きる。",
+   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
+   "caution": "実際の構文エラーは実行前の解析（コンパイル）時に発生するため、その場の try では捕捉できない。raise で明示的に発生させた SyntaxError は except で捕捉できる（本アプリでもこの区別どおり）。",
+   "example": "def handler(event, context):\n    try:\n        raise SyntaxError(\"bad\")\n    except SyntaxError:\n        print(\"SyntaxErrorを捕捉\")\n    return {\"requestId\":event[\"requestId\"],\"status\":\"success\",\"fragment\":event[\"fragment\"]}",
+   "source": "https://docs.python.org/ja/3.12/library/exceptions.html#SyntaxError"
+  },
+  "sha256": "602485626e90d792eae946af3e4b8bc0c1fd7938ba3a08c3682db0b8978888ed"
+ },
+ {
+  "kind": "cloudformation",
+  "name": "IndentationError",
+  "supported": true,
+  "fields": {
+   "description": "インデントの誤りに関する構文エラーの基底クラス（SyntaxError のサブクラス）。",
+   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
+   "caution": "実際のインデントエラーは解析時に発生するため、その場の try では捕捉できない。raise で明示的に発生させた場合は except で捕捉できる。",
+   "example": "def handler(event, context):\n    try:\n        raise IndentationError(\"bad\")\n    except IndentationError:\n        print(\"IndentationErrorを捕捉\")\n    return {\"requestId\":event[\"requestId\"],\"status\":\"success\",\"fragment\":event[\"fragment\"]}",
+   "source": "https://docs.python.org/ja/3.12/library/exceptions.html#IndentationError"
+  },
+  "sha256": "36e8aa58f80347a4c563fe1189f3ec5a5ceb9e2770135d94782dd44b6f5d1071"
+ },
+ {
+  "kind": "cloudformation",
+  "name": "TabError",
+  "supported": true,
+  "fields": {
+   "description": "インデントにタブとスペースが混在して一貫しないときに発生する例外（IndentationError のサブクラス）。",
+   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
+   "caution": "実際の TabError は解析時に発生するため、その場の try では捕捉できない。インデントはスペースに統一すると起きない。",
+   "example": "def handler(event, context):\n    try:\n        raise TabError(\"bad\")\n    except TabError:\n        print(\"TabErrorを捕捉\")\n    return {\"requestId\":event[\"requestId\"],\"status\":\"success\",\"fragment\":event[\"fragment\"]}",
+   "source": "https://docs.python.org/ja/3.12/library/exceptions.html#TabError"
+  },
+  "sha256": "a3281065a4589eaa6154c3a82d180765c16ac227b6eed6fddcf1618717bbdcf3"
+ },
+ {
+  "kind": "cloudformation",
+  "name": "UnicodeDecodeError",
+  "supported": true,
+  "fields": {
+   "description": "Unicode の復号（デコード）中にエラーが起きたときに発生する例外（UnicodeError のサブクラス）。バイト列を指定した符号化方式で文字列に変換できない場合に起きる。",
+   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
+   "caution": "except UnicodeError や except ValueError でも捕捉できる。符号化方式の指定誤りや、想定と異なる符号化方式のデータが主な原因。",
+   "example": "def handler(event, context):\n    try:\n        raise UnicodeDecodeError(\"utf-8\", b\"x\", 0, 1, \"bad\")\n    except UnicodeDecodeError:\n        print(\"UnicodeDecodeErrorを捕捉\")\n    return {\"requestId\":event[\"requestId\"],\"status\":\"success\",\"fragment\":event[\"fragment\"]}",
+   "source": "https://docs.python.org/ja/3.12/library/exceptions.html#UnicodeDecodeError"
+  },
+  "sha256": "f1c178a470a722089293eb91cac76c394f9b76fc2c1412aadd2f9386601cc528"
+ },
+ {
+  "kind": "cloudformation",
+  "name": "UnicodeEncodeError",
+  "supported": true,
+  "fields": {
+   "description": "Unicode の符号化（エンコード）中にエラーが起きたときに発生する例外（UnicodeError のサブクラス）。文字列を指定した符号化方式で表せない文字が含まれる場合に起きる。",
+   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
+   "caution": "except UnicodeError や except ValueError でも捕捉できる。符号化方式で表せない文字（絵文字や特殊な記号など）が主な原因。",
+   "example": "def handler(event, context):\n    try:\n        raise UnicodeEncodeError(\"ascii\", \"x\", 0, 1, \"bad\")\n    except UnicodeEncodeError:\n        print(\"UnicodeEncodeErrorを捕捉\")\n    return {\"requestId\":event[\"requestId\"],\"status\":\"success\",\"fragment\":event[\"fragment\"]}",
+   "source": "https://docs.python.org/ja/3.12/library/exceptions.html#UnicodeEncodeError"
+  },
+  "sha256": "6c23c5443a5378ee5ba3f782f204da2ae4f83fc5fb4d27d23f4e0f9375e359c0"
+ },
+ {
+  "kind": "cloudformation",
+  "name": "UnicodeTranslateError",
+  "supported": true,
+  "fields": {
+   "description": "Unicode の変換（str.translate() など）中にエラーが起きたときに発生する例外（UnicodeError のサブクラス）。",
+   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
+   "caution": "except UnicodeError や except ValueError でも捕捉できる。文字の対応付け（マッピング）の不備が主な原因。",
+   "example": "def handler(event, context):\n    try:\n        raise UnicodeTranslateError(\"x\", 0, 1, \"bad\")\n    except UnicodeTranslateError:\n        print(\"UnicodeTranslateErrorを捕捉\")\n    return {\"requestId\":event[\"requestId\"],\"status\":\"success\",\"fragment\":event[\"fragment\"]}",
+   "source": "https://docs.python.org/ja/3.12/library/exceptions.html#UnicodeTranslateError"
+  },
+  "sha256": "dbb7257608228198cbcccca3733b2ad4829485dbf97d647e4c90259fb3803bdd"
+ },
+ {
+  "kind": "cloudformation",
+  "name": "BlockingIOError",
+  "supported": true,
+  "fields": {
+   "description": "ノンブロッキングに設定されたオブジェクトへの操作がブロックしてしまうときに発生する例外（OSError のサブクラス）。errno EAGAIN などに対応する。",
+   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
+   "caution": "except OSError でも捕捉できる。本アプリは実ファイルやソケットを実行しないため、主に raise／except の照合で使う。",
+   "example": "def handler(event, context):\n    try:\n        raise BlockingIOError(\"bad\")\n    except BlockingIOError:\n        print(\"BlockingIOErrorを捕捉\")\n    return {\"requestId\":event[\"requestId\"],\"status\":\"success\",\"fragment\":event[\"fragment\"]}",
+   "source": "https://docs.python.org/ja/3.12/library/exceptions.html#BlockingIOError"
+  },
+  "sha256": "369d1393bfde041f8581741c42e5570a842acf66df712ece5f73826a58a7633b"
+ },
+ {
+  "kind": "cloudformation",
+  "name": "ChildProcessError",
+  "supported": true,
+  "fields": {
+   "description": "子プロセスへの操作が失敗したときに発生する例外（OSError のサブクラス）。errno ECHILD に対応する。",
+   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
+   "caution": "except OSError でも捕捉できる。本アプリは実ファイルやソケットを実行しないため、主に raise／except の照合で使う。",
+   "example": "def handler(event, context):\n    try:\n        raise ChildProcessError(\"bad\")\n    except ChildProcessError:\n        print(\"ChildProcessErrorを捕捉\")\n    return {\"requestId\":event[\"requestId\"],\"status\":\"success\",\"fragment\":event[\"fragment\"]}",
+   "source": "https://docs.python.org/ja/3.12/library/exceptions.html#ChildProcessError"
+  },
+  "sha256": "e973edc845cc635e01479b109c16d3c5739e3db38894c9a3c855f229aa7103a6"
+ },
+ {
+  "kind": "cloudformation",
+  "name": "ConnectionError",
+  "supported": true,
+  "fields": {
+   "description": "接続関連エラーの基底クラス（OSError のサブクラス）。BrokenPipeError・ConnectionAbortedError・ConnectionRefusedError・ConnectionResetError の親。",
+   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
+   "caution": "接続まわりのエラーをまとめて捕捉したい場合に使う。except OSError でも捕捉できる。本アプリは実ファイルやソケットを実行しないため、主に raise／except の照合で使う。",
+   "example": "def handler(event, context):\n    try:\n        raise ConnectionError(\"bad\")\n    except ConnectionError:\n        print(\"ConnectionErrorを捕捉\")\n    return {\"requestId\":event[\"requestId\"],\"status\":\"success\",\"fragment\":event[\"fragment\"]}",
+   "source": "https://docs.python.org/ja/3.12/library/exceptions.html#ConnectionError"
+  },
+  "sha256": "4688030cdb042357bc32d5b476464cc51da6e4d4b527daa2cdb74c6d9c16fad7"
+ },
+ {
+  "kind": "cloudformation",
+  "name": "BrokenPipeError",
+  "supported": true,
+  "fields": {
+   "description": "読み手が閉じたパイプへ書き込もうとしたときや、書き込み側が shutdown されたソケットへ書き込もうとしたときに発生する例外（ConnectionError のサブクラス）。errno EPIPE／ESHUTDOWN に対応する。",
+   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
+   "caution": "except ConnectionError や except OSError でも捕捉できる。本アプリは実ファイルやソケットを実行しないため、主に raise／except の照合で使う。",
+   "example": "def handler(event, context):\n    try:\n        raise BrokenPipeError(\"bad\")\n    except BrokenPipeError:\n        print(\"BrokenPipeErrorを捕捉\")\n    return {\"requestId\":event[\"requestId\"],\"status\":\"success\",\"fragment\":event[\"fragment\"]}",
+   "source": "https://docs.python.org/ja/3.12/library/exceptions.html#BrokenPipeError"
+  },
+  "sha256": "9fafa7c93065a1a7dbd37d8f271e9ab4c96c3864784d1a44b152a50fbebf8f5d"
+ },
+ {
+  "kind": "cloudformation",
+  "name": "ConnectionAbortedError",
+  "supported": true,
+  "fields": {
+   "description": "接続の試みが相手によって中断されたときに発生する例外（ConnectionError のサブクラス）。errno ECONNABORTED に対応する。",
+   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
+   "caution": "except ConnectionError や except OSError でも捕捉できる。本アプリは実ファイルやソケットを実行しないため、主に raise／except の照合で使う。",
+   "example": "def handler(event, context):\n    try:\n        raise ConnectionAbortedError(\"bad\")\n    except ConnectionAbortedError:\n        print(\"ConnectionAbortedErrorを捕捉\")\n    return {\"requestId\":event[\"requestId\"],\"status\":\"success\",\"fragment\":event[\"fragment\"]}",
+   "source": "https://docs.python.org/ja/3.12/library/exceptions.html#ConnectionAbortedError"
+  },
+  "sha256": "d5477a5b9f9f588a0a84a1b299e968ab1434bf8e4f1c33bf04c3e5926f1616fb"
+ },
+ {
+  "kind": "cloudformation",
+  "name": "ConnectionRefusedError",
+  "supported": true,
+  "fields": {
+   "description": "接続の試みが相手によって拒否されたときに発生する例外（ConnectionError のサブクラス）。errno ECONNREFUSED に対応する。",
+   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
+   "caution": "サーバが起動していない、ポートが違う、といった場合に起きる。except ConnectionError や except OSError でも捕捉できる。本アプリは実ファイルやソケットを実行しないため、主に raise／except の照合で使う。",
+   "example": "def handler(event, context):\n    try:\n        raise ConnectionRefusedError(\"bad\")\n    except ConnectionRefusedError:\n        print(\"ConnectionRefusedErrorを捕捉\")\n    return {\"requestId\":event[\"requestId\"],\"status\":\"success\",\"fragment\":event[\"fragment\"]}",
+   "source": "https://docs.python.org/ja/3.12/library/exceptions.html#ConnectionRefusedError"
+  },
+  "sha256": "4199f3ae37691aa169e84af415012fe11ab0061fe47d4b18d0a8b1ada32c70d3"
+ },
+ {
+  "kind": "cloudformation",
+  "name": "ConnectionResetError",
+  "supported": true,
+  "fields": {
+   "description": "接続が相手によってリセットされたときに発生する例外（ConnectionError のサブクラス）。errno ECONNRESET に対応する。",
+   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
+   "caution": "except ConnectionError や except OSError でも捕捉できる。本アプリは実ファイルやソケットを実行しないため、主に raise／except の照合で使う。",
+   "example": "def handler(event, context):\n    try:\n        raise ConnectionResetError(\"bad\")\n    except ConnectionResetError:\n        print(\"ConnectionResetErrorを捕捉\")\n    return {\"requestId\":event[\"requestId\"],\"status\":\"success\",\"fragment\":event[\"fragment\"]}",
+   "source": "https://docs.python.org/ja/3.12/library/exceptions.html#ConnectionResetError"
+  },
+  "sha256": "1fadfe586cafb5a2e5d94eb00f02741233fb45b24905ec9727e5d6a15ad1c418"
+ },
+ {
+  "kind": "cloudformation",
+  "name": "FileExistsError",
+  "supported": true,
+  "fields": {
+   "description": "既に存在するファイルやディレクトリを作ろうとしたときに発生する例外（OSError のサブクラス）。errno EEXIST に対応する。",
+   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
+   "caution": "except OSError でも捕捉できる。作成前に存在確認するか、存在してもよい作り方（exist_ok など）を使う。本アプリは実ファイルやソケットを実行しないため、主に raise／except の照合で使う。",
+   "example": "def handler(event, context):\n    try:\n        raise FileExistsError(\"bad\")\n    except FileExistsError:\n        print(\"FileExistsErrorを捕捉\")\n    return {\"requestId\":event[\"requestId\"],\"status\":\"success\",\"fragment\":event[\"fragment\"]}",
+   "source": "https://docs.python.org/ja/3.12/library/exceptions.html#FileExistsError"
+  },
+  "sha256": "05a3ab329698fd5e426f445348b798861ac6d7a16d5bbd1b4e96b41dedac3e69"
+ },
+ {
+  "kind": "cloudformation",
+  "name": "InterruptedError",
+  "supported": true,
+  "fields": {
+   "description": "システムコールが到着したシグナルによって割り込まれたときに発生する例外（OSError のサブクラス）。errno EINTR に対応する。",
+   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
+   "caution": "現在の CPython は割り込まれたシステムコールを自動で再試行する（PEP 475）ため、シグナルハンドラが例外を発生させる場合などに限られる。except OSError でも捕捉できる。",
+   "example": "def handler(event, context):\n    try:\n        raise InterruptedError(\"bad\")\n    except InterruptedError:\n        print(\"InterruptedErrorを捕捉\")\n    return {\"requestId\":event[\"requestId\"],\"status\":\"success\",\"fragment\":event[\"fragment\"]}",
+   "source": "https://docs.python.org/ja/3.12/library/exceptions.html#InterruptedError"
+  },
+  "sha256": "9ffd3bc34be560abffa1133f07dc42b0b8cd274482da2ab5d9b6fc77a2cdb1a3"
+ },
+ {
+  "kind": "cloudformation",
+  "name": "IsADirectoryError",
+  "supported": true,
+  "fields": {
+   "description": "ディレクトリに対してファイル操作（os.remove() など）を要求したときに発生する例外（OSError のサブクラス）。errno EISDIR に対応する。",
+   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
+   "caution": "except OSError でも捕捉できる。パスがファイルではなくディレクトリを指していることが原因。本アプリは実ファイルやソケットを実行しないため、主に raise／except の照合で使う。",
+   "example": "def handler(event, context):\n    try:\n        raise IsADirectoryError(\"bad\")\n    except IsADirectoryError:\n        print(\"IsADirectoryErrorを捕捉\")\n    return {\"requestId\":event[\"requestId\"],\"status\":\"success\",\"fragment\":event[\"fragment\"]}",
+   "source": "https://docs.python.org/ja/3.12/library/exceptions.html#IsADirectoryError"
+  },
+  "sha256": "fffc8e485fbb9ff32e159b3082b7d1e6496301821c03c85d5442d94e33e954a8"
+ },
+ {
+  "kind": "cloudformation",
+  "name": "NotADirectoryError",
+  "supported": true,
+  "fields": {
+   "description": "ディレクトリでないものに対してディレクトリ操作（os.listdir() など）を要求したときに発生する例外（OSError のサブクラス）。errno ENOTDIR に対応する。",
+   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
+   "caution": "except OSError でも捕捉できる。パスの途中にファイルが含まれている場合などに起きる。本アプリは実ファイルやソケットを実行しないため、主に raise／except の照合で使う。",
+   "example": "def handler(event, context):\n    try:\n        raise NotADirectoryError(\"bad\")\n    except NotADirectoryError:\n        print(\"NotADirectoryErrorを捕捉\")\n    return {\"requestId\":event[\"requestId\"],\"status\":\"success\",\"fragment\":event[\"fragment\"]}",
+   "source": "https://docs.python.org/ja/3.12/library/exceptions.html#NotADirectoryError"
+  },
+  "sha256": "77c77a215776c1cd93d9ac10aa095be4d17af0d4549af6d9ed0089763efc352c"
+ },
+ {
+  "kind": "cloudformation",
+  "name": "PermissionError",
+  "supported": true,
+  "fields": {
+   "description": "適切なアクセス権がなく操作を実行できないときに発生する例外（OSError のサブクラス）。ファイルの権限不足などが典型。errno EACCES／EPERM などに対応する。",
+   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
+   "caution": "except OSError でも捕捉できる。ファイルやディレクトリの権限、読み取り専用属性などが原因。本アプリは実ファイルやソケットを実行しないため、主に raise／except の照合で使う。",
+   "example": "def handler(event, context):\n    try:\n        raise PermissionError(\"bad\")\n    except PermissionError:\n        print(\"PermissionErrorを捕捉\")\n    return {\"requestId\":event[\"requestId\"],\"status\":\"success\",\"fragment\":event[\"fragment\"]}",
+   "source": "https://docs.python.org/ja/3.12/library/exceptions.html#PermissionError"
+  },
+  "sha256": "7beb7808dbaef3785ccc79d3293c0210b4783685cd232e79705a7c57ebbd7735"
+ },
+ {
+  "kind": "cloudformation",
+  "name": "ProcessLookupError",
+  "supported": true,
+  "fields": {
+   "description": "指定したプロセスが存在しないときに発生する例外（OSError のサブクラス）。errno ESRCH に対応する。",
+   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
+   "caution": "except OSError でも捕捉できる。プロセス ID の指定誤りや、既に終了したプロセスへの操作で起きる。本アプリは実ファイルやソケットを実行しないため、主に raise／except の照合で使う。",
+   "example": "def handler(event, context):\n    try:\n        raise ProcessLookupError(\"bad\")\n    except ProcessLookupError:\n        print(\"ProcessLookupErrorを捕捉\")\n    return {\"requestId\":event[\"requestId\"],\"status\":\"success\",\"fragment\":event[\"fragment\"]}",
+   "source": "https://docs.python.org/ja/3.12/library/exceptions.html#ProcessLookupError"
+  },
+  "sha256": "3a8c9c10b0c5916a8e35fc138d71f875228bff64e842ac23e130cf63c6b89912"
+ },
+ {
+  "kind": "cloudformation",
+  "name": "TimeoutError",
+  "supported": true,
+  "fields": {
+   "description": "システム関数がシステムレベルでタイムアウトしたときに発生する例外（OSError のサブクラス）。errno ETIMEDOUT に対応する。",
+   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
+   "caution": "except OSError でも捕捉できる。接続や応答の待ち時間が上限を超えた場合に起きる。本アプリは実ファイルやソケットを実行しないため、主に raise／except の照合で使う。",
+   "example": "def handler(event, context):\n    try:\n        raise TimeoutError(\"bad\")\n    except TimeoutError:\n        print(\"TimeoutErrorを捕捉\")\n    return {\"requestId\":event[\"requestId\"],\"status\":\"success\",\"fragment\":event[\"fragment\"]}",
+   "source": "https://docs.python.org/ja/3.12/library/exceptions.html#TimeoutError"
+  },
+  "sha256": "ea1b6b83dd6a690e223e3404966c5b0be37d47a1f4c49391d188cb180c5d432d"
+ },
+ {
+  "kind": "cloudformation",
+  "name": "Warning",
+  "supported": true,
+  "fields": {
+   "description": "警告カテゴリの基底クラス（Exception のサブクラス）。警告は通常、例外として発生させるのではなく warnings モジュールの仕組みで表示される。",
+   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
+   "caution": "警告カテゴリは Exception のサブクラスだが、通常のエラー処理とは別に warnings のフィルタで表示・無視が制御される。raise で発生させれば except でも捕捉できる。",
+   "example": "def handler(event, context):\n    try:\n        raise Warning(\"bad\")\n    except Warning:\n        print(\"Warningを捕捉\")\n    return {\"requestId\":event[\"requestId\"],\"status\":\"success\",\"fragment\":event[\"fragment\"]}",
+   "source": "https://docs.python.org/ja/3.12/library/exceptions.html#Warning"
+  },
+  "sha256": "1d1e0c92d58daf119f69725119151bb266450d4bb72935ab447e33a674e06b37"
+ },
+ {
+  "kind": "cloudformation",
+  "name": "UserWarning",
+  "supported": true,
+  "fields": {
+   "description": "ユーザのコードが発生させる警告の基底クラス（Warning のサブクラス）。",
+   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
+   "caution": "warnings.warn() で警告を出すときの既定のカテゴリ。警告は既定では表示されるが、プログラムは止まらない。",
+   "example": "def handler(event, context):\n    try:\n        raise UserWarning(\"bad\")\n    except UserWarning:\n        print(\"UserWarningを捕捉\")\n    return {\"requestId\":event[\"requestId\"],\"status\":\"success\",\"fragment\":event[\"fragment\"]}",
+   "source": "https://docs.python.org/ja/3.12/library/exceptions.html#UserWarning"
+  },
+  "sha256": "43dca8e33b430b03f4c38d859bf978a57a45b46377e57d7940d1c0e43334807e"
+ },
+ {
+  "kind": "cloudformation",
+  "name": "DeprecationWarning",
+  "supported": true,
+  "fields": {
+   "description": "非推奨になった機能に関する警告の基底クラス（Warning のサブクラス）。他の Python 開発者向けの警告。",
+   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
+   "caution": "既定では __main__ モジュール以外では無視される。開発モード（python -X dev）では表示される。",
+   "example": "def handler(event, context):\n    try:\n        raise DeprecationWarning(\"bad\")\n    except DeprecationWarning:\n        print(\"DeprecationWarningを捕捉\")\n    return {\"requestId\":event[\"requestId\"],\"status\":\"success\",\"fragment\":event[\"fragment\"]}",
+   "source": "https://docs.python.org/ja/3.12/library/exceptions.html#DeprecationWarning"
+  },
+  "sha256": "8a494934d21211f59aae8b78a278103ab6385030f6c103813af4e0dfc57b3df8"
+ },
+ {
+  "kind": "cloudformation",
+  "name": "PendingDeprecationWarning",
+  "supported": true,
+  "fields": {
+   "description": "将来非推奨になる予定だが、現時点では非推奨ではない機能に関する警告の基底クラス（Warning のサブクラス）。",
+   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
+   "caution": "既定では無視される。既に非推奨になった機能には DeprecationWarning の方が使われる。",
+   "example": "def handler(event, context):\n    try:\n        raise PendingDeprecationWarning(\"bad\")\n    except PendingDeprecationWarning:\n        print(\"PendingDeprecationWarningを捕捉\")\n    return {\"requestId\":event[\"requestId\"],\"status\":\"success\",\"fragment\":event[\"fragment\"]}",
+   "source": "https://docs.python.org/ja/3.12/library/exceptions.html#PendingDeprecationWarning"
+  },
+  "sha256": "9b79a66037ba967ba22efb3b00b36013fe079d355ccaee25c69412e06347bd3f"
+ },
+ {
+  "kind": "cloudformation",
+  "name": "FutureWarning",
+  "supported": true,
+  "fields": {
+   "description": "将来のバージョンで意味が変わる構文・機能に関する警告の基底クラス（Warning のサブクラス）。アプリケーションの利用者向けの警告。",
+   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
+   "caution": "利用者向けである点が、開発者向けの DeprecationWarning と異なる。",
+   "example": "def handler(event, context):\n    try:\n        raise FutureWarning(\"bad\")\n    except FutureWarning:\n        print(\"FutureWarningを捕捉\")\n    return {\"requestId\":event[\"requestId\"],\"status\":\"success\",\"fragment\":event[\"fragment\"]}",
+   "source": "https://docs.python.org/ja/3.12/library/exceptions.html#FutureWarning"
+  },
+  "sha256": "6327ff8e963580965792505df11effec2a5342c71aa6979b61bcaa1d03dbce98"
+ },
+ {
+  "kind": "cloudformation",
+  "name": "ImportWarning",
+  "supported": true,
+  "fields": {
+   "description": "モジュールの import における間違いの可能性に関する警告の基底クラス（Warning のサブクラス）。",
+   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
+   "caution": "既定では無視される。開発モード（python -X dev）では表示される。",
+   "example": "def handler(event, context):\n    try:\n        raise ImportWarning(\"bad\")\n    except ImportWarning:\n        print(\"ImportWarningを捕捉\")\n    return {\"requestId\":event[\"requestId\"],\"status\":\"success\",\"fragment\":event[\"fragment\"]}",
+   "source": "https://docs.python.org/ja/3.12/library/exceptions.html#ImportWarning"
+  },
+  "sha256": "b420bf889c5fdc86e9a6258976a9ad5af201954cefca3ced7058c65a8d0e8131"
+ },
+ {
+  "kind": "cloudformation",
+  "name": "SyntaxWarning",
+  "supported": true,
+  "fields": {
+   "description": "疑わしい構文に関する警告の基底クラス（Warning のサブクラス）。",
+   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
+   "caution": "構文エラー（SyntaxError）とは別で、プログラムは止まらず警告だけが出る。",
+   "example": "def handler(event, context):\n    try:\n        raise SyntaxWarning(\"bad\")\n    except SyntaxWarning:\n        print(\"SyntaxWarningを捕捉\")\n    return {\"requestId\":event[\"requestId\"],\"status\":\"success\",\"fragment\":event[\"fragment\"]}",
+   "source": "https://docs.python.org/ja/3.12/library/exceptions.html#SyntaxWarning"
+  },
+  "sha256": "0ee7f55756253fa8f82516401cd39b1a84e90ffb2ad9570982ede2a876cb7f9a"
+ },
+ {
+  "kind": "cloudformation",
+  "name": "RuntimeWarning",
+  "supported": true,
+  "fields": {
+   "description": "疑わしい実行時動作に関する警告の基底クラス（Warning のサブクラス）。",
+   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
+   "caution": "ゼロ除算に近い浮動小数点の異常など、実行時の怪しい動作を知らせるために使われる。",
+   "example": "def handler(event, context):\n    try:\n        raise RuntimeWarning(\"bad\")\n    except RuntimeWarning:\n        print(\"RuntimeWarningを捕捉\")\n    return {\"requestId\":event[\"requestId\"],\"status\":\"success\",\"fragment\":event[\"fragment\"]}",
+   "source": "https://docs.python.org/ja/3.12/library/exceptions.html#RuntimeWarning"
+  },
+  "sha256": "873ad8942f8f3d57c2866c753fac36f83d364e9b3595de20577a6c0e8a29a4ad"
+ },
+ {
+  "kind": "cloudformation",
+  "name": "UnicodeWarning",
+  "supported": true,
+  "fields": {
+   "description": "Unicode に関する警告の基底クラス（Warning のサブクラス）。",
+   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
+   "caution": "文字列とバイト列の比較など、Unicode が関係する怪しい動作を知らせるために使われる。",
+   "example": "def handler(event, context):\n    try:\n        raise UnicodeWarning(\"bad\")\n    except UnicodeWarning:\n        print(\"UnicodeWarningを捕捉\")\n    return {\"requestId\":event[\"requestId\"],\"status\":\"success\",\"fragment\":event[\"fragment\"]}",
+   "source": "https://docs.python.org/ja/3.12/library/exceptions.html#UnicodeWarning"
+  },
+  "sha256": "2919223df7351359d2cfc16231a11776eba10d94264eb31f4d97d1388dc73efd"
+ },
+ {
+  "kind": "cloudformation",
+  "name": "EncodingWarning",
+  "supported": true,
+  "fields": {
+   "description": "符号化（エンコーディング）に関する警告の基底クラス（Warning のサブクラス）。Python 3.10 で追加された。",
+   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
+   "caution": "ロケール依存の既定エンコーディングの使用など、符号化方式が暗黙に決まる動作を知らせるために使われる。",
+   "example": "def handler(event, context):\n    try:\n        raise EncodingWarning(\"bad\")\n    except EncodingWarning:\n        print(\"EncodingWarningを捕捉\")\n    return {\"requestId\":event[\"requestId\"],\"status\":\"success\",\"fragment\":event[\"fragment\"]}",
+   "source": "https://docs.python.org/ja/3.12/library/exceptions.html#EncodingWarning"
+  },
+  "sha256": "7fb8eae2f959f968d099ba54d6537a2e914fa7d3344aa532a0d42fa1c438bec6"
+ },
+ {
+  "kind": "cloudformation",
+  "name": "BytesWarning",
+  "supported": true,
+  "fields": {
+   "description": "bytes と bytearray に関する警告の基底クラス（Warning のサブクラス）。",
+   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
+   "caution": "文字列とバイト列の混同など、バイト列が関係する怪しい動作を知らせるために使われる。",
+   "example": "def handler(event, context):\n    try:\n        raise BytesWarning(\"bad\")\n    except BytesWarning:\n        print(\"BytesWarningを捕捉\")\n    return {\"requestId\":event[\"requestId\"],\"status\":\"success\",\"fragment\":event[\"fragment\"]}",
+   "source": "https://docs.python.org/ja/3.12/library/exceptions.html#BytesWarning"
+  },
+  "sha256": "78211bc8a2d3511ad0b9a93709c08baf484371b84d21716ea3f529516935889d"
+ },
+ {
+  "kind": "cloudformation",
+  "name": "ResourceWarning",
+  "supported": true,
+  "fields": {
+   "description": "リソースの使用に関する警告の基底クラス（Warning のサブクラス）。Python 3.2 で追加された。",
+   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
+   "caution": "閉じられていないファイルなど、リソースの後始末漏れを知らせるために使われる。既定では無視される。",
+   "example": "def handler(event, context):\n    try:\n        raise ResourceWarning(\"bad\")\n    except ResourceWarning:\n        print(\"ResourceWarningを捕捉\")\n    return {\"requestId\":event[\"requestId\"],\"status\":\"success\",\"fragment\":event[\"fragment\"]}",
+   "source": "https://docs.python.org/ja/3.12/library/exceptions.html#ResourceWarning"
+  },
+  "sha256": "4caf1c81b8e43d58c52bcf2e7aa3f82c2398e0403d434ab1f7c8f1a7bac376f0"
+ },
+ {
+  "kind": "cloudformation",
+  "name": "IOError",
+  "supported": true,
+  "fields": {
+   "description": "OSError の別名（同一のクラス）。Python 3.3 で OSError に統合された。",
+   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
+   "caution": "IOError と OSError は同じクラスのため、raise した例外はどちらの名前の except でも捕捉できる（本アプリでも同一視する）。新しいコードでは OSError を使う。",
+   "example": "def handler(event, context):\n    try:\n        raise IOError(\"bad\")\n    except IOError:\n        print(\"IOErrorを捕捉\")\n    return {\"requestId\":event[\"requestId\"],\"status\":\"success\",\"fragment\":event[\"fragment\"]}",
+   "source": "https://docs.python.org/ja/3.12/library/exceptions.html#IOError"
+  },
+  "sha256": "d8ffa476dff3828466ab2d86e252908501883d5b30828b8b6b3d038c719c79e7"
+ },
+ {
+  "kind": "cloudformation",
+  "name": "EnvironmentError",
+  "supported": true,
+  "fields": {
+   "description": "OSError の別名（同一のクラス）。Python 3.3 で OSError に統合された。",
+   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
+   "caution": "EnvironmentError と OSError は同じクラスのため、raise した例外はどちらの名前の except でも捕捉できる（本アプリでも同一視する）。新しいコードでは OSError を使う。",
+   "example": "def handler(event, context):\n    try:\n        raise EnvironmentError(\"bad\")\n    except EnvironmentError:\n        print(\"EnvironmentErrorを捕捉\")\n    return {\"requestId\":event[\"requestId\"],\"status\":\"success\",\"fragment\":event[\"fragment\"]}",
+   "source": "https://docs.python.org/ja/3.12/library/exceptions.html#EnvironmentError"
+  },
+  "sha256": "b8f77d18ac1ab8885e18537e42e65c192de1a2e76c8ec3196bcd3293971acca9"
  }
 ]

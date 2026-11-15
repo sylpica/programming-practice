@@ -744,7 +744,7 @@
  {
   "kind": "powershell",
   "name": "比較演算子",
-  "description": "左辺の型に応じて比較します。文字列比較の既定は大文字小文字を区別しません。否定形の-notlike・-notmatchもあります。全ての比較演算子には、大文字小文字を区別する-c接頭辞の形（-ceq・-cne・-cgt・-cge・-clt・-cle・-clike・-cnotlike・-cmatch・-cnotmatch）と、区別しないことを明示する-i接頭辞の形（-ieq・-ine・-igt・-ige・-ilt・-ile・-ilike・-inotlike・-imatch・-inotmatch）があり、接頭辞なしの形は-i形と同じく区別しません。",
+  "description": "左辺の型に応じて比較します。基本形は-eq・-ne・-gt・-ge・-lt・-le・-like・-matchの8つで、否定形の-notlike・-notmatchもあります。文字列比較の既定は大文字小文字を区別しません。全ての比較演算子には、大文字小文字を区別する-c接頭辞の形（-ceq・-cne・-cgt・-cge・-clt・-cle・-clike・-cnotlike・-cmatch・-cnotmatch）と、区別しないことを明示する-i接頭辞の形（-ieq・-ine・-igt・-ige・-ilt・-ile・-ilike・-inotlike・-imatch・-inotmatch）があり、接頭辞なしの形は-i形と同じく区別しません。",
   "returns": "構文に従って変数・制御・成功ストリームを更新",
   "caution": "未対応の形式は名称・行を示して停止します。",
   "example": "\"Hello\" -eq \"hello\"\n\"abc.txt\" -like \"*.txt\"\n\"abc123\" -match \"[0-9]+\"\n\"a\" -cgt \"B\"\n\"ABC\" -clike \"a*\"",

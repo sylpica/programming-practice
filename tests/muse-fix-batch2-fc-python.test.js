@@ -141,8 +141,8 @@ test("R23-N11 valid targets keep working", async () => {
 
 // ---- R23-N6: math constants have reference items that match the real behaviour
 test("R23-N6 math constant reference items exist, are supported, and their examples run", async () => {
-  assert.equal(py.reference.length, 166); // +1 修正バッチ3（R24 §3.2「数値の属性」）
-  assert.equal(cf.reference.length, 177); // +1 同項目の CloudFormation 伝播
+  assert.equal(py.reference.length, 210); // +1 修正バッチ3（R24 §3.2「数値の属性」）+44 修正バッチ4 Python追随班（例外44件）
+  assert.equal(cf.reference.length, 221); // +1 同項目の CloudFormation 伝播 +44 例外44件の伝播
   for (const [name, expected] of [["math.pi", "3.141592653589793"], ["math.e", "2.718281828459045"], ["math.tau", "6.283185307179586"], ["math.inf", "inf"], ["math.nan", "nan"]]) {
     const item = ref(py, name);
     assert.ok(item, name);
@@ -205,9 +205,9 @@ test("RA-22 dict item states the key condition as hashability", () => {
 // ---- reference-r2 ledger stays in sync (changed rows follow the definitions, new rows exist)
 test("r2 ledger rows for changed and new python items match the definitions", () => {
   const rows = JSON.parse(fs.readFileSync(new URL("../docs/audit/reference-r2.json", import.meta.url)));
-  assert.equal(rows.length, 919); // +2 修正バッチ3（「数値の属性」の Python 行＋CloudFormation 伝播行）
-  assert.equal(rows.filter((r) => r.kind === "python").length, 166);
-  assert.equal(rows.filter((r) => r.kind === "cloudformation").length, 177);
+  assert.equal(rows.length, 1007); // +2 修正バッチ3（「数値の属性」の Python 行＋CloudFormation 伝播行）+88 修正バッチ4 Python追随班（例外44件の Python 行＋CloudFormation 伝播行）
+  assert.equal(rows.filter((r) => r.kind === "python").length, 210);
+  assert.equal(rows.filter((r) => r.kind === "cloudformation").length, 221);
   const names = ["ModuleNotFoundError", "UnicodeError", "FileNotFoundError", "LookupError", "ArithmeticError", "NameError", "KeyboardInterrupt", "Exception", "global", "comprehension", "f-string", "with", "math", "dict", "math.pi", "math.e", "math.tau", "math.inf", "math.nan", "数値の属性"];
   for (const [kind, def] of [["python", py], ["cloudformation", cf]]) {
     for (const name of names) {

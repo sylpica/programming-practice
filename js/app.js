@@ -635,7 +635,9 @@ function renderRefs() {
   let q = $("referenceSearch").value.toLowerCase();
   $("refList").replaceChildren();
   for (let r of reference.filter((r) =>
-    (r.name + " " + r.category + " " + r.description).toLowerCase().includes(q),
+    (r.name + " " + r.category + " " + r.description + " " + r.syntax)
+      .toLowerCase()
+      .includes(q),
   )) {
     let b = el("button", r.name);
     b.onclick = () => showRef(r.name);
@@ -648,7 +650,9 @@ function fullRefs() {
   let q = $("fullSearch").value.toLowerCase();
   $("fullReferences").replaceChildren();
   for (let r of reference.filter((r) =>
-    (r.name + " " + r.category + " " + r.description).toLowerCase().includes(q),
+    (r.name + " " + r.category + " " + r.description + " " + r.syntax)
+      .toLowerCase()
+      .includes(q),
   ))
     $("fullReferences").append(refArticle(r, false, "h2"));
   if (!$("fullReferences").childElementCount)

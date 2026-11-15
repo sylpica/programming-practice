@@ -286,6 +286,12 @@ export function tokenize(source, dialect = "js") {
                 : big
                   ? /^\d(?:_?\d)*$/.test(body)
                   : /^\d(?:_?\d)*(?:\.\d(?:_?\d)*)?(?:[eE][+-]?\d(?:_?\d)*)?$/.test(body);
+        // R25-N9 兄弟表面：区切り入りでも先行ゼロの10進形（0_777／0_777n 等）は
+        // 実 Node では SyntaxError（先行ゼロ自体が不可）。整数部が 0 で始まり
+        // 2文字以上ある形は、区切りの位置以前にリテラルとして不正。
+        const intPart = body.split(/[.eE]/)[0];
+        if (!/^0[xXbBoO]/.test(body) && intPart.length > 1 && intPart.startsWith("0"))
+          throw new PracticeError(`先行ゼロの数値リテラルは JavaScript では使えません：${raw}`, line, "SyntaxError");
         if (!valid)
           throw new PracticeError(`数値リテラルの区切り（_）の位置が不正です：${raw}`, line, "SyntaxError");
         out.push({ v: body.replaceAll("_", "") + (big ? "n" : ""), k: "number", line });
@@ -297,6 +303,15 @@ export function tokenize(source, dialect = "js") {
     if (dialect === "js") {
       let bm = source.slice(i).match(/^\d+n(?![\w$])/);
       if (bm) {
+        // R25-N9：先行ゼロを持つ10進 BigInt（0777n／08n／00n 等）は実 Node
+        // では SyntaxError。正規形は 0n のみで、n なしの 0777 が名指し停止
+        // していることと揃え、値を捏造せずリテラルを名指して停止する。
+        if (/^0\d/.test(bm[0]))
+          throw new PracticeError(
+            `先行ゼロの数値リテラルは JavaScript では使えません：${bm[0]}`,
+            line,
+            "SyntaxError",
+          );
         out.push({ v: bm[0], k: "number", line });
         i += bm[0].length;
         continue;
@@ -308,13 +323,26 @@ export function tokenize(source, dialect = "js") {
     // 段階でリテラル全体の形を検証し、リテラル自体を名指して停止する
     // （Python エンジンや JS 自身の 1__0 の扱いと一貫させる）。検証だけを
     // 行い、妥当な形の字句化は従来の経路に委ねる。
+    // R25-N11：この検証は JS 分岐だけにあり、同じ共有トークナイザを使う
+    // 他方言（R／AutoHotkey／Power Fx／C／C++／C#）では不完全なリテラルが
+    // 汎用の区切りエラー（虚偽原因）になっていた。検証を各方言へ広げ、
+    // 方言ごとの正当な接尾辞・基数形は従来経路（方言専用の名指しを含む）
+    // に委ねたまま、不正な形だけをリテラル自体の名指しで停止する。
+    // R25-N10（JS 分）：数値リテラル直後の「.＋数字」（1.5.2／1..2／
+    // 0b101.5／1e5.5）も末尾検証を素通りしていた。直後が識別子の形
+    // （1.5.toString() のメンバーアクセス）は区別して壊さない。
     if (
-      dialect === "js" &&
+      ["js", "r", "ahk", "fx", "c", "cpp", "csharp"].includes(dialect) &&
       (/\d/.test(source[i]) || (source[i] === "." && /\d/.test(source[i + 1] || "")))
     ) {
       const rest0 = source.slice(i);
+      const wordRe = dialect === "js" ? /^[\w$]+/ : /^\w+/;
       // 基数接頭辞の直後に有効な数字が無い形（0x／0xZZ／0b2／0o8 等）。
-      const prefix = rest0.match(/^0[xXbBoO][\w$]*/)?.[0];
+      // いずれかの基数で整形されている接頭辞は、方言専用の名指し
+      // （R／AutoHotkey の「0b 形式はありません」、Power Fx の「基数
+      // リテラルはありません」、C系の「0o 形式は使えません」等）を
+      // 持つ従来経路に委ねる。
+      const prefix = rest0.match(dialect === "js" ? /^0[xXbBoO][\w$]*/ : /^0[xXbBoO]\w*/)?.[0];
       const prefixValid =
         /^0[xX][0-9a-fA-F]/.test(rest0) ||
         /^0[bB][01]/.test(rest0) ||
@@ -338,17 +366,51 @@ export function tokenize(source, dialect = "js") {
             line,
             "SyntaxError",
           );
-        if (/^[\w$]/.test(after)) {
-          const token = core + (after.match(/^[\w$]+/)?.[0] || "");
-          // 整数・基数形の末尾 n は BigInt リテラル（0x1Fn 等）として
-          // 従来経路に委ねる。型接尾辞（1f 等）も従来の専用メッセージに委ねる。
-          const bigintSuffix =
-            after === "n" || /^n(?![\w$])/.test(after);
-          const typeSuffix = /^[LfF](?![\w$])/.test(after);
-          if (
-            !(bigintSuffix && !/[.eE]/.test(core.replace(/^0[xXbBoO]/, ""))) &&
-            !typeSuffix
-          )
+        // R25-N10：リテラル直後の「.＋数字」はリテラル自体の誤り。
+        // C系は16進浮動小数（0x1F.5p3 等）の表面があるため対象外とし、
+        // JS／R／AutoHotkey／Power Fx で名指す（「.＋識別子」の正当な
+        // メンバーアクセスは数字で始まらないため区別できる）。
+        if (
+          ["js", "r", "ahk", "fx"].includes(dialect) &&
+          /^\.\d/.test(after)
+        )
+          throw new PracticeError(
+            `数値リテラルの書き方が不正です：${core}${after.match(/^\.\d+(?:\.\d+)*/)?.[0] || ""}`,
+            line,
+            "SyntaxError",
+          );
+        // C系では、核が「.」で終わり識別子が続く形（10.ToString() 等）の
+        // 末尾ドットはメンバーアクセスのドットでありリテラルの一部では
+        // ない（R24-N15 の C# 表面。c-family 側の変換も同じ裁定）。
+        // C系でのみ末尾検証の対象から外す。JS では実 Node でも
+        // 10.toString() はリテラル直後の識別子として SyntaxError に
+        // なるため、従来どおり名指す。
+        if (
+          !(["c", "cpp", "csharp"].includes(dialect) && core.endsWith(".")) &&
+          (dialect === "js" ? /^[\w$]/ : /^\w/).test(after)
+        ) {
+          const token = core + (after.match(wordRe)?.[0] || "");
+          // 方言ごとの正当な接尾辞は従来経路に委ねる：JS の BigInt
+          // 末尾 n（0x1Fn 等）と型接尾辞（1f 等、専用メッセージあり）、
+          // R の L（整数リテラル、専用の未対応名指しあり）と i（複素数
+          // リテラルの表面として従来経路に残す）、C／C++／C# の型接尾辞
+          // （u／l／ll／ul／f 等。C系は c-family 側の変換で正規化済みの
+          // 形がここを通る）。
+          const suffixWord = after.match(wordRe)?.[0] || "";
+          const exempt =
+            dialect === "js"
+              ? ((suffixWord === "n" ||
+                  /^n(?![\w$])/.test(after)) &&
+                  !/[.eE]/.test(core.replace(/^0[xXbBoO]/, ""))) ||
+                /^[LfF](?![\w$])/.test(after)
+              : dialect === "r"
+                ? suffixWord === "L" || suffixWord === "i"
+                : dialect === "c" || dialect === "cpp"
+                  ? /^(?:[uU](?:[lL]{1,2})?|[lL]{1,2}[uU]?|[fF])$/.test(suffixWord)
+                  : dialect === "csharp"
+                    ? /^(?:[uU][lL]?|[lL][uU]?|[fFdDmM])$/.test(suffixWord)
+                    : false;
+          if (!exempt)
             throw new PracticeError(
               `数値リテラルの書き方が不正です：${token}`,
               line,
@@ -1666,6 +1728,26 @@ export function executeProgram(nodes, model, semantics = {}, custom = {}) {
         // （Node の SyntaxError: Invalid left-hand side in assignment 相当）
         // であり、右辺に未定義の名前があってもそちらを先に指してはならない。
         // 書き込み可能な形は var／index／member と、C系の逆参照（*p）のみ。
+        // R25-N8：キーワードリテラルは var ノードとして運ばれるため形の
+        // 検証を素通りしていた（JS の true／null／this への代入が黙って
+        // 受理され、右辺の未定義名を誤って指した）。方言ごとの予約
+        // リテラル名を代入先として先に名指す。JS の undefined／NaN／
+        // Infinity は識別子であり、実 Node の sloppy な挙動（黙った
+        // 無効化）とアプリの現行扱いが一致するため対象に含めない。
+        // R の T／F は再代入可能な変数なので対象に含めない。
+        const keywordTarget =
+          n.target?.k === "var"
+            ? {
+                js: ["true", "false", "null", "this"],
+                r: ["TRUE", "FALSE", "NULL"],
+              }[semantics.dialect]?.includes(n.target.name)
+            : false;
+        if (keywordTarget)
+          throw new PracticeError(
+            `代入先が不正です：${n.target.name} には代入できません（Invalid left-hand side in assignment）`,
+            n.line,
+            "SyntaxError",
+          );
         if (
           !["var", "index", "member"].includes(n.target?.k) &&
           !(n.target?.k === "unary" && n.target?.op === "*")
