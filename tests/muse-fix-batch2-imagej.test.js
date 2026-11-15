@@ -169,10 +169,11 @@ test('D1-1 .length values match lengthOf for strings and arrays', async () => {
   assert.deepEqual(outputs(p), ['3', '3', '5', '5']);
 });
 
-/* D2-7 追随: SIM_EXTRA のみの7件目は String.format。項目化せず、未確認で停止するのが正 */
-test('D2-7 String.format is not itemized and stops as unconfirmed like the other SIM_EXTRA names', async () => {
+/* D2-7 追随: SIM_EXTRA のみの7件目は String.format。項目化せず、未対応で停止するのが正
+   （R29-N4 で接頭辞を実体に合わせ「未対応：」へ統一。旧文言は「未確認：〜未対応です」の混在だった） */
+test('D2-7 String.format is not itemized and stops as unsupported like the other SIM_EXTRA names', async () => {
   assert.ok(!d.reference.some((r) => r.name === 'String.format'), 'String.format は項目化しない裁定です');
   const r = await run('s = String.format("%d", 1);\nprint("after");');
-  assert.ok(errors(r).some((e) => /未確認：String\.format はモデルで未対応です/.test(e.message)), JSON.stringify(errors(r)));
+  assert.ok(errors(r).some((e) => /未対応：String\.format はモデルで未対応です/.test(e.message)), JSON.stringify(errors(r)));
   assert.ok(!r.paths.some((p) => outputs(p).includes('after')));
 });

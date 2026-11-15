@@ -39,14 +39,14 @@ test("R25-N7(a): both reference search predicates in app.js include syntax", () 
   assert.equal(occurrences, 2, "renderRefs と fullRefs の両述語に syntax が必要");
 });
 
-test("R25-N7(a): every reference item is found by its own name (all 1327)", () => {
+test("R25-N7(a): every reference item is found by its own name (all 1340)", () => {
   let n = 0;
   for (const d of definitions)
     for (const r of d.reference) {
       n++;
       assert.ok(searchHit(r, r.name), `${d.id}/${r.name} が項目名で到達しない`);
     }
-  assert.equal(n, 1327); // 998 + 修正バッチ4 Python追随班の例外44件×2種（Python＋CloudFormation伝播）+ 修正バッチ6 R27-N20 組み込み定数3件×2種（同）+ R27-N7 VBA 定数94件 + 修正バッチ7 R28-N9 VBA 定数141件
+  assert.equal(n, 1340); // 998 + 修正バッチ4 Python追随班の例外44件×2種（Python＋CloudFormation伝播）+ 修正バッチ6 R27-N20 組み込み定数3件×2種（同）+ R27-N7 VBA 定数94件 + 修正バッチ7 R28-N9 VBA 定数141件 + 修正バッチ8 13件（PowerShell 三項演算子＋VBA 参照専用12件）
 });
 
 // ---------- R25-N7(b)：比較演算子の description に基本形8綴りを列挙 ----------
@@ -113,7 +113,7 @@ function extractNames(item) {
   return [...names];
 }
 
-test("R25-N7(c): all bundled items' all names reach their own item (bundled=12 items, 94 names, 0 unreachable)", () => {
+test("R25-N7(c): all bundled items' all names reach their own item (bundled=12 items, 95 names, 0 unreachable)", () => {
   let bundled = 0,
     names = 0;
   const unreachable = [];
@@ -127,7 +127,7 @@ test("R25-N7(c): all bundled items' all names reach their own item (bundled=12 i
         if (!searchHit(r, n)) unreachable.push(`${d.id}/${r.name}: ${n}`);
     }
   assert.equal(bundled, 12, "束ね項目数");
-  assert.equal(names, 94, "名前総数");
+  assert.equal(names, 95, "名前総数");
   assert.deepEqual(unreachable, [], "未到達の名前がある");
 });
 
@@ -170,7 +170,7 @@ test("R25-N7(d): DEVELOPMENT.md states the F-02 reachability criterion incl. the
 });
 
 // ---------- R25-N17：REQUIREMENTS.md の数表 ----------
-test("R25-N17: REQUIREMENTS.md reference counts match the measured definitions and total 1327", () => {
+test("R25-N17: REQUIREMENTS.md reference counts match the measured definitions and total 1340", () => {
   const req = read("../docs/audit/REQUIREMENTS.md");
   const nameToId = {
     "Excel VBA": "vba",
@@ -207,8 +207,8 @@ test("R25-N17: REQUIREMENTS.md reference counts match the measured definitions a
     );
   }
   assert.equal(rows, 15);
-  assert.equal(sum, 1327, "表の合計が本文の1327と一致しない");
-  assert.match(req, /1327リファレンス/);
+  assert.equal(sum, 1340, "表の合計が本文の1340と一致しない");
+  assert.match(req, /1340リファレンス/);
 });
 
 // ---------- R25-N30：AutoHotkey for の文面 ----------

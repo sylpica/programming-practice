@@ -584,6 +584,25 @@ main {
   background: #fff2df;
   color: #916322;
 }
+/* R29-N5（U-45）: コード練習ビューのリファレンス一覧ボタンと使用中チップでも
+   参照専用（未対応）を判別できるようにする。配色はバッジ
+   （.badge.unsupported）と同一（文字 #916322／背景 #fff2df、コントラスト
+   4.74:1 で AA 合格）で、色だけに頼らず本文に「未対応」タグを併記する。 */
+.ref-list button.unsupported,
+.chip.unsupported {
+  background: #fff2df;
+  color: #916322;
+}
+.unsupported-tag {
+  display: inline-block;
+  margin-left: 5px;
+  padding: 0 4px;
+  border: 1px solid currentColor;
+  border-radius: 3px;
+  font-size: 9px;
+  line-height: 1.5;
+  vertical-align: 1px;
+}
 .final-body {
   padding: 15px 17px;
   font-size: 12px;

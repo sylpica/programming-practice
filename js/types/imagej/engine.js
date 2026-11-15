@@ -1072,12 +1072,12 @@ function simRunProgram(code, forkCtl, model){
         case "replace": return simReplaceStr(o, av[0], av[1]);
         case "split": return simSplitStr(o, av.length ? av[0] : undefined, e.line);
       }
-      if (Object.prototype.hasOwnProperty.call(SIM_OFFICIAL, m) || funcByName(m)) throw simErr(e.line, "未確認：文字列メソッド " + m + " はモデルで未対応です", "後続結果は生成しません。");
+      if (Object.prototype.hasOwnProperty.call(SIM_OFFICIAL, m) || funcByName(m)) throw simErr(e.line, "未対応：文字列メソッド " + m + " はモデルで未対応です", "後続結果は生成しません。");
       throw simErr(e.line, "「" + m + "」は文字列に使えないメソッドです", "ImageJ にも存在しない名前です。綴り違いの可能性があります。");
     }
     if (Array.isArray(o)){
       if (m === "length") return o.length;
-      if (Object.prototype.hasOwnProperty.call(SIM_OFFICIAL, "Array." + m)) throw simErr(e.line, "未確認：配列メソッド Array." + m + " はモデルで未対応です", "変更後の配列を推測しません。");
+      if (Object.prototype.hasOwnProperty.call(SIM_OFFICIAL, "Array." + m)) throw simErr(e.line, "未対応：配列メソッド Array." + m + " はモデルで未対応です", "変更後の配列を推測しません。");
       throw simErr(e.line, "「" + m + "」は配列に使えないメソッドです", "ImageJ にも存在しない名前です。綴り違いの可能性があります。");
     }
     return SIM_UNK;
@@ -2374,12 +2374,12 @@ function simBuiltin(S, e, args, refs, H){
     else step(line, "ダイアログに項目を追加します");
     return SIM_UNK;
   }
-  if (name.indexOf("File.") === 0) throw simErr(line, "未確認：" + name + " はモデルで未対応です", "ファイル状態を推測して後続を実行しません。");
+  if (name.indexOf("File.") === 0) throw simErr(line, "未対応：" + name + " はモデルで未対応です", "ファイル状態を推測して後続を実行しません。");
   if (!f0 && !Object.prototype.hasOwnProperty.call(SIM_EXTRA, name)){
-    if (Object.prototype.hasOwnProperty.call(SIM_OFFICIAL, name)) throw simErr(line, "未確認：" + name + " はモデルで未対応です", "後続の状態・出力は生成しません。");
+    if (Object.prototype.hasOwnProperty.call(SIM_OFFICIAL, name)) throw simErr(line, "未対応：" + name + " はモデルで未対応です", "後続の状態・出力は生成しません。");
     throw simErr(line, "「" + name + "」は定義されていない関数です", "関数リファレンスにも、このコード内の function 定義にもありません。綴り違いか、定義のし忘れの可能性があります。");
   }
-  throw simErr(line, "未確認：" + name + " はモデルで未対応です", "後続の状態・出力は生成しません。");
+  throw simErr(line, "未対応：" + name + " はモデルで未対応です", "後続の状態・出力は生成しません。");
 }
 function writeRef(S, name, v){ if (S.writeVar) S.writeVar(name, v); else S.scopes[0][name] = v; }
 function simRoiManager(S, e, args, H){
@@ -2400,7 +2400,7 @@ function simRoiManager(S, e, args, H){
     S.roiList.forEach(function(r){ S.results.push(simResultRow(S, r)); });
     step(line, "登録された全 ROI（" + S.roiList.length + " 件）を測定し、結果表に行を追加します"); return SIM_UNK;
   }
-  throw simErr(line, "未確認：ROI Manager の操作「" + simFmt(args[0]) + "」はモデルで未対応です", "後続の状態・出力は生成しません。");
+  throw simErr(line, "未対応：ROI Manager の操作「" + simFmt(args[0]) + "」はモデルで未対応です", "後続の状態・出力は生成しません。");
 }
 /* ROI の面積：矩形は幅×高さ、楕円は画素数の近似（π×幅×高さ/4）。直線・多角形は外接矩形の面積ではないため確定しない */
 function simRoiArea(roi){
@@ -2689,7 +2689,7 @@ function simRunCmd(S, cmdRaw, opt, line, H){
   }
   var best = null, bestD = 3;
   SIM_CMD_KEYS.forEach(function(k){ var d = simLev(base.toLowerCase(), k.replace(/\.\.\.$/, "").toLowerCase()); if (d < bestD){ bestD = d; best = k; } });
-  throw simErr(line, "未確認：メニューコマンド「" + cmd + "」はモデルで未対応です", best ? "もしかして「" + best + "」ですか。後続結果は生成しません。" : "実在・効果を確認できないため、後続結果は生成しません。");
+  throw simErr(line, "未対応：メニューコマンド「" + cmd + "」はモデルで未対応です", best ? "もしかして「" + best + "」ですか。後続結果は生成しません。" : "実在・効果を確認できないため、後続結果は生成しません。");
 }
 
 /* ---------- terms ---------- */

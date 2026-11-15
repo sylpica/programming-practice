@@ -776,7 +776,7 @@ function parse(source, language, deadline) {
             this.take();
           }
           this.take("}");
-          return { ...meta, k: "array", values };
+          return { ...meta, k: "array", values, elemType: typeName };
         }
         unsupported("new " + typeName + "[] のこの形式は未対応です", start.line);
       }
@@ -813,7 +813,7 @@ function parse(source, language, deadline) {
         this.take("}");
         // R24-N11 根因：宣言長が捨てられ、要素数との不一致を検証できて
         // いなかった。size として保持し、評価時に CS0847 相当で止める。
-        return { ...meta, k: "array", values, size: counts[0] };
+        return { ...meta, k: "array", values, size: counts[0], elemType: typeName };
       }
       if (counts.length > 1) {
         if (jaggedSuffix > 0)
@@ -858,6 +858,19 @@ function parse(source, language, deadline) {
     }
     let t = this.ts[this.i],
       a;
+    // R29-N18 兄弟表面：C# で式の先頭に裸の波括弧初期化子が現れる位置
+    // （代入の右辺・引数など）は、実物では CS0623（配列初期化子は変数
+    // またはフィールドの初期化子でのみ使用できる）。共有パーサが
+    // レコードリテラルとして読み「レコードのフィールド名が必要です」
+    // という虚偽原因になるため、ここで真因を名指す。宣言位置の
+    // 初期化子は宣言パーサが先に処理し、波括弧で始まる要素は
+    // parseBracedInit が先に処理するため、合法形には届かない。
+    if (language === "csharp" && t?.v === "{")
+      throw new PracticeError(
+        "配列初期化子は変数またはフィールドの初期化子でのみ使用できます。new 式を使ってください（CS0623）",
+        t.line,
+        "CompileError",
+      );
     if (t?.v === "++" || t?.v === "--") {
       this.take();
       a = { k: "pre", target: this.expr(10), op: t.v, line: t.line };
@@ -955,7 +968,10 @@ function parse(source, language, deadline) {
       parser.take();
     }
     parser.take("}");
-    return { k: "array", values, line };
+    // R29-N18：裸の波括弧初期化子であることを印付けする。new 式の配列
+    // 初期化子（parseNewExpr が返す k:"array"）と区別し、C# のジャグ／
+    // 1次元配列で要素位置の裸の入れ子を CS0623 として名指すために使う。
+    return { k: "array", values, line, bracedInit: true };
   };
   // R27-N18：部分初期化子の波括弧を、言語規則どおりに畳む／名指す。
   // - C：スカラーへの余分な波括弧は合法（gcc 実測：値は内側の値、
@@ -2132,10 +2148,10 @@ export function createCFamily({ id, name, extensions, language }) {
     [
       "new",
       "式",
-      "new 型[個数] / new 型[] { … } / new クラス名()",
+      "new 型[個数] / new 型[個数,個数] / new 型[個数][] / new 型[] { … } / new クラス名()",
       "配列またはオブジェクトを生成する式です。配列は要素が型の既定値で初期化されます。",
       "int[] values = new int[3];\nvalues[0] = 1;",
-      "対応形式は new 型[個数]、new 型[] {…}、引数なしの new クラス名() のみです。引数付きコンストラクタなどは未対応です。",
+      "対応形式は new 型[個数]、new 型[個数,個数]（矩形配列）、new 型[個数][]（ジャグ配列）、new 型[] {…}、引数なしの new クラス名() です。引数付きコンストラクタや、多次元／ジャグ配列への new と初期化子 {…} の併用などは未対応です。",
     ],
     [
       "文字列補間",
@@ -2208,7 +2224,7 @@ export function createCFamily({ id, name, extensions, language }) {
   ]);
   const prelude = {pointer:"int values[3]={1,2,3};",if:"int n=2;",for:"int total=0;",while:"int n=0;",printf:"int n=3;",cout:"int n=3;","Console.WriteLine":"int total=3;",class:"class Counter { public int Value; }",checked:"int n=1;"};
   for (const r of reference) if (prelude[r.name]) r.example = prelude[r.name] + "\n" + r.example;
-  if (managed) reference.find(r => r.name === "array").syntax = "int[] values = {1, 2, 3};";
+  if (managed) reference.find(r => r.name === "array").syntax = "int[] values = {1, 2, 3}; / int[,] table = {{1, 2}, {3, 4}}; / int[][] jagged = {new int[]{1, 2}, new int[]{3}};";
   const csharpOnly = ["uint","ulong","ushort","byte","sbyte","foreach","unchecked","new","文字列補間","int.TryParse","double.TryParse","Length","int.MaxValue","int.MinValue","uint.MaxValue","uint.MinValue","short.MaxValue","short.MinValue","byte.MaxValue","byte.MinValue","sbyte.MaxValue","sbyte.MinValue","char.MaxValue","char.MinValue","Math.PI","Math.E","String.Empty","string.Empty","long.MaxValue","long.MinValue","ulong.MaxValue"];
   const cppOnly = ["参照","getline","endl"];
   reference = reference.filter(r => !managed
@@ -2339,7 +2355,7 @@ export function createCFamily({ id, name, extensions, language }) {
         ? "C#のint32演算、配列範囲検査、単純クラス・参照共有をモデル化します。"
         : "C / C++の符号付き整数・配列・ポインタをモデルメモリ上で追跡し、範囲外・未初期化・オーバーフローは停止します。",
       support:
-        "mainまたは文の断片、単純宣言、代入、If / For / While、掲載出力。未対応：型推論（auto / var）、多次元配列、動的確保・解放、複雑な型・テンプレート・関数定義・多重宣言・スコープのシャドーイング。64ビット整数の安全な精度範囲外は未確認として停止。",
+        "mainまたは文の断片、単純宣言、代入、If / For / While、掲載出力。多次元配列にも対応します（C／C++ は連鎖添字の多次元配列、C# は矩形配列（int[,]）とジャグ配列（int[][]））。未対応：型推論（auto / var）、動的確保・解放、複雑な型・テンプレート・関数定義・多重宣言・スコープのシャドーイング。64ビット整数の安全な精度範囲外は未確認として停止。",
       sources: managed
         ? [
             {
@@ -2531,7 +2547,56 @@ export function createCFamily({ id, name, extensions, language }) {
             return managed ? csNumText(v, type) : cppGText(v);
           return formatValue(transformDisplay(v));
         }
-        function csConcatText(v, type) {
+        // R29-N21 根因：配列の ToString（型名表示）が、宣言した要素型
+        // ではなく保持した要素値の JS 型から導出されていたため、byte／
+        // sbyte／short／ushort／uint／ulong の配列や矩形・ジャグが全て
+        // "System.Double[]" になっていた。型名は宣言型（csTypeStrOf／
+        // 型ヒント）から要素型＋形（[]／[,]／[][]）で組み立てる。
+        // 導出できない場合だけ従来の値ベース推定へ落とす。
+        const CS_SYSTEM_NAMES = {
+          int: "Int32", long: "Int64", double: "Double", float: "Single",
+          bool: "Boolean", char: "Char", string: "String", byte: "Byte",
+          sbyte: "SByte", short: "Int16", ushort: "UInt16", uint: "UInt32",
+          ulong: "UInt64",
+        };
+        function csArrayTypeName(node, value, s, typeHint) {
+          for (const cand of [node ? csTypeStrOf(node, s) : null, typeHint]) {
+            const p = cand ? csParseTypeStr(cand) : null;
+            if (p?.suffix) {
+              const sys = CS_SYSTEM_NAMES[p.elem];
+              return (sys ? "System." + sys : p.elem) + p.suffix;
+            }
+          }
+          let depth = 0,
+            cur = value;
+          while (Array.isArray(cur)) {
+            depth++;
+            cur = cur[0];
+          }
+          if (!depth) return null;
+          const elemName =
+            typeof cur === "string"
+              ? "String"
+              : typeof cur === "boolean"
+                ? "Boolean"
+                : typeof cur === "number"
+                  ? "Double"
+                  : "Int32";
+          return "System." + elemName + "[]".repeat(depth);
+        }
+        function csArrayShape(node, s, typeHint) {
+          for (const cand of [node ? csTypeStrOf(node, s) : null, typeHint]) {
+            const p = cand ? csParseTypeStr(cand) : null;
+            if (p?.suffix) return p;
+          }
+          return null;
+        }
+        function csConcatText(v, type, node, s) {
+          // R29-N22 根因：文字列連結・補間の中の配列は、実物では
+          // ToString（型名）になる。JS の String(配列)（要素のカンマ
+          // 連結）で代用していたため "v=1,2,3" になっていた。
+          if (Array.isArray(v))
+            return csArrayTypeName(node, v, s, type) ?? String(v);
           if (v === null || v === undefined) return "";
           if (typeof v === "boolean") return v ? "True" : "False";
           if (typeof v === "number")
@@ -2554,6 +2619,74 @@ export function createCFamily({ id, name, extensions, language }) {
           const target = node.b;
           if (target && ["var", "index", "member"].includes(target.k))
             api.write(target, api.freshUnknown("標準入力", s), s, node);
+        }
+        // R29-N20／N21 根因：C# の配列の「形」（要素型と添字の形）は
+        // 値（入れ子配列）からは復元できないため、宣言型の文字列から
+        // 導出する。型文字列 "int[,]"／"int[][]"／"byte[]" を
+        // { elem, suffix } に分解し、式ノードから結果型の文字列を
+        // 再構成する（変数・添字・new 式・キャストだけが対象で、
+        // 導出できない形は null を返し、従来の経路に委ねる）。
+        function csParseTypeStr(str) {
+          if (typeof str !== "string") return null;
+          const m = str.match(/^([A-Za-z_][\w.]*?)(\[.*\])$/);
+          if (!m) return { elem: str, suffix: null };
+          return { elem: m[1], suffix: m[2] };
+        }
+        function csTypeStrOf(node, s) {
+          if (!node || typeof node !== "object") return null;
+          if (node.k === "var") return s.types[node.name] ?? null;
+          if (node.k === "index") {
+            const t = csTypeStrOf(node.target, s);
+            if (!t) return null;
+            if (t === "string")
+              return node.indexes.length === 1 ? "char" : null;
+            const p = csParseTypeStr(t);
+            if (!p?.suffix) return null;
+            if (/^\[,+\]$/.test(p.suffix)) {
+              const rank = p.suffix.split(",").length;
+              return node.indexes.length === rank ? p.elem : null;
+            }
+            if (/^(\[\])+$/.test(p.suffix)) {
+              if (node.indexes.length !== 1) return null;
+              const groups = p.suffix.length / 2;
+              return groups === 1 ? p.elem : p.elem + "[]".repeat(groups - 1);
+            }
+            return null;
+          }
+          if (node.k === "construct")
+            return node.name?.includes("[") ? node.name : (node.name ?? null);
+          if (node.k === "array" && node.elemType)
+            return node.elemType + "[]";
+          if (node.k === "cast") return node.type;
+          if (node.k === "literal" && typeof node.value === "string")
+            return node.quote === "'" ? "char" : "string";
+          return null;
+        }
+        // R29-N20：添字の個数が対象の形と一致しなければ CS0022
+        // （dotnet 実測：矩形への a[0]／a[0][1]、ジャグ・1次元への
+        // a[0,1] は全て CS0022）。形を導出できない対象は対象外。
+        function csCheckIndex(node, s, api, errNode) {
+          const targetStr = csTypeStrOf(node.target, s);
+          if (!targetStr) return;
+          const fail = (expected) =>
+            api.fail(
+              `インデックスの数が正しくありません：${targetStr} には ${expected} 個のインデックスが必要です（CS0022）`,
+              errNode || node,
+              "CompileError",
+            );
+          if (targetStr === "string") {
+            if (node.indexes.length !== 1) fail(1);
+            return;
+          }
+          const p = csParseTypeStr(targetStr);
+          if (!p?.suffix) return;
+          if (/^\[,+\]$/.test(p.suffix)) {
+            const rank = p.suffix.split(",").length;
+            if (node.indexes.length !== rank) fail(rank);
+            return;
+          }
+          if (/^(\[\])+$/.test(p.suffix) && node.indexes.length !== 1)
+            fail(1);
         }
         function typeOf(a, s) {
           if (!a) return "int";
@@ -2611,7 +2744,16 @@ export function createCFamily({ id, name, extensions, language }) {
             if (managed && a.op === "+" && [l, r].includes("string")) return "string";
             return arithmeticType(l, r, s);
           }
+          if (a.k === "construct" && a.name?.includes("["))
+            return a.name;
+          if (a.k === "array" && a.elemType) return a.elemType + "[]";
           if (a.k === "index") {
+            // R29-N21：ジャグ配列の行など、添字の結果が配列になる形は
+            // 要素型ではなく配列型として伝える（表示・連結の型名導出用）。
+            if (managed) {
+              const ts = csTypeStrOf(a, s);
+              if (ts && ts.includes("[")) return ts;
+            }
             // R28-N19：多次元配列への部分添字（a[1] で行を取り出す形）
             // の結果型は要素型の配列。完全添字は従来どおり要素型。
             if (!managed) {
@@ -3021,6 +3163,15 @@ export function createCFamily({ id, name, extensions, language }) {
           for (let i = value.offset; i < mem.values.length; i++) {
             const c = mem.values[i];
             if (c === 0) return text;
+            // R29-N23：ポインタから変換された未確定の文字に到達した
+            // 場合は、未初期化と誤診せず未確認として停止する（終端の
+            // ヌル文字より前にあれば、文字列の内容自体が確定しない）。
+            if (isUnknown(c))
+              api.fail(
+                "確定できない文字（文字列リテラルから変換された値）が含まれています",
+                node,
+                "未確認",
+              );
             if (typeof c !== "number") api.fail("未初期化の文字です", node, "未定義動作");
             text += String.fromCharCode(c);
           }
@@ -3187,6 +3338,22 @@ export function createCFamily({ id, name, extensions, language }) {
                 collIsNull = api.read(c, s) === null;
               if (collIsNull)
                 api.fail("null参照です", n, "NullReferenceException");
+              // R29-N19 根因：矩形配列は入れ子配列として保持されるため、
+              // 共有 loop() が外側だけを走査し、foreach が要素ではなく
+              // 行を列挙していた。実物では矩形の foreach は全要素を
+              // 行優先に列挙する。コレクションを平坦化して読む専用
+              // ノードへ差し替え、共有 loop() の反復・break／continue・
+              // スコープ処理はそのまま使う（ジャグは行の列挙が正しい
+              // ため対象外）。
+              if (n.collection?.k !== "rectFlat") {
+                const shape = csArrayShape(n.collection, s, null);
+                if (shape?.suffix && /^\[,+\]$/.test(shape.suffix))
+                  n.collection = {
+                    k: "rectFlat",
+                    target: n.collection,
+                    line: n.line,
+                  };
+              }
             }
             if (n.k === "assign") {
               // R25-N14（C家族の同根表面）：文として届く代入（C／C++
@@ -3261,6 +3428,25 @@ export function createCFamily({ id, name, extensions, language }) {
               }
               let v = n.value ? api.read(n.value, s) : uninitialized;
               if (n.array) {
+                // R29-N18 根因：ジャグ配列の初期化子受理が矩形の入れ子
+                // 経路を流用し、行位置の裸の波括弧初期化子 {{1,2},{3}}
+                // まで受理していた。実物ではジャグの各行は new 式で
+                // なければならず、裸の入れ子は CS0623（矩形の入れ子
+                // 行は合法なので矩形は対象外）。1次元配列の要素位置の
+                // 裸の波括弧も同じく CS0623（dotnet 実測：int[] の
+                // {{1},{2}}、string[] の {{"x"}} も CS0623）。
+                if (
+                  managed &&
+                  n.arrayKind !== "rect" &&
+                  n.value?.k === "array" &&
+                  Array.isArray(n.value.values) &&
+                  n.value.values.some((el) => el?.bracedInit)
+                )
+                  api.fail(
+                    "配列初期化子は変数またはフィールドの初期化子でのみ使用できます。要素（ジャグ配列の行など）は new 式で書いてください（CS0623）",
+                    n,
+                    "CompileError",
+                  );
                 // R24-N10 根因：null で初期化した配列変数まで「配列長が
                 // 必要」と誤診していた。実 C# では null 配列の宣言は正当で
                 // （dotnet 実測で a == null → True）、メンバー／添字アク
@@ -3601,26 +3787,49 @@ export function createCFamily({ id, name, extensions, language }) {
                 // 要素を数値として cast する経路で「数値型が一致しません」
                 // という誤った理由になっていた。真因を名指して停止する。
                 // 文字リテラル（'h' 等）の並びは対象外（合法）。
+                // R29-N23 根因：その是正が「文字列リテラルを含む2要素
+                // 以上」を一律 excess とし、文字列が配列全体の初期化子
+                // ではなく1要素として現れる形まで誤停止していた。
+                // gcc／g++ 13.3 実測で切り分ける：
+                // - 先頭要素が文字列（{"hi","x"}／{"hi",'x'}）：文字列が
+                //   配列全体を初期化し、残りは excess（両言語ともエラー）。
+                // - 文字列が2番目以降の1要素（{'h','i',0,"x",'y'}）：
+                //   C は警告のみで合法（char へのポインタ変換。値は
+                //   アドレス依存で確定できないため未確定値として保持
+                //   する）、C++ は invalid conversion のエラー。
                 {
                   const initElemNodes = Array.isArray(n.value?.values)
                     ? n.value.values
                     : [];
-                  if (
-                    !managed &&
-                    n.type === "char" &&
-                    initElemNodes.length > 1 &&
-                    initElemNodes.some(
-                      (el) =>
-                        el?.k === "literal" &&
-                        typeof el.value === "string" &&
-                        el.quote !== "'",
-                    )
-                  )
-                    api.fail(
-                      "文字配列の初期化子に要素が多すぎます（excess elements in char array initializer）：文字列リテラルは1つだけ指定できます",
-                      n,
-                      "CompileError",
-                    );
+                  const isStrLit = (el) =>
+                    el?.k === "literal" &&
+                    typeof el.value === "string" &&
+                    el.quote !== "'";
+                  if (!managed && n.type === "char" && initElemNodes.length > 1) {
+                    if (isStrLit(initElemNodes[0]))
+                      api.fail(
+                        "文字配列の初期化子に要素が多すぎます（excess elements in char array initializer）：文字列リテラルは1つだけ指定できます",
+                        n,
+                        "CompileError",
+                      );
+                    if (initElemNodes.some((el, i) => i > 0 && isStrLit(el))) {
+                      if (language === "cpp")
+                        api.fail(
+                          "文字列リテラルを char へ変換できません（invalid conversion from 'const char*' to 'char'）",
+                          n,
+                          "CompileError",
+                        );
+                      if (Array.isArray(v))
+                        v = v.map((el, i) =>
+                          i > 0 && isStrLit(initElemNodes[i])
+                            ? api.freshUnknown(
+                                "文字列リテラルから char への変換値（アドレスに依存します）",
+                                s,
+                              )
+                            : el,
+                        );
+                    }
+                  }
                 }
                 // R27-N17 根因：char 配列の波括弧で包んだ文字列初期化
                 // （char s[] = {"hi"};）は gcc／g++ ともに合法だが、配列
@@ -3726,7 +3935,67 @@ export function createCFamily({ id, name, extensions, language }) {
                   Array.isArray(n.value?.values) &&
                   Array.isArray(v)
                 ) {
-                  if (n.value.values.length === 0) {
+                  // R29-N24 根因：std::string の初期化子リスト構築
+                  // （std::string s{{'h','i'}}／s{'h','i'}／s = {'h','i'}
+                  // は g++ 13.3 実測で合法で "hi" になる）が、スカラー
+                  // 扱いの「要素が1つだけ必要です」で停止していた。
+                  // 要素が全て char へ変換できる値（文字リテラル・
+                  // char 型の値・数値）なら、initializer_list<char>
+                  // コンストラクタとして文字列を組み立てる。文字列
+                  // リテラルが複数要素の中に混ざる形は g++ でも
+                  // invalid conversion のエラー。整数リテラルの定数が
+                  // char の範囲外なら narrowing として名指す。
+                  let bracedHandled = false;
+                  if (n.type === "string" && n.value.values.length > 0) {
+                    const elNodes = n.value.values;
+                    const isStrLitEl = (el) =>
+                      el?.k === "literal" &&
+                      typeof el.value === "string" &&
+                      el.quote !== "'";
+                    if (v.some((elVal) => isUnknown(elVal))) {
+                      v = v.find((elVal) => isUnknown(elVal));
+                      bracedHandled = true;
+                    } else if (elNodes.length > 1 && elNodes.some(isStrLitEl))
+                      api.fail(
+                        "文字列リテラルを char へ変換できません（invalid conversion from 'const char*' to 'char'）",
+                        n,
+                        "CompileError",
+                      );
+                    else if (
+                      v.every(
+                        (elVal) =>
+                          typeof elVal === "number" ||
+                          typeof elVal === "boolean" ||
+                          (typeof elVal === "string" && elVal.length === 1),
+                      )
+                    ) {
+                      for (const el of elNodes)
+                        if (
+                          el?.k === "literal" &&
+                          typeof el.value === "number" &&
+                          (el.value < -128 || el.value > 127)
+                        )
+                          api.fail(
+                            `波括弧初期化で整数の定数 ${el.value} を char へ縮小変換（narrowing）はできません`,
+                            n,
+                            "CompileError",
+                          );
+                      v = v
+                        .map((elVal) =>
+                          typeof elVal === "string"
+                            ? elVal
+                            : String.fromCharCode(
+                                ((Math.trunc(Number(elVal)) % 256) + 256) %
+                                  256,
+                              ),
+                        )
+                        .join("");
+                      bracedHandled = true;
+                    }
+                  }
+                  if (bracedHandled) {
+                    // v は組み立て済みの文字列。通常の初期化へ進む。
+                  } else if (n.value.values.length === 0) {
                     v =
                       n.type === "bool"
                         ? false
@@ -3866,6 +4135,21 @@ export function createCFamily({ id, name, extensions, language }) {
             }
           },
           read(a, s, api) {
+            // R29-N19：矩形配列の foreach 用に平坦化して読む（step で
+            // 差し替えられた専用ノード）。行優先に全要素を並べる。
+            if (managed && a.k === "rectFlat") {
+              const target = api.read(a.target, s);
+              if (target === null)
+                api.fail("null参照です", a, "NullReferenceException");
+              if (!Array.isArray(target)) return { handled: true, value: target };
+              const flat = [];
+              const walkFlat = (x) => {
+                if (Array.isArray(x)) x.forEach(walkFlat);
+                else flat.push(x);
+              };
+              walkFlat(target);
+              return { handled: true, value: flat };
+            }
             if (
               a.k === "literal" &&
               typeof a.value === "number" &&
@@ -4069,6 +4353,24 @@ export function createCFamily({ id, name, extensions, language }) {
               if (target === "char") {
                 if (typeof v === "string" && v.length === 1) return { handled: true, value: v };
                 if (typeof v !== "number") api.fail("char へのキャスト元が数値ではありません", a, "CompileError");
+                // R29-N25 兄弟表面：定数（整数・浮動小数点とも）の
+                // char へのキャストが範囲外なら、実物は CS0221
+                // （dotnet 実測：(char)70000.5／(char)70000 とも
+                // CS0221）。明示 unchecked では実物の畳み込み
+                // （切り捨て＋16ビット折り返し）を維持し、実行時値は
+                // 従来どおり折り返す。
+                if (
+                  isConstantIntegerExpr(a.arg) &&
+                  s.checkMode !== "unchecked" &&
+                  (!Number.isFinite(Math.trunc(v)) ||
+                    Math.trunc(v) < 0 ||
+                    Math.trunc(v) > 65535)
+                )
+                  api.fail(
+                    `定数値 '${v}' は 'char' へ変換できません（CS0221：定数キャストが範囲外です。unchecked を使うと折り返します）`,
+                    a,
+                    "CompileError",
+                  );
                 return { handled: true, value: String.fromCharCode(Math.trunc(v) & 0xffff) };
               }
               if (typeof v === "string" && v.length === 1) v = v.charCodeAt(0);
@@ -4089,6 +4391,25 @@ export function createCFamily({ id, name, extensions, language }) {
                   cMin = cUnsigned ? 0 : -(2 ** (cBits - 1)),
                   cMax = cUnsigned ? 2 ** cBits - 1 : 2 ** (cBits - 1) - 1;
                 if (!Number.isFinite(t) || t < cMin || t > cMax) {
+                  // R29-N25 根因：RG-257 の定数判定（isConstantIntegerExpr）
+                  // は整数定数の経路だけに届き、浮動小数点の定数キャストが
+                  // 実行時変換の経路（未確認／OverflowException）に落ちて
+                  // いた。実物では定数の浮動小数点キャストも、既定／
+                  // checked 文脈では CS0221 のコンパイルエラーになる
+                  // （dotnet 8.0.428 実測：(byte)300.5／(byte)300.0／
+                  // checked((byte)300.5)／(int)(1.0/0.0) は全て CS0221）。
+                  // 明示 unchecked の実物の定数畳み込み値（例：0）は
+                  // 仕様上 unspecified のため、確定値を出さず従来の
+                  // 未確認停止を維持する（監査側も妥当と裁定済み）。
+                  if (
+                    isConstantIntegerExpr(a.arg) &&
+                    s.checkMode !== "unchecked"
+                  )
+                    api.fail(
+                      `定数値 '${v}' は '${target}' へ変換できません（CS0221：定数キャストが範囲外です）`,
+                      a,
+                      "CompileError",
+                    );
                   if (s.checked)
                     api.fail("整数へのキャストが範囲外です", a, "OverflowException");
                   api.fail(
@@ -4213,6 +4534,9 @@ export function createCFamily({ id, name, extensions, language }) {
               return { handled: true, value };
             }
             if (a.k === "index") {
+              // R29-N20：添字の形（カンマ形か連鎖形か）と個数を、対象の
+              // 宣言型の形と照合する（実物は全て CS0022）。
+              if (managed) csCheckIndex(a, s, api, a);
               // R28-N19（C#）：a[1,1] のような多次元（矩形）添字は、
               // indexes に全次元が入る。入れ子配列を順にたどる。
               if (managed && a.indexes.length > 1) {
@@ -4521,6 +4845,9 @@ export function createCFamily({ id, name, extensions, language }) {
               return true;
             }
             if (managed && a.k === "index") {
+              // R29-N20：書き込み側も読み取りと同じ添字形の照合を行う
+              // （矩形への a[0][1]／a[1]、ジャグへの a[0,1] は CS0022）。
+              csCheckIndex(a, s, api, node);
               // R28-N19：a[1,1]（矩形）／a[0][1]（ジャグ連鎖）の書き込み
               // にも対応する。対象の入れ子配列を全添字でたどり、最後の
               // 添字の位置へ要素型で cast して書き込む。ジャグの行代入
@@ -4650,8 +4977,8 @@ export function createCFamily({ id, name, extensions, language }) {
                 // 契約はフェーズ1（P-N3）で「上限で日本語の理由を付けて
                 // 停止」と定まっているため、ホストが実際に死ぬのを待たず
                 // 上限 200,000 で決定的に同じ停止を発生させる。
-                const ta = csConcatText(a, lt),
-                  tb = csConcatText(b, rt);
+                const ta = csConcatText(a, lt, na, s),
+                  tb = csConcatText(b, rt, nb, s);
                 if (ta.length + tb.length > 200000)
                   throw hostErrorAsPractice(
                     new RangeError("Invalid string length"),
@@ -5032,24 +5359,23 @@ export function createCFamily({ id, name, extensions, language }) {
               if (typeof v0 === "boolean") text = v0 ? "True" : "False";
               else if (v0 === null) text = "";
               else if (Array.isArray(v0)) {
-                const elem = {
-                  int: "System.Int32[]",
-                  long: "System.Int64[]",
-                  double: "System.Double[]",
-                  float: "System.Single[]",
-                  bool: "System.Boolean[]",
-                  char: "System.Char[]",
-                  string: "System.String[]",
-                }[String(argType).replace(/\[\]$/, "")];
-                text =
-                  elem ||
-                  (v0.length
-                    ? typeof v0[0] === "string"
-                      ? "System.String[]"
-                      : typeof v0[0] === "boolean"
-                        ? "System.Boolean[]"
-                        : "System.Double[]"
-                    : "System.Int32[]");
+                // R29-N21：char[] には Console.WriteLine(char[]) の
+                // オーバーロードがあり、型名ではなく文字そのものを
+                // 出力する（dotnet 実測）。1次元 char[] の場合だけ
+                // その扱いにし、それ以外は宣言型から導出した型名。
+                const shape = csArrayShape(args[0], s, argType);
+                if (shape?.elem === "char" && shape.suffix === "[]")
+                  text = v0
+                    .map((ch) =>
+                      typeof ch === "number"
+                        ? String.fromCharCode(ch)
+                        : String(ch ?? ""),
+                    )
+                    .join("");
+                else
+                  text =
+                    csArrayTypeName(args[0], v0, s, argType) ??
+                    "System.Int32[]";
               } else if (typeof v0 === "number")
                 text =
                   argType === "float"

@@ -41,8 +41,11 @@ const NA = { kind: "NA" },
       : (Object.values(v?.columns ?? {})[0]?.length ?? 0),
   namesOf = (v) => (Array.isArray(v) && Array.isArray(v.names) ? v.names : null),
   withNames = (arr, names) => {
-    if (names && names.some((n) => n !== null && n !== undefined && n !== ""))
-      arr.names = [...names];
+    // R29-N17：名前配列が渡されたらそのまま付ける。全て ""／NA の名前でも
+    // 実 R では名前属性が残るため、「実質的な名前があるときだけ付ける」
+    // 規約は廃止。名前属性自体が無い入力からは null を渡すこと（呼び出し
+    // 側で namesOf(...) の有無を見て合成する）。
+    if (names) arr.names = [...names];
     return arr;
   };
 const show = (v) =>
@@ -693,7 +696,7 @@ function subset(values, index) {
         outNames.push(srcNames?.[i] ?? null);
       }
     }
-    return withNames(out, outNames);
+    return withNames(out, srcNames ? outNames : null);
   }
   if (indexes.some(isNA) && indexes.some((v) => typeof v === "number" && v < 0))
     throw new PracticeError("only 0 may be mixed with negative subscripts");
@@ -711,7 +714,7 @@ function subset(values, index) {
         outNames.push(srcNames?.[i] ?? null);
       }
     });
-    return withNames(out, outNames);
+    return withNames(out, srcNames ? outNames : null);
   }
   const out = [],
     outNames = [];
@@ -725,7 +728,7 @@ function subset(values, index) {
       outNames.push(srcNames?.[Math.trunc(v) - 1] ?? null);
     }
   }
-  return withNames(out, outNames);
+  return withNames(out, srcNames ? outNames : null);
 }
 // R25-N14：添字代入の説明が対象を特定できるよう、添字式のラベルも
 // 生成する（NX-N23 の裁定：添字代入の説明は対象を特定すること）。
@@ -1633,8 +1636,16 @@ export const definition = {
                 });
               });
               const combined = coerce(rawValues);
+              // R29-N17：名前の供給源（引数名・要素の名前属性）が1つも
+              // 無ければ名前属性自体が無い（names は NULL）。供給源が
+              // ある場合は、値が全て ""／NA でも属性はそのまま付ける。
+              const anyNameSource = args.some(
+                (a, i) =>
+                  vals[i] != null &&
+                  (a.argName || namesOf(vals[i]) !== null),
+              );
               return combined.length
-                ? withNames(combined, rawNames)
+                ? withNames(combined, anyNameSource ? rawNames : null)
                 : null;
             }
             case "length":
@@ -2209,7 +2220,8 @@ export const definition = {
                 api.fail("ベクトル長の上限です", node);
               return withNames(
                 outPairs.map((p) => p[0]),
-                outPairs.map((p) => p[1]),
+                // R29-N17：x に名前属性が無ければ結果にも付けない
+                baseNames ? outPairs.map((p) => p[1]) : null,
               );
             }
             case "read.csv": {
@@ -2554,8 +2566,12 @@ export const definition = {
                     : String(el);
               });
               if (isArr) {
-                if (newNames.some((x) => x !== null && x !== "")) obj.names = newNames;
-                else delete obj.names;
+                // R29-N17：namesgets（attrib.c）は value をそのまま属性に
+                // 付ける。全て "" や NA でも名前属性は残る（NULL になるのは
+                // value が NULL のときだけ＝上の effective === null 分岐）。
+                // 「実質的な名前が1つでもあるときだけ属性を持つ」という
+                // センチネル規約は実 R に無い。
+                obj.names = newNames;
                 // member（df$列）の場合は列の配列そのものへ付けた名前が
                 // データフレーム側からも見える（参照を共有するため）。
                 api.note(s, n, `${label} に ${show(v)} を代入します`);
@@ -2564,7 +2580,7 @@ export const definition = {
               // スカラー・NA は長さ1ベクトルとして包んで名前を持たせる。
               // NA のセンチネル自体は共有物なので絶対に変更しない。
               const wrapped = [obj];
-              if (newNames.some((x) => x !== null && x !== "")) wrapped.names = newNames;
+              wrapped.names = newNames; // R29-N17：スカラー側も同規則（上記参照）
               if (inner.k === "var") s.vars[inner.name] = wrapped;
               else api.write(inner, wrapped, s, n);
               api.note(s, n, `${label} に ${show(v)} を代入します`);

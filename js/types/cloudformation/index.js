@@ -2,7 +2,7 @@ import { additionalTemplates } from "./additional-templates.js";
 import { load, JSON_SCHEMA } from "../../vendor/yaml.js";
 import { parseJsonLocated, sourceFailure, rows } from "../../core/data.js";
 import { PracticeError, charLabel, toLearnerError } from "../../core/script.js";
-import { LIMITS, unknown, formatValue } from "../../core/contract.js";
+import { LIMITS, unknown, formatValue, isUnknown } from "../../core/contract.js";
 import { normalize, definition as pythonDefinition } from "../python/index.js";
 const identity = `def handler(event, context):
     fragment = event["fragment"]
@@ -31,6 +31,7 @@ const ref = rows([
     'event["fragment"]',
     "変換対象のテンプレート断片です。トップレベルTransformではTransform節を除くテンプレート全体、Fn::Transformでは同階層の兄弟範囲（Fn::Transform自身を除く）が断片になります。",
     'fragment = event["fragment"]',
+    "応答のfragmentはオブジェクト（テンプレート断片）で返す必要がある。数値・文字列・配列・nullなどのオブジェクトでないfragmentは検証で停止する。",
   ],
   [
     "params",
@@ -385,7 +386,11 @@ export const definition = {
                 message:
                   "ハンドラの処理が上限に達して打ち切られたため、レスポンスを返せませんでした",
               };
-            else if (!response || typeof response !== "object")
+            else if (
+              !response ||
+              typeof response !== "object" ||
+              Array.isArray(response)
+            )
               p.error = {
                 line: 1,
                 message: "ハンドラは辞書形式のレスポンスを返す必要があります",
@@ -414,12 +419,33 @@ export const definition = {
                 line: 1,
                 message:
                   "マクロが失敗しました：" +
-                  (response.errorMessage || response.status),
+                  (typeof response.errorMessage === "string" &&
+                  response.errorMessage
+                    ? response.errorMessage
+                    : response.status),
               };
             else if (!Object.hasOwn(response, "fragment"))
               p.error = {
                 line: 1,
                 message: "レスポンスにfragmentがありません",
+              };
+            // R29-N1（RG-219 の応答側）: AWS 公式の応答形式では fragment は
+            // { ... } の JSON オブジェクト（変換後のテンプレート断片）であり、
+            // 置換先のテンプレート（節）として差し込まれる。スカラー・配列・
+            // null・未確定値は断片として成立しないため、仕様側（RG-219）で
+            // 厳密化した検証と対になる型検査をここで行い、名指しで止める。
+            // 連鎖時は invoke() がこのエラーを後段へ渡す前に送出する。
+            else if (
+              !response.fragment ||
+              typeof response.fragment !== "object" ||
+              Array.isArray(response.fragment) ||
+              isUnknown(response.fragment)
+            )
+              p.error = {
+                line: 1,
+                message:
+                  "レスポンスのfragmentがオブジェクトではありません（変換後のテンプレート断片はオブジェクトで返してください）：" +
+                  formatValue(response.fragment),
               };
           }
           p.groups.push({

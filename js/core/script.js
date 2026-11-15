@@ -749,12 +749,17 @@ export class ScriptParser {
         try {
           pattern = this.parseArrayPattern(t.line);
         } catch (e) {
-          // R28-N15：閉じ括弧の直後が = なら分割代入として書かれて
-          // いるため、RG-227 の名指し（残余への既定値・裸の残余）を
-          // 握り潰さず伝播させる。それ以外は従来どおりリテラルとして
-          // 読み直す（本物のスプレッド要素等の帰属を変えない）。
-          if (this.isRestNamingError(e) && this.patternFollowedByAssign(saveI - 1))
-            throw e;
+          // R28-N15／R29-N30：RG-227 の名指し（残余への既定値・裸の
+          // 残余）は、投機的パターン読みの全ての式位置で伝播させる。
+          // バッチ7では「閉じ括弧の直後が = の場合」に限ったため、
+          // オブジェクト値・三項分岐・論理演算・呼出引数・入れ子要素
+          // 等では名指しが届かず「スプレッド構文」等に化けていた。
+          // 残余名指しエラーは `...対象 = 既定値`／裸の `...` という
+          // パターン専用の断片からしか生じないため、位置によらず
+          // そのまま伝播させてよい。本物のスプレッド（`...[1]` 等、
+          // パターン読みで名指しエラーを生じない形）は従来どおり
+          // リテラルとして読み直され「スプレッド構文」の名指しを保つ。
+          if (this.isRestNamingError(e)) throw e;
           pattern = null;
         }
         if (pattern && this.peek("=")) {
@@ -797,11 +802,11 @@ export class ScriptParser {
         try {
           pattern = this.parseObjectPattern(t.line);
         } catch (e) {
-          // R28-N15：配列形と同じく、分割代入として書かれた形では
-          // RG-227 の名指しを伝播させる（従来は握り潰されてレコード
-          // として読み直され「: が必要です」等の虚偽原因になっていた）。
-          if (this.isRestNamingError(e) && this.patternFollowedByAssign(saveI - 1))
-            throw e;
+          // R28-N15／R29-N30：配列形と同じく、RG-227 の名指しを全ての
+          // 式位置で伝播させる（従来は握り潰されてレコードとして読み
+          // 直され「レコードのフィールド名が必要です」等の虚偽原因に
+          // なっていた。オブジェクト値に内包された {...r = {}} 等）。
+          if (this.isRestNamingError(e)) throw e;
           pattern = null;
         }
         if (pattern && this.peek("=")) {
@@ -1090,38 +1095,19 @@ export class ScriptParser {
     this.take("{");
     return this.parseObjectPattern(line);
   }
-  // R28-N15：RG-227 の名指しエラー（残余要素への既定値・裸の残余）か。
-  // 投機的なパターン読みでは通常の式（配列・オブジェクトリテラル）と
-  // 区別がつかないため握り潰すが、パターンの閉じ括弧の直後が = で
-  // ある場合は分割代入として書かれたことが確定するので、その場合は
-  // 名指しエラーをそのまま伝播させる（宣言位置の帰属と揃える）。
+  // R28-N15／R29-N30：RG-227 の名指しエラー（残余要素への既定値・
+  // 裸の残余）か。投機的なパターン読みでこのエラーが生じるのは
+  // `...対象 = 既定値`／裸の `...` というパターン専用の断片だけであり、
+  // 本物のスプレッド要素（`...式`）のパターン読みはこのエラーを生じ
+  // ない。そのためバッチ7の「閉じ括弧の直後が = の場合だけ伝播」と
+  // いう条件（patternFollowedByAssign）は R29-N30 で撤廃し、全ての
+  // 式位置でそのまま伝播させる（宣言位置の帰属と揃える）。
   isRestNamingError(e) {
     return (
       e instanceof PracticeError &&
       typeof e.message === "string" &&
       e.message.includes("分割代入の残余要素（...）")
     );
-  }
-  // from（開き括弧トークンの位置）から対応する閉じ括弧を探し、その
-  // 直後（改行を除く）が代入の = かどうかを返す。文字列・識別子等の
-  // 内容トークン（k を持つもの）は括弧として数えない。
-  patternFollowedByAssign(from) {
-    let depth = 0;
-    for (let j = from; j < this.ts.length; j++) {
-      const tok = this.ts[j];
-      if (!tok || tok.v === "<eof>") return false;
-      if (tok.k) continue;
-      if (["[", "{", "("].includes(tok.v)) depth++;
-      else if (["]", "}", ")"].includes(tok.v)) {
-        depth--;
-        if (depth === 0) {
-          let n = j + 1;
-          while (this.ts[n]?.v === "\n" && !this.ts[n]?.k) n++;
-          return this.ts[n]?.v === "=";
-        }
-      }
-    }
-    return false;
   }
   parseArrayPattern(line) {
     const pattern = { k: "arrayPattern", elements: [], invalid: null, line };
@@ -1365,7 +1351,16 @@ export class ScriptParser {
       this.take();
       return this.program("}");
     }
-    return [this.statement()];
+    const stmt = this.statement();
+    // R29-N29：波括弧なしの単一文本体では、本体文を終端する ; は本体
+    // 自身に属する（ECMAScript の ExpressionStatement 等は ; を含む）。
+    // 従来は ; が呼び出し側に残り、if の else 照合・do-while の while
+    // 照合が ; に阻まれて「未対応：x」「while が必要です」等の虚偽原因
+    // になっていた。本体側で ; を消費すれば、else／else if／while の
+    // 照合が実文法どおりに働く（波括弧あり本体の後ろの ; は従来どおり
+    // 空文として扱われ、else とは結ばない）。
+    if (this.peek(";")) this.take();
+    return [stmt];
   }
   statement() {
     this.skip();
@@ -1623,13 +1618,9 @@ export class ScriptParser {
       try {
         pattern = this.parsePatternRoot(line);
       } catch (e) {
-        // R28-N15：文位置でも、パターンの閉じ括弧の直後が = なら
-        // 分割代入として書かれているため RG-227 の名指しを伝播させる。
-        if (
-          this.isRestNamingError(e) &&
-          this.patternFollowedByAssign(paren ? save + 1 : save)
-        )
-          throw e;
+        // R28-N15／R29-N30：文位置でも RG-227 の名指しを式位置と
+        // 一貫して伝播させる（伝播条件は expr 側と同一）。
+        if (this.isRestNamingError(e)) throw e;
         pattern = null;
       }
       if (pattern && this.peek("=")) {

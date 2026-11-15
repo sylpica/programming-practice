@@ -205,7 +205,7 @@ test("RA-22 dict item states the key condition as hashability", () => {
 // ---- reference-r2 ledger stays in sync (changed rows follow the definitions, new rows exist)
 test("r2 ledger rows for changed and new python items match the definitions", () => {
   const rows = JSON.parse(fs.readFileSync(new URL("../docs/audit/reference-r2.json", import.meta.url)));
-  assert.equal(rows.length, 1248); // +2 修正バッチ3（「数値の属性」の Python 行＋CloudFormation 伝播行）+88 修正バッチ4 Python追随班（例外44件の Python 行＋CloudFormation 伝播行）+6 修正バッチ6 R27-N20（組み込み定数の Python 行＋CloudFormation 伝播行）+94 修正バッチ6 R27-N7（VBA 定数）+141 修正バッチ7 R28-N9（VBA 定数）
+  assert.equal(rows.length, 1260); // +2 修正バッチ3（「数値の属性」の Python 行＋CloudFormation 伝播行）+88 修正バッチ4 Python追随班（例外44件の Python 行＋CloudFormation 伝播行）+6 修正バッチ6 R27-N20（組み込み定数の Python 行＋CloudFormation 伝播行）+94 修正バッチ6 R27-N7（VBA 定数）+141 修正バッチ7 R28-N9（VBA 定数）+12 修正バッチ8（VBA 参照専用）
   assert.equal(rows.filter((r) => r.kind === "python").length, 213);
   assert.equal(rows.filter((r) => r.kind === "cloudformation").length, 224);
   const names = ["ModuleNotFoundError", "UnicodeError", "FileNotFoundError", "LookupError", "ArithmeticError", "NameError", "KeyboardInterrupt", "Exception", "global", "comprehension", "f-string", "with", "math", "dict", "math.pi", "math.e", "math.tau", "math.inf", "math.nan", "数値の属性"];

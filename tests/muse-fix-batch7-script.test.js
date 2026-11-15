@@ -268,10 +268,13 @@ test("R28-N15: declaration position unchanged; genuine spread keeps its own nami
   const spread = await js("let arr = [...[1, 2]]; console.log(arr);");
   assert.match(errors(spread)[0] || "", /スプレッド構文/);
   assert.doesNotMatch(errors(spread)[0] || "", REST_DEFAULT_MSG);
-  // = が続かないスプレッド＋代入のリテラル形も残余の名指しに化けない
+  // R29-N30 で裁定変更：`...対象 = 既定値` の断片は、式位置によらず
+  // 残余＋既定値の名指しで一貫させる（バッチ7の「= が続かないリテラル
+  // 形はスプレッド名指し」という切り分けは、オブジェクト値・三項・
+  // 論理・呼出引数等の位置で真因が化ける R29-N30 の是正により置換）。
+  // 本物のスプレッド（上の [...[1, 2]] 形）は従来どおりスプレッド名指し。
   const spreadAssign = await js("let r; let arr = [...r = [1]]; console.log(arr);");
-  assert.match(errors(spreadAssign)[0] || "", /スプレッド構文/);
-  assert.doesNotMatch(errors(spreadAssign)[0] || "", REST_DEFAULT_MSG);
+  assert.match(errors(spreadAssign)[0] || "", REST_DEFAULT_MSG);
 });
 test("R28-N15: valid rest assignment and literal defaults keep working", async () => {
   const valid = await js("let a, r; [a, ...r] = [1, 2, 3]; console.log(a, r.length);");

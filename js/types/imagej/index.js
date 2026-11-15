@@ -25,7 +25,14 @@ reference.find(r=>r.name === "File.exists").example = 'print(File.exists("/model
 reference.find(r=>r.name === "open").example = 'open("/model/input/image1.tif");';
 const unmodeledReferences = new Set(["getValue", "setColor", "drawLine", "getPixelSize", "getLut", "getDateAndTime", "getLocationAndSize", "getDisplayedArea", "getSelectionCoordinates", "getLine", "getCursorLoc", "Roi.getBounds", "Roi.getCoordinates", "Roi.contains", "Roi.move", "Roi.translate", "Roi.setStrokeWidth", "Roi.setStrokeColor", "Roi.setFillColor", "Roi.setName", "Roi.getName", "Roi.setPosition", "Roi.getPosition", "Roi.getProperty", "Roi.setProperty", "RoiManager.select", "RoiManager.selectByName", "RoiManager.getName", "RoiManager.getIndex", "RoiManager.delete", "setForegroundColor", "File.open", "File.append", "runMacro", "Math.sinh", "Math.cosh", "Math.tanh"]);
 for (const r of reference) {
-  if (unmodeledReferences.has(r.name)) { r.supported=false; r.caution += "このアプリでは未確認として停止する。"; }
+  // R29-N4（U-45）: この37件は「意味論を一次情報で確定できなかった（未確認）」
+  // ものではなく、実体は未実装（未対応）である。34件は公式 Built-in Macro
+  // Functions に定義がある実在関数で説明も確定しており、残り3件
+  // （Math.sinh／cosh／tanh）は項目自身が「実物に存在しない」と確定記述して
+  // いるため、どちらも「未確認」ではありえない。caution・バッジ・実行時文言の
+  // 3表面で分類ラベルを「未対応」に統一する（バッジは app.js の
+  // 「参照用 · 操作は未対応」、実行時文言は engine.js の「未対応：〜」）。
+  if (unmodeledReferences.has(r.name)) { r.supported=false; r.caution += "このアプリでは未対応として停止する。"; }
   if (["setPixel","setMinAndMax"].includes(r.name)) r.example = r.example.replace(/updateDisplay\(\);?/g, "");
   if (r.name === "getProfile") r.example = "makeLine(0, 0, 100, 0);\nprof=getProfile(); print(prof);"; /* D10: 選択なしでは実 ImageJ でもエラーになるため、直線 ROI を作る前置きを含める */
 }

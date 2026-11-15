@@ -1078,11 +1078,11 @@
   "fields": {
    "description": "アクティブ画像の座標 (x, y) の画素について、校正済みの値（物理量）を返す。getPixel と異なり密度キャリブレーションが適用される値で、校正されていない画像では生値と一致する。RGB 画像では輝度（グレースケール）値を返し、画像外の座標を指定すると NaN を返す。",
    "returns": "校正済みの画素値（数値）",
-   "caution": "第1引数に \"Mean\" のような測定項目名の文字列を与えると、現在の画像・選択についてのその測定値を返す形式もある（例: getValue(\"Mean\")）。生の格納値が欲しい場合は getPixel を使う。このアプリでは未確認として停止する。",
+   "caution": "第1引数に \"Mean\" のような測定項目名の文字列を与えると、現在の画像・選択についてのその測定値を返す形式もある（例: getValue(\"Mean\")）。生の格納値が欲しい場合は getPixel を使う。このアプリでは未対応として停止する。",
    "example": "v = getValue(100, 50);",
    "source": "https://imagej.net/ij/developer/macro/functions2.html#getValue"
   },
-  "sha256": "4bc40e3ac78e372e236a031e7925c7ba39b5928a1c3d48fc1b18c8160f73d747",
+  "sha256": "88a528cfdd68c50df00247e75c30265c78f76b09b05bbc9e8be0226901c10f18",
   "description": "照合済",
   "returns": "照合済",
   "caution": "照合済（モデル固有の限定は実装・試験で確認）"
@@ -1110,11 +1110,11 @@
   "fields": {
    "description": "現在の画像への描画色を赤・緑・青の値で設定する。システム全体の前景色は変更しない。drawLine や fill、draw などの描画関数がこの色で描く。グレースケール画像では明るさの値として解釈される。",
    "returns": "戻り値なし（処理または引数の変数への書き込み）",
-   "caution": "run(\"Fill\")などのコマンドの前景色指定には使えない。色を名前で指定する setColor(\"red\") のような文字列形式や、グレースケール用の setColor(value) 形式もある。このアプリでは未確認として停止する。",
+   "caution": "run(\"Fill\")などのコマンドの前景色指定には使えない。色を名前で指定する setColor(\"red\") のような文字列形式や、グレースケール用の setColor(value) 形式もある。このアプリでは未対応として停止する。",
    "example": "setColor(255, 0, 0);\ndrawLine(10, 10, 100, 50);",
    "source": "https://imagej.net/ij/developer/macro/functions2.html#setColor"
   },
-  "sha256": "ec41ee5a72325331ffff3e4aac0766eda4620c0435bc99493b7614df732d456c",
+  "sha256": "9024127e9493e6ebe8d79d8f8ee15d7a92a5afb8149d6138809ca782bf8564ad",
   "description": "照合済",
   "returns": "照合済",
   "caution": "照合済（モデル固有の限定は実装・試験で確認）"
@@ -1126,11 +1126,11 @@
   "fields": {
    "description": "点 (x1, y1) から点 (x2, y2) へ、現在の描画色と線幅で直線をアクティブ画像に描く。描画は画像そのものを書き換える。",
    "returns": "戻り値なし（処理または引数の変数への書き込み）",
-   "caution": "線幅は setLineWidth(太さ) で変更する。元に戻せない書き換えなので、注釈用途ではオーバーレイ（Overlay）の利用も検討する。このアプリでは未確認として停止する。",
+   "caution": "線幅は setLineWidth(太さ) で変更する。元に戻せない書き換えなので、注釈用途ではオーバーレイ（Overlay）の利用も検討する。このアプリでは未対応として停止する。",
    "example": "setColor(255, 0, 0);\ndrawLine(10, 10, 100, 50);",
    "source": "https://imagej.net/ij/developer/macro/functions2.html#drawLine"
   },
-  "sha256": "aaec8e6439820a7b1d050a0d91f34db13d13b571a000f378955dac22d9ed281f",
+  "sha256": "9e0bcf7318525db6b5f4ddba7ea5fac569964a0dbe7ee3f5888d68acf2e89adf",
   "description": "照合済",
   "returns": "照合済",
   "caution": "照合済（モデル固有の限定は実装・試験で確認）"
@@ -1334,11 +1334,11 @@
   "fields": {
    "description": "現在の画像に設定された空間校正のうち、単位（文字列）と1ピクセルの幅・高さを変数に書き込む。getVoxelSize の2次元版にあたる取得関数。",
    "returns": "戻り値なし（処理または引数の変数への書き込み）",
-   "caution": "引数はすべて書き込み先の変数名。奥行き（z間隔）も含めて知りたい場合は getVoxelSize を使う。このアプリでは未確認として停止する。",
+   "caution": "引数はすべて書き込み先の変数名。奥行き（z間隔）も含めて知りたい場合は getVoxelSize を使う。このアプリでは未対応として停止する。",
    "example": "getPixelSize(unit, pw, ph);\nprint(unit, pw);",
    "source": "https://imagej.net/ij/developer/macro/functions2.html#getPixelSize"
   },
-  "sha256": "d5f08ebacd711640ae3673a41864eaa7c387372c2eb65a9e8078eda5d12fc972",
+  "sha256": "9ac1fdcc4ff9857a16a841c244b46a5216f601e043b4ab47906ca76c6dbcdb4f",
   "description": "照合済",
   "returns": "照合済",
   "caution": "照合済（モデル固有の限定は実装・試験で確認）"
@@ -1350,11 +1350,11 @@
   "fields": {
    "description": "現在の画像のLUT（ルックアップテーブル）を、赤・緑・青それぞれ256要素の配列として変数に書き込む。疑似カラーの対応表をプログラムで読み取るための関数。",
    "returns": "戻り値なし（処理または引数の変数への書き込み）",
-   "caution": "引数は書き込み先の変数名。LUTの設定は setLut や Color.setLut で行う。このアプリでは未確認として停止する。",
+   "caution": "引数は書き込み先の変数名。LUTの設定は setLut や Color.setLut で行う。このアプリでは未対応として停止する。",
    "example": "getLut(r, g, b);\nprint(r[255]);",
    "source": "https://imagej.net/ij/developer/macro/functions2.html#getLut"
   },
-  "sha256": "4be7b49fb1bf79f79685545f26bc6bc12773fe420595f87177543515964f1678",
+  "sha256": "31d71ac3c4e1437dae1bfc2dcaa439589d27069b7703e6131d9b568fc9397fe1",
   "description": "照合済",
   "returns": "照合済",
   "caution": "照合済（モデル固有の限定は実装・試験で確認）"
@@ -1366,11 +1366,11 @@
   "fields": {
    "description": "現在の日時を分解して、指定した変数に書き込む。ログへの時刻記録や、処理の所要時間の計測の起点などに使う。",
    "returns": "戻り値なし（処理または引数の変数への書き込み）",
-   "caution": "引数はすべて書き込み先の変数名。month と dayOfWeek は 0 始まりの番号で返る。経過時間の計測には getTime のほうが向く。このアプリでは未確認として停止する。",
+   "caution": "引数はすべて書き込み先の変数名。month と dayOfWeek は 0 始まりの番号で返る。経過時間の計測には getTime のほうが向く。このアプリでは未対応として停止する。",
    "example": "getDateAndTime(y, mo, dow, d, h, mi, s, ms);\nprint(h, mi);",
    "source": "https://imagej.net/ij/developer/macro/functions2.html#getDateAndTime"
   },
-  "sha256": "1e3a172f8d96f85ad76cd9381ae51eb606afe52b66b146c4815613ffcc2bcaeb",
+  "sha256": "2f21b227fc9f660a73584ca1b64fc9b8d3e173bd22c44d0009ce04fcd8ab55ec",
   "description": "照合済",
   "returns": "照合済",
   "caution": "照合済（モデル固有の限定は実装・試験で確認）"
@@ -1382,11 +1382,11 @@
   "fields": {
    "description": "アクティブな画像ウィンドウの、画面座標での位置と大きさを変数に書き込む。ウィンドウ配置の記録や再現に使う。",
    "returns": "戻り値なし（処理または引数の変数への書き込み）",
-   "caution": "引数はすべて書き込み先の変数名。画像そのものの幅・高さは getWidth / getHeight で得る。このアプリでは未確認として停止する。",
+   "caution": "引数はすべて書き込み先の変数名。画像そのものの幅・高さは getWidth / getHeight で得る。このアプリでは未対応として停止する。",
    "example": "getLocationAndSize(x, y, w, h);",
    "source": "https://imagej.net/ij/developer/macro/functions2.html#getLocationAndSize"
   },
-  "sha256": "44dc6fbf8416dfd79537a8b66ecf4a214ad042e5c1f8f2607549051f0abf98c4",
+  "sha256": "a694353d23d3dc8d783c861e7d3fe1d8b4263e0ec0cdc451a70d93bf6e20a8fd",
   "description": "照合済",
   "returns": "照合済",
   "caution": "照合済（モデル固有の限定は実装・試験で確認）"
@@ -1398,11 +1398,11 @@
   "fields": {
    "description": "画像キャンバスに実際に表示されている領域のピクセル座標（左上と幅・高さ）を変数に書き込む。拡大表示で一部だけが見えているときに、見えている範囲を対象に処理するための関数。",
    "returns": "戻り値なし（処理または引数の変数への書き込み）",
-   "caution": "引数はすべて書き込み先の変数名。全体が表示されている場合は画像全体の範囲が返る。このアプリでは未確認として停止する。",
+   "caution": "引数はすべて書き込み先の変数名。全体が表示されている場合は画像全体の範囲が返る。このアプリでは未対応として停止する。",
    "example": "getDisplayedArea(x, y, w, h);",
    "source": "https://imagej.net/ij/developer/macro/functions2.html#getDisplayedArea"
   },
-  "sha256": "0f9ad249360b1621a9d8f102bd7d3da3c0e9b8268a8388595301187ec1b31f52",
+  "sha256": "cfbf6b57a979000873dfe37ddeec69a056689adbc0a84751361d8196172d3883",
   "description": "照合済",
   "returns": "照合済",
   "caution": "照合済（モデル固有の限定は実装・試験で確認）"
@@ -1606,11 +1606,11 @@
   "fields": {
    "description": "現在の選択を定義する点の座標を、x座標の配列とy座標の配列として変数に書き込む。Roi.getCoordinates と同じ情報を、名前空間なしで提供する関数。",
    "returns": "戻り値なし（処理または引数の変数への書き込み）",
-   "caution": "引数は書き込み先の変数名。外接矩形だけが欲しい場合は getSelectionBounds を使う。このアプリでは未確認として停止する。",
+   "caution": "引数は書き込み先の変数名。外接矩形だけが欲しい場合は getSelectionBounds を使う。このアプリでは未対応として停止する。",
    "example": "getSelectionCoordinates(xs, ys);\nprint(xs.length);",
    "source": "https://imagej.net/ij/developer/macro/functions2.html#getSelectionCoordinates"
   },
-  "sha256": "61ecaed3b3d00d8100bb14dd44688e3dd8bc48f7fafa74d4767f4cb5f56b3770",
+  "sha256": "80ee4c1ce7d09b423051594409122ddd7b156b22f8435a5cb0995c57218b77fa",
   "description": "照合済",
   "returns": "照合済",
   "caution": "照合済（モデル固有の限定は実装・試験で確認）"
@@ -1622,11 +1622,11 @@
   "fields": {
    "description": "現在の直線選択の始点・終点の座標と線幅を、指定した変数に書き込む。直線選択がない場合は x1 に -1 が入る。",
    "returns": "戻り値なし（処理または引数の変数への書き込み）",
-   "caution": "引数はすべて書き込み先の変数名で、座標と線幅はピクセル単位。プロファイル取得は getProfile と組み合わせる。このアプリでは未確認として停止する。",
+   "caution": "引数はすべて書き込み先の変数名で、座標と線幅はピクセル単位。プロファイル取得は getProfile と組み合わせる。このアプリでは未対応として停止する。",
    "example": "getLine(x1, y1, x2, y2, w);\nif (x1 >= 0) print(w);",
    "source": "https://imagej.net/ij/developer/macro/functions2.html#getLine"
   },
-  "sha256": "fafb905028b84cadb40fc0a2aa441f948c6ede663a9c6294e6660b8431ee1bca",
+  "sha256": "ddd73b1e8ee7a47484667c39d627e28996389d42e1dcb01c1e921b81a2a9b14b",
   "description": "照合済",
   "returns": "照合済",
   "caution": "照合済（モデル固有の限定は実装・試験で確認）"
@@ -1638,11 +1638,11 @@
   "fields": {
    "description": "カーソルの位置（ピクセル座標）と、マウスイベントの修飾フラグを変数に書き込む。ツールの自作などで、クリック位置に応じた処理を組むための関数。",
    "returns": "戻り値なし（処理または引数の変数への書き込み）",
-   "caution": "引数はすべて書き込み先の変数名。z は2次元画像では 0、スタックではスライス番号から1を引いた値。実寸座標への変換は toScaled を使う。このアプリでは未確認として停止する。",
+   "caution": "引数はすべて書き込み先の変数名。z は2次元画像では 0、スタックではスライス番号から1を引いた値。実寸座標への変換は toScaled を使う。このアプリでは未対応として停止する。",
    "example": "getCursorLoc(x, y, z, flags);\nprint(x, y);",
    "source": "https://imagej.net/ij/developer/macro/functions2.html#getCursorLoc"
   },
-  "sha256": "82c597bb7109f656e2a3d7465f2f054141ab9db95f74d35d282cc9ac5e7659dc",
+  "sha256": "668780dee47cb3d169e6d12f7270e7019f89af01c7ebd72646e6a8b35a0ae82a",
   "description": "照合済",
   "returns": "照合済",
   "caution": "照合済（モデル固有の限定は実装・試験で確認）"
@@ -1686,11 +1686,11 @@
   "fields": {
    "description": "現在の選択の外接矩形（バウンディングボックス）の左上座標と幅・高さを、指定した変数に書き込む。getSelectionBounds と同じ情報を Roi 名前空間で提供する関数。",
    "returns": "戻り値なし（処理または引数の変数への書き込み）",
-   "caution": "引数はすべて書き込み先の変数名で、値はピクセル単位の整数。小数で欲しい場合は Roi.getFloatBounds を使う。このアプリでは未確認として停止する。",
+   "caution": "引数はすべて書き込み先の変数名で、値はピクセル単位の整数。小数で欲しい場合は Roi.getFloatBounds を使う。このアプリでは未対応として停止する。",
    "example": "Roi.getBounds(x, y, w, h);\nprint(w, h);",
    "source": "https://imagej.net/ij/developer/macro/functions2.html#Roi.getBounds"
   },
-  "sha256": "1bf07e9a116be36a21bc1c9480e5d08a0726989c89f9b1960f2db02f00deeb8a",
+  "sha256": "3077b737cfe89488f031e3e35070747fd1f981da7aef5a1cd700242e9e0bc55b",
   "description": "照合済",
   "returns": "照合済",
   "caution": "照合済（モデル固有の限定は実装・試験で確認）"
@@ -1702,11 +1702,11 @@
   "fields": {
    "description": "現在の選択を定義する頂点座標を、x座標の配列とy座標の配列として変数に書き込む。多角形や折れ線などの頂点列をプログラムで扱うための関数。",
    "returns": "戻り値なし（処理または引数の変数への書き込み）",
-   "caution": "引数は書き込み先の変数名。選択内部の全画素座標が欲しい場合は Roi.getContainedPoints を使う。このアプリでは未確認として停止する。",
+   "caution": "引数は書き込み先の変数名。選択内部の全画素座標が欲しい場合は Roi.getContainedPoints を使う。このアプリでは未対応として停止する。",
    "example": "Roi.getCoordinates(xs, ys);\nprint(xs.length);",
    "source": "https://imagej.net/ij/developer/macro/functions2.html#Roi.getCoordinates"
   },
-  "sha256": "b309364296b16e725552939949b624b6c21ead377a2def3a9697edfe3de13834",
+  "sha256": "c779e3cefc3acc561c1b1405c79133022ebee63208235bf32baa2b2a8a3a3585",
   "description": "照合済",
   "returns": "照合済",
   "caution": "照合済（モデル固有の限定は実装・試験で確認）"
@@ -1718,11 +1718,11 @@
   "fields": {
    "description": "点 (x, y) が現在の選択の内側にあるかどうかを返す。座標ごとに処理を分けたい場合の判定に使う。",
    "returns": "内側なら 1、外側なら 0",
-   "caution": "選択（ROI）が無い状態で呼び出すとマクロは中止される。このアプリでは未確認として停止する。",
+   "caution": "選択（ROI）が無い状態で呼び出すとマクロは中止される。このアプリでは未対応として停止する。",
    "example": "if (Roi.contains(100, 50)) print(\"内側\");",
    "source": "https://imagej.net/ij/developer/macro/functions2.html#Roi.contains"
   },
-  "sha256": "bee0e8679ed5696d1a6ec4825e09c0d45db35064d550738f291fad1d2cee10e8",
+  "sha256": "c662c0c2caa7f5780e4f427b8f18b3d2fd6f07935e5b516028eb8cd9d16ee834",
   "description": "照合済",
   "returns": "照合済",
   "caution": "照合済（モデル固有の限定は実装・試験で確認）"
@@ -1734,11 +1734,11 @@
   "fields": {
    "description": "現在の選択を、外接矩形の左上が指定座標になる位置へ移動する。大きさと形は変わらない。",
    "returns": "戻り値なし（処理または引数の変数への書き込み）",
-   "caution": "現在の位置からの相対移動は Roi.translate を使う。このアプリでは未確認として停止する。",
+   "caution": "現在の位置からの相対移動は Roi.translate を使う。このアプリでは未対応として停止する。",
    "example": "Roi.move(50, 50);",
    "source": "https://imagej.net/ij/developer/macro/functions2.html#Roi.move"
   },
-  "sha256": "f04a536d31ebee062aea54ff8a32f02d37d82844713ac93a84646094bf8da0fe",
+  "sha256": "2233e743a38c591be8d2eb90aff767f2a78b94b38c6746d437ea699e7fb9c91a",
   "description": "照合済",
   "returns": "照合済",
   "caution": "照合済（モデル固有の限定は実装・試験で確認）"
@@ -1750,11 +1750,11 @@
   "fields": {
    "description": "現在の選択を dx、dy だけ平行移動する。Roi.move が絶対位置の指定なのに対し、こちらは現在の位置からの相対移動である。",
    "returns": "戻り値なし（処理または引数の変数への書き込み）",
-   "caution": "このアプリでは未確認として停止する。",
+   "caution": "このアプリでは未対応として停止する。",
    "example": "Roi.translate(10, -5);",
    "source": "https://imagej.net/ij/developer/macro/functions2.html#Roi.translate"
   },
-  "sha256": "f1b953c579bc22d52c4d8487101436ca4d5edd2eac69de76364e9aa5c260cf96",
+  "sha256": "898af7ee0386b14afb924cede2e0372e4950661e86b9ee0909cffca6bd6e3b98",
   "description": "照合済",
   "returns": "照合済",
   "caution": "照合済（モデル固有の限定は実装・試験で確認）"
@@ -1766,11 +1766,11 @@
   "fields": {
    "description": "現在の選択の輪郭線の太さを設定する。直線や折れ線の選択では、測定に使う線幅にもなる。作成後の線幅変更はこの関数で行う。",
    "returns": "戻り値なし（処理または引数の変数への書き込み）",
-   "caution": "線幅は makeLine の第5引数でも指定できる。縮小表示で細くなりすぎないための最小太さは Roi.setMinStrokeWidth で指定する。このアプリでは未確認として停止する。",
+   "caution": "線幅は makeLine の第5引数でも指定できる。縮小表示で細くなりすぎないための最小太さは Roi.setMinStrokeWidth で指定する。このアプリでは未対応として停止する。",
    "example": "makeLine(0, 0, 200, 120);\nRoi.setStrokeWidth(10);",
    "source": "https://imagej.net/ij/developer/macro/functions2.html#Roi.setStrokeWidth"
   },
-  "sha256": "fa68b99e4a5298cddb049d9815e332a51d880d6b9b8a3fbb7fb4fe282fcf9e7c",
+  "sha256": "14b5611500f2a35643848ec60a2795ae72743c92c40ed6b351d536120197da48",
   "description": "照合済",
   "returns": "照合済",
   "caution": "照合済（モデル固有の限定は実装・試験で確認）"
@@ -1782,11 +1782,11 @@
   "fields": {
    "description": "現在の選択の輪郭線の色を設定する。色は \"red\" のような名前や16進文字列で指定でき、RGB の3引数形式、色をパックした値の1引数形式もある。",
    "returns": "戻り値なし（処理または引数の変数への書き込み）",
-   "caution": "塗りの色は Roi.setFillColor。1.54e以降では、塗りを設定した後に輪郭色を設定すると、塗りと輪郭の両方が描かれる。このアプリでは未確認として停止する。",
+   "caution": "塗りの色は Roi.setFillColor。1.54e以降では、塗りを設定した後に輪郭色を設定すると、塗りと輪郭の両方が描かれる。このアプリでは未対応として停止する。",
    "example": "Roi.setStrokeColor(\"red\");",
    "source": "https://imagej.net/ij/developer/macro/functions2.html#Roi.setStrokeColor"
   },
-  "sha256": "50fba5e07ca779c07cdd6ffae51ca46a39b76c0b534eb647f7104e07497d671c",
+  "sha256": "97d2cd4739ce6a9b62356c83eb77030c43c23bb7e73d593c584b09ad79dea2c2",
   "description": "照合済",
   "returns": "照合済",
   "caution": "照合済（モデル固有の限定は実装・試験で確認）"
@@ -1798,11 +1798,11 @@
   "fields": {
    "description": "現在の選択の塗りの色を設定する。色の指定方法は Roi.setStrokeColor と同じで、名前・16進文字列・RGB 3引数・パック値が使える。",
    "returns": "戻り値なし（処理または引数の変数への書き込み）",
-   "caution": "輪郭だけの表示に戻す操作とは別に、塗りは Overlay や描画時に反映される。このアプリでは未確認として停止する。",
+   "caution": "輪郭だけの表示に戻す操作とは別に、塗りは Overlay や描画時に反映される。このアプリでは未対応として停止する。",
    "example": "Roi.setFillColor(\"yellow\");",
    "source": "https://imagej.net/ij/developer/macro/functions2.html#Roi.setFillColor"
   },
-  "sha256": "3bf3e5e30f1a1f4a516db8ca099f39164a7fb04502be3bbae755e87ef095892a",
+  "sha256": "35ec883aea336eea2c8a9ec54adfe1f52342e0ba1ff3a875d3a30444c4a14bc6",
   "description": "照合済",
   "returns": "照合済",
   "caution": "照合済（モデル固有の限定は実装・試験で確認）"
@@ -1814,11 +1814,11 @@
   "fields": {
    "description": "現在の選択に名前を設定する。ROI Manager に登録した際の表示名になり、名前で選択を特定する処理の手がかりになる。",
    "returns": "戻り値なし（処理または引数の変数への書き込み）",
-   "caution": "名前の取得は Roi.getName。現在の選択名は getInfo(\"selection.name\") でも得られる。このアプリでは未確認として停止する。",
+   "caution": "名前の取得は Roi.getName。現在の選択名は getInfo(\"selection.name\") でも得られる。このアプリでは未対応として停止する。",
    "example": "Roi.setName(\"cell-01\");",
    "source": "https://imagej.net/ij/developer/macro/functions2.html#Roi.setName"
   },
-  "sha256": "abbc0e30551f18329d175a1d9ac0eac21906181440609f666eaf3352c5a705b9",
+  "sha256": "97219d3e00b3d161d62967a50817cb276dff8ca0043ed0c0dc306834481bfc98",
   "description": "照合済",
   "returns": "照合済",
   "caution": "照合済（モデル固有の限定は実装・試験で確認）"
@@ -1830,11 +1830,11 @@
   "fields": {
    "description": "現在の選択の名前を返す。名前が設定されていない選択では空文字列になる。",
    "returns": "選択の名前（文字列）",
-   "caution": "括弧を付けても同じ。名前の設定は Roi.setName。このアプリでは未確認として停止する。",
+   "caution": "括弧を付けても同じ。名前の設定は Roi.setName。このアプリでは未対応として停止する。",
    "example": "n = Roi.getName();",
    "source": "https://imagej.net/ij/developer/macro/functions2.html#Roi.getName"
   },
-  "sha256": "53d9e5095f022410a9fc290be3951d2c5b6c55fbb193a6cc317d3c9307ed0167",
+  "sha256": "250781f1d0097cd0446487a5d9ecffe79d19ac651a48b97c05ef25176670e9dc",
   "description": "照合済",
   "returns": "照合済",
   "caution": "照合済（モデル固有の限定は実装・試験で確認）"
@@ -1846,11 +1846,11 @@
   "fields": {
    "description": "現在の選択が属するハイパースタック上の位置（チャンネル・スライス・フレーム）を設定する。スライスだけを指定する1引数形式もある。",
    "returns": "戻り値なし（処理または引数の変数への書き込み）",
-   "caution": "0 を指定した次元は、その次元では位置を持たない扱いになる。このアプリでは未確認として停止する。",
+   "caution": "0 を指定した次元は、その次元では位置を持たない扱いになる。このアプリでは未対応として停止する。",
    "example": "Roi.setPosition(1, 5, 1);",
    "source": "https://imagej.net/ij/developer/macro/functions2.html#Roi.setPosition"
   },
-  "sha256": "b2fc9daa8739c553a82d19bb24404fb5ca9b9ca335a9079722385d7506049b3a",
+  "sha256": "eb55f40b188c755b0f7672a76a331bc33a46047de956e768371d6610574c5d8f",
   "description": "照合済",
   "returns": "照合済",
   "caution": "照合済（モデル固有の限定は実装・試験で確認）"
@@ -1862,11 +1862,11 @@
   "fields": {
    "description": "現在の選択が属するハイパースタック上の位置を、指定した変数に書き込む。Roi.setPosition で設定した位置の読み取りに使う。",
    "returns": "戻り値なし（処理または引数の変数への書き込み）",
-   "caution": "引数はすべて書き込み先の変数名。位置が設定されていない次元は 0 が返る。このアプリでは未確認として停止する。",
+   "caution": "引数はすべて書き込み先の変数名。位置が設定されていない次元は 0 が返る。このアプリでは未対応として停止する。",
    "example": "Roi.getPosition(c, z, t);\nprint(z);",
    "source": "https://imagej.net/ij/developer/macro/functions2.html#Roi.getPosition"
   },
-  "sha256": "571d154f788b05039fab4ffed553bdfa9e051289edd41c9f9b6971b3cb7dffa8",
+  "sha256": "a89e503c090e3ca3def54d0255b17712b346f7c67134198542da6e58b694372b",
   "description": "照合済",
   "returns": "照合済",
   "caution": "照合済（モデル固有の限定は実装・試験で確認）"
@@ -1878,11 +1878,11 @@
   "fields": {
    "description": "選択に付けられたプロパティ（キーと値の組）のうち、指定したキーの値を文字列で返す。キーが無ければ空文字列。Roi.setProperty で付けた付帯情報の読み取りに使う。",
    "returns": "キーの値（文字列）",
-   "caution": "このアプリでは未確認として停止する。",
+   "caution": "このアプリでは未対応として停止する。",
    "example": "v = Roi.getProperty(\"group\");",
    "source": "https://imagej.net/ij/developer/macro/functions2.html#Roi.getProperty"
   },
-  "sha256": "e1f2b7ccc667254adaa13e9796e95c61e89214b910cd2ea3eae32c3bbf273de7",
+  "sha256": "4751af79ccd59e17c786c0e6ef41a94ec02d9acac3f12c1b9acdf7147fb7ceca",
   "description": "照合済",
   "returns": "照合済",
   "caution": "照合済（モデル固有の限定は実装・試験で確認）"
@@ -1894,11 +1894,11 @@
   "fields": {
    "description": "選択に、キーと値の組のプロパティを追加する。分類や条件などの付帯情報を選択自体に持たせるための仕組みで、読み取りは Roi.getProperty。",
    "returns": "戻り値なし（処理または引数の変数への書き込み）",
-   "caution": "第2引数を省略すると、値 \"1\" として追加される。このアプリでは未確認として停止する。",
+   "caution": "第2引数を省略すると、値 \"1\" として追加される。このアプリでは未対応として停止する。",
    "example": "Roi.setProperty(\"group\", \"A\");",
    "source": "https://imagej.net/ij/developer/macro/functions2.html#Roi.setProperty"
   },
-  "sha256": "041735a611a831017c9e3724e7a0335ff6d531216fff8f68caa9711aa1401403",
+  "sha256": "b8201efeedd5ddf52da9585016612d8a36cbf9634fac6ded72bb0d8c880eca9c",
   "description": "照合済",
   "returns": "照合済",
   "caution": "照合済（モデル固有の限定は実装・試験で確認）"
@@ -1910,11 +1910,11 @@
   "fields": {
    "description": "ROI Manager のリストで、番号（0始まり）で指定した ROI をアクティブな選択にする。roiManager(\"select\", index) と同じ働きを名前空間形式で提供する。",
    "returns": "戻り値なし（処理または引数の変数への書き込み）",
-   "caution": "名前で選びたい場合は RoiManager.selectByName を使う。このアプリでは未確認として停止する。",
+   "caution": "名前で選びたい場合は RoiManager.selectByName を使う。このアプリでは未対応として停止する。",
    "example": "RoiManager.select(0);",
    "source": "https://imagej.net/ij/developer/macro/functions2.html#RoiManager.select"
   },
-  "sha256": "56803f07de5f5802941be0b807e8a17ae3cc7acd6f4aab9ba7797aec39bff131",
+  "sha256": "3ca31e867aad217bf341ebf355a642cd742d95d0faae621f0d8cd578d2a6f363",
   "description": "照合済",
   "returns": "照合済",
   "caution": "照合済（モデル固有の限定は実装・試験で確認）"
@@ -1926,11 +1926,11 @@
   "fields": {
    "description": "ROI Manager のリストで、名前で指定した ROI をアクティブな選択にする。同名が複数ある場合は最初に一致したものが選ばれる。",
    "returns": "戻り値なし（処理または引数の変数への書き込み）",
-   "caution": "このアプリでは未確認として停止する。",
+   "caution": "このアプリでは未対応として停止する。",
    "example": "RoiManager.selectByName(\"cell-01\");",
    "source": "https://imagej.net/ij/developer/macro/functions2.html#RoiManager.selectByName"
   },
-  "sha256": "fada5a412991b5cc5d0f504d01f3dd469b65c5cbad0834769f2a0de12e0eaacd",
+  "sha256": "92f44e1a454959049490716071c5e3bc26c3930706e389e09b042801e43c222a",
   "description": "照合済",
   "returns": "照合済",
   "caution": "照合済（モデル固有の限定は実装・試験で確認）"
@@ -1942,11 +1942,11 @@
   "fields": {
    "description": "ROI Manager のリストで、番号（0始まり）で指定した ROI の名前を返す。名前が設定されていない ROI では空文字列になる。",
    "returns": "ROI の名前（文字列）",
-   "caution": "名前から番号を引く場合は RoiManager.getIndex。このアプリでは未確認として停止する。",
+   "caution": "名前から番号を引く場合は RoiManager.getIndex。このアプリでは未対応として停止する。",
    "example": "n = RoiManager.getName(0);",
    "source": "https://imagej.net/ij/developer/macro/functions2.html#RoiManager.getName"
   },
-  "sha256": "dc0e2169abb5778f33c833c2f7e53bad88080ce8a6c4a9f813e234a30abe7511",
+  "sha256": "18830753c7490cfd4cac2b6cec4eb13f371092ae5833e79778b9ca829a4d586d",
   "description": "照合済",
   "returns": "照合済",
   "caution": "照合済（モデル固有の限定は実装・試験で確認）"
@@ -1958,11 +1958,11 @@
   "fields": {
    "description": "ROI Manager のリストで、指定した名前を持つ最初の ROI の番号（0始まり）を返す。該当する ROI が無ければ -1 になる。",
    "returns": "ROI の番号（無ければ -1）",
-   "caution": "このアプリでは未確認として停止する。",
+   "caution": "このアプリでは未対応として停止する。",
    "example": "i = RoiManager.getIndex(\"cell-01\");",
    "source": "https://imagej.net/ij/developer/macro/functions2.html#RoiManager.getIndex"
   },
-  "sha256": "d3ec908b9cce5b755cfd7fe7706fc3f7d0b70ff3bf1995ad629c551e0c37e21f",
+  "sha256": "01a8fc76513468c49cacedbe621f7f2bdcfd4718e4f5d3f9982cee13797c6ae3",
   "description": "照合済",
   "returns": "照合済",
   "caution": "照合済（モデル固有の限定は実装・試験で確認）"
@@ -1974,11 +1974,11 @@
   "fields": {
    "description": "ROI Manager のリストから、番号（0始まり）で指定した ROI を削除する。全件の消去には roiManager(\"reset\") を使う。",
    "returns": "戻り値なし（処理または引数の変数への書き込み）",
-   "caution": "このアプリでは未確認として停止する。",
+   "caution": "このアプリでは未対応として停止する。",
    "example": "RoiManager.delete(0);",
    "source": "https://imagej.net/ij/developer/macro/functions2.html#RoiManager.delete"
   },
-  "sha256": "45970a171781f5a90b2e13a31af6ccde056854ffde86f9183cc707b0334c151a",
+  "sha256": "fc9172f9e056ed9c79aace8d201b434aadea28cace3c5c31f35a19a7059a9ce9",
   "description": "照合済",
   "returns": "照合済",
   "caution": "照合済（モデル固有の限定は実装・試験で確認）"
@@ -1990,11 +1990,11 @@
   "fields": {
    "description": "前景色（描画色）を赤・緑・青の値で設定する。setColorと異なりシステム全体の前景色を変更し、run(\"Fill\")などのコマンドにも反映される。背景色の設定は setBackgroundColor。",
    "returns": "戻り値なし（処理または引数の変数への書き込み）",
-   "caution": "引数を1つにして、色をパックした値で指定する setForegroundColor(rgb) 形式もある。このアプリでは未確認として停止する。",
+   "caution": "引数を1つにして、色をパックした値で指定する setForegroundColor(rgb) 形式もある。このアプリでは未対応として停止する。",
    "example": "setForegroundColor(255, 0, 0);\ndrawRect(10, 10, 50, 50);",
    "source": "https://imagej.net/ij/developer/macro/functions2.html#setForegroundColor"
   },
-  "sha256": "10150b938318e222714774788c7fc56e5d90bed67a9122d0d2158fe6d0247637",
+  "sha256": "25eef38704ab05a5b7b0e88408ccf5e7bb5e6f48c1627d1fe3a85a275cce25c4",
   "description": "照合済",
   "returns": "照合済",
   "caution": "照合済（モデル固有の限定は実装・試験で確認）"
@@ -2422,11 +2422,11 @@
   "fields": {
    "description": "テキストファイルを書き込み用に開き、ファイル変数を返す。print にそのファイル変数を渡すと、ログ画面ではなくファイルへ出力できる。開けるファイルは同時に1つだけ。",
    "returns": "ファイル変数",
-   "caution": "ファイルはマクロ終了時に自動で閉じられる。開いている間は別のファイルを開けない。このアプリでは未確認として停止する。",
+   "caution": "ファイルはマクロ終了時に自動で閉じられる。開いている間は別のファイルを開けない。このアプリでは未対応として停止する。",
    "example": "f = File.open(\"/data/log.txt\");\nprint(f, \"header\");",
    "source": "https://imagej.net/ij/developer/macro/functions2.html#File.open"
   },
-  "sha256": "8d3859369f2f50455ea1295602a79bbd2c77cd4264d888772f586df036a81647",
+  "sha256": "cf196a79c4403669a831e2488038ffcd99844f8c8ff019fc6200b0fbbb0df387",
   "description": "照合済",
   "returns": "照合済",
   "caution": "照合済（モデル固有の限定は実装・試験で確認）"
@@ -2438,11 +2438,11 @@
   "fields": {
    "description": "指定したテキストファイルの末尾に文字列を追記する（末尾に改行が付く）。ファイルがなければ新規作成される。処理ログを蓄積する用途に向く。",
    "returns": "戻り値なし（処理または引数の変数への書き込み）",
-   "caution": "1回ごとに開いて閉じるため、大量の行を書く用途には File.open の方が向く。このアプリでは未確認として停止する。",
+   "caution": "1回ごとに開いて閉じるため、大量の行を書く用途には File.open の方が向く。このアプリでは未対応として停止する。",
    "example": "name=\"sample\";\nFile.append(\"done: \" + name, \"/data/log.txt\");",
    "source": "https://imagej.net/ij/developer/macro/functions2.html#File.append"
   },
-  "sha256": "e7f7a0d352de8611aa93164706f3104c138055279213a0421010cc547db9b618",
+  "sha256": "ebb9ce46f32ad88247272e30676358ce027303aeb30c1d2948ebb0b603028f65",
   "description": "照合済",
   "returns": "照合済",
   "caution": "照合済（モデル固有の限定は実装・試験で確認）"
@@ -3187,11 +3187,11 @@
   "fields": {
    "description": "macros フォルダ内のファイル名、またはフルパスで指定したマクロ（スクリプト）ファイルを実行する。第2引数で文字列を渡すことができ、呼び先では getArgument で受け取る。",
    "returns": "呼び出したマクロが返した文字列",
-   "caution": "コードの文字列をその場で実行したい場合は eval を使う。このアプリでは未確認として停止する。",
+   "caution": "コードの文字列をその場で実行したい場合は eval を使う。このアプリでは未対応として停止する。",
    "example": "result = runMacro(\"SubTask\", \"123\");",
    "source": "https://imagej.net/ij/developer/macro/functions2.html#runMacro"
   },
-  "sha256": "3a68637f6975832613b3de614e580d0fd831e1f2a2e120e696eb9ea09732a3bd",
+  "sha256": "02b13db526dee4b91058166752f8a03a221e4e4524cdcda8ac3a63bbd2501468",
   "description": "照合済",
   "returns": "照合済",
   "caution": "照合済（モデル固有の限定は実装・試験で確認）"
@@ -3363,11 +3363,11 @@
   "fields": {
    "description": "変換対象のテンプレート断片です。トップレベルTransformではTransform節を除くテンプレート全体、Fn::Transformでは同階層の兄弟範囲（Fn::Transform自身を除く）が断片になります。",
    "returns": "入力断片／変換後のテンプレート断片",
-   "caution": "",
+   "caution": "応答のfragmentはオブジェクト（テンプレート断片）で返す必要がある。数値・文字列・配列・nullなどのオブジェクトでないfragmentは検証で停止する。",
    "example": "def handler(event, context):\n    fragment = event[\"fragment\"]\n    fragment[\"Metadata\"] = {\"Stage\": event[\"params\"].get(\"Stage\", \"dev\")}\n    return {\"requestId\": event[\"requestId\"], \"status\": \"success\", \"fragment\": fragment}",
    "source": "https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/template-macros-author.html"
   },
-  "sha256": "2b4105b0aecb82448ea74a3501cbb33a2ea1e1826d1341d8a607138fedd6b068",
+  "sha256": "d67da67ac4a2140207d973bde2a2eaf21d4dc4f1361c093479bc91055458cd76",
   "description": "照合済",
   "returns": "照合済",
   "caution": "照合済（モデル固有の限定は実装・試験で確認）"
@@ -9333,11 +9333,11 @@
   "fields": {
    "description": "双曲線正弦（ハイパボリックサイン）を返す。sinh(n) = (e^n - e^-n) / 2 で定義される双曲線関数。",
    "returns": "sinh(n)",
-   "caution": "実物の ImageJ マクロ言語には Math.sinh は存在しない。公式「Built-in Macro Functions」の Math の項にも、本体 Functions.java の doMath() が受け付ける関数名にも含まれていない。このアプリでは未確認として停止する。",
+   "caution": "実物の ImageJ マクロ言語には Math.sinh は存在しない。公式「Built-in Macro Functions」の Math の項にも、本体 Functions.java の doMath() が受け付ける関数名にも含まれていない。このアプリでは未対応として停止する。",
    "example": "y = Math.sinh(0.5);",
    "source": "https://imagej.net/ij/developer/macro/functions2.html"
   },
-  "sha256": "d9bb23d67766622309430dffe5930dba220ea1e76ac4781a55f03389a32d4f16"
+  "sha256": "e8b5f0c382cd0460a84f9a9dc7a697152d0ba0fe88d48d72e3b094f06d3032b0"
  },
  {
   "kind": "imagej",
@@ -9346,11 +9346,11 @@
   "fields": {
    "description": "双曲線余弦（ハイパボリックコサイン）を返す。cosh(n) = (e^n + e^-n) / 2 で定義される双曲線関数。",
    "returns": "cosh(n)",
-   "caution": "実物の ImageJ マクロ言語には Math.cosh は存在しない。公式「Built-in Macro Functions」の Math の項にも、本体 Functions.java の doMath() が受け付ける関数名にも含まれていない。このアプリでは未確認として停止する。",
+   "caution": "実物の ImageJ マクロ言語には Math.cosh は存在しない。公式「Built-in Macro Functions」の Math の項にも、本体 Functions.java の doMath() が受け付ける関数名にも含まれていない。このアプリでは未対応として停止する。",
    "example": "y = Math.cosh(0.5);",
    "source": "https://imagej.net/ij/developer/macro/functions2.html"
   },
-  "sha256": "8f877b27412f6625992d00a3c82698997e61a3ac98927cf961b9e9d98db63783"
+  "sha256": "93d2d6b7d96ddf89a2312fbee17a5e620c34ac4031aca13e999a1545273a5c62"
  },
  {
   "kind": "imagej",
@@ -9359,11 +9359,11 @@
   "fields": {
    "description": "双曲線正接（ハイパボリックタンジェント）を返す。tanh(n) = sinh(n) / cosh(n) で定義される双曲線関数。",
    "returns": "tanh(n)",
-   "caution": "実物の ImageJ マクロ言語には Math.tanh は存在しない。公式「Built-in Macro Functions」の Math の項にも、本体 Functions.java の doMath() が受け付ける関数名にも含まれていない。このアプリでは未確認として停止する。",
+   "caution": "実物の ImageJ マクロ言語には Math.tanh は存在しない。公式「Built-in Macro Functions」の Math の項にも、本体 Functions.java の doMath() が受け付ける関数名にも含まれていない。このアプリでは未対応として停止する。",
    "example": "y = Math.tanh(0.5);",
    "source": "https://imagej.net/ij/developer/macro/functions2.html"
   },
-  "sha256": "a2a01b523d0253f2ebf98a70fb70433ac11762063621e900649184fe114af6d1"
+  "sha256": "c80138956b85a0992ffdb70bbbab649bcd64a9dd0fadc6bf1a0b63b1a6427b8c"
  },
  {
   "kind": "imagej",
@@ -12891,11 +12891,11 @@
   "fields": {
    "description": "配列またはオブジェクトを生成する式です。配列は要素が型の既定値で初期化されます。",
    "returns": "生成した配列またはオブジェクトへの参照",
-   "caution": "対応形式は new 型[個数]、new 型[] {…}、引数なしの new クラス名() のみです。引数付きコンストラクタなどは未対応です。",
+   "caution": "対応形式は new 型[個数]、new 型[個数,個数]（矩形配列）、new 型[個数][]（ジャグ配列）、new 型[] {…}、引数なしの new クラス名() です。引数付きコンストラクタや、多次元／ジャグ配列への new と初期化子 {…} の併用などは未対応です。",
    "example": "using System;\nclass Program {\n    static void Main() {\nint[] values = new int[3];\nvalues[0] = 1;\n    }\n}",
    "source": "https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/operators/new-operator"
   },
-  "sha256": "be382a0085479e9c87bb0f59507db96260cda51672a208d19d7526c2ddf39dba"
+  "sha256": "ba1f4cf45a409ace430899468b5e63aba2d6489389c8089cc32c99d11462eafc"
  },
  {
   "kind": "csharp",
@@ -17836,5 +17836,161 @@
    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/keycode-constants.md"
   },
   "sha256": "86090a69ebb77c8f47e71eae20d3a6fed8c5cebf50436ef25e381767f1031c87"
+ },
+ {
+  "kind": "vba",
+  "name": "StrConv",
+  "supported": false,
+  "fields": {
+   "description": "文字列を指定した方法で変換して返します。conversion には vbUpperCase などの StrConv 定数を組み合わせて指定します。",
+   "returns": "Variant（String）",
+   "caution": "このアプリでは未対応です（参照専用の項目です）。呼び出すと関数名を挙げて停止します。",
+   "example": "Debug.Print StrConv(\"abc\", vbUpperCase)",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/strconv-function.md"
+  },
+  "sha256": "3980d67b191bda36bdfbd8cd89021fe773333d2ab5968558f0b77eb7f44a0d58"
+ },
+ {
+  "kind": "vba",
+  "name": "Shell",
+  "supported": false,
+  "fields": {
+   "description": "実行可能プログラムを起動し、起動したプログラムのタスクIDを返します。windowstyle には vbHide などの Shell 定数を指定します。",
+   "returns": "Variant（Double）（起動したプログラムのタスクID）",
+   "caution": "このアプリでは未対応です（参照専用の項目です）。外部プログラムは起動しません。呼び出すと関数名を挙げて停止します。",
+   "example": "x = Shell(\"calc.exe\", vbNormalFocus)",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/shell-function.md"
+  },
+  "sha256": "c337e5b343c0a0a54a13649c35ad91af7ef0a2c1c998acb6d74c10c09e694ea1"
+ },
+ {
+  "kind": "vba",
+  "name": "CallByName",
+  "supported": false,
+  "fields": {
+   "description": "文字列で名前を指定して、オブジェクトのメソッドを実行したり、プロパティを設定・取得したりします。calltype には vbMethod などの CallByName 定数を指定します。",
+   "returns": "Variant（呼び出したプロパティ取得・メソッドの結果）",
+   "caution": "このアプリでは未対応です（参照専用の項目です）。呼び出すと関数名を挙げて停止します。",
+   "example": "x = CallByName(Range(\"A1\"), \"Value\", vbGet)",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/callbyname-function.md"
+  },
+  "sha256": "890d9aca8651e8f84e3a6e78591c1ea67eb8761df2c03b2691fc056ff57ef61c"
+ },
+ {
+  "kind": "vba",
+  "name": "QueryClose",
+  "supported": false,
+  "fields": {
+   "description": "UserForm が閉じられる前に発生するイベントです。CloseMode には vbFormControlMenu などの QueryClose 定数が入り、Cancel を 0 以外にすると閉じるのを止められます。",
+   "returns": "戻り値なし（イベントプロシージャ）",
+   "caution": "このアプリでは未対応です（参照専用の項目です）。UserForm とイベントプロシージャは扱いません。",
+   "example": "Private Sub UserForm_QueryClose(Cancel As Integer, CloseMode As Integer)\nEnd Sub",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/queryclose-event.md"
+  },
+  "sha256": "da7b7ef21500e4ef377237b479a8dde84bd93e48a43128665a4ade3a006f0aa5"
+ },
+ {
+  "kind": "vba",
+  "name": "Show",
+  "supported": false,
+  "fields": {
+   "description": "UserForm オブジェクトを表示します。modal には vbModal／vbModeless の Form 定数を指定します（省略時は vbModal）。",
+   "returns": "戻り値なし（メソッド）",
+   "caution": "このアプリでは未対応です（参照専用の項目です）。UserForm は表示しません。",
+   "example": "UserForm1.Show vbModal",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/show-method.md"
+  },
+  "sha256": "33c589811c4d4bda6a421f9cc3acd7e403db4c3c00e809c52a54d3a04041073a"
+ },
+ {
+  "kind": "vba",
+  "name": "Unload",
+  "supported": false,
+  "fields": {
+   "description": "オブジェクトをメモリから削除（アンロード）します。QueryClose 定数の vbFormCode は、このステートメントがコードから呼び出されたことを表します。",
+   "returns": "戻り値なし（宣言または制御文）",
+   "caution": "このアプリでは未対応です（参照専用の項目です）。UserForm は扱いません。",
+   "example": "Unload UserForm1",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/unload-statement.md"
+  },
+  "sha256": "e70ff91f5a974a692c634318808f5a8282a9c66536385304f00dbaee1881cc0b"
+ },
+ {
+  "kind": "vba",
+  "name": "GetAttr",
+  "supported": false,
+  "fields": {
+   "description": "ファイルやフォルダの属性を表す数値を返します。戻り値は vbNormal／vbReadOnly などのファイル属性定数の合計で表されます。",
+   "returns": "Integer（ファイル属性定数の合計）",
+   "caution": "このアプリでは未対応です（参照専用の項目です）。ファイル属性は取得しません。呼び出すと関数名を挙げて停止します。",
+   "example": "x = GetAttr(\"TESTFILE\")",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/getattr-function.md"
+  },
+  "sha256": "bc0feab8f6a215b23e43ed6369a14808a26783a365703400707bff823be1c7e8"
+ },
+ {
+  "kind": "vba",
+  "name": "SetAttr",
+  "supported": false,
+  "fields": {
+   "description": "ファイルの属性を設定します。attributes には vbReadOnly などのファイル属性定数を組み合わせて指定します。",
+   "returns": "戻り値なし（宣言または制御文）",
+   "caution": "このアプリでは未対応です（参照専用の項目です）。ファイル属性は変更しません。呼び出すと未対応として停止します。",
+   "example": "SetAttr \"TESTFILE\", vbReadOnly",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/setattr-statement.md"
+  },
+  "sha256": "57afcb1e79d3e8039cd365ef31da5bc3c15b997784212bdcf88a59a652598734"
+ },
+ {
+  "kind": "vba",
+  "name": "Dir",
+  "supported": false,
+  "fields": {
+   "description": "指定したパターンやファイル属性に一致するファイルやフォルダの名前を返します。attributes には vbDirectory などのファイル属性定数を指定します。",
+   "returns": "String（一致したファイル・フォルダの名前。見つからなければ空文字列）",
+   "caution": "このアプリでは未対応です（参照専用の項目です）。ファイルは検索しません。呼び出すと関数名を挙げて停止します。",
+   "example": "x = Dir(\"*.txt\")",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/dir-function.md"
+  },
+  "sha256": "122c5e2f92be2abca8619ae554a837e1261efc60d30c6a10b66266dc44bc0272"
+ },
+ {
+  "kind": "vba",
+  "name": "FormatDateTime",
+  "supported": false,
+  "fields": {
+   "description": "日付や時刻を指定した書式で表した文字列を返します。NamedFormat には vbGeneralDate などの日付書式定数を指定します。",
+   "returns": "String（書式化された日付・時刻）",
+   "caution": "このアプリでは未対応です（参照専用の項目です）。呼び出すと関数名を挙げて停止します。",
+   "example": "x = FormatDateTime(Date, vbLongDate)",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/formatdatetime-function.md"
+  },
+  "sha256": "73ac335c4126b83481869db4cb3d84892fe6abe6947b4668337c348ec15978dd"
+ },
+ {
+  "kind": "vba",
+  "name": "VarType",
+  "supported": false,
+  "fields": {
+   "description": "変数の種類（サブタイプ）を表す数値を返します。戻り値は vbInteger／vbString などの VarType 定数で表されます。",
+   "returns": "Integer（変数のサブタイプを表す定数値）",
+   "caution": "このアプリでは未対応です（参照専用の項目です）。呼び出すと関数名を挙げて停止します。",
+   "example": "x = VarType(42)",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/vartype-function.md"
+  },
+  "sha256": "19583684954b4ef3f35f3abe817b0e2214cfeefa08fdb0cb4807212b3a15e064"
+ },
+ {
+  "kind": "vba",
+  "name": "Weekday",
+  "supported": false,
+  "fields": {
+   "description": "日付の曜日を表す数値を返します。戻り値は vbSunday などの曜日定数で表され、firstdayofweek にも曜日定数を指定します。",
+   "returns": "Variant（Integer）（曜日を表す定数値）",
+   "caution": "このアプリでは未対応です（参照専用の項目です）。呼び出すと関数名を挙げて停止します。",
+   "example": "x = Weekday(Date)",
+   "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/weekday-function.md"
+  },
+  "sha256": "e9dde346598ecf5be356dd1f79b1a4816b4d5d590ba242a86535073dd2fb68ef"
  }
 ]

@@ -82,6 +82,16 @@ export function tokenizePS(source) {
     }
     if (c === "$") {
       i++;
+      // R29-N14: 部分式 $( は変数ではなく部分式演算子である（Microsoft
+      // Learn about_Operator_Precedence の最上位グループ $() @() () @{}、
+      // 言語仕様の primary-expression）。変数名の読み取りより先に
+      // 演算子トークンとして切り取る。従来は変数形式の失敗文言
+      // （「このPowerShell変数の形式」）という虚偽原因で止まっていた。
+      if (source[i] === "(") {
+        i++;
+        push("op", "$(", start);
+        continue;
+      }
       if (source[i] === "{") {
         const end = source.indexOf("}", i + 1);
         if (end < 0) fail("変数名の } がありません", line, "SyntaxError");
@@ -193,7 +203,7 @@ export function tokenizePS(source) {
     const op = source
       .slice(i)
       .match(
-        /^(?:-(?:c|i)?(?:notlike|notmatch|eq|ne|ge|gt|le|lt|like|match)\b|-(?:c|i)?(?:notcontains|contains|notin|in)\b|-(?:and|or|not|f)\b|\+\+|--|\+=|-=|\*=|\/=|\.\.|@\(|@\{|\$\(|[+\-*\/%=<>!|&.,;(){}\[\]:?])/i,
+        /^(?:-(?:c|i)?(?:notlike|notmatch|eq|ne|ge|gt|le|lt|like|match)\b|-(?:c|i)?(?:notcontains|contains|notin|in)\b|-(?:and|or|not|f)\b|\+\+|--|\+=|-=|\*=|\/=|%=|\.\.|@\(|@\{|\$\(|[+\-*\/%=<>!|&.,;(){}\[\]:?])/i,
       );
     if (op) {
       i += op[0].length;
@@ -326,6 +336,11 @@ export class PSParser {
     // R24-N3: param 定義の既定値など、カンマが区切りとして働く文脈では
     // カンマ演算子の消費を抑止するためのカウンタ。
     this.noComma = 0;
+    // R29-N13: 括弧内・条件括弧内では代入が式として値を返す（言語仕様
+    // §7.1.1 グループ化括弧／§7.11 代入）。文頭のパイプラインでは従来
+    // どおり文としての代入（出力なし）と区別するため、式としての代入を
+    // 読み取る文脈（括弧・部分式・条件）でのみ立てるカウンタ。
+    this.assignDepth = 0;
     // R25-N12: 引数モードの式解析中だけ立てるカウンタ。この間は数値
     // リテラルに接着した演算子形を文字列として読む（oneArgument 参照）。
     // 括弧内・添字内・キャスト被演算子は式モードに戻るため、その範囲では
@@ -371,6 +386,19 @@ export class PSParser {
     return out;
   }
   statement() {
+    // R29-N13: 文の先頭では代入は文として処理する（出力なし）ため、
+    // 括弧・部分式の文脈で立った assignDepth は文の境界で下ろす
+    // （$() 内の代入文が式として出力されてしまう漏れの防止）。
+    // 括弧が再度現れれば、その内側で再び立つ。
+    const savedAssign = this.assignDepth;
+    this.assignDepth = 0;
+    try {
+      return this.statementBody();
+    } finally {
+      this.assignDepth = savedAssign;
+    }
+  }
+  statementBody() {
     const t = this.ts[this.i],
       name = t.v.toLowerCase(),
       line = t.line;
@@ -523,7 +551,7 @@ export class PSParser {
         // 正規形であるため、括弧つき形と同様に属性として読む。
         if (
           !/^CmdletBinding\s*(\(|$)/i.test(bc.text.trim()) &&
-          !/^OutputType\s*\(/i.test(bc.text.trim())
+          !/^OutputType\s*(\(|$)/i.test(bc.text.trim())
         ) {
           this.i = before;
           break;
@@ -543,14 +571,24 @@ export class PSParser {
     }
     const pipe = this.pipeline();
     const op = this.ts[this.i]?.v;
-    if (["=", "+=", "-=", "*=", "/="].includes(op)) {
+    if (["=", "+=", "-=", "*=", "/=", "%="].includes(op)) {
       this.take();
       if (pipe.stages.length !== 1 || pipe.stages[0].k !== "expression")
         fail("代入先が不正です", line, "SyntaxError");
       const target = pipe.stages[0].value;
       if (!["var", "member", "index"].includes(target.k))
         fail("変数・プロパティ・添字へ代入してください", line, "SyntaxError");
-      return { k: "assign", target, op, value: this.pipeline(), line };
+      // R29-N13: 代入の右辺では連鎖代入（$y = $x = 5）が式として
+      // 読めるよう、右辺のパイプライン解析の間だけ assignDepth を立てる。
+      const savedAssign = this.assignDepth;
+      this.assignDepth++;
+      let value;
+      try {
+        value = this.pipeline();
+      } finally {
+        this.assignDepth = savedAssign;
+      }
+      return { k: "assign", target, op, value, line };
     }
     return {
       k: "pipeline",
@@ -606,6 +644,14 @@ export class PSParser {
         validateSet = null,
         mandatory = false,
         validateNotNull = false;
+      // R29-N9／N10: 括弧つき検証・許可属性の記録。validations は
+      // {kind, name, min, max, pattern} の列（kind は notnull／
+      // notnullorempty／notnullorwhitespace／count／length／range／
+      // pattern）。allow 系は対応する検証の免除フラグ。
+      const validations = [];
+      let allowNull = false,
+        allowEmptyString = false,
+        allowEmptyCollection = false;
       const aliases = [];
       // R27-N4: 型制約とパラメータ属性（B.2.4 attribute）は複数並べて
       // 書ける（例：[Parameter(Mandatory=$true)][ValidateSet('a','b')]
@@ -637,14 +683,73 @@ export class PSParser {
           .trim()
           .split(".")
           .at(-1)
-          .toLowerCase();
+          .toLowerCase()
+          .replace(/attribute$/, "");
         const inner = bc.tokens.slice(
           bc.tokens.findIndex((x) => x.v === "(") + 1,
+        );
+        // R29-N9／N10: 括弧つき形は属性として解釈する（RG-263 の型
+        // リテラル是正は括弧なし形だけの話であり、混同しない）。
+        // 実 PowerShell では [ValidateNotNull()] 等の () 付きが標準
+        // 表記である（Microsoft Learn about_Functions_Advanced_
+        // Parameters）。検証意味論は engine 側の束縛時検証で実装する。
+        const innerText = text.slice(
+          text.indexOf("(") + 1,
+          text.lastIndexOf(")"),
+        );
+        const attrNums = (innerText.match(/-?\d+(?:\.\d+)?/g) ?? []).map(
+          Number,
         );
         if (attrName === "validateset")
           validateSet = inner
             .filter((x) => ["string", "number", "word"].includes(x.k))
             .map((x) => (x.k === "number" ? String(psNumber(x.v)) : x.v));
+        else if (attrName === "validatenotnull") {
+          validateNotNull = true;
+          validations.push({ kind: "notnull", name: "ValidateNotNull" });
+        } else if (attrName === "validatenotnullorempty")
+          validations.push({
+            kind: "notnullorempty",
+            name: "ValidateNotNullOrEmpty",
+          });
+        else if (attrName === "validatenotnullorwhitespace")
+          validations.push({
+            kind: "notnullorwhitespace",
+            name: "ValidateNotNullOrWhiteSpace",
+          });
+        else if (attrName === "validatecount" && attrNums.length >= 2)
+          validations.push({
+            kind: "count",
+            name: "ValidateCount",
+            min: attrNums[0],
+            max: attrNums[1],
+          });
+        else if (attrName === "validatelength" && attrNums.length >= 2)
+          validations.push({
+            kind: "length",
+            name: "ValidateLength",
+            min: attrNums[0],
+            max: attrNums[1],
+          });
+        else if (attrName === "validaterange" && attrNums.length >= 2)
+          validations.push({
+            kind: "range",
+            name: "ValidateRange",
+            min: attrNums[0],
+            max: attrNums[1],
+          });
+        else if (attrName === "validatepattern") {
+          const pm = innerText.match(/'([^']*)'|"([^"]*)"/);
+          if (!pm) fail("未対応のパラメータ属性：[" + text + "]", bc.line);
+          validations.push({
+            kind: "pattern",
+            name: "ValidatePattern",
+            pattern: pm[1] ?? pm[2],
+          });
+        } else if (attrName === "allownull") allowNull = true;
+        else if (attrName === "allowemptystring") allowEmptyString = true;
+        else if (attrName === "allowemptycollection")
+          allowEmptyCollection = true;
         else if (attrName === "parameter") {
           for (let j = 0; j < inner.length; j++) {
             if (
@@ -692,6 +797,10 @@ export class PSParser {
         validateSet,
         mandatory,
         validateNotNull,
+        validations,
+        allowNull,
+        allowEmptyString,
+        allowEmptyCollection,
         aliases,
         line: t.line,
       });
@@ -705,16 +814,20 @@ export class PSParser {
     this.skip();
     this.take("(");
     // R26-N1: 条件の括弧内も独立した文脈（block と同じくリセットする）。
+    // R29-N13: 条件括弧内では代入式が受理される（if ($x = 5) 等）。
     const savedComma = this.noComma,
-      savedGlued = this.argGlued;
+      savedGlued = this.argGlued,
+      savedAssign = this.assignDepth;
     this.noComma = 0;
     this.argGlued = 0;
+    this.assignDepth++;
     let p;
     try {
       p = this.pipeline();
     } finally {
       this.noComma = savedComma;
       this.argGlued = savedGlued;
+      this.assignDepth = savedAssign;
     }
     this.take(")");
     return p;
@@ -1171,24 +1284,52 @@ export class PSParser {
         };
       else a = { k: "pre", op: t.v, target: preTarget, line };
     }
-    else if (t.v === "(" || t.v === "$(") {
+    else if (t.v === "(") {
       // R25-N12: 括弧内は式モードに戻るため、接着判定を一時的に下ろす。
       // R26-N1: 括弧・部分式の内側へ noComma を継承しない。param 既定値の
       // 区切りカンマが働くのはパラメータ列の水準だけであり、括弧内の
       // カンマは式のカンマである（文法 B.2.3）。
+      // R29-N13: グループ化括弧の中では代入式が値を返す形で受理される
+      // （($x = 5) は 5）。assignDepth を立てて expr 側の代入式読みを有効化する。
       const savedGlued = this.argGlued,
-        savedComma = this.noComma;
+        savedComma = this.noComma,
+        savedAssign = this.assignDepth;
       this.argGlued = 0;
       this.noComma = 0;
+      this.assignDepth++;
       let pipe;
       try {
         pipe = this.pipeline();
       } finally {
         this.argGlued = savedGlued;
         this.noComma = savedComma;
+        this.assignDepth = savedAssign;
       }
       this.take(")");
       a = { k: "subexpression", pipe, line };
+    } else if (t.v === "$(") {
+      // R29-N14: 部分式 $() は文の列（statement-list）を保持し、その
+      // 出力全体が式の値になる（言語仕様の subexpression）。空の $() は
+      // 出力なし（AutomationNull）になる。従来は字句段階で変数形式の
+      // 虚偽原因により到達できなかった。
+      const savedGlued = this.argGlued,
+        savedComma = this.noComma,
+        savedAssign = this.assignDepth;
+      this.argGlued = 0;
+      this.noComma = 0;
+      this.assignDepth++;
+      try {
+        if (this.peek(")")) {
+          this.take();
+          a = { k: "subexpression", pipe: null, line };
+        } else {
+          a = { k: "subexpression-list", body: this.program(")"), line };
+        }
+      } finally {
+        this.argGlued = savedGlued;
+        this.noComma = savedComma;
+        this.assignDepth = savedAssign;
+      }
     } else if (t.v === "@(") {
       // R26-N1: 配列表記の内側へ noComma を継承しない（括弧と同じ）。
       const savedGlued = this.argGlued,
@@ -1360,6 +1501,26 @@ export class PSParser {
             x.line = key.line;
           }
           this.ts.splice(this.i, 0, ...restTokens);
+          // R29-N12: 単語トークンは「-」までしか取り込まないため、接着した
+          // 複合代入 -= は「-」と「=」の2トークンに割れる。再トークン化で
+          // 戻した「-」の直後に、原文で接着した「=」が続く場合は1つの
+          // 複合代入トークンへ結合し直す（RG-240 の字句一般化を複合代入
+          // 全般へ広げる。空白で離れた形は結合しない）。
+          const first = this.ts[this.i],
+            after = this.ts[this.i + restTokens.length];
+          if (
+            restTokens.length === 1 &&
+            first?.v === "-" &&
+            after?.v === "=" &&
+            first.end === after.start
+          )
+            this.ts.splice(this.i, restTokens.length + 1, {
+              k: "op",
+              v: "-=",
+              start: first.start,
+              end: after.end,
+              line: key.line,
+            });
           name = name.slice(0, cut);
         }
         a = { k: "member", target: a, name, line };
@@ -1471,6 +1632,27 @@ export class PSParser {
       } else {
         a = { k: "binary", op, a, b: this.expr(p + 1), line };
       }
+    }
+    // R29-N13: 括弧内・条件内（assignDepth が立った文脈）では代入式を
+    // 受理する。代入は最も緩い結合であり、式の値として代入後の値を
+    // 返す（言語仕様 §7.11）。文頭では statement() 側の代入文（出力
+    // なし）が従来どおり処理するため、ここでは読まない。従来はこの
+    // 読みが無く、括弧が揃っているのに「) が必要です」という虚偽
+    // 原因で止まっていた。
+    if (
+      this.assignDepth > 0 &&
+      min <= 1 &&
+      ["=", "+=", "-=", "*=", "/=", "%="].includes(this.ts[this.i]?.v) &&
+      ["var", "member", "index"].includes(a.k)
+    ) {
+      const assignOp = this.take().v;
+      a = {
+        k: "assign-expr",
+        target: a,
+        op: assignOp,
+        value: this.pipeline(),
+        line,
+      };
     }
     // R28-N7: 三項（条件）演算子（言語仕様 7.4。PowerShell 7 以降の
     // 正規の演算子）。優先順位は全二項演算子より下であるため、最も

@@ -907,8 +907,20 @@
  },
  {
   "kind": "powershell",
+  "name": "三項演算子",
+  "description": "三項演算子（条件演算子）?: です。条件が真のときは ? の後の値を、偽のときは : の後の値を返します。選ばれた側だけを評価します（短絡）。優先順位は二項演算子より低く、右結合です。PowerShell 7 以降で使えます。",
+  "returns": "構文に従って変数・制御・成功ストリームを更新",
+  "caution": "未対応の形式は名称・行を示して停止します。",
+  "example": "$x = 5\nWrite-Output ($x -gt 3 ? \"big\" : \"small\")",
+  "source": "https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_operators?view=powershell-7.4",
+  "officialSource": "https://github.com/PowerShell/PowerShell-Docs/blob/ebaa235784a688ec72ab642186c4c17460fb438b/reference/7.4/Microsoft.PowerShell.Core/About/about_Operators.md",
+  "sourceSHA256": "a66fdac1f9ba14b5ec39169fc3d0fd76426ab8b9429e119bbd16d93f62703c3d",
+  "review": "掲載文面を公式の説明・構文・出力と照合。対応範囲はDEVELOPMENT.mdの宣言に限定。使用例のモデル実行はNode試験、実物実行はshell-native-audit.py。"
+ },
+ {
+  "kind": "powershell",
   "name": "算術・代入演算子",
-  "description": "加算+、減算-、乗算*、除算/、剰余%で計算します。+=・-=・*=・/=は計算結果を変数へ代入する複合代入です。++は変数を1増やし、--は1減らします（前置形式 ++$x・--$x と後置形式 $x++・$x-- の両方に対応します。前置形式では増減後の値、後置形式では増減前の値が式の値になります）。数値リテラルには、16進形式（0x1F＝31）や、単位接尾辞KB／MB／GB／TB／PBを付けた形式（1KB＝1024、2MB＝2097152）も書けます。",
+  "description": "加算+、減算-、乗算*、除算/、剰余%で計算します。+=・-=・*=・/=・%=は計算結果を変数へ代入する複合代入です。++は変数を1増やし、--は1減らします（前置形式 ++$x・--$x と後置形式 $x++・$x-- の両方に対応します。前置形式では増減後の値、後置形式では増減前の値が式の値になります）。数値リテラルには、16進形式（0x1F＝31）や、単位接尾辞KB／MB／GB／TB／PBを付けた形式（1KB＝1024、2MB＝2097152）も書けます。",
   "returns": "構文に従って変数・制御・成功ストリームを更新",
   "caution": "未対応の形式は名称・行を示して停止します。",
   "example": "$x=10\n$x += 5\n$x\n$x++\n$x\n0x1F\n1KB",

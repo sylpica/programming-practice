@@ -353,7 +353,7 @@ test("batch3-psengine r6 rows for all touched PowerShell items are in sync with 
     assert.ok(row, "r6 row " + name);
     for (const f of syncFields) assert.equal(row[f], item[f], name + "." + f);
   }
-  assert.equal(ps.reference.length, 51);
-  assert.equal(r6.filter((e) => e.kind === "powershell").length, 51);
-  assert.equal(r6.length, 79);
+  assert.equal(ps.reference.length, 52);
+  assert.equal(r6.filter((e) => e.kind === "powershell").length, 52);
+  assert.equal(r6.length, 80);
 });

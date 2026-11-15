@@ -150,7 +150,7 @@ const r2 = JSON.parse(
 );
 
 test("F-02(pyref): reference-r2 rows for python/cloudformation are fully in sync (fields + sha256)", () => {
-  assert.equal(r2.length, 1248); // 919 + python 44 + cloudformation 44 + 修正バッチ6 R27-N20 python 3 + cloudformation 伝播3（統合時に追加）+ R27-N7 VBA 定数94 + 修正バッチ7 R28-N9 VBA 定数141
+  assert.equal(r2.length, 1260); // 919 + python 44 + cloudformation 44 + 修正バッチ6 R27-N20 python 3 + cloudformation 伝播3（統合時に追加）+ R27-N7 VBA 定数94 + 修正バッチ7 R28-N9 VBA 定数141 + 修正バッチ8 VBA 参照専用12
   for (const [kind, def] of [
     ["python", py],
     ["cloudformation", cf],
@@ -232,5 +232,5 @@ for (const [label, code, expect] of HANDLER_CASES) {
 test("except-handler: totals across all definitions stay 1327 after the propagation", () => {
   let n = 0;
   for (const d of definitions) n += d.reference.length;
-  assert.equal(n, 1327); // 1086 + 修正バッチ6 R27-N20 組み込み定数3件×2種（Python＋CloudFormation伝播）+ R27-N7 VBA 定数94件 + 修正バッチ7 R28-N9 VBA 定数141件
+  assert.equal(n, 1340); // 1086 + 修正バッチ6 R27-N20 組み込み定数3件×2種（Python＋CloudFormation伝播）+ R27-N7 VBA 定数94件 + 修正バッチ7 R28-N9 VBA 定数141件 + 修正バッチ8 13件（PowerShell 三項演算子1件＋VBA 参照専用12件）
 });

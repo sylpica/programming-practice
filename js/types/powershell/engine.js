@@ -454,6 +454,13 @@ export function simulatePowerShell(source, model, limits) {
         /[.e]/i.test(t)
       );
     }
+    // R29-N2: パイプラインが単一の式ステージだけからなる場合の、その
+    // 式ノードを返す（由来判定の補助）。
+    function pipeExprNode(pipe) {
+      return pipe?.stages?.length === 1 && pipe.stages[0].k === "expression"
+        ? pipe.stages[0].value
+        : null;
+    }
     function exprIsDouble(node, s) {
       if (!node || typeof node !== "object") return false;
       if (node.k === "literal") return node.dbl === true;
@@ -462,6 +469,15 @@ export function simulatePowerShell(source, model, limits) {
         return t === "double" || t === "system.double";
       }
       if (node.k === "var") {
+        // R29-N2: パイプラインの現在項目 $_／$PSItem は変数表ではなく
+        // items スタックにあり、由来は itemDbl スタックで並行管理する。
+        if (["_", "psitem"].includes(node.name.toLowerCase())) {
+          const top = s.ps?.items?.at(-1);
+          if (typeof top === "number")
+            return !Number.isInteger(top) || !!s.ps?.itemDbl?.at(-1);
+          if (typeof top === "string") return numericStringIsDouble(top);
+          return false;
+        }
         const v = ciGet(s.vars, node.name);
         if (typeof v === "number")
           return (
@@ -469,6 +485,17 @@ export function simulatePowerShell(source, model, limits) {
           );
         if (typeof v === "string") return numericStringIsDouble(v);
         return false;
+      }
+      if (node.k === "assign-expr") {
+        const rhs = pipeExprNode(node.value);
+        return rhs ? exprIsDouble(rhs, s) : !!s.ps?.lastDbl;
+      }
+      if (node.k === "subexpression-list") {
+        const only =
+          node.body?.length === 1 && node.body[0].k === "pipeline"
+            ? pipeExprNode(node.body[0].pipe)
+            : null;
+        return only ? exprIsDouble(only, s) : false;
       }
       if (node.k === "binary")
         return (
@@ -1172,7 +1199,50 @@ export function simulatePowerShell(source, model, limits) {
       if (a.k === "array") return a.values.map((v) => read(v, s, api));
       if (a.k === "array-pipelines")
         return a.values.flatMap((p) => enumerate(only(p, s, api, a)));
-      if (a.k === "subexpression") return only(a.pipe, s, api, a);
+      if (a.k === "subexpression")
+        // R29-N14: 空の $() は出力なし（AutomationNull）。
+        return a.pipe ? only(a.pipe, s, api, a) : undefined;
+      if (a.k === "subexpression-list") {
+        // R29-N14: 部分式 $() は文の列を実行し、その出力全体が値になる。
+        const parts = capture(a.body, s, api);
+        if (parts.length !== 1 || parts[0].s !== s)
+          fail("未対応：部分式内の分岐", a.line);
+        return parts[0].values.length ? scalar(parts[0].values) : undefined;
+      }
+      if (a.k === "assign-expr") {
+        // R29-N13: 括弧内・条件内の代入式。代入した値そのものが式の値。
+        let v = only(a.value, s, api, a);
+        if (v === undefined) v = null;
+        if (a.op !== "=")
+          v = binary(
+            a.op[0],
+            read(a.target, s, api),
+            v,
+            s,
+            a,
+            api,
+            exprIsDouble(a.target, s) ||
+              exprIsDouble(pipeExprNode(a.value), s),
+          );
+        set(s, a.target, v, a, api);
+        if (
+          a.target.k === "var" &&
+          typeof v === "number" &&
+          Number.isInteger(v)
+        ) {
+          const rhs = pipeExprNode(a.value);
+          const isDbl =
+            a.op === "="
+              ? rhs
+                ? exprIsDouble(rhs, s)
+                : !!s.ps.lastDbl
+              : exprIsDouble(a.target, s) ||
+                (rhs ? exprIsDouble(rhs, s) : false);
+          if (isDbl) (s.ps.dbl ??= {})[a.target.name.toLowerCase()] = true;
+          else if (s.ps.dbl) delete s.ps.dbl[a.target.name.toLowerCase()];
+        }
+        return v;
+      }
       if (a.k === "hashtable") {
         const h = hash([]),
           seen = new Set();
@@ -1516,6 +1586,16 @@ export function simulatePowerShell(source, model, limits) {
           api.stop(s, c, "関数呼び出しの深さ上限");
           return [{ s, values: [] }];
         }
+        // R29-N2: 引数の double 由来は、フレームを切り替える前に
+        // 呼び出し側の状態で引数式から判定しておく（束縛で呼び出し側の
+        // 変数と同名のパラメータが上書きされても由来が失われないように）。
+        const argDbl = c.args.map((node) => exprIsDouble(node, s)),
+          namedDbl = Object.fromEntries(
+            Object.entries(c.params).map(([k, node]) => [
+              k,
+              exprIsDouble(node, s),
+            ]),
+          );
         s.ps.calls.push({
           vars: s.vars,
           signal: s.ps.signal,
@@ -1590,19 +1670,174 @@ export function simulatePowerShell(source, model, limits) {
                 "ParameterBindingValidationException",
               );
           }
-          // R28-N6: ValidateNotNull 系の括弧なし属性は、束縛された値が
-          // $null でないことを検証する（実物は
-          // ParameterBindingValidationException で停止する）。
-          if (param.validateNotNull && supplied && v === null)
-            fail(
-              "パラメータの値が検証属性 ValidateNotNull に一致しません：$" +
-                param.name +
-                " に $null は指定できません",
-              c.line,
-              "ParameterBindingValidationException",
-            );
+          // R29-N10: 括弧つき検証属性（ValidateNotNull／
+          // ValidateNotNullOrEmpty／ValidateNotNullOrWhiteSpace／
+          // ValidateCount／ValidateLength／ValidateRange／
+          // ValidatePattern）の束縛時検証。意味論は Microsoft Learn の
+          // 各属性クラス定義に従う：NotNull は $null のみ、OrEmpty は
+          // $null・空文字列・空コレクション、OrWhiteSpace はそれに
+          // 加えて空白のみの文字列を拒否する。検証は、引数が与えられた
+          // 場合と既定値がある場合に行う（ValidateSet と同じ範囲）。
+          // AllowNull／AllowEmptyString／AllowEmptyCollection は対応
+          // する拒否を免除する。メッセージは実際の属性名を名指す
+          // （従来は OrEmpty／OrWhiteSpace でも ValidateNotNull と
+          // 取り違えていた）。括弧なし形は RG-263 により型リテラル
+          // として上の型変換で裁定済みであり、ここには現れない。
+          if (supplied || param.value)
+            for (const val of param.validations ?? []) {
+              const isNull = v === null || v === undefined,
+                isEmptyStr = v === "",
+                isWsStr =
+                  typeof v === "string" && v !== "" && v.trim() === "",
+                isEmptyColl =
+                  (Array.isArray(v) && v.length === 0) ||
+                  (isObject(v) &&
+                    v.psType === "Hashtable" &&
+                    v.entries.size === 0);
+              const reject = (why) =>
+                fail(
+                  "パラメータの値が検証属性 " +
+                    val.name +
+                    " に一致しません：$" +
+                    param.name +
+                    " に " +
+                    why +
+                    " は指定できません",
+                  c.line,
+                  "ParameterBindingValidationException",
+                );
+              if (val.kind === "notnull") {
+                if (isNull && !param.allowNull) reject("$null");
+              } else if (
+                val.kind === "notnullorempty" ||
+                val.kind === "notnullorwhitespace"
+              ) {
+                if (isNull && !param.allowNull) reject("$null");
+                else if (isEmptyStr && !param.allowEmptyString)
+                  reject("空文字列");
+                else if (isEmptyColl && !param.allowEmptyCollection)
+                  reject("空のコレクション");
+                else if (
+                  val.kind === "notnullorwhitespace" &&
+                  isWsStr
+                )
+                  reject("空白のみの文字列");
+              } else if (val.kind === "count") {
+                const count = isNull
+                  ? 0
+                  : Array.isArray(v)
+                    ? v.length
+                    : isObject(v) && v.psType === "Hashtable"
+                      ? v.entries.size
+                      : 1;
+                if (count < val.min || count > val.max)
+                  fail(
+                    "パラメータの値が検証属性 ValidateCount に一致しません：$" +
+                      param.name +
+                      " の要素数は " +
+                      count +
+                      " です（範囲：" +
+                      val.min +
+                      " ～ " +
+                      val.max +
+                      "）",
+                    c.line,
+                    "ParameterBindingValidationException",
+                  );
+              } else if (val.kind === "length") {
+                const len =
+                  typeof v === "string"
+                    ? v.length
+                    : Array.isArray(v)
+                      ? v.length
+                      : isNull
+                        ? 0
+                        : String(v).length;
+                if (len < val.min || len > val.max)
+                  fail(
+                    "パラメータの値が検証属性 ValidateLength に一致しません：$" +
+                      param.name +
+                      " の長さは " +
+                      len +
+                      " です（範囲：" +
+                      val.min +
+                      " ～ " +
+                      val.max +
+                      "）",
+                    c.line,
+                    "ParameterBindingValidationException",
+                  );
+              } else if (val.kind === "range") {
+                let num = NaN;
+                try {
+                  num = numeric(v, c);
+                } catch {
+                  num = NaN;
+                }
+                if (
+                  typeof num !== "number" ||
+                  Number.isNaN(num) ||
+                  num < val.min ||
+                  num > val.max
+                )
+                  fail(
+                    "パラメータの値が検証属性 ValidateRange に一致しません：$" +
+                      param.name +
+                      " の値 " +
+                      psFormat(v) +
+                      " は範囲外です（範囲：" +
+                      val.min +
+                      " ～ " +
+                      val.max +
+                      "）",
+                    c.line,
+                    "ParameterBindingValidationException",
+                  );
+              } else if (val.kind === "pattern") {
+                let ok = false;
+                try {
+                  ok = new RegExp(val.pattern, "i").test(
+                    typeof v === "string" ? v : text(v, c),
+                  );
+                } catch {
+                  ok = false;
+                }
+                if (!ok)
+                  fail(
+                    "パラメータの値が検証属性 ValidatePattern に一致しません：$" +
+                      param.name +
+                      " の値 " +
+                      psFormat(v) +
+                      " はパターンに一致しません",
+                    c.line,
+                    "ParameterBindingValidationException",
+                  );
+              }
+            }
           ciSet(s.vars, param.name, v);
           markDouble(s, param.name, v);
+          // R29-N2: 引数・既定値・[double] 型制約の double 由来を
+          // パラメータへ引き継ぎ、整数値では由来を付け替える
+          // （フレーム初期値である呼び出し側の同名記録を残さない）。
+          if (typeof v === "number") {
+            const typeDbl =
+              typeof param.type === "string" &&
+              ["double", "system.double"].includes(
+                param.type.toLowerCase().replace(/\s+/g, ""),
+              );
+            const isDbl =
+              !Number.isInteger(v) ||
+              typeDbl ||
+              (namedKey !== undefined
+                ? !!namedDbl[namedKey]
+                : Object.hasOwn(args, i)
+                  ? !!argDbl[i]
+                  : param.value
+                    ? exprIsDouble(param.value, s)
+                    : false);
+            if (isDbl) (s.ps.dbl ??= {})[param.name.toLowerCase()] = true;
+            else if (s.ps.dbl) delete s.ps.dbl[param.name.toLowerCase()];
+          }
         }
         for (const key of Object.keys(params))
           if (
@@ -1619,12 +1854,25 @@ export function simulatePowerShell(source, model, limits) {
             );
         ciSet(s.vars, "args", args.slice(fn.params.length));
         return capture(fn.body, s, api).map((r) => {
+          // R29-N2: 戻り値が単一値の場合、その double 由来（関数内の
+          // 最後のパイプラインが状態へ残した lastDbl）を呼び出し側へ
+          // 引き継ぐ。フレーム復元で dbl 記録は呼び出し側へ戻るため、
+          // 由来は valuesDbl として結果オブジェクト側に載せる。
+          const valuesDbl =
+            r.values.length === 1
+              ? [
+                  typeof r.values[0] === "number" &&
+                  !Number.isInteger(r.values[0])
+                    ? true
+                    : !!r.s.ps.lastDbl,
+                ]
+              : r.values.map(() => false);
           const frame = r.s.ps.calls.pop();
           r.s.vars = frame.vars;
           r.s.ps.signal = frame.signal;
           r.s.ps.functions = frame.functions;
           if (frame.dbl !== undefined) r.s.ps.dbl = frame.dbl;
-          return r;
+          return { s: r.s, values: r.values, valuesDbl };
         });
       }
       if (name === "write-output") {
@@ -1704,15 +1952,28 @@ export function simulatePowerShell(source, model, limits) {
           fail("未対応：" + canonical + "はスクリプトブロック形式のみ", c.line);
         let states = [s];
         s.ps.pipes.at(-1).result = [];
+        // R29-N2: 結果値の double 由来も並行して保持する
+        // （Where-Object は入力をそのまま通し、ForEach-Object は
+        // ブロックの単一出力の由来を引き継ぐ）。
+        s.ps.pipes.at(-1).resultDbl = [];
         for (let i = 0; i < input.length; i++) {
           const next = [];
           for (const st of states) {
             const f = st.ps.pipes.at(-1);
             st.ps.items.push(f.items[i]);
+            // R29-N2: $_ の double 由来も並行スタックで保持する。
+            (st.ps.itemDbl ??= []).push(f.itemDbl?.[i] ?? false);
             for (const r of capture(block.body, st, api)) {
               r.s.ps.items.pop();
+              r.s.ps.itemDbl?.pop();
               if (name === "foreach-object") {
-                r.s.ps.pipes.at(-1).result.push(...r.values);
+                const frame = r.s.ps.pipes.at(-1);
+                frame.result.push(...r.values);
+                frame.resultDbl.push(
+                  ...r.values.map(() =>
+                    r.values.length === 1 ? !!r.s.ps.lastDbl : false,
+                  ),
+                );
                 next.push(r.s);
               } else
                 for (const branch of api.choose(
@@ -1723,6 +1984,7 @@ export function simulatePowerShell(source, model, limits) {
                   if (branch.yes) {
                     const frame = branch.s.ps.pipes.at(-1);
                     frame.result.push(frame.items[i]);
+                    frame.resultDbl.push(frame.itemDbl?.[i] ?? false);
                   }
                   next.push(branch.s);
                 }
@@ -1733,6 +1995,7 @@ export function simulatePowerShell(source, model, limits) {
         return states.map((st) => ({
           s: st,
           values: st.ps.pipes.at(-1).result,
+          valuesDbl: st.ps.pipes.at(-1).resultDbl,
         }));
       }
       if (name === "select-object") {
@@ -2268,7 +2531,15 @@ export function simulatePowerShell(source, model, limits) {
         const stage = p.stages[i],
           next = [];
         for (const r of states) {
-          r.s.ps.pipes.push({ items: r.values, result: [] });
+          // R29-N2: このステージへ渡る値の double 由来を、パイプ
+          // フレームに並行して保持する（$_ の由来・foreach スカラー・
+          // 関数戻り値の伝播の土台）。配列要素の由来は既知限界として
+          // 保持しない（要素は false）。
+          r.s.ps.pipes.push({
+            items: r.values,
+            result: [],
+            itemDbl: r.valuesDbl ?? r.values.map(() => false),
+          });
           let values;
           if (stage.k === "expression") {
             if (i)
@@ -2277,15 +2548,28 @@ export function simulatePowerShell(source, model, limits) {
                 stage.line,
                 "SyntaxError",
               );
+            // 由来は式の評価（副作用）より前に現在の状態で判定する。
+            const stageDbl = exprIsDouble(stage.value, r.s);
             const expressionValue = read(stage.value, r.s, api);
             values = [
-              { s: r.s, values: enumerate(expressionValue), expressionValue },
+              {
+                s: r.s,
+                values: enumerate(expressionValue),
+                expressionValue,
+                valuesDbl: Array.isArray(expressionValue)
+                  ? enumerate(expressionValue).map(() => false)
+                  : [stageDbl],
+              },
             ];
           } else
             values = command(stage, r.s, api, r.s.ps.pipes.at(-1).items, i > 0);
           for (const v of values) {
             v.s.ps.pipes.pop();
             v.s.ps.lastPipeline = v.values;
+            // R29-N2: 単一値で終わるパイプラインは、その値の由来を
+            // 状態へ残す（代入文・return が境界を跨いで参照する）。
+            v.s.ps.lastDbl =
+              v.values.length === 1 ? !!(v.valuesDbl?.[0]) : false;
             v.s.ps.success = true;
             next.push(v);
           }
@@ -2328,7 +2612,18 @@ export function simulatePowerShell(source, model, limits) {
                 (r.values[0] === null || r.values[0] === undefined)
                   ? []
                   : r.values;
-            r.s.ps.loops.push({ items, index: 0 });
+            // R29-N2: スカラー由来のコレクション（foreach ($v in 1.0)
+            // 等）では、反復変数へ double 由来を引き継ぐ。配列要素の
+            // 由来は既知限界として引き継がない（items が複数・配列
+            // 式由来の場合は scalarDbl を立てない）。
+            const scalarDbl =
+              items.length === 1 &&
+              ((Object.hasOwn(r, "expressionValue") &&
+                !Array.isArray(r.expressionValue)) ||
+                !Object.hasOwn(r, "expressionValue"))
+                ? !!(r.valuesDbl?.[0])
+                : false;
+            r.s.ps.loops.push({ items, index: 0, scalarDbl });
             evaluated.push(r.s);
           }
         active = evaluated;
@@ -2367,7 +2662,18 @@ export function simulatePowerShell(source, model, limits) {
             if (n.k === "foreach") {
               ciSet(current.vars, n.name, frame.items[frame.index]);
               // R28-N3: ループ変数も小数の由来の対象にする。
+              // R29-N2: スカラー由来（frame.scalarDbl）も引き継ぎ、
+              // 整数値の要素では由来を付け替える（残留させない）。
               markDouble(current, n.name, frame.items[frame.index]);
+              if (
+                typeof frame.items[frame.index] === "number" &&
+                Number.isInteger(frame.items[frame.index])
+              ) {
+                if (frame.scalarDbl)
+                  (current.ps.dbl ??= {})[n.name.toLowerCase()] = true;
+                else if (current.ps.dbl)
+                  delete current.ps.dbl[n.name.toLowerCase()];
+              }
               if (
                 typeof frame.items[frame.index] !== "number" &&
                 current.ps.dbl
@@ -2474,8 +2780,15 @@ export function simulatePowerShell(source, model, limits) {
                 : null;
             const isDbl =
               n.op === "="
-                ? exprIsDouble(valueNode, r.s)
-                : exprIsDouble(n.target, r.s) || exprIsDouble(valueNode, r.s);
+                ? valueNode
+                  ? exprIsDouble(valueNode, r.s)
+                  : // R29-N2: コマンド（関数呼び出し）結果の由来は
+                    // パイプライン実行が状態へ残した lastDbl で引き継ぐ。
+                    !!r.s.ps.lastDbl
+                : exprIsDouble(n.target, r.s) ||
+                  (valueNode
+                    ? exprIsDouble(valueNode, r.s)
+                    : !!r.s.ps.lastDbl);
             if (isDbl) (r.s.ps.dbl ??= {})[n.target.name.toLowerCase()] = true;
             else if (r.s.ps.dbl) delete r.s.ps.dbl[n.target.name.toLowerCase()];
           }
@@ -2498,7 +2811,10 @@ export function simulatePowerShell(source, model, limits) {
         api.note(s, n, "switchの条件を順に判定します");
         const output = [];
         for (const r of pipeline(n.test, s, api)) {
-          r.s.ps.switches.push({ items: r.values });
+          r.s.ps.switches.push({
+            items: r.values,
+            itemDbl: r.valuesDbl ?? r.values.map(() => false),
+          });
           let active = [r.s],
             finished = [];
           for (let index = 0; index < r.values.length; index++) {
@@ -2506,6 +2822,7 @@ export function simulatePowerShell(source, model, limits) {
               const frame = st.ps.switches.at(-1);
               frame.matched = false;
               st.ps.items.push(frame.items[index]);
+              (st.ps.itemDbl ??= []).push(frame.itemDbl?.[index] ?? false);
             }
             for (const cs of n.cases.filter((x) => !x.isDefault)) {
               const next = [];
@@ -2563,6 +2880,7 @@ export function simulatePowerShell(source, model, limits) {
                     : [st];
               for (const v of results) {
                 v.ps.items.pop();
+                v.ps.itemDbl?.pop();
                 if (v.ps.signal === "break") {
                   v.ps.signal = null;
                   finished.push(v);
@@ -2666,6 +2984,8 @@ export function simulatePowerShell(source, model, limits) {
           dbl: {},
           streams: [[]],
           items: [],
+          // R29-N2: items（$_）と並行する double 由来スタック。
+          itemDbl: [],
           loops: [],
           switches: [],
           pipes: [],

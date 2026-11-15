@@ -533,6 +533,15 @@ function linkSegments(text, names) {
 function normalizeLineEndings(code) {
   return code.replace(/\r\n?/g, "\n");
 }
+// R29-N5（U-45）: 参照専用（supported=false）項目を、コード練習ビューの
+// リファレンス一覧（#refList）と使用中チップでも対応項目と判別できるように
+// するための表示情報。文言はリファレンスビューのバッジ
+// （refArticle の「参照用 · 操作は未対応」）と揃える。色だけに頼らず、
+// ボタン／チップの本文にも「未対応」のテキストタグを付ける。
+function referenceOnlyMark(r) {
+  if (!r || r.supported !== false) return null;
+  return { tag: "未対応", ariaSuffix: "（参照用 · 操作は未対応）" };
+}
 // End of pure helpers.
 function linkedText(text) {
   let fragment = document.createDocumentFragment();
@@ -557,6 +566,10 @@ function renderExplanation(t) {
   let links = el("div", undefined, "chips");
   for (let name of t.refs) {
     let b = el("button", name, "chip");
+    applyReferenceOnlyMark(
+      b,
+      reference.find((x) => x.name === name),
+    );
     b.onclick = () => showRef(name);
     links.append(b);
   }
@@ -596,6 +609,17 @@ function renderTemplates() {
   }
 }
 $("template").onchange = (e) => loadTemplate(e.target.value);
+// R29-N5（U-45）: 一覧ボタン／チップに参照専用の判別表示を付ける。
+// .unsupported の配色はバッジ（.badge.unsupported）と同一にし、
+// 「未対応」タグ（テキスト）と aria-label でも区別する（色のみに依存しない）。
+function applyReferenceOnlyMark(button, r) {
+  const mark = referenceOnlyMark(r);
+  if (!mark) return;
+  button.classList.add("unsupported");
+  button.append(el("span", mark.tag, "unsupported-tag"));
+  button.setAttribute("aria-label", r.name + mark.ariaSuffix);
+  button.title = "参照用 · 操作は未対応";
+}
 function refArticle(r, expanded = false, heading = "h3") {
   let article = el("article", undefined, expanded ? "" : "ref-card");
   article.append(
@@ -640,6 +664,7 @@ function renderRefs() {
       .includes(q),
   )) {
     let b = el("button", r.name);
+    applyReferenceOnlyMark(b, r);
     b.onclick = () => showRef(r.name);
     $("refList").append(b);
   }
@@ -693,6 +718,10 @@ function updateUsed() {
   $("used").replaceChildren();
   for (let name of names) {
     let b = el("button", name, "chip");
+    applyReferenceOnlyMark(
+      b,
+      reference.find((r) => r.name === name),
+    );
     b.onclick = () => showRef(name);
     $("used").append(b);
   }

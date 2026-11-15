@@ -108,7 +108,7 @@ test("Y-4 no '。 ' sequence and no leading space in any user-facing field", () 
   // 追記テンプレート由来の caution は、note が空なら文そのものが caution になる
   assert.equal(
     imagej.reference.find((r) => r.name === "Roi.translate").caution,
-    "このアプリでは未確認として停止する。",
+    "このアプリでは未対応として停止する。",
   );
   const python = getDefinition("python");
   assert.ok(

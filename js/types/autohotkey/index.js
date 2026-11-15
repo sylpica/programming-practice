@@ -240,6 +240,18 @@ const AHK_KEYWORD_CASE = {
   return: "return",
   break: "break",
   continue: "continue",
+  // R29-N26：単語演算子 and／or／not（および継続判定が演算子として扱う
+  // in／is）も、文キーワードと同じく大文字小文字を区別しない（AutoHotkey
+  // v2 公式ドキュメントの大小無区別の原則）。共有パーサの優先順位表・
+  // 単項演算子表は小文字形でしか演算子を認識しないため、ここで正規化
+  // しないと AND／Or／NOT が「未定義の名前」という虚偽原因になっていた。
+  // 変数名・関数名・プロパティ名は実行側が元々 toLowerCase で照合して
+  // おり大小無区別が成立しているため、正規化が要るのはこの表の語だけ。
+  and: "and",
+  or: "or",
+  not: "not",
+  in: "in",
+  is: "is",
 };
 function phaseA(source) {
   let out = "",
@@ -787,14 +799,48 @@ function phaseB(source) {
   // よる継続）は対象外とする。
   let prevIncompleteLine = 0;
   let enclosureDepth = 0;
-  // R28-N1：行頭演算子の継続行の結合先（直近の有意な行）。結合は
-  // 書換後の行に対して行い、継続の断片は結合先の行末コメントの前へ
-  // 挿入する。継続行そのものは空行として残し、後続の行番号を
-  // ずらさない。空行・コメント行は結合先を更新しない（RG-228 の
-  // 有意な行の扱いと揃える）。
+  // R28-N1＋R29-N27／N28：行継続の結合は「書換前の生の行」に対して
+  // 行い、結合が済んでから transformCodeLine で一括して書き換える。
+  // 従来は先に MsgBox 2 を MsgBox(2) へ書き換えてから後ろへ断片を
+  // 挿入していたため、継続断片が呼出の「結果」への演算に化けて黙った
+  // 誤値になっていた（MsgBox 2 ＋次行 + 3 が 2 のまま）。生の行へ結合
+  // すれば MsgBox 2 + 3 と書いた場合と完全に同じ経路を通る。行末側の
+  // 継続（未完の式＋次行の式の断片）も同じ結合で扱う。
+  // あわせて、括弧・角括弧の内包中でも行頭演算子の継続を成立させる
+  // （公式の継続規則は行単位の字句的な結合で、内包の内外を区別しな
+  // い。従来の enclosureDepth === 0 条件が R29-N28 の根因だった）。
+  // 結合先の情報は生コード・コメント・伏せ形を保持し、結合のたびに
+  // transformCodeLine を再適用する。結合された行は空行として残し、
+  // 後続の行番号をずらさない。空行・コメント行は結合先を更新しない
+  // （RG-228 の有意な行の扱いと揃える）。
   let mergeTarget = null;
+  let lastSigOutIdx = -1;
   const out = [];
   const lines = source.split("\n");
+  // 継続断片を結合先の生コードへ繋ぎ、書換え直して out を更新する。
+  const applyMerge = (contRaw, contMaskedTrimmed, idx) => {
+    // メンバー継続（.名前）は空白を挟むと連結演算子（.concat）に
+    // 化けるため、ドットの前には空白を入れない。それ以外の演算子
+    // は単語演算子（and／or 等）の融合を避けて空白で繋ぐ。
+    const sep = /^\.[\p{ID_Start}_]/u.test(contRaw) ? "" : " ";
+    mergeTarget.rawCode =
+      mergeTarget.rawCode.replace(/\s+$/, "") + sep + contRaw;
+    // 結合先の行末コメントは、コードとの間に空白を挟んで戻す（元の行で
+    // コメント前の空白はコード側の末尾に含まれていたが、結合時に削ら
+    // れる。空白なしで ; を繋ぐとコメントとして認識されなくなる）。
+    out[mergeTarget.outIdx] =
+      transformCodeLine(mergeTarget.rawCode).text +
+      (mergeTarget.comment ? " " + mergeTarget.comment : "");
+    for (const ch of maskAhkStrings(contRaw)) {
+      if (ch === "(" || ch === "[") enclosureDepth++;
+      else if (ch === ")" || ch === "]")
+        enclosureDepth = Math.max(0, enclosureDepth - 1);
+    }
+    prevIncompleteLine = ahkLineEndsIncomplete(contMaskedTrimmed)
+      ? idx + 1
+      : 0;
+    out.push("");
+  };
   for (let idx = 0; idx < lines.length; idx++) {
     const line = lines[idx];
     let text, analysisCode, pendingTarget = null;
@@ -819,40 +865,13 @@ function phaseB(source) {
       const trimmedLine = maskedLine.trim();
       if (
         mergeTarget &&
-        enclosureDepth === 0 &&
         trimmedLine &&
         ahkLineStartsContinuation(trimmedLine) &&
         ahkContinuationTargetOk(mergeTarget.maskedTrimmed)
       ) {
         const r = transformCodeLine(line);
         inBlock = r.opensBlock;
-        const contCode = r.text
-          .slice(0, r.text.length - comment.length)
-          .trim();
-        const targetText = out[mergeTarget.outIdx];
-        const head = targetText
-          .slice(0, mergeTarget.codeLen)
-          .replace(/\s+$/, "");
-        const tail = targetText.slice(mergeTarget.codeLen);
-        // メンバー継続（.名前）は空白を挟むと連結演算子（.concat）に
-        // 化けるため、ドットの前には空白を入れない。それ以外の演算子
-        // は単語演算子（and／or 等）の融合を避けて空白で繋ぐ。
-        const sep = /^\.[\p{ID_Start}_]/u.test(contCode) ? "" : " ";
-        out[mergeTarget.outIdx] =
-          head + sep + contCode + (tail ? " " + tail : "");
-        mergeTarget = {
-          ...mergeTarget,
-          codeLen: head.length + sep.length + contCode.length,
-        };
-        for (const ch of maskedLine) {
-          if (ch === "(" || ch === "[") enclosureDepth++;
-          else if (ch === ")" || ch === "]")
-            enclosureDepth = Math.max(0, enclosureDepth - 1);
-        }
-        prevIncompleteLine = ahkLineEndsIncomplete(trimmedLine)
-          ? idx + 1
-          : 0;
-        out.push("");
+        applyMerge(code.trim(), trimmedLine, idx);
         continue;
       }
       if (
@@ -870,13 +889,37 @@ function phaseB(source) {
           prevIncompleteLine,
           "SyntaxError",
         );
+      // R29-N27（行末側）：未完の式で終わる行への、演算子で始まらない
+      // 式の断片の継続（MsgBox 2 + の次行 3 等）。文で始まる行・
+      // ブロック開閉・ラベル・ホットキー・ディレクティブ・else／Until
+      // 行は式の断片ではないため結合しない（文で始まる行は上の検査が
+      // 専用文言で止める）。結合先は未完行そのもの（直近の有意な行）。
+      if (
+        mergeTarget &&
+        prevIncompleteLine &&
+        mergeTarget.outIdx === lastSigOutIdx &&
+        trimmedLine &&
+        !code.trim().startsWith("}") &&
+        !code.trim().startsWith("{") &&
+        !code.trim().startsWith("#") &&
+        !trimmedLine.endsWith("::") &&
+        !/^[\p{ID_Start}_][\p{ID_Continue}_]*\s*:$/u.test(trimmedLine) &&
+        !/^(else|until)\b/i.test(trimmedLine) &&
+        ahkContinuationTargetOk(mergeTarget.maskedTrimmed)
+      ) {
+        const r = transformCodeLine(line);
+        inBlock = r.opensBlock;
+        applyMerge(code.trim(), trimmedLine, idx);
+        continue;
+      }
       const r = transformCodeLine(line);
       inBlock = r.opensBlock;
       text = r.text;
       if (trimmedLine)
         pendingTarget = {
           outIdx: out.length,
-          codeLen: text.length - comment.length,
+          rawCode: code,
+          comment,
           maskedTrimmed: trimmedLine,
         };
     }
@@ -889,7 +932,10 @@ function phaseB(source) {
     const trimmed = masked.trim();
     if (trimmed)
       prevIncompleteLine = ahkLineEndsIncomplete(trimmed) ? idx + 1 : 0;
-    if (pendingTarget) mergeTarget = pendingTarget;
+    if (pendingTarget) {
+      mergeTarget = pendingTarget;
+      lastSigOutIdx = pendingTarget.outIdx;
+    }
     out.push(text);
   }
   return out.join("\n");

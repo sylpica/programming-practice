@@ -291,11 +291,16 @@ test("D10 dereferencing an array name has the element type", async () => {
 });
 
 // ---------- D11: C# の範囲外 float→int キャストは確定値を返さない ----------
+// R29-N25 で是正：定数の浮動小数点キャストは実 dotnet では既定／checked
+// とも CS0221 のコンパイルエラーであり、未確認／OverflowException は
+// 実規則と異なる（バッチ8 C家族班）。本テストの意図（範囲外の変換で
+// 確定値を捏造しないこと）は、定数は CS0221、明示 unchecked の定数と
+// 実行時値は従来どおり未確認／OverflowException という形で維持する。
 test("D11 unchecked out-of-range float-to-int cast in C# stops as unspecified", async () => {
-  await expectError("csharp", `Console.WriteLine((int)1e30);`, /不定（unspecified）/, "未確認");
+  await expectError("csharp", `Console.WriteLine((int)1e30);`, /CS0221/, "CompileError");
   await expectError("csharp", `Console.WriteLine(unchecked((int)1e30));`, /不定（unspecified）/, "未確認");
-  await expectError("csharp", `Console.WriteLine((int)(1.0/0.0));`, /不定（unspecified）/, "未確認");
-  await expectError("csharp", `Console.WriteLine(checked((int)1e30));`, /キャストが範囲外/, "OverflowException");
+  await expectError("csharp", `Console.WriteLine((int)(1.0/0.0));`, /CS0221/, "CompileError");
+  await expectError("csharp", `Console.WriteLine(checked((int)1e30));`, /CS0221/, "CompileError");
   assert.equal(output(await first("csharp", `Console.WriteLine((int)1.5);`)), "1");
 });
 

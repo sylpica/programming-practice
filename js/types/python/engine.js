@@ -1886,7 +1886,7 @@ class Interp {
         return;
       }
       case 'assert': {
-        const t = truthy(this.eval(s.e, env));
+        const t = this.truthyOf(this.eval(s.e, env), s.line, env);
         if (t === null) { this.step(s.line, 'assert の条件は実行時に決まります'); return; }
         if (!t) { const mv = s.msg ? this.eval(s.msg, env) : null; const known = mv !== null && !isUnk(mv); this.err(s.line, 'AssertionError', known ? strVal(mv) : 'assert の条件が不成立（False）でした', '', known ? strVal(mv) : undefined, known ? reprVal(mv) : undefined); }
         this.step(s.line, 'assert の条件を確かめます（成立（True）なので続けます）');
@@ -2037,7 +2037,7 @@ class Interp {
         let forcedFalse = false;
         for (const arm of s.arms) {
           const c = this.eval(arm.cond, env);
-          const t = truthy(c);
+          const t = this.truthyOf(c, arm.line || s.line, env);
           if (t === null) {
             const bid = this.bidOf(s);
             if (!this.pathCtx || bid < 0) {
@@ -2134,7 +2134,7 @@ class Interp {
         const canStall = !hasNode(s.cond, n => n.k === 'call' || n.k === 'attr') && !hasNode(s.body, n => n.k === 'break' || n.k === 'return' || n.k === 'raise');
         while (true) {
           const c = this.eval(s.cond, env);
-          const t = truthy(c);
+          const t = this.truthyOf(c, s.line, env);
           let assumed = false;
           if (t === null) {
             const bid = this.bidOf(s);
@@ -2508,7 +2508,7 @@ Interp.prototype.eval = function (n, env) {
     }
     case 'un': {
       const v = this.eval(n.e, env);
-      if (n.op === 'not') { const t = truthy(v); return t === null ? {...UNK(),symbolic:{kind:'unknown',op:'not',a:symbolic(v)}} : BOOL(!t); }
+      if (n.op === 'not') { const t = this.truthyOf(v, n.line, env); return t === null ? {...UNK(),symbolic:{kind:'unknown',op:'not',a:symbolic(v)}} : BOOL(!t); }
       if (isUnk(v)) return UNK();
       if (isBool(v)) { const nv = v.v ? 1 : 0; return NUM(n.op === '-' ? -nv : n.op === '+' ? nv : ~nv, false); }
       if (isNum(v)) {
@@ -2521,7 +2521,7 @@ Interp.prototype.eval = function (n, env) {
     case 'boolop': {
       let result = this.eval(n.items[0], env);
       for (let i = 1; i < n.items.length; i++) {
-        const t = truthy(result);
+        const t = this.truthyOf(result, n.line, env);
         if (n.op === 'and' && t === false) return result;
         if (n.op === 'or' && t === true) return result;
         if (t === null) {if(hasNode([n.items[i]],x=>x.k==='call'))this.err(n.line,'未対応','短絡評価が未確定の関数呼び出しは説明に対応していません','');let right=this.eval(n.items[i],env);result={...UNK(),symbolic:{kind:'unknown',op:n.op,a:symbolic(result),b:symbolic(right)}};continue;}
@@ -2553,7 +2553,7 @@ Interp.prototype.eval = function (n, env) {
       return accumulated||BOOL(true);
     }
     case 'ifexp': {
-      const c = this.eval(n.cond, env); const t = truthy(c);
+      const c = this.eval(n.cond, env); const t = this.truthyOf(c, n.line, env);
       if (t === null) return UNK();
       return this.eval(t ? n.then : n.els, env);
     }
@@ -2949,6 +2949,77 @@ Interp.prototype.evalCall = function (n, env) {
   this.err(n.line, 'TypeError', typeName(fn) + ' は呼び出し（ ）ができません', '関数名のあとに ( ) を付けて呼び出します。変数と関数を取り違えていないか確認してください');
   return UNK();
 };
+// R29-N15：ユーザー定義クラスの特殊メソッド（__bool__／__len__／__index__）の
+// ディスパッチ。実 CPython 3.12 の規則（docs.python.org 3.12「真値判定」／
+// 「len()」および実 CPython 3.12.3 での機械突合）:
+//   - 真値判定は型（クラス）側の __bool__ を優先し、無ければ __len__ の
+//     非ゼロで判定する。どちらも無ければ True。
+//   - 特殊メソッドはインスタンス属性ではなく型から引く（インスタンスへ
+//     代入した __bool__／__len__ は実物でも無視されることを実測で確認）。
+//   - __bool__ が bool 以外を返したら TypeError、__len__ が負値を返したら
+//     ValueError、整数として解釈できない値（float／str／None 等）を返したら
+//     TypeError。__len__ の戻り値が __index__ を持つインスタンスなら
+//     __index__ 経由で整数化する（operator.index の規則）。
+//   - メソッド本体の結果が未確定（入力依存・BIG 等）なら判定も未確定に倒し、
+//     黙って True に倒さない。
+Interp.prototype.specialLookup = function (inst, name) {
+  const cls = inst && inst.cls;
+  if (!cls || !cls.cenv || !cls.cenv.vars || !cls.cenv.vars.has(name)) return undefined;
+  return cls.cenv.vars.get(name);
+};
+Interp.prototype.callSpecial = function (inst, name, line, env) {
+  const m = this.specialLookup(inst, name);
+  if (m === undefined) return undefined;
+  if (isUnk(m)) return UNK(name + ' の結果');
+  if (isFunc(m) || (m && (m.__bound || m.__method || m.__builtin || m.__class))) return this.callFn(m, [inst], env || this.globals, line);
+  this.err(line, 'TypeError', name + ' の値（' + typeName(m) + '）は呼び出しできません（' + typeName(m) + ' object is not callable）', 'クラスの中で ' + name + ' は def で定義してください');
+  return UNK();
+};
+// __len__ の戻り値を長さ（0以上の整数）へ是正する。戻り値:
+//   { known: true, len } ／ { known: false }（未確定）／ null（__len__ 自体が無い）
+Interp.prototype.lenOfInstance = function (inst, line, env, depth) {
+  const m = this.specialLookup(inst, '__len__');
+  if (m === undefined) return null;
+  const r = this.callSpecial(inst, '__len__', line, env);
+  if (r === undefined || isUnk(r)) return { known: false };
+  let cur = r;
+  for (let d = depth || 0; ; d++) {
+    if (isUnk(cur)) return { known: false };
+    if (isBool(cur)) return { known: true, len: cur.v ? 1 : 0 };
+    if (isNum(cur) && !cur.f) {
+      if (cur.v < 0) this.err(line, 'ValueError', '__len__() は 0 以上を返す必要があります（__len__() should return >= 0）', '');
+      return { known: true, len: cur.v };
+    }
+    if (cur && cur.__instance && d < 5 && this.specialLookup(cur, '__index__') !== undefined) {
+      cur = this.callSpecial(cur, '__index__', line, env);
+      if (cur === undefined) break;
+      continue;
+    }
+    break;
+  }
+  this.err(line, 'TypeError', '__len__() の戻り値（' + typeName(cur) + '）は整数として解釈できません（object cannot be interpreted as an integer）', '__len__ は整数を返してください');
+  return { known: false };
+};
+// 真値判定の正本。組み込み型は従来の truthy()、ユーザー定義クラスの
+// インスタンスは __bool__／__len__ を引く（R29-N15。RG-254 の同族として
+// 判定経路をここに統一し、if／while／not／and／or／三項／assert／内包条件／
+// bool()／any／all／filter／sorted・zip のキーワード判定は全て本メソッド経由）。
+Interp.prototype.truthyOf = function (v, line, env) {
+  if (v && v.__instance) {
+    if (this.specialLookup(v, '__bool__') !== undefined) {
+      const r = this.callSpecial(v, '__bool__', line, env);
+      if (r === undefined || isUnk(r)) return null;
+      if (isBool(r)) return r.v;
+      this.err(line, 'TypeError', '__bool__ は bool（True／False）を返す必要があります（__bool__ should return bool, returned ' + typeName(r) + '）', '__bool__ は True か False を返してください');
+      return null;
+    }
+    const lr = this.lenOfInstance(v, line, env);
+    if (lr === null) return true;
+    if (!lr.known) return null;
+    return lr.len !== 0;
+  }
+  return truthy(v);
+};
 // インスタンスそのものは追跡しない（UNK）が、__init__ は実行して副作用（クラス属性や外側の変数の書き換え）を追う
 Interp.prototype.instantiate = function (cls, args, kwargs, env, line) {
   const inst = { __instance: true, cls, attrs: new Map() };
@@ -3120,7 +3191,7 @@ Interp.prototype.callBuiltin0 = function (name, args, kwargs, env, line, node) {
     }
     case 'filter': {
       const seq = this.iterable(args[1], line); if (seq === null) return UNK(); const out = [];
-      for (const x of seq) { const r = isNone(args[0]) ? x : this.callFn(args[0], [x], env, line); const t = truthy(r); if (t === null) return UNK(); if (t) out.push(x); }
+      for (const x of seq) { const r = isNone(args[0]) ? x : this.callFn(args[0], [x], env, line); const t = this.truthyOf(r, line, env); if (t === null) return UNK(); if (t) out.push(x); }
       return ITER(out, 'filter');
     }
     case 'input': {
@@ -3139,6 +3210,15 @@ Interp.prototype.callBuiltin0 = function (name, args, kwargs, env, line, node) {
       if (isSet(v)) return NUM(v.__set.length, false);
       if (isView(v)) return NUM(v.__view.__dict.size, false);
       if (v && v.__range) return NUM(v.__range.length, false);
+      // R29-N15：ユーザー定義クラスのインスタンスは __len__ を引く（実
+      // CPython どおり。定義済みなのに「長さがありません」としない）。
+      if (v && v.__instance) {
+        const lr = this.lenOfInstance(v, line, env);
+        if (lr !== null) {
+          if (!lr.known) return UNK();
+          return NUM(lr.len, false);
+        }
+      }
       this.err(line, 'TypeError', typeName(v) + ' には長さ（len）がありません', 'len() は文字列・リスト・辞書など「集まり」に使います');
       return UNK();
     }
@@ -3182,7 +3262,7 @@ Interp.prototype.callBuiltin0 = function (name, args, kwargs, env, line, node) {
       this.err(line, 'TypeError', typeName(v) + ' は float() で変換できません', '');
       return UNK();
     }
-    case 'bool': { if (!args.length) return BOOL(false); const t = truthy(args[0]); return t === null ? UNK() : BOOL(t); }
+    case 'bool': { if (!args.length) return BOOL(false); const t = this.truthyOf(args[0], line, env); return t === null ? UNK() : BOOL(t); }
     case 'list': case 'tuple': case 'set': {
       if (args.length === 0) return name === 'list' ? LIST() : name === 'tuple' ? TUPLE() : SET();
       const seq = this.iterable(args[0], line, true);
@@ -3261,7 +3341,7 @@ Interp.prototype.callBuiltin0 = function (name, args, kwargs, env, line, node) {
     }
     case 'sorted': {
       const seq = this.iterable(args[0], line); if (seq === null) return UNK();
-      const rev = kw.reverse !== undefined && truthy(kw.reverse) === true;
+      const rev = kw.reverse !== undefined && this.truthyOf(kw.reverse, line, env) === true;
       const keys = this.keyed(seq, kw.key && !isNone(kw.key) ? kw.key : null, env, line); if (keys === null) return UNK();
       const idx = seq.map((_, i) => i);
       idx.sort((a, b) => { const c = this.cmpVals(keys[a], keys[b], line); return (rev ? -c : c) || a - b; });
@@ -3281,7 +3361,7 @@ Interp.prototype.callBuiltin0 = function (name, args, kwargs, env, line, node) {
         if (isIter(a)) { { this.materialize(a); if (a.failed) return UNK(); } lens.push(a.__iter.length - (a.pos || 0)); takers.push(() => ((a.pos || 0) < a.__iter.length ? a.__iter[(a.pos = (a.pos || 0) + 1) - 1] : EXH)); }
         else { const seq = this.iterableChecked(a, line, false); if (seq === null) return UNK(); lens.push(seq.length); let i = 0; takers.push(() => (i < seq.length ? seq[i++] : EXH)); }
       }
-      if (kw.strict !== undefined && truthy(kw.strict) === true && lens.length > 1 && !lens.every(l => l === lens[0])) this.err(line, 'ValueError', 'zip(..., strict=True) では、並びの長さが揃っていないとエラーになります', '');
+      if (kw.strict !== undefined && this.truthyOf(kw.strict, line, env) === true && lens.length > 1 && !lens.every(l => l === lens[0])) this.err(line, 'ValueError', 'zip(..., strict=True) では、並びの長さが揃っていないとエラーになります', '');
       const out = [];
       while (takers.length) { const row = []; let done = false; for (const t of takers) { const r = t(); if (r === EXH) { done = true; break; } row.push(r); } if (done) break; out.push(TUPLE(row)); }
       return ITER(out, 'zip');
@@ -3317,12 +3397,12 @@ Interp.prototype.callBuiltin0 = function (name, args, kwargs, env, line, node) {
       if (isIter(v0)) { // イテレータは途中まで消費して短絡する（CPython と同じ消費位置になる）
         { this.materialize(v0); if (v0.failed) return UNK(); }
         let known = (v0.pos || 0) >= v0.__iter.length;
-        while ((v0.pos || 0) < v0.__iter.length) { const x = v0.__iter[v0.pos || 0]; v0.pos = (v0.pos || 0) + 1; const t = truthy(x); if (t === null) continue; known = true; if (name === 'any' && t) return BOOL(true); if (name === 'all' && !t) return BOOL(false); }
+        while ((v0.pos || 0) < v0.__iter.length) { const x = v0.__iter[v0.pos || 0]; v0.pos = (v0.pos || 0) + 1; const t = this.truthyOf(x, line, env); if (t === null) continue; known = true; if (name === 'any' && t) return BOOL(true); if (name === 'all' && !t) return BOOL(false); }
         return known ? BOOL(name === 'all') : UNK();
       }
       const seq = this.iterable(args[0], line); if (seq === null) return UNK();
       let known = seq.length === 0; // 空なら any=False / all=True で確定
-      for (const x of seq) { const t = truthy(x); if (t === null) continue; known = true; if (name === 'any' && t) return BOOL(true); if (name === 'all' && !t) return BOOL(false); }
+      for (const x of seq) { const t = this.truthyOf(x, line, env); if (t === null) continue; known = true; if (name === 'any' && t) return BOOL(true); if (name === 'all' && !t) return BOOL(false); }
       return known ? BOOL(name === 'all') : UNK();
     }
     case 'open': this.diag(line, 'note', '対応外', 'ファイルを開く処理（open）はこの説明では中身を読みません。読み取った内容は「実行時に決まる値」として扱います', ''); return UNK('ファイルの内容');
@@ -3459,7 +3539,7 @@ Interp.prototype.callMethod = function (obj, name, args, kwargs, env, line) {
       case 'index': { if (!args.length || args.length > 3) arityErr('1〜3 個'); if (args.some(isUnk) || obj.__list.some(isUnk)) return UNK(); const L = obj.__list.length; const bd = (v, d) => { if (v === undefined) return d; let k = this.intIndex(v, line, '開始・終了位置'); if (k < 0) { k += L; if (k < 0) k = 0; } return Math.min(k, L); }; const st = bd(args[1], 0), en = bd(args[2], L); let at = -1; for (let k = st; k < en; k++) if (eqVal(obj.__list[k], args[0]) === true) { at = k; break; } if (at < 0) this.err(line, 'ValueError', reprVal(args[0]) + ' はリストにありません', ''); return NUM(at, false); }
       case 'count': if (args.length !== 1) arityErr('1 個必要'); if (isUnk(args[0])) return UNK(); return NUM(obj.__list.filter(x => eqVal(x, args[0]) === true).length, false);
       case 'sort': {
-        const rev = kwargs && kwargs.reverse !== undefined ? truthy(this.eval(kwargs.reverse, env)) === true : false;
+        const rev = kwargs && kwargs.reverse !== undefined ? this.truthyOf(this.eval(kwargs.reverse, env), line, env) === true : false;
         const keyFn = kwargs && kwargs.key ? this.eval(kwargs.key, env) : null;
         const keys = this.keyed(obj.__list, keyFn && !isNone(keyFn) ? keyFn : null, env, line);
         if (keys === null) { const n = obj.__list.length; obj.__list.length = 0; for (let i = 0; i < n; i++) obj.__list.push(UNK('並べ替え後の要素')); this.step(line, 'リストを並べ替えます（並べ替えの基準が実行時に決まるため、結果は分かりません）'); return NONE; }
@@ -3566,7 +3646,7 @@ Interp.prototype.compResults = function (n, env) {
       self.tick();
       self.assignToQuiet(g.target, item, child);
       let ok = true;
-      for (const c of g.conds) { const t = truthy(self.eval(c, child)); if (t === null) { unk = true; return; } if (t !== true) { ok = false; break; } }
+      for (const c of g.conds) { const t = self.truthyOf(self.eval(c, child), n.line, child); if (t === null) { unk = true; return; } if (t !== true) { ok = false; break; } }
       if (ok) yield* gen(idx + 1);
     }
   }

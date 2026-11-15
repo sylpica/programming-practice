@@ -130,7 +130,7 @@ const NEW_ITEM_NAMES = [
 ];
 test("R27-N7 every defined constant has its own supported reference entry", () => {
   assert.equal(NEW_ITEM_NAMES.length, 94);
-  assert.equal(vba.reference.length, 326, "91 + 94 (batch6 constants) + 141 (batch7 constants, R28-N9)");
+  assert.equal(vba.reference.length, 338, "91 + 94 (batch6 constants) + 141 (batch7 constants, R28-N9) + 12 (batch8 reference-only owners: 6 cfnvba + 6 vbasweep)");
   const byName = new Map(vba.reference.map((r) => [r.name, r]));
   for (const name of NEW_ITEM_NAMES) {
     const r = byName.get(name);

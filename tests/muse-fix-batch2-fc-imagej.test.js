@@ -258,13 +258,14 @@ test('RA-5..7 Math.sinh/cosh/tanh are marked unsupported with the reason', () =>
     const it = ref(n);
     assert.equal(it.supported, false, n);
     assert.ok(it.caution.includes('実物の ImageJ マクロ言語には ' + n + ' は存在しない'), n);
-    assert.ok(it.caution.includes('このアプリでは未確認として停止する'), n);
+    assert.ok(it.caution.includes('このアプリでは未対応として停止する'), n);
   }
 });
-test('RA-5..7 calling Math.sinh/cosh/tanh stops as unconfirmed', async () => {
+test('RA-5..7 calling Math.sinh/cosh/tanh stops as unsupported', async () => {
   for (const code of ['print(Math.sinh(0.5));', 'print(Math.cosh(0));', 'print(Math.tanh(0.5));']) {
     const r = await run(code + '\nprint("after");');
-    assert.ok(errText(r).includes('未確認'), code + ' -> ' + errText(r));
+    assert.ok(errText(r).includes('未対応：'), code + ' -> ' + errText(r));
+    assert.ok(!errText(r).includes('未確認'), code + ' -> ' + errText(r));
     assert.ok(!(r.paths || []).some((p) => outputs(p).includes('after')), code);
   }
 });

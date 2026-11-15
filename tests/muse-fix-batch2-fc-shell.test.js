@@ -309,9 +309,9 @@ test("fc-shell R23-N7 automatic-variable items exist and stay in sync with r6", 
     assert.ok(row, name);
     assert.equal(row.description, item.description, name);
   }
-  assert.equal(ps.reference.length, 51); // +1 修正バッチ3（R24-N4 包含演算子）
-  assert.equal(r6.filter((e) => e.kind === "powershell").length, 51);
-  assert.equal(r6.length, 79);
+  assert.equal(ps.reference.length, 52); // +1 修正バッチ3（R24-N4 包含演算子）+1 修正バッチ8（R29-N3 三項演算子）
+  assert.equal(r6.filter((e) => e.kind === "powershell").length, 52);
+  assert.equal(r6.length, 80);
 });
 
 // ---------- R23-N8: BOM・不可視文字 ----------

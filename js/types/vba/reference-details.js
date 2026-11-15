@@ -1303,5 +1303,53 @@ export const referenceDetails = {
   "Attribute": {
     "returns": "戻り値なし（宣言または制御文）",
     "source": "https://learn.microsoft.com/en-us/openspecs/microsoft_general_purpose_programming_languages/ms-vbal/4599fae2-3f41-4e70-968e-2398741f446b"
+  },
+  "StrConv": {
+    "returns": "Variant（String）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/strconv-function.md"
+  },
+  "Shell": {
+    "returns": "Variant（Double）（起動したプログラムのタスクID）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/shell-function.md"
+  },
+  "CallByName": {
+    "returns": "Variant（呼び出したプロパティ取得・メソッドの結果）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/callbyname-function.md"
+  },
+  "QueryClose": {
+    "returns": "戻り値なし（イベントプロシージャ）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/queryclose-event.md"
+  },
+  "Show": {
+    "returns": "戻り値なし（メソッド）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/show-method.md"
+  },
+  "Unload": {
+    "returns": "戻り値なし（宣言または制御文）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/unload-statement.md"
+  },
+  "GetAttr": {
+    "returns": "Integer（ファイル属性定数の合計）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/getattr-function.md"
+  },
+  "SetAttr": {
+    "returns": "戻り値なし（宣言または制御文）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/setattr-statement.md"
+  },
+  "Dir": {
+    "returns": "String（一致したファイル・フォルダの名前。見つからなければ空文字列）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/dir-function.md"
+  },
+  "FormatDateTime": {
+    "returns": "String（書式化された日付・時刻）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/formatdatetime-function.md"
+  },
+  "VarType": {
+    "returns": "Integer（変数のサブタイプを表す定数値）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/vartype-function.md"
+  },
+  "Weekday": {
+    "returns": "Variant（Integer）（曜日を表す定数値）",
+    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/weekday-function.md"
   }
 };

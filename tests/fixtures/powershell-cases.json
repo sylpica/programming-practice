@@ -185,5 +185,14 @@
   ["float modulo by zero", "Write-Output (5.5 % 0)", [["NaN"]]],
   ["quoted member name", "$h=@{k=10}\nWrite-Output ($h.'k')", [["10"]]],
   ["variable member name", "$n='k'\n$h=@{k=10}\nWrite-Output ($h.$n)", [["10"]]],
-  ["ternary operator", "Write-Output ($true ? 1 : 2)\nWrite-Output ($false ? 1 : 2)", [["1", "2"]]]
+  ["ternary operator", "Write-Output ($true ? 1 : 2)\nWrite-Output ($false ? 1 : 2)", [["1", "2"]]],
+  ["modulo compound assignment", "$x=10\n$x %= 3\nWrite-Output $x", [["1"]]],
+  ["member glued compound subtract", "$h=@{k=10}\n$h.k-=3\nWrite-Output $h.k", [["7"]]],
+  ["parenthesized assignment expression", "Write-Output ($x = 5)\nWrite-Output $x", [["5", "5"]]],
+  ["subexpression", "Write-Output $(1 + 1)", [["2"]]],
+  ["subexpression with statements", "Write-Output $($x = 5; $x + 1)", [["6"]]],
+  ["validate not null or empty parens accepts value", "function f { param([ValidateNotNullOrEmpty()] $x) $x }\nf 'hi'", [["hi"]]],
+  ["allow empty string parens", "function f { param([AllowEmptyString()] $x) 'done' }\nf ''", [["done"]]],
+  ["double provenance through function argument", "function f { param($x) $x/0 }\nf 1.0", [["Infinity"]]],
+  ["double provenance through pipeline item", "1.0 | ForEach-Object { $_/0 }", [["Infinity"]]]
 ]
