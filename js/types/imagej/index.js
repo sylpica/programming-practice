@@ -1,6 +1,7 @@
 import { functions, functionCats } from "./reference-data.js";
 import { sourceTemplates } from "./templates-data.js";
 import { LIMITS, formatModelValue as formatValue } from "../../core/contract.js";
+import { toLearnerError } from "../../core/script.js";
 const reference = functions.map((r) => ({
   name: r.name,
   category: functionCats[r.cat] || r.cat,
@@ -196,7 +197,7 @@ export const definition = {
         paths: [],
         error: {
           line: e.line || 1,
-          message: e.text || e.message || "未対応の構文です",
+          message: e.text || (e?.category ? e.message : toLearnerError(e).message),
         },
       };
     }

@@ -4,6 +4,7 @@ import {
   parseExpression,
   astRefs,
   PracticeError,
+  toLearnerError,
   baseBinary,
 } from "../../core/script.js";
 import { rows, sourceFailure } from "../../core/data.js";
@@ -496,7 +497,9 @@ export const definition = {
       };
       return executeProgram(nodes, model, semantics, limits);
     } catch (e) {
-      return sourceFailure(e);
+      return sourceFailure(
+        e instanceof PracticeError || e?.category ? e : toLearnerError(e),
+      );
     }
   },
 };

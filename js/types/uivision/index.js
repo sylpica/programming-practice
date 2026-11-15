@@ -3,6 +3,7 @@ import {
   executeProgram,
   parseExpression,
   PracticeError,
+  toLearnerError,
 } from "../../core/script.js";
 import { rows, sourceFailure } from "../../core/data.js";
 import { actionProgram, interpolate, uiCondition } from "../../core/actions.js";
@@ -331,6 +332,16 @@ export const definition = {
           s.vars["!statusOK"] = true;
         },
         read(a, s) {
+          // R24-N36：undefined は JavaScript の定義済みグローバル値。
+          // サンドボックス式（executeScript_Sandbox の return 式や条件式）
+          // で「未定義の名前：undefined」という虚偽原因の ReferenceError
+          // にしない（NaN／Infinity も同じグローバル値として解決する）。
+          if (a?.k === "var" && a.name === "undefined")
+            return { handled: true, value: undefined };
+          if (a?.k === "var" && a.name === "NaN")
+            return { handled: true, value: NaN };
+          if (a?.k === "var" && a.name === "Infinity")
+            return { handled: true, value: Infinity };
           if (a?.k === "var" && typeof s.vars[a.name] === "string") {
             let text = s.vars[a.name].trim();
             if (text !== "" && !Number.isNaN(Number(text)))
@@ -339,14 +350,16 @@ export const definition = {
           return undefined;
         },
         call(name, args, s, api, node) {
+          // 引数の欠落は null ではなく undefined として渡る（JS 本体と同根）。
+          const arg0 = args.length ? api.read(args[0], s) : undefined;
           if (name === "Number") {
-            let v = api.read(args[0], s);
+            let v = arg0;
             return isUnknown(v)
               ? unknown("数値変換する値による", v.id)
               : Number(v);
           }
           if (name === "String") {
-            let v = api.read(args[0], s);
+            let v = arg0;
             return isUnknown(v) ? v : String(v);
           }
           api.fail("このスクリプト関数は未対応です：" + name, node);
@@ -577,7 +590,9 @@ export const definition = {
       };
       return executeProgram(nodes, model, semantics, limits);
     } catch (e) {
-      return sourceFailure(e);
+      return sourceFailure(
+        e instanceof PracticeError || e?.category ? e : toLearnerError(e),
+      );
     }
   },
 };

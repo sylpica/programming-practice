@@ -27,6 +27,7 @@ import {
 } from "../shell/model.js";
 import { commands, block, commandRefs } from "./parser.js";
 import { arithmetic } from "./arithmetic.js";
+import { toLearnerError } from "../../core/script.js";
 function slot(value, s) {
   // Unknown values are always held behind a placeholder so structural
   // parsing (command splitting on &, pipes, redirects, blocks) cannot
@@ -373,33 +374,7 @@ export function simulateCmd(source, model, limits) {
         s.halt = true;
       }
     }
-    return shellRuntime(
-      [program(0)],
-      model,
-      (s, api) => {
-        initFiles(s);
-        for (const [k, v] of Object.entries(s.vars)) {
-          if (v !== null && typeof v === "object" && !isUnknown(v))
-            fail(
-              "モデル環境変数は文字列・数値・真偽値または未確定値で指定してください：" +
-                k,
-              1,
-              "モデルエラー",
-            );
-          ciSet(s.vars, k, isUnknown(v) ? v : String(v ?? ""));
-        }
-        s.cmd = {
-          errorlevel: s.model.errorlevel ?? 0,
-          echo: false,
-          delayed: false,
-          args: s.model.args || [],
-          calls: [],
-          locals: [],
-          loops: {},
-          slots: {},
-        };
-      },
-      (n, s, api) => {
+    const dispatchCommand = (n, s, api) => {
         if (n.k === "redirect-end") {
           const entries = s.outputs.splice(n.start),
             text = entries
@@ -987,7 +962,36 @@ export function simulateCmd(source, model, limits) {
               fail("typeにはファイル名が必要です", n.line, "SyntaxError");
             // Trailing whitespace is an argument delimiter, not part
             // of the file name (R22-N3, incl. the space before a pipe).
-            const e = fsEntry(s, value(arg.trim(), s), n.line);
+            const typeValue = value(arg.trim(), s);
+            // 読み取り経路のデバイス規律（R24 §3.3 再裁定）：予約デバイス名は
+            // 通常ファイルとして探さない。NUL は読むと即 EOF の空デバイス
+            // なので、何も表示せず成功する（実 cmd の type nul／type nul >
+            // file の古典形。Microsoft Learn「Naming Files, Paths, and
+            // Namespaces」の予約名規則で、拡張子付き・フォルダ内でも
+            // デバイスとして扱われる）。CON 等の入力デバイスはコンソール
+            // 入力等でモデル化できないため、デバイス名を名指して停止する。
+            if (!isUnknown(typeValue)) {
+              const device = reservedDeviceName(
+                windowsPath(typeValue, s.model.cwd, n.line),
+              );
+              if (device === "NUL") {
+                s.cmd.errorlevel = 0;
+                api.note(
+                  s,
+                  n,
+                  "予約デバイス NUL を読みます（内容は空です）",
+                );
+                break;
+              }
+              if (device)
+                fail(
+                  "未対応：予約デバイス名 " +
+                    device +
+                    " からの読み取り（デバイス入力はモデル化できません）",
+                  n.line,
+                );
+            }
+            const e = fsEntry(s, typeValue, n.line);
             if (isUnknown(e))
               fail(
                 "未確認：typeのファイルが確定していません",
@@ -1162,15 +1166,59 @@ export function simulateCmd(source, model, limits) {
             // SH-C1 追随：コピー／移動先が予約デバイス名の場合は
             // リダイレクトと同じ方針（NUL は破棄してファイルを作らない、
             // CON／CONOUT$ は画面出力、その他は名前を挙げて未対応停止）。
-            // コピー元がデバイス名の場合も、通常ファイルとして扱わず
-            // 名前を挙げて停止する（copy con の対話入力や copy nul の
-            // 空ファイル作成はモデル化しない）。
+            // 読み取り側（コピー元）の規律は type 等の読み取り経路と統一
+            // する（R24 §3.3 再裁定）：NUL は空として読めるため、copy では
+            // 空のコピー（0バイトのファイル作成。実 cmd の copy nul の
+            // 古典形）として扱う。CON 等はデバイス入力をモデル化できない
+            // ため名前を挙げて停止する。move は実ファイルの移動であり
+            // デバイス自体は移動できないため、NUL でも名前を挙げて停止する。
             let deviceHandled = null;
             if (!isUnknown(fromValue)) {
               const srcDevice = reservedDeviceName(
                 windowsPath(fromValue, s.model.cwd, n.line),
               );
-              if (srcDevice)
+              if (srcDevice === "NUL" && name === "copy") {
+                if (isUnknown(toValue))
+                  fail("未確認：コピー先が確定していません", n.line, "未確認");
+                const destPath = windowsPath(toValue, s.model.cwd, n.line),
+                  destEntry = fsEntry(s, destPath, n.line),
+                  // 既存フォルダ宛はフォルダ内へ元名で入る形になるが、その
+                  // 最終パス（…\nul）自体もデバイス名なので破棄になる。
+                  finalPath =
+                    destEntry?.type === "directory"
+                      ? destPath.replace(/\\$/, "") +
+                        "\\" +
+                        windowsPath(fromValue, s.model.cwd, n.line)
+                          .split("\\")
+                          .at(-1)
+                      : destPath,
+                  destDevice = reservedDeviceName(finalPath);
+                if (destDevice === "NUL")
+                  deviceHandled = { device: "NUL", path: destPath };
+                else if (destDevice === "CON" || destDevice === "CONOUT$")
+                  deviceHandled = { device: destDevice, path: destPath };
+                else if (destDevice)
+                  fail(
+                    "未対応：予約デバイス名 " + destDevice + " へのコピー",
+                    n.line,
+                  );
+                else {
+                  if (destEntry && !overwrite)
+                    fail(
+                      "未確認：既存ファイルへの上書きには明示した強制オプションが必要です",
+                      n.line,
+                      "未確認",
+                    );
+                  writeFile(s, destPath, "", n.line);
+                  deviceHandled = {
+                    device: "NUL",
+                    path: destPath,
+                    note:
+                      "予約デバイス NUL を空として読み取り、空のファイルを作成します：" +
+                      destPath,
+                  };
+                }
+              } else if (srcDevice)
                 fail(
                   "未対応：予約デバイス名 " +
                     srcDevice +
@@ -1180,7 +1228,11 @@ export function simulateCmd(source, model, limits) {
                   n.line,
                 );
             }
-            if (!isUnknown(fromValue) && !isUnknown(toValue)) {
+            if (
+              !deviceHandled &&
+              !isUnknown(fromValue) &&
+              !isUnknown(toValue)
+            ) {
               const destPath = windowsPath(toValue, s.model.cwd, n.line),
                 destEntry = fsEntry(s, destPath, n.line);
               // 既存フォルダ宛はフォルダ内へ元名で入る通常経路であり、
@@ -1243,12 +1295,13 @@ export function simulateCmd(source, model, limits) {
               api.note(
                 s,
                 n,
-                deviceHandled.device === "NUL"
-                  ? "予約デバイス NUL へ" +
-                    (name === "move" ? "移動" : "コピー") +
-                    "します（出力は破棄され、ファイルは作られません）"
-                  : "予約デバイス CON へ出力します（画面表示）：" +
-                    deviceHandled.path,
+                deviceHandled.note ||
+                  (deviceHandled.device === "NUL"
+                    ? "予約デバイス NUL へ" +
+                      (name === "move" ? "移動" : "コピー") +
+                      "します（出力は破棄され、ファイルは作られません）"
+                    : "予約デバイス CON へ出力します（画面表示）：" +
+                      deviceHandled.path),
               );
               break;
             }
@@ -1307,7 +1360,24 @@ export function simulateCmd(source, model, limits) {
             let text = s.cmd.stdin;
             if (pos.length) {
               if (pos.length !== 1) fail("未対応：findの複数ファイル", n.line);
-              text = fsEntry(s, pos[0], n.line)?.content;
+              // 読み取り経路のデバイス規律（type／copy と統一）：NUL は
+              // 空の入力として読み（一致なし・ERRORLEVEL 1 で継続）、
+              // CON 等はデバイス名を名指して停止する。
+              const findValue = value(pos[0], s);
+              if (!isUnknown(findValue)) {
+                const device = reservedDeviceName(
+                  windowsPath(findValue, s.model.cwd, n.line),
+                );
+                if (device === "NUL") text = "";
+                else if (device)
+                  fail(
+                    "未対応：予約デバイス名 " +
+                      device +
+                      " からの読み取り（デバイス入力はモデル化できません）",
+                    n.line,
+                  );
+                else text = fsEntry(s, pos[0], n.line)?.content;
+              } else text = fsEntry(s, pos[0], n.line)?.content;
             }
             if (typeof text !== "string")
               fail(
@@ -1332,7 +1402,44 @@ export function simulateCmd(source, model, limits) {
           default:
             fail("未対応のcmdコマンド：" + name, n.line);
         }
+    };
+    // P-N3 受け皿：shellRuntime 内の受け皿は例外の message をそのまま
+    // パスエラー／手順テキストへ載せるため、ディスパッチ境界でホスト例外を
+    // 学習者向け文言へ変換してから投げ直す（PracticeError はそのまま通る）。
+    const dispatch = (n, s, api) => {
+      try {
+        return dispatchCommand(n, s, api);
+      } catch (e) {
+        throw toLearnerError(e);
+      }
+    };
+    return shellRuntime(
+      [program(0)],
+      model,
+      (s, api) => {
+        initFiles(s);
+        for (const [k, v] of Object.entries(s.vars)) {
+          if (v !== null && typeof v === "object" && !isUnknown(v))
+            fail(
+              "モデル環境変数は文字列・数値・真偽値または未確定値で指定してください：" +
+                k,
+              1,
+              "モデルエラー",
+            );
+          ciSet(s.vars, k, isUnknown(v) ? v : String(v ?? ""));
+        }
+        s.cmd = {
+          errorlevel: s.model.errorlevel ?? 0,
+          echo: false,
+          delayed: false,
+          args: s.model.args || [],
+          calls: [],
+          locals: [],
+          loops: {},
+          slots: {},
+        };
       },
+      dispatch,
       (s) => [
         {
           title: "環境変数",
@@ -1355,6 +1462,9 @@ export function simulateCmd(source, model, limits) {
       limits,
     );
   } catch (e) {
-    return sourceError(e);
+    // P-N3 受け皿：実行境界（executeProgram の後処理など）から漏れた
+    // ホスト例外は、生文言のまま返さず学習者向け文言へ変換する
+    // （PracticeError はそのまま通る）。
+    return sourceError(toLearnerError(e));
   }
 }

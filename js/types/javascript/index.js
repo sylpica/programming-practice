@@ -558,8 +558,12 @@ export const definition = {
           if (a.k === "unary" && a.op === "typeof") {
             const name = callName(a.arg), root = name?.split(".")[0];
             if (name && !Object.hasOwn(s.vars, root)) {
-              if (["Number", "String", "Boolean", "parseInt", "prompt", "alert", "console.log", "Math.abs", "Math.floor", "Math.round", "JSON.stringify", "document.getElementById", "document.querySelector", "document.createElement"].includes(name)) return { handled: true, value: "function" };
-              if (["console", "Math", "JSON", "document"].includes(name)) return { handled: true, value: "object" };
+              // R24-N25：typeof のグローバル名解決。BigInt をはじめとする
+              // グローバル関数・コンストラクタは "function"、グローバル
+              // オブジェクトは "object"（実 Node／ECMAScript 仕様どおり）。
+              // ここに無い名前だけが「存在しない名前」として "undefined"。
+              if (["Number", "String", "Boolean", "parseInt", "parseFloat", "isNaN", "isFinite", "prompt", "alert", "BigInt", "Array", "Object", "Symbol", "Function", "Date", "RegExp", "Error", "TypeError", "RangeError", "SyntaxError", "ReferenceError", "Map", "Set", "WeakMap", "WeakSet", "Promise", "Proxy", "ArrayBuffer", "DataView", "console.log", "Math.abs", "Math.floor", "Math.round", "JSON.stringify", "document.getElementById", "document.querySelector", "document.createElement"].includes(name)) return { handled: true, value: "function" };
+              if (["console", "Math", "JSON", "document", "globalThis", "window", "Intl", "Reflect"].includes(name)) return { handled: true, value: "object" };
             }
             if (a.arg.k === "var" && !Object.hasOwn(s.vars, a.arg.name) && !["undefined", "NaN", "Infinity", "true", "false", "null"].includes(a.arg.name))
               return { handled: true, value: "undefined" };
@@ -702,6 +706,13 @@ export const definition = {
         },
         call(name, args, s, api, node) {
           const values = () => args.map((a) => api.read(a, s));
+          // R24-N24：引数の欠落は null ではなく undefined として渡る
+          // （ECMAScript の呼び出し規約）。共有コアの read は「AST ノード
+          // が無い」場合に null を返すため、args[0] を直接 read すると
+          // 欠落と明示的な null が混同され、Math.abs() が 0、
+          // JSON.stringify() が "null" 等の誤値になっていた。欠落位置は
+          // ここで undefined に直してから各関数へ渡す。
+          const arg = (idx) => (idx < args.length ? api.read(args[idx], s) : undefined);
           switch (name) {
             case "console.log": {
               let v = values();
@@ -715,7 +726,7 @@ export const definition = {
             case "alert":
               s.outputs.push({
                 channel: "alert",
-                text: formatValue(displayValue(api.read(args[0], s))),
+                text: formatValue(displayValue(arg(0))),
                 line: node.line,
               });
               return undefined;
@@ -723,12 +734,12 @@ export const definition = {
               return { ...api.freshUnknown("promptの入力またはキャンセル", s), valueType: "prompt" };
             case "document.getElementById":
             {
-              const id = api.read(args[0], s);
+              const id = arg(0);
               if (isUnknown(id)) api.fail("未確定のIDによるDOM探索は未確認です", node, "未確認");
               return Object.hasOwn(s.model.dom.elements,id) ? s.model.dom.elements[id] : null;
             }
             case "document.querySelector": {
-              let selector = api.read(args[0], s),
+              let selector = arg(0),
                 id = Object.hasOwn(s.model.dom.selectors || {},selector) ? s.model.dom.selectors[selector] : undefined;
               if (id) return s.model.dom.elements[id] ?? null;
               if (typeof selector === "string" && selector.startsWith("#"))
@@ -737,20 +748,20 @@ export const definition = {
             }
             case "document.createElement":
               return {
-                tagName: String(api.read(args[0], s)).toUpperCase(),
+                tagName: String(arg(0)).toUpperCase(),
                 textContent: "",
                 children: [],
               };
             case "Number": {
               if (!args.length) return 0;
-              let v = api.read(args[0], s);
+              let v = arg(0);
               return isUnknown(v)
                 ? convertedUnknown(v, "Number")
                 : Number(v);
             }
             case "String": {
               if (!args.length) return "";
-              let v = api.read(args[0], s);
+              let v = arg(0);
               if (isUnknown(v)) return convertedUnknown(v, "String");
               // P-N1: 文字列化の結果も値サイズ上限の対象にする（大きな
               // 配列の文字列化などで実体が爆発しないようにする）。
@@ -760,7 +771,7 @@ export const definition = {
                 : text;
             }
             case "Boolean": {
-              let v = api.read(args[0], s);
+              let v = arg(0);
               return isUnknown(v) ? convertedUnknown(v, "Boolean") : Boolean(v);
             }
             case "parseInt": {
@@ -772,13 +783,13 @@ export const definition = {
             case "Math.abs":
             case "Math.floor":
             case "Math.round": {
-              let v = api.read(args[0], s);
+              let v = arg(0);
               return isUnknown(v)
                 ? unknown(name + "の引数による")
                 : Math[name.split(".")[1]](v);
             }
             case "JSON.stringify": {
-              let v = api.read(args[0], s);
+              let v = arg(0);
               if (containsUnknown(v)) return unknown("JSON.stringifyの入力に未確定値があります");
               if (containsBigInt(v))
                 api.fail("BigIntはJSONへ変換できません", node, "TypeError");
@@ -846,7 +857,7 @@ export const definition = {
               }
             }
             if (method === "appendChild") {
-              let child = api.read(args[0], s);
+              let child = arg(0);
               if (!child || typeof child !== "object")
                 api.fail("ノードが必要です", node, "TypeError");
               object.children ??= [];

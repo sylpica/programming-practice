@@ -58,10 +58,25 @@ const TYPE_ATTRS = {
 };
 for (const k of Object.keys(TYPE_ATTRS)) TYPE_ATTRS[k] = new Set(TYPE_ATTRS[k].split(' ').filter(Boolean));
 const MATH_CONST = { pi: Math.PI, e: Math.E, tau: 2 * Math.PI, inf: Infinity, nan: NaN };
+// math モジュールの公開関数名（CPython 3.12 の math モジュール）。
+// from-import／import * で取り込んだ関数は、属性形（math.sqrt 等）と
+// 同じ経路（callMethod の math 専用処理 → mathCall）へ束縛する。
+// mathCall が確定計算するのは sqrt／fabs／floor／ceil（log 系は定義域
+// エラーの判定のみ）で、それ以外は属性形と同じく未確定値になる。
+const MATH_FUNCS = 'acos acosh asin asinh atan atan2 atanh cbrt ceil comb copysign cos cosh degrees dist erf erfc exp exp2 expm1 fabs factorial floor fmod frexp fsum gamma gcd hypot isclose isfinite isinf isnan isqrt lcm ldexp lgamma log log10 log1p log2 modf nextafter perm pow prod radians remainder sin sinh sqrt sumprod tan tanh trunc ulp'.split(' ');
 // 例外クラスの親子関係（CPython の例外階層のうち、このアプリで名前が現れる範囲）。
 // isinstance の例外照合に使う（RA-16 の開示とは別に、照合自体は階層どおりに行う）。
 const EXC_PARENTS = { BaseException: null, Exception: 'BaseException', ArithmeticError: 'Exception', ZeroDivisionError: 'ArithmeticError', OverflowError: 'ArithmeticError', AssertionError: 'Exception', AttributeError: 'Exception', EOFError: 'Exception', ImportError: 'Exception', ModuleNotFoundError: 'ImportError', LookupError: 'Exception', IndexError: 'LookupError', KeyError: 'LookupError', NameError: 'Exception', UnboundLocalError: 'NameError', OSError: 'Exception', FileNotFoundError: 'OSError', RuntimeError: 'Exception', NotImplementedError: 'RuntimeError', RecursionError: 'RuntimeError', StopIteration: 'Exception', TypeError: 'Exception', ValueError: 'Exception', UnicodeError: 'ValueError', KeyboardInterrupt: 'BaseException', SystemExit: 'BaseException' };
 const EXC_NAMES = new Set(Object.keys(EXC_PARENTS));
+// R24-N7：except の照合は例外階層どおりに行う。発生した例外 kind が、
+// ハンドラに書かれたクラス自身かその子孫（親を辿って一致）なら捕捉する。
+// BaseException 直下の KeyboardInterrupt／SystemExit は Exception の子孫では
+// ないため、except Exception では捕捉されない（docs.python.org の例外階層）。
+function excMatches(kind, handlerType) {
+  let k = kind;
+  while (k) { if (k === handlerType) return true; k = EXC_PARENTS[k]; }
+  return false;
+}
 // 型そのものを表す値か（int | str のような合併型や isinstance の第2引数の判定に使う）
 const isClassValue = (v) => !!v && typeof v === 'object' && (!!v.__union || !!v.__type || !!v.__class || (!!v.__builtin && (TYPE_BUILTINS.includes(v.__builtin) || EXC_NAMES.has(v.__builtin))));
 const BIG = () => ({ __unk: true, desc: 'とても大きな整数・この説明では正確に計算しません' });
@@ -1603,7 +1618,7 @@ class Interp {
         try { this.execBlock(s.body, env, ctx); }
         catch (e) { if (isCatchableDiag(e)) simErr = e; else pending = e; }
         if (simErr) {
-          const h = s.handlers.find(hh => hh.types === null || hh.types.includes(simErr.kind) || hh.types.includes('Exception') || hh.types.includes('BaseException'));
+          const h = s.handlers.find(hh => hh.types === null || hh.types.some(t => excMatches(simErr.kind, t)));
           if (!h) pending = simErr;
           else {
             this.step(s.line, 'エラー（' + simErr.kind + '）が起きたので、except の中身を実行します');
@@ -1712,7 +1727,21 @@ class Interp {
         for (const nm of importNames(s.text || '')) env.set(nm, UNK('モジュール「' + nm + '」の内容'));
         { const t = (s.text || '').trim(); let m;
           if ((m = /^import\s+math(?:\s+as\s+(\w+))?\s*$/.exec(t))) { const u = UNK('モジュール「math」の内容'); u.mod = 'math'; env.set(m[1] || 'math', u); }
-          else if ((m = /^from\s+math\s+import\s+\(?(.+?)\)?\s*$/.exec(t))) for (const part of m[1].split(',')) { const p = part.trim().split(/\s+as\s+/); if (p[0] in MATH_CONST) env.set((p[1] || p[0]).trim(), NUM(MATH_CONST[p[0]], true)); } }
+          else if ((m = /^from\s+math\s+import\s+\(?(.+?)\)?\s*$/.exec(t))) {
+            // R24-N23：from-import でも属性形と同じ確定計算が効くよう、
+            // 定数は実値、関数は math モジュールへの束縛メソッド参照として
+            // 取り込む（従来は定数以外が汎用の未確定値になり、呼び出しても
+            // 確定計算されなかった）。import * は黙って何もしないのではなく、
+            // モジュールの公開名（定数と関数）を全て取り込む。
+            const mathMod = UNK('モジュール「math」の内容'); mathMod.mod = 'math';
+            const bindMath = (orig, alias) => { if (orig in MATH_CONST) env.set(alias, NUM(MATH_CONST[orig], true)); else env.set(alias, METHODREF(mathMod, orig)); };
+            for (const part of m[1].split(',')) {
+              const p = part.trim().split(/\s+as\s+/); const orig = p[0].trim();
+              if (orig === '*') { for (const c of Object.keys(MATH_CONST)) env.set(c, NUM(MATH_CONST[c], true)); for (const f of MATH_FUNCS) env.set(f, METHODREF(mathMod, f)); continue; }
+              if (!orig) continue;
+              bindMath(orig, (p[1] || p[0]).trim());
+            }
+          } }
         return;
       }
       case 'expr': {
@@ -2206,6 +2235,11 @@ Interp.prototype.eval = function (n, env) {
       if (isBool(obj) && (n.name === 'real' || n.name === 'imag')) return NUM(n.name === 'real' ? (obj.v ? 1 : 0) : 0, false);
       if (isNum(obj) && !obj.f && n.name === 'numerator') return obj;
       if (isNum(obj) && !obj.f && n.name === 'denominator') return NUM(1, false);
+      // §3.2 是正：bool は int のサブクラスで、numerator／denominator も
+      // メソッドではなく int と同じ実値（True なら 1／1、False なら 0／1）。
+      // ここで返さないと下の TYPE_ATTRS 経路でメソッド参照として返ってしまう。
+      if (isBool(obj) && n.name === 'numerator') return NUM(obj.v ? 1 : 0, false);
+      if (isBool(obj) && n.name === 'denominator') return NUM(1, false);
       if (obj && obj.__range && obj.rng && (n.name === 'start' || n.name === 'stop' || n.name === 'step')) return NUM(obj.rng[n.name === 'start' ? 0 : n.name === 'stop' ? 1 : 2], false);
       if (obj && obj.__class) { if (obj.cenv.vars.has(n.name)) return obj.cenv.vars.get(n.name); return UNK('クラス属性「' + n.name + '」の値'); }
       { const tn = typeName(obj); if (TYPE_ATTRS[tn] && !TYPE_ATTRS[tn].has(n.name)) this.err(n.line, 'AttributeError', tn + ' には属性「' + n.name + '」はありません', '綴りを確認するか、リファレンスで使える名前を確認してください'); }

@@ -435,7 +435,7 @@
   "kind": "powershell",
   "name": "Get-Location",
   "description": "モデルの現在フォルダを返します。別名pwdでも同じ処理をします。",
-  "returns": "Pathを持つモデルPathInfo",
+  "returns": "Path・ProviderPath・Drive・Providerを持つモデルPathInfo",
   "caution": "仮想FS・明示モデル内の対応部分集合です。実プロセス・実ファイル・実ホストには接続しません。",
   "example": "Get-Location",
   "source": "https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.management/get-location?view=powershell-7.4",
@@ -446,7 +446,7 @@
  {
   "kind": "powershell",
   "name": "Get-Content",
-  "description": "モデルに明示したファイルの内容を行ごとに返します。-Rawは全体を1文字列で返します。別名cat・gcでも同じ処理をします。",
+  "description": "モデルに明示したファイルの内容を行ごとに返します。-Rawは全体を1文字列で返します。別名cat・gcでも同じ処理をします。予約デバイス名NULは空のファイルとして読み（即EOFのため内容なし）、CONなどのデバイスは名前を挙げて停止します。",
   "returns": "文字列の列。-Rawは1つの文字列",
   "caution": "仮想FS・明示モデル内の対応部分集合です。実プロセス・実ファイル・実ホストには接続しません。",
   "example": "Get-Content notes.txt",
@@ -458,7 +458,7 @@
  {
   "kind": "powershell",
   "name": "Set-Content",
-  "description": "仮想ファイルの内容を置き換えます。モデルはUTF-8・Windowsの改行を使用します。別名scでも同じ処理をします。構文行の基本形のほかに、末尾の改行を付けない-NoNewlineも実装されています。",
+  "description": "仮想ファイルの内容を置き換えます。モデルはUTF-8・Windowsの改行を使用します。別名scでも同じ処理をします。構文行の基本形のほかに、末尾の改行を付けない-NoNewlineも実装されています。書き込み先が予約デバイス名の場合、NULは内容を破棄してファイルを作らず、CON／CONOUT$は画面へ出力し、それ以外のデバイスは名前を挙げて停止します。",
   "returns": "成功ストリームへの出力なし",
   "caution": "仮想FS・明示モデル内の対応部分集合です。実プロセス・実ファイル・実ホストには接続しません。",
   "example": "Set-Content out.txt -Value \"Hello\"\nGet-Content out.txt",
@@ -470,7 +470,7 @@
  {
   "kind": "powershell",
   "name": "Add-Content",
-  "description": "仮想ファイルへ内容を追記します。別名acでも同じ処理をします。構文行の基本形のほかに、末尾の改行を付けない-NoNewlineも実装されています。",
+  "description": "仮想ファイルへ内容を追記します。別名acでも同じ処理をします。構文行の基本形のほかに、末尾の改行を付けない-NoNewlineも実装されています。書き込み先が予約デバイス名の場合、NULは内容を破棄してファイルを作らず、CON／CONOUT$は画面へ出力し、それ以外のデバイスは名前を挙げて停止します。",
   "returns": "成功ストリームへの出力なし",
   "caution": "仮想FS・明示モデル内の対応部分集合です。実プロセス・実ファイル・実ホストには接続しません。",
   "example": "Set-Content out.txt \"A\"\nAdd-Content out.txt \"B\"\nGet-Content out.txt",
@@ -482,7 +482,7 @@
  {
   "kind": "powershell",
   "name": "New-Item",
-  "description": "仮想FSにファイルまたはフォルダを作成します。別名niでも同じ処理をします。構文行の基本形のほかに、既存項目がある場合に上書きする-Force、ファイルの初期内容を指定する-Valueも実装されています。",
+  "description": "仮想FSにファイルまたはフォルダを作成します。ファイル・フォルダのどちらの作成でも、パス中の親フォルダがなければ自動で作成します。別名niでも同じ処理をします。構文行の基本形のほかに、既存項目がある場合に上書きする-Force、ファイルの初期内容を指定する-Valueも実装されています。予約デバイス名はファイル／フォルダ名として使えず、名前を挙げて停止します。",
   "returns": "作成したモデル項目",
   "caution": "仮想FS・明示モデル内の対応部分集合です。実プロセス・実ファイル・実ホストには接続しません。",
   "example": "New-Item -Path extra -ItemType Directory",
@@ -506,7 +506,7 @@
  {
   "kind": "powershell",
   "name": "Rename-Item",
-  "description": "仮想FSの項目名を変更します。新しい名前はパスでなく名前を指定します。別名renでも同じ処理をします。",
+  "description": "仮想FSの項目名を変更します。新しい名前はパスでなく名前を指定します。別名renでも同じ処理をします。新しい名前が予約デバイス名の場合は、名前を挙げて停止します。",
   "returns": "通常は成功ストリームへの出力なし",
   "caution": "仮想FS・明示モデル内の対応部分集合です。実プロセス・実ファイル・実ホストには接続しません。",
   "example": "Copy-Item notes.txt copy.txt\nRename-Item copy.txt renamed.txt",
@@ -518,7 +518,7 @@
  {
   "kind": "powershell",
   "name": "Copy-Item",
-  "description": "モデル内で単一ファイルをコピーします。別名cpでも同じ処理をします。構文行の基本形のほかに、上書きする-Forceも実装されています。",
+  "description": "モデル内で単一ファイルをコピーします。別名cpでも同じ処理をします。構文行の基本形のほかに、上書きする-Forceも実装されています。コピー先が予約デバイス名の場合、NULは内容を破棄してファイルを作らず、CON／CONOUT$は内容を画面へ出力し、それ以外のデバイスは名前を挙げて停止します。コピー元が予約デバイス名NULの場合は空の内容としてコピーし、CONなどの場合は名前を挙げて停止します。",
   "returns": "通常は成功ストリームへの出力なし",
   "caution": "仮想FS・明示モデル内の対応部分集合です。実プロセス・実ファイル・実ホストには接続しません。",
   "example": "Copy-Item notes.txt copied.txt",
@@ -530,7 +530,7 @@
  {
   "kind": "powershell",
   "name": "Move-Item",
-  "description": "モデル内で項目を移動します。別名mvでも同じ処理をします。構文行の基本形のほかに、上書きする-Forceも実装されています。",
+  "description": "モデル内で項目を移動します。別名mvでも同じ処理をします。構文行の基本形のほかに、上書きする-Forceも実装されています。移動先が予約デバイス名の場合、NULは内容を破棄してファイルを作らず元を削除し、CON／CONOUT$は内容を画面へ出力して元を削除し、それ以外のデバイスは名前を挙げて停止します。移動元が予約デバイス名の場合も名前を挙げて停止します。",
   "returns": "通常は成功ストリームへの出力なし",
   "caution": "仮想FS・明示モデル内の対応部分集合です。実プロセス・実ファイル・実ホストには接続しません。",
   "example": "Copy-Item notes.txt copied.txt\nMove-Item copied.txt moved.txt",
@@ -734,24 +734,34 @@
  {
   "kind": "powershell",
   "name": "プロパティ",
-  "description": "オブジェクトのプロパティを参照します。Lengthは文字列・配列の長さ（フォルダなど長さを持たないオブジェクトでは$null）、Countは要素数（単一のオブジェクトでは1、$nullでは0）です。Extensionはファイル名の拡張子、Keys／Valuesはハッシュテーブルのキー／値の一覧、PSIsContainerはフォルダかどうか、Pathは場所を表すオブジェクトのパスです。存在しないプロパティは$nullになります。",
+  "description": "オブジェクトのプロパティを参照します。Nameはファイル・フォルダの名前のみ（パスを含みません）、FullNameはフルパスです。Lengthは文字列・配列の長さ（フォルダなど長さを持たないオブジェクトでは$null）、Countは要素数（単一のオブジェクトでは1、$nullでは0）です。Extensionはファイル名の拡張子、Keys／Valuesはハッシュテーブルのキー／値の一覧、PSIsContainerはフォルダかどうか、Pathは場所を表すオブジェクトのパスです。存在しないプロパティは$nullになります。",
   "returns": "構文に従って変数・制御・成功ストリームを更新",
   "caution": "未対応の形式は名称・行を示して停止します。",
-  "example": "$h=@{A=1; B=2}\n$h.Keys\n$h.Values\n\"abc\".Length\n@(1,2,3).Count\n(Get-Location).Path",
+  "example": "$h=@{A=1; B=2}\n$h.Keys\n$h.Values\n\"abc\".Length\n@(1,2,3).Count\n(Get-Location).Path\n$f=Get-ChildItem -File | Select-Object -First 1\n$f.Name\n$f.FullName",
   "source": "https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_properties?view=powershell-7.4",
   "officialSource": "https://github.com/PowerShell/PowerShell-Docs/blob/ebaa235784a688ec72ab642186c4c17460fb438b/reference/7.4/Microsoft.PowerShell.Core/About/about_Properties.md"
  },
  {
   "kind": "powershell",
   "name": "比較演算子",
-  "description": "左辺の型に応じて比較します。文字列比較の既定は大文字小文字を区別しません。否定形の-notlike・-notmatch、大文字小文字を区別する-ceq・-cne、区別しないことを明示する-ieq・-ineも使えます。",
+  "description": "左辺の型に応じて比較します。文字列比較の既定は大文字小文字を区別しません。否定形の-notlike・-notmatchもあります。全ての比較演算子には、大文字小文字を区別する-c接頭辞の形（-ceq・-cne・-cgt・-cge・-clt・-cle・-clike・-cnotlike・-cmatch・-cnotmatch）と、区別しないことを明示する-i接頭辞の形（-ieq・-ine・-igt・-ige・-ilt・-ile・-ilike・-inotlike・-imatch・-inotmatch）があり、接頭辞なしの形は-i形と同じく区別しません。",
   "returns": "構文に従って変数・制御・成功ストリームを更新",
   "caution": "未対応の形式は名称・行を示して停止します。",
-  "example": "\"Hello\" -eq \"hello\"\n\"abc.txt\" -like \"*.txt\"\n\"abc123\" -match \"[0-9]+\"",
+  "example": "\"Hello\" -eq \"hello\"\n\"abc.txt\" -like \"*.txt\"\n\"abc123\" -match \"[0-9]+\"\n\"a\" -cgt \"B\"\n\"ABC\" -clike \"a*\"",
   "source": "https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_comparison_operators?view=powershell-7.4",
   "officialSource": "https://github.com/PowerShell/PowerShell-Docs/blob/ebaa235784a688ec72ab642186c4c17460fb438b/reference/7.4/Microsoft.PowerShell.Core/About/about_Comparison_Operators.md",
   "sourceSHA256": "9fd97c66bec33335d35f6ddd61e571aa7ae9b686e2cbe0043b52ff7918cafec3",
   "review": "掲載文面を公式の説明・構文・出力と照合。対応範囲はDEVELOPMENT.mdの宣言に限定。使用例のモデル実行はNode試験、実物実行はshell-native-audit.py。"
+ },
+ {
+  "kind": "powershell",
+  "name": "包含演算子",
+  "description": "コレクションに要素が含まれるかどうかを判定し、結果は常に真偽値（$true／$false）です。-containsは左辺のコレクションに右辺の要素が含まれるかを、-notcontainsは含まれないかを判定します。-inは左右が逆で、左辺の要素が右辺のコレクションに含まれるかを、-notinは含まれないかを判定します。要素の照合は比較演算子の-eqと同じ規則で行い、-c接頭辞（-ccontains・-cnotcontains・-cin・-cnotin）は大文字小文字を区別し、-i接頭辞（-icontains・-inotcontains・-iin・-inotin）と接頭辞なしの形は区別しません。左辺がコレクションのときに一致要素を取り出す比較演算子のフィルタ動作とは異なり、包含演算子は単一の真偽値を返します。",
+  "returns": "構文に従って変数・制御・成功ストリームを更新",
+  "caution": "未対応の形式は名称・行を示して停止します。",
+  "example": "@(1,2,3) -contains 2\n2 -in @(1,2,3)\n@(1,2,3) -notcontains 5\n\"b\" -in @(\"a\",\"b\")",
+  "source": "https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_comparison_operators?view=powershell-7.4",
+  "officialSource": "https://github.com/PowerShell/PowerShell-Docs/blob/ebaa235784a688ec72ab642186c4c17460fb438b/reference/7.4/Microsoft.PowerShell.Core/About/about_Comparison_Operators.md"
  },
  {
   "kind": "powershell",
@@ -848,7 +858,7 @@
  {
   "kind": "powershell",
   "name": "$PWD",
-  "description": "自動変数です。現在の場所（カレントフォルダ）を表すPathInfoオブジェクトで、Pathプロパティが現在のフォルダのパスです。Set-Locationで移動すると追随します。Get-Locationの戻り値と同じ内容です。",
+  "description": "自動変数です。現在の場所（カレントフォルダ）を表すPathInfoオブジェクトで、Pathプロパティが現在のフォルダのパス、ProviderPathも同じパス、Driveは現在のドライブを表すオブジェクト（Nameがドライブ名）です。Set-Locationで移動すると追随します。Get-Locationの戻り値と同じ内容です。",
   "returns": "構文に従って変数・制御・成功ストリームを更新",
   "caution": "未対応の形式は名称・行を示して停止します。",
   "example": "$PWD.Path",
@@ -858,7 +868,7 @@
  {
   "kind": "powershell",
   "name": "$PSVersionTable",
-  "description": "自動変数です。PowerShellのバージョン情報を保持する読み取り専用のハッシュテーブルです。このモデルではPSVersion（このモデルの根拠とする7.4）とPSEdition（Core）を保持します。",
+  "description": "自動変数です。PowerShellのバージョン情報を保持する読み取り専用のハッシュテーブルです。このモデルではPSVersion（このモデルの根拠とする7.4）とPSEdition（Core）を保持します。PSVersionはバージョンオブジェクトで、Major（7）・Minor（4）などの数値プロパティを持ち、文字列としては7.4と表示されます。",
   "returns": "構文に従って変数・制御・成功ストリームを更新",
   "caution": "未対応の形式は名称・行を示して停止します。",
   "example": "$PSVersionTable.PSVersion",
@@ -898,10 +908,10 @@
  {
   "kind": "powershell",
   "name": "算術・代入演算子",
-  "description": "加算+、減算-、乗算*、除算/、剰余%で計算します。+=・-=・*=・/=は計算結果を変数へ代入する複合代入です。++は変数を1増やし、--は1減らします（前置形式 ++$x・--$x と後置形式 $x++・$x-- の両方に対応します。前置形式では増減後の値、後置形式では増減前の値が式の値になります）。",
+  "description": "加算+、減算-、乗算*、除算/、剰余%で計算します。+=・-=・*=・/=は計算結果を変数へ代入する複合代入です。++は変数を1増やし、--は1減らします（前置形式 ++$x・--$x と後置形式 $x++・$x-- の両方に対応します。前置形式では増減後の値、後置形式では増減前の値が式の値になります）。数値リテラルには、16進形式（0x1F＝31）や、単位接尾辞KB／MB／GB／TB／PBを付けた形式（1KB＝1024、2MB＝2097152）も書けます。",
   "returns": "構文に従って変数・制御・成功ストリームを更新",
   "caution": "未対応の形式は名称・行を示して停止します。",
-  "example": "$x=10\n$x += 5\n$x\n$x++\n$x",
+  "example": "$x=10\n$x += 5\n$x\n$x++\n$x\n0x1F\n1KB",
   "source": "https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_arithmetic_operators?view=powershell-7.4",
   "officialSource": "https://github.com/PowerShell/PowerShell-Docs/blob/ebaa235784a688ec72ab642186c4c17460fb438b/reference/7.4/Microsoft.PowerShell.Core/About/about_Arithmetic_Operators.md"
  }

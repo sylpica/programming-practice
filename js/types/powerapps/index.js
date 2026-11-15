@@ -8,6 +8,7 @@ import {
   callName,
   PracticeError,
   unsupported,
+  toLearnerError,
 } from "../../core/script.js";
 import { rows, sourceFailure } from "../../core/data.js";
 import { formatModelValue as formatValue, isUnknown, unknown } from "../../core/contract.js";
@@ -446,6 +447,17 @@ export const definition = {
         if (v === null || v === undefined) return "";
         return typeof v === "object" ? formatValue(v) : String(v);
       }
+      // R24-N35：Blank（内部表現 null）の文字列化は空文字列が正しい
+      // （Power Fx の Blank は「値なし」であり、JS の内部表現 "null" を
+      // 学習者の見る文面へ出さない。Microsoft Learn「Blank, Coalesce,
+      // IsBlank, and IsEmpty functions」）。値→表示文字列の共通経路として、
+      // 通知文・手順テキスト・コア側の整形（semantics.format）では
+      // formatValue の "null" を使わず、Blank は "" に倒す fxFormatValue を
+      // 通す。連結 & と Text() は従来から fxTextOf／専用分岐で "" になる
+      // ことを回帰テストで固定する。
+      function fxFormatValue(v) {
+        return v === null || v === undefined ? "" : formatValue(v);
+      }
       // RG-15: numeric custom formats for Text(Value, Format), following the
       // number placeholders documented by Microsoft (0, #, ".", grouping ",",
       // scaling ",", and "%"). Anything outside that subset (date/time
@@ -616,11 +628,14 @@ export const definition = {
       }
       let semantics = {
         dialect: "fx",
+        // R24-N35：コア（executeProgram）側の手順テキスト整形でも Blank を
+        // "null" と表示しないよう、この種類の整形関数自体を Blank 対応にする。
+        format: (v) => fxFormatValue(v),
         copyOnAssign: true,
         step(n, s, api) {
           if (n.internalSwitch) {
             s.vars[n.target.name] = api.read(n.value, s);
-            api.note(s, n, "Switchの比較値を一度評価します：" + formatValue(s.vars[n.target.name]));
+            api.note(s, n, "Switchの比較値を一度評価します：" + fxFormatValue(s.vars[n.target.name]));
             return [s];
           }
         },
@@ -927,7 +942,7 @@ export const definition = {
               api.note(
                 s,
                 node,
-                `${varKey} に ${formatValue(v)} を設定し、表示数式を再計算します`,
+                `${varKey} に ${fxFormatValue(v)} を設定し、表示数式を再計算します`,
               );
               return null;
             }
@@ -1207,7 +1222,7 @@ export const definition = {
                 )
                   api.fail(
                     "Notify の NotificationType が正しくありません：" +
-                      formatValue(type),
+                      fxFormatValue(type),
                     node,
                   );
               }
@@ -1224,7 +1239,9 @@ export const definition = {
               }
               s.outputs.push({
                 channel: "Notify",
-                text: formatValue(message),
+                // R24-N35：通知文は値→文字列変換の共通経路 fxFormatValue を
+                // 通す（Blank は "null" でなく空文になる）。
+                text: fxFormatValue(message),
                 line: node.line,
               });
               return true;
@@ -1324,7 +1341,10 @@ export const definition = {
       };
       return executeProgram(nodes, model, semantics, limits);
     } catch (e) {
-      return sourceFailure(e);
+      // P-N3 受け皿：解析・後処理（groups 整形など executeProgram の
+      // 内部 catch の外側）から漏れたホスト例外は、生文言のまま返さず
+      // 学習者向け文言へ変換する（PracticeError はそのまま通る）。
+      return sourceFailure(toLearnerError(e));
     }
   },
 };

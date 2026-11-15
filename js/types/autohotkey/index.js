@@ -4,6 +4,7 @@ import {
   executeProgram,
   scanScript,
   PracticeError,
+  toLearnerError,
   unsupported,
   baseBinary,
   callName,
@@ -1997,7 +1998,9 @@ export const definition = {
       };
       return executeProgram(nodes, model, semantics, limits);
     } catch (e) {
-      return sourceFailure(e);
+      return sourceFailure(
+        e instanceof PracticeError || e?.category ? e : toLearnerError(e),
+      );
     }
   },
 };

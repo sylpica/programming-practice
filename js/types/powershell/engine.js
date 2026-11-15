@@ -21,6 +21,7 @@ import {
   copyEntry,
   sourceError,
   inputValue,
+  reservedDeviceName,
 } from "../shell/model.js";
 import { parsePS, PSParser } from "./parser.js";
 import {
@@ -79,6 +80,9 @@ export function psFormat(v) {
   if (v == null) return "$null";
   if (typeof v === "boolean") return v ? "True" : "False";
   if (typeof v === "number") return numberText(v, { line: 1 }, true);
+  // R24-N14: バージョンオブジェクトは、その文字列表記（"7.4"）で表示する。
+  if (isObject(v) && v.displayText !== undefined)
+    return truncateDisplayText(String(v.displayText));
   if (isObject(v))
     return truncateDisplayText(
       (v.psType === "Hashtable" ? [...v.entries] : Object.entries(v.properties))
@@ -155,6 +159,8 @@ function text(v, node) {
     return parts.join(" ");
   }
   if (isObject(v)) {
+    // R24-N14: バージョンオブジェクトの文字列化は文字列表記そのもの。
+    if (v.psType === "Version") return String(v.displayText);
     if (v.psType === "Hashtable") return "System.Collections.Hashtable";
     fail(
       "未対応：オブジェクトの文字列化。プロパティを部分式で指定してください",
@@ -223,6 +229,51 @@ function info(e) {
       Extension: dot > 0 ? name.slice(dot) : "",
     },
     e.type === "directory" ? "DirectoryInfo" : "FileInfo",
+  );
+}
+// R24-N14: $PSVersionTable.PSVersion は文字列ではなくバージョン
+// オブジェクト（System.Version 相当）。モデルが保持する版文字列
+// （"7.4"）から各成分を導出する：Major=7／Minor=4、指定のない
+// Build／Revision は System.Version の規則どおり -1。
+function versionObject(versionText) {
+  const parts = String(versionText).split(".").map((x) => Number(x)),
+    component = (i) => (Number.isInteger(parts[i]) ? parts[i] : -1);
+  return {
+    ...object(
+      {
+        Major: component(0),
+        Minor: component(1),
+        Build: component(2),
+        Revision: component(3),
+      },
+      "Version",
+    ),
+    displayText: String(versionText),
+  };
+}
+const isVersionValue = (v) => isObject(v) && v.psType === "Version";
+// R24-N14: $PWD／Get-Location が返す PathInfo。実物の PathInfo が持つ
+// プロパティ（Path／ProviderPath／Drive／Provider）を全て、モデルが
+// 保持する現在フォルダから導出して返す（about_Automatic_Variables）。
+// FileSystem プロバイダでは ProviderPath は Path と同じ値になり、
+// Drive はドライブ名（例：C）・ルート・ドライブ相対の現在位置を持つ
+// PSDriveInfo 相当オブジェクト。
+function pathInfo(cwd) {
+  const driveName = /^[a-z]:/i.test(cwd) ? cwd[0].toUpperCase() : "",
+    root = driveName ? driveName + ":\\" : cwd,
+    provider = object({ Name: "FileSystem" }, "ProviderInfo"),
+    drive = object(
+      {
+        Name: driveName,
+        Root: root,
+        CurrentLocation: cwd.length > 3 ? cwd.slice(3) : "",
+        Provider: provider,
+      },
+      "PSDriveInfo",
+    );
+  return object(
+    { Path: cwd, ProviderPath: cwd, Drive: drive, Provider: provider },
+    "PathInfo",
   );
 }
 const alias = {
@@ -301,12 +352,16 @@ export function simulatePowerShell(source, model, limits) {
       if (lower === "lastexitcode") return s.model.lastExitCode ?? null;
       // R23-N1: 自動変数を未定義変数の「$null」規則に落とさない。
       // $PWD はモデルの現在フォルダを保持する PathInfo（Get-Location と同じ）。
-      if (lower === "pwd") return object({ Path: s.model.cwd }, "PathInfo");
+      // R24-N14: Path だけでなく Drive／ProviderPath／Provider も返す。
+      if (lower === "pwd") return pathInfo(s.model.cwd);
       // $PSVersionTable は常に値を持つ読み取り専用ハッシュテーブル。
       // バージョンはこのモデルの根拠（PowerShell 7.4／Core）だけを保持する。
+      // R24-N14: PSVersion は文字列ではなく、その文字列から成分を導出した
+      // バージョンオブジェクトとして保持する（.Major／.Minor が $null に
+      // 落ちて誤分岐しないように）。
       if (lower === "psversiontable")
         return hash([
-          ["PSVersion", "7.4"],
+          ["PSVersion", versionObject("7.4")],
           ["PSEdition", "Core"],
         ]);
       // $HOME は実環境で決まるホームフォルダのパス。値を捏造せず
@@ -565,6 +620,52 @@ export function simulatePowerShell(source, model, limits) {
           if (a === null) return false;
           fail("未対応：右辺が配列の比較", n.line);
         }
+        // R24-N14: バージョンオブジェクトとの比較は、相手（文字列・数値・
+        // バージョンオブジェクト）を版として解釈し成分ごとに比べる
+        // （System.Version の比較規則。未指定成分は -1）。
+        if (isVersionValue(a) || isVersionValue(b)) {
+          const tuple = (v) => {
+            if (isVersionValue(v))
+              return [
+                v.properties.Major,
+                v.properties.Minor,
+                v.properties.Build,
+                v.properties.Revision,
+              ];
+            if (typeof v === "string" && /^\d+(?:\.\d+){0,3}$/.test(v.trim())) {
+              const parts = v.trim().split(".").map(Number);
+              while (parts.length < 4) parts.push(-1);
+              return parts;
+            }
+            if (typeof v === "number" && Number.isFinite(v))
+              return [v, -1, -1, -1];
+            return null;
+          };
+          const av = tuple(a),
+            bv = tuple(b);
+          if (av && bv) {
+            let cmp = 0;
+            for (let i = 0; i < 4; i++)
+              if (av[i] !== bv[i]) {
+                cmp = av[i] < bv[i] ? -1 : 1;
+                break;
+              }
+            return base === "eq"
+              ? cmp === 0
+              : base === "ne"
+                ? cmp !== 0
+                : base === "gt"
+                  ? cmp > 0
+                  : base === "ge"
+                    ? cmp >= 0
+                    : base === "lt"
+                      ? cmp < 0
+                      : cmp <= 0;
+          }
+          if (base === "eq") return false;
+          if (base === "ne") return true;
+          fail("未対応：バージョン値との順序比較の相手", n.line);
+        }
         let x = a,
           y = b;
         if (x === null || y === null)
@@ -647,28 +748,52 @@ export function simulatePowerShell(source, model, limits) {
           };
         return a + tb;
       }
-      if (op === "*" && (typeof a === "string" || Array.isArray(a))) {
-        // R22-N12: 文字列×整数・配列×整数は繰返し
-        // （about_Arithmetic_Operators）。右辺は整数へ変換される。
-        const raw = numeric(b, n);
-        if (!Number.isFinite(raw))
-          fail("繰返し回数を整数へ変換できません", n.line, "RuntimeException");
-        // .NET の整数変換に合わせ、小数部は最近接へ丸める（.5 は偶数側）。
-        let count = Math.floor(raw);
-        const frac = raw - count;
-        if (frac > 0.5 || (frac === 0.5 && count % 2 !== 0)) count++;
-        else if (frac < -0.5 || (frac === -0.5 && count % 2 !== 0)) count--;
-        if (count < 0)
-          fail("繰返し回数は0以上が必要です", n.line, "RuntimeException");
-        if (
-          (typeof a === "string" && a.length * count > 100000) ||
-          (Array.isArray(a) && a.length * count > 10000)
-        )
-          fail("未確認：繰返し結果がモデルの上限を超えます", n.line, "未確認");
-        if (typeof a === "string") return a.repeat(count);
-        const repeated = [];
-        for (let i = 0; i < count; i++) repeated.push(...a);
-        return repeated;
+      if (op === "*") {
+        // R22-N12／R24-N3残り：文字列・配列の繰返し
+        // （about_Arithmetic_Operators）。回数は整数へ変換される。
+        // 順方向（文字列／配列×数値）と逆方向（数値×配列／文字列）で
+        // 同じ変換・丸め・上限を使うため、繰返し本体は共有する。
+        // 上限は P-N1 の値サイズガードの既存規律（文字列100000字・
+        // 配列10000要素）そのもので、新しい上限は作らない。
+        const replicate = (value, rawCount) => {
+          const raw = numeric(rawCount, n);
+          if (!Number.isFinite(raw))
+            fail(
+              "繰返し回数を整数へ変換できません",
+              n.line,
+              "RuntimeException",
+            );
+          // .NET の整数変換に合わせ、小数部は最近接へ丸める（.5 は偶数側）。
+          let count = Math.floor(raw);
+          const frac = raw - count;
+          if (frac > 0.5 || (frac === 0.5 && count % 2 !== 0)) count++;
+          else if (frac < -0.5 || (frac === -0.5 && count % 2 !== 0)) count--;
+          if (count < 0)
+            fail("繰返し回数は0以上が必要です", n.line, "RuntimeException");
+          if (
+            (typeof value === "string" && value.length * count > 100000) ||
+            (Array.isArray(value) && value.length * count > 10000)
+          )
+            fail(
+              "未確認：繰返し結果がモデルの上限を超えます",
+              n.line,
+              "未確認",
+            );
+          if (typeof value === "string") return value.repeat(count);
+          const repeated = [];
+          for (let i = 0; i < count; i++) repeated.push(...value);
+          return repeated;
+        };
+        if (typeof a === "string" || Array.isArray(a)) return replicate(a, b);
+        // R24-N3残り（統合時裁定）：逆方向（数値×配列／数値×非数値文字列）は
+        // 繰返しにならない。about_Arithmetic_Operators は「評価方法は式の
+        // 左端のオブジェクトの型で決まる」「右辺を左辺の型へ変換できなければ
+        // 演算は失敗する」「乗算は厳密には交換可能でない（(ab) と (ba) は
+        // 常には一致しない）」と定め、実例 16 + "file" は変換エラーになる。
+        // 繰返しの実例はすべて文字列／配列が左辺の形のみ。したがって
+        // 2 * @(1,2) や 3 * "ab" は後段の数値変換で正直に停止するのが
+        // 実物の挙動であり、数値文字列（2 * "3" = 6）は従来どおり変換される。
+        // 配列×配列も同様に数値変換の失敗で停止する（実物でもエラー）。
       }
       a = numeric(a, n);
       b = numeric(b, n);
@@ -957,6 +1082,35 @@ export function simulatePowerShell(source, model, limits) {
       }
       fail("未対応：PowerShell式 " + a.k, a.line);
     }
+    // §3.3 再裁定（デバイス名）：Windows の予約デバイス名は、どの
+    // フォルダでも・拡張子を付けても通常ファイルではない
+    // （shell/model.js の reservedDeviceName、Microsoft Learn
+    // 「Naming Files, Paths, and Namespaces」）。
+    // 読み取り経路：NUL は即 EOF の空として扱い、それ以外のデバイスは
+    // デバイス名を名指して停止する（CON は対話入力でモデル化できない）。
+    // 書き込み経路：cmd 側の是正済み意味論に合わせ、NUL は内容を破棄
+    // してファイルを作らず、CON／CONOUT$ は画面へ出力し、それ以外の
+    // デバイスは名前を挙げて停止する。
+    const deviceOf = (raw, s, line) => {
+      if (typeof raw !== "string") return null;
+      const full = windowsPath(raw, s.model.cwd, line);
+      if (isUnknown(full)) return null;
+      return reservedDeviceName(full);
+    };
+    const resolvedPath = (raw, s, line) => {
+      if (typeof raw !== "string") return null;
+      const full = windowsPath(raw, s.model.cwd, line);
+      return isUnknown(full) ? null : full;
+    };
+    // コピー／移動の最終的な書き込み先（既存フォルダ宛はその中へ元名で）。
+    const finalDestPath = (srcRaw, dstRaw, s, line) => {
+      const full = resolvedPath(dstRaw, s, line);
+      if (full === null) return null;
+      const dest = fsEntry(s, full, line);
+      if (dest?.type === "directory")
+        return full.replace(/\\$/, "") + "\\" + String(srcRaw).replaceAll("/", "\\").split("\\").at(-1);
+      return full;
+    };
     function command(c, s, api, input, hasInput = false) {
       const canonical =
           alias[c.name.toLowerCase()] ||
@@ -1324,7 +1478,7 @@ export function simulatePowerShell(source, model, limits) {
         return [{ s, values: [object(props, "GenericMeasureInfo")] }];
       }
       if (name === "get-location")
-        return [{ s, values: [object({ Path: s.model.cwd }, "PathInfo")] }];
+        return [{ s, values: [pathInfo(s.model.cwd)] }];
       if (name === "set-location") {
         const target = windowsPath(
             p("path", 0, s.model.cwd),
@@ -1420,6 +1574,19 @@ export function simulatePowerShell(source, model, limits) {
         ];
       }
       if (name === "get-content") {
+        // §3.3 再裁定：読み取り経路のデバイス名。NUL は即 EOF（空）として
+        // 正直に扱い、CON 等はデバイス名を名指して停止する（従来の
+        // 「モデルにファイルがありません」はデバイスを名指さない虚偽原因）。
+        const readDevice = deviceOf(p("path", 0, null), s, c.line);
+        if (readDevice === "NUL")
+          return [{ s, values: !!p("raw", 100, false) ? [""] : [] }];
+        if (readDevice)
+          fail(
+            "未対応：予約デバイス名 " +
+              readDevice +
+              " からの読み取り（デバイス入力はモデル化できません）",
+            c.line,
+          );
         const e = fsEntry(s, p("path", 0, null), c.line);
         if (!e || e.type !== "file")
           fail("モデルにファイルがありません", c.line, "ItemNotFoundException");
@@ -1447,6 +1614,30 @@ export function simulatePowerShell(source, model, limits) {
           content = noNewline
             ? strings.join("")
             : strings.map((v) => v + "\r\n").join("");
+        // §3.3 再裁定：書き込み先が予約デバイス名なら通常ファイルを作らない。
+        const writeDevice = deviceOf(p("path", 0, null), s, c.line);
+        if (writeDevice === "NUL") {
+          api.note(
+            s,
+            { ...c, refs: [] },
+            "予約デバイス NUL へ書き込みます（内容は破棄され、ファイルは作られません）",
+          );
+          return [{ s, values: [] }];
+        }
+        if (writeDevice === "CON" || writeDevice === "CONOUT$") {
+          s.outputs.push({
+            channel: "Write-Host",
+            text: noNewline ? strings.join("") : strings.join("\n"),
+            line: c.line,
+          });
+          api.note(s, { ...c, refs: [] }, "予約デバイス CON へ出力します（画面表示）");
+          return [{ s, values: [] }];
+        }
+        if (writeDevice)
+          fail(
+            "未対応：予約デバイス名 " + writeDevice + " への書き込み",
+            c.line,
+          );
         writeFile(
           s,
           p("path", 0, null),
@@ -1484,6 +1675,16 @@ export function simulatePowerShell(source, model, limits) {
           );
         if (typeof path === "string")
           path = windowsPath(path, s.model.cwd, c.line);
+        // §3.3 再裁定：デバイス名はファイル／フォルダ名として作らない。
+        const itemDevice =
+          typeof path === "string" ? reservedDeviceName(path) : null;
+        if (itemDevice)
+          fail(
+            "未対応：予約デバイス名 " +
+              itemDevice +
+              " はファイル／フォルダ名として使えません",
+            c.line,
+          );
         let e = fsEntry(s, path, c.line);
         if (type === "directory") {
           if (e && !force)
@@ -1499,6 +1700,16 @@ export function simulatePowerShell(source, model, limits) {
         } else if (type === "file") {
           if (e && !force)
             fail("モデルにパスが既に存在します：" + path, c.line, "IOException");
+          // R24-N32: ファイル形でも、パス中の親フォルダがなければ自動で
+          // 作成する（Microsoft Learn「New-Item」。Directory 形が中間
+          // フォルダを作成するのと揃える。親が既存ファイルの場合は
+          // writeFile 側の従来の停止に委ねる）。
+          if (typeof path === "string") {
+            const at = path.lastIndexOf("\\"),
+              parent = at <= 2 ? path.slice(0, 3) : path.slice(0, at),
+              parentEntry = fsEntry(s, parent, c.line);
+            if (!parentEntry) makeDirectory(s, parent, c.line);
+          }
           e = writeFile(s, path, text(p("value", 100, ""), c), c.line);
         } else fail("未対応のNew-Item -ItemType：" + type, c.line);
         return [{ s, values: [info(e)] }];
@@ -1516,6 +1727,15 @@ export function simulatePowerShell(source, model, limits) {
           leaf = text(p("newname", 1, null), c);
         if (isUnknown(leaf) || /[\\/:*?]/.test(leaf))
           fail("未対応：Rename-Itemの新しい名前", c.line);
+        // §3.3 再裁定：デバイス名への名前変更は名前を挙げて停止する。
+        const renameDevice = reservedDeviceName(leaf);
+        if (renameDevice)
+          fail(
+            "未対応：予約デバイス名 " +
+              renameDevice +
+              " への名前変更（デバイス名はファイル名として使えません）",
+            c.line,
+          );
         copyEntry(
           s,
           from,
@@ -1527,12 +1747,106 @@ export function simulatePowerShell(source, model, limits) {
         return [{ s, values: [] }];
       }
       if (name === "copy-item" || name === "move-item") {
+        // §3.3 再裁定：コピー／移動先・元が予約デバイス名の場合に通常
+        // ファイルを作らない（cmd 側の是正済み意味論に合わせる）。
+        // 先デバイス：NUL は破棄（移動では元を削除）、CON／CONOUT$ は
+        // 内容を画面へ、それ以外は名前を挙げて停止。元デバイス：
+        // Copy-Item の NUL は空の読み取りとして扱い（読み取り経路の
+        // 再裁定と同じ）、それ以外と Move-Item の元デバイスは名前を
+        // 挙げて停止する。
+        const srcRaw = p("path", 0, null),
+          dstRaw = p("destination", 1, null),
+          isMove = name === "move-item",
+          verb = isMove ? "移動" : "コピー";
+        if (typeof srcRaw === "string" && typeof dstRaw === "string") {
+          const finalPath = finalDestPath(srcRaw, dstRaw, s, c.line),
+            dstDevice = finalPath ? reservedDeviceName(finalPath) : null,
+            srcDevice = deviceOf(srcRaw, s, c.line),
+            source = fsEntry(s, srcRaw, c.line);
+          if (dstDevice && srcDevice) {
+            // 元も先もデバイス：先が NUL なら破棄、それ以外は先を名指す。
+            if (dstDevice === "NUL") return [{ s, values: [] }];
+            fail(
+              "未対応：予約デバイス名 " + dstDevice + " への" + verb,
+              c.line,
+            );
+          }
+          if (dstDevice && source && !isUnknown(source)) {
+            if (source.type === "directory")
+              fail(
+                "未対応：予約デバイス名 " +
+                  dstDevice +
+                  " へのフォルダの" +
+                  verb,
+                c.line,
+              );
+            if (dstDevice === "NUL") {
+              if (isMove) removeEntry(s, source.path, c.line);
+              api.note(
+                s,
+                { ...c, refs: [] },
+                "予約デバイス NUL へ" +
+                  verb +
+                  "します（出力は破棄され、ファイルは作られません）",
+              );
+              return [{ s, values: [] }];
+            }
+            if (dstDevice === "CON" || dstDevice === "CONOUT$") {
+              if (source.content === undefined || isUnknown(source.content))
+                fail(
+                  "未確認：" + verb + "元ファイルの内容がモデルにありません",
+                  c.line,
+                  "未確認",
+                );
+              s.outputs.push({
+                channel: "Write-Host",
+                text: source.content.replace(/\r\n/g, "\n").replace(/\n$/, ""),
+                line: c.line,
+              });
+              if (isMove) removeEntry(s, source.path, c.line);
+              api.note(
+                s,
+                { ...c, refs: [] },
+                "予約デバイス CON へ出力します（画面表示）",
+              );
+              return [{ s, values: [] }];
+            }
+            fail(
+              "未対応：予約デバイス名 " + dstDevice + " への" + verb,
+              c.line,
+            );
+          }
+          if (srcDevice) {
+            if (!isMove && srcDevice === "NUL" && finalPath) {
+              // 読み取り経路の再裁定：NUL の内容は空。空ファイルとして複写。
+              const existing = fsEntry(s, finalPath, c.line);
+              if (existing?.type === "directory")
+                fail(
+                  "フォルダにはファイル内容を書き込めません：" + finalPath,
+                  c.line,
+                  "実行エラー",
+                );
+              writeFile(s, finalPath, "", c.line);
+              return [{ s, values: [] }];
+            }
+            fail(
+              "未対応：予約デバイス名 " +
+                srcDevice +
+                " からの" +
+                verb +
+                "（デバイスからの読み取りはモデル化できません）",
+              c.line,
+            );
+          }
+          // 先がデバイスでも元が通常ファイルに無い場合は、従来どおり
+          // copyEntry の「元がありません」エラーを優先する（cmd と同じ）。
+        }
         copyEntry(
           s,
-          p("path", 0, null),
-          p("destination", 1, null),
+          srcRaw,
+          dstRaw,
           c.line,
-          name === "move-item",
+          isMove,
           name === "copy-item" || !!p("force", 100, false),
         );
         return [{ s, values: [] }];
@@ -1794,8 +2108,29 @@ export function simulatePowerShell(source, model, limits) {
                   continue;
                 }
                 const item = st.ps.switches.at(-1).items[index],
+                  // R24-N30：switch オプションの照合配線（about_Switch）。
+                  // 照合方式は既存の比較演算子の意味論を再利用する：
+                  // -Wildcard→-like／-Regex→-match／-Exact・既定→-eq、
+                  // -CaseSensitive はそれぞれの -c 変種（-clike／-cmatch／
+                  // -ceq）にする。競合する照合方式（Regex／Wildcard／
+                  // Exact）が複数指定された場合は、最後に指定されたものが
+                  // 優先する（about_Switch の Note）。照合節が文字列でない
+                  // 場合、各オプションは無視され従来の -eq 照合になる
+                  // （about_Switch の各パラメータの説明）。
+                  switchOp = (() => {
+                    if (typeof cs.value !== "string") return "-eq";
+                    let mode = "eq",
+                      sensitive = false;
+                    for (const opt of n.options ?? []) {
+                      if (opt === "wildcard") mode = "like";
+                      else if (opt === "regex") mode = "match";
+                      else if (opt === "exact") mode = "eq";
+                      else if (opt === "casesensitive") sensitive = true;
+                    }
+                    return (sensitive ? "-c" : "-") + mode;
+                  })(),
                   test = binary(
-                    "-eq",
+                    switchOp,
                     isUnknown(item) ? item : text(item, n),
                     text(cs.value, n),
                     st,

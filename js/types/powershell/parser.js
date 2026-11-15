@@ -112,18 +112,44 @@ export function tokenizePS(source) {
       push("word", relative[0], start);
       continue;
     }
-    // R23-N2 追随: 2進リテラル（0b…）は実 PowerShell の数値リテラルに
-    // 存在しないため、"0" と "b101" に黙って分割して誤値や虚偽原因に
-    // せず、リテラル自体を名指して未対応で止める。
-    const binary = source.slice(i).match(/^0b[01]+/i);
-    if (binary) fail("未対応：2進数リテラル（" + binary[0] + "）", line);
-    // R23-N2: 16進接頭辞 0x と単位接尾辞（KB／MB／GB／TB／PB）も
-    // 数値リテラルの一部として取り込む。取り込まないと "0" と "x1F" の
-    // ように黙って分割され、誤値や虚偽原因になる。
-    const number = source
-      .slice(i)
-      .match(/^(?:0x[0-9a-f]+|\d+(?:\.\d+)?(?:e[+-]?\d+)?)(?:kb|mb|gb|tb|pb)?/i);
-    if (number) {
+    // R24-N2: 数値リテラルの字句解析。実 PowerShell の文法（言語仕様
+    // B.1.9.1／B.1.9.2、about_Numeric_Literals）に沿って、先行ドット形
+    // （.5／.5e2）と末尾ドット＋指数形（1.e2）、末尾ドット形（1.）も
+    // リテラルとして取り込む。末尾ドットはメンバーアクセス（1.Length）
+    // と範囲演算子（1..3）と衝突しない場合に限る。
+    // あわせて末尾検証を行う：リテラルの直後に英数字・_ が続く不完全形
+    // （0x、1e、1.5e、1KBB、1_000 等）は接頭辞だけを切り取って別トークン
+    // に化けさせず（代入位置の虚偽原因・括弧位置の「) が必要です」・
+    // 引数位置の黙った分割の根治）、リテラル自体を名指して止める。
+    // 字句解析段階で止めるため、全位置（引数モード含む）で一貫する。
+    const numStart =
+      /[0-9]/.test(c) || (c === "." && /[0-9]/.test(source[i + 1] ?? ""));
+    if (numStart) {
+      const rest = source.slice(i);
+      // R23-N2 追随: 2進リテラル（0b…）は実 PowerShell の数値リテラルに
+      // 存在しないため、"0" と "b101" に黙って分割して誤値や虚偽原因に
+      // せず、リテラル自体を名指して未対応で止める。R24-N2: 0b の後に
+      // 0／1 以外の文字が続く形（0b2 等）も接頭辞として捕捉する
+      // （従来は ^0b[01]+ を要求するため名指し経路をすり抜けていた）。
+      const binary = rest.match(/^0[bB][0-9A-Za-z_]*/);
+      if (binary) fail("未対応：2進数リテラル（" + binary[0] + "）", line);
+      // R23-N2: 16進接頭辞 0x と単位接尾辞（KB／MB／GB／TB／PB）も
+      // 数値リテラルの一部として取り込む。取り込まないと "0" と "x1F" の
+      // ように黙って分割され、誤値や虚偽原因になる。
+      const number = rest.match(
+        /^(?:0x[0-9a-f]+|(?:\d+\.\d+|\.\d+|\d+\.(?=[eE][+-]?\d)|\d+\.(?![\p{L}\p{N}_.])|\d+)(?:[eE][+-]?\d+)?)(?:kb|mb|gb|tb|pb)?/iu,
+      );
+      const after = rest[number[0].length] ?? "";
+      if (/[\p{L}\p{N}_]/u.test(after)) {
+        let literal = rest.match(/^[0-9A-Za-z_.]+/)[0];
+        if (/[eE]$/.test(literal) && /^[+-]/.test(rest.slice(literal.length)))
+          literal += rest[literal.length];
+        fail(
+          "未対応または不正な数値リテラル：" + literal,
+          line,
+          "SyntaxError",
+        );
+      }
       i += number[0].length;
       push("number", number[0], start);
       continue;
@@ -243,9 +269,11 @@ for (const base of [
 ])
   for (const prefix of ["-", "-c", "-i"]) prec[prefix + base] = 3;
 // R23-N2: 数値リテラル文字列（0x 接頭辞・単位接尾辞つき）を値へ変換する。
+// R24-N2: 字句解析側と同じ文法に揃え、先行ドット形（.5）と末尾ドット形
+// （1.／1.e2）も変換できるようにする。
 export function psNumber(text) {
   const m = String(text).match(
-    /^(0x[0-9a-f]+|\d+(?:\.\d+)?(?:e[+-]?\d+)?)(kb|mb|gb|tb|pb)?$/i,
+    /^(0x[0-9a-f]+|(?:\d+\.\d+|\.\d+|\d+\.|\d+)(?:e[+-]?\d+)?)(kb|mb|gb|tb|pb)?$/i,
   );
   if (!m) return Number(text);
   let v = /^0x/i.test(m[1]) ? parseInt(m[1], 16) : Number(m[1]);
@@ -265,6 +293,9 @@ export class PSParser {
     }));
     this.i = 0;
     this.depth = 0;
+    // R24-N3: param 定義の既定値など、カンマが区切りとして働く文脈では
+    // カンマ演算子の消費を抑止するためのカウンタ。
+    this.noComma = 0;
   }
   peek(v) {
     return this.ts[this.i]?.v === v;
@@ -358,6 +389,29 @@ export class PSParser {
     }
     if (name === "switch") {
       this.take();
+      // R24-N30: switch のオプション（about_Switch）を、条件の括弧と
+      // 誤認して「( が必要です」という虚偽原因にしない。対応する
+      // オプションは AST の options に記録する（照合方法の切り替えは
+      // engine 側が options を読んで -like／-match／-ceq の既存意味論で
+      // 行う。-Exact は従来の -eq 照合そのもの）。ファイル入力の -File は
+      // 実行モデル側の対応が要るため、対象を名指して正直に止める。
+      // 未知のオプションも同様に名指す。
+      const options = [];
+      while (
+        this.ts[this.i]?.v === "-" &&
+        this.ts[this.i + 1]?.k === "word"
+      ) {
+        const optToken = this.ts[this.i],
+          optWord = this.ts[this.i + 1].v,
+          optName = optWord.toLowerCase();
+        if (optName === "file")
+          fail("未対応：switchの -File オプション", optToken.line);
+        if (!["wildcard", "regex", "exact", "casesensitive"].includes(optName))
+          fail("未対応：switchのオプション -" + optWord, optToken.line);
+        this.take();
+        this.take();
+        options.push(optName);
+      }
       const test = this.condition();
       this.skip();
       this.take("{");
@@ -375,7 +429,7 @@ export class PSParser {
         this.skip();
       }
       this.take("}");
-      return { k: "switch", test, cases, line };
+      return { k: "switch", test, cases, options, line };
     }
     if (name === "function") {
       this.take();
@@ -435,7 +489,18 @@ export class PSParser {
       const t = this.take();
       if (t.k !== "var")
         fail("paramには$変数が必要です", t.line, "SyntaxError");
-      const value = this.peek("=") ? (this.take(), this.expr()) : null;
+      // R24-N3: 既定値のカンマはパラメータの区切りであり、カンマ演算子
+      // として消費させない（param($a = 1, $b = 2) の形を壊さないため）。
+      let value = null;
+      if (this.peek("=")) {
+        this.take();
+        this.noComma++;
+        try {
+          value = this.expr();
+        } finally {
+          this.noComma--;
+        }
+      }
       params.push({ name: t.v, type, value, line: t.line });
       if (!this.peek(",")) break;
       this.take();
@@ -578,6 +643,25 @@ export class PSParser {
       this.take();
       return { k: "literal", value: t.v, line: t.line };
     }
+    // R24-N31: 引数モードでは、空白で独立した演算子トークンは式の演算子
+    // ではなく文字列引数として渡る（about_Parsing）。従来は "+" だけが
+    // 単項演算子として消費されて黙って落ち（Write-Output 1 + 2 が
+    // 1 と 2 だけになる）、文字列形では誤った変換エラーになっていた。
+    // "*"／"?" と同種の記号（+ - / % =）を一掃する。隣接形（-5 や +2）は
+    // 従来どおり式側（単項演算子）で解釈する。
+    if (t.k === "op" && ["+", "-", "/", "%", "="].includes(t.v)) {
+      const prev = this.ts[this.i - 1],
+        next = this.ts[this.i + 1],
+        gapBefore = !prev || prev.end < t.start,
+        gapAfter =
+          !next ||
+          next.start > t.end ||
+          [";", "|", ")", "}", "<eof>", ","].includes(next.v);
+      if (gapBefore && gapAfter) {
+        this.take();
+        return { k: "literal", value: t.v, line: t.line };
+      }
+    }
     // NX-N8: var トークンは bareword として取り込まない。
     // 特に $? は v が "?" のためワイルドカード分岐に誤って入り、文字列 "?"
     // になっていた。自動変数として式側で評価させる。
@@ -593,7 +677,22 @@ export class PSParser {
       }
       return { k: "literal", value: text, line: t.line };
     }
-    return this.expr(7);
+    const first = this.expr(7);
+    // §3.3 既知残存の是正：引数モードでも範囲演算子は式として受理する
+    // （Write-Output 1..3 は実 PowerShell では 1,2,3 を出力する。
+    // 代入形・括弧形は従来から正常だった）。左辺は expr(7) が範囲の
+    // 手前で止まるため、ここで範囲として組み立てる。
+    if (this.peek("..")) {
+      this.take();
+      return {
+        k: "binary",
+        op: "..",
+        a: first,
+        b: this.expr(7),
+        line: t.line,
+      };
+    }
+    return first;
   }
   expr(min = 0) {
     if (++this.depth > 64)
@@ -617,10 +716,12 @@ export class PSParser {
       a = { k: "string", value: t.v, quote: t.quote, line };
     else if (t.k === "var") a = { k: "var", name: t.v, line };
     else if (["-", "+", "!", "-not"].includes(t.v.toLowerCase()))
-      a = { k: "unary", op: t.v.toLowerCase(), arg: this.expr(7), line };
+      // R24-N3: 単項演算子の被演算子はカンマ演算子を含まない
+      // （-1,2 は (-1) と 2 の配列であり、-(1,2) ではないため）。
+      a = { k: "unary", op: t.v.toLowerCase(), arg: this.expr(8), line };
     else if (t.v === "++" || t.v === "--")
       // R22-N16: 前置インクリメント／デクリメント。
-      a = { k: "pre", op: t.v, target: this.expr(7), line };
+      a = { k: "pre", op: t.v, target: this.expr(8), line };
     else if (t.v === "(" || t.v === "$(") {
       const pipe = this.pipeline();
       this.take(")");
@@ -655,7 +756,8 @@ export class PSParser {
     } else if (t.v === "[") {
       const type = this.take().v;
       this.take("]");
-      a = { k: "cast", type, arg: this.expr(7), line };
+      // R24-N3: キャストの被演算子もカンマ演算子を含まない（単項と同様）。
+      a = { k: "cast", type, arg: this.expr(8), line };
     } else
       fail("未対応または不正なPowerShellの式：" + t.v, line, "SyntaxError");
     while (true) {
@@ -679,13 +781,35 @@ export class PSParser {
         a = { k: "post", op: this.take().v, target: a, line };
         continue;
       }
+      // R24-N3: カンマ演算子（配列生成）は二項演算子より強く結合する
+      // （about_Operator_Precedence：カンマは比較・算術・論理の各演算子
+      // より上位）。被演算子側でカンマ列を先に配列としてまとめないと、
+      // stage 側の「式の値リストの区切り」に分割されて -in／-eq フィルタ
+      // ／配列への + などが黙って誤値になっていた。優先順位は全二項
+      // 演算子（最大6＝範囲）より上の7とし、要素は expr(8)（カンマも
+      // 二項演算子も含まない一次側）で読む。連鎖は平坦な配列にする。
+      // param 既定値などカンマが区切りの文脈では noComma で抑止する。
+      if (this.peek(",") && !this.noComma && min <= 7) {
+        const values = a.k === "array" ? [...a.values] : [a];
+        while (this.peek(",")) {
+          this.take();
+          values.push(this.expr(8));
+        }
+        a = { k: "array", values, line };
+        continue;
+      }
       const opToken = this.ts[this.i],
         op = opToken?.v.toLowerCase(),
         p = prec[op];
-      if (p === undefined || p < min) {
+      if (p === undefined) {
         // SH-P3（同根の一掃）：単一トークンの -演算子が優先順位表に無いまま
         // ここで黙って止まると、呼び出し側が「) が必要です」等と
         // 無関係な原因を表示する。演算子を名指して止める。
+        // R24-N1（回帰の根治）：この名指しは「表に実際に無い場合」に限る。
+        // p < min は、より高い優先順位の部分式や比較の右辺の解析中に
+        // 表内の演算子（-eq／-and 等）が現れる正常な場面であり、従来
+        // どおり break して外側で消費させる（両条件で発火させると
+        // 複合式の比較・論理結合が全て虚偽原因で止まる）。
         if (opToken?.k === "op" && /^-[a-z]/i.test(opToken.v))
           fail(
             "未対応または不正なPowerShellの式：" + opToken.v,
@@ -694,8 +818,11 @@ export class PSParser {
           );
         break;
       }
+      if (p < min) break;
       this.take();
-      a = { k: "binary", op, a, b: this.expr(p + 1), line };
+      // R24-N3: 範囲の右辺はカンマ列にしない（1..3, 4 は (1..3) と 4 の
+      // 配列であり、1..(3,4) ではないため、右辺は expr(8) で読む）。
+      a = { k: "binary", op, a, b: this.expr(op === ".." ? 8 : p + 1), line };
     }
     this.depth--;
     return a;

@@ -52,7 +52,7 @@
 - C/C++/C#：掲載APIを対象言語別に整理。C#配列の別名・要素型・初期値、C++のbool昇格・出力、実行入力の識別を修正した。
 - 共通UI：モデル入力はコード側で開閉。使用項目・リファレンス・用語集は右（375pxは下）、終了状態はコードの下。テンプレート解説はその下へ全展開し、内側スクロールを設けない。「なし」にすると非表示になる。
 
-対応表示リファレンスの使用例は、自立コードとして実行確認する対象である（現行917件の対応項目の使用例はテストで全件実行される）。説明文・実物仕様の照合は項目単位の個票（REFERENCE-R2.md、reference-r2.json／reference-r6.json、MUSE-REF-R22.md）で管理し、使用例試験と区別する。
+対応表示リファレンスの使用例は、自立コードとして実行確認する対象である（現行936件の対応項目の使用例はテストで全件実行される）。説明文・実物仕様の照合は項目単位の個票（REFERENCE-R2.md、reference-r2.json／reference-r6.json、MUSE-REF-R22.md）で管理し、使用例試験と区別する。
 
 ### 練習テンプレートの補充
 
@@ -68,7 +68,7 @@
 - JavaScript：typeof（未宣言名とTDZを区別）とReferenceError表示。戻り値のない出力文の重複説明を除去。
 - AutoHotkey：SetTitleMatchModeが変更前のモードを返す。UI.Vision：storeText/storeValueのロケーター不一致は#LNFを保存して継続する。
 - CloudFormation：TransformのName/Parametersオブジェクトと配列内オブジェクトを解析する。カスタムLambdaのトップレベルparamsは公式のevent仕様に従い空にする。AWS::IncludeのトップレベルParametersは専用の組込み仕様であり、このモデルでは実装しない。Fn::Transformのparamsとは混同しない。
-- リファレンスは説明・戻り値・注意点を一次資料へ対応付ける。戻り値と公式資料リンクも表示する。対応／参照専用の区別は維持（現行は対応917件／参照専用61件）。静的説明文の照合と、任意コード・全引数の実環境互換性は別である。個票はdocs/audit/REFERENCE-R2.mdとMUSE-REF-R22.mdを参照。
+- リファレンスは説明・戻り値・注意点を一次資料へ対応付ける。戻り値と公式資料リンクも表示する。対応／参照専用の区別は維持（現行は対応936件／参照専用62件）。静的説明文の照合と、任意コード・全引数の実環境互換性は別である。個票はdocs/audit/REFERENCE-R2.mdとMUSE-REF-R22.mdを参照。
 
 新アイコンはMuse側の25e40db以降で反映済み。636f8d0でmanifest変更後のprecache再生成も完了し、Codex第3ラウンドではPNGの実体・寸法を確認して保持する。
 
@@ -148,9 +148,11 @@ PowerShell 7.4を根拠にするWindowsパス・UTF-8／CRLFの部分モデル�
 
 その後の修正バッチ2（2026-11-15）で、VBA Attribute・ImageJ `.length`・Python math 定数5件（CloudFormation 伝播5件を含む）・PowerShell 自動変数とプロパティ項目の追加、ImageJ Math.sinh/cosh/tanh の未対応分類への是正、Python `with` の対応分類への是正等を行い、現在の件数は次のとおり：Excel VBA 91、ImageJ 201、CloudFormation 176（固有11＋Python委譲165）、Power Automate 15、AutoHotkey 26、UI.Vision 22、Power Apps 28、Python 165、R 44、C 26、C++ 31、C# 53、JavaScript 39、cmd 28、PowerShell 50。合計 **995件（対応933／参照専用62）**。照合個票は `docs/audit/reference-r2.json` 917行／`docs/audit/reference-r6.json` 78行。詳細は `docs/audit/MUSE-FIX-BATCH2.md`。
 
+その後の修正バッチ3（2026-11-15）で、PowerShell「包含演算子」の新設と比較演算子項目の全綴り拡張（R24-N4）、PowerShell「プロパティ」項目への `.Name`／`.FullName` 追記（R24-N16）、Python「数値の属性」の新設（第24ラウンド報告書 §3.2 の裁定＝項目化。CloudFormation 伝播を含む）を行い、現在の件数は次のとおり：Excel VBA 91、ImageJ 201、CloudFormation 177（固有11＋Python委譲166）、Power Automate 15、AutoHotkey 26、UI.Vision 22、Power Apps 28、Python 166、R 44、C 26、C++ 31、C# 53、JavaScript 39、cmd 28、PowerShell 51。合計 **998件（対応936／参照専用62）**。照合個票は `docs/audit/reference-r2.json` 919行／`docs/audit/reference-r6.json` 79行。詳細は `docs/audit/MUSE-FIX-BATCH3.md`。
+
 この修正で確定した宣言事項：
 
-- Python：次の組み込み名は PY_BUILTINS の受理のみで専用処理はなく、呼び出すと未対応として停止します（リファレンス項目はありません）：ascii、breakpoint、bytearray、bytes、callable、classmethod、compile、complex、delattr、dir、eval、exec、frozenset、getattr、globals、hasattr、hash、help、id、issubclass、locals、memoryview、object、property、setattr、slice、staticmethod、super、vars。例外クラス名（Exception、ValueError 等25件）は項目化し、raise 文と try のハンドラ照合で処理します（コンストラクタ呼び出しを値として使う形は未対応）。また TYPE_ATTRS に載る次のメソッドは参照のみ受理され、呼び出しは未対応として停止します（リファレンス項目はありません）：str の casefold、center、encode、expandtabs、format_map、isprintable、istitle、ljust、maketrans、partition、removeprefix、removesuffix、rjust、rpartition、splitlines、swapcase、translate、zfill、dict の fromkeys、set の isdisjoint、issubset、issuperset、int の as_integer_ratio、bit_count、bit_length、conjugate、from_bytes、is_integer、to_bytes、float の as_integer_ratio、conjugate、fromhex、hex、is_integer、bool の as_integer_ratio、bit_count、bit_length、conjugate、from_bytes、is_integer、to_bytes。with 文は部分対応です（本文は実行し、as 変数には未確定値が入り、__enter__／__exit__ の処理や後始末は再現しません。open との組み合わせは open 自体が未対応のため停止します）。
+- Python：次の組み込み名は PY_BUILTINS の受理のみで専用処理はなく、呼び出すと未対応として停止します（リファレンス項目はありません）：ascii、breakpoint、bytearray、bytes、callable、classmethod、compile、complex、delattr、dir、eval、exec、frozenset、getattr、globals、hasattr、hash、help、id、issubclass、locals、memoryview、object、property、setattr、slice、staticmethod、super、vars。例外クラス名（Exception、ValueError 等25件）は項目化し、raise 文と try のハンドラ照合で処理します（コンストラクタ呼び出しを値として使う形は未対応）。また TYPE_ATTRS に載る次のメソッドは参照のみ受理され、呼び出しは未対応として停止します（リファレンス項目はありません）：str の casefold、center、encode、expandtabs、format_map、isprintable、istitle、ljust、maketrans、partition、removeprefix、removesuffix、rjust、rpartition、splitlines、swapcase、translate、zfill、dict の fromkeys、set の isdisjoint、issubset、issuperset、int の as_integer_ratio、bit_count、bit_length、conjugate、from_bytes、is_integer、to_bytes、float の as_integer_ratio、conjugate、fromhex、hex、is_integer、bool の as_integer_ratio、bit_count、bit_length、conjugate、from_bytes、is_integer、to_bytes。数値属性 real／imag／numerator／denominator は読み取りを再現し、リファレンス項目「数値の属性」に集約します（float の numerator／denominator は実物どおり AttributeError、bool は True=1／1・False=0／1）。with 文は部分対応です（本文は実行し、as 変数には未確定値が入り、__enter__／__exit__ の処理や後始末は再現しません。open との組み合わせは open 自体が未対応のため停止します）。
 - JavaScript：`length`（配列・文字列のプロパティ）は意図的除外とする。使用中チップの refs には含めないことをテストで明示検証している設計判断（`tests/muse-fix-core.test.js`）に基づき、リファレンス項目は設けない。プロパティ自体の読み取りはモデルで対応している。
 - AutoHotkey：組み込み変数 A_* は、A_Index を個別項目とし、その他の実装済み110件は束ね項目「A_*（組み込み変数）」に集約する。scan は実装済みの A_* 名を束ね項目（A_Index は個別項目）へ解決する。明示的に未対応の21件（A_LoopField 等）は項目化も解決もしない。
 - ImageJ：`Dialog.` 接頭辞の汎用受理（ステップ表示＋未確定値）で処理される18件は項目化し、汎用モデルである旨を注意書きに明記した。SIM_EXTRA のみの7件（getMetadata、String.format 等）は実装がなく実行時に未確認として停止するため、項目化しない。

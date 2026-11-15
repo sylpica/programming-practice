@@ -662,11 +662,11 @@
   "fields": {
    "description": "配列の添字の下限です。",
    "returns": "Long（添字の下限）",
-   "caution": "本アプリでは1次元のみ対応します。",
+   "caution": "本アプリでは1次元のみ対応します。第2引数の次元は省略でき、指定できるのは1のみです（範囲外の次元はエラー9になります）。",
    "example": "Dim items(2) As String\nDebug.Print LBound(items)",
    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/lbound-function.md"
   },
-  "sha256": "38fe7069198e6b07d722c28b531abe8e35f8808f1b4c0d19dcb917d0acb0f892",
+  "sha256": "3be9f42739d47307e8bcc78b91fce51aa5cfaf246d59b4b14f4e197c2f2d26ba",
   "description": "照合済",
   "returns": "照合済",
   "caution": "照合済（モデル固有の限定は実装・試験で確認）"
@@ -678,11 +678,11 @@
   "fields": {
    "description": "配列の添字の上限です。",
    "returns": "Long（添字の上限）",
-   "caution": "要素数そのものではありません。",
+   "caution": "要素数そのものではありません。第2引数の次元は省略でき、指定できるのは1のみです（範囲外の次元はエラー9になります）。本アプリでは1次元のみ対応します。",
    "example": "Dim items(2) As String\nDebug.Print UBound(items)",
    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/ubound-function.md"
   },
-  "sha256": "105d936ac656e8743b2b4138e6477138e3bdbb875f77700d7daeea92044ea92f",
+  "sha256": "3414357635d451709e9bd9b7ed8c90f5c9ae8c2f2cbbf7f5b0092aeeb16834ea",
   "description": "照合済",
   "returns": "照合済",
   "caution": "照合済（モデル固有の限定は実装・試験で確認）"
@@ -8279,6 +8279,19 @@
  },
  {
   "kind": "python",
+  "name": "数値の属性",
+  "supported": true,
+  "fields": {
+   "description": "int・float・bool が持つ数値属性。real は実部、imag は虚部、numerator は分子、denominator は分母を、メソッドではなく値そのものとして返す読み取り専用の属性。",
+   "returns": "real は値そのもの、imag は 0（float では 0.0）。numerator／denominator は int と bool のみが持ち、値そのもの／1 を返す",
+   "caution": "メソッドではないため呼び出しの括弧は付けない。float に numerator／denominator は無く、読むと AttributeError になる（有理数として表すなら as_integer_ratio() を使う）。bool は int のサブクラスのため True は 1／1、False は 0／1 を返す。",
+   "example": "print((5).real, (5).imag, (5).numerator, (5).denominator)\nprint((1.5).real, (1.5).imag)\nprint(True.numerator, True.denominator)",
+   "source": "https://docs.python.org/ja/3.12/library/numbers.html"
+  },
+  "sha256": "db587dd7cbbd5a4f31646b0b055a47c9814afe7ce81fd4f09b3ef69bbe298e2e"
+ },
+ {
+  "kind": "python",
   "name": "reversed",
   "supported": true,
   "fields": {
@@ -9532,11 +9545,11 @@
   "fields": {
    "description": "通常の組み込み例外すべての基底クラス。個別の例外をまとめて捕捉するときに使う。",
    "returns": "例外クラス（raise で発生させ、except で捕捉する）",
-   "caution": "あらゆる通常例外を捕捉するため、広く捕りすぎると不具合の発見が遅れる。具体的な例外型を指定するのが基本。KeyboardInterrupt や SystemExit は基底が BaseException のため捕捉されない（実際の Python）。ただし本アプリの照合は簡略化されており、except Exception でも捕捉されてしまう。",
+   "caution": "あらゆる通常例外を捕捉するため、広く捕りすぎると不具合の発見が遅れる。具体的な例外型を指定するのが基本。KeyboardInterrupt や SystemExit は基底が BaseException のため捕捉されない。",
    "example": "try:\n    raise Exception(\"bad\")\nexcept Exception:\n    print(\"Exceptionを捕捉\")",
    "source": "https://docs.python.org/ja/3.12/library/exceptions.html#Exception"
   },
-  "sha256": "6690e64c329253aced9fa160edc466dae47422b0d63f3688763bfa626ff27b4a"
+  "sha256": "bc2f68b44997ec2c7e387cd5f504cb6c0e79084dc28c0d151eda3ae0b52454dd"
  },
  {
   "kind": "python",
@@ -9623,11 +9636,11 @@
   "fields": {
    "description": "定義されていない名前（変数・関数）を参照したときに発生する例外。",
    "returns": "例外クラス（raise で発生させ、except で捕捉する）",
-   "caution": "綴り間違い、定義より前の参照、スコープの勘違いが主な原因。関数内で代入する名前を代入前に読むと、亜種の UnboundLocalError になる（本アプリでも発生する）。本アプリの except 照合は例外名の完全一致のみで、except NameError では UnboundLocalError を捕捉できない。",
+   "caution": "綴り間違い、定義より前の参照、スコープの勘違いが主な原因。関数内で代入する名前を代入前に読むと、亜種の UnboundLocalError になる（本アプリでも発生する）。UnboundLocalError は NameError のサブクラスのため、except NameError で捕捉できる。",
    "example": "try:\n    raise NameError(\"bad\")\nexcept NameError:\n    print(\"NameErrorを捕捉\")",
    "source": "https://docs.python.org/ja/3.12/library/exceptions.html#NameError"
   },
-  "sha256": "bd7460b84308a818e15ec243f9953841a4f88077011eeb6aac935687407ba8a2"
+  "sha256": "bc6ee4f0c85b0e7c2dd958fbf6c659d036446d92d0d468751b6653fc6d6a7ad1"
  },
  {
   "kind": "python",
@@ -9701,11 +9714,11 @@
   "fields": {
    "description": "import しようとしたモジュール自体が見つからないときに発生する例外（ImportError のサブクラス）。",
    "returns": "例外クラス（raise で発生させ、except で捕捉する）",
-   "caution": "except ImportError でまとめて捕捉できる（実際の Python）。モジュールのインストール漏れや名前の勘違いが主な原因。本アプリの except 照合は例外名の完全一致のみで、親クラスでの捕捉は再現されない。",
+   "caution": "except ImportError でまとめて捕捉できる。モジュールのインストール漏れや名前の勘違いが主な原因。",
    "example": "try:\n    raise ModuleNotFoundError(\"bad\")\nexcept ModuleNotFoundError:\n    print(\"ModuleNotFoundErrorを捕捉\")",
    "source": "https://docs.python.org/ja/3.12/library/exceptions.html#ModuleNotFoundError"
   },
-  "sha256": "f20466510e7d008b29e836964514ba2c51165a36149c5a0fcc4f137a6a10d7d0"
+  "sha256": "f34f8d8a3aafb243b061353f0e2305300d41592f48ae30d97cfe10b28864fa53"
  },
  {
   "kind": "python",
@@ -9727,11 +9740,11 @@
   "fields": {
    "description": "存在しないファイルやディレクトリを開こうとしたときに発生する例外（OSError のサブクラス）。",
    "returns": "例外クラス（raise で発生させ、except で捕捉する）",
-   "caution": "パスの綴りや作業ディレクトリの勘違いが主な原因。except OSError でも捕捉できる（実際の Python）。本アプリは実ファイルを実行しない。本アプリの except 照合は例外名の完全一致のみで、親クラスでの捕捉は再現されない。",
+   "caution": "パスの綴りや作業ディレクトリの勘違いが主な原因。except OSError でも捕捉できる。本アプリは実ファイルを実行しない。",
    "example": "try:\n    raise FileNotFoundError(\"bad\")\nexcept FileNotFoundError:\n    print(\"FileNotFoundErrorを捕捉\")",
    "source": "https://docs.python.org/ja/3.12/library/exceptions.html#FileNotFoundError"
   },
-  "sha256": "10b753ae6ecb031a841afaac7114c8345b62ab32feec90baaf2cfd2a26fd441b"
+  "sha256": "1786bd3d2b5a031088c17b89b953577364ba3df217363445bc9655a66e8af7df"
  },
  {
   "kind": "python",
@@ -9753,11 +9766,11 @@
   "fields": {
    "description": "算術計算のエラーの基底クラス。ZeroDivisionError や OverflowError の親。",
    "returns": "例外クラス（raise で発生させ、except で捕捉する）",
-   "caution": "個別の算術エラーをまとめて捕捉したい場合に使う（実際の Python では ZeroDivisionError・OverflowError 等を捕捉できる）。具体的な原因を追うなら亜種ごとに分ける。本アプリの except 照合は例外名の完全一致のみで、子クラスの捕捉は再現されない。",
+   "caution": "個別の算術エラーをまとめて捕捉したい場合に使う（ZeroDivisionError・OverflowError 等を捕捉できる）。具体的な原因を追うなら亜種ごとに分ける。",
    "example": "try:\n    raise ArithmeticError(\"bad\")\nexcept ArithmeticError:\n    print(\"ArithmeticErrorを捕捉\")",
    "source": "https://docs.python.org/ja/3.12/library/exceptions.html#ArithmeticError"
   },
-  "sha256": "73e5780d17bfbb82a1b47a784117434f8815e971646c8e046d0d8fd38c48da1e"
+  "sha256": "70e2daf4af9b4d0a0dc866c891d1f862c97ba5642b23fe9c1af20cd7d2ea8bd4"
  },
  {
   "kind": "python",
@@ -9766,11 +9779,11 @@
   "fields": {
    "description": "キーやインデックスによる探索エラーの基底クラス。KeyError と IndexError の親。",
    "returns": "例外クラス（raise で発生させ、except で捕捉する）",
-   "caution": "辞書とシーケンスの探索失敗をまとめて捕捉したい場合に使う（実際の Python では KeyError・IndexError を捕捉できる）。本アプリの except 照合は例外名の完全一致のみで、子クラスの捕捉は再現されない。",
+   "caution": "辞書とシーケンスの探索失敗をまとめて捕捉したい場合に使う（KeyError・IndexError を捕捉できる）。",
    "example": "try:\n    raise LookupError(\"bad\")\nexcept LookupError:\n    print(\"LookupErrorを捕捉\")",
    "source": "https://docs.python.org/ja/3.12/library/exceptions.html#LookupError"
   },
-  "sha256": "2274ad6799de3b2b54e527fb6de9dc9f6d21937a675559fa8213136cba53ec9e"
+  "sha256": "a276cdf666c39c3af9ac9d84c55b4d4e7211133695d583a65e2b19a4826dc0e6"
  },
  {
   "kind": "python",
@@ -9805,11 +9818,11 @@
   "fields": {
    "description": "Unicode の符号化・復号でエラーが起きたときに発生する例外（ValueError のサブクラス）。",
    "returns": "例外クラス（raise で発生させ、except で捕捉する）",
-   "caution": "except ValueError でも捕捉できる（実際の Python）。エンコーディング指定の誤りが主な原因。本アプリの except 照合は例外名の完全一致のみで、親クラスでの捕捉は再現されない。",
+   "caution": "except ValueError でも捕捉できる。エンコーディング指定の誤りが主な原因。",
    "example": "try:\n    raise UnicodeError(\"bad\")\nexcept UnicodeError:\n    print(\"UnicodeErrorを捕捉\")",
    "source": "https://docs.python.org/ja/3.12/library/exceptions.html#UnicodeError"
   },
-  "sha256": "e8896d3b212430716626c69c5687006f630eddefa5a28b961479b5966a0dcf7a"
+  "sha256": "0f42fac3a15722c3f057b92e967548344c4b13c21e01deaffb2410a87577114e"
  },
  {
   "kind": "python",
@@ -9831,11 +9844,11 @@
   "fields": {
    "description": "ユーザが Ctrl+C などで割り込みをかけたときに発生する例外（BaseException の一員）。",
    "returns": "例外クラス（raise で発生させ、except で捕捉する）",
-   "caution": "except Exception では捕捉されないため、長時間処理を止められることは通常は妨げない。捕捉する場合は終了処理だけを行い、握り潰さない。本アプリの照合は簡略化されており、except Exception でも捕捉されてしまう（実際の Python と異なる）。",
+   "caution": "except Exception では捕捉されないため、長時間処理を止められることは通常は妨げない。捕捉する場合は終了処理だけを行い、握り潰さない。",
    "example": "try:\n    raise KeyboardInterrupt(\"bad\")\nexcept KeyboardInterrupt:\n    print(\"KeyboardInterruptを捕捉\")",
    "source": "https://docs.python.org/ja/3.12/library/exceptions.html#KeyboardInterrupt"
   },
-  "sha256": "909d6e6572ac9e70b75fc803e8aca28cded9d8143488c317e4e13b0463335be6"
+  "sha256": "a64e2f9244f9f84ee130a28781235b50247410a003a711aee909c23596f426f5"
  },
  {
   "kind": "python",
@@ -9844,11 +9857,11 @@
   "fields": {
    "description": "sys.exit() によって発生し、インタプリタの終了を要求する例外（BaseException の一員）。",
    "returns": "例外クラス（raise で発生させ、except で捕捉する）",
-   "caution": "except Exception では捕捉されない。終了コードは引数で渡され、0 が正常終了を表す。本アプリの照合は簡略化されており、except Exception でも一致する場合がある。",
+   "caution": "except Exception では捕捉されない。終了コードは引数で渡され、0 が正常終了を表す。",
    "example": "try:\n    raise SystemExit(\"bad\")\nexcept SystemExit:\n    print(\"SystemExitを捕捉\")",
    "source": "https://docs.python.org/ja/3.12/library/exceptions.html#SystemExit"
   },
-  "sha256": "5b605b32192ad0b1c7cf51e1d2c79f7b3d40a77869ec0d85ce6740c93fdbeb43"
+  "sha256": "3f25164801422012b1cc097ef22ca2e3be8953fa27fa132c29fdb0934d3e47fd"
  },
  {
   "kind": "cloudformation",
@@ -11672,6 +11685,19 @@
  },
  {
   "kind": "cloudformation",
+  "name": "数値の属性",
+  "supported": true,
+  "fields": {
+   "description": "int・float・bool が持つ数値属性。real は実部、imag は虚部、numerator は分子、denominator は分母を、メソッドではなく値そのものとして返す読み取り専用の属性。",
+   "returns": "real は値そのもの、imag は 0（float では 0.0）。numerator／denominator は int と bool のみが持ち、値そのもの／1 を返す",
+   "caution": "メソッドではないため呼び出しの括弧は付けない。float に numerator／denominator は無く、読むと AttributeError になる（有理数として表すなら as_integer_ratio() を使う）。bool は int のサブクラスのため True は 1／1、False は 0／1 を返す。",
+   "example": "def handler(event, context):\n    print((5).real, (5).imag, (5).numerator, (5).denominator)\n    print((1.5).real, (1.5).imag)\n    print(True.numerator, True.denominator)\n    return {\"requestId\":event[\"requestId\"],\"status\":\"success\",\"fragment\":event[\"fragment\"]}",
+   "source": "https://docs.python.org/ja/3.12/library/numbers.html"
+  },
+  "sha256": "5ddab2b85d2406ae10c9f54b6f51276af7329d6cae4f00ff721e24e7d10e5940"
+ },
+ {
+  "kind": "cloudformation",
   "name": "reversed",
   "supported": true,
   "fields": {
@@ -12925,11 +12951,11 @@
   "fields": {
    "description": "通常の組み込み例外すべての基底クラス。個別の例外をまとめて捕捉するときに使う。",
    "returns": "例外クラス（raise で発生させ、except で捕捉する）",
-   "caution": "あらゆる通常例外を捕捉するため、広く捕りすぎると不具合の発見が遅れる。具体的な例外型を指定するのが基本。KeyboardInterrupt や SystemExit は基底が BaseException のため捕捉されない（実際の Python）。ただし本アプリの照合は簡略化されており、except Exception でも捕捉されてしまう。",
+   "caution": "あらゆる通常例外を捕捉するため、広く捕りすぎると不具合の発見が遅れる。具体的な例外型を指定するのが基本。KeyboardInterrupt や SystemExit は基底が BaseException のため捕捉されない。",
    "example": "def handler(event, context):\n    try:\n        raise Exception(\"bad\")\n    except Exception:\n        print(\"Exceptionを捕捉\")\n    return {\"requestId\":event[\"requestId\"],\"status\":\"success\",\"fragment\":event[\"fragment\"]}",
    "source": "https://docs.python.org/ja/3.12/library/exceptions.html#Exception"
   },
-  "sha256": "058b0c388020c99e15ff9d4a8c3cf5aaba67bd642862d81b5121eb57934245fd"
+  "sha256": "2daf830840bcabcc16786a5e0b576ce6ceba79927021ecfc356b87eedfd9593b"
  },
  {
   "kind": "cloudformation",
@@ -13016,11 +13042,11 @@
   "fields": {
    "description": "定義されていない名前（変数・関数）を参照したときに発生する例外。",
    "returns": "例外クラス（raise で発生させ、except で捕捉する）",
-   "caution": "綴り間違い、定義より前の参照、スコープの勘違いが主な原因。関数内で代入する名前を代入前に読むと、亜種の UnboundLocalError になる（本アプリでも発生する）。本アプリの except 照合は例外名の完全一致のみで、except NameError では UnboundLocalError を捕捉できない。",
+   "caution": "綴り間違い、定義より前の参照、スコープの勘違いが主な原因。関数内で代入する名前を代入前に読むと、亜種の UnboundLocalError になる（本アプリでも発生する）。UnboundLocalError は NameError のサブクラスのため、except NameError で捕捉できる。",
    "example": "def handler(event, context):\n    try:\n        raise NameError(\"bad\")\n    except NameError:\n        print(\"NameErrorを捕捉\")\n    return {\"requestId\":event[\"requestId\"],\"status\":\"success\",\"fragment\":event[\"fragment\"]}",
    "source": "https://docs.python.org/ja/3.12/library/exceptions.html#NameError"
   },
-  "sha256": "fae40213b742e6a3c5b80d48aa821e6c7713d0abc01e005eeaa00b6f22e1c055"
+  "sha256": "96c627b61b1df60ca357fc4883c6615dfba27a2eef51a64a9cb74d3fa1e8316c"
  },
  {
   "kind": "cloudformation",
@@ -13094,11 +13120,11 @@
   "fields": {
    "description": "import しようとしたモジュール自体が見つからないときに発生する例外（ImportError のサブクラス）。",
    "returns": "例外クラス（raise で発生させ、except で捕捉する）",
-   "caution": "except ImportError でまとめて捕捉できる（実際の Python）。モジュールのインストール漏れや名前の勘違いが主な原因。本アプリの except 照合は例外名の完全一致のみで、親クラスでの捕捉は再現されない。",
+   "caution": "except ImportError でまとめて捕捉できる。モジュールのインストール漏れや名前の勘違いが主な原因。",
    "example": "def handler(event, context):\n    try:\n        raise ModuleNotFoundError(\"bad\")\n    except ModuleNotFoundError:\n        print(\"ModuleNotFoundErrorを捕捉\")\n    return {\"requestId\":event[\"requestId\"],\"status\":\"success\",\"fragment\":event[\"fragment\"]}",
    "source": "https://docs.python.org/ja/3.12/library/exceptions.html#ModuleNotFoundError"
   },
-  "sha256": "555166f22142ef820fd6580ac487e3d75504cfa151e7241d1ae142f85247d4a6"
+  "sha256": "ccdfa1a52cf3384e7e65fc51e779edb33dbfb749b5680cc676d511af2797e189"
  },
  {
   "kind": "cloudformation",
@@ -13120,11 +13146,11 @@
   "fields": {
    "description": "存在しないファイルやディレクトリを開こうとしたときに発生する例外（OSError のサブクラス）。",
    "returns": "例外クラス（raise で発生させ、except で捕捉する）",
-   "caution": "パスの綴りや作業ディレクトリの勘違いが主な原因。except OSError でも捕捉できる（実際の Python）。本アプリは実ファイルを実行しない。本アプリの except 照合は例外名の完全一致のみで、親クラスでの捕捉は再現されない。",
+   "caution": "パスの綴りや作業ディレクトリの勘違いが主な原因。except OSError でも捕捉できる。本アプリは実ファイルを実行しない。",
    "example": "def handler(event, context):\n    try:\n        raise FileNotFoundError(\"bad\")\n    except FileNotFoundError:\n        print(\"FileNotFoundErrorを捕捉\")\n    return {\"requestId\":event[\"requestId\"],\"status\":\"success\",\"fragment\":event[\"fragment\"]}",
    "source": "https://docs.python.org/ja/3.12/library/exceptions.html#FileNotFoundError"
   },
-  "sha256": "d138dbdaf642ec5df108dbda886e4a3e9c1af34ca068609d6112aae5cbbb5a31"
+  "sha256": "6ef9eee9a27a4a51d5da47ec4ffb1e5b3f61021812f803d4f0ec13545343b034"
  },
  {
   "kind": "cloudformation",
@@ -13146,11 +13172,11 @@
   "fields": {
    "description": "算術計算のエラーの基底クラス。ZeroDivisionError や OverflowError の親。",
    "returns": "例外クラス（raise で発生させ、except で捕捉する）",
-   "caution": "個別の算術エラーをまとめて捕捉したい場合に使う（実際の Python では ZeroDivisionError・OverflowError 等を捕捉できる）。具体的な原因を追うなら亜種ごとに分ける。本アプリの except 照合は例外名の完全一致のみで、子クラスの捕捉は再現されない。",
+   "caution": "個別の算術エラーをまとめて捕捉したい場合に使う（ZeroDivisionError・OverflowError 等を捕捉できる）。具体的な原因を追うなら亜種ごとに分ける。",
    "example": "def handler(event, context):\n    try:\n        raise ArithmeticError(\"bad\")\n    except ArithmeticError:\n        print(\"ArithmeticErrorを捕捉\")\n    return {\"requestId\":event[\"requestId\"],\"status\":\"success\",\"fragment\":event[\"fragment\"]}",
    "source": "https://docs.python.org/ja/3.12/library/exceptions.html#ArithmeticError"
   },
-  "sha256": "9352c59a7e7d2ff1c8e79a59e128617b793a6778d059ef3ddc3ededb972e9b73"
+  "sha256": "22ffc9ad77666f397f09309998141c61339108e974f64395517620e3d530ec6f"
  },
  {
   "kind": "cloudformation",
@@ -13159,11 +13185,11 @@
   "fields": {
    "description": "キーやインデックスによる探索エラーの基底クラス。KeyError と IndexError の親。",
    "returns": "例外クラス（raise で発生させ、except で捕捉する）",
-   "caution": "辞書とシーケンスの探索失敗をまとめて捕捉したい場合に使う（実際の Python では KeyError・IndexError を捕捉できる）。本アプリの except 照合は例外名の完全一致のみで、子クラスの捕捉は再現されない。",
+   "caution": "辞書とシーケンスの探索失敗をまとめて捕捉したい場合に使う（KeyError・IndexError を捕捉できる）。",
    "example": "def handler(event, context):\n    try:\n        raise LookupError(\"bad\")\n    except LookupError:\n        print(\"LookupErrorを捕捉\")\n    return {\"requestId\":event[\"requestId\"],\"status\":\"success\",\"fragment\":event[\"fragment\"]}",
    "source": "https://docs.python.org/ja/3.12/library/exceptions.html#LookupError"
   },
-  "sha256": "177cb94a62d7115dc3638529488c316e4f2639d06eca109d1b34bc65760af6ad"
+  "sha256": "998401f58efc965702c39e7a2214520c6a555662f5efe2654d7116c928d6bb4c"
  },
  {
   "kind": "cloudformation",
@@ -13198,11 +13224,11 @@
   "fields": {
    "description": "Unicode の符号化・復号でエラーが起きたときに発生する例外（ValueError のサブクラス）。",
    "returns": "例外クラス（raise で発生させ、except で捕捉する）",
-   "caution": "except ValueError でも捕捉できる（実際の Python）。エンコーディング指定の誤りが主な原因。本アプリの except 照合は例外名の完全一致のみで、親クラスでの捕捉は再現されない。",
+   "caution": "except ValueError でも捕捉できる。エンコーディング指定の誤りが主な原因。",
    "example": "def handler(event, context):\n    try:\n        raise UnicodeError(\"bad\")\n    except UnicodeError:\n        print(\"UnicodeErrorを捕捉\")\n    return {\"requestId\":event[\"requestId\"],\"status\":\"success\",\"fragment\":event[\"fragment\"]}",
    "source": "https://docs.python.org/ja/3.12/library/exceptions.html#UnicodeError"
   },
-  "sha256": "b3715b3dd92be0ecefdfdc3402f3e7e6040bbcc6f1b5648ccdf392d19ada5153"
+  "sha256": "6915d530f78eabb00fdff2537cd196aca1ac835838cdb9962d58f9f1b68745d0"
  },
  {
   "kind": "cloudformation",
@@ -13224,11 +13250,11 @@
   "fields": {
    "description": "ユーザが Ctrl+C などで割り込みをかけたときに発生する例外（BaseException の一員）。",
    "returns": "例外クラス（raise で発生させ、except で捕捉する）",
-   "caution": "except Exception では捕捉されないため、長時間処理を止められることは通常は妨げない。捕捉する場合は終了処理だけを行い、握り潰さない。本アプリの照合は簡略化されており、except Exception でも捕捉されてしまう（実際の Python と異なる）。",
+   "caution": "except Exception では捕捉されないため、長時間処理を止められることは通常は妨げない。捕捉する場合は終了処理だけを行い、握り潰さない。",
    "example": "def handler(event, context):\n    try:\n        raise KeyboardInterrupt(\"bad\")\n    except KeyboardInterrupt:\n        print(\"KeyboardInterruptを捕捉\")\n    return {\"requestId\":event[\"requestId\"],\"status\":\"success\",\"fragment\":event[\"fragment\"]}",
    "source": "https://docs.python.org/ja/3.12/library/exceptions.html#KeyboardInterrupt"
   },
-  "sha256": "c15f28f8dc2273c438ab0fc81f27198fd3967ee130f2ba8ed3bd153c74ff5426"
+  "sha256": "691d97c6a5f60231cb34cd9546d2007fee82ec4331ff6a86560dcc159d08fe3f"
  },
  {
   "kind": "cloudformation",
@@ -13237,10 +13263,10 @@
   "fields": {
    "description": "sys.exit() によって発生し、インタプリタの終了を要求する例外（BaseException の一員）。",
    "returns": "例外クラス（raise で発生させ、except で捕捉する）",
-   "caution": "except Exception では捕捉されない。終了コードは引数で渡され、0 が正常終了を表す。本アプリの照合は簡略化されており、except Exception でも一致する場合がある。",
+   "caution": "except Exception では捕捉されない。終了コードは引数で渡され、0 が正常終了を表す。",
    "example": "def handler(event, context):\n    try:\n        raise SystemExit(\"bad\")\n    except SystemExit:\n        print(\"SystemExitを捕捉\")\n    return {\"requestId\":event[\"requestId\"],\"status\":\"success\",\"fragment\":event[\"fragment\"]}",
    "source": "https://docs.python.org/ja/3.12/library/exceptions.html#SystemExit"
   },
-  "sha256": "52685eed5e0d6893c196e93be9bfa020ae111ada7635db3790fb1f59df587d1a"
+  "sha256": "e94748db15be43e281f1236ef4c9da584824b4a62cfa8d82c62659fe2332fb0f"
  }
 ]

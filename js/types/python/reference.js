@@ -225,7 +225,8 @@ export const REFERENCE = [
   "related": [
    "str",
    "type",
-   "input"
+   "input",
+   "数値の属性"
   ],
   "lesson": "variables-types",
   "doc": "https://docs.python.org/ja/3.12/library/functions.html#int"
@@ -884,7 +885,8 @@ export const REFERENCE = [
   "related": [
    "int",
    "str",
-   "type"
+   "type",
+   "数値の属性"
   ],
   "lesson": "variables-types",
   "doc": "https://docs.python.org/ja/3.12/library/functions.html#float"
@@ -905,10 +907,32 @@ export const REFERENCE = [
   "related": [
    "int",
    "type",
-   "if"
+   "if",
+   "数値の属性"
   ],
   "lesson": "variables-types",
   "doc": "https://docs.python.org/ja/3.12/library/functions.html#bool"
+ },
+ {
+  "id": "数値の属性",
+  "name": "数値の属性（real / imag / numerator / denominator）",
+  "category": "組み込み関数",
+  "importance": "応用",
+  "level": "基礎",
+  "summary": "int・float・bool が持つ数値属性。real は実部、imag は虚部、numerator は分子、denominator は分母を、メソッドではなく値そのものとして返す読み取り専用の属性。",
+  "syntax": "数値.real\n数値.imag\n整数.numerator\n整数.denominator",
+  "args": "対象: 属性を読む数値（int・float・bool）",
+  "returns": "real は値そのもの、imag は 0（float では 0.0）。numerator／denominator は int と bool のみが持ち、値そのもの／1 を返す",
+  "example": "print((5).real, (5).imag, (5).numerator, (5).denominator)\nprint((1.5).real, (1.5).imag)\nprint(True.numerator, True.denominator)",
+  "expected": "5 0 5 1\n1.5 0.0\n1 1",
+  "pitfalls": "メソッドではないため呼び出しの括弧は付けない。float に numerator／denominator は無く、読むと AttributeError になる（有理数として表すなら as_integer_ratio() を使う）。bool は int のサブクラスのため True は 1／1、False は 0／1 を返す。",
+  "related": [
+   "int",
+   "float",
+   "bool"
+  ],
+  "lesson": "variables-types",
+  "doc": "https://docs.python.org/ja/3.12/library/numbers.html"
  },
  {
   "id": "reversed",
@@ -1166,7 +1190,7 @@ export const REFERENCE = [
   "importance": "重要",
   "level": "基礎",
   "summary": "イテレータから次の要素を取り出す関数。",
-  "syntax": "next(iterator, default=None)",
+  "syntax": "next(iterator)\nnext(iterator, default)",
   "args": "iterator: イテレータ、default: 要素が尽きたときに返す値（省略時は例外）",
   "returns": "次の要素",
   "example": "it = iter([10, 20, 30])\nprint(next(it))\nprint(next(it))",
@@ -2006,7 +2030,7 @@ export const REFERENCE = [
   "importance": "重要",
   "level": "基礎",
   "summary": "指定したキーを辞書から取り除き、その値を返すメソッド。",
-  "syntax": "dict.pop(key, default=None)",
+  "syntax": "dict.pop(key[, default])",
   "args": "key: キー、default: キーが無い場合の戻り値",
   "returns": "キーの値（キーが無く default 指定時は default）",
   "example": "d = {\"a\": 1, \"b\": 2}\nprint(d.pop(\"a\"))\nprint(d)",
@@ -2935,7 +2959,7 @@ export const REFERENCE = [
   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
   "example": "try:\n    raise Exception(\"bad\")\nexcept Exception:\n    print(\"Exceptionを捕捉\")",
   "expected": "Exceptionを捕捉",
-  "pitfalls": "あらゆる通常例外を捕捉するため、広く捕りすぎると不具合の発見が遅れる。具体的な例外型を指定するのが基本。KeyboardInterrupt や SystemExit は基底が BaseException のため捕捉されない（実際の Python）。ただし本アプリの照合は簡略化されており、except Exception でも捕捉されてしまう。",
+  "pitfalls": "あらゆる通常例外を捕捉するため、広く捕りすぎると不具合の発見が遅れる。具体的な例外型を指定するのが基本。KeyboardInterrupt や SystemExit は基底が BaseException のため捕捉されない。",
   "related": [
    "BaseException",
    "try",
@@ -3082,7 +3106,7 @@ export const REFERENCE = [
   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
   "example": "try:\n    raise NameError(\"bad\")\nexcept NameError:\n    print(\"NameErrorを捕捉\")",
   "expected": "NameErrorを捕捉",
-  "pitfalls": "綴り間違い、定義より前の参照、スコープの勘違いが主な原因。関数内で代入する名前を代入前に読むと、亜種の UnboundLocalError になる（本アプリでも発生する）。本アプリの except 照合は例外名の完全一致のみで、except NameError では UnboundLocalError を捕捉できない。",
+  "pitfalls": "綴り間違い、定義より前の参照、スコープの勘違いが主な原因。関数内で代入する名前を代入前に読むと、亜種の UnboundLocalError になる（本アプリでも発生する）。UnboundLocalError は NameError のサブクラスのため、except NameError で捕捉できる。",
   "related": [
    "AttributeError",
    "try",
@@ -3208,7 +3232,7 @@ export const REFERENCE = [
   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
   "example": "try:\n    raise ModuleNotFoundError(\"bad\")\nexcept ModuleNotFoundError:\n    print(\"ModuleNotFoundErrorを捕捉\")",
   "expected": "ModuleNotFoundErrorを捕捉",
-  "pitfalls": "except ImportError でまとめて捕捉できる（実際の Python）。モジュールのインストール漏れや名前の勘違いが主な原因。本アプリの except 照合は例外名の完全一致のみで、親クラスでの捕捉は再現されない。",
+  "pitfalls": "except ImportError でまとめて捕捉できる。モジュールのインストール漏れや名前の勘違いが主な原因。",
   "related": [
    "ImportError",
    "Exception",
@@ -3250,7 +3274,7 @@ export const REFERENCE = [
   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
   "example": "try:\n    raise FileNotFoundError(\"bad\")\nexcept FileNotFoundError:\n    print(\"FileNotFoundErrorを捕捉\")",
   "expected": "FileNotFoundErrorを捕捉",
-  "pitfalls": "パスの綴りや作業ディレクトリの勘違いが主な原因。except OSError でも捕捉できる（実際の Python）。本アプリは実ファイルを実行しない。本アプリの except 照合は例外名の完全一致のみで、親クラスでの捕捉は再現されない。",
+  "pitfalls": "パスの綴りや作業ディレクトリの勘違いが主な原因。except OSError でも捕捉できる。本アプリは実ファイルを実行しない。",
   "related": [
    "OSError",
    "ImportError",
@@ -3292,7 +3316,7 @@ export const REFERENCE = [
   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
   "example": "try:\n    raise ArithmeticError(\"bad\")\nexcept ArithmeticError:\n    print(\"ArithmeticErrorを捕捉\")",
   "expected": "ArithmeticErrorを捕捉",
-  "pitfalls": "個別の算術エラーをまとめて捕捉したい場合に使う（実際の Python では ZeroDivisionError・OverflowError 等を捕捉できる）。具体的な原因を追うなら亜種ごとに分ける。本アプリの except 照合は例外名の完全一致のみで、子クラスの捕捉は再現されない。",
+  "pitfalls": "個別の算術エラーをまとめて捕捉したい場合に使う（ZeroDivisionError・OverflowError 等を捕捉できる）。具体的な原因を追うなら亜種ごとに分ける。",
   "related": [
    "ZeroDivisionError",
    "OverflowError",
@@ -3313,7 +3337,7 @@ export const REFERENCE = [
   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
   "example": "try:\n    raise LookupError(\"bad\")\nexcept LookupError:\n    print(\"LookupErrorを捕捉\")",
   "expected": "LookupErrorを捕捉",
-  "pitfalls": "辞書とシーケンスの探索失敗をまとめて捕捉したい場合に使う（実際の Python では KeyError・IndexError を捕捉できる）。本アプリの except 照合は例外名の完全一致のみで、子クラスの捕捉は再現されない。",
+  "pitfalls": "辞書とシーケンスの探索失敗をまとめて捕捉したい場合に使う（KeyError・IndexError を捕捉できる）。",
   "related": [
    "KeyError",
    "IndexError",
@@ -3376,7 +3400,7 @@ export const REFERENCE = [
   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
   "example": "try:\n    raise UnicodeError(\"bad\")\nexcept UnicodeError:\n    print(\"UnicodeErrorを捕捉\")",
   "expected": "UnicodeErrorを捕捉",
-  "pitfalls": "except ValueError でも捕捉できる（実際の Python）。エンコーディング指定の誤りが主な原因。本アプリの except 照合は例外名の完全一致のみで、親クラスでの捕捉は再現されない。",
+  "pitfalls": "except ValueError でも捕捉できる。エンコーディング指定の誤りが主な原因。",
   "related": [
    "ValueError",
    "str",
@@ -3418,7 +3442,7 @@ export const REFERENCE = [
   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
   "example": "try:\n    raise KeyboardInterrupt(\"bad\")\nexcept KeyboardInterrupt:\n    print(\"KeyboardInterruptを捕捉\")",
   "expected": "KeyboardInterruptを捕捉",
-  "pitfalls": "except Exception では捕捉されないため、長時間処理を止められることは通常は妨げない。捕捉する場合は終了処理だけを行い、握り潰さない。本アプリの照合は簡略化されており、except Exception でも捕捉されてしまう（実際の Python と異なる）。",
+  "pitfalls": "except Exception では捕捉されないため、長時間処理を止められることは通常は妨げない。捕捉する場合は終了処理だけを行い、握り潰さない。",
   "related": [
    "BaseException",
    "SystemExit",
@@ -3439,7 +3463,7 @@ export const REFERENCE = [
   "returns": "例外クラス（raise で発生させ、except で捕捉する）",
   "example": "try:\n    raise SystemExit(\"bad\")\nexcept SystemExit:\n    print(\"SystemExitを捕捉\")",
   "expected": "SystemExitを捕捉",
-  "pitfalls": "except Exception では捕捉されない。終了コードは引数で渡され、0 が正常終了を表す。本アプリの照合は簡略化されており、except Exception でも一致する場合がある。",
+  "pitfalls": "except Exception では捕捉されない。終了コードは引数で渡され、0 が正常終了を表す。",
   "related": [
    "BaseException",
    "KeyboardInterrupt",

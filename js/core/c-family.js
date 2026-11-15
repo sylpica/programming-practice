@@ -86,7 +86,11 @@ function transformNumberLiteral(raw, suffix, language, line) {
       if (sl === "f") return digits + "f";
       if (sl === "d") return digits;
     } else {
-      if (sl === "l" || sl === "ul" || sl === "lu") return digits + "L";
+      if (sl === "l") return digits + "L";
+      // §3.3(b) 根因の一部：ul 接尾辞を L 付きリテラルへ落とすと型が
+      // long になり、ulong 定数への暗黙変換規則（変換先は ulong のみ）を
+      // 判定できない。u 接尾辞と同じくキャスト形で型を保持する。
+      if (sl === "ul" || sl === "lu") return `((ulong)${digits})`;
       // D3 兄弟表面：u 接尾辞の型情報を落とすと uint リテラルが int
       // として扱われ、uint 同士の演算が long へ昇格して折り返さない。
       // C 側の ((unsigned int)…) と同じくキャスト形で型を保持する。
@@ -373,8 +377,17 @@ function transformSource(source, language, deadline) {
         /^(?:0[xX][0-9a-fA-F]+|0[bB][0-9]+|0[oO][0-9]+|\d+\.?\d*(?:[eE][+-]?\d+)?|\.\d+(?:[eE][+-]?\d+)?)/,
       );
       if (m) {
+        // R24-N15（C# 部分）根因：正規表現 \d+\.?\d* が `10.ToString()` の
+        // メンバーアクセスのドットまで小数点として取り込むため、リテラル
+        // 直結のメンバーアクセスが「) が必要です」という虚偽原因に化けて
+        // いた。ドットの直後が識別子文字ならドットはリテラルに含めない
+        // （実 C# の字句規則どおり。`1.e5` のような指数形は正規表現側で
+        // 指数まで取り込むため末尾ドットにはならない）。
+        let raw = m[0];
+        if (raw.endsWith(".") && /[A-Za-z_]/.test(rest[raw.length] || ""))
+          raw = raw.slice(0, -1);
         let suffix = "";
-        const srest = rest.slice(m[0].length);
+        const srest = rest.slice(raw.length);
         const pats =
           language === "csharp"
             ? ["ul", "lu", "f", "d", "m", "u", "l"]
@@ -391,12 +404,12 @@ function transformSource(source, language, deadline) {
             break;
           }
         }
-        if (/^0[bB]/.test(m[0]) && /[2-9]/.test(m[0]))
-          unsupported(`2進数リテラル ${m[0]} に 0/1 以外の数字があります`, line);
-        if (/^0[oO]/.test(m[0]) && /[89]/.test(m[0]))
-          unsupported(`8進数リテラル ${m[0]} に 8/9 が含まれています`, line);
-        out += transformNumberLiteral(m[0], suffix, language, line);
-        advance(i + m[0].length + suffix.length);
+        if (/^0[bB]/.test(raw) && /[2-9]/.test(raw))
+          unsupported(`2進数リテラル ${raw} に 0/1 以外の数字があります`, line);
+        if (/^0[oO]/.test(raw) && /[89]/.test(raw))
+          unsupported(`8進数リテラル ${raw} に 8/9 が含まれています`, line);
+        out += transformNumberLiteral(raw, suffix, language, line);
+        advance(i + raw.length + suffix.length);
         continue;
       }
     }
@@ -420,6 +433,19 @@ function parse(source, language, deadline) {
       if (p.ts[i].v === "%" && p.ts[i + 1]?.v === "=") {
         ts.push({ v: "%=", line: p.ts[i].line });
         i++;
+      } else if (
+        // R24-N15（C# 部分）根因の本体：共有トークナイザの数値正規表現
+        // \d+\.?\d* も `10.ToString()` のドットを小数点として取り込む。
+        // 末尾ドットの数値トークンの直後が識別子なら、ドットをメンバー
+        // アクセスとして分離する（識別子のドット分割と同じ扱い）。
+        // これでリテラル直結メンバーも (10) 形と同じく対象を名指して
+        // 止まるようになる。
+        p.ts[i].k === "number" &&
+        p.ts[i].v.endsWith(".") &&
+        p.ts[i + 1]?.k === "id"
+      ) {
+        ts.push({ ...p.ts[i], v: p.ts[i].v.slice(0, -1) });
+        ts.push({ v: ".", line: p.ts[i].line });
       } else ts.push(p.ts[i]);
     }
     p.ts = ts;
@@ -653,7 +679,9 @@ function parse(source, language, deadline) {
           this.take();
         }
         this.take("}");
-        return { ...meta, k: "array", values };
+        // R24-N11 根因：宣言長が捨てられ、要素数との不一致を検証できて
+        // いなかった。size として保持し、評価時に CS0847 相当で止める。
+        return { ...meta, k: "array", values, size: count };
       }
       return { ...meta, k: "construct", name: typeName + "[]", args: [count] };
     }
@@ -947,7 +975,8 @@ function parse(source, language, deadline) {
                   this.take();
                 }
                 this.take("}");
-                value = { k: "array", values, line: t.line };
+                // R24-N11 根因（宣言経路も同じ）：宣言長を保持する。
+                value = { k: "array", values, size: count, line: t.line };
                 array = true;
                 size = null;
               } else
@@ -2243,6 +2272,76 @@ export function createCFamily({ id, name, extensions, language }) {
             return Boolean(v);
           }
           if (["auto", "var"].includes(type)) return v;
+          // §3.3(b) 是正：接尾辞で型が決まる整数定数（u→uint、L→long、
+          // ul→ulong。変換形 ((uint)200) や (uint)200 のような定数への
+          // キャストも含む）には、C# の暗黙変換規則がそのまま効く。
+          // uint 定数から byte／int 等への暗黙変換は存在せず、実 C# では
+          // CS0266 のコンパイルエラーになる（dotnet 実測：byte b = 200u、
+          // int n = 200u、byte b = 200L、long l = 200ul、uint u = 200L、
+          // char c = 65u が全て CS0266。(uint)200 の代入も同じ）。
+          // 接尾辞なしリテラルや変数・実行時値の変換は従来のモデル規則
+          // （範囲チェック／折り返し）を維持し、ここでは対象にしない。
+          if (
+            managed &&
+            node?.value &&
+            !(
+              node?.k === "assign" &&
+              node?.op &&
+              node.op !== "="
+            ) &&
+            [
+              "int",
+              "long",
+              "short",
+              "char",
+              "uint",
+              "ulong",
+              "ushort",
+              "byte",
+              "sbyte",
+            ].includes(type)
+          ) {
+            const suffixedType = (el) => {
+              if (!el || typeof el !== "object") return null;
+              if (
+                el.k === "cast" &&
+                ["uint", "ulong", "long"].includes(el.type) &&
+                isConstantIntegerExpr(el.arg)
+              )
+                return el.type;
+              if (el.k === "literal" && typeof el.value === "number")
+                return /L$/.test(el.raw || "") ? "long" : null;
+              if (el.k === "unary" && ["-", "+", "~"].includes(el.op))
+                return suffixedType(el.arg);
+              if (el.k === "binary") {
+                const l = suffixedType(el.a),
+                  r = suffixedType(el.b);
+                if (!l && !r) return null;
+                const plain = (x) =>
+                  x?.k === "literal" && typeof x.value === "number"
+                    ? "int"
+                    : null;
+                const lt = l || plain(el.a),
+                  rt = r || plain(el.b);
+                return lt && rt ? arithmeticType(lt, rt, s) : null;
+              }
+              return null;
+            };
+            const sct = suffixedType(node.value);
+            if (sct) {
+              const allowed = {
+                uint: ["uint", "long", "ulong"],
+                ulong: ["ulong"],
+                long: ["long", "ulong"],
+              }[sct];
+              if (!allowed.includes(type))
+                api.fail(
+                  `${sct} から ${type} への暗黙の変換はできません（明示キャストが必要です）`,
+                  node,
+                  "CompileError",
+                );
+            }
+          }
           if (managed && type === "char") {
             if (typeof v === "string" && v.length === 1) return v;
             if (typeof v === "number" && Number.isInteger(v) && v >= 0 && v <= 65535)
@@ -2546,6 +2645,59 @@ export function createCFamily({ id, name, extensions, language }) {
               }
               let v = n.value ? api.read(n.value, s) : uninitialized;
               if (n.array) {
+                // R24-N10 根因：null で初期化した配列変数まで「配列長が
+                // 必要」と誤診していた。実 C# では null 配列の宣言は正当で
+                // （dotnet 実測で a == null → True）、メンバー／添字アク
+                // セス時に NullReferenceException で止まるのが正しい。
+                // string／自作クラスの null と同じ扱いに揃える。
+                if (managed && n.value && v === null) {
+                  s.vars[n.name] = null;
+                  s.types[n.name] = type;
+                  api.note(
+                    s,
+                    n,
+                    `${n.name} を ${type} として用意します：null`,
+                  );
+                  return [s];
+                }
+                // §3.3(a) 再裁定：波括弧初期化子の浮動小数点要素は、C では
+                // 暗黙変換で合法（切り捨て、gcc 実測）だが、C++ では定数
+                // の浮動小数点→整数変換は narrowing conversion でエラー
+                // （g++ 実測：error: narrowing conversion）。言語別に分ける。
+                // 変数などの非定数要素は g++ でも警告止まりで切り捨て
+                // られるため、定数要素だけを対象にする。
+                if (
+                  language === "cpp" &&
+                  Array.isArray(n.value?.values) &&
+                  !["float", "double"].includes(n.type)
+                ) {
+                  const isConstFloat = (el) => {
+                    if (!el || typeof el !== "object") return false;
+                    if (el.k === "literal")
+                      return (
+                        typeof el.value === "number" &&
+                        /[.eE]/.test(String(el.raw || "")) &&
+                        !/^0[xXbBoO]/.test(String(el.raw || ""))
+                      );
+                    if (el.k === "unary" && ["-", "+"].includes(el.op))
+                      return isConstFloat(el.arg);
+                    if (el.k === "binary")
+                      return isConstFloat(el.a) && isConstFloat(el.b);
+                    if (el.k === "cast")
+                      return (
+                        ["float", "double"].includes(el.type) &&
+                        isConstFloat(el.arg)
+                      );
+                    return false;
+                  };
+                  for (const el of n.value.values)
+                    if (isConstFloat(el))
+                      api.fail(
+                        "波括弧初期化で浮動小数点の定数を整数型へ縮小変換（narrowing）はできません",
+                        n,
+                        "CompileError",
+                      );
+                }
                 if (!managed && n.type === "char" && typeof v === "string") {
                   if ([...v].some(c => c.codePointAt(0) > 127)) api.fail("このモデルのchar文字列はASCIIに限定します", n, "未対応");
                   const bytes = [...v].map(c => c.charCodeAt(0));
@@ -2878,6 +3030,24 @@ export function createCFamily({ id, name, extensions, language }) {
             }
             if (language === "cpp" && a.k === "var" && a.name === "cin")
               return { handled: true, value: unknown("標準入力ストリーム") };
+            if (managed && a.k === "array" && a.size) {
+              // R24-N11：new 型[n]{…} は要素数が宣言長と一致しなければ
+              // コンパイルエラー CS0847（dotnet 実測）。多すぎ・少なすぎ
+              // の両方向を止める。一致する場合は通常の配列として評価する。
+              const n = api.read(a.size, s);
+              if (!Number.isInteger(n) || n < 0 || n > 10000)
+                api.fail("配列サイズが不正です", a);
+              if (a.values.length !== n)
+                api.fail(
+                  `配列初期化子の要素数（${a.values.length}）が宣言長（${n}）と一致しません`,
+                  a,
+                  "CompileError",
+                );
+              return {
+                handled: true,
+                value: a.values.map((x) => api.read(x, s)),
+              };
+            }
             if (a.k === "construct") {
               if (!managed)
                 api.fail("動的確保／クラスの生成はこのモデルでは未対応です", a);
@@ -3517,11 +3687,20 @@ export function createCFamily({ id, name, extensions, language }) {
               if (args.length !== 2)
                 api.fail("TryParse は（文字列, out 変数）の2引数形式のみ対応します", node, "未対応");
               const text = api.read(args[0], s);
+              // R24-N34：第1引数 null は例外ではなく変換失敗（False）。
+              // 実 C# の TryParse は null を受け付け、false を返す
+              // （dotnet 実測。"" が False であることと一貫させる）。
+              if (text === null) {
+                api.write(args[1], 0, s, node);
+                return false;
+              }
               if (typeof text !== "string")
                 api.fail("TryParse の第1引数は文字列です", node, "CompileError");
               let ok = false,
                 parsed = 0;
               if (name === "int.TryParse") {
+                // NumberStyles.Integer：前後の空白と先行符号のみ許可。
+                // 桁区切りは認めない（dotnet 実測で "1,000" は False）。
                 const t = text.trim();
                 if (/^[+-]?\d+$/.test(t)) {
                   const big = BigInt(t);
@@ -3531,10 +3710,27 @@ export function createCFamily({ id, name, extensions, language }) {
                   }
                 }
               } else {
+                // R24-N33：既定スタイルは Float | AllowThousands。
+                // dotnet 実測に基づく受理形：NaN 記号（符号・大小文字
+                // 不問）、Infinity 記号、整数部内の桁区切りカンマ
+                // （位置は不問だが先頭カンマと小数部・指数部のカンマは
+                // 不可）、指数。溢れは ±Infinity、下方溢れは 0 で True。
+                // Number() の緩い解釈（"0x10" 等）は実物と異なるため
+                // 専用検証に置き換える。
                 const t = text.trim();
-                if (t !== "" && !Number.isNaN(Number(t))) {
+                const lower = t.toLowerCase(),
+                  signless = lower.replace(/^[+-]/, "");
+                if (signless === "nan") {
                   ok = true;
-                  parsed = Number(t);
+                  parsed = NaN;
+                } else if (signless === "infinity") {
+                  ok = true;
+                  parsed = lower.startsWith("-") ? -Infinity : Infinity;
+                } else if (
+                  /^[+-]?(?:\d[\d,]*(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?$/.test(t)
+                ) {
+                  ok = true;
+                  parsed = Number(t.replace(/,/g, ""));
                 }
               }
               api.write(args[1], ok ? parsed : 0, s, node);
@@ -3546,6 +3742,10 @@ export function createCFamily({ id, name, extensions, language }) {
             let values = args.map((a) => api.read(a, s));
             if (name === "Console.ReadLine") {
               if (!managed) api.fail("未対応の関数です", node);
+              // 固定引数関数の同根一掃（R24-N9）：引数なしが正規形で、
+              // 引数を渡す呼び出しは実 C# ではコンパイルエラー。
+              if (args.length !== 0)
+                api.fail("Console.ReadLine は引数を取りません", node, "CompileError");
               return api.freshUnknown("標準入力またはストリーム終端", s);
             }
             if (name === "Console.WriteLine") {
@@ -3643,8 +3843,24 @@ export function createCFamily({ id, name, extensions, language }) {
                   node,
                   "CompileError",
                 );
+              // R24-N9 根因：引数の個数・型を一切検査せず、abs() が
+              // NaN、abs(1, 2) が先頭引数、abs("x") が NaN を捏造して
+              // いた。実物は全てコンパイルエラー（gcc 実測：too few /
+              // too many arguments、g++ 実測：no matching function）。
+              if (args.length !== 1)
+                api.fail(
+                  `abs は引数を1つだけ取ります（${args.length}個は渡せません）`,
+                  node,
+                  "CompileError",
+                );
               let v = values[0];
               if (isUnknown(v)) return v;
+              if (typeof v !== "number" && typeof v !== "boolean")
+                api.fail(
+                  "abs の引数は数値でなければなりません",
+                  node,
+                  "CompileError",
+                );
               // D4 根因：abs は引数を int 化せず Math.abs をそのまま
               // 返していたため、%d で 5.5 が表示されていた。C では
               // 引数が int へ変換されてから絶対値を取る。C++ では

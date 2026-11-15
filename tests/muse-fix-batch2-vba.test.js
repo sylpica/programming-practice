@@ -131,7 +131,7 @@ test("D1-4 Attribute resolves through scan (usedReferences)", () => {
 test("D1-4 reference-r2.json carries the matching Attribute row and no sha256 changes", () => {
   const rows = JSON.parse(readFileSync(new URL("../docs/audit/reference-r2.json", import.meta.url), "utf8"));
   // 統合後の総数: 905 existing + Attribute + ImageJ .length（D1-1）+ Python math 定数5件とその CloudFormation 伝播5件（R23-N6）
-  assert.equal(rows.length, 917, "905 existing + Attribute + .length + math constants x2 kinds");
+  assert.equal(rows.length, 919, "905 existing + Attribute + .length + math constants x2 kinds + batch3 数値の属性 x2 kinds");
   const row = rows.find((r) => r.kind === "vba" && r.name === "Attribute");
   assert.ok(row, "Attribute row must exist in reference-r2.json");
   assert.equal(row.supported, true);

@@ -302,6 +302,61 @@ export function tokenize(source, dialect = "js") {
         continue;
       }
     }
+    // R24-N13：JavaScript の不正な数値リテラル（1e／0x／0b2／0o8／1.5n／
+    // 0xZZ 等）は、接頭辞だけを通常の数値として切り取り残りを別トークンに
+    // 化けさせると、後段で「) が必要です」という虚偽原因になる。字句の
+    // 段階でリテラル全体の形を検証し、リテラル自体を名指して停止する
+    // （Python エンジンや JS 自身の 1__0 の扱いと一貫させる）。検証だけを
+    // 行い、妥当な形の字句化は従来の経路に委ねる。
+    if (
+      dialect === "js" &&
+      (/\d/.test(source[i]) || (source[i] === "." && /\d/.test(source[i + 1] || "")))
+    ) {
+      const rest0 = source.slice(i);
+      // 基数接頭辞の直後に有効な数字が無い形（0x／0xZZ／0b2／0o8 等）。
+      const prefix = rest0.match(/^0[xXbBoO][\w$]*/)?.[0];
+      const prefixValid =
+        /^0[xX][0-9a-fA-F]/.test(rest0) ||
+        /^0[bB][01]/.test(rest0) ||
+        /^0[oO][0-7]/.test(rest0);
+      if (prefix && !prefixValid)
+        throw new PracticeError(
+          `数値リテラルの書き方が不正です：${prefix}`,
+          line,
+          "SyntaxError",
+        );
+      // 妥当な核（基数形／10進形＋指数部）の直後に識別子文字が続く形
+      // （1.5n／0b102／1e5n／123abc 等）と、指数部が不完全な形（1e／1e+）。
+      const core = rest0.match(
+        /^(?:0[xX][0-9a-fA-F]+|0[bB][01]+|0[oO][0-7]+|(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?)/,
+      )?.[0];
+      if (core) {
+        const after = rest0.slice(core.length);
+        if (/^[eE][+-]?(?!\d)/.test(after) && !/[.eE]/.test(core.slice(2)) && !/^0[xXbBoO]/.test(core))
+          throw new PracticeError(
+            `数値リテラルの書き方が不正です：${core}${after.match(/^[eE][+-]?/)?.[0] || ""}`,
+            line,
+            "SyntaxError",
+          );
+        if (/^[\w$]/.test(after)) {
+          const token = core + (after.match(/^[\w$]+/)?.[0] || "");
+          // 整数・基数形の末尾 n は BigInt リテラル（0x1Fn 等）として
+          // 従来経路に委ねる。型接尾辞（1f 等）も従来の専用メッセージに委ねる。
+          const bigintSuffix =
+            after === "n" || /^n(?![\w$])/.test(after);
+          const typeSuffix = /^[LfF](?![\w$])/.test(after);
+          if (
+            !(bigintSuffix && !/[.eE]/.test(core.replace(/^0[xXbBoO]/, ""))) &&
+            !typeSuffix
+          )
+            throw new PracticeError(
+              `数値リテラルの書き方が不正です：${token}`,
+              line,
+              "SyntaxError",
+            );
+        }
+      }
+    }
     // RG-11：基数リテラル（0x／0b／0o）。対応形式は言語ごとに異なるため、
     // 存在しない形式は値を捏造せず名前を挙げて弾く。
     let rm = source
@@ -315,6 +370,14 @@ export function tokenize(source, dialect = "js") {
         throw new PracticeError(`${dialect === "r" ? "R" : "AutoHotkey"} に 0${form} 形式の数値リテラルはありません：${rm[0]}`, line, "SyntaxError");
       if (["c", "cpp", "csharp"].includes(dialect) && form === "o")
         throw new PracticeError(`0o 形式の数値リテラルはこの言語では使えません（8進数は先行ゼロで表記します）：${rm[0]}`, line, "SyntaxError");
+      // R24-N13 兄弟表面：JavaScript の基数 BigInt リテラル（0x1Fn 等）は
+      // 末尾 n までを1トークンとして取り込む（従来は n が別トークンに
+      // 化けて「) が必要です」の虚偽原因になっていた）。
+      if (dialect === "js" && source[i + rm[0].length] === "n" && !/[\w$]/.test(source[i + rm[0].length + 1] || "")) {
+        out.push({ v: rm[0] + "n", k: "number", line });
+        i += rm[0].length + 1;
+        continue;
+      }
       out.push({ v: rm[0], k: "number", line });
       i += rm[0].length;
       continue;
@@ -511,7 +574,8 @@ export class ScriptParser {
       let raw = t.v,
         value;
       // RG-51：BigInt リテラルは BigInt 値として保持する。
-      if (this.dialect === "js" && /^\d+n$/.test(raw))
+      // R24-N13：基数形（0x1Fn／0b101n／0o17n）も BigInt として保持する。
+      if (this.dialect === "js" && /^(?:\d+|0[xX][0-9a-fA-F]+|0[bB][01]+|0[oO][0-7]+)n$/.test(raw))
         value = BigInt(raw.slice(0, -1));
       // RG-11：C／C++ の先行ゼロは8進数。8・9 を含むものは不正な8進リテラルとして弾く。
       else if (["c", "cpp"].includes(this.dialect) && /^0[0-7]+$/.test(raw))
@@ -709,6 +773,16 @@ export class ScriptParser {
       }
       // RG-07（R9-N5）：アロー関数は対象を名指して停止する。
       if (v === "=>") unsupported("アロー関数（=>）", next.line);
+      // R24-N15（JS 部分）：in／instanceof は JavaScript の二項演算子だが
+      // このモデルでは未対応。演算子の位置に現れたら、優先順位表に無い
+      // ことを理由に素通りして後段の「) が必要です」等の虚偽原因にせず、
+      // 演算子自体を名指して停止する。
+      if (
+        this.dialect === "js" &&
+        next?.k === "id" &&
+        (v === "in" || v === "instanceof")
+      )
+        unsupported(`${v} 演算子`, next.line);
       let p = this.precTable()[v];
       if (
         p === undefined ||
@@ -1587,6 +1661,33 @@ export function executeProgram(nodes, model, semantics = {}, custom = {}) {
         return [s];
       }
       case "assign": {
+        // R24-N12：代入ターゲットの形の検証を右辺の評価より前に行う。
+        // リテラル・呼び出し結果・演算結果等への代入は構文段階の誤り
+        // （Node の SyntaxError: Invalid left-hand side in assignment 相当）
+        // であり、右辺に未定義の名前があってもそちらを先に指してはならない。
+        // 書き込み可能な形は var／index／member と、C系の逆参照（*p）のみ。
+        if (
+          !["var", "index", "member"].includes(n.target?.k) &&
+          !(n.target?.k === "unary" && n.target?.op === "*")
+        ) {
+          const form =
+            {
+              literal: "リテラル",
+              call: "関数呼び出しの結果",
+              binary: "演算の結果",
+              array: "配列リテラル",
+              record: "オブジェクトリテラル",
+              post: "++ / -- の結果",
+              unary: "単項演算の結果",
+              cond: "条件式の結果",
+              nullish: "条件式の結果",
+            }[n.target?.k] || "この式";
+          throw new PracticeError(
+            `代入先が不正です：${form}には代入できません（Invalid left-hand side in assignment）`,
+            n.line,
+            "SyntaxError",
+          );
+        }
         let v = read(n.value, s);
         if (["+=", "-=", "*=", "/="].includes(n.op))
           v = semantics.binary

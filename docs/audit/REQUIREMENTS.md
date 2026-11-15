@@ -88,13 +88,13 @@
 | AutoHotkey v2 | 6 | 2 | 2 | 2 | 26 |
 | UI.Vision RPA | 6 | 2 | 2 | 2 | 22 |
 | Power Apps | 6 | 2 | 2 | 2 | 28 |
-| Python | 10 | 4 | 3 | 3 | 165 |
+| Python | 10 | 4 | 3 | 3 | 166 |
 | R | 6 | 2 | 2 | 2 | 44 |
 | C | 6 | 2 | 2 | 2 | 26 |
 | C++ | 6 | 2 | 2 | 2 | 31 |
 | C# | 6 | 2 | 2 | 2 | 53 |
 | JavaScript | 6 | 2 | 2 | 2 | 39 |
 | コマンドプロンプト | 8 | 2 | 3 | 3 | 28 |
-| PowerShell | 8 | 2 | 3 | 3 | 50 |
+| PowerShell | 8 | 2 | 3 | 3 | 51 |
 
-現在は104テンプレート／995リファレンス（対応933・参照専用62。修正バッチ2後の現在値。リファレンス完全性修正で978件となった後、修正バッチ2で VBA Attribute・ImageJ `.length`・Python math 定数（CloudFormation 伝播を含む）・PowerShell プロパティ等の追加と分類是正を経た内訳で、種類別の内訳は本表のとおり。経緯は `docs/DEVELOPMENT.md` の「リファレンス完全性修正」節と `docs/audit/MUSE-FIX-BATCH2.md` を参照）。追加63件は公式原稿と掲載文面を照合し、[reference-r6.json](reference-r6.json)に公式原稿のコミットとハッシュを記録した。既存441件のCodex照合はR2、Muse追加7件の経緯と448件へのレビュー記録更新は統合済み監査記録に属する。511件すべてを今回新たに全文レビューしたとは扱わない。
+現在は104テンプレート／998リファレンス（対応936・参照専用62。修正バッチ3後の現在値。修正バッチ2の995件から、PowerShell 包含演算子の新設・Python 数値の属性の新設（CloudFormation 伝播を含む）で +3。リファレンス完全性修正で978件となった後、修正バッチ2で VBA Attribute・ImageJ `.length`・Python math 定数（CloudFormation 伝播を含む）・PowerShell プロパティ等の追加と分類是正を経た内訳で、種類別の内訳は本表のとおり。経緯は `docs/DEVELOPMENT.md` の「リファレンス完全性修正」節と `docs/audit/MUSE-FIX-BATCH2.md` を参照）。追加63件は公式原稿と掲載文面を照合し、[reference-r6.json](reference-r6.json)に公式原稿のコミットとハッシュを記録した。既存441件のCodex照合はR2、Muse追加7件の経緯と448件へのレビュー記録更新は統合済み監査記録に属する。511件すべてを今回新たに全文レビューしたとは扱わない。

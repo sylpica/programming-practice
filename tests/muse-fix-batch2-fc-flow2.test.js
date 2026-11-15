@@ -439,7 +439,7 @@ test("r2 rows for changed items match the live definitions (sha256 untouched)", 
       "utf8",
     ),
   );
-  assert.equal(rows.length, 917); // 統合時：R23-N6 の Python math 定数＋CloudFormation 伝播で +10
+  assert.equal(rows.length, 919); // 統合時：R23-N6 の Python math 定数＋CloudFormation 伝播で +10、修正バッチ3「数値の属性」×2種で +2
   const targets = {
     cloudformation: ["Transform", "Fn::Transform", "fragment", "params", "region", "accountId", "transformId", "templateParameterValues", "errorMessage"],
     powerapps: ["Filter", "Sum", "Patch", "Value", "Notify"],

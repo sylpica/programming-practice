@@ -141,8 +141,8 @@ test("R23-N11 valid targets keep working", async () => {
 
 // ---- R23-N6: math constants have reference items that match the real behaviour
 test("R23-N6 math constant reference items exist, are supported, and their examples run", async () => {
-  assert.equal(py.reference.length, 165);
-  assert.equal(cf.reference.length, 176);
+  assert.equal(py.reference.length, 166); // +1 修正バッチ3（R24 §3.2「数値の属性」）
+  assert.equal(cf.reference.length, 177); // +1 同項目の CloudFormation 伝播
   for (const [name, expected] of [["math.pi", "3.141592653589793"], ["math.e", "2.718281828459045"], ["math.tau", "6.283185307179586"], ["math.inf", "inf"], ["math.nan", "nan"]]) {
     const item = ref(py, name);
     assert.ok(item, name);
@@ -155,14 +155,19 @@ test("R23-N6 math constant reference items exist, are supported, and their examp
 });
 
 // ---- RA-16..RA-22: reference text corrections
-test("RA-16 exception items disclose that parent-class catching is not reproduced", () => {
+// R24-N7（修正バッチ3）で例外の階層照合を実装したため、RA-16/RA-17 が固定していた
+// 「完全一致のみ」「except Exception でも捕捉されてしまう」という開示は虚偽表示となり除去した。
+// ここでは開示の不在と、階層照合の実挙動（親クラスで捕捉できる／BaseException 系は Exception で捕捉できない）を固定する。
+test("RA-16 superseded by R24-N7: exception items no longer claim exact-name-only matching", () => {
   for (const name of ["ModuleNotFoundError", "UnicodeError", "FileNotFoundError", "LookupError", "ArithmeticError", "NameError"]) {
-    assert.match(ref(py, name).caution, /完全一致/, name);
+    assert.doesNotMatch(ref(py, name).caution, /完全一致/, name);
   }
 });
-test("RA-17 KeyboardInterrupt and Exception disclose the simplified in-app matching", () => {
-  assert.match(ref(py, "KeyboardInterrupt").caution, /except Exception でも捕捉されてしまう/);
-  assert.match(ref(py, "Exception").caution, /except Exception でも捕捉されてしまう/);
+test("RA-17 superseded by R24-N7: parent classes catch subclasses; Exception does not catch KeyboardInterrupt", async () => {
+  assert.doesNotMatch(ref(py, "KeyboardInterrupt").caution, /except Exception でも捕捉されてしまう/);
+  assert.doesNotMatch(ref(py, "Exception").caution, /except Exception でも捕捉されてしまう/);
+  assert.deepEqual(out(await first("try:\n    raise IndexError('x')\nexcept LookupError:\n    print('caught')")), ["caught"]);
+  assert.match(await errMsg("try:\n    raise KeyboardInterrupt()\nexcept Exception:\n    print('caught')"), /KeyboardInterrupt/);
 });
 test("RA-18 global item separates the global and nonlocal statements", () => {
   const g = ref(py, "global");
@@ -200,10 +205,10 @@ test("RA-22 dict item states the key condition as hashability", () => {
 // ---- reference-r2 ledger stays in sync (changed rows follow the definitions, new rows exist)
 test("r2 ledger rows for changed and new python items match the definitions", () => {
   const rows = JSON.parse(fs.readFileSync(new URL("../docs/audit/reference-r2.json", import.meta.url)));
-  assert.equal(rows.length, 917);
-  assert.equal(rows.filter((r) => r.kind === "python").length, 165);
-  assert.equal(rows.filter((r) => r.kind === "cloudformation").length, 176);
-  const names = ["ModuleNotFoundError", "UnicodeError", "FileNotFoundError", "LookupError", "ArithmeticError", "NameError", "KeyboardInterrupt", "Exception", "global", "comprehension", "f-string", "with", "math", "dict", "math.pi", "math.e", "math.tau", "math.inf", "math.nan"];
+  assert.equal(rows.length, 919); // +2 修正バッチ3（「数値の属性」の Python 行＋CloudFormation 伝播行）
+  assert.equal(rows.filter((r) => r.kind === "python").length, 166);
+  assert.equal(rows.filter((r) => r.kind === "cloudformation").length, 177);
+  const names = ["ModuleNotFoundError", "UnicodeError", "FileNotFoundError", "LookupError", "ArithmeticError", "NameError", "KeyboardInterrupt", "Exception", "global", "comprehension", "f-string", "with", "math", "dict", "math.pi", "math.e", "math.tau", "math.inf", "math.nan", "数値の属性"];
   for (const [kind, def] of [["python", py], ["cloudformation", cf]]) {
     for (const name of names) {
       const row = rows.find((r) => r.kind === kind && r.name === name);

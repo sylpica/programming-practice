@@ -70,8 +70,8 @@ const FALLBACK_METHODS = [
 
 test("R22-ref python: totals after additions", () => {
   assert.equal(NEW_PY.length, 118);
-  assert.equal(py.reference.length, 165); // 42 + 118 + 5 (R23-N6 math 定数)
-  assert.equal(cf.reference.length, 176); // 49 + 118 (Python伝播) + 4 (固有) + 5 (R23-N6 伝播)
+  assert.equal(py.reference.length, 166); // 42 + 118 + 5 (R23-N6 math 定数) + 1 (修正バッチ3 数値の属性)
+  assert.equal(cf.reference.length, 177); // 49 + 118 (Python伝播) + 4 (固有) + 5 (R23-N6 伝播) + 1 (修正バッチ3 数値の属性 伝播)
 });
 
 test("R22-ref python: every new item exists and is supported", () => {

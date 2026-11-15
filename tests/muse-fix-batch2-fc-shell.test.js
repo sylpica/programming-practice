@@ -309,9 +309,9 @@ test("fc-shell R23-N7 automatic-variable items exist and stay in sync with r6", 
     assert.ok(row, name);
     assert.equal(row.description, item.description, name);
   }
-  assert.equal(ps.reference.length, 50);
-  assert.equal(r6.filter((e) => e.kind === "powershell").length, 50);
-  assert.equal(r6.length, 78);
+  assert.equal(ps.reference.length, 51); // +1 修正バッチ3（R24-N4 包含演算子）
+  assert.equal(r6.filter((e) => e.kind === "powershell").length, 51);
+  assert.equal(r6.length, 79);
 });
 
 // ---------- R23-N8: BOM・不可視文字 ----------
@@ -445,7 +445,10 @@ test("fc-shell SH-C1-follow copy from a missing source to NUL still errors on th
   assert.match(errors(r)[0].message, /コピー／移動元がありません/);
 });
 test("fc-shell SH-C1-follow copy/move from a device stops naming the device and creates nothing", () => {
-  for (const code of ["copy con out.txt", "copy nul empty.txt", "move con out.txt"]) {
+  // 修正バッチ3（§3.3 再裁定）: copy のコピー元 NUL は実 cmd が 0 バイト読み取りとして
+  // 空ファイルを作る（SS64 Redirection / Microsoft Learn 予約デバイス名）ため対象から外し、
+  // 別テストで成功を固定する。con からの copy と move のデバイス元停止は不変。
+  for (const code of ["copy con out.txt", "move con out.txt"]) {
     const r = runCmd(code);
     assert.equal(errors(r).length, 1, code);
     assert.match(errors(r)[0].message, /予約デバイス名/, code);

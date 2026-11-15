@@ -727,6 +727,19 @@ export const definition = {
               indexes = a.indexes.map((i) => (i ? api.read(i, s) : undefined));
             if (isUnknown(x) || indexes.some(isUnknown))
               return { handled: true, value: unknown("実行時の添字による") };
+            // R24-N8（読み取り形）：空添字 x[] は x 自体を返す（?Extract）。
+            // パーサの indexes の null 項目は「添字なし」（x[,] 等）。
+            // 従来は vec() 経由でスカラーや NULL の表現が変わり得たため、
+            // 空添字は対象そのものを返す形に是正する。
+            const emptySubRead =
+              a.indexes.length === 0 || a.indexes.every((i) => i === null);
+            if (!a.double && emptySubRead) {
+              if (a.indexes.length > (x?.kind === "data.frame" ? 2 : 1))
+                api.fail("incorrect number of dimensions", a);
+              return { handled: true, value: structuredClone(x) };
+            }
+            if (!a.double && x?.kind !== "data.frame" && indexes.length > 1)
+              api.fail("incorrect number of dimensions", a);
             if (x?.kind === "data.frame") {
               // RG-47: [[ selects a single column as a vector, not a data.frame.
               if (a.double) {
@@ -819,11 +832,49 @@ export const definition = {
           }
           if (a.k === "index") {
             let target = api.read(a.target, s);
+            // R24-N8：空添字への代入 x[] <- v は全要素への代入（?Extract
+            // の代入意味論）。従来は添字が空のため idx が空ベクトルになり
+            // 代入ループが空転して、エラーもなく黙って無効化されていた。
+            const emptySubWrite =
+              a.indexes.length === 0 || a.indexes.every((i) => i === null);
+            if (emptySubWrite) {
+              let values = vec(v);
+              if (!values.length)
+                api.fail("replacement has length zero", node);
+              if (target?.kind === "data.frame") {
+                if (a.indexes.length > 2)
+                  api.fail("incorrect number of dimensions", node);
+                for (const col of Object.values(target.columns))
+                  for (let i = 0; i < col.length; i++)
+                    col[i] = structuredClone(values[i % values.length]);
+                return true;
+              }
+              if (a.indexes.length > 1)
+                api.fail("incorrect number of dimensions", node);
+              if (Array.isArray(target)) {
+                for (let i = 0; i < target.length; i++)
+                  target[i] = structuredClone(values[i % values.length]);
+                return true;
+              }
+              if (
+                target !== null &&
+                target !== undefined &&
+                (typeof target !== "object" || isNA(target)) &&
+                a.target.k === "var"
+              ) {
+                // 長さ1ベクトル（スカラー表現）の全要素はその値自体。
+                s.vars[a.target.name] = structuredClone(values[0]);
+                return true;
+              }
+              api.fail("この添字代入は未対応です", node);
+            }
             if (target?.kind === "data.frame")
               api.fail(
                 "データフレームへの添字代入は未対応です。$で列を指定してください",
                 node,
               );
+            if (a.indexes.length > 1)
+              api.fail("incorrect number of dimensions", node);
             let idx = vec(api.read(a.indexes[0], s));
             if (
               !Array.isArray(target) ||
@@ -1069,6 +1120,45 @@ export const definition = {
               `argument "${REQUIRED_FIRST[name]}" is missing, with no default`,
               node,
             );
+          // R24-N26／N28：`...` を持たない関数の余分な引数は、実 R どおり
+          // unused argument エラーとして名前・値を挙げて停止する
+          // （R23-N4 の引数不足側と対称な規律）。公式 Usage の照合結果：
+          //   `...` なし（厳格）：length(x)／is.na(x)／nrow(x)／ncol(x)／
+          //     names(x)／seq_len(length.out)／sd(x, na.rm)／
+          //     readline(prompt)／rnorm(n, mean, sd)／runif(n, min, max)／
+          //     sample(x, size, replace, prob)／rep(x, times, length.out,
+          //     each)（rep の名前付きは従来どおり case 側で名前を挙げる）
+          //   `...` あり（従来どおり受理）：c／sum／mean(x, trim, na.rm,
+          //     ...）／median(x, na.rm, ...）／as.numeric(x, ...）／
+          //     as.character(x, ...）／print(x, ...）／cat(..., file, sep,
+          //     fill, labels, append)／data.frame(..., row.names, ...)／
+          //     read.csv(file, header, ..., ...)／seq（名前付きは case 側で
+          //     名前を挙げて停止する従来規律を維持）
+          const STRICT_FORMALS = {
+            length: ["x"],
+            "is.na": ["x"],
+            nrow: ["x"],
+            ncol: ["x"],
+            names: ["x"],
+            "seq_len": ["length.out"],
+            sd: ["x", "na.rm"],
+            readline: ["prompt"],
+            rnorm: ["n", "mean", "sd"],
+            runif: ["n", "min", "max"],
+            sample: ["x", "size", "replace", "prob"],
+          };
+          if (Object.hasOwn(STRICT_FORMALS, name)) {
+            const formals = STRICT_FORMALS[name];
+            for (const k of Object.keys(named))
+              if (!formals.includes(k))
+                api.fail(`unused argument (${k} = ${show(named[k])})`, node);
+            // sd の位置引数第2引数（na.rm）は従来の明示規則（名前付きで
+            // 指定させる停止）が case 側にあるため、ここでは対象外。
+            if (name !== "sd" && pos.length > formals.length)
+              api.fail(`unused argument (${show(pos[formals.length])})`, node);
+          }
+          if (name === "rep" && pos.length > 4)
+            api.fail(`unused argument (${show(pos[4])})`, node);
           if (["readline", "rnorm", "runif", "sample"].includes(name))
             return api.freshUnknown(name + "の実行時の値", s);
           // RG-80（R21-N4）: 出力系（print／cat）は未知値でも行自体を消さない。
@@ -1115,6 +1205,21 @@ export const definition = {
                   ? 0
                   : vec(x).length;
             case "is.na":
+              // R24-N29：is.na は要素ごとの論理値を入力と同じ形状で返す
+              // （?is.na：データフレームでは同じ形の論理値の表を返す）。
+              // 従来は vec() がデータフレームを長さ1に潰し、NA セルを
+              // 含む行まで結果から消えていた。
+              if (x?.kind === "data.frame")
+                return {
+                  kind: "data.frame",
+                  columns: Object.fromEntries(
+                    Object.entries(x.columns).map(([k, col]) => [
+                      k,
+                      col.map((v) => isNA(v) || Number.isNaN(v)),
+                    ]),
+                  ),
+                  ...(x.rowNames ? { rowNames: x.rowNames } : {}),
+                };
               return withNames(
                 vec(x).map((v) => isNA(v) || Number.isNaN(v)),
                 namesOf(x),
@@ -1166,8 +1271,18 @@ export const definition = {
               return x;
             }
             case "cat": {
-              let text = pos
-                .flatMap(vec)
+              // R24-N28(b)：cat の仮引数（file／sep／fill／labels／append）
+              // と同名の名前付き引数はデータではなくパラメータとして扱う。
+              // それ以外の名前付き引数は `...` のデータとして順序どおり
+              // 出力対象に含める。file が空文字列でない場合は画面ではなく
+              // モデルのファイルへ書き出す（append=TRUE で追記）。
+              const CAT_FORMALS = ["file", "sep", "fill", "labels", "append"];
+              let text = args
+                .flatMap((a, i) =>
+                  a.argName && CAT_FORMALS.includes(a.argName)
+                    ? []
+                    : vec(vals[i]),
+                )
                 .map((v) =>
                   isUnknown(v)
                     ? "（実行時に決まる値）"
@@ -1186,6 +1301,23 @@ export const definition = {
                         : String(v),
                 )
                 .join(named.sep ?? " ");
+              const fileArg = named.file;
+              if (fileArg !== undefined) {
+                const fname = vec(fileArg)[0];
+                if (typeof fname !== "string")
+                  api.fail("catの file は文字列で指定してください", node);
+                if (fname !== "") {
+                  s.model.files ??= {};
+                  const prev =
+                    named.append === true &&
+                    typeof s.model.files[fname] === "string"
+                      ? s.model.files[fname]
+                      : "";
+                  s.model.files[fname] = prev + text;
+                  api.note(s, node, `ファイル ${fname} へ書き出します`);
+                  return null;
+                }
+              }
               s.outputs.push({ channel: "cat", text, line: node.line });
               return null;
             }
@@ -1198,7 +1330,17 @@ export const definition = {
                   "この関数は第2引数以降を名前付きで指定してください",
                   node,
                 );
-              let a = name === "sum" ? pos.flatMap(vec) : vec(x);
+              // R24-N28（同根）：sum の `...` に入る名前付き引数（na.rm
+              // 以外）はパラメータではなく合計対象のデータ（実 R の引数
+              // 照合どおり）。従来は pos だけを見て黙って捨てていた。
+              let a =
+                name === "sum"
+                  ? args.flatMap((ag, i) =>
+                      ag.argName === "na.rm" ? [] : vec(vals[i]),
+                    )
+                  : vec(x);
+              if (name === "sum" && a.some(isUnknown))
+                return unknown("sumの引数による");
               if (named["na.rm"] === true)
                 a = a.filter((v) => !isNA(v) && !Number.isNaN(v));
               if (name === "mean" && a.some(v => typeof v === "string")) {
@@ -1237,16 +1379,57 @@ export const definition = {
               );
             }
             case "data.frame": {
+              // R24-N28(a)：data.frame の仮引数（row.names／check.rows／
+              // check.names／fix.empty.names／stringsAsFactors）と同名の
+              // 名前付き引数は列ではなくパラメータとして扱う（公式
+              // Usage：data.frame(..., row.names = NULL, check.rows =
+              // FALSE, check.names = TRUE, fix.empty.names = TRUE,
+              // stringsAsFactors = FALSE)）。row.names は行名として保持し、
+              // 長さが行数と合わなければ実 R どおりエラーにする。
+              const DF_FORMALS = [
+                "row.names",
+                "check.rows",
+                "check.names",
+                "fix.empty.names",
+                "stringsAsFactors",
+              ];
+              let colCount = 0;
               let cols = Object.fromEntries(
-                  args.map((a, i) => [
-                    a.argName || "V" + (i + 1),
-                    vec(vals[i]),
-                  ]),
-                ),
+                args
+                  .filter(
+                    (a) => !(a.argName && DF_FORMALS.includes(a.argName)),
+                  )
+                  .map((a) => {
+                    const i = args.indexOf(a);
+                    return [
+                      a.argName || "V" + ++colCount,
+                      vec(vals[i]),
+                    ];
+                  }),
+              ),
                 lens = Object.values(cols).map((x) => x.length),
                 n = Math.max(0, ...lens);
               if (lens.some((l) => (l === 0 && n) || n % l))
                 api.fail("arguments imply differing number of rows", node);
+              const rowNames = named["row.names"];
+              if (rowNames !== undefined && rowNames !== null) {
+                const rn = vec(rowNames);
+                if (rn.length !== n)
+                  api.fail(
+                    "row names supplied are of the wrong length",
+                    node,
+                  );
+                return {
+                  kind: "data.frame",
+                  columns: Object.fromEntries(
+                    Object.entries(cols).map(([k, v]) => [
+                      k,
+                      Array.from({ length: n }, (_, i) => v[i % v.length]),
+                    ]),
+                  ),
+                  rowNames: rn,
+                };
+              }
               return {
                 kind: "data.frame",
                 columns: Object.fromEntries(
@@ -1423,6 +1606,69 @@ export const definition = {
         // shared JavaScript formatting. Compound assignments (+= etc.),
         // which are not R syntax, keep the shared narration.
         step(n, s, api) {
+          if (n.k === "each") {
+            // R24-N27：R の for は対象をベクトルとして評価する（?Control／
+            // R Language Definition）。NULL・長さ0では0回実行して継続し、
+            // スカラーは長さ1ベクトルとして1回実行する。共有基盤の loop()
+            // は配列以外を一律「未確定または配列でない」という事実と異なる
+            // 理由で止めるため、R の意味論はこちらで実施する（反復の手順
+            // 表記と上限は基盤の loop() に倣う）。データフレームは実 R
+            // どおり列ごとに繰り返す。
+            let coll = api.read(n.collection, s);
+            if (isUnknown(coll))
+              unsupported(
+                "未確定の繰り返し対象（実行時に決まる値のため反復回数を確定できません）",
+                n.line,
+              );
+            let values;
+            if (coll === null) values = [];
+            else if (coll?.kind === "data.frame")
+              values = Object.values(coll.columns);
+            else if (Array.isArray(coll)) values = coll;
+            else if (isNA(coll) || typeof coll !== "object") values = [coll];
+            else unsupported("リスト形式の繰り返し対象", n.line);
+            let active = [s],
+              done = [];
+            for (let i = 0; active.length; i++) {
+              let next = [];
+              for (let st of active) {
+                if (st.halt || st.signal) {
+                  done.push(st);
+                  continue;
+                }
+                if (i >= values.length) {
+                  api.note(st, n, `${i}回実行してループを終了します`);
+                  done.push(st);
+                  continue;
+                }
+                if (i >= LIMITS.iterations) {
+                  api.note(st, n, "ループ上限で説明を停止しました", "limit");
+                  st.halt = true;
+                  done.push(st);
+                  continue;
+                }
+                st.vars[n.name] = structuredClone(values[i]);
+                api.note(st, n, `繰り返し ${i + 1}回目`);
+                st.loopDepth = (st.loopDepth || 0) + 1;
+                (st.loopIterations ??= []).push(i + 1);
+                for (let out of api.run(n.body, [st])) {
+                  out.loopDepth--;
+                  out.loopIterations.pop();
+                  if (out.signal === "break") {
+                    out.signal = null;
+                    done.push(out);
+                  } else if (out.halt || out.signal === "return")
+                    done.push(out);
+                  else {
+                    out.signal = null;
+                    next.push(out);
+                  }
+                }
+              }
+              active = next;
+            }
+            return [...done, ...active];
+          }
           if (n.k === "assign" && !["+=", "-=", "*=", "/="].includes(n.op)) {
             const v = api.read(n.value, s);
             api.write(n.target, v, s, n);

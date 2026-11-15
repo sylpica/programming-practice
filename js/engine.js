@@ -86,6 +86,24 @@ class VBAError extends Error {
     this.code = code;
   }
 }
+// P-N3 受け皿：ホスト例外（V8 の TypeError／RangeError、structuredClone の
+// DataCloneError、JSON 化の TypeError 等）の生文言を学習者向け表示
+// （トップレベルエラー／パスエラー／手順テキスト）へ漏らさないための変換。
+// VBAError はこのエンジンが意図して作った正当な停止理由なのでそのまま通し、
+// それ以外は内部文言を一切出さず日本語の汎用文言で受ける
+// （js/core/script.js の toLearnerError、c-family の hostErrorAsPractice と同方針）。
+// このエンジンは core/script.js の executeProgram を経由しない独立実装の
+// ため、変換層はこちらに置く。
+function toLearnerVBAError(e) {
+  if (e instanceof VBAError) return e;
+  if (e instanceof RangeError)
+    return new VBAError(
+      "値や処理が大きすぎて処理できませんでした。コードを小さくして再実行してください。",
+    );
+  return new VBAError(
+    "処理中に予期しないエラーが発生しました。コードやモデルを小さくして再実行してください。",
+  );
+}
 const fail = (m, c = 0) => {
   throw new VBAError(m, c);
 };
@@ -1160,16 +1178,27 @@ function evalExpr(a, s) {
         return arr.values[index - arr.low];
       }
       if (
-        ["isnull", "isempty", "lbound", "ubound"].includes(name) &&
+        ["isnull", "isempty"].includes(name) &&
         args.length !== 1
       )
         fail("引数の数が一致していません", 450);
       if (name === "isnull") return args[0]?.kind === "null";
       if (name === "isempty") return args[0]?.kind === "empty";
       if (["lbound", "ubound"].includes(name)) {
+        // R24-N17: VBA-Docs の構文は LBound/UBound(arrayname, [dimension]) で、
+        // dimension は省略可能（省略時は 1）。従来は次元引数を渡す形をすべて
+        // 個数エラー 450 で拒否していたが、450 は引数の個数が実際に合わない
+        // 場合（0 個または 3 個以上）だけに使う。本アプリの配列は 1 次元のみ
+        // なので、有効な次元は 1 だけであり、それ以外の次元は実 VBA どおり
+        // 「添字が範囲を超えている」エラー 9 で止める。次元は Long 引数なので
+        // 他の Long 引数と同じく銀行丸めで整数化してから判定する。
+        if (args.length < 1 || args.length > 2)
+          fail("引数の数が一致していません", 450);
         if (args[0]?.kind !== "array") fail("型が一致しません", 13);
         if (args[0].dynamic && !args[0].values.length)
           fail("インデックスが有効範囲にありません", 9);
+        let dim = args.length === 2 ? roundEven(num(args[1])) : 1;
+        if (dim !== 1) fail("インデックスが有効範囲にありません", 9);
         return (
           args[0].low + (name === "ubound" ? args[0].values.length - 1 : 0)
         );
@@ -1424,7 +1453,7 @@ function assign(target, v, s, set = false) {
 function clone(s) {
   return structuredClone(s);
 }
-export function simulate(source, model = {}, custom = {}) {
+function simulateImpl(source, model = {}, custom = {}) {
   let limits = { ...LIMITS, ...custom },
     started = performance.now(),
     operations = 0,
@@ -1434,12 +1463,14 @@ export function simulate(source, model = {}, custom = {}) {
   try {
     ast = parse(source);
   } catch (e) {
+    // P-N3：パース段階のホスト例外も生文言を返さない。
+    const le = toLearnerVBAError(e);
     return {
       paths: [],
       error: {
-        line: e.line || Number(e.message.match(/^(\d+)行/)?.[1]) || 1,
-        message: e.message,
-        code: e.code || 0,
+        line: le.line || Number(le.message.match(/^(\d+)行/)?.[1]) || 1,
+        message: le.message,
+        code: le.code || 0,
       },
       truncated: false,
       operations,
@@ -1467,6 +1498,9 @@ export function simulate(source, model = {}, custom = {}) {
     s.trace.push({ line: n.line, text, kind, tokens: n.tokens || [] });
   };
   const error = (s, n, e) => {
+    // P-N3：実行中のホスト例外はパスエラーの文言へ変換してから記録する
+    // （学習者向けでない JS ホスト例外の生文言をパスに残さない）。
+    e = toLearnerVBAError(e);
     s.err = e.code || 0;
     note(s, n, `${e.code ? `エラー ${e.code}：` : ""}${e.message}`, "error");
     if (!s.resume || !e.code) {
@@ -2230,9 +2264,11 @@ export function simulate(source, model = {}, custom = {}) {
   try {
     declarations(ast.body);
   } catch (e) {
+    // P-N3：宣言処理段階のホスト例外も生文言を返さない。
+    const le = toLearnerVBAError(e);
     return {
       paths: [],
-      error: { line: e.line || 1, message: e.message, code: e.code || 0 },
+      error: { line: le.line || 1, message: le.message, code: le.code || 0 },
       operations,
       truncated: false,
     };
@@ -2260,4 +2296,20 @@ export function simulate(source, model = {}, custom = {}) {
     elapsed: performance.now() - started,
     limits,
   };
+}
+export function simulate(source, model = {}, custom = {}) {
+  try {
+    return simulateImpl(source, model, custom);
+  } catch (e) {
+    // P-N3 最終受け皿：後処理（基準状態の structuredClone や、変化量を
+    // 求める JSON 化など、個別の catch の外側）から漏れたホスト例外も、
+    // 生文言のまま呼び出し側へ投げず、日本語の汎用文言のエラー結果で返す。
+    const le = toLearnerVBAError(e);
+    return {
+      paths: [],
+      error: { line: le.line || 1, message: le.message, code: le.code || 0 },
+      truncated: false,
+      operations: 0,
+    };
+  }
 }
