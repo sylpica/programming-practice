@@ -1,4 +1,21 @@
-# Codex R7 独立監査 — ee01f07（節目2・未完了）
+# Codex R7 独立監査 — ee01f07（節目3・未完了）
+
+監査対象は引き続き **ee01f07402b404c7b9dbcd83935b4be3bc4de187、全15種類・104テンプレート・978リファレンス**。配信日：2026-11-16 JST。Muse側の指摘一覧は読まず、修正後mainの挙動を固定対象へ混ぜていない。
+
+節目3では **追加22件（全てP2）**。累計 **100件（P1：0、P2：92、P3：8）**。同じ原因の多数の入力はまとめ、実測追加は重複計上しない。これはMuseと重複しない新規件数を表すものではない。[追加指摘](#節目3の追加指摘)と[更新した残作業](#節目3の残作業)を参照。
+
+**使った書き込みコール数：2件（この節目）。累計11件。** 監査専用ブランチへWindows性能計測を送るgit push 1回と、この報告書だけをまとめてmainへ配信するgit push 1回。前の節目は5件、4件。ローカル作業用ファイル・読取り・CI内の保存は数に含めない。製品コード・教材・既存テスト・DEVELOPMENT.mdの修正や、監査ブランチのmainへのマージは行っていない。
+
+配信準備時のmainは前の報告コミット `830ca4b7fd15fd503527588f89f3fde791344a8c`。本書は固定したee01f07の監査であり、最新mainに個々の欠陥が残ると判定する再監査ではない。
+
+**観点1〜8は未完了。** この節目ではVBA・ImageJ・R・C/C++の未確認部分を進めたが、他種類や文面・保存・全ビュー等の残作業を削っていない。978項目と全実装の全引数・全組合せを一次情報に照合し終えたとは扱わない。前の記録を保持し、状況を末尾で更新する。
+
+依頼されたGPT-6.1 Sol／推論「中」の設定を会話のツールから変更・検証する手段はないため、設定を確認済みとは報告しない。サブエージェント・リセット権は使用していない。
+
+## 節目2までの記録
+
+以下は前回の内容を保持した履歴。書き込み回数や当時の累計、未実施の記述は当時の値であり、この節目の更新は後記を優先する。
+
 
 対象は引き続き **ee01f07402b404c7b9dbcd83935b4be3bc4de187、全15種類・104テンプレート・978リファレンス**。配信日：2026-11-16 JST。mainの後続修正を対象へ混ぜず、Muse側の指摘一覧・個票は参照していない。
 
@@ -1552,3 +1569,393 @@ a.appendChild(b);
 PADの引用内変数とLoop conditionの追加候補も保持しているが、実製品の式構文・モデル表記との対応が未確定なので、この節目では確定欠陥に数えない。SDKの表現差や監査スクリプトの失敗を欠陥件数へ足していない。
 
 使用量／回数制限の通知は受けていない。リセット権は使っておらず、リセット時刻の通知もない。未完了を制限到達と偽って報告しない。引き続き全範囲を保持して監査する。
+
+
+## 節目3の検証範囲・証拠
+
+- **R追加138入力**を実R 4.2.2と比較。名前付き引数、data.frameを各関数へ渡す場合、NA／NaN／Inf、空集合、rep／seqの引数優先・小数変換等を追加した。JSONでNaN／Infがnullになる差は、そのまま欠陥にしていない。さらに乱数／入力関数の不正入力5件を照合。
+- **ImageJ全200参照名×0／8引数の400入力**を実装で実行し、エラー表示と後続出力の矛盾を確認した。これは関数ごとの正しい引数全てを確認した試験ではない。別にpure macro等11ケースを公式ImageJ 1.54p／OpenJDK 21で実行した。初めのignoreErrorsを有効にした比較は、エラー後の出力を成功と誤認しないよう、同じケースを通常のエラー処理で再実行した。headlessでエラーUIがHeadlessExceptionとなるケースはgetErrorMessageと公式Functions.javaの該当分岐を併用した。GUI画像処理全体を実測したとは呼ばない。
+- **C/C++追加45ケース**をgcc／g++ 14.2.0、C17／C++17、pedantic-errorsでコンパイルし、コンパイル成功の安全なケースは実行。absの引数とprintfとの入れ子、getlineの代入先等を比較した。実言語のコンパイル失敗を合格や任意出力へ読み替えない。
+- **VBA追加436入力**（27呼出し関数×16入力＋4ケース）を実装で実行。Microsoft LearnのVBA資料、MS-VBALの該当事項を照合した。Val／IsNumericの32ケースは.NET 8のMicrosoft.VisualBasicで補助比較したが、**Visual Basic .NETの結果を実Excel VBAの実測とはしていない**。Left等の小数引数や、公式情報間で他入力型の記述に差のある箇所は、補助比較だけで全てを確定欠陥にしていない。
+- **VBAの実装名からの漏れ確認**：evalExprのid／member／callを読み、実装済み27呼出し関数、括弧なし10組込み、Empty／Null／Nothing／True／False／vbCrLf／vbTabの7定数、Rangeの5プロパティとErr.Numberの計6プロパティを90参照項目へ照合。この列挙範囲の項目漏れは**確認済み・なし**。未知の一般メソッドは未対応停止で、実装済み名と誤認していない。書式・説明・全引数・全構文の正確性の合格を意味しない。
+- **実ブラウザ4再現**：ImageJの静的エラー後にLog 1／Log AFTERが表示されること、Rのsumが0、rep(NULL)がc()、VBAのReplace(Null,...)がNullと表示されることをChromiumで確認。APIだけの値を画面で非表示なら表示欠陥と呼ぶ、という誤りを避けた。新しい下書き・アクセシビリティ全経路の合格とはしない。
+
+### Windowsの性能実測
+
+[Windows CI run 43749028788](https://github.com/sylpica/programming-practice/actions/runs/43749028788)（監査専用ブランチbb434b1、Windows Server 2025・Node 22）。毎回別のNodeプロセスでee01f07のRエンジンを起動し、空の基底ベクトルに対する反復を計測した。外部の4秒タイムアウトは監査側の保護であり、アプリの探索制御による停止とは区別する。
+
+| times | Windowsのsimulate時間 | プロセス起動込みの壁時計 | 結果 |
+|---:|---:|---:|---|
+| 10,000,000 | 120.1225 ms | 274.5474 ms | 正常に戻るがrep(NULL)の型／表示は誤り |
+| 100,000,000 | 1006.9569 ms | 1125.9329 ms | 同上 |
+| 1,000,000,000 | 4秒以内に戻らず | 4012.0254 msで外部終了 | エンジン自身の探索上限では止まっていない |
+
+コードはいずれも `a <- rep(c(),times=...,length.out=1)`。Linux Node 24でも10,000,000回122.8226ms、100,000,000回1575.6876ms（戻った後に探索上限）、1,000,000,000回は4秒で外部終了。実Rでは同じ10億回指定が警告とNULLで即時に完了し、system.timeのelapsedは分解能上0秒だった。これは実測した入力集合の最重例であり、任意入力全体の最悪時間や上限値の証明ではない。UIの別のWorker監視による保護がなくなったとは主張しない。
+
+### 既報の補強と保留
+
+- **R7-22**：`rnorm()` は実Rでnが必須、`readline(1,2)` はunused argument (2)だが、アプリはいずれも未確定値として継続。既報の引数数検査の欠陥へ追記し、別件に数えない。既知の負数を受ける乱数関数の意味検査はR7-100で分けた。
+- **R7-24**：`sd(c(NaN,1))` も実RはNA、アプリNaN。統計関数のNaN／欠損の扱いの追加再現。R7-25のas.numericによるNaN→NAもベクトル内で再現した。
+- **R7-35**：`Len(InputBox("?"),1)` も未確定値の早期returnが引数数検査を迂回する。既知のNullだけの問題ではない。新規件数には含めない。
+- `Dialog.`から始まる架空の名前が通る疑いは、ImageJの静的検査が先に未知名を拒否することを確認して棄却した。ソースの接頭辞分岐だけで欠陥を断定していない。
+- VBAの小数位置・長さ引数、より広い変換形式、ImageJのGUI専用機能の追加候補は、実機／資料との照合が残る。未確定候補を確定件数へ混ぜない。
+
+## 節目3の追加指摘
+
+各再現はee01f07の固定checkout／固定画面で行う。コードごとに初期化し、同じ指摘中に別の式を挙げた場合も独立に実行する。保存先mainの後続修正を使わない。
+
+### R7-79（P2）sumの名前付き実引数を合計から黙って落とす
+
+対象：R。再現：ee01f07で種類を選択しコードを入力・実行。既定モデルを使用する。
+
+```text
+print(sum(a=1,b=2))
+```
+
+実際：アプリ0、R 4.2.2は3。sum(x=c(1,2,3))も0対6。sum(1,a=2)は1対3。
+
+期待：na.rm以外の...へ渡した数値を名前の有無で落とさず合計する。未対応なら計算前に停止。
+
+根拠：[R公式sum](https://stat.ethz.ch/R-manual/R-devel/library/base/html/sum.html)。実装call内でposだけをflatMapし、namedの数値を捨てる。
+
+### R7-80（P2）存在しない関数が未確定引数を受けると正常扱いになる
+
+対象：R。再現：ee01f07で種類を選択しコードを入力・実行。既定モデルを使用する。
+
+```text
+a <- as.numerci(readline())
+print(a)
+```
+
+実際：アプリは「as.numerciの引数による」という未確定値を作って継続。実Rはcould not find function "as.numerci"。既知値を渡すas.numerci(1)ではアプリも未対応停止するため、未知値だけ検査を抜ける。
+
+期待：関数の存在／対応を先に検査する。未知値だから架空の関数の返り値を作ってよいとはしない。
+
+根拠：[R言語定義：関数評価](https://cran.r-project.org/doc/manuals/r-release/R-lang.html#Function-evaluation)。R 4.2.2の実測と、callのswitchより前のpos.some(isUnknown)分岐。
+
+### R7-81（P2）repのlength.outよりtimesを先に適用して空の結果にする
+
+対象：R。再現：ee01f07で種類を選択しコードを入力・実行。既定モデルを使用する。
+
+```text
+print(rep(1:2,times=0,length.out=3))
+```
+
+実際：アプリは空配列（表示c()）、実Rは[1] 1 2 1。
+
+期待：length.outがあるときtimesは無視する。元のベクトルから必要な長さへ反復する。
+
+根拠：[R公式rep：length.outの優先](https://stat.ethz.ch/R-manual/R-devel/library/base/html/rep.html)。実装は先にtimes=0でoutPairsを空にし、length.out処理で空のまま返す。
+
+### R7-82（P2）data.frameのオプションを存在しないデータ列にする
+
+対象：R。再現：ee01f07で種類を選択しコードを入力・実行。既定モデルを使用する。
+
+```text
+print(names(data.frame(x=1:2,stringsAsFactors=FALSE)))
+```
+
+実際：アプリはxとstringsAsFactors、実Rはxだけ。row.names=c("a","b")やcheck.names=FALSEも、アプリでは同名の列を作る。
+
+期待：予約されたオプションを列データと区別し、対応外ならオプション名を挙げて停止する。
+
+根拠：[R公式data.frameの署名](https://stat.ethz.ch/R-manual/R-devel/library/base/html/data.frame.html)。実装は全argsを列へ変換する。
+
+### R7-83（P2）データフレームを普通の単一要素ベクトルにして変換・欠損判定を誤る
+
+対象：R。再現：ee01f07で種類を選択しコードを入力・実行。既定モデルを使用する。
+
+```text
+print(as.numeric(data.frame(x=1:2)))
+```
+
+実際：アプリNA、実Rは'list' object cannot be coerced to type 'double'。as.character(data.frame(x=1:2))もアプリ[object Object]、実Rは文字列1:2。is.na(data.frame(x=1:2))はアプリ単一FALSE、実Rは2行1列のFALSE行列。
+
+期待：データフレームの型・列・形状を保つ処理、または正直な未対応停止にする。JSオブジェクトを数値／文字列に変えて値を捏造しない。
+
+根拠：[numeric](https://stat.ethz.ch/R-manual/R-devel/library/base/html/numeric.html)、[character](https://stat.ethz.ch/R-manual/R-devel/library/base/html/character.html)、[NA](https://stat.ethz.ch/R-manual/R-devel/library/base/html/NA.html)。R 4.2.2で3式を別々に実測。
+
+### R7-84（P2）rep(NULL)をNULLでなく空の数値ベクトルにする
+
+対象：R。再現：ee01f07で種類を選択しコードを入力・実行。既定モデルを使用する。
+
+```text
+print(rep(NULL))
+```
+
+実際：アプリは空配列（表示c()）、実RはNULL。length.outを正にしても実Rは警告付きNULLだが、アプリは空配列（表示c()）。
+
+期待：NULLの型を保持する。空の数値ベクトルとNULLを同一表示・値として扱わない。
+
+根拠：[R公式repのNote：NULLの結果は常にNULL](https://stat.ethz.ch/R-manual/R-devel/library/base/html/rep.html)。
+
+### R7-85（P2）有効な小数の件数引数を不正な値と誤診する
+
+対象：R。再現：ee01f07で種類を選択しコードを入力・実行。既定モデルを使用する。
+
+```text
+print(rep(1:2,times=1.9))
+```
+
+実際：アプリ「timesは0以上の整数で指定してください」（エラー）、実Rは[1] 1 2。each=1.9、length.out=3.9も実Rでは有効で、順に1 2、1 2 1。seq_len(1.9)は実Rで1、seq(from=1,to=2,length.out=1.9)は1 2だがアプリはともにエラー。
+
+期待：関数ごとの切捨て／切上げ規則を再現するか、小数引数を未対応として説明する。実言語で不正な入力であるように直させない。
+
+根拠：[R公式rep](https://stat.ethz.ch/R-manual/R-devel/library/base/html/rep.html)、[seq](https://stat.ethz.ch/R-manual/R-devel/library/base/html/seq.html)。R 4.2.2で5ケース実測。
+
+### R7-86（P2）repの内部ループに探索上限が効かず、不要な反復で停止を遅らせる
+
+対象：R。再現：ee01f07で種類を選択しコードを入力・実行。既定モデルを使用する。
+
+```text
+a <- rep(c(),times=1000000000,length.out=1)
+```
+
+実際：Linux／Windowsとも別プロセスの4秒タイムアウトに達し、アプリのsimulateは戻らなかった。Windowsでは1千万回120.1225ms、1億回1006.9569ms。実Rは10億回でも計測分解能上elapsed 0秒、警告とNULLで終了した。
+
+期待：NULLの反復は即時に扱い、内部処理にも探索上限を適用する。空のpairsに対する不要なpush反復を延々行わない。これは全域の最悪時間を証明した値ではなく、今回の比較ケースの実測。UI側の別のWorker監視タイムアウトがあることは区別する。
+
+根拠：[R公式rep](https://stat.ethz.ch/R-manual/R-devel/library/base/html/rep.html)、[Windows CI実測](https://github.com/sylpica/programming-practice/actions/runs/43749028788)。js/core/contract.jsの1200msとrep内のforループを照合。
+
+### R7-87（P2）requiresが既知の不足バージョンでもマクロを継続する
+
+対象：ImageJ。再現：ee01f07で種類を選択しコードを入力・実行。既定モデルを使用する。
+
+```text
+requires("9.99");
+print("AFTER");
+```
+
+実際：モデルruntime.version=1.54pでもアプリはAFTERを出力。実ImageJ 1.54pはバージョン不足の案内を出し、AFTERは出力しない。
+
+期待：最低バージョンの条件を判定して止める。未判定なら未確認停止にし、「要件を確認します」と説明して継続しない。
+
+根拠：[ImageJ公式requires](https://imagej.net/ij/developer/macro/functions2.html#requires)、[1.54p Functions.java](https://github.com/imagej/ImageJ/blob/v1.54p/ij/macro/Functions.java) requires内のinterp.done=true。実測の案内はThis plugin or macro requires ImageJ 9.99 or later. Use Help>Update ImageJ to upgrade to the latest version.（改行あり）。
+
+### R7-88（P2）evalが内側の出力を落としたまま実行したと説明する
+
+対象：ImageJ。再現：ee01f07で種類を選択しコードを入力・実行。既定モデルを使用する。
+
+```text
+eval("print(\"INNER\");");
+print("AFTER");
+```
+
+実際：アプリはAFTERだけ。実ImageJ 1.54pはINNER、AFTER。トレースは「渡された文字列をマクロとして実行します（中身の説明は省略します）」とする。
+
+期待：動的実行が対応外ならその場で正直に停止する。説明の省略と実行結果の省略を混同しない。
+
+根拠：[ImageJ公式eval](https://imagej.net/ij/developer/macro/functions2.html#eval)。実物のpure macroをheadlessで実行し、出力を確認した。
+
+### R7-89（P2）Array.sortが混在型や並行配列の長さ不一致を正常に並べ替える
+
+対象：ImageJ。再現：ee01f07で種類を選択しコードを入力・実行。既定モデルを使用する。
+
+```text
+a=newArray(2,1);
+b=newArray("x");
+Array.sort(a,b);
+print(a[0],b[0]);
+```
+
+実際：アプリは1 xと出力。実ImageJはArrays must have same lengthで停止。a=newArray("b",1);Array.sort(a);もアプリは継続、実物はMixed strings and numbers。
+
+期待：配列の型と長さを検査して停止する。第1配列だけを変更して並行配列を元のままにしない。
+
+根拠：[ImageJ公式Array.sort](https://imagej.net/ij/developer/macro/functions2.html#Array.sort)、[公式1.54p sortArray](https://github.com/imagej/ImageJ/blob/v1.54p/ij/macro/Functions.java)。通常のエラー処理では上記errorMessageを得てheadlessのエラーUIでHeadlessExceptionとなる。エラー無視設定後の後続出力は成功結果に使っていない。
+
+### R7-90（P2）Array.sortの有効な3配列形式を引数エラーにして第3配列を取り残す
+
+対象：ImageJ。再現：ee01f07で種類を選択しコードを入力・実行。既定モデルを使用する。
+
+```text
+a=newArray(2,1);
+b=newArray("b","a");
+c=newArray(4,3);
+Array.sort(a,b,c);
+print(a[0],b[0],c[0]);
+```
+
+実際：アプリは「Array.sort の引数の数が違います」と表示しつつ1 a 4を出力。実ImageJ 1.54pは正常に1 a 3。
+
+期待：3個以上の並行配列を同じ順で並べ替えるか、部分対応の未対応停止として説明する。2配列までという制限を実言語の引数誤りとしない。リファレンス書式・注意にも範囲を明示する。
+
+根拠：[ImageJ公式Array.sort](https://imagej.net/ij/developer/macro/functions2.html#Array.sort)、公式sortArrayのwhile(nextToken==comma)で後続の全配列を並べ替える処理。1.54pで実測。
+
+### R7-91（P2）getFileListがサブフォルダを落とし非対象の隠し項目を返す
+
+対象：ImageJ。再現：ee01f07で種類を選択しコードを入力・実行。モデルdirectoriesにroot=/workspace/work/r7c/ij-fixtures/とsub=/workspace/work/r7c/ij-fixtures/sub/を指定。filesにroot直下のa.txt、.hidden、Thumbs.dbとsub/nested.txtを明示する。実物では同じ構造を作った。別パスにする場合はコードとモデルの両方を置換。
+
+```text
+a=getFileList("/workspace/work/r7c/ij-fixtures/");
+for(i=0;i<a.length;i++){print(a[i]);}
+```
+
+実際：アプリはa.txt、.hidden、Thumbs.db。実ImageJ 1.54pはa.txt、sub/。サブフォルダ内のnested.txtそのものは直下の一覧に含めない。
+
+期待：直下のサブフォルダを末尾/付きで含め、.で始まる名前とThumbs.dbを実物どおり除外する。単なる出力順の違いではない。
+
+根拠：[ImageJ公式getFileList](https://imagej.net/ij/developer/macro/functions2.html#getFileList)、公式Functions.javaのgetFileListと実測。
+
+### R7-92（P2）File.existsが明示した存在フォルダを存在しないと返す
+
+対象：ImageJ。再現：ee01f07で種類を選択しコードを入力・実行。R7-91と同じフォルダ・ファイル構造を明示する。
+
+```text
+print(File.exists("/workspace/work/r7c/ij-fixtures/sub/"));
+```
+
+実際：アプリ0、実ImageJ 1.54pは1。親rootフォルダでも0対1。
+
+期待：フォルダも存在判定の対象。モデルで存在を判定できないなら未確定とし、falseを捏造しない。
+
+根拠：[ImageJ公式File.exists](https://imagej.net/ij/developer/macro/functions2.html#File.exists)、実測。実装はfilesにないパスがdirectories内にあると0へ分岐する。
+
+### R7-93（P2）静的に検出した引数エラーがあっても後続処理・出力を生成する
+
+対象：ImageJ。再現：ee01f07で種類を選択しコードを入力・実行。既定モデルを使用する。
+
+```text
+print(abs(1,2));
+print("AFTER");
+```
+
+実際：アプリはabsの引数の数エラーを表示しつつ1とAFTERを出力。実ImageJは右括弧が必要とのエラーで停止しAFTERは出力しない。全200参照名それぞれに0引数／8引数を付けた400入力を調べ、エラーありかつAFTERを生成するものが263件あった。
+
+期待：エラーのあるプログラムの後続状態・出力を、実行された結果として生成しない。誤った引数数を未対応として止める場合も、実際にそこで停止する。400入力を263個の独立欠陥とは数えず、共通の停止制御の欠陥1件とする。
+
+根拠：[ImageJマクロ言語](https://imagej.net/ij/developer/macro/macros.html)、公式Functions.javaのgetArg等のエラー経路。1.54pで右括弧不足のerrorMessageとHeadlessExceptionを得て停止を確認。静的diagsが実行前の停止に使われていない。
+
+### R7-94（P2）absの余分な引数を黙って捨てる
+
+対象：C／C++。再現：ee01f07で種類を選択しコードを入力・実行。既定モデルを使用する。
+
+```text
+#include <stdio.h>
+#include <stdlib.h>
+int main(){
+    int r=abs(-1,0);
+    printf("%d",r);
+    return 0;
+}
+```
+
+実際：アプリは1。gcc C17／g++ C++17（pedantic-errors）はtoo many arguments to function absでコンパイル失敗。入れ子のprintf("%d",abs(-1,0))でも同じ。
+
+期待：標準関数の引数数を検査する。第2引数を無視して正常な戻り値を作らない。
+
+根拠：[C標準ドラフトN1570 7.22.6.1](https://www.open-std.org/jtc1/sc22/wg14/www/docs/n1570.pdf)、[C++標準ドラフトN4659](https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2017/n4659.pdf)。実装はvalues[0]だけをMath.absへ渡す。
+
+### R7-95（P2）getlineの戻り値を入力文字列として扱い型不正な代入を通す
+
+対象：C++。再現：ee01f07で種類を選択しコードを入力・実行。既定モデルを使用する。
+
+```text
+#include <iostream>
+#include <string>
+int main(){
+    std::string s;
+    std::string r=std::getline(std::cin,s);
+    return 0;
+}
+```
+
+実際：アプリはrを入力由来の未確定値として正常に代入。実g++ C++17はbasic_istream<char>からstd::stringへ変換できずコンパイル失敗。int r=...、bool r=...も実物は失敗するがアプリは受理する。
+
+期待：getlineは入力を書き込むsと、戻り値のistream参照を区別する。戻り値の利用を扱えなければ未対応停止にする。
+
+根拠：[C++標準N4659のstringのgetline宣言](https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2017/n4659.pdf)。実装はsへ書き込んだ未確定値そのものをreturnする。
+
+### R7-96（P2）Valが指数表記の指数を読み捨てて値を変える
+
+対象：VBA。再現：ee01f07で種類を選択しコードを入力・実行。既定モデルを使用する。
+
+```text
+Debug.Print Val("1e3")
+```
+
+実際：アプリ1。Microsoft.VisualBasic.Conversion.Valによる補助照合は1000。1.2e-2もアプリ1.2、補助照合0.012。
+
+期待：数値部分として指数を評価するか、指数形式を未対応として止める。文字eを単なる末尾として切り捨てない。
+
+根拠：[VBA公式Val](https://learn.microsoft.com/en-us/office/vba/language/reference/user-interface-help/val-function)、[MicrosoftのVal実装・API](https://learn.microsoft.com/en-us/dotnet/api/microsoft.visualbasic.conversion.val?view=net-8.0)。実Excel VBAでは未実測。補助照合のVisual Basic .NETをVBA実機と表記しない。アプリの正規表現には指数部がない。
+
+### R7-97（P2）IsNumericが非VBA形式の0x接頭辞を数値とする
+
+対象：VBA。再現：ee01f07で種類を選択しコードを入力・実行。既定モデルを使用する。
+
+```text
+Debug.Print IsNumeric("0x10")
+```
+
+実際：アプリTrue。Microsoft.VisualBasic.Information.IsNumericの補助照合はFalse。0b10も同様。リファレンスはこのモデルを10進数の通常表記に限定すると宣言している。
+
+期待：VBAで数値として有効でない形式はFalse、または宣言どおり未対応停止にする。JSのNumberが受け付ける形式を無条件にVBAへ持ち込まない。
+
+根拠：[VBA公式IsNumeric](https://learn.microsoft.com/en-us/office/vba/language/reference/user-interface-help/isnumeric-function)、[VBA数値型変換](https://learn.microsoft.com/en-us/office/vba/language/concepts/getting-started/type-conversion-functions)。実Excel VBA未実測。JSのNumber(x)による受理と自身の10進数制限を照合した。
+
+### R7-98（P2）Nullの一律伝播がReplaceのエラーとIsNumericのBooleanを消す
+
+対象：VBA。再現：ee01f07で種類を選択しコードを入力・実行。既定モデルを使用する。
+
+```text
+Debug.Print Replace(Null,"a","b")
+```
+
+実際：アプリはNullを表示して継続。公式ReplaceはexpressionがNullならエラー。Debug.Print IsNumeric(Null)もアプリNullだが、IsNumericはBooleanを返しNull入力はFalseとなる。
+
+期待：有効な引数数でも関数固有のNull規則を適用する。ReplaceをNull値の成功に、IsNumericをNull型にしない。既報R7-35の「Nullが引数数検査を抜ける」とは別の、正しい引数数での挙動。
+
+根拠：[VBA公式ReplaceのReturn values](https://learn.microsoft.com/en-us/office/vba/language/reference/user-interface-help/replace-function)、[MS-VBAL IsNumericのBoolean宣言とNull時の規則](https://learn.microsoft.com/en-us/openspecs/microsoft_general_purpose_programming_languages/ms-vbal/d920bc45-c366-4151-97dc-58c6a5b82780)。実Excel VBA未実測。MS-VBALの他の入力型までこのNullの確認結果から一般化しない。
+
+### R7-99（P2）別画像を閉じると生存中画像のIDが変わり選択できなくなる
+
+対象：ImageJ。再現：ee01f07で種類を選択しコードを入力・実行。モデルimagesを同じ寸法・画素設定の2画像にし、titleを順にA、Bとする。
+
+```text
+selectImage("B");
+id=getImageID();
+selectImage("A");
+close();
+selectImage(id);
+print(getTitle());
+```
+
+実際：アプリではBのモデルIDは-2だがAを閉じるとBが配列先頭へ移り、selectImage(id)は「存在しない画像」で停止する。
+
+期待：開いたままのBのIDを維持し、Bを選んでタイトルBを表示する。IDの数値自体を実物のIDに合わせる必要はないが、同一性を保つ。
+
+根拠：[ImageJ公式getImageID／selectImage](https://imagej.net/ij/developer/macro/functions2.html#getImageID)。ImageJ 1.54pのImagePlusをheadlessで2個作り、A.close前後のB.getIDがともに-3であることを実測。これはGUIマクロ全体の実行ではなく、ID不変性の補助確認。実装は-(active+1)を返し、closeで配列を詰める。
+
+### R7-100（P2）乱数関数が既知の不正引数でも正常な未確定値として継続する
+
+対象：R。再現：ee01f07で種類を選択しコードを入力・実行。既定モデルを使用する。
+
+```text
+print(rnorm(-1))
+```
+
+実際：アプリはエラーなしで実行時の未確定値を表示する。実Rはinvalid argumentsで停止。runif(-1)も同じ。sample(NULL,1)は実Rでinvalid first argumentだがアプリは未確定値として継続する。
+
+期待：乱数の値が未確定であることと、既知の引数の妥当性を区別する。既知の負の件数や無効な母集団はエラー、または未対応停止として表示する。
+
+根拠：[R公式Normal](https://stat.ethz.ch/R-manual/R-devel/library/stats/html/Normal.html)、[Uniform](https://stat.ethz.ch/R-manual/R-devel/library/stats/html/Uniform.html)、[sample](https://stat.ethz.ch/R-manual/R-devel/library/base/html/sample.html)。R 4.2.2実測。実装はreadline／rnorm／runif／sampleの名前を見た時点で検査せずfreshUnknownを返す。
+
+## 節目3の残作業
+
+前の節目の全15種類別台帳と観点1〜8を引き継ぐ。この節目の追加試験で対象を一部へ縮小したり、台帳を消したりはしていない。
+
+| 観点 | この節目で進めた範囲 | 継続する残作業 |
+|---|---|---|
+| 1 一次情報・実挙動 | R、ImageJ、C/C++の実物比較、VBAの公式資料と補助ランタイム | 全15種類の全機能の一次情報照合。実Excel／Canvas／PAD／AWS／UI.Vision製品セッション |
+| 2 宣言との一致 | VBAの実装名と項目の照合、ImageJ／Rの対応範囲・誤ったエラー原因 | DEVELOPMENT.md全宣言と実装の双方向対応、各部分対応の例外全件 |
+| 3 パス・表示・状態 | ImageJの静的エラー後実行、画像IDの同一性、Rの型・表示 | 全分岐制約、状態遷移・同時編集・保存・復元の未確認経路。前の正常データ888件の結果は保持 |
+| 4 新2種類 | WindowsでRエンジン性能を追加測定。cmd／PowerShellの既報・実測を保持 | cmd／PowerShellの全引数・全展開段階・全パイプライン等。今回それらの追加全件試験をしたという意味ではない |
+| 5 関数・参照・用語の完全性／正確性 | VBAの列挙可能な呼出し・組込み・定数・プロパティに項目漏れなし。ImageJ Array.sort等の書式問題 | 全15種類の完全名簿と参照／除外宣言の突合、978項目の全説明・書式・出力、111用語と教材用語の全一次情報・ビュー間照合 |
+| 6 境界・異常値・組合せ | R138＋5、VBA436、ImageJ400＋11、C/C++45、画像IDの組合せ | 全関数の全引数位置・型・過不足・境界・入れ子・副作用・未知値の行列。今回の件数を全網羅としない |
+| 7 全104教材・全エラー理由 | ImageJの静的エラー後の出力、Rの有効な小数引数に対する誤診 | 全104教材の主張と公式期待結果、全エンジンの全停止理由の再現 |
+| 8 文面・a11y・保存劣化・性能 | WindowsでRの重い入力を実測、画面4再現 | 全文面・フォーカス・aria・壊れた保存の全形・PWA劣化・さらなる最重入力探索。実スクリーンリーダー／Safari／Firefox／iOS |
+
+VBAの27関数等の項目漏れ確認を、VBA90項目の全説明／全挙動が正しいという結論へ広げない。ImageJ400件も引数数・停止制御を洗う入力集合であり、200関数の全型・全オプションの代わりではない。実施不能の製品セッション・GUI・実機があること、実施可能な部分にも残作業があることを分けて保持する。
+
+使用量・回数制限の通知は受けていない。リセット権は使っていない。リセット時刻の通知もないため推測しない。今回も節目の未完了報告であり、完成監査として扱わない。
