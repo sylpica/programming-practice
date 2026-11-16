@@ -1,4 +1,18 @@
-# Codex R7 独立監査 — ee01f07（節目7・未完了）
+# Codex R7 独立監査 — ee01f07（節目8・未完了）
+
+対象は引き続き **ee01f07402b404c7b9dbcd83935b4be3bc4de187、全15種類・104テンプレート・978リファレンス・111用語**。配信日：2026-11-16 UTC。Muse側の指摘一覧・個票を見ず、固定対象の実装・公式資料・実ランタイムから独立に確認した。
+
+節目8の追加は **17件（すべてP2）**。累計 **195件（P1：0、P2：178、P3：17）**。Museとの重複を除いた件数ではない。同一原因の入力違い、既報の補強、未確定差分、監査ハーネスの不具合は新規欠陥へ加算していない。[今回の検証範囲](#節目8の検証範囲と証拠)、[追加指摘](#節目8の追加指摘)、[残作業](#節目8の残作業)を参照。
+
+**使った書き込みコール数：6件（この節目）。累計22件。** 監査専用ブランチへのgit push 5回（結果欠落・監査スクリプト失敗の試行を含む）と、報告書だけをmainへ一括配信するgit push 1回。過去の節目は5、4、2、2、1、1、1件。従来と同じくGitHubへ書き込むgit pushを数え、ローカルの検証コード・データ作成、読取り、CI内の保存を含めない。製品コード・教材・既存テスト・DEVELOPMENT.mdは変更していない。監査ブランチはmainへマージしない。
+
+配信準備時のmainは `423013607ea1956efb7a6dbfd915dbbc32ac02cf`。その既存変更を保持して報告書だけを配信する。監査対象はee01f07に固定し、その後のmainの修正残存や追加種類を確認済みとする意味ではない。
+
+**観点1〜8は未完了。** 今回はJavaScriptの値・束縛・未知値・DOM、ImageJの選択・校正、VBAの文字列変換・引数境界を進めた。全15種類・全104教材・978項目・111用語・全ビューの未了台帳を保持し、今回の一致ケースだけで全体を完了としない。サブエージェント・リセット権は使っていない。モデル／推論設定をツールから変更・検証できないため、設定を確認したと偽らない。
+
+## 節目7までの記録
+
+以下は前回報告を保持した履歴。件数・書き込み回数・未実施の記述は当時の値であり、今回の状況は末尾の節目8で更新する。
 
 対象は引き続き **ee01f07402b404c7b9dbcd83935b4be3bc4de187、全15種類・104テンプレート・978リファレンス**。配信日：2026-11-16。Muse側の指摘一覧・個票を参照せず、固定対象の実装・公式資料・実ランタイムから独立に確認した。
 
@@ -3566,3 +3580,361 @@ VBA・ImageJ・CloudFormation・PAD・AutoHotkey・UI.Vision・Power Apps・Pyth
 実Excel／Canvas／PAD／AWS／UI.Vision製品セッション、実スクリーンリーダー、Safari／Firefox／iOS実機、ImageJのGUI全経路は環境・接続がなく未実施。新しいR版の実行・Windowsでの今回追加コードの実行は未実施。Windows CIで可能な残作業を「不可能」と書き換えず、Linuxの時間や終了コードをWindowsの測定値として捏造しない。今回の有限集合を全体の最重ケースと呼ばず、性能探索の未了を残す。
 
 使用量・回数制限の通知は受けていない。リセット権は使っていない。リセット時刻の通知もないため推測しない。今回も未完了の節目報告であり、全範囲完了や欠陥収束の宣言ではない。
+
+
+## 節目8の検証範囲と証拠
+
+対象は固定ee01f07。新しいmainの修正を取り込んで再現したものではなく、今回もMuseの監査カタログ・個票は読んでいない。主なローカル証拠は `/workspace/work/r7h/` のコード、入力、JSON結果、ブラウザ結果。報告中の再現コード・期待値・一次根拠だけでも個別に追試できるようにした。
+
+| 検証 | 実施範囲・結果 | 限界 |
+|---|---|---|
+| JavaScript型変換 | Number／String／Boolean／parseInt／Math.abs／Math.floor／Math.round／JSON.stringify ×25値の200組。0／1／−1／−0／NaN／±Infinity／真偽／null／undefined／空・通常文字列／空・入れ子配列／Object／BigIntを実Node 24.22.1と照合 | この200組では新規欠陥は**確認済み・なし**。引数個数、未知値、全組合せを完了した意味ではない |
+| JS更新・束縛・未知値 | 上記を含む初回247ケース、追加12ソース×7入力。BigInt更新16組、定数シャドー6組、Objectの宣言・変換18組、追加引数の副作用等 | 前置BigInt更新8組の未対応停止は合格。未知値を含まない18 Object例も新規欠陥は**確認済み・なし**。JS全構文の結論ではない |
+| JS実DOM／ダイアログ | Chromium 156。実alertの11入力、セレクター7形式、ID変更・DOMString／読取専用プロパティを同等のHTML fixtureで再現 | DOM全API・イベント実行・ブラウザ差は未了。consoleコレクションの見栄えをalertのDOMStringと混同しない |
+| JS教材 | 全6教材のコード・タイトル・intro・教材固有modelを使用。入力7なら合計12、配列共有後の合計10、巻上げundefined→2→1→外、未確定入力の開始／終了の2パスとDOM変更を確認 | 今回確認した全6教材の初期モデル・記載の基本主張は**確認済み・なし**。任意に変更したモデルや異常入力まで無欠陥という意味ではない |
+| JS参照・用語 | 39項目を列挙し、対応38例を実Chromiumとアプリで実行して異常終了なし。addEventListener 1件は未対応宣言を確認。lengthの項目がないのはDEVELOPMENT.mdの明示除外に一致。4用語の定義を確認 | 有効ハンドラの呼出し名・定数・主要DOMプロパティについて、明示除外を除く新規項目漏れは**確認済み・なし**。38例が走ることを全説明・全戻り値の完全照合とはしない。用語のDOM／参照／constの短い定義に新規誤りは**確認済み・なし**。「未確定」の全パス宣言はR7-181等と不一致。教材語の未収載は既報R7-56を保持 |
+| ImageJ ROI | ImageJ 1.54p本体＋Java 21。64×64 ByteProcessorを一時current imageに設定。矩形／楕円160、直線20、複数頂点6、makeSelectionのtype・配列長32、任意n10の**228組**を実行。公式同タグFunctions.javaも照合 | 208組でnativeエラーなし、20組でエラー。アプリは10組でエラー表示。両者がエラーなしの200組のうち198組に少なくとも1出力差があったが、原因単位でまとめており198件とは数えない。同長3点のpolygon／freehandの2組は3出力とも一致し、この2組では新規欠陥は確認済み・なし。nativeのignoreErrorsは停止を抑制するため、エラー後の出力・状態は正解として使わない |
+| ImageJ校正 | 実本体でsetVoxelSize→getVoxelSizeを実行。幅・高さ・単位の不保持を再現 | getPixelSizeはアプリ未対応。公式Webのdepth説明と1.54p本体の違いは別に明示。GUI操作・実画像処理全経路の実測ではない |
+| Windows補助比較 | [run 43792330809](https://github.com/sylpica/programming-practice/actions/runs/43792330809)、監査ブランチ `b263182`（製品はee01f07由来）。Windows Server 2025、build26100、Python3.12.10、Node22.23.4、VBScript locale1033。**522入力すべて**の戻り型・文字列・エラー番号をUnicodeファイルから回収し、数値の53bit表現も保存 | **VBScriptはExcel VBAではない**。Valは機能試験でエラー13となりVBA正解の比較対象から外した。VBAの一次規則で裏づけたR7-193〜195のみ確定。IsNumeric(Empty／Boolean)、RoundのNull／16桁等、Unicode casing、Leftの最大Long等の差分は実Excel未確認として保留。出力文字列の単純差163件にはNullの表示記号差等も混じり、新規欠陥数ではない |
+| Windows性能 | 同runの522アプリ実行は合計 **51.0522ms**、集合内最長 **5.1417ms**（Debug.Print Trim(Null)）。同一runnerで順次測定したsimulateの経過時間。補助VBScriptプロセスは150.0799ms | ブラウザ描画・起動を含まない。過去runでは合計77.3386ms／最長4.1468ms等の揺れあり。全入力空間の最重・最悪性能と呼ばない |
+| 全画面再現 | 新規17件＋R7-125補強2件の19ソースを種類選択→編集→実行で確認。ImageJはmodel panelを開いて64×64 fixtureを入力。pageerrorは0 | 全ビュー／全aria／全フォーカス経路の結論ではない。前節までのアクセシビリティ・保存劣化の記録を保持 |
+
+監査用ハーネスの試行も隠さない。最初の `eb15cf4`／run43790087387、診断追加の `fc5b0f8`／run43791768188は、ジョブが成功していてもVBScriptの標準出力0バイト・522件欠落で、native合格と扱わなかった。`98ff1f2`／run43791950326は監査スクリプトのASCIIエンコード失敗、`7d306f5`／run43792174988も標準出力欠落。最後にASCIIソース＋非ASCIIのChrW表現＋Unicodeファイル記録へ変更し、locale・機能検査・全522結果を回収した。欠落原因のOS一般への断定はしない。製品の不具合と監査スクリプトの失敗は分ける。監査ブランチ5回のpushをすべて書き込み数へ含め、mainへは報告書だけを1回で配信する。
+
+### 既報の補強（新規件数に含めない）
+
+R7-125：`let a=[1];console.log(a.pop(NoSuchR8));` は実Node／ChromiumのReferenceErrorを消して1を出す。`let x=1;prompt(x++);console.log(x);` は実物2に対して1。未使用引数を含めた評価を省略する既報と同じ原因のため追加採番しない。一次根拠は[ECMAScript ArgumentListEvaluation](https://tc39.es/ecma262/multipage/ecmascript-language-expressions.html#sec-argument-lists-runtime-semantics-argumentlistevaluation)。R7-93のImageJ静的エラー後の出力も、第4引数の確認で再現したが重複計上しない。
+
+R7-98：補助VBScriptではLeft("abc",Null)とReplace("abc","a","b",Null)が94、アプリはNull。これは既報の一律Null伝播の補助差分として保存し、実Excelで確認したとは書かない。
+
+## 節目8の追加指摘
+
+### R7-179（P2）BigIntの後置++／--がNumberへ変わり、大きな整数の値も失う
+
+対象：javascript。位置：`js/types/javascript/index.js の increment 処理`。
+
+再現：固定ee01f07で種類を選び、次を実行する。ImageJは64×64の8-bit画像1枚を置く（モデルimagesのw/h=64、bit=8）。JavaScriptは標準のname／result要素を使う。
+
+```javascript
+let x=9007199254740993n;
+console.log(String(x++));
+console.log(typeof x);
+console.log(String(x));
+```
+
+実際：出力は `9007199254740992`、`number`、`9007199254740992`。正常終了する。
+
+期待・一次根拠：実Node／Chromiumは `9007199254740993`、`bigint`、`9007199254740994`。後置更新はToNumericの型を保って1nを加減する。未対応ならその旨で停止する。 [ECMAScript 後置更新](https://tc39.es/ecma262/multipage/ecmascript-language-expressions.html#sec-postfix-increment-operator)。
+
+0n、1n、−1n、大きな値 × 後置++／--の8組で型が変わる。前置8組は未対応として停止したため、この欠陥に含めない。既報R7-54の宣言矛盾とは別の実行結果の欠陥。
+
+### R7-180（P2）組込みと同名のローカル変数を無視して、定数値・関数呼出しを捏造する
+
+対象：javascript。位置：`js/types/javascript/index.js:549 および call の名前によるswitch`。
+
+再現：固定ee01f07で種類を選び、次を実行する。ImageJは64×64の8-bit画像1枚を置く（モデルimagesのw/h=64、bit=8）。JavaScriptは標準のname／result要素を使う。
+
+```javascript
+{let undefined=1;console.log(String(undefined));}
+{let Number=0;console.log(Number("1"));}
+```
+
+実際：最初の出力は `undefined`、続くNumber呼出しも成功して `1` を出す。
+
+期待・一次根拠：実Node／Chromiumは最初に `1`、次に `TypeError: Number is not a function`。字句環境の束縛を解決してから値と呼出し可否を判断する。 [ResolveBinding](https://tc39.es/ecma262/multipage/executable-code-and-execution-contexts.html#sec-resolvebinding)、[EvaluateCall](https://tc39.es/ecma262/multipage/ecmascript-language-expressions.html#sec-evaluatecall)。
+
+undefined／NaN／Infinityを1または"x"で隠す6組、Number／Math.abs／JSON.stringifyを非関数へ置き換える3組で再現。グローバルの再定義制約を避け、すべてブロックスコープのletを使った。
+
+### R7-181（P2）未確定値をホストの型変換へ流し、固定出力と欠落した分岐を作る
+
+対象：javascript。位置：`js/types/javascript/index.js:654–674、配列join`。
+
+再現：固定ee01f07で種類を選び、次を実行する。ImageJは64×64の8-bit画像1枚を置く（モデルimagesのw/h=64、bit=8）。JavaScriptは標準のname／result要素を使う。
+
+```javascript
+let x=prompt();
+if(parseInt("10",x)===2){console.log("base2");}else{console.log("other");}
+```
+
+実際：promptが未確定なのに `other` の1パスだけ。
+
+期待・一次根拠：入力"2"なら `base2`、"16"やキャンセルなら `other`。候補を保持するか未確認として停止する。未確定値を内部の普通のObjectとしてparseInt／String／Number／joinへ渡して結果を確定してはいけない。 [parseInt](https://tc39.es/ecma262/multipage/global-object.html#sec-parseint-string-radix)、[Array.prototype.join](https://tc39.es/ecma262/multipage/indexed-collections.html#sec-array.prototype.join)、[HTML prompt](https://html.spec.whatwg.org/multipage/timers-and-user-prompts.html#dom-prompt)。
+
+追加再現：`let x=prompt();console.log([1,2].join(x));` は `1[object Object]2`、`String([x])` は `[object Object]`、`Number([x])` はNaNに固定。実入力null／空／"2"／"8"／"16"／"|"／"x"を照合。これは全入力列挙の代用ではなく、既知の到達可能ケースを失うことの反例。用語集の「到達可能な分岐をすべて表示」とも不一致。
+
+### R7-182（P2）利用者のkind:"unknown"という通常オブジェクトを内部未知値と誤認する
+
+対象：javascript。位置：`js/core/contract.js の isUnknown と JavaScriptのメンバー参照・containsUnknown`。
+
+再現：固定ee01f07で種類を選び、次を実行する。ImageJは64×64の8-bit画像1枚を置く（モデルimagesのw/h=64、bit=8）。JavaScriptは標準のname／result要素を使う。
+
+```javascript
+let v={kind:"unknown",value:1};
+console.log(JSON.stringify(v));
+if(v.value===2){console.log("wrong");}else{console.log("right");}
+```
+
+実際：既知のJSONを未確定表示にし、`wrong` と `right` の2パスを作る。
+
+期待・一次根拠：実Node／Chromiumは `{"kind":"unknown","value":1}` と `right` のみ。通常のプロパティ名kindに特別な言語上の効果はない。 [Object Initializer](https://tc39.es/ecma262/multipage/ecmascript-language-expressions.html#sec-object-initializer)、[JSON.stringify](https://tc39.es/ecma262/multipage/structured-data.html#sec-json.stringify)。
+
+`let v={kind:"unknown",n:1};console.log(v.n);` でも1が未確定へ変わる。kind:"na"ではこの差分なし。内部タグと利用者データの衝突に絞った指摘で、全種類へ一般化しない。
+
+### R7-183（P2）alertの文面をDOMString変換せず、JSON・内部表示へ変える
+
+対象：javascript。位置：`js/types/javascript/index.js:625`。
+
+再現：固定ee01f07で種類を選び、次を実行する。ImageJは64×64の8-bit画像1枚を置く（モデルimagesのw/h=64、bit=8）。JavaScriptは標準のname／result要素を使う。
+
+```javascript
+alert();
+alert(undefined);
+alert(1n);
+alert([1,2]);
+alert({a:1});
+```
+
+実際：順に `null`、`未設定`、`1n`、改行入りJSON配列、JSONオブジェクトを表示する。
+
+期待・一次根拠：実Chromiumのdialog.messageは順に空文字列、`undefined`、`1`、`1,2`、`[object Object]`。引数省略の空文面と明示undefinedを区別し、渡した値はDOMStringへ変換する。 [HTML simple dialogs](https://html.spec.whatwg.org/multipage/timers-and-user-prompts.html#dom-alert)、[Web IDL DOMString](https://webidl.spec.whatwg.org/#es-DOMString)。
+
+実ダイアログを捕捉して破棄し、11入力（省略、null、undefined、空／通常文字列、0、BigInt、空／通常配列、空／通常Object）を確認。null、文字列、0の4組は一致、残る7組で差分。console.logの実装依存の見栄えとは区別する。
+
+### R7-184（P2）#で始まるCSSをすべて単純IDとみなし、正しいセレクターも不正構文もnullにする
+
+対象：javascript。位置：`js/types/javascript/index.js:640`。
+
+再現：固定ee01f07で種類を選び、次を実行する。ImageJは64×64の8-bit画像1枚を置く（モデルimagesのw/h=64、bit=8）。JavaScriptは標準のname／result要素を使う。
+
+```javascript
+console.log(document.querySelector("#name ")===null);
+console.log(document.querySelector("#")===null);
+```
+
+実際：末尾空白付きの有効なセレクターと、不正な `#` の両方でtrueを出す。
+
+期待・一次根拠：name要素がある同等fixtureの実Chromiumでは1行目false、2行目SyntaxError。一般のCSSが範囲外なら未対応として停止し、未発見nullと区別する。 [scope-match と構文失敗](https://dom.spec.whatwg.org/#scope-match-a-selectors-string)、[querySelector](https://dom.spec.whatwg.org/#dom-parentnode-queryselector)。
+
+`#name, #result`、`#name:not(#result)`も存在要素を見失う。単純な#name／#result／#missingの3組は一致。リファレンスの「一般のCSS探索は未対応」は確認したが、現実装はこれらを未対応停止せず確定nullにするため免責できない。
+
+### R7-185（P2）要素のid変更後も旧IDで検索でき、新IDでは見つからない
+
+対象：javascript。位置：`js/types/javascript/index.js の write と document.getElementById`。
+
+再現：固定ee01f07で種類を選び、次を実行する。ImageJは64×64の8-bit画像1枚を置く（モデルimagesのw/h=64、bit=8）。JavaScriptは標準のname／result要素を使う。
+
+```javascript
+let e=document.getElementById("result");
+e.id="renamed";
+console.log(document.getElementById("result")===null);
+console.log(document.getElementById("renamed")===e);
+```
+
+実際：旧IDのnull比較も新IDの同一性比較もfalse。
+
+期待・一次根拠：同じname／result要素を置いた実Chromiumはtrue、true。getElementByIdは現在のIDで検索する。 [getElementById](https://dom.spec.whatwg.org/#dom-nonelementparentnode-getelementbyid)、[idの反映](https://dom.spec.whatwg.org/#dom-element-id)。
+
+通常の作成・追加とは別に、既存要素のIDを書き換えた際の索引と要素自身の不整合。
+
+### R7-186（P2）DOMプロパティを普通のレコードとして扱い、初期値・型・読取専用性を誤る
+
+対象：javascript。位置：`js/types/javascript/index.js:555、597、648`。
+
+再現：固定ee01f07で種類を選び、次を実行する。ImageJは64×64の8-bit画像1枚を置く（モデルimagesのw/h=64、bit=8）。JavaScriptは標準のname／result要素を使う。
+
+```javascript
+let p=document.createElement("p");
+console.log(p.id === "");
+p.textContent=1;
+console.log(typeof p.textContent);
+p.textContent=null;
+console.log(p.textContent === "");
+p.tagName="X";
+console.log(p.tagName);
+```
+
+実際：`false`、`number`、`false`、`X`。
+
+期待・一次根拠：実Chromium（通常の非strictスクリプト）は `true`、`string`、`true`、`P`。未設定idは空文字列、textContentは文字列でnull設定は空文字列、tagNameは読取専用。strictならtagName代入はTypeErrorであり、Xへ書き換わることはない。 [Element IDL／id](https://dom.spec.whatwg.org/#interface-element)、[textContent](https://dom.spec.whatwg.org/#dom-node-textcontent)、[Web IDL DOMString](https://webidl.spec.whatwg.org/#es-DOMString)。
+
+モデルDOM読書き・要素作成を対応宣言し、idの参照戻り値にも「設定がなければ空文字列」と記すが実装が違う。子テキストの集約は既報R7-39のため重複計上しない。
+
+### R7-187（P2）ROIの外接矩形が始点・小数寸法のままで、実際に選択を囲む矩形にならない
+
+対象：imagej。位置：`js/types/imagej/engine.js:1707–1768`。
+
+再現：固定ee01f07で種類を選び、次を実行する。ImageJは64×64の8-bit画像1枚を置く（モデルimagesのw/h=64、bit=8）。JavaScriptは標準のname／result要素を使う。
+
+```ijm
+makeLine(10,10,0,0);
+getSelectionBounds(x,y,w,h);print(x,y,w,h);
+getBoundingRect(a,b,c,d);print(a,b,c,d);
+```
+
+実際：両取得関数とも `10 10 10 10`。
+
+期待・一次根拠：実ImageJ 1.54pは両方 `0 0 11 11`。逆向き直線の最小座標、端点を含む整数矩形を返す。 [getSelectionBounds／getBoundingRect](https://imagej.net/ij/developer/macro/functions2.html#getSelectionBounds)、[1.54p getBounds／makeLine](https://github.com/imagej/ImageJ/blob/v1.54p/ij/macro/Functions.java#L819)。
+
+228ケース中の成功比較で確認。直線20組のほか、makeRectangle(0,2.5,1,1.5)では実物 `0 2 1 2`、モデル `0 2.5 1 1.5`。makeOval、point／angle選択にも寸法差がある。モデルが幅を未確定にする多角形についても始点xを外接左上と確定する部分は誤り。すべてを同じROI幾何・整数境界の指摘にまとめた。
+
+### R7-188（P2）幅0の矩形ROIを実在する選択として保持する
+
+対象：imagej。位置：`js/types/imagej/engine.js:1707`。
+
+再現：固定ee01f07で種類を選び、次を実行する。ImageJは64×64の8-bit画像1枚を置く（モデルimagesのw/h=64、bit=8）。JavaScriptは標準のname／result要素を使う。
+
+```ijm
+makeRectangle(0,2,0,1);
+print(selectionType());
+getSelectionBounds(x,y,w,h);print(x,y,w,h);
+```
+
+実際：selectionTypeは0、範囲は `0 2 0 1`。
+
+期待・一次根拠：64×64画像上の実ImageJ 1.54pは選択なしの−1、範囲 `0 0 64 64`。選択がなければ画像全体を返す。 [選択なしの範囲](https://imagej.net/ij/developer/macro/functions2.html#getSelectionBounds)、[1.54p makeRectangle](https://github.com/imagej/ImageJ/blob/v1.54p/ij/macro/Functions.java#L877)。
+
+矩形・楕円の幅、各座標、0／1／−1／小数を交差した160組を実行した。負数・高さ0を一律に無選択とする規則は主張せず、実測で確定した幅0のケースを指摘する。
+
+### R7-189（P2）makeSelectionの文字列typeを誤対応させ、異なる選択型を返す
+
+対象：imagej。位置：`js/types/imagej/engine.js:1730`。
+
+再現：固定ee01f07で種類を選び、次を実行する。ImageJは64×64の8-bit画像1枚を置く（モデルimagesのw/h=64、bit=8）。JavaScriptは標準のname／result要素を使う。
+
+```ijm
+xs=newArray(10,0,5);ys=newArray(10,0,7);
+makeSelection("line",xs,ys);
+print(selectionType());
+```
+
+実際：lineからselectionType()が5になる。
+
+期待・一次根拠：実ImageJ 1.54pでは6（折れ線）。実装のtype文字列判定ではlineを含む指定はPOLYLINE（freeを含めばFREELINE）として作る。未対応の形式なら正直に停止する。 [公式 makeSelection](https://imagej.net/ij/developer/macro/functions2.html#makeSelection)、[1.54p type判定](https://github.com/imagej/ImageJ/blob/v1.54p/ij/macro/Functions.java#L2078)。
+
+この3点のlineは実物でも成功する形式。"rectangle"／"oval"／"composite"もモデル独自の型へ変わるが、公式説明に列挙された推奨形式と区別し、主要再現はlineに絞る。
+
+### R7-190（P2）makeSelectionがX／Y配列の長さ不一致を無視して選択を作る
+
+対象：imagej。位置：`js/types/imagej/engine.js:1730`。
+
+再現：固定ee01f07で種類を選び、次を実行する。ImageJは64×64の8-bit画像1枚を置く（モデルimagesのw/h=64、bit=8）。JavaScriptは標準のname／result要素を使う。
+
+```ijm
+xs=newArray(10,0,5);ys=newArray(10,0);
+makeSelection("polygon",xs,ys);
+print(selectionType());
+```
+
+実際：正常終了してselectionTypeが2。
+
+期待・一次根拠：実ImageJは `Arrays are not the same length`。不正な座標対からROIを作成済みと説明しない。 [公式 makeSelection](https://imagej.net/ij/developer/macro/functions2.html#makeSelection)、[1.54p 配列長検証](https://github.com/imagej/ImageJ/blob/v1.54p/ij/macro/Functions.java#L2111)。
+
+型16形式×同長／不一致の32組を照合。nativeのignoreErrorsを使ったハーネスではエラー後にJava例外や出力が生じ得るため、それらを本来の継続結果とは扱っていない。この指摘は取得できたエラー文と公式の検証位置を根拠にする。
+
+### R7-191（P2）makeSelectionの有効な第4引数を引数数エラーと誤診する
+
+対象：imagej。位置：`js/types/imagej/engine.js の静的引数数表`。
+
+再現：固定ee01f07で種類を選び、次を実行する。ImageJは64×64の8-bit画像1枚を置く（モデルimagesのw/h=64、bit=8）。JavaScriptは標準のname／result要素を使う。
+
+```ijm
+xs=newArray(10,0,5);ys=newArray(10,0,7);
+makeSelection("point",xs,ys,2);
+print(selectionType());
+```
+
+実際：「makeSelection の引数の数が違います」と表示する（後続出力を作る点は既報R7-93）。
+
+期待・一次根拠：実ImageJ 1.54pは配列先頭2点でポイント選択を作り、10を出す。第4引数は使う点数nで、配列長以内なら有効。対応しない場合の理由は未対応であり、利用者の引数数が不正という断定ではない。 [1.54p makeSelection の任意n](https://github.com/imagej/ImageJ/blob/v1.54p/ij/macro/Functions.java#L2113)。
+
+polygon／point × n=0,1,2,3,4の10組で確認。n=4は配列長を超えるため、実物もArray too short。この異常ケースを有効形式の証拠には使わない。
+
+### R7-192（P2）ボクセル校正を設定したと説明しながら保持せず、取得で初期値を捏造する
+
+対象：imagej。位置：`js/types/imagej/engine.js:1700`。
+
+再現：固定ee01f07で種類を選び、次を実行する。ImageJは64×64の8-bit画像1枚を置く（モデルimagesのw/h=64、bit=8）。JavaScriptは標準のname／result要素を使う。
+
+```ijm
+setVoxelSize(2,3,4,"mm");
+getVoxelSize(x,y,z,u);
+print(x,y,z,u);
+```
+
+実際：setVoxelSizeで「以後の測定はこの校正で換算」と説明するが、取得出力は `1 1 1 pixels`。
+
+期待・一次根拠：実ImageJ 1.54pは `2 3 4 mm`。少なくとも設定した幅2・高さ3・単位mmを保持するか、校正が未対応として停止する。 [setVoxelSize／getVoxelSize](https://imagej.net/ij/developer/macro/functions2.html#setVoxelSize)、[1.54p 校正書込み](https://github.com/imagej/ImageJ/blob/v1.54p/ij/macro/Functions.java#L3965)。
+
+標準64×64画像で実測。公式Web説明は非スタックでdepthを無視すると記す一方、この1.54p実装は4を保持したため、その差をアプリの独立欠陥件数には加えていない。明白な幅・高さ・単位の未保持を根拠にする。getPixelSizeはモデルが未対応停止するので、正常取得と誤記しない。
+
+### R7-193（P2）配列を文字列引数へ渡すと内部Object表記を正常な文字列にする
+
+対象：vba。位置：`js/engine.js:674 の str と各文字列組込み関数`。
+
+再現：固定ee01f07で種類を選び、次を実行する。ImageJは64×64の8-bit画像1枚を置く（モデルimagesのw/h=64、bit=8）。JavaScriptは標準のname／result要素を使う。
+
+```vb
+Debug.Print CStr(Array(1))
+```
+
+実際：`[object Object]` を正常出力する。
+
+期待・一次根拠：Array(1)はVariant要素の非Byte配列であり、Stringへの変換はエラー13（型が一致しません）。Windows VBScript補助実測でもType mismatch／13。 [MS-VBAL 非Byte配列のLet-coercion](https://learn.microsoft.com/en-us/openspecs/microsoft_general_purpose_programming_languages/ms-vbal/38315eed-8ea8-4e2a-b91c-25a96910407a)。
+
+Left(Array(1),1)／Mid(Array(1),1,1)は"["、Rightは"]"、Trim／Replaceは内部Object表記、InStrは0となる。空配列・数値1要素・文字列1要素も確認。型付き数値のLenは既報R7-34であり、ここでは配列からStringへの不正変換を分ける。Excel実測とは表示しない。
+
+### R7-194（P2）文字列切出しのLong引数で偶数丸めと範囲検証を行わない
+
+対象：vba。位置：`js/engine.js:1177`。
+
+再現：固定ee01f07で種類を選び、次を実行する。ImageJは64×64の8-bit画像1枚を置く（モデルimagesのw/h=64、bit=8）。JavaScriptは標準のname／result要素を使う。
+
+```vb
+Debug.Print Left("abcd", 1.5)
+Debug.Print Mid("abcd", 1, 1.5)
+Debug.Print Left("abcd", 2147483648)
+```
+
+実際：先頭のLeft(1.5)で「引数が不正です」／5。各行を単独実行するとMidの長さ1.5は"a"へ切り捨て、2147483648は全文を返す。
+
+期待・一次根拠：Left("abcd",1.5)は"ab"、Mid("abcd",1,1.5)は"ab"、Long範囲外の2147483648はOverflow／6。Longへの数値変換を偶数丸め・範囲検証してから関数の値域を検査する。 [Left length=Variant(Long)](https://learn.microsoft.com/en-us/office/vba/language/reference/user-interface-help/left-function)、[Mid](https://learn.microsoft.com/en-us/office/vba/language/reference/user-interface-help/mid-function)、[MS-VBAL 数値変換](https://learn.microsoft.com/en-us/openspecs/microsoft_general_purpose_programming_languages/ms-vbal/56fb78c3-a0ea-4bf0-8ee4-eb5f89bda4f7)。
+
+Rightでも同根。0.5、1.5、2.5、−0.5、数値文字列、Long上限／超過を含めて照合した。Windows VBScriptの実出力で補強したが、VBScriptのLeft(2147483647)はエラー5という差もあり、これをVBAの正解に流用しない。Replaceの小数start／count、Roundの小数桁引数は補助差分として保留し、新規件数を増やさない。
+
+### R7-195（P2）CStrのDouble文字列化がVBA書式にならず、文字列比較も変わる
+
+対象：vba。位置：`js/engine.js:674 の str と cstr`。
+
+再現：固定ee01f07で種類を選び、次を実行する。ImageJは64×64の8-bit画像1枚を置く（モデルimagesのw/h=64、bit=8）。JavaScriptは標準のname／result要素を使う。
+
+```vb
+Debug.Print CStr(1E20) = "1E+20"
+Debug.Print CStr(1E20)
+```
+
+実際：Falseと、指数表記でない `100000000000000000000`。
+
+期待・一次根拠：Trueと `1E+20`。Doubleの整数部が15桁を超える場合は、VBAの文字列変換規則に従って指数表記を使う。Windows VBScript（locale1033）のCStr(1E20)も1E+20。 [MS-VBAL 数値からStringの書式](https://learn.microsoft.com/en-us/openspecs/microsoft_general_purpose_programming_languages/ms-vbal/00113388-401b-41c2-8107-dc3fc0485554)。
+
+Debug.Printそのものの見た目の相違ではなく、CStrが返すStringと等値分岐が変わることを確認した。小さな値の指数大文字・小文字差や、ロケール・Unicodeケース変換は今回確定した欠陥には加えない。
+
+## 節目8の残作業
+
+**観点1〜8の監査は未完了。** 固定ee01f07の全15種類・104テンプレート・978参照項目・111用語・全ビューを引き続き対象にする。配信先mainで追加された種類や修正の残存確認とは混ぜない。今回の有限集合で一致した箇所を、全関数・全入力・全ビューの完了に読み替えない。
+
+| 観点 | 今回進めた範囲 | 残作業 |
+|---|---|---|
+| 1 一次照合 | ECMAScript／DOM／HTML、ImageJ1.54pの本体・公式ソース、Microsoft Learn／MS-VBALとWindows補助比較 | 全15種類の残る構文・関数・型・書式。補助VBScriptとVBAが違う候補を、実Excel等の適切な根拠へ置き換える作業 |
+| 2 宣言 | JSの字句束縛・未知値・モデルDOM、lengthの明示除外、ImageJの校正・ROI、VBAのLong変換 | DEVELOPMENT.mdの全宣言の双方向表、全型・名前・値域における未対応停止の正直さ |
+| 3 分岐・状態・表示 | 未確定radixで落ちるパス、通常レコードで増える偽パス、DOMのID／型／初期値、ROI・校正の状態 | 全エンジンの未確認制約、保存・移行・複数タブの前節からの未了分、DOMコレクション／配列穴・型・別名・未知値の残る交差 |
+| 4 cmd／PowerShell | 過去の実Windows echo等の回答・根拠を保持 | 残る全引数位置・展開段階・パイプライン・表示・停止理由。今回はcmd／PowerShellの追加実測なし。Windows CI自体は利用可能 |
+| 5 参照・用語 | JS39項目の列挙・38対応例の実行、明示除外との突合、4用語、DOM初期値の説明との矛盾。ImageJとVBAの関数契約 | 978項目の全説明・書式・例の値、全実装名／変数／属性／定数／別名／構文の完全対応、111用語の一次逐文・教材語・全ビューの説明矛盾 |
+| 6 全関数の境界等 | JS初回247＋追加12ソースの7入力比較・DOM、ImageJ228＋校正、VBAモデル522のWindows実行と補助比較 | 全関数の全引数位置・型・空／null・巨大値・個数・ゼロ除算・入れ子・条件・チェーン・パイプライン。Round桁数／Null、IsNumericのEmpty／Boolean、Unicode casing、VBA引数型の未確定分も継続 |
+| 7 全104教材・全エラー | JS全6教材の初期モデル・主張、38参照例、ImageJの長さ不一致・有効な任意n、19画面ソース | 104教材全体の未了分を保持。ImageJの実GUIが必要な教材、全エンジンの全停止文言と実原因の一対一再現。今回のJS参照例実行を参照の全意味検証とはしない |
+| 8 文面・a11y・劣化・性能 | alert文面、id参照の初期値誤り、校正したとの誤説明、19画面再現、Windows522ケースのsimulate実測 | 全利用者文面の誤記・表記、aria・ラベル・全フォーカス、実容量枯渇と保存救出、キャッシュ世代、最重入力の探索・Windows UI描画性能 |
+
+種類別でもVBA・ImageJ・CloudFormation・PAD・AutoHotkey・UI.Vision・Power Apps・Python・R・C・C++・C#・JavaScript・cmd・PowerShellすべてに未了作業を残す。前節のR median／seq／rep／read.csvと名前・属性・精度、C系の全オーバーロード・定数式・整数昇格・宣言型・ポインタ／配列、C#のTryParse out修飾子／型なども落とさない。今回扱わなかった種類を「確認済み・なし」へ変更しない。
+
+実Excel／Canvas／PAD／AWS／UI.Visionの製品セッション、実スクリーンリーダー、Safari／Firefox／iOS実機、ImageJ GUI全経路は接続・実行環境がなく未実施。LinuxのImageJ本体・実ChromiumとWindows CIで可能な検証は実施したが、これらが未接続製品の実測を代替したとは書かない。Windows CIで実行できる残作業を環境上不可能とはしない。最重ケースを発見したとも断定しない。
+
+使用量・回数制限、リセット時刻の通知は受けていない。リセット権・サブエージェントは使っていない。依頼されたモデル／推論設定をこの会話のツールで変更・確認できない制約も継続する。これは継続中の節目報告であり、全範囲完了や欠陥収束の宣言ではない。
