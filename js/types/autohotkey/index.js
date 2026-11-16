@@ -623,7 +623,7 @@ function rewriteSegment(seg) {
     if (!name.includes(".") && AHK_STMT_KEYWORDS.has(name.toLowerCase())) return seg;
     if (
       /^(:=|==|!=|<=|>=|\+=|-=|\*=|\/=|\*\*=|&=|\|=|\^=|<<=|>>=|>>>=|\.=|&&|\|\|)/.test(rest) ||
-      /^[=*\/(\[{?:,|<>.%^]/.test(rest)
+      /^[=*\/\[{?:,|<>.%^]/.test(rest)
     )
       return seg;
     if (/^[+-]/.test(rest)) {
@@ -1396,6 +1396,35 @@ export const definition = {
       return modelFailure("モデルはオブジェクト（JSON）で指定してください");
     if (!Array.isArray(model.windows))
       return modelFailure("モデルwindowsは配列で指定してください");
+    // R32-PLAT-N2(a)（修正バッチ11・fx班）: windows の要素の形状も入口
+    // で検証する。要素がオブジェクトでない・必須フィールド（id／
+    // title／text／exists）が欠ける・型が違う形は、ウィンドウ解決や
+    // ホットストリング処理の中で汎用文言（「null / undefined の
+    // プロパティは参照できません」「処理中に予期しないエラーが発生
+    // しました」）になっていた。shell の files 要素、ImageJ の
+    // images 要素と同じく、要素の位置とフィールド名を名指して
+    // 停止する（検証はモデル検証部だけに置き、パーサには触れない）。
+    for (let i = 0; i < model.windows.length; i++) {
+      const w = model.windows[i];
+      if (!isModelObject(w))
+        return modelFailure(`モデルwindows[${i}]はオブジェクトで指定してください`);
+      if (!("id" in w))
+        return modelFailure(`モデルwindows[${i}]にidがありません`);
+      if (typeof w.id !== "number")
+        return modelFailure(`モデルwindows[${i}].idは数値で指定してください`);
+      if (!("title" in w))
+        return modelFailure(`モデルwindows[${i}]にtitleがありません`);
+      if (typeof w.title !== "string")
+        return modelFailure(`モデルwindows[${i}].titleは文字列で指定してください`);
+      if (!("text" in w))
+        return modelFailure(`モデルwindows[${i}]にtextがありません`);
+      if (typeof w.text !== "string")
+        return modelFailure(`モデルwindows[${i}].textは文字列で指定してください`);
+      if (!("exists" in w))
+        return modelFailure(`モデルwindows[${i}]にexistsがありません`);
+      if (typeof w.exists !== "boolean")
+        return modelFailure(`モデルwindows[${i}].existsは真偽値で指定してください`);
+    }
     if (model.variables !== undefined && !isModelObject(model.variables))
       return modelFailure("モデルvariablesはオブジェクトで指定してください");
     if (model.keys !== undefined && !Array.isArray(model.keys))

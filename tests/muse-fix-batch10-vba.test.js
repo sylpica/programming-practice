@@ -214,15 +214,27 @@ test("batch10-imagej R31-N13 every return path carries truncated (overlong code,
   assert.ok(!ok.error);
 });
 test("batch10-imagej sweep-c other model fields degrade honestly without generic wording", async () => {
-  // files／directories／runtime の型違いは未確定値への正直な退化で、
+  // directories／runtime の型違いは未確定値への正直な退化で、
   // 汎用文言にも契約キー欠落にもならない（処置前から維持されている挙動）。
-  for (const model of [{ files: 123 }, { files: "x" }, { directories: 123 }, { runtime: "x" }]) {
+  // 修正バッチ11・fx班（RG-362(c)／R32-PLAT-N2(c)）で files の期待値を
+  // 更新: files は R32 監査で「images と同水準の入口検証で項目を
+  // 名指すべき欠陥」と再判定されたため、退化ではなくモデルエラーで
+  // 停止する（truncated 契約と汎用文言回避は維持・厳密化）。
+  for (const model of [{ directories: 123 }, { runtime: "x" }]) {
     const r = await ijRun("print(1);", model);
     assert.equal(r.truncated, false, JSON.stringify(model));
     assert.ok(!r.error, JSON.stringify(model));
     assert.ok(!JSON.stringify(r).includes("予期しないエラー"), JSON.stringify(model));
   }
+  for (const model of [{ files: 123 }, { files: "x" }]) {
+    const r = await ijRun("print(1);", model);
+    assert.equal(r.truncated, false, JSON.stringify(model));
+    assert.ok(r.error, JSON.stringify(model));
+    assert.match(r.error.message, /モデルの files はオブジェクトで指定してください/);
+    assert.ok(!JSON.stringify(r).includes("予期しないエラー"), JSON.stringify(model));
+  }
   const r = await ijRun("open(\"/model/input/image1.tif\");", { files: 123 });
   assert.equal(r.truncated, false);
+  assert.match(r.error.message, /モデルの files はオブジェクトで指定してください/);
   assert.ok(!JSON.stringify(r).includes("予期しないエラー"));
 });

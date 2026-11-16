@@ -169,6 +169,34 @@ export const definition = {
           limits: LIMITS,
           error: { line: 1, message: imagesError },
         };
+      // R32-PLAT-N2(c)（修正バッチ11・fx班）: files にも images と同水準の
+      // 入口検証を入れる。files はパス→ファイルオブジェクトの対応表で、
+      // スカラー（42／"x" 等）のままエンジンへ渡ると、ファイルを開く
+      // テンプレートの実行時に汎用文言（「処理中に予期しないエラーが
+      // 発生しました」）に落ちていた。未指定（undefined／null）は
+      // images と同じく従来どおり（エンジン側で空の対応表になる）。
+      // 結果契約（truncated を含む形）は images のエラー返却と同一にする。
+      const filesError = (() => {
+        if (!model || typeof model !== "object") return null;
+        const files = model.files;
+        if (files === undefined || files === null) return null;
+        if (typeof files !== "object" || Array.isArray(files))
+          return "モデルの files はオブジェクトで指定してください";
+        for (const [path, entry] of Object.entries(files)) {
+          if (!entry || typeof entry !== "object" || Array.isArray(entry))
+            return `モデルの files["${path}"] はオブジェクトで指定してください`;
+          if (entry.pix !== undefined && entry.pix !== null && typeof entry.pix !== "object")
+            return `モデルの files["${path}"].pix はオブジェクトで指定してください`;
+        }
+        return null;
+      })();
+      if (filesError)
+        return {
+          paths: [],
+          truncated: false,
+          limits: LIMITS,
+          error: { line: 1, message: filesError },
+        };
       // R25-N6: 長さ検査を try の内側へ移す。try の外にあると
       // simulate(null) 等で code.length の TypeError がガードつき
       // catch（RG-173）を通らず投げ返されてしまう。

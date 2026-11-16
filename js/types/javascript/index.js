@@ -527,6 +527,17 @@ export const definition = {
       return modelFailure(
         "モデルdom.elementsはオブジェクトで指定してください",
       );
+    // R32-PLAT-N2(b)（修正バッチ11・fx班）: 要素値の形状も入口で検証
+    // する。要素値がオブジェクトでない形（例：{name: 42}）は、要素へ
+    // の書き込み時に「null / undefined へ書き込めません」という
+    // 要素を指さない汎用文言になっていた。Power Apps の
+    // controls.<名前>、UI.Vision の pages.<URL>.elements.<ロケータ>
+    // と同じく、要素キー名を名指して停止する。
+    for (const [name, element] of Object.entries(model.dom.elements))
+      if (!isModelObject(element))
+        return modelFailure(
+          `モデルdom.elements.${name}はオブジェクトで指定してください`,
+        );
     if (!isModelObject(model.dom.body))
       return modelFailure("モデルdom.bodyはオブジェクトで指定してください");
     if (model.dom.selectors !== undefined && !isModelObject(model.dom.selectors))

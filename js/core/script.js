@@ -490,7 +490,7 @@ export function tokenize(source, dialect = "js") {
     m = source
       .slice(i)
       .match(
-        /^(===|!==|%\/%|%%|%in%|<-|->|:=|==|!=|<=|>=|&&=|\|\|=|\?\?=|&&|\|\||\+\+|--|\*\*=|>>>=|\*\*|\+=|-=|\*=|\/=|<<=|<<|>>=|>>>|>>|&=|\|=|\^=|::|=>|<>|\[\[|\]\]|[+\-*\/%^&|!<>=(){}\[\],;:.$?])/,
+        /^(===|!==|%\/%|%%|%in%|%=|<-|->|:=|==|!=|<=|>=|&&=|\|\|=|\?\?=|&&|\|\||\+\+|--|\*\*=|>>>=|\*\*|\+=|-=|\*=|\/=|<<=|<<|>>=|>>>|>>|&=|\|=|\^=|::|=>|<>|\[\[|\]\]|[+\-*\/%^&|!<>=(){}\[\],;:.$?])/,
       );
     if (!m) {
       // RG-61：不可視文字・制御文字は、そのまま出すと原因表示が空に見えるため名指しする。
@@ -523,12 +523,19 @@ export function tokenize(source, dialect = "js") {
     // トークン列を一切変えない。
     const compoundHeads = {
       "**=": "*", "&=": "&", "|=": "|", "^=": "^",
-      "<<=": "<<", ">>=": ">>", ">>>=": ">>>",
+      "<<=": "<<", ">>=": ">>", ">>>=": ">>>", "%=": "%",
     };
-    if (compoundHeads[m[0]] !== undefined && dialect !== "ahk") {
+    if (
+      compoundHeads[m[0]] !== undefined &&
+      dialect !== "ahk" &&
+      !(dialect === "js" && m[0] !== "**=")
+    ) {
       // R31-N5（JS 分）：`**=` は JavaScript では `**`＋`=` として出し、
       // parser 側で `**=` 演算子として名指せるようにする（従来の
       // `*`＋`= `分割では `*=` という別演算子の名指しになっていた）。
+      // RG-348（R32-PAR-2）：JS のその他の複合代入（%= ／ &= ／ |= ／
+      // ^= ／ <<= ／ >>= ／ >>>=）は単一トークンのまま parser へ渡し、
+      // 実装済みの二項演算と同じ機構で評価する。
       const head =
         dialect === "js" && m[0] === "**=" ? "**" : compoundHeads[m[0]];
       out.push({ v: head, line });
@@ -964,6 +971,39 @@ export class ScriptParser {
             ["id", "string", "number"].includes(this.ts[this.i]?.k)
           )
             unsupported(`オブジェクトリテラルの ${key.v} アクセサ`, key.line);
+          // RG-350（R32-PAR-4）：修飾子の組み合わせ形（計算済みアクセサ／
+          // async メソッド（計算済み名）／async ジェネレータメソッド）も
+          // 「: が必要です」にせず、形そのものを名指す。
+          if (
+            this.dialect === "js" &&
+            key.k === "id" &&
+            (key.v === "get" || key.v === "set") &&
+            this.ts[this.i]?.v === "["
+          )
+            unsupported(
+              `オブジェクトリテラルの ${key.v} アクセサ（計算済みプロパティ名）`,
+              key.line,
+            );
+          if (
+            this.dialect === "js" &&
+            key.k === "id" &&
+            key.v === "async" &&
+            this.ts[this.i]?.v === "*"
+          )
+            unsupported(
+              "オブジェクトリテラルの async ジェネレータメソッド",
+              key.line,
+            );
+          if (
+            this.dialect === "js" &&
+            key.k === "id" &&
+            key.v === "async" &&
+            this.ts[this.i]?.v === "["
+          )
+            unsupported(
+              "オブジェクトリテラルの async メソッド（計算済みプロパティ名）",
+              key.line,
+            );
           if (
             this.dialect === "js" &&
             key.k === "id" &&
@@ -1102,9 +1142,44 @@ export class ScriptParser {
       if (v === "$" || (v === "." && this.ts[this.i + 1]?.k === "id")) {
         this.take();
         let name = this.take();
+        // RG-349（R32-PAR-3 の R 分）：`a$` のように $ の後ろに名前が
+        // 無い形を、$ を黙って捨てて別の原因（未定義の名前等）に化け
+        // させず、名前の欠落そのものを名指す。
+        if (
+          v === "$" &&
+          this.dialect === "r" &&
+          !["id", "string"].includes(name.k)
+        )
+          throw new PracticeError(
+            "「$」のあとには名前（列名など）が必要です",
+            name.line,
+            "SyntaxError",
+          );
         a = { k: "member", target: a, name: name.v, line: a.line };
         continue;
       }
+      // RG-349（R32-PAR-3 の JS 分）：`a.` のように . の後ろに名前が
+      // 無い形は、区切り記号ではなく名前の欠落を名指す（. の後ろに
+      // 識別子が続く正当な形は上の分岐で処理済み）。
+      if (v === "." && this.dialect === "js")
+        throw new PracticeError(
+          "「.」のあとには名前（プロパティ名など）が必要です",
+          next.line,
+          "SyntaxError",
+        );
+      // RG-349（R32-PAR-3 の R 分）：`a::` のように :: の後ろに名前が
+      // 無い形も名前の欠落を名指す（a::b／a:::b の正当な形は対象外）。
+      if (
+        v === "::" &&
+        this.dialect === "r" &&
+        this.ts[this.i + 1]?.k !== "id" &&
+        this.ts[this.i + 1]?.v !== ":"
+      )
+        throw new PracticeError(
+          "「::」のあとには名前が必要です",
+          next.line,
+          "SyntaxError",
+        );
       if (v === "++" || v === "--") {
         this.take();
         a = { k: "post", target: a, op: v, line: a.line };
@@ -1198,12 +1273,16 @@ export class ScriptParser {
     if (
       min === 0 &&
       this.assignOk &&
-      (this.dialect === "js" || this.dialect === "ahk")
+      (this.dialect === "js" || this.dialect === "ahk" || this.dialect === "r")
     ) {
+      // RG-355（R32-F01C-N1）：R の代入（<-）は値を返す式として式位置
+      // でも読む（右結合の連鎖代入も再帰でそのまま成立する）。
       const assignOpsHere =
         this.dialect === "js"
-          ? ["=", "+=", "-=", "*=", "/=", "&&=", "||=", "??="]
-          : [":=", "+=", "-=", "*=", "/=", "&=", "|=", "^=", "<<=", ">>=", ">>>="];
+          ? ["=", "+=", "-=", "*=", "/=", "%=", "<<=", ">>=", ">>>=", "&=", "|=", "^=", "&&=", "||=", "??="]
+          : this.dialect === "r"
+            ? ["<-"]
+            : [":=", "+=", "-=", "*=", "/=", "&=", "|=", "^=", "<<=", ">>=", ">>>="];
       if (assignOpsHere.includes(this.ts[this.i]?.v)) {
         const op = this.take().v;
         if (!["var", "member", "index"].includes(a.k)) {
@@ -1250,6 +1329,28 @@ export class ScriptParser {
     }
     this.depth--;
     return a;
+  }
+  // RG-358（R32-F01C-N2）：if／while の条件が括弧式で始まり、その直後に
+  // 二項演算子が続く形（if (x) > 3、while (i + 1) <= 3 等）は、括弧内
+  // だけを条件として残りを捨てたり演算子の断片を原因にしたりせず、
+  // 条件全体を1つの式として読み直す。AutoHotkey 以外では従来どおり
+  // 括弧内だけを読む。
+  parenTest() {
+    const save = this.i,
+      saveDepth = this.depth;
+    this.take("(");
+    let test = this.exprCtx(1);
+    this.take(")");
+    if (
+      this.dialect === "ahk" &&
+      (this.ts[this.i]?.v === "?" ||
+        this.precTable()[this.ts[this.i]?.v] !== undefined)
+    ) {
+      this.i = save;
+      this.depth = saveDepth;
+      test = this.exprCtx(1);
+    }
+    return test;
   }
   skipLines() {
     while (this.ts[this.i]?.v === "\n" && !this.ts[this.i]?.k) this.take();
@@ -1585,9 +1686,7 @@ export class ScriptParser {
       this.take();
       let test;
       if (this.peek("(")) {
-        this.take();
-        test = this.exprCtx(1);
-        this.take(")");
+        test = this.parenTest();
       } else test = this.exprCtx(1);
       let body = this.body();
       // R30-N13：R では改行を跨いだ else を結ばない（式位置の if と同じ
@@ -1622,9 +1721,7 @@ export class ScriptParser {
       let test;
       if (this.dialect === "ahk" && !this.peek("(")) test = this.exprCtx(1);
       else {
-        this.take("(");
-        test = this.exprCtx(1);
-        this.take(")");
+        test = this.parenTest();
       }
       return { k: "while", test, body: this.body(), line, refs: ["while"] };
     }
@@ -1648,6 +1745,11 @@ export class ScriptParser {
     }
     if (v === "for") {
       this.take();
+      // RG-347（R32-PAR-1）：for await は for の直後に await が続く形。
+      // 「( が必要です」という虚偽原因にせず、for await 文そのものを
+      // 名指して停止する（RG-335 の for-of 文の名指しと同水準）。
+      if (this.dialect === "js" && this.peek("await"))
+        unsupported("for await 文", line);
       this.take("(");
       if (this.dialect === "r") {
         let name = this.take().v;
@@ -1906,7 +2008,7 @@ export class ScriptParser {
     // RG-43：代入演算子は方言ごとに限定する（他方言の演算子の無言受理を防ぐ）。
     const assignOps = {
       // R30-N16：JavaScript の論理代入（&&= ／ ||= ／ ??=）を追加。
-      js: ["=", "+=", "-=", "*=", "/=", "&&=", "||=", "??="],
+      js: ["=", "+=", "-=", "*=", "/=", "%=", "<<=", ">>=", ">>>=", "&=", "|=", "^=", "&&=", "||=", "??="],
       r: ["=", "<-", "+=", "-=", "*=", "/="],
       // R27-N8：AutoHotkey v2 公式の代入演算子表にある複合代入を追加。
       // **= は公式の代入演算子表に無いため含めない（式位置では ** の
@@ -2349,11 +2451,13 @@ export function executeProgram(nodes, model, semantics = {}, custom = {}) {
         if (["&&=", "||=", "??="].includes(a.op))
           return evalLogicalAssign(a.target, a.op, a.value, s, a);
         let v;
-        if (a.op === "=" || a.op === ":=")
+        if (a.op === "=" || a.op === ":=" || a.op === "<-")
           v = read(a.value, s);
         else {
           const base = {
             "+=": "+", "-=": "-", "*=": "*", "/=": "/", "**=": "**",
+            "%=": "%", "&=": "&", "|=": "|", "^=": "^",
+            "<<=": "<<", ">>=": ">>", ">>>=": ">>>",
           }[a.op];
           if (!base)
             throw new PracticeError(
@@ -2917,6 +3021,7 @@ export function executeProgram(nodes, model, semantics = {}, custom = {}) {
         // **= ／ <<= 等の複数文字演算子を扱えない）。
         const compoundBase = {
           "+=": "+", "-=": "-", "*=": "*", "/=": "/", "**=": "**",
+          "%=": "%",
           "&=": "&", "|=": "|", "^=": "^",
           "<<=": "<<", ">>=": ">>", ">>>=": ">>>",
         }[n.op];

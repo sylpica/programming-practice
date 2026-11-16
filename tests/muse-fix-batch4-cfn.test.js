@@ -54,15 +54,22 @@ test("R25-N4 finite deep nesting (50/200/1000) keeps working", async () => {
   }
 });
 
+// 修正バッチ11・fx班（RG-361／R32-F01B-N3）で期待値を更新: R25 時点では
+// 「ホスト例外の変換文言」が期待だった3形は、R32 監査で「他種の RG-345
+// 水準のモデル形状検証でモデル／項目を名指すべき欠陥」と再判定された。
+// 変換の検証（生文言が漏れないこと）は維持し、文言は新しい入口検証の
+// 名指し文言＋カテゴリ「モデルエラー」に厳密化した（弱体化ではない）。
 test("R25-N4 null model is converted to a learner message", async () => {
   const r = await cf.simulate("Resources: {}", null);
-  assert.equal(r.error.message, "null / undefined のプロパティは参照できません");
+  assert.equal(r.error.message, "モデルはオブジェクト（JSON）で指定してください");
+  assert.equal(r.error.category, "モデルエラー");
   assert.doesNotMatch(r.error.message, HOST_LEAK);
 });
 
 test("R25-N4 undefined model is converted to a learner message", async () => {
   const r = await cf.simulate("Resources: {}", undefined);
-  assert.equal(r.error.message, "null / undefined のプロパティは参照できません");
+  assert.equal(r.error.message, "モデルはオブジェクト（JSON）で指定してください");
+  assert.equal(r.error.category, "モデルエラー");
   assert.doesNotMatch(r.error.message, HOST_LEAK);
 });
 
@@ -73,7 +80,8 @@ test("R25-N4 numeric macro definition is converted, not leaked", async () => {
     JSON.stringify({ Transform: "AddMetadata", Resources: {} }),
     m,
   );
-  assert.equal(r.error.message, "処理中に予期しないエラーが発生しました");
+  assert.equal(r.error.message, "モデルmacros.AddMetadataは文字列で指定してください");
+  assert.equal(r.error.category, "モデルエラー");
   assert.doesNotMatch(r.error.message, HOST_LEAK);
 });
 

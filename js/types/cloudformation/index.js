@@ -342,6 +342,44 @@ export const definition = {
   },
   async simulate(code, model) {
     try {
+      // R32-F01B-N3／R32-PLAT-N1（修正バッチ11・fx班）: モデル形状の入口
+      // 検証。他種は RG-345 で simulate 入口の検証を持ち、モデル自体は
+      // 「モデルはオブジェクト（JSON）で指定してください」／カテゴリ
+      // 「モデルエラー」、項目の型違いは項目名を名指して停止するが、
+      // CFN には検証が無く、モデル null が汎用文言（「null / undefined
+      // のプロパティは参照できません」）、非オブジェクトがハンドラ側の
+      // KeyError への誤帰属や空モデルへの黙った読み替え、macros の値の
+      // 型違いが汎用文言、event の非オブジェクトが黙った既定値補完に
+      // なっていた。ハンドラ形・テンプレート形の双方を対象に、入口で
+      // 形状を検証する。PracticeError は isAuthorError で著作者エラー
+      // として素通しされ、カテゴリ「モデルエラー」のまま返る。
+      const isModelObject = (v) =>
+        !!v && typeof v === "object" && !Array.isArray(v);
+      const modelFail = (message) => {
+        throw new PracticeError(message, 1, "モデルエラー");
+      };
+      if (!isModelObject(model))
+        modelFail("モデルはオブジェクト（JSON）で指定してください");
+      if (model.event !== undefined && !isModelObject(model.event))
+        modelFail("モデルeventはオブジェクトで指定してください");
+      if (model.macros !== undefined) {
+        if (!isModelObject(model.macros))
+          modelFail("モデルmacrosはオブジェクトで指定してください");
+        for (const [name, source] of Object.entries(model.macros))
+          if (typeof source !== "string")
+            modelFail(`モデルmacros.${name}は文字列で指定してください`);
+      }
+      // ハンドラ形では event が入力そのものであり、欠落はハンドラ側の
+      // KeyError（'fragment'）へ誤帰属していた。event と、その必須
+      // フィールド fragment の欠落をモデル側で名指す（テンプレート形
+      // の event 欠落は従来どおり後段の既定値補完で扱い、macros の
+      // 欠落は「モデルにマクロ定義がありません」が名指す）。
+      const isHandlerForm = /^\s*(def |import |from )/.test(firstCodeLine(code));
+      if (isHandlerForm) {
+        if (model.event === undefined) modelFail("モデルにeventがありません");
+        if (model.event.fragment === undefined)
+          modelFail("モデルeventにfragmentがありません");
+      }
       // RG-63: 先頭の BOM は取り除く。先頭の不可視文字は JSON／YAML の判定を
       // すり抜けてライブラリの生エラーを露出させるため、文字を名指して止める。
       if (code.charCodeAt(0) === 0xfeff) code = code.slice(1);

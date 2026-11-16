@@ -62,6 +62,25 @@ function guardHostErrors(fn) {
     }
   };
 }
+// RG-348（R32-N2）：複合代入演算子から基底の二項演算子への対応。
+// 従来は op[0]（先頭1文字）で代用していたため、<<= が「<」になる等、
+// 複合代入の意味論が壊れていた（そもそもパーサが受理しなかった）。
+function compoundBaseOp(op) {
+  return (
+    {
+      "+=": "+",
+      "-=": "-",
+      "*=": "*",
+      "/=": "/",
+      "%=": "%",
+      "<<=": "<<",
+      ">>=": ">>",
+      "&=": "&",
+      "|=": "|",
+      "^=": "^",
+    }[op] || op
+  );
+}
 const uninitialized = { kind: "uninitialized" },
   isPtr = (v) => v?.kind === "pointer",
   builtinTypes = [
@@ -422,8 +441,18 @@ function transformSource(source, language, deadline) {
       continue;
     }
     if (/[0-9]/.test(c) || (c === "." && /[0-9]/.test(src[i + 1] || ""))) {
+      // RG-352／RG-353（R32-N6／N7）：桁区切りを含む数値リテラル。
+      // C# の `_` は数字と数字の間（連続も可）と 0x／0b 接頭辞の直後に
+      // 置ける（dotnet 8.0.428 実走：1__000／0x__FF／0b_1010／1_0.5／
+      // 1.5_0／1e1_0 は合法、1000_／1_.5／1e_5／1000_u は CS1013）。
+      // C／C++ の `'` は数字と数字の間に1つだけ置ける（g++ -std=c++14／
+      // gcc -std=c2x 実走：1'000／0x1'000／1.5'5／1e1'0 は合法、
+      // 1''000 は adjacent digit separators エラー）。区切りは値の
+      // 計算前に取り除き、元の並びはエラー表示のために raw へ残す。
       const m = rest.match(
-        /^(?:0[xX][0-9a-fA-F]+|0[bB][0-9]+|0[oO][0-9]+|\d+\.?\d*(?:[eE][+-]?\d+)?|\.\d+(?:[eE][+-]?\d+)?)/,
+        language === "csharp"
+          ? /^(?:0[xX]_*[0-9a-fA-F](?:_*[0-9a-fA-F])*|0[bB]_*[0-9](?:_*[0-9])*|0[oO]_*[0-9](?:_*[0-9])*|\d(?:_*\d)*(?:\.(?:\d(?:_*\d)*)?)?(?:[eE][+-]?\d(?:_*\d)*)?|\.\d(?:_*\d)*(?:[eE][+-]?\d(?:_*\d)*)?)/
+          : /^(?:0[xX][0-9a-fA-F](?:'?[0-9a-fA-F]+)*|0[bB][0-9](?:'?[0-9]+)*|0[oO][0-9](?:'?[0-9]+)*|\d(?:'?\d)*(?:\.(?:\d(?:'?\d)*)?)?(?:[eE][+-]?\d(?:'?\d)*)?|\.\d(?:'?\d)*(?:[eE][+-]?\d(?:'?\d)*)?)/,
       );
       if (m) {
         // R24-N15（C# 部分）根因：正規表現 \d+\.?\d* が `10.ToString()` の
@@ -435,6 +464,27 @@ function transformSource(source, language, deadline) {
         let raw = m[0];
         if (raw.endsWith(".") && /[A-Za-z_]/.test(rest[raw.length] || ""))
           raw = raw.slice(0, -1);
+        // RG-352／RG-353：区切り文字が数字の直後に残っている場合は、
+        // 数字と数字の間ではない不正な配置（末尾の区切り、二重の
+        // 区切り、小数点・指数・接尾辞に隣接する区切り）である。
+        // C／C++ で文字リテラルの開始と誤認して「文字列が閉じられて
+        // いません」等の虚偽原因にせず、桁区切り／書式そのものを
+        // 名指して停止する。リテラル全体を表示する（途中表示にしない）。
+        {
+          const sep = language === "csharp" ? "_" : "'";
+          if (rest[raw.length] === sep) {
+            const shown =
+              raw +
+              (rest.slice(raw.length).match(/^[0-9A-Za-z_.']*/) || [""])[0];
+            throw new PracticeError(
+              language === "csharp"
+                ? `数値リテラルの書き方が不正です：${shown}`
+                : `数値リテラルの桁区切り（'）の書き方が不正です：${shown}`,
+              line,
+              "SyntaxError",
+            );
+          }
+        }
         let suffix = "";
         const srest = rest.slice(raw.length);
         const pats =
@@ -491,7 +541,7 @@ function transformSource(source, language, deadline) {
             );
           }
         }
-        out += transformNumberLiteral(raw, suffix, language, line);
+        out += transformNumberLiteral(raw.replace(/[_']/g, ""), suffix, language, line);
         advance(i + raw.length + suffix.length);
         continue;
       }
@@ -512,9 +562,19 @@ function parse(source, language, deadline) {
   // rewritten to plain variables whose declarations are prepended.
   {
     let ts = [];
+    // RG-348（R32-N2）：共有トークナイザは複合代入トークン（<<= 等）を
+    // 演算子＋「=」へ分割して返す（AutoHotkey 以外）。C家族では文・式の
+    // 両経路で複合代入として扱えるよう、%= と同じく単一トークンへ戻す。
+    // 戻さないと RHS の先頭の「=」だけが「式を解釈できません：=」と
+    // 断片表示されていた。単なる二項演算（a << b、a & b 等）は直後が
+    // 「=」でないため影響しない。
+    const compoundMerges = { "<<": "<<=", ">>": ">>=", "&": "&=", "|": "|=", "^": "^=" };
     for (let i = 0; i < p.ts.length; i++) {
       if (p.ts[i].v === "%" && p.ts[i + 1]?.v === "=") {
         ts.push({ v: "%=", line: p.ts[i].line });
+        i++;
+      } else if (compoundMerges[p.ts[i].v] && p.ts[i + 1]?.v === "=") {
+        ts.push({ v: compoundMerges[p.ts[i].v], line: p.ts[i].line });
         i++;
       } else if (
         // R24-N15（C# 部分）根因の本体：共有トークナイザの数値正規表現
@@ -781,6 +841,8 @@ function parse(source, language, deadline) {
     if (!csTypes.includes(first)) return null;
     if (first === "decimal") unsupported("decimal 型へのキャストは未対応です", meta.line);
     this.take();
+    // RG-351：キャスト位置の nullable 型（(int?)x 等）も型を名指す。
+    if (this.peek("?")) unsupported(`nullable 型（${first}?）`, meta.line);
     if (!this.peek(")")) {
       this.i = start;
       return null;
@@ -891,6 +953,19 @@ function parse(source, language, deadline) {
     }
     let t = this.ts[this.i],
       a;
+    // RG-356（R32-N10）：C／C++ のカンマ演算子が読める文脈の判定。
+    // カンマが区切りとして使われる文脈（宣言子列・呼出し引数・添字・
+    // 初期化子リスト）では消費しない。読めるのは (1) 括弧式の中身
+    // （共有 expr が exprCtx(0) で開く文脈）、(2) for 句・while 条件
+    // など c-family が cCommaDepth を立てて読む全文脈、(3) 文の条件
+    // 括弧など「(」の直後から直接読まれる文脈。C# にはカンマ演算子が
+    // 無いため対象外（既存の裁定済みの扱いを変えない）。
+    const commaCtx =
+      language !== "csharp" &&
+      min <= 0 &&
+      ((this.cCommaDepth || 0) > 0 ||
+        (this.assignOk && this.noComma === 0) ||
+        (!this.assignOk && !this.cNoComma && this.ts[this.i - 1]?.v === "("));
     // R29-N18 兄弟表面：C# で式の先頭に裸の波括弧初期化子が現れる位置
     // （代入の右辺・引数など）は、実物では CS0623（配列初期化子は変数
     // またはフィールドの初期化子でのみ使用できる）。共有パーサが
@@ -904,6 +979,34 @@ function parse(source, language, deadline) {
         t.line,
         "CompileError",
       );
+    // RG-351（R32-N5）：C# の式位置の未対応構文は、JS 側の RG-336 と
+    // 同じ水準で「式の先頭トークン」で構文そのものを名指す。従来は
+    // var として読み進めてしまい、後続の句読点・未定義名・閉じ括弧の
+    // 断片が原因として表示されていた。
+    if (language === "csharp" && min <= 0) {
+      if (t?.v === "default") unsupported("default 式", t.line);
+      if (t?.v === "is") unsupported("is 演算子（パターンマッチング）", t.line);
+      if (t?.v === "as") unsupported("as 演算子", t.line);
+      if (t?.v === "(") {
+        // ラムダ式（(引数) => 本体）。対応する閉じ括弧の直後が => の
+        // 場合だけ名指す（通常の括弧式・キャストは対象外）。
+        let depth = 0,
+          closeIdx = -1;
+        for (let j = this.i; j < this.ts.length; j++) {
+          const tv = this.ts[j].v;
+          if (tv === "(") depth++;
+          else if (tv === ")") {
+            depth--;
+            if (depth === 0) {
+              closeIdx = j;
+              break;
+            }
+          } else if (tv === "<eof>") break;
+        }
+        if (closeIdx > 0 && this.ts[closeIdx + 1]?.v === "=>")
+          unsupported("ラムダ式", t.line);
+      }
+    }
     if (t?.v === "++" || t?.v === "--") {
       this.take();
       a = { k: "pre", target: this.expr(10), op: t.v, line: t.line };
@@ -956,6 +1059,41 @@ function parse(source, language, deadline) {
       // 文は statement 側で別途名指し済み。
       if (v === "switch" && language === "csharp")
         unsupported("switch 式", this.ts[this.i].line);
+      // RG-349（R32-N3・C家族分）：メンバーアクセスの末尾形。ドット／
+      // -> の直後にメンバー名が無い場合は、区切り記号ではなくメン
+      // バー名の欠落そのものを名指す（セミコロンが書かれている形で
+      // 「; が必要です」になっていた）。-> は . と同じメンバーアク
+      // セスとして読む（対象の値に対する可否は実行側の既存経路が
+      // 判定する）。
+      if (v === "." || v === "->") {
+        const nx = this.ts[this.i + 1];
+        if (nx?.k !== "id")
+          throw new PracticeError(
+            "メンバー名が必要です",
+            this.ts[this.i].line,
+            "SyntaxError",
+          );
+        if (v === "->") {
+          this.take();
+          const nameTok = this.take();
+          a = { k: "member", target: a, name: nameTok.v, line: a.line };
+          continue;
+        }
+        // "." で直後が識別子の場合は通常のメンバーアクセスとして
+        // 読み直す（origExpr の後置処理が届かなかった位置向け）。
+        this.take();
+        const nameTok = this.take();
+        a = { k: "member", target: a, name: nameTok.v, line: a.line };
+        continue;
+      }
+      // RG-351（R32-N5）：C# の is／as は被演算子の後ろに現れる中置の
+      // 構文であるため、後置ループでも第一トークンとして名指す。
+      if (language === "csharp" && v === "is")
+        unsupported("is 演算子（パターンマッチング）", this.ts[this.i].line);
+      if (language === "csharp" && v === "as")
+        unsupported("as 演算子", this.ts[this.i].line);
+      if (language === "csharp" && v === "=>")
+        unsupported("ラムダ式", this.ts[this.i].line);
       if (v === "?" && min <= 0) {
         if (this.ts[this.i + 1]?.v === "?")
           unsupported("null 合体演算子 ?? は未対応です", this.ts[this.i].line);
@@ -997,12 +1135,29 @@ function parse(source, language, deadline) {
         continue;
       }
       if (
-        ["=", "+=", "-=", "*=", "/=", "%="].includes(v) &&
+        ["=", "+=", "-=", "*=", "/=", "%=", "<<=", ">>=", "&=", "|=", "^="].includes(v) &&
         min <= 0 &&
         ["var", "index", "member"].includes(a.k)
       ) {
-        const op = this.take().v,
+        const op = this.take().v;
+        // RG-356：代入の右辺は代入式であり、同じ階層のカンマは右辺に
+        // 属さない（(i = 5, i + 1) のカンマは外側のカンマ演算子）。
+        // 右辺を読む間だけカンマ消費の文脈を切り、括弧で包まれた
+        // カンマ式は括弧側の exprCtx が改めて開く文脈で読む。
+        const savedAssignOk = this.assignOk,
+          savedNoComma = this.noComma,
+          savedCommaDepth = this.cCommaDepth || 0;
+        this.assignOk = false;
+        this.noComma = 1;
+        this.cCommaDepth = 0;
+        let value;
+        try {
           value = this.expr(0);
+        } finally {
+          this.assignOk = savedAssignOk;
+          this.noComma = savedNoComma;
+          this.cCommaDepth = savedCommaDepth;
+        }
         a = { k: "assign", target: a, value, op, line: a.line };
         continue;
       }
@@ -1012,6 +1167,17 @@ function parse(source, language, deadline) {
       this.take();
       const b = this.expr(pr + (v === "^" ? 0 : 1));
       a = { k: "binary", op: v, a, b, line: a.line };
+    }
+    // RG-356：カンマ演算子（左を副作用のため評価し、値は右）。
+    if (commaCtx) {
+      for (;;) {
+        let j = this.i;
+        while (this.ts[j]?.v === "\n") j++;
+        if (this.ts[j]?.v !== ",") break;
+        this.i = j;
+        this.take();
+        a = { k: "comma", a, b: this.expr(0), line: a.line };
+      }
     }
     if (savedChain) this.coutChain = savedChain;
     return a;
@@ -1239,6 +1405,11 @@ function parse(source, language, deadline) {
       if (language === "c" && type === "string") unsupported("Cには組込みstring型がありません。char配列を使ってください", t.line);
       if (type === "unsigned") type = "unsigned int";
       if (type === "signed") type = "int";
+      // RG-351（R32-N5）：C# の nullable 型（int? 等）は型そのものを
+      // 名指して停止する。従来は宣言子側で「変数名が必要です」という
+      // 虚偽原因になっていた（? は変数名の欠落ではない）。
+      if (language === "csharp" && this.peek("?"))
+        unsupported(`nullable 型（${type}?）`, t.line);
       // 型の直後の []（C# 形式の配列型）は基本型の一部として全ての
       // 宣言子に共通する。それ以外の修飾（* ／ & ／ [長さ]）と初期化子
       // は宣言子ごとのものとして読み直す。
@@ -1367,11 +1538,18 @@ function parse(source, language, deadline) {
               value.strCountInit = true;
             this.take(")");
           } else {
+            // RG-356：直接初期化の引数のカンマは区切りであり、カンマ
+            // 演算子として消費させない（複数引数の名指しを維持する）。
             let args = [];
-            while (!this.peek(")")) {
-              args.push(this.expr());
-              if (!this.peek(",")) break;
-              this.take();
+            this.cNoComma = (this.cNoComma || 0) + 1;
+            try {
+              while (!this.peek(")")) {
+                args.push(this.expr());
+                if (!this.peek(",")) break;
+                this.take();
+              }
+            } finally {
+              this.cNoComma--;
             }
             this.take(")");
             if (args.length !== 1)
@@ -1523,12 +1701,53 @@ function parse(source, language, deadline) {
       } catch {
         target = null;
       }
-      if (target && this.peek("%=")) {
-        this.take();
+      // RG-348：複合代入の受け皿。変数・添字・メンバーへの複合代入は
+      // expr() 自身が代入ノードまで読むため、ここに残るのは逆参照
+      // （*p <<= 1 等）のように expr() が対象として受理しない形だけ。
+      // 従来は %= だけが対象で、他の演算子は共有 simple() の演算子表
+      // （C系は = ／ += ／ -= ／ *= ／ /= のみ）に無く「; が必要です」
+      // という虚偽原因になっていた。全標準複合代入を同じ機構で受ける。
+      if (
+        target &&
+        target.k !== "assign" &&
+        ["%=", "<<=", ">>=", "&=", "|=", "^=", "+=", "-=", "*=", "/="].includes(
+          this.ts[this.i]?.v,
+        )
+      ) {
+        const op = this.take().v;
         const value = this.expr();
-        return { k: "assign", target, value, op: "%=", line: t.line };
+        return { k: "assign", target, value, op, line: t.line };
       }
       this.i = save;
+    }
+    // RG-356（R32-N10）：C／C++ の文位置のカンマ演算子（i++, j++; や
+    // x = 1, y = 2; の式文）。カンマ無しで読むとカンマの位置で止まる
+    // 形だけを、カンマ演算子として読み直して式文にする。それ以外の
+    // 形（呼出し引数のカンマ等は式の内側で消費され、カンマ位置で
+    // 止まらない）は従来の経路のまま変えない。
+    if (["c", "cpp"].includes(language)) {
+      const saveC = this.i;
+      let stopsAtComma = false;
+      try {
+        this.expr();
+        stopsAtComma = this.ts[this.i]?.v === ",";
+      } catch {
+        stopsAtComma = false;
+      }
+      this.i = saveC;
+      if (stopsAtComma) {
+        this.cCommaDepth = (this.cCommaDepth || 0) + 1;
+        try {
+          const value = this.expr();
+          if (
+            ["\n", ";", "}", ")", "<eof>", "else"].includes(this.ts[this.i]?.v)
+          )
+            return { k: "expression", value, line: t.line };
+        } finally {
+          this.cCommaDepth--;
+        }
+        this.i = saveC;
+      }
     }
     try {
       return simple();
@@ -1571,6 +1790,15 @@ function parse(source, language, deadline) {
         refs: [t.v],
       };
     }
+    // RG-351（R32-N5）：文頭の未対応構文は構文そのものを名指して停止
+    // する（JS 側の RG-336 と同水準）。従来は式文として読み進めて
+    // しまい、句読点・区切りが原因として表示されていた。try／catch
+    // は C++／C# のキーワード（C では識別子として使えるため対象外）。
+    if (t.v === "try" && language !== "c") unsupported("try 文", t.line);
+    if (t.v === "catch" && language !== "c") unsupported("catch 節", t.line);
+    if (t.v === "finally" && language === "csharp") unsupported("finally 節", t.line);
+    if (t.v === "using" && language === "csharp") unsupported("using 文", t.line);
+    if (t.v === "lock" && language === "csharp") unsupported("lock 文", t.line);
     if (t.v === "class") {
       if (language !== "csharp") unsupported("この言語のクラスは未対応です", t.line);
       this.take();
@@ -1700,6 +1928,8 @@ function parse(source, language, deadline) {
       this.take();
       this.take("(");
       let typeTok = this.take();
+      // RG-351：foreach の反復変数の nullable 型も型そのものを名指す。
+      if (this.peek("?")) unsupported(`nullable 型（${typeTok.v}?）`, t.line);
       if (this.peek("[")) {
         this.take();
         this.take("]");
@@ -1718,6 +1948,121 @@ function parse(source, language, deadline) {
         body: this.body(),
         line: t.line,
         refs: ["foreach"],
+      };
+    }
+    if (t.v === "while") {
+      // RG-356：while 条件は C／C++ では全文（カンマ演算子を含む）を
+      // 読む。共有パーサの exprCtx(1) 経由ではカンマが区切り扱いに
+      // なり、単独括弧の条件（while (i++, i < 3) 等）が読めなかった。
+      this.take();
+      this.take("(");
+      this.cCommaDepth = (this.cCommaDepth || 0) + 1;
+      let test;
+      try {
+        test = this.expr();
+      } finally {
+        this.cCommaDepth--;
+      }
+      this.take(")");
+      return { k: "while", test, body: this.body(), line: t.line, refs: ["while"] };
+    }
+    if (t.v === "for") {
+      // RG-356（R32-N10）：for 句の読みを c-family 側で行う。
+      // - C／C++：初期化部は宣言か全文（カンマ演算子を含む式文）、
+      //   条件・更新部も全文。共有パーサの simple() 経由では初期化部
+      //   の代入のカンマ列・更新部のカンマ列が「; が必要です」という
+      //   虚偽原因になっていた。
+      // - C#：初期化部・更新部は文式のカンマ列（宣言子列は simple()
+      //   が読む）。条件は単一の式（カンマ演算子は無い）。
+      this.take();
+      this.take("(");
+      const line = t.line;
+      const exprFull = () => {
+        this.cCommaDepth = (this.cCommaDepth || 0) + 1;
+        try {
+          return this.expr();
+        } finally {
+          this.cCommaDepth--;
+        }
+      };
+      const startsDeclaration = () => {
+        const h = this.ts[this.i];
+        if (!h) return false;
+        if (
+          builtinTypes.includes(h.v) ||
+          classes[h.v] ||
+          ["unsigned", "signed", "short", "long", "uint", "ulong", "ushort", "byte", "sbyte"].includes(h.v)
+        )
+          return true;
+        return h.k === "id" && this.ts[this.i + 1]?.k === "id";
+      };
+      const statementList = () => {
+        // 文式をカンマで区切って並べた列（C# の初期化部・更新部。
+        // カンマ演算子ではなく文法上の列）。要素は expr() で読む：
+        // simple() 経由では代入要素の直後のカンマが共有側の終端
+        // チェックに触れて「; が必要です」になっていた（HEAD でも
+        // 同形は停止していた）。要素が1つなら従来の文ノードの形
+        // （= 代入は代入文、それ以外は式文）を保ち、複数ならカンマ
+        // 式の式文にする（評価順・値は実 C# の列と同じ）。
+        const parts = [this.expr()];
+        while (this.peek(",")) {
+          this.take();
+          parts.push(this.expr());
+        }
+        if (parts.length === 1) {
+          const only = parts[0];
+          return only?.k === "assign" && only.op === "="
+            ? only
+            : { k: "expression", value: only, line };
+        }
+        let chain = parts[0];
+        for (let k = 1; k < parts.length; k++)
+          chain = { k: "comma", a: chain, b: parts[k], line };
+        return { k: "expression", value: chain, line };
+      };
+      const clauseExpr = () => {
+        // C／C++ の初期化部（宣言でない形）・更新部。カンマが現れる
+        // 形だけ全文として読み直し、それ以外は従来どおり simple()
+        // の結果（文ノードの形）をそのまま使う。
+        const save = this.i;
+        let stopsAtComma = false;
+        try {
+          this.expr();
+          stopsAtComma = this.ts[this.i]?.v === ",";
+        } catch {
+          stopsAtComma = false;
+        }
+        this.i = save;
+        if (!stopsAtComma) return this.simple();
+        return { k: "expression", value: exprFull(), line };
+      };
+      let init = null;
+      if (!this.peek(";")) {
+        if (startsDeclaration()) init = this.simple();
+        else if (language === "csharp") init = statementList();
+        else init = clauseExpr();
+      }
+      this.take(";");
+      let test = this.peek(";")
+        ? { k: "literal", value: true, line }
+        : language === "csharp"
+          ? this.expr()
+          : exprFull();
+      this.take(";");
+      let update = null;
+      if (!this.peek(")")) {
+        if (language === "csharp") update = statementList();
+        else update = clauseExpr();
+      }
+      this.take(")");
+      return {
+        k: "for",
+        init,
+        test,
+        update,
+        body: this.body(),
+        line,
+        refs: ["for"],
       };
     }
     {
@@ -2792,6 +3137,8 @@ export function createCFamily({ id, name, extensions, language }) {
         function typeOf(a, s) {
           if (!a) return "int";
           if (a.k === "cast" || a.k === "type") return a.type;
+          // RG-356：カンマ式の型は右辺の型。
+          if (a.k === "comma") return typeOf(a.b, s);
           if (a.k === "post" || a.k === "pre") return typeOf(a.target, s);
           if (a.k === "call") {
             // D4 受け皿：abs の結果型は引数型と変換規則で決まる。C では
@@ -2979,8 +3326,41 @@ export function createCFamily({ id, name, extensions, language }) {
             return v;
           }
           if (type === "string") {
-            if (v !== null && typeof v !== "string" && !isUnknown(v))
+            if (v !== null && typeof v !== "string" && !isUnknown(v)) {
+              // RG-357（R32-N11）：C++ の std::string への代入形は、
+              // char を受ける代入演算子（operator=(char)）があり、整数
+              // 値も char への変換を経て1文字になる（g++ 13.3 実測：
+              // s = 'x' は "x"、s = 65 は "A"、s = true は文字コード1）。
+              // 代入形（assign ノード経由）だけ変換を実装する。初期化形
+              // （declare ノード経由）は実 C++ でもコンパイルエラー
+              // （char から std::string への変換コンストラクタが無い）
+              // であり、代入形と区別できる文言で停止する。変換の範囲
+              // 規則は char への cast と同じ経路に委ねる。
+              if (
+                language === "cpp" &&
+                (typeof v === "number" || typeof v === "boolean")
+              ) {
+                if (node?.k === "assign") {
+                  const code = cast(
+                    typeof v === "boolean" ? Number(v) : v,
+                    "char",
+                    s,
+                    node,
+                    api,
+                  );
+                  return String.fromCharCode(
+                    ((Math.trunc(code) % 256) + 256) % 256,
+                  );
+                }
+                if (node?.k === "declare")
+                  api.fail(
+                    "std::string の初期化に char は使えません（char を受け取るコンストラクタがありません。宣言した後に代入してください）",
+                    node,
+                    "CompileError",
+                  );
+              }
               api.fail("文字列型が一致しません", node);
+            }
             return v;
           }
           if (type === "bool") {
@@ -3510,6 +3890,37 @@ export function createCFamily({ id, name, extensions, language }) {
                 if (elem && elem !== ct) (s.loopVarTypes ??= {})[n.name] = elem;
                 else if (elem && n.varType && n.varType !== "var" && ct === elem)
                   (s.loopVarTypes ??= {})[n.name] = elem;
+                // RG-359（R32-N13）：要素型→反復変数の宣言型への変換が
+                // 適用されず、変換前の値がそのまま束縛されていた
+                // （foreach (int c in "ab") が 'a','b' を表示する誤値。
+                // dotnet 8.0.428 実走では 97, 98）。変換が存在する数値型
+                // ・char の組合せでは、読み取り時に変換する eachConvert
+                // で包み、反復変数の型記録も宣言型に合わせる（表示・
+                // 比較が宣言型で解釈される）。変換が存在しない組合せ
+                // （bool／string 等）の黙った反復はバッチ10 §5 の既知の
+                // 緩さで、本件の範囲外として変更しない。
+                const numericConvTypes = [
+                  "char", "sbyte", "byte", "short", "ushort", "int", "uint",
+                  "long", "ulong", "float", "double",
+                ];
+                if (
+                  elem &&
+                  n.varType &&
+                  n.varType !== "var" &&
+                  elem !== n.varType &&
+                  numericConvTypes.includes(elem) &&
+                  numericConvTypes.includes(n.varType) &&
+                  n.collection?.k !== "eachConvert"
+                ) {
+                  n.collection = {
+                    k: "eachConvert",
+                    target: n.collection,
+                    from: elem,
+                    to: n.varType,
+                    line: n.line,
+                  };
+                  (s.loopVarTypes ??= {})[n.name] = n.varType;
+                }
               }
             }
             if (n.k === "assign") {
@@ -3526,7 +3937,7 @@ export function createCFamily({ id, name, extensions, language }) {
               let v = api.read(n.value, s);
               if (n.op && n.op !== "=")
                 v = semantics.binary(
-                  n.op[0],
+                  compoundBaseOp(n.op),
                   api.read(n.target, s),
                   v,
                   n,
@@ -4342,9 +4753,65 @@ export function createCFamily({ id, name, extensions, language }) {
             // そのまま返し、共有 loop() の既存判定に委ねる。
             if (managed && a.k === "stringChars") {
               const target = api.read(a.target, s);
-              if (typeof target === "string")
+              // RG-360（R32-N14）：char スカラーは文字列対象から外す。
+              // char の内部表現が1文字の文字列であるため、RG-338 の
+              // 文字列反復が char 変数・char リテラルまで取り込み、
+              // 実 C# では CS1579（foreach に使えない）の形が黙って
+              // 1回反復していた。他のスカラーと同じく、反復対象では
+              // ないものとして共有 loop() の停止に委ねる。
+              if (typeof target === "string" && typeOf(a.target, s) !== "char")
                 return { handled: true, value: target.split("") };
               return { handled: true, value: target };
+            }
+            if (managed && a.k === "eachConvert") {
+              // RG-359（R32-N13）：foreach の要素変換（読み取り時に
+              // 一括変換）。変換規則は dotnet 8.0.428 実走で確定：
+              // 整数系は切り捨て＋ビット幅でのラップ（checked 文脈では
+              // OverflowException）、char は16ビット符号なし、浮動
+              // 小数→整数系も切り捨て＋ラップ。cast() の暗黙変換の
+              // 規則（定数式の範囲検査等）は foreach の明示変換の
+              // 意味論と異なるため、専用の変換として実装する。
+              const values = api.read(a.target, s);
+              if (!Array.isArray(values)) return { handled: true, value: values };
+              const converted = values.map((v) => {
+                if (v === null || v === undefined || isUnknown(v)) return v;
+                let num;
+                if (typeof v === "string") {
+                  if (v.length !== 1) return v;
+                  num = v.charCodeAt(0);
+                } else if (typeof v === "boolean") num = v ? 1 : 0;
+                else if (typeof v === "number") num = v;
+                else return v;
+                if (a.to === "char") {
+                  if (!Number.isFinite(num))
+                    api.fail(
+                      "範囲外の浮動小数点から整数への変換結果は不定（unspecified）な値のため、確定値として扱えません",
+                      a,
+                      "未確認",
+                    );
+                  const t = Math.trunc(num);
+                  if (s.checked && (t < 0 || t > 65535))
+                    api.fail("整数へのキャストが範囲外です", a, "OverflowException");
+                  return String.fromCharCode(((t % 65536) + 65536) % 65536);
+                }
+                if (a.to === "double") return num;
+                if (a.to === "float") return Math.fround(num);
+                if (!Number.isFinite(num))
+                  api.fail(
+                    "範囲外の浮動小数点から整数への変換結果は不定（unspecified）な値のため、確定値として扱えません",
+                    a,
+                    "未確認",
+                  );
+                const t = Math.trunc(num);
+                const bits = width(a.to, false);
+                const wrapped = ["byte", "ushort", "uint", "ulong"].includes(a.to)
+                  ? Number(BigInt.asUintN(bits, BigInt(t)))
+                  : Number(BigInt.asIntN(bits, BigInt(t)));
+                if (s.checked && wrapped !== t)
+                  api.fail("整数へのキャストが範囲外です", a, "OverflowException");
+                return wrapped;
+              });
+              return { handled: true, value: converted };
             }
             if (
               a.k === "literal" &&
@@ -4379,7 +4846,7 @@ export function createCFamily({ id, name, extensions, language }) {
               if (a.op && a.op !== "=") {
                 const cur = api.read(a.target, s);
                 v = semantics.binary(
-                  a.op[0],
+                  compoundBaseOp(a.op),
                   cur,
                   v,
                   { k: "binary", a: a.target, b: a.value, line: a.line },

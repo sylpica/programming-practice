@@ -357,6 +357,107 @@ export function castChain(node) {
   }
   return { types, target };
 }
+// RG-354（R32-PAR-8・修正バッチ11）: 代入先になれない式の形を学習者
+// 向けに名指すための記述子。一次情報：Microsoft Learn
+// about_Assignment_Operators の構文は
+// 「<assignable-expression> <assignment-operator> <value>」であり、
+// 代入できる式（assignable expressions）は変数とプロパティ（本モデル
+// では添字も含む）だけである。リテラルや演算の結果への代入は実
+// PowerShell でも「The assignment expression is not valid.」として
+// 停止する不正な代入先であり、括弧の不足ではない。
+export function assignTargetForm(node) {
+  switch (node?.k) {
+    case "literal":
+      return typeof node.value === "number"
+        ? "数値リテラル " + node.value
+        : "リテラル " + node.value;
+    case "string":
+      return "文字列リテラル";
+    case "binary":
+      return node.op === ".." ? "範囲式の結果" : "演算式の結果";
+    case "unary":
+      return "単項演算の結果";
+    case "ternary":
+      return "条件演算の結果";
+    case "cast":
+      return "型変換の結果";
+    case "subexpression":
+    case "subexpression-list":
+      return "括弧内の式の結果";
+    case "array-pipelines":
+      return "配列式の結果";
+    case "hashtable":
+      return "ハッシュテーブルのリテラル";
+    case "typeliteral":
+      return "型リテラル [" + node.type + "]";
+    case "post":
+    case "pre":
+      return node.op + " の結果";
+    default:
+      return "式の結果";
+  }
+}
+// RG-354: カンマ列の代入先（多重代入の左辺）かどうかを裁定する。
+// 多重代入は about_Assignment_Operators「Assigning multiple
+// variables」が示す実 PowerShell の正規形（$a, $b, $c = 1, 2, 3）
+// だが、このモデルでは未対応である。括弧で囲んだカンマ列
+// （($a, $b) = 1, 2）も同じ左辺の形として扱う。要素が全て代入可能
+// なら { bad: null }、代入できない要素が混ざればその要素を bad に
+// 返し、カンマ列でなければ null を返す。
+export function multipleAssignTarget(node) {
+  let elements = null;
+  if (node?.k === "array") elements = node.values;
+  else if (
+    node?.k === "subexpression" &&
+    node.pipe?.stages.length === 1 &&
+    node.pipe.stages[0].k === "expression" &&
+    node.pipe.stages[0].value?.k === "array"
+  )
+    elements = node.pipe.stages[0].value.values;
+  if (!elements || elements.length < 2) return null;
+  const bad =
+    elements.find(
+      (el) => !["var", "member", "index"].includes(castChain(el).target.k),
+    ) ?? null;
+  return { elements, bad };
+}
+// RG-354: 代入先として受理できない左辺について、真因（多重代入／
+// 不正な代入先の要素／不正な代入先そのもの）を名指して止める。
+// 「変数・プロパティ・添字へ代入してください」（代入先が変数その
+// ものである多重代入への虚偽原因）や「) が必要です」（括弧は閉じ
+// られている括弧内リテラル代入への虚偽原因）にはしない。
+export function failAssignTarget(node, op, line) {
+  const multi = multipleAssignTarget(node);
+  if (multi) {
+    if (multi.bad)
+      fail(
+        "代入先が不正です：" +
+          assignTargetForm(multi.bad) +
+          "には代入できません。代入先は変数・プロパティ・添字である必要があります",
+        line,
+        "SyntaxError",
+      );
+    if (op === "=")
+      fail(
+        "未対応：多重代入（$a, $b = 1, 2 のように複数の変数へ一度に代入する形）",
+        line,
+      );
+    fail(
+      "代入先が不正です：複数の代入先への複合代入（" +
+        op +
+        "）はできません。代入先は1つの変数・プロパティ・添字である必要があります",
+      line,
+      "SyntaxError",
+    );
+  }
+  fail(
+    "代入先が不正です：" +
+      assignTargetForm(node) +
+      "には代入できません。代入先は変数・プロパティ・添字である必要があります",
+    line,
+    "SyntaxError",
+  );
+}
 export class PSParser {
   constructor(source, line = 1) {
     this.source = source;
@@ -654,8 +755,15 @@ export class PSParser {
           target = chain.target;
         }
       }
-      if (!["var", "member", "index"].includes(target.k))
+      if (!["var", "member", "index"].includes(target.k)) {
+        // RG-354（R32-PAR-8）: 多重代入（$a, $b = 1, 2）は実 PowerShell
+        // の正規形で代入先は変数そのものであるため、「変数・プロパティ・
+        // 添字へ代入してください」は虚偽原因になる。多重代入そのものを
+        // 名指して止める（failAssignTarget が必ず停止する）。多重代入
+        // 以外の形（[int]5 = 3 等）は従来どおりとする。
+        if (multipleAssignTarget(target)) failAssignTarget(target, op, line);
         fail("変数・プロパティ・添字へ代入してください", line, "SyntaxError");
+      }
       // R29-N13: 代入の右辺では連鎖代入（$y = $x = 5）が式として
       // 読めるよう、右辺のパイプライン解析の間だけ assignDepth を立てる。
       const savedAssign = this.assignDepth;
@@ -1433,10 +1541,17 @@ export class PSParser {
       }
     } else if (t.v === "@(") {
       // R26-N1: 配列表記の内側へ noComma を継承しない（括弧と同じ）。
+      // RG-354: 配列リテラルの内側も括弧と同じく代入式の文脈として
+      // 扱う。従来は assignDepth が代入文の右辺など外側の文脈からの
+      // 漏れに依存し、文頭の @($a = 5) だけが「) が必要です」という
+      // 虚偽原因で止まる位置依存になっていた（$x = @($a = 5) は
+      // 従来から代入式として読めていた）。
       const savedGlued = this.argGlued,
-        savedComma = this.noComma;
+        savedComma = this.noComma,
+        savedAssign = this.assignDepth;
       this.argGlued = 0;
       this.noComma = 0;
+      this.assignDepth++;
       const values = [];
       try {
         this.skip();
@@ -1448,6 +1563,7 @@ export class PSParser {
       } finally {
         this.argGlued = savedGlued;
         this.noComma = savedComma;
+        this.assignDepth = savedAssign;
       }
       this.take(")");
       a = { k: "array-pipelines", values, line };
@@ -1577,15 +1693,21 @@ export class PSParser {
         if (key.v === "(") {
           const open = this.take(),
             savedGlued = this.argGlued,
-            savedComma = this.noComma;
+            savedComma = this.noComma,
+            savedAssign = this.assignDepth;
           this.argGlued = 0;
           this.noComma = 0;
+          // RG-354: メンバー名の括弧内もグループ化括弧と同じ式の
+          // 文脈であり、代入式の読みを有効化する（$h.($k = 'k')）。
+          // 従来は外側の文脈依存で「) が必要です」になっていた。
+          this.assignDepth++;
           let pipe;
           try {
             pipe = this.pipeline();
           } finally {
             this.argGlued = savedGlued;
             this.noComma = savedComma;
+            this.assignDepth = savedAssign;
           }
           this.take(")");
           a = {
@@ -1657,16 +1779,23 @@ export class PSParser {
         this.take();
         // R25-N12: 添字内は式モードのため接着判定を一時的に下ろす。
         // R26-N1: 添字の内側へ noComma を継承しない（括弧と同じ）。
+        // RG-354: 添字の内側も式の位置であり、代入式（$a[$i = 1]、
+        // 実 PowerShell で受理される形）の読みを有効化する。従来は
+        // 外側に括弧がある場合だけ漏れて受理され、文頭では
+        // 「] が必要です」という虚偽原因になっていた。
         const savedGlued = this.argGlued,
-          savedComma = this.noComma;
+          savedComma = this.noComma,
+          savedAssign = this.assignDepth;
         this.argGlued = 0;
         this.noComma = 0;
+        this.assignDepth++;
         let index;
         try {
           index = this.expr();
         } finally {
           this.argGlued = savedGlued;
           this.noComma = savedComma;
+          this.assignDepth = savedAssign;
         }
         // R30-N10: 添字の閉じ括弧の前の改行は文を終えない。
         this.skipNl();
@@ -1803,6 +1932,26 @@ export class PSParser {
             line,
           };
     }
+    // RG-354（R32-PAR-8）: 代入式の文脈（assignDepth）で代入演算子が
+    // 続くのに、代入先が変数・プロパティ・添字（または型付き形）で
+    // ない場合は、呼び出し側の「) が必要です」等の虚偽原因にせず、
+    // 真因を名指して止める。(5 = 3) の括弧は閉じられており、不正な
+    // のは代入先がリテラルであること（about_Assignment_Operators の
+    // <assignable-expression> 構文）。多重代入（$a, $b = 1, 2 を
+    // 括弧・条件・配列リテラル等に置いた形）も同じく多重代入その
+    // ものを名指す。代入可能な形は上の分岐が演算子を消費済みのため
+    // ここには来ない。
+    if (
+      this.assignDepth > 0 &&
+      min <= 1 &&
+      ["=", "+=", "-=", "*=", "/=", "%="].includes(this.ts[this.i]?.v) &&
+      !["var", "member", "index"].includes(a.k) &&
+      !(
+        assignChain.types.length &&
+        ["var", "member", "index"].includes(assignChain.target.k)
+      )
+    )
+      failAssignTarget(a, this.ts[this.i].v, line);
     // R28-N7: 三項（条件）演算子（言語仕様 7.4。PowerShell 7 以降の
     // 正規の演算子）。優先順位は全二項演算子より下であるため、最も
     // 緩い水準（min <= 1）でだけ読み、分岐は完全な式として読む。
