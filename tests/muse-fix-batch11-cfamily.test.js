@@ -128,7 +128,11 @@ test("RG-351: C# expression-position syntax is named by its syntax name", async 
     [`int[] a = {1}; Console.WriteLine(a is int[]);`, "is 演算子"],
     [`string s = "a"; Console.WriteLine(s as string);`, "as 演算子"],
     [`int x = default(int);`, "default 式"],
-    [`int x = 1; Func<int> f = () => x;`, "ラムダ式"],
+    // バッチ12（RG-369 兄弟表面）で Func<int> 等のジェネリック型
+    // 利用形が型そのものを名指すようになったため、ラムダの名指しは
+    // ジェネリック型を含まない引数位置の形で確認する（Func<int> を
+    // 使う形は出現順にジェネリック型が名指されるのが正しい順序）。
+    [`int x = 1; Console.WriteLine(() => x);`, "ラムダ式"],
     [`int? x = null;`, "nullable 型（int?）"],
     [`int x = 1; Console.WriteLine((int?)x);`, "nullable 型（int?）"],
   ];
@@ -141,7 +145,9 @@ test("RG-351: C# expression-position syntax is named by its syntax name", async 
   }
   // 単一引数（括弧なし）のラムダも、位置により従来のアロー関数名
   // ないしラムダ式名で、構文そのものが名指される。
-  const arrow = await run("csharp", cs(`Func<int> f = x => x;`));
+  // （バッチ12で Func<int> の宣言形はジェネリック型が先に名指される
+  // ようになったため、ここも引数位置の形で確認する。）
+  const arrow = await run("csharp", cs(`Console.WriteLine(x => x);`));
   assert.ok(
     errors(arrow).some((e) => e.includes("アロー関数（=>）") || e.includes("ラムダ式")),
     JSON.stringify(errors(arrow)),

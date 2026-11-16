@@ -24,12 +24,19 @@ import { getDefinition } from "../js/types/registry.js";
 const cf = getDefinition("cloudformation");
 const cfRun = async (code) => cf.simulate(code, structuredClone(cf.model.defaults));
 const FN_MSG = /Fn::Transformの指定にマクロ名（Name）が含まれていません/;
+// 修正バッチ12・cfn班（RG-371／R33-N8）で期待値を更新: R27 時点では
+// Fn::Transform 自体がスカラーの形も「Name が含まれていません」に一括して
+// いたが、真因は指定がオブジェクトでないことであり、原因の切り分けとして
+// 専用文言へ変更した。停止自体と Fn::Transform の名指しは維持し、検証は
+// 完全一致へ厳密化（弱体化ではない）。空配列は要素が無く Name を含む指定が
+// 存在しないため、従来文言（FN_MSG）のまま維持する。
+const FN_SPEC_MSG = "Fn::Transformの指定がオブジェクトではありません（NameとParametersのオブジェクト、またはその配列で指定してください）";
 const fnCase = (v) => JSON.stringify({ Resources: { A: { "Fn::Transform": v, B: 1 } } });
 
 test("R27-N6 Fn::Transform falsy scalars stop with the Fn::Transform message", async () => {
   for (const v of ["", null, 0, false]) {
     const r = await cfRun(fnCase(v));
-    assert.match(r.error.message, FN_MSG, JSON.stringify(v));
+    assert.equal(r.error.message, FN_SPEC_MSG, JSON.stringify(v));
   }
 });
 test("R27-N6 Fn::Transform empty array stops with the Fn::Transform message", async () => {
@@ -38,13 +45,13 @@ test("R27-N6 Fn::Transform empty array stops with the Fn::Transform message", as
 });
 test("R27-N6 Fn::Transform falsy in deep nesting and inside arrays stops", async () => {
   const deep = JSON.stringify({ Resources: { A: { P: { Q: { "Fn::Transform": "" } } } } });
-  assert.match((await cfRun(deep)).error.message, FN_MSG);
+  assert.equal((await cfRun(deep)).error.message, FN_SPEC_MSG);
   const inArr = JSON.stringify({ Resources: { A: [{ "Fn::Transform": null }] } });
-  assert.match((await cfRun(inArr)).error.message, FN_MSG);
+  assert.equal((await cfRun(inArr)).error.message, FN_SPEC_MSG);
 });
 test("R27-N6 Fn::Transform falsy in YAML forms stops", async () => {
-  assert.match((await cfRun('Resources:\n  A:\n    Fn::Transform: ""\n    B: 1\n')).error.message, FN_MSG);
-  assert.match((await cfRun("Resources:\n  A:\n    Fn::Transform:\n    B: 1\n")).error.message, FN_MSG);
+  assert.equal((await cfRun('Resources:\n  A:\n    Fn::Transform: ""\n    B: 1\n')).error.message, FN_SPEC_MSG);
+  assert.equal((await cfRun("Resources:\n  A:\n    Fn::Transform:\n    B: 1\n")).error.message, FN_SPEC_MSG);
 });
 test("R27-N6 valid Fn::Transform forms keep working (unchanged)", async () => {
   const obj = await cfRun(fnCase({ Name: "AddMetadata", Parameters: { Stage: "test" } }));

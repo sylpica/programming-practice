@@ -95,11 +95,25 @@ test("R26-N14 empty Transform array stays accepted (no macros)", async () => {
   assert.ok(!r.error, JSON.stringify(r.error));
   assert.equal(r.paths.length, 1);
 });
+// 修正バッチ12・cfn班（RG-371／R33-N8）で期待値を更新: R26 時点では
+// Name の型違い（""／null／123）も「含まれていません」に一括していたが、
+// Name キーが存在する形で「含まれていません」は虚偽の原因になるため、
+// Name の型違いは Name を名指す文言へ切り分けた。Name の真の欠落（{}）は
+// 従来文言のまま。検証は正規表現一致から完全一致へ厳密化（弱体化ではない）。
 test("R26-N14 Fn::Transform empty / null Name stops naming Fn::Transform", async () => {
-  for (const spec of [{ Name: "" }, { Name: null }, { Name: 123 }, {}]) {
+  for (const spec of [{ Name: "" }, { Name: null }, { Name: 123 }]) {
     const r = await cfRun(JSON.stringify({ Resources: { A: { "Fn::Transform": spec } } }));
-    assert.match(r.error.message, /Fn::Transformの指定にマクロ名（Name）が含まれていません/);
+    assert.equal(
+      r.error.message,
+      "Fn::TransformのNameは空でない文字列で指定してください（NameとParametersのオブジェクト、またはその配列で指定してください）",
+      JSON.stringify(spec),
+    );
   }
+  const missing = await cfRun(JSON.stringify({ Resources: { A: { "Fn::Transform": {} } } }));
+  assert.equal(
+    missing.error.message,
+    "Fn::Transformの指定にマクロ名（Name）が含まれていません（NameとParametersのオブジェクト、またはその配列で指定してください）",
+  );
 });
 test("R26-N14 valid Transform forms keep working (unchanged)", async () => {
   for (const t of ["AddMetadata", ["AddMetadata"], { Name: "AddMetadata" }]) {

@@ -1075,6 +1075,15 @@ export class ScriptParser {
       } else this.i = save;
       a = { ...meta, k: "ifexpr", test, then, otherwise };
     } else if (t.k === "id") a = { ...meta, k: "var", name: t.v };
+    // RG-370（R33-PAR-7 の式先頭形）：左辺の無い `::fn`／`:::fn` も、
+    // 断片表示（「式を解釈できません：::」）でなく演算子を名指す。
+    else if (t.v === "::" && this.dialect === "r")
+      unsupported(
+        this.ts[this.i]?.v === ":"
+          ? "名前空間演算子（:::）"
+          : "名前空間演算子（::）",
+        t.line,
+      );
     else throw new PracticeError(`式を解釈できません：${t.v}`, t.line);
     while (true) {
       // RG-07 追加表面（R21-N10 同根）：行頭の二項演算子は式の継続として扱う
@@ -1120,13 +1129,26 @@ export class ScriptParser {
       }
       if (v === "[" || v === "[[") {
         this.take();
+        // RG-364（R33-N1）：JavaScript の添字式は代入式が置ける位置
+        // （ECMA-262 の AssignmentExpression）。従来は素の expr() で
+        // 読んでいたため、文頭の代入先など assignOk が立っていない
+        // 文脈では添字内の代入式が消費されず、閉じ括弧があるのに
+        // 「] が必要です」という虚偽原因になっていた。読み取り位置と
+        // 同じく、添字の中では常に代入式の文脈を開く。カンマの扱いは
+        // 外側の文脈を維持する（区切り文脈では従来どおり多重添字の
+        // 列として残し、カンマ演算子が許される文脈では従来どおり
+        // カンマ式として読む）。他方言の添字の読みは変えない。
+        const readIndex = () =>
+          this.dialect === "js"
+            ? this.exprCtx(this.noComma === 0 ? 0 : 1)
+            : this.expr();
         let indexes = [];
         if (this.peek(",")) indexes.push(null);
-        else if (!this.peek(v === "[[" ? "]]" : "]")) indexes.push(this.expr());
+        else if (!this.peek(v === "[[" ? "]]" : "]")) indexes.push(readIndex());
         this.skipLines();
         while (this.peek(",")) {
           this.take();
-          indexes.push(this.peek("]") ? null : this.expr());
+          indexes.push(this.peek("]") ? null : readIndex());
           this.skipLines();
         }
         this.take(v === "[[" ? "]]" : "]");
@@ -1168,18 +1190,35 @@ export class ScriptParser {
           "SyntaxError",
         );
       // RG-349（R32-PAR-3 の R 分）：`a::` のように :: の後ろに名前が
-      // 無い形も名前の欠落を名指す（a::b／a:::b の正当な形は対象外）。
-      if (
-        v === "::" &&
-        this.dialect === "r" &&
-        this.ts[this.i + 1]?.k !== "id" &&
-        this.ts[this.i + 1]?.v !== ":"
-      )
+      // 無い形も名前の欠落を名指す。
+      // RG-370（R33-PAR-7）：完結形（a::b／a:::b）も、パッケージ名前空間を
+      // 解決しない本アプリでは名前空間演算子そのものを名指して停止する。
+      // 従来は完結形が優先順位表に無いことを理由に式が途中で切れ、
+      // 「代入の区切りが必要です」「) が必要です」等の虚偽原因に化けて
+      // いた。`:::` は字句側で `::`＋`:` に分かれるため、続く `:` で
+      // 判別する。名前は R 公式（?::）どおりシンボルでも文字列リテラル
+      // でもよいため、文字列が続く形も演算子を名指す（従来は末尾形の
+      // 「名前が必要です」に化けていた）。
+      if (v === "::" && this.dialect === "r") {
+        const after = this.ts[this.i + 1];
+        if (after?.v === ":") {
+          const afterName = this.ts[this.i + 2];
+          if (afterName?.k === "id" || afterName?.k === "string")
+            unsupported("名前空間演算子（:::）", next.line);
+          throw new PracticeError(
+            "「:::」のあとには名前が必要です",
+            next.line,
+            "SyntaxError",
+          );
+        }
+        if (after?.k === "id" || after?.k === "string")
+          unsupported("名前空間演算子（::）", next.line);
         throw new PracticeError(
           "「::」のあとには名前が必要です",
           next.line,
           "SyntaxError",
         );
+      }
       if (v === "++" || v === "--") {
         this.take();
         a = { k: "post", target: a, op: v, line: a.line };
@@ -2111,6 +2150,9 @@ export function astRefs(node) {
 }
 export function callName(a) {
   if (a?.k === "var") return a.name;
+  // バッチ12追随第2段：基底オブジェクト捕捉でリテラルへ置き換えた
+  // 対象は、捕捉時に控えた参照名（refName）を表示名として使う。
+  if (a?.k === "literal" && a.refName) return a.refName;
   if (a?.k === "member") return callName(a.target) + "." + a.name;
   return "";
 }
@@ -2280,6 +2322,9 @@ export function executeProgram(nodes, model, semantics = {}, custom = {}) {
   // 値、短絡した場合は現在の値。未確定値では判定できないため、結果を
   // 未確定値として書き込む（黙って確定値を捏造しない）。
   function evalLogicalAssign(target, op, valueNode, s, node) {
+    // RG-364：論理代入でも添字キーは一度だけ評価する。
+    const restoreKeys = resolveJsTargetKeys(target, s);
+    try {
     const cur = read(target, s);
     if (isUnknown(cur)) {
       const u = unknown("論理代入の結果による");
@@ -2296,6 +2341,83 @@ export function executeProgram(nodes, model, semantics = {}, custom = {}) {
     const v = read(valueNode, s);
     write(target, v, s, node);
     return v;
+    } finally {
+      restoreKeys?.();
+    }
+  }
+  // RG-364（R33-N1）：JavaScript では代入先は参照として一度だけ評価
+  // される（ECMA-262）。複合代入・論理代入・++ / -- では対象の読み
+  // 取りと書き込みが別々に行われるため、そのままでは添字内の代入式
+  // や ++ 等が二重に実行され、代入文では右辺より後に添字が評価され
+  // る順序のずれも生じる。対象に含まれる添字キーを内側から順に一度
+  // だけ評価してリテラルへ置き換え、操作の完了時（例外時を含む）に
+  // 元へ戻すことで、単一評価と左から右の順序を全ての代入経路で揃
+  // える。対象は JavaScript 方言の index／member 対象だけに限り、
+  // 他方言の評価経路は変えない。
+  // バッチ12追随第2段（§7.5：格納時の基底オブジェクト再評価）：
+  // キーだけでなく基底オブジェクトも参照として捕捉する。従来は
+  // 書き込み時に対象の基底式を再評価していたため、右辺（やキー）が
+  // 基底変数を再束縛すると、新しいオブジェクトへ黙って書いていた
+  // （例：a[0] = (a = [99])[0] が旧配列でなく新配列へ書く）。各
+  // index／member 節点で、内側の対象チェーンを解決した後に基底式を
+  // 一度だけ評価し、その値（オブジェクト参照そのもの。複製しない）
+  // をリテラルへ置き換えてからキーを評価する。これで ECMA-262 の
+  // 「基底→キー→（現在値）→右辺→格納」の順序と、格納先が参照解決
+  // 時点のオブジェクトであることが全代入経路で揃う。捕捉は値の
+  // 保持だけで共有エンジンの値モデルは変えていない。
+  function resolveJsTargetKeys(target, s) {
+    if (
+      semantics.dialect !== "js" ||
+      !target ||
+      !["index", "member"].includes(target.k)
+    )
+      return null;
+    const saved = [];
+    let restored = false;
+    const restore = () => {
+      if (restored) return;
+      restored = true;
+      for (let i = saved.length - 1; i >= 0; i--) {
+        const [node, prop, original] = saved[i];
+        if (prop === "indexes") node.indexes = original;
+        else node.target = original;
+      }
+    };
+    const visit = (node) => {
+      if (!node || typeof node !== "object") return;
+      if (node.k !== "index" && node.k !== "member") return;
+      // 内側の対象チェーン（a[0] の a、a[0][1] の a[0] 等）を先に
+      // 解決する。その後は内側の読みが副作用を持たないため、外側の
+      // 基底として一度だけ評価できる。
+      if (node.target?.k === "index" || node.target?.k === "member")
+        visit(node.target);
+      // 基底オブジェクトの捕捉（キー評価より先に行う）。
+      if (node.target) {
+        const originalBase = node.target;
+        const baseValue = read(originalBase, s);
+        saved.push([node, "target", originalBase]);
+        node.target = {
+          k: "literal",
+          value: baseValue,
+          line: originalBase.line,
+          refName: callName(originalBase) || undefined,
+        };
+      }
+      if (node.k !== "index") return;
+      if (node.indexes?.length === 1 && node.indexes[0]) {
+        const original = node.indexes[0];
+        const value = read(original, s);
+        saved.push([node, "indexes", node.indexes]);
+        node.indexes = [{ k: "literal", value, line: original.line }];
+      }
+    };
+    try {
+      visit(target);
+    } catch (e) {
+      restore();
+      throw e;
+    }
+    return restore;
   }
   function read(a, s) {
     check();
@@ -2447,6 +2569,12 @@ export function executeProgram(nodes, model, semantics = {}, custom = {}) {
             a.line,
             "SyntaxError",
           );
+        // RG-364：式位置の代入でも、対象の添字キーを右辺より先に
+        // 一度だけ評価する（論理代入は evalLogicalAssign 側でも同じ
+        // 解決を行うため、二重に解決してもリテラル化済みキーの再読
+        // みは副作用を持たない）。
+        const restoreKeys = resolveJsTargetKeys(a.target, s);
+        try {
         // R30-N16：論理代入は短絡評価が本質のため専用経路で評価する。
         if (["&&=", "||=", "??="].includes(a.op))
           return evalLogicalAssign(a.target, a.op, a.value, s, a);
@@ -2471,6 +2599,9 @@ export function executeProgram(nodes, model, semantics = {}, custom = {}) {
         }
         write(a.target, v, s, a);
         return v;
+        } finally {
+          restoreKeys?.();
+        }
       }
       case "destructureExpr": {
         // R27-N13：式位置の分割代入。右辺を評価してから束縛し、
@@ -2525,6 +2656,10 @@ export function executeProgram(nodes, model, semantics = {}, custom = {}) {
         return semantics.call(name, a.args, s, api, a);
       }
       case "post": {
+        // RG-364：++/-- の対象の添字キーも一度だけ評価する（読み
+        // 取りと書き込みで二重に実行しない）。
+        const restoreKeys = resolveJsTargetKeys(a.target, s);
+        try {
         let x = read(a.target, s);
         if (semantics.increment) {
           let value = semantics.increment(x, a, s, api);
@@ -2538,6 +2673,9 @@ export function executeProgram(nodes, model, semantics = {}, custom = {}) {
           a,
         );
         return x;
+        } finally {
+          restoreKeys?.();
+        }
       }
       default:
         unsupported(a.k, a.line);
@@ -3004,6 +3142,10 @@ export function executeProgram(nodes, model, semantics = {}, custom = {}) {
             "SyntaxError",
           );
         }
+        // RG-364：代入先の検証が済んだ後、右辺より先に対象の添字
+        // キーを一度だけ評価する（ECMA-262 の参照評価の順序）。
+        const restoreKeys = resolveJsTargetKeys(n.target, s);
+        try {
         // R30-N16：論理代入は短絡評価が本質のため専用経路で評価する
         // （右辺の評価を先に行うと、短絡すべき副作用が実行されてしまう）。
         let v;
@@ -3016,7 +3158,6 @@ export function executeProgram(nodes, model, semantics = {}, custom = {}) {
           );
           return [s];
         }
-        v = read(n.value, s);
         // R27-N8：複合代入の基底演算子への対応表（従来の op[0] では
         // **= ／ <<= 等の複数文字演算子を扱えない）。
         const compoundBase = {
@@ -3025,10 +3166,36 @@ export function executeProgram(nodes, model, semantics = {}, custom = {}) {
           "&=": "&", "|=": "|", "^=": "^",
           "<<=": "<<", ">>=": ">>", ">>>=": ">>>",
         }[n.op];
+        // バッチ12追随（RG-364 観察②）：ECMA-262 の複合代入は、対象の
+        // 参照解決（RG-364 で添字キーを先行評価済み）に続いて「現在値の
+        // 読み取り」を右辺の評価より先に行う。従来の文レベル代入は右辺
+        // を先に評価してから現在値を読んでいたため、右辺が対象自身を
+        // 書き換える副作用（x += x++、x += (x = 5)、a[0] += a.pop() 等）
+        // を持つと実 JavaScript と異なる値になっていた。JavaScript
+        // 方言の複合代入に限り、現在値を右辺より先に読み取る（式位置の
+        // 代入式は従来から対象→右辺の順で正しく、論理代入は
+        // evalLogicalAssign が現在値を先に読むため対象外）。他方言の
+        // 評価順序は変えない。
+        const isJsCompound = Boolean(compoundBase) && semantics.dialect === "js";
+        const jsPreRead = isJsCompound ? read(n.target, s) : undefined;
+        const hasJsPreRead = isJsCompound;
+        v = read(n.value, s);
         if (compoundBase)
           v = semantics.binary
-            ? semantics.binary(compoundBase, read(n.target, s), v, n, s, api)
-            : baseBinary(compoundBase, read(n.target, s), v, semantics.dialect);
+            ? semantics.binary(
+                compoundBase,
+                hasJsPreRead ? jsPreRead : read(n.target, s),
+                v,
+                n,
+                s,
+                api,
+              )
+            : baseBinary(
+                compoundBase,
+                hasJsPreRead ? jsPreRead : read(n.target, s),
+                v,
+                semantics.dialect,
+              );
         write(n.target, v, s, n);
         note(
           s,
@@ -3036,6 +3203,9 @@ export function executeProgram(nodes, model, semantics = {}, custom = {}) {
           `${callName(n.target) || "対象"} に ${fmt(v)} を代入します`,
         );
         return [s];
+        } finally {
+          restoreKeys?.();
+        }
       }
       case "destructure": {
         // R26-N7：文位置の分割代入。右辺を先に評価してから束縛する

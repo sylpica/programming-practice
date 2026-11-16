@@ -677,21 +677,43 @@ export const definition = {
               ),
               { line },
             );
+          // RG-371（R33-N8）: 検証は原因ごとに切り分け、真因だけを名指す。
+          // 従来は Name の有無・型と Parameters の型を1条件に潰していたため、
+          // Name があるのに Parameters の型違いで「Name が含まれていません」
+          // という虚偽の原因を示していた。Name の真の欠落だけが従来文言で、
+          // 指定自体がオブジェクトでない形・Name の型違い・Parameters の
+          // 型違いはそれぞれ対象を名指す文言で停止させる。
           for (let spec of specs) {
-            if (
-              !spec ||
-              typeof spec !== "object" ||
-              Array.isArray(spec) ||
-              typeof spec.Name !== "string" ||
-              spec.Name === "" ||
-              (spec.Parameters !== undefined &&
-                (!spec.Parameters ||
-                  typeof spec.Parameters !== "object" ||
-                  Array.isArray(spec.Parameters)))
-            )
+            if (!spec || typeof spec !== "object" || Array.isArray(spec))
+              throw Object.assign(
+                Error(
+                  "Fn::Transformの指定がオブジェクトではありません（NameとParametersのオブジェクト、またはその配列で指定してください）",
+                ),
+                { line },
+              );
+            if (!Object.hasOwn(spec, "Name"))
               throw Object.assign(
                 Error(
                   "Fn::Transformの指定にマクロ名（Name）が含まれていません（NameとParametersのオブジェクト、またはその配列で指定してください）",
+                ),
+                { line },
+              );
+            if (typeof spec.Name !== "string" || spec.Name === "")
+              throw Object.assign(
+                Error(
+                  "Fn::TransformのNameは空でない文字列で指定してください（NameとParametersのオブジェクト、またはその配列で指定してください）",
+                ),
+                { line },
+              );
+            if (
+              spec.Parameters !== undefined &&
+              (!spec.Parameters ||
+                typeof spec.Parameters !== "object" ||
+                Array.isArray(spec.Parameters))
+            )
+              throw Object.assign(
+                Error(
+                  "Fn::TransformのParametersはオブジェクトで指定してください（NameとParametersのオブジェクト、またはその配列で指定してください）",
                 ),
                 { line },
               );

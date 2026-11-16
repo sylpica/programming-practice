@@ -883,6 +883,40 @@ export const definition = {
       return modelFailure("モデルvariablesはオブジェクトで指定してください");
     if (model.files !== undefined && !isModelObject(model.files))
       return modelFailure("モデルfilesはオブジェクトで指定してください");
+    // RG-372（R33-F01C-N1）：files の各値の形状も入口で検証する
+    // （RG-362 で確立したファイル系モデル要素の水準に揃える）。値は
+    // CSV 文字列か data.frame オブジェクト（kind が "data.frame" で
+    // columns が列名→配列のオブジェクト）のどちらかでなければならず、
+    // それ以外（数値・配列・真偽・null・kind 違い・columns 欠落／
+    // 非配列の列等）は項目名を名指すモデルエラーで停止する。従来は
+    // 未検証のまま read.csv へ渡り、数値 42 や c(1, 2) が data.frame
+    // のふりをして結果になっていた（黙った誤値）。
+    if (model.files !== undefined) {
+      for (const [fname, fval] of Object.entries(model.files)) {
+        if (typeof fval === "string") continue;
+        if (!isModelObject(fval))
+          return modelFailure(
+            `モデルfiles["${fname}"]はdata.frameオブジェクトまたはCSV文字列で指定してください`,
+          );
+        if (fval.kind !== "data.frame")
+          return modelFailure(
+            `モデルfiles["${fname}"].kindは"data.frame"で指定してください`,
+          );
+        if (!isModelObject(fval.columns))
+          return modelFailure(
+            `モデルfiles["${fname}"].columnsはオブジェクトで指定してください`,
+          );
+        for (const [cname, cval] of Object.entries(fval.columns))
+          if (!Array.isArray(cval))
+            return modelFailure(
+              `モデルfiles["${fname}"].columns["${cname}"]は配列で指定してください`,
+            );
+        if (fval.rowNames !== undefined && !Array.isArray(fval.rowNames))
+          return modelFailure(
+            `モデルfiles["${fname}"].rowNamesは配列で指定してください`,
+          );
+      }
+    }
     // RG-14: the shared parser cannot represent `function` expressions and
     // otherwise reports false causes (a parameter NameError, or a missing
     // ")"). Detect the keyword on R tokens and stop honestly, naming it.

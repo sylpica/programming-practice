@@ -357,6 +357,35 @@ function transformSource(source, language, deadline) {
     else out += parts.map((p) => p.text).join(" + ");
     advance(j);
   };
+  // RG-373／RG-374（R33-N10／N11）：不正な数値リテラルのエラー表示は、
+  // ソース上で連続するリテラル全体を示すための表示専用走査。従来は
+  // 核（正規表現で受理できた部分）＋英数字だけの尾部を連結していた
+  // ため、接頭辞直後の区切り（0x'FF →「0x」）、指数符号直後の区切り
+  // （1e+_5 →「1e+」）、小数点の後の続き（1.5.2'3 →「1.5.2」）等で
+  // 表示が途中で切れた。数字・英字・_・'・. を連続する限り取り込み、
+  // 指数符号（直前が区切りを挟んでも e／E になる位置の +／-）も
+  // 取り込む。空白・;・,・) 等で止まるため、正当な後続コード
+  // （1e5 + 5 の + 等）は取り込まない。
+  const fullNumericLiteral = (text) => {
+    let end = 0;
+    while (end < text.length) {
+      const ch = text[end];
+      if (/[0-9A-Za-z_'.]/.test(ch)) {
+        end++;
+        continue;
+      }
+      if (ch === "+" || ch === "-") {
+        let j = end - 1;
+        while (j >= 0 && (text[j] === "_" || text[j] === "'")) j--;
+        if (j >= 0 && (text[j] === "e" || text[j] === "E")) {
+          end++;
+          continue;
+        }
+      }
+      break;
+    }
+    return text.slice(0, end);
+  };
   let scanCount = 0;
   while (i < src.length) {
     // P-N4：準備段階も時間上限の対象にする。一定間隔で時刻を検査し、
@@ -473,9 +502,10 @@ function transformSource(source, language, deadline) {
         {
           const sep = language === "csharp" ? "_" : "'";
           if (rest[raw.length] === sep) {
-            const shown =
-              raw +
-              (rest.slice(raw.length).match(/^[0-9A-Za-z_.']*/) || [""])[0];
+            // RG-373／RG-374：表示は核＋一部ではなくリテラル全文
+            // （fullNumericLiteral）。従来の尾部正規表現は指数符号を
+            // 含まず、1_000.5_e+_3 が「1_000.5_e」で切れていた。
+            const shown = fullNumericLiteral(rest);
             throw new PracticeError(
               language === "csharp"
                 ? `数値リテラルの書き方が不正です：${shown}`
@@ -519,23 +549,18 @@ function transformSource(source, language, deadline) {
         {
           const afterNum = srest.slice(suffix.length);
           if (/^[A-Za-z0-9_]/.test(afterNum)) {
-            let badTail = afterNum.match(/^[A-Za-z0-9_]+/)?.[0] || "";
-            if (
-              /[eE]$/.test(raw + suffix + badTail) &&
-              /^[+-]/.test(afterNum.slice(badTail.length))
-            )
-              badTail += afterNum[badTail.length];
+            // RG-373／RG-374：尾部は英数字だけでは不十分（0x'FF の
+            // '、1e+_5 の符号と後続を取りこぼす）。表示はリテラル
+            // 全文（fullNumericLiteral）にする。停止条件・文言は不変。
             throw new PracticeError(
-              `数値リテラルの書き方が不正です：${raw}${suffix}${badTail}`,
+              `数値リテラルの書き方が不正です：${fullNumericLiteral(rest)}`,
               line,
               "SyntaxError",
             );
           }
           if (afterNum[0] === "." && /[0-9]/.test(afterNum[1] || "")) {
-            const badTail =
-              "." + (afterNum.slice(1).match(/^[0-9]+/)?.[0] || "");
             throw new PracticeError(
-              `数値リテラルの書き方が不正です：${raw}${suffix}${badTail}`,
+              `数値リテラルの書き方が不正です：${fullNumericLiteral(rest)}`,
               line,
               "SyntaxError",
             );
@@ -622,6 +647,128 @@ function parse(source, language, deadline) {
         p.ts[i].line,
       );
   }
+  // RG-365〜RG-369（修正バッチ12・C#班）共通の先読みヘルパー群。
+  // いずれもトークン列に対する純粋な形検査であり、受理範囲は変えず、
+  // 未対応構文を「第一トークンで構文名を名指す」ための判定にだけ使う。
+  // sigNext：改行トークンを読み飛ばした次の有意トークンの位置。
+  const sigNext = (ts, j) => {
+    while (ts[j]?.v === "\n" && !ts[j]?.k) j++;
+    return j;
+  };
+  // attrBracketEnd：start の "[" が属性1つ分の角括弧（[名前]／
+  // [名前(引数)]／[対象: 名前]／[A, B] 等）の形に一致すれば、閉じ "]"
+  // の次の有意位置を返す。一致しなければ -1。添字（[0]／[式]）は
+  // 先頭が識別子でない・式演算子を含むため一致しない。
+  const attrBracketEnd = (ts, start) => {
+    let j = sigNext(ts, start + 1);
+    for (;;) {
+      // 対象指定子（assembly:／return: 等）。
+      if (ts[j]?.k === "id" && ts[sigNext(ts, j + 1)]?.v === ":")
+        j = sigNext(ts, j + 2);
+      if (ts[j]?.k !== "id") return -1;
+      j = sigNext(ts, j + 1);
+      while (ts[j]?.v === "." && ts[sigNext(ts, j + 1)]?.k === "id")
+        j = sigNext(ts, j + 2);
+      if (ts[j]?.v === "(") {
+        let depth = 0,
+          ok = false;
+        for (let k = j; k < ts.length; k++) {
+          const v = ts[k].v;
+          if (v === "(") depth++;
+          else if (v === ")") {
+            depth--;
+            if (depth === 0) {
+              j = sigNext(ts, k + 1);
+              ok = true;
+              break;
+            }
+          } else if (v === "<eof>") break;
+        }
+        if (!ok) return -1;
+      }
+      if (ts[j]?.v === ",") {
+        j = sigNext(ts, j + 1);
+        continue;
+      }
+      if (ts[j]?.v === "]") return sigNext(ts, j + 1);
+      return -1;
+    }
+  };
+  // genericArgsEnd：start の "<" から始まる型引数リストの内容が
+  // 型らしいトークン（識別子・カンマ・入れ子の <>・?・[]・.）だけで
+  // 構成されれば、閉じ ">" の次の有意位置を返す。比較式（a < b）は
+  // 閉じ ">" が無い／内容に演算子を含むため一致しない。
+  const genericArgsEnd = (ts, start) => {
+    let depth = 0,
+      hasId = false;
+    for (let j = start; j < ts.length; j++) {
+      const tk = ts[j],
+        v = tk?.v;
+      if (v === "\n" && !tk.k) continue;
+      if (v === "<") depth++;
+      else if (v === ">" || v === ">>") {
+        depth -= v === ">>" ? 2 : 1;
+        if (depth === 0) return hasId ? sigNext(ts, j + 1) : -1;
+        if (depth < 0) return -1;
+      } else if (
+        depth >= 1 &&
+        (tk.k === "id" || [",", "?", "[", "]", "."].includes(v))
+      ) {
+        if (tk.k === "id") hasId = true;
+      } else return -1;
+    }
+    return -1;
+  };
+  // parenCommaInfo：start の "(" に対応する ")" の位置と、最上位
+  // カンマの有無、カンマ区切りの各要素が全て型らしい並びか
+  // （タプルリテラルとタプル型キャストの切り分け用）を返す。
+  const parenCommaInfo = (ts, start) => {
+    let depth = 0,
+      close = -1;
+    const segments = [];
+    let cur = [];
+    for (let j = start; j < ts.length; j++) {
+      const tk = ts[j],
+        v = tk?.v;
+      if (v === "\n" && !tk.k) continue;
+      if (v === "<eof>") break;
+      if (["(", "[", "{"].includes(v)) {
+        depth++;
+        if (depth > 1) cur.push(tk);
+        continue;
+      }
+      if ([")", "]", "}"].includes(v)) {
+        depth--;
+        if (depth === 0) {
+          close = j;
+          break;
+        }
+        cur.push(tk);
+        continue;
+      }
+      if (depth === 1 && v === ",") {
+        segments.push(cur);
+        cur = [];
+        continue;
+      }
+      if (depth >= 1) cur.push(tk);
+    }
+    if (close < 0) return null;
+    segments.push(cur);
+    const typeLike = (seg) =>
+      seg.length > 0 &&
+      seg.some((t) => t.k === "id") &&
+      seg.every(
+        (t) =>
+          t.k === "id" ||
+          [".", "<", ">", ">>", "?", "[", "]"].includes(t.v),
+      );
+    return {
+      close,
+      hasTopComma: segments.length > 1,
+      allTypeLike: segments.every(typeLike),
+    };
+  };
   let pendingDecls = [];
   if (language === "csharp") {
     // R25-N27 の判定用：`_` が通常の変数として宣言されているか
@@ -795,6 +942,18 @@ function parse(source, language, deadline) {
   if (language === "csharp") p.parseCast = function(meta) {
     const start = this.i;
     const first = this.ts[start]?.v;
+    // RG-369 兄弟表面（修正バッチ12・C#班）：ジェネリック型への
+    // キャスト（(Func<int, int>)x 等）は、型そのものを名指す。
+    // 直後が ")" の場合だけが対象で、ジェネリックメソッド呼出し
+    // （(M<int>(3)) 等）や比較の括弧式（(a < b > c) 等）には届かない。
+    if (
+      this.ts[start]?.k === "id" &&
+      this.ts[sigNext(this.ts, start + 1)]?.v === "<"
+    ) {
+      const end = genericArgsEnd(this.ts, sigNext(this.ts, start + 1));
+      if (end > 0 && this.ts[end]?.v === ")")
+        unsupported(`ジェネリック型 ${first}<...>`, meta.line);
+    }
     const csTypes = ["int", "long", "double", "float", "char", "bool", "short", "uint", "ulong", "ushort", "byte", "sbyte", "string", "decimal"];
     // D14 追随（修正バッチ2・追随班）：キャスト位置の C 形式の型名
     // （(unsigned int)5 等）も、宣言位置と同様に正名を提示して停止する。
@@ -953,6 +1112,82 @@ function parse(source, language, deadline) {
     }
     let t = this.ts[this.i],
       a;
+    // RG-367／RG-369（修正バッチ12・C#班）：sizeof／typeof／nameof／
+    // stackalloc は式のどの位置（被演算子位置を含む）でも演算子・
+    // 構文そのものを名指す。従来は識別子として読み進めてしまい、
+    // 引数の型名が「未定義の名前」という虚偽帰属になっていた
+    // （RG-351 で是正された default(int) の同型残余）。nameof は
+    // 文脈キーワードのため、直後が "(" の形だけを対象にする。
+    // RG-366：括弧内に最上位カンマがある形は C# ではタプル
+    // （リテラル・型・分解代入）であり、カンマ演算子は存在しない。
+    // 要素が全て型らしい並びで、直後に被演算子が続き、その後ろが
+    // 代入・区切りでない場合だけはタプル型キャストとして対象外に
+    // する（(int, int) t = ... の宣言形は被演算子の後ろが = に
+    // なるためタプル側に残る）。
+    if (language === "csharp") {
+      if (
+        ["sizeof", "typeof", "nameof"].includes(t?.v) &&
+        this.ts[sigNext(this.ts, this.i + 1)]?.v === "("
+      )
+        unsupported(`${t.v} 演算子`, t.line);
+      if (t?.v === "stackalloc") unsupported("stackalloc 式", t.line);
+      if (t?.v === "(" && !t.k) {
+        const info = parenCommaInfo(this.ts, this.i);
+        // 括弧内全体が単一のジェネリック型（(Func<int, int>)x の
+        // キャスト等）の場合はタプルではなく、parseCast 側の
+        // ジェネリック型の名指しに委ねる。
+        const singleGenericType =
+          info &&
+          this.ts[sigNext(this.ts, this.i + 1)]?.k === "id" &&
+          this.ts[sigNext(this.ts, sigNext(this.ts, this.i + 1) + 1)]?.v ===
+            "<" &&
+          genericArgsEnd(
+            this.ts,
+            sigNext(this.ts, sigNext(this.ts, this.i + 1) + 1),
+          ) === info.close;
+        if (info?.hasTopComma && !singleGenericType) {
+          let isTuple = !info.allTypeLike;
+          if (info.allTypeLike) {
+            const after = sigNext(this.ts, info.close + 1),
+              av = this.ts[after]?.v;
+            const operandStart =
+              this.ts[after]?.k === "id" ||
+              this.ts[after]?.k === "number" ||
+              this.ts[after]?.k === "string" ||
+              av === "(";
+            if (!operandStart) isTuple = true;
+            else {
+              // 被演算子の末尾（呼出し形 M(...) の閉じ括弧まで）を
+              // 求め、その後ろが代入・区切り・本体開始ならキャスト
+              // ではなくタプル側（宣言・メソッド定義）とみなす。
+              let opEnd = after;
+              const second = sigNext(this.ts, after + 1);
+              if (this.ts[second]?.v === "(") {
+                let d3 = 0;
+                for (let k = second; k < this.ts.length; k++) {
+                  const tv = this.ts[k].v;
+                  if (tv === "(") d3++;
+                  else if (tv === ")") {
+                    d3--;
+                    if (d3 === 0) {
+                      opEnd = k;
+                      break;
+                    }
+                  } else if (tv === "<eof>") break;
+                }
+              }
+              if (
+                ["=", ";", ",", ")", "]", "}", "{"].includes(
+                  this.ts[sigNext(this.ts, opEnd + 1)]?.v,
+                )
+              )
+                isTuple = true;
+            }
+          }
+          if (isTuple) unsupported("タプル", t.line);
+        }
+      }
+    }
     // RG-356（R32-N10）：C／C++ のカンマ演算子が読める文脈の判定。
     // カンマが区切りとして使われる文脈（宣言子列・呼出し引数・添字・
     // 初期化子リスト）では消費しない。読めるのは (1) 括弧式の中身
@@ -1098,6 +1333,32 @@ function parse(source, language, deadline) {
         if (this.ts[this.i + 1]?.v === "?")
           unsupported("null 合体演算子 ?? は未対応です", this.ts[this.i].line);
         if (this.ts[this.i + 1]?.v === ".") break;
+        // RG-368（修正バッチ12・C#班）：null 条件インデックス
+        // （s?[0] 等）。直後が "[" で、対応する三項演算子の ":" が
+        // 無い場合だけ名指す。条件 ? [..] : .. の三項形（":" が
+        // ある形）は従来の三項演算子の経路を壊さない。
+        if (language === "csharp" && this.ts[this.i + 1]?.v === "[") {
+          let d2 = 0,
+            q2 = 0,
+            hasColon = false;
+          for (let j = this.i + 1; j < this.ts.length; j++) {
+            const tv = this.ts[j].v;
+            if (["(", "[", "{"].includes(tv)) d2++;
+            else if ([")", "]", "}"].includes(tv)) {
+              if (d2 === 0) break;
+              d2--;
+            } else if (d2 === 0 && tv === "?") q2++;
+            else if (d2 === 0 && tv === ":") {
+              if (q2 === 0) {
+                hasColon = true;
+                break;
+              }
+              q2--;
+            } else if (d2 === 0 && (tv === ";" || tv === "<eof>")) break;
+          }
+          if (!hasColon)
+            unsupported("null 条件アクセス（?[]）", this.ts[this.i].line);
+        }
         // Locate the colon that belongs to this "?" and hide it while the
         // then-branch is parsed, so ":" is never read as a binary operator.
         let depth = 0,
@@ -1305,6 +1566,14 @@ function parse(source, language, deadline) {
   };
   p.simple = function () {
     let t = this.ts[this.i];
+    // RG-366（修正バッチ12・C#班）：var によるタプル分解代入
+    // （var (x, y) = ...）は、var 一般ではなくタプルとして名指す。
+    if (
+      language === "csharp" &&
+      t.v === "var" &&
+      this.ts[sigNext(this.ts, this.i + 1)]?.v === "("
+    )
+      unsupported("タプル（分解代入）", t.line);
     if (["let", "const", "auto", "var"].includes(t.v))
       unsupported("この宣言・型推論はモデルで未対応です：" + t.v, t.line);
     if (t.v === "cout") {
@@ -1691,6 +1960,30 @@ function parse(source, language, deadline) {
         refs: [...new Set(declarators.flatMap((d) => d.refs))],
       };
     }
+    // RG-369 兄弟表面（修正バッチ12・C#班、バッチ11 §5-4 の同根）：
+    // ジェネリック型の利用形は、既知名リスト（List 等）以外の型名
+    // （Func<int, int> 等の複数型引数を含む）でも、宣言位置では
+    // 型そのものを名指す。トークン段階の既知名スキャンと同じ文言に
+    // 揃える。直後が識別子（変数名）か [] ＋識別子の場合だけが対象で、
+    // ジェネリックメソッド呼出し（名前<...>(...)）には届かない。
+    if (
+      language === "csharp" &&
+      t.k === "id" &&
+      this.ts[sigNext(this.ts, this.i + 1)]?.v === "<"
+    ) {
+      const end = genericArgsEnd(this.ts, sigNext(this.ts, this.i + 1));
+      if (end > 0) {
+        const after = this.ts[end];
+        if (
+          after?.k === "id" ||
+          (after?.v === "[" &&
+            this.ts[sigNext(this.ts, end + 1)]?.v === "]" &&
+            this.ts[sigNext(this.ts, sigNext(this.ts, end + 1) + 1)]?.k ===
+              "id")
+        )
+          unsupported(`ジェネリック型 ${t.v}<...> の宣言は未対応です`, t.line);
+      }
+    }
     if (t.k === "id" && this.ts[this.i + 1]?.k === "id" && !classes[t.v])
       unsupported(`型 ${t.v} の宣言は未対応です`, t.line);
     {
@@ -1799,10 +2092,80 @@ function parse(source, language, deadline) {
     if (t.v === "finally" && language === "csharp") unsupported("finally 節", t.line);
     if (t.v === "using" && language === "csharp") unsupported("using 文", t.line);
     if (t.v === "lock" && language === "csharp") unsupported("lock 文", t.line);
+    // RG-365（修正バッチ12・C#班）：文頭の属性（型宣言・文位置の
+    // 宣言に付く形、[assembly: ...] 等の対象指定子付きを含む）は
+    // 属性そのものを名指す。添字で文が始まることは C# には無い。
+    if (
+      language === "csharp" &&
+      t.v === "[" &&
+      attrBracketEnd(this.ts, this.i) > 0
+    )
+      unsupported("属性（アトリビュート）", t.line);
+    // RG-369（修正バッチ12・C#班）：unsafe ブロックと unsafe 付き
+    // 宣言。unsafe は文脈キーワードのため、直後がブロック開始か
+    // 型・修飾子の場合だけを対象にする（同名変数への代入等は不変）。
+    if (language === "csharp" && t.v === "unsafe") {
+      const nv = this.ts[sigNext(this.ts, this.i + 1)]?.v;
+      if (
+        nv === "{" ||
+        ["class", "struct", "interface", "enum", "void", "int", "long", "double", "float", "bool", "char", "string", "public", "private", "protected", "static"].includes(nv)
+      )
+        unsupported("unsafe 文", t.line);
+    }
+    // RG-369：class 以外のジェネリック型宣言の型パラメータ
+    // （struct Box<T>／interface IBox<T>／record R<T>／
+    // delegate void D<T>()）。class は下の class 分岐で名指す。
+    if (
+      language === "csharp" &&
+      ["struct", "interface", "record"].includes(t.v)
+    ) {
+      const n1 = sigNext(this.ts, this.i + 1),
+        n2 = sigNext(this.ts, n1 + 1);
+      if (this.ts[n1]?.k === "id" && this.ts[n2]?.v === "<")
+        unsupported("ジェネリック型パラメータ（<T>）の宣言", t.line);
+    }
+    if (language === "csharp" && t.v === "delegate") {
+      let j = sigNext(this.ts, this.i + 1);
+      while (
+        this.ts[j]?.k === "id" &&
+        this.ts[sigNext(this.ts, j + 1)]?.k === "id"
+      )
+        j = sigNext(this.ts, j + 1);
+      if (
+        this.ts[j]?.k === "id" &&
+        this.ts[sigNext(this.ts, j + 1)]?.v === "<"
+      )
+        unsupported("ジェネリック型パラメータ（<T>）の宣言", t.line);
+    }
+    // RG-369：文頭のジェネリックメソッド定義（型 名前<T>(...)）。
+    // 戻り値型・名前の2識別子の直後が "<" の形だけが対象で、
+    // ジェネリック型の利用形（名前<...> 変数）や型宣言には届かない。
+    if (language === "csharp") {
+      let j = this.i;
+      while (
+        ["public", "private", "protected", "static", "internal", "sealed", "virtual", "override", "async", "partial"].includes(this.ts[j]?.v)
+      )
+        j = sigNext(this.ts, j + 1);
+      const rt = this.ts[j],
+        nmIdx = sigNext(this.ts, j + 1),
+        nm = this.ts[nmIdx];
+      if (
+        rt?.k === "id" &&
+        nm?.k === "id" &&
+        !["class", "struct", "interface", "record", "delegate", "enum", "namespace"].includes(rt.v) &&
+        this.ts[sigNext(this.ts, nmIdx + 1)]?.v === "<"
+      )
+        unsupported("ジェネリックメソッド（型パラメータ）", t.line);
+    }
     if (t.v === "class") {
       if (language !== "csharp") unsupported("この言語のクラスは未対応です", t.line);
       this.take();
       let name = this.take().v;
+      // RG-369（修正バッチ12・C#班）：ジェネリック型パラメータ宣言
+      // （class Box<T> {}）。制約（where T : ...）が続く形も、
+      // 先に現れる型パラメータそのものを名指す。
+      if (this.ts[sigNext(this.ts, this.i)]?.v === "<")
+        unsupported("ジェネリック型パラメータ（<T>）の宣言", t.line);
       this.take("{");
       let fields = {},
         main = [];
@@ -1814,6 +2177,15 @@ function parse(source, language, deadline) {
         // 名指しで停止する（この経路は C# 専用）。
         if (this.peek("<eof>"))
           throw new PracticeError("} が必要です", this.ts[this.i]?.line ?? t.line);
+        // RG-365（修正バッチ12・C#班）：メンバー位置の属性
+        // （メソッド／フィールド／プロパティ／[return: ...] 等の
+        // 対象指定子付き）は属性そのものを名指す。従来は "[" が
+        // フィールド型として断片表示されていた。
+        {
+          const s = sigNext(this.ts, this.i);
+          if (this.ts[s]?.v === "[" && attrBracketEnd(this.ts, s) > 0)
+            unsupported("属性（アトリビュート）", this.ts[s]?.line ?? t.line);
+        }
         let start = this.i;
         while (
           ["public", "private", "protected", "static"].includes(
@@ -1843,6 +2215,16 @@ function parse(source, language, deadline) {
           );
         let type = typeTok.v,
           field = fieldTok.v;
+        // RG-369（修正バッチ12・C#班）：インデクサ
+        // （型 this[引数] ...）とジェネリックメソッド
+        // （型 名前<T>(...)）は構文そのものを名指す。
+        if (
+          fieldTok.v === "this" &&
+          this.ts[sigNext(this.ts, this.i)]?.v === "["
+        )
+          unsupported("インデクサ（this[...]）", t.line);
+        if (this.ts[sigNext(this.ts, this.i)]?.v === "<")
+          unsupported("ジェネリックメソッド（型パラメータ）", t.line);
         if (!builtinTypes.includes(type))
           unsupported("クラスのフィールド型 " + type, t.line);
         if (this.peek("=")) unsupported("クラスフィールドの初期化式", t.line);
@@ -2096,6 +2478,20 @@ function parse(source, language, deadline) {
             } else if (v === "<eof>") break;
           }
           if (close > 0) {
+            // RG-365（修正バッチ12・C#班）：引数位置の属性は、
+            // 関数定義そのものより先に（出現順どおり）名指す。
+            if (language === "csharp") {
+              for (let k = j + 2; k < close; k++) {
+                if (this.ts[k]?.v !== "[") continue;
+                let pk = k - 1;
+                while (this.ts[pk]?.v === "\n" && !this.ts[pk]?.k) pk--;
+                if (
+                  (pk === j + 1 || this.ts[pk]?.v === ",") &&
+                  attrBracketEnd(this.ts, k) > 0
+                )
+                  unsupported("属性（アトリビュート）", t.line);
+              }
+            }
             const after = this.ts[close + 1]?.v,
               params = this.ts.slice(j + 2, close);
             const paramIsTyped =
@@ -2793,8 +3189,16 @@ export function createCFamily({ id, name, extensions, language }) {
       description: managed
         ? "C#のint32演算、配列範囲検査、単純クラス・参照共有をモデル化します。"
         : "C / C++の符号付き整数・配列・ポインタをモデルメモリ上で追跡し、範囲外・未初期化・オーバーフローは停止します。",
+      // RG-379（バッチ12表示追随）：スコープのシャドーイングは言語で
+      // 実挙動が分かれる（C／C++ は内側ブロックで受理、C# は実 C# の
+      // 規則どおり CS0136 で停止）ため、表明文も言語で出し分ける。
+      // 同じスコープでの再宣言は全言語でエラーとして停止する。
       support:
-        "mainまたは文の断片、単純宣言、代入、If / For / While、掲載出力。多次元配列にも対応します（C／C++ は連鎖添字の多次元配列、C# は矩形配列（int[,]）とジャグ配列（int[][]））。未対応：型推論（auto / var）、動的確保・解放、複雑な型・テンプレート・関数定義・多重宣言・スコープのシャドーイング。64ビット整数の安全な精度範囲外は未確認として停止。",
+        "mainまたは文の断片、単純宣言、代入、If / For / While、掲載出力。複数宣言子（int a = 1, b = 2; のように、1つの宣言に複数の名前を初期化子の有無を混ぜて書く形）にも対応します。宣言子ごとのポインタ（C／C++）・配列の修飾や、for の初期化部での複数宣言子も同じです。多次元配列にも対応します（C／C++ は連鎖添字の多次元配列、C# は矩形配列（int[,]）とジャグ配列（int[][]））。" +
+        (managed
+          ? "スコープ：同じスコープでの同名の再宣言はエラーとして停止します。外側で宣言した名前を内側のブロック・for・foreach で再宣言する形（シャドーイング）は、実 C# の規則どおり CS0136 として停止します（内側の宣言が先にある場合も同じです。兄弟ブロック同士の同名宣言は対応します）。未対応：型推論（auto / var）、動的確保・解放、複雑な型・テンプレート・関数定義。"
+          : "スコープ：内側のブロックや for の初期化部で外側と同じ名前を再宣言する形（シャドーイング）に対応します（ブロックを抜けると外側の変数に戻ります）。同じスコープでの同名の再宣言はエラーとして停止します。ただしファイルスコープの大域変数と同名の変数を main の直下で宣言する形は、同一スコープとして停止します。未対応：型推論（auto / var）、動的確保・解放、複雑な型・テンプレート・関数定義。") +
+        "64ビット整数の安全な精度範囲外は未確認として停止。",
       sources: managed
         ? [
             {
@@ -3218,6 +3622,23 @@ export function createCFamily({ id, name, extensions, language }) {
                 if (memT?.dims && chainLen < memT.dims.length)
                   return (memT.type || "int") + "[]";
               }
+            }
+            // RG-376（R33 §4）：従来は対象変数の宣言型から []／* を
+            // 一律に剥がして要素型としており、string[] の要素まで
+            // 「string 変数の要素＝char」と誤判定していた（a[0] の
+            // 型が char になり、cout が String.fromCharCode("ab")＝
+            // "\u0000" を出し、文字列演算が型不一致で停止した）。
+            // 連鎖添字（a[0][0]）では callName が空になり int に
+            // 化けていた。非 managed では対象式の型を再帰的に辿り、
+            // 配列／ポインタ型からは1段だけ剥がし、string 型からは
+            // char を返すのが要素型の正しい導出である。managed は
+            // csTypeStrOf と従来経路をそのまま使う。
+            if (!managed) {
+              const tt = typeOf(a.target, s);
+              if (tt === "string") return "char";
+              if (tt.endsWith("[]")) return tt.slice(0, -2) || "int";
+              if (tt.endsWith("*")) return tt.slice(0, -1) || "int";
+              return tt || "int";
             }
             const targetType = s.types[callName(a.target)]?.replace(/\[\]|\*/g, "");
             if (targetType === "string") return "char";
@@ -3953,11 +4374,18 @@ export function createCFamily({ id, name, extensions, language }) {
               return [s];
             }
             if (n.k === "declare") {
+              // RG-379（バッチ12表示追随）：この検査に届く時点で、内側
+              // スコープでの同名宣言（シャドーイング）は共有エンジンの
+              // スコープ登録が s.types から外側の型を退避済みであり、
+              // 同じスコープの重複は通常そちらが先に名指しで停止する。
+              // ここで名前が残っているのは同一スコープの再宣言だけなの
+              // で、文言もシャドーイングと切り分けて同一スコープの重複
+              // として名指す（カテゴリも未対応ではなく SyntaxError）。
               if (Object.hasOwn(s.types, n.name)) {
                 api.fail(
-                  "この初版は同名変数の再宣言・スコープのシャドーイングに対応していません",
+                  `同じスコープで名前が重複しています：${n.name}`,
                   n,
-                  "未対応",
+                  "SyntaxError",
                 );
               }
               if (managed && n.pointer)
@@ -4279,14 +4707,19 @@ export function createCFamily({ id, name, extensions, language }) {
                   const rowSize = dimVals
                     .slice(1)
                     .reduce((a, b) => a * b, 1);
-                  const padVal = n.type === "bool" ? false : 0;
+                  // RG-376：C++ の std::string（クラス型）要素は既定構築
+                  // され "" になる。埋め値・未初期化要素に 0／未初期化
+                  // マーカーを使うと、部分初期化が char 初期化エラーに
+                  // 化け、未初期化読みが虚偽の未定義動作になっていた。
+                  // trivial 型（int／char 等）の未初期化は従来どおり。
+                  const padVal = n.type === "bool" ? false : language === "cpp" && n.type === "string" ? "" : 0;
                   let flat;
                   if (v === uninitialized) {
                     if (dimVals[0] === null)
                       api.fail("配列長を指定してください", n);
                     flat = Array.from(
                       { length: dimVals.reduce((a, b) => a * b, 1) },
-                      () => uninitialized,
+                      () => (language === "cpp" && n.type === "string" ? "" : uninitialized),
                     );
                   } else if (!Array.isArray(v)) {
                     api.fail("配列初期化子が必要です", n);
@@ -4429,10 +4862,15 @@ export function createCFamily({ id, name, extensions, language }) {
                 if (length === null) api.fail("配列長を指定してください", n);
                 if (!Number.isInteger(length) || length < 0 || length > 10000)
                   api.fail("配列長が不正または上限を超えています", n);
-                const defaultValue = n.type === "bool" ? false : n.type === "string" || classes[n.type] ? null : 0;
+                // RG-376：C++ の std::string 要素の既定値は ""（クラス型の
+                // 既定構築。スカラー形 RG-40 と同じ）。従来は C# と共通の
+                // null が部分初期化の埋め値になり、未初期化配列では要素が
+                // 未初期化マーカーのまま「未定義動作」で停止していた。
+                // C# の string[] の null、trivial 型の未初期化は不変。
+                const defaultValue = n.type === "bool" ? false : n.type === "string" ? (language === "cpp" ? "" : null) : classes[n.type] ? null : 0;
                 if (v === uninitialized)
                   v = Array.from({ length }, () =>
-                    managed ? defaultValue : uninitialized,
+                    managed ? defaultValue : language === "cpp" && n.type === "string" ? "" : uninitialized,
                   );
                 else if (!Array.isArray(v))
                   api.fail("配列初期化子が必要です", n);
@@ -5338,10 +5776,19 @@ export function createCFamily({ id, name, extensions, language }) {
                           "CompileError",
                         );
                     }
-                    if (idxVals.length > mem0.dims.length)
+                    // RG-376：要素型が std::string の多次元配列では、次元
+                    // 分の添字で得た文字列への追加の添字1つ（a[0][0][0]）
+                    // は char アクセスとして合法であり、「次元超過」では
+                    // ない。それ以外の超過は従来どおり次元超過で停止する。
+                    const stringCharExtra =
+                      language === "cpp" &&
+                      mem0.type === "string" &&
+                      idxVals.length === mem0.dims.length + 1;
+                    if (idxVals.length > mem0.dims.length && !stringCharExtra)
                       api.fail("添字の数が次元の数を超えています", a, "CompileError");
                     let offset = rootPtr.offset;
-                    for (let d = 0; d < idxVals.length; d++) {
+                    const elemIdxCount = Math.min(idxVals.length, mem0.dims.length);
+                    for (let d = 0; d < elemIdxCount; d++) {
                       const iv = idxVals[d];
                       if (iv < 0 || iv >= mem0.dims[d])
                         api.fail("配列の範囲外の添字です", a, "未定義動作");
@@ -5363,6 +5810,17 @@ export function createCFamily({ id, name, extensions, language }) {
                     const value = memObj.values[offset];
                     if (value?.kind === "uninitialized")
                       api.fail("未初期化の配列要素です", a, "未定義動作");
+                    if (stringCharExtra) {
+                      if (isUnknown(value))
+                        return { handled: true, value: unknown("未確定の値の要素") };
+                      if (typeof value !== "string")
+                        api.fail("添字の数が次元の数を超えています", a, "CompileError");
+                      const ci = idxVals[idxVals.length - 1];
+                      if (ci === value.length) return { handled: true, value: 0 };
+                      if (ci < 0 || ci > value.length)
+                        api.fail("文字列の有効範囲外の添字です", a, "未定義動作");
+                      return { handled: true, value: value.charCodeAt(ci) };
+                    }
                     return { handled: true, value };
                   }
                 }
@@ -5570,6 +6028,36 @@ export function createCFamily({ id, name, extensions, language }) {
               const id = s.addresses[a.target.name];
               if (id && s.model.memory[id]) s.model.memory[id].values[0] = next;
               return true;
+            }
+            // RG-376：文字列値への添字書込みの一般形（a[0][0] = 'z' 等）。
+            // スカラー string 変数への書込みは上の専用経路が処理するが、
+            // 配列要素の文字列は読み取りが文字列値を返すため、下の
+            // ポインタ経路では「モデルポインタと整数添字が必要です」に
+            // 化けていた。対象式の型が string で、実際の値も文字列の
+            // ときだけ、文字列を組み替えて対象コンテナへ書き戻す
+            // （書き戻しは要素代入・スカラー代入の既存経路が担う）。
+            // 範囲・型の停止理由はスカラー形と揃える。
+            if (
+              !managed &&
+              a.k === "index" &&
+              !(a.target.k === "var" && s.types[a.target.name] === "string") &&
+              typeOf(a.target, s) === "string"
+            ) {
+              const current = api.read(a.target, s);
+              if (typeof current === "string") {
+                const index = api.read(a.indexes[0], s);
+                if (!Number.isInteger(index))
+                  api.fail("添字は整数型でなければなりません", node, "CompileError");
+                if (index < 0 || index >= current.length)
+                  api.fail("文字列の有効範囲外への書き込みです", node, "未定義動作");
+                const ch = cast(v, "char", s, node, api);
+                const next =
+                  current.slice(0, index) +
+                  (typeof ch === "string" ? ch : String.fromCharCode(ch)) +
+                  current.slice(index + 1);
+                api.write(a.target, next, s, api, node);
+                return true;
+              }
             }
             if (
               !managed &&
@@ -5824,7 +6312,13 @@ export function createCFamily({ id, name, extensions, language }) {
               op === "+" &&
               typeof a === "string" &&
               typeof b === "string" &&
-              (node.k === "assign" ? s.types[callName(node.target)] === "string" : [lt, rt].includes("string"))
+              // RG-376：複合代入（文位置の assign ノード）でも、被演算子
+              // の型に string が含まれるかを併せて見る。従来は代入先が
+              // スカラー変数の場合しか連結を認めず、a[0] += "X" のような
+              // 配列要素への複合代入が（要素型の誤判定と相まって）
+              // 型不一致で停止していた。スカラー string 変数への従来の
+              // 認定はそのまま残す。
+              (node.k === "assign" ? s.types[callName(node.target)] === "string" || [lt, rt].includes("string") : [lt, rt].includes("string"))
             ) {
               // P-N1: C++ の std::string 連結も同じ上限・同じ停止契約
               // （P-N3 のホスト例外漏れの発生源自体を断つ）。
