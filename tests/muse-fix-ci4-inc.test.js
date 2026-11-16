@@ -117,12 +117,16 @@ test("ci4-inc (RG-262 planned): typed bindings follow the held value's type", ()
   );
   expectOut("$x = [int]'5'\n$x++\nWrite-Output $x", [["6"]]);
   expectOut("$x = [int]'5'\n$x--\nWrite-Output $x", [["4"]]);
-  // 文頭の型付き変数宣言（[string]$s = '5' の形）は、シミュレータの現行
-  // 到達範囲では代入文そのものが SyntaxError で止まり保持値が作られない
-  // （incDec 以前の既存制限で、本是正の前後で不変）。保持値の型による
-  // 判定は、到達可能な上の束縛形（param／キャスト代入）で固定する。
-  expectErr("[string]$s = '5'\n$s++\nWrite-Output $s", /代入してください/);
-  expectErr("[int]$x = '5'\n$x++\nWrite-Output $x", /代入してください/);
+  // 文頭の型付き変数宣言（[string]$s = '5' の形）は、修正バッチ9の
+  // R30-N11 で型付き代入文として実装された（従来は「変数へ代入して
+  // ください」という虚偽原因の SyntaxError で止まる既存制限だった）。
+  // 保持値の型による判定は文位置の型付き代入でも同じであり、
+  // [string] 束縛の保持値は文字列として、[int] 束縛の保持値は
+  // 代入時に変換済みの数値として増減する。
+  expectErr("[string]$s = '5'\n$s++\nWrite-Output $s", INC);
+  expectErr("[string]$s = '5'\n$s--\nWrite-Output $s", DEC);
+  expectOut("[int]$x = '5'\n$x++\nWrite-Output $x", [["6"]]);
+  expectOut("[int]$x = '5'\n$x--\nWrite-Output $x", [["4"]]);
 });
 
 // ---------- 文字列でない保持値は本件の範囲外（現行維持を固定） ----------

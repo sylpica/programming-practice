@@ -368,10 +368,31 @@ export const definition = {
             ...pythonDefinition.scan(line),
           ],
         });
+        const sourceLineCount = source.split("\n").length;
         for (let p of normalized.paths) {
           p.response = p.captures?.__macro_response;
+          // R30-N33: エンジンが合成した代入のナレーションを露出させない。
+          // runHandler はハンドラ実行のために、学習者のソース末尾へ
+          // 「__macro_response = handler(event, None)」を合成して実行する。
+          // この合成行から生じたステップは、学習者の行数を超える行番号を
+          // 持つ（出所＝合成行）ことと、代入先が合成変数そのものである
+          // ことの両方で識別する。名前のパターン（__macro_ 始まり等）で
+          // 広く消すことはしない：学習者が自分のコードで書いた
+          // __macro_custom や __mine 等への代入ステップは、学習者の行の
+          // 範囲内にあるため従来どおり残る。最終状態（groups）側で
+          // __macro_response が表示されないことと表面を揃える。
+          p.trace = p.trace.filter(
+            (t) =>
+              !(
+                t.line > sourceLineCount &&
+                t.text.includes("「__macro_response」に")
+              ),
+          );
           for (let t of p.trace)
-            t.line = Math.min(source.split("\n").length, t.line);
+            t.line = Math.min(sourceLineCount, t.line);
+          // 最終状態 vars 側も、合成変数そのものだけを除く（captures は
+          // レスポンス取り出し用の内部経路として従来どおり保持する）。
+          if (p.vars) delete p.vars.__macro_response;
           let response = p.response;
           if (!p.error) {
             // RG-66: レスポンスが捕捉されていないのに探索が打ち切られている場合は、

@@ -239,8 +239,10 @@ function transformSource(source, language, deadline) {
       lit = "",
       parts = [],
       closed = false;
+    // R30-N30：各パートがリテラルか穴（式）かを保持する。先頭が穴の
+    // 補間は連結への下ろし方を変える必要があるため（下記参照）。
     const flushLit = () => {
-      if (lit) parts.push('"' + lit + '"');
+      if (lit) parts.push({ text: '"' + lit + '"', hole: false });
       lit = "";
     };
     while (j < src.length) {
@@ -285,9 +287,10 @@ function transformSource(source, language, deadline) {
           k++;
         }
         flushLit();
-        parts.push(
-          "(" + transformSource(splitHole(hole, line), language) + ")",
-        );
+        parts.push({
+          text: "(" + transformSource(splitHole(hole, line), language) + ")",
+          hole: true,
+        });
         j = k;
         continue;
       }
@@ -302,7 +305,20 @@ function transformSource(source, language, deadline) {
     if (!closed)
       throw new PracticeError("文字列が閉じられていません", line);
     flushLit();
-    out += parts.length ? parts.join(" + ") : '""';
+    // R30-N30 根因：補間は常に string を生むが、連結への下ろしでは
+    // 先頭が穴だけの場合に穴の値の型がそのまま残っていた。そのため
+    // $"{a}"（char[]）が WriteLine(char[]) オーバーロード相当の誤値
+    // "hi" になり、string への代入では型不一致、"{a}{a}" では配列
+    // 同士の + で CompileError と、形ごとにバラバラだった。実
+    // dotnet では補間内の配列値は全形で型名文字列（System.Char[] 等）
+    // になる。先頭が穴の場合は空文字列を先頭に置いて全体を括弧で
+    // 包み、最初の演算から文字列連結（型名表示への変換を含む従来の
+    // RG-284 経路）にすることで、全形を実物に統一する。先頭が
+    // リテラルの場合は従来どおり（既に文字列連結として正しい）。
+    if (!parts.length) out += '""';
+    else if (parts[0].hole)
+      out += '("" + ' + parts.map((p) => p.text).join(" + ") + ")";
+    else out += parts.map((p) => p.text).join(" + ");
     advance(j);
   };
   let scanCount = 0;
@@ -876,6 +892,33 @@ function parse(source, language, deadline) {
       a = { k: "pre", target: this.expr(10), op: t.v, line: t.line };
     } else if (t?.v === "new" && language === "csharp") {
       a = this.parseNewExpr();
+    } else if (
+      // R30-N31：式位置の std::string({...})（関数形式キャスト／一時
+      // オブジェクト）。宣言位置と同じく波括弧初期化子として読み、
+      // stringInitList として印付ける（評価は read 側、型は typeOf 側）。
+      language === "cpp" &&
+      t?.v === "string" &&
+      this.ts[this.i + 1]?.v === "(" &&
+      this.ts[this.i + 2]?.v === "{"
+    ) {
+      const line = t.line;
+      this.take();
+      this.take();
+      let init = parseBracedInit(this);
+      init = normalizeBracedInit(init, {
+        isArray: false,
+        baseType: "string",
+        line,
+      });
+      this.take(")");
+      a = { ...init, stringInitList: true, line };
+      if (
+        init.values.length === 2 &&
+        init.values[0]?.k === "literal" &&
+        typeof init.values[0].value === "string" &&
+        init.values[0].quote !== "'"
+      )
+        a.strCountInit = true;
     } else {
       a = origExpr(12);
     }
@@ -889,6 +932,13 @@ function parse(source, language, deadline) {
         if (nv === "?" || SHARED[nv] !== undefined) this.i = j;
       }
       const v = this.ts[this.i]?.v;
+      // R30-N17：C# の switch 式（値 switch { … }）は未対応であり、
+      // 対象そのものを名指して停止する。従来は式の後続として読めずに
+      // 呼び出し側の宣言・文の終端チェックが「; が必要です」という
+      // 虚偽原因を表示していた（セミコロンは不足していない）。switch
+      // 文は statement 側で別途名指し済み。
+      if (v === "switch" && language === "csharp")
+        unsupported("switch 式", this.ts[this.i].line);
       if (v === "?" && min <= 0) {
         if (this.ts[this.i + 1]?.v === "?")
           unsupported("null 合体演算子 ?? は未対応です", this.ts[this.i].line);
@@ -1274,16 +1324,43 @@ function parse(source, language, deadline) {
         if (this.peek("(")) {
           // Direct initialization: Type name(args) — a single argument only.
           this.take();
-          let args = [];
-          while (!this.peek(")")) {
-            args.push(this.expr());
-            if (!this.peek(",")) break;
-            this.take();
+          // R30-N31：C++ の括弧付き波括弧構築 `型 名({…})`（括弧で包んだ
+          // リスト初期化）。実 g++ では合法で、std::string s({'h','i'})
+          // は初期化子リストコンストラクタで "hi" になる。従来は波括弧
+          // の中身をレコードリテラルとして読み始め、「: が必要です」
+          // （std:: の :: と誤認させる）という虚偽原因で停止していた。
+          // 波括弧初期化子として読み、直接リスト初期化（型 名{…}）と
+          // 同じ実行経路（narrowing 検査・std::string の初期化子リスト
+          // 構築）に委ねる。std::string の (文字列, 個数) 形
+          // （{"hi", 1} → "h"、g++ 実測）は strCountInit で印付ける。
+          if (language === "cpp" && !array && !pointer && this.peek("{")) {
+            value = parseBracedInit(this);
+            value = normalizeBracedInit(value, {
+              isArray: false,
+              baseType: type,
+              line: t.line,
+            });
+            if (
+              type === "string" &&
+              value.values.length === 2 &&
+              value.values[0]?.k === "literal" &&
+              typeof value.values[0].value === "string" &&
+              value.values[0].quote !== "'"
+            )
+              value.strCountInit = true;
+            this.take(")");
+          } else {
+            let args = [];
+            while (!this.peek(")")) {
+              args.push(this.expr());
+              if (!this.peek(",")) break;
+              this.take();
+            }
+            this.take(")");
+            if (args.length !== 1)
+              unsupported("複数引数の直接初期化は未対応です", t.line);
+            value = args[0];
           }
-          this.take(")");
-          if (args.length !== 1)
-            unsupported("複数引数の直接初期化は未対応です", t.line);
-          value = args[0];
         } else if (this.peek("{")) {
           // R26-N19：直接リスト初期化 `型 名{値};` は C++ の基本形（g++ 実測で
           // 合法）。従来は波括弧位置で「; が必要です」という虚偽原因になって
@@ -2746,6 +2823,8 @@ export function createCFamily({ id, name, extensions, language }) {
           }
           if (a.k === "construct" && a.name?.includes("["))
             return a.name;
+          // R30-N31：std::string({...}) の結果型は std::string。
+          if (a.k === "array" && a.stringInitList) return "string";
           if (a.k === "array" && a.elemType) return a.elemType + "[]";
           if (a.k === "index") {
             // R29-N21：ジャグ配列の行など、添字の結果が配列になる形は
@@ -3952,7 +4031,35 @@ export function createCFamily({ id, name, extensions, language }) {
                       el?.k === "literal" &&
                       typeof el.value === "string" &&
                       el.quote !== "'";
-                    if (v.some((elVal) => isUnknown(elVal))) {
+                    if (n.value.strCountInit) {
+                      // R30-N31：括弧付き波括弧構築の (文字列, 個数) 形は
+                      // 初期化子リストではなく basic_string(const char*,
+                      // size_type) コンストラクタが選ばれる（g++ 13.3
+                      // 実測：std::string s({"hi", 1}) は "h"）。個数が
+                      // 文字列の長さを超える読みは実物では範囲外の読みに
+                      // なるため、確定値を出さずその旨を名指す。
+                      const count = v[1];
+                      if (typeof count !== "number")
+                        api.fail(
+                          "文字列リテラルを char へ変換できません（invalid conversion from 'const char*' to 'char'）",
+                          n,
+                          "CompileError",
+                        );
+                      if (!Number.isInteger(count) || count < 0)
+                        api.fail(
+                          "std::string の (文字列, 個数) 構築の個数が不正です",
+                          n,
+                          "CompileError",
+                        );
+                      if (count > String(v[0]).length)
+                        api.fail(
+                          "std::string の (文字列, 個数) 構築で個数が文字列の長さを超える形は未対応です",
+                          n,
+                          "未対応",
+                        );
+                      v = String(v[0]).slice(0, count);
+                      bracedHandled = true;
+                    } else if (v.some((elVal) => isUnknown(elVal))) {
                       v = v.find((elVal) => isUnknown(elVal));
                       bracedHandled = true;
                     } else if (elNodes.length > 1 && elNodes.some(isStrLitEl))
@@ -4467,6 +4574,91 @@ export function createCFamily({ id, name, extensions, language }) {
                 handled: true,
                 value: a.values.map((x) => api.read(x, s)),
               };
+            }
+            if (language === "cpp" && a.k === "array" && a.stringInitList) {
+              // R30-N31：式位置の std::string({...}) の評価。宣言位置の
+              // 初期化子リスト構築（R29-N24）と規則を揃える：要素が全て
+              // char へ変換できる値なら initializer_list<char> で組み
+              // 立て、単一の文字列はそのまま、(文字列, 個数) 形は
+              // basic_string(const char*, size_type) として切り取る。
+              const elNodes = a.values;
+              const vals = elNodes.map((x) => api.read(x, s));
+              if (vals.some((x) => isUnknown(x)))
+                return {
+                  handled: true,
+                  value: unknown("std::string の初期化子リストによる"),
+                };
+              const isStrLitEl = (el) =>
+                el?.k === "literal" &&
+                typeof el.value === "string" &&
+                el.quote !== "'";
+              if (a.strCountInit) {
+                const count = vals[1];
+                if (typeof count !== "number")
+                  api.fail(
+                    "文字列リテラルを char へ変換できません（invalid conversion from 'const char*' to 'char'）",
+                    a,
+                    "CompileError",
+                  );
+                if (!Number.isInteger(count) || count < 0)
+                  api.fail(
+                    "std::string の (文字列, 個数) 構築の個数が不正です",
+                    a,
+                    "CompileError",
+                  );
+                if (count > String(vals[0]).length)
+                  api.fail(
+                    "std::string の (文字列, 個数) 構築で個数が文字列の長さを超える形は未対応です",
+                    a,
+                    "未対応",
+                  );
+                return { handled: true, value: String(vals[0]).slice(0, count) };
+              }
+              if (vals.length > 1 && elNodes.some(isStrLitEl))
+                api.fail(
+                  "文字列リテラルを char へ変換できません（invalid conversion from 'const char*' to 'char'）",
+                  a,
+                  "CompileError",
+                );
+              if (vals.length === 1 && typeof vals[0] === "string")
+                return { handled: true, value: vals[0] };
+              if (
+                vals.every(
+                  (elVal) =>
+                    typeof elVal === "number" ||
+                    typeof elVal === "boolean" ||
+                    (typeof elVal === "string" && elVal.length === 1),
+                )
+              ) {
+                for (const el of elNodes)
+                  if (
+                    el?.k === "literal" &&
+                    typeof el.value === "number" &&
+                    (el.value < -128 || el.value > 127)
+                  )
+                    api.fail(
+                      `波括弧初期化で整数の定数 ${el.value} を char へ縮小変換（narrowing）はできません`,
+                      a,
+                      "CompileError",
+                    );
+                return {
+                  handled: true,
+                  value: vals
+                    .map((elVal) =>
+                      typeof elVal === "string"
+                        ? elVal
+                        : String.fromCharCode(
+                            ((Math.trunc(Number(elVal)) % 256) + 256) % 256,
+                          ),
+                    )
+                    .join(""),
+                };
+              }
+              api.fail(
+                "std::string の初期化子リストの要素を char へ変換できません",
+                a,
+                "CompileError",
+              );
             }
             if (a.k === "construct") {
               if (!managed)

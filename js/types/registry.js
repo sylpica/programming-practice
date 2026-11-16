@@ -54,6 +54,51 @@ export function validateDefinition(d) {
     !d.extensions.every((x) => x.startsWith("."))
   )
     throw Error("拡張子の定義が不正です");
+  // 共有UI契約（js/app.js が読む下位形状）の必須サブフィールド検査。
+  // R30-N1／N2 の再発防止：model／semantics のキーの存在だけでは、
+  // defaults や sources[].url が undefined のまま素通りし、実UIで
+  // 初期値が文字列 "undefined" になる等の統合欠陥を検出できない。
+  const model = d.model;
+  if (typeof model !== "object" || model === null || Array.isArray(model))
+    throw Error("種類定義の model が不正です");
+  if (model.kind !== "json" && model.kind !== "sheet")
+    throw Error("種類定義の model.kind が不正です");
+  if (typeof model.title !== "string" || model.title.length === 0)
+    throw Error("種類定義の model.title が必要です");
+  if (typeof model.hint !== "string" || model.hint.length === 0)
+    throw Error("種類定義の model.hint が必要です");
+  if (
+    typeof model.defaults !== "object" ||
+    model.defaults === null ||
+    Array.isArray(model.defaults)
+  )
+    throw Error("種類定義の model.defaults が必要です");
+  const semantics = d.semantics;
+  if (
+    typeof semantics !== "object" ||
+    semantics === null ||
+    Array.isArray(semantics)
+  )
+    throw Error("種類定義の semantics が不正です");
+  if (
+    typeof semantics.description !== "string" ||
+    semantics.description.length === 0
+  )
+    throw Error("種類定義の semantics.description が必要です");
+  if (typeof semantics.support !== "string" || semantics.support.length === 0)
+    throw Error("種類定義の semantics.support が必要です");
+  if (!Array.isArray(semantics.sources) || semantics.sources.length === 0)
+    throw Error("種類定義の semantics.sources が必要です");
+  for (const source of semantics.sources) {
+    if (
+      !source ||
+      typeof source.title !== "string" ||
+      source.title.length === 0 ||
+      typeof source.url !== "string" ||
+      !source.url.startsWith("https://")
+    )
+      throw Error("種類定義の semantics.sources の title／url が不正です");
+  }
   return d;
 }
 const ids = new Set();

@@ -1209,6 +1209,15 @@ export function simulatePowerShell(source, model, limits) {
           fail("未対応：部分式内の分岐", a.line);
         return parts[0].values.length ? scalar(parts[0].values) : undefined;
       }
+      if (a.k === "typeliteral") {
+        // R30-N10: 型リテラル単独形（[int] 等）。型そのものを値として
+        // 扱うモデルは無いため、存在しない ";"／"<eof>" ではなく
+        // 型リテラルそのものを名指して止める。
+        fail(
+          "未対応：型リテラル [" + a.type + "] を値として使う式",
+          a.line,
+        );
+      }
       if (a.k === "assign-expr") {
         // R29-N13: 括弧内・条件内の代入式。代入した値そのものが式の値。
         let v = only(a.value, s, api, a);
@@ -1224,6 +1233,19 @@ export function simulatePowerShell(source, model, limits) {
             exprIsDouble(a.target, s) ||
               exprIsDouble(pipeExprNode(a.value), s),
           );
+        // R30-N11: 型付き代入式は通常のキャスト評価で変換してから
+        // 代入し、変換後の値が式の値になる（文位置の代入文と同じ）。
+        if (a.castType)
+          v = read(
+            {
+              k: "cast",
+              type: a.castType,
+              arg: { k: "literal", value: v, line: a.line },
+              line: a.line,
+            },
+            s,
+            api,
+          );
         set(s, a.target, v, a, api);
         if (
           a.target.k === "var" &&
@@ -1231,13 +1253,19 @@ export function simulatePowerShell(source, model, limits) {
           Number.isInteger(v)
         ) {
           const rhs = pipeExprNode(a.value);
+          const castDbl =
+            typeof a.castType === "string" &&
+            ["double", "system.double"].includes(
+              a.castType.toLowerCase().replace(/\s+/g, ""),
+            );
           const isDbl =
-            a.op === "="
+            castDbl ||
+            (a.op === "="
               ? rhs
                 ? exprIsDouble(rhs, s)
                 : !!s.ps.lastDbl
               : exprIsDouble(a.target, s) ||
-                (rhs ? exprIsDouble(rhs, s) : false);
+                (rhs ? exprIsDouble(rhs, s) : false));
           if (isDbl) (s.ps.dbl ??= {})[a.target.name.toLowerCase()] = true;
           else if (s.ps.dbl) delete s.ps.dbl[a.target.name.toLowerCase()];
         }
@@ -1745,73 +1773,101 @@ export function simulatePowerShell(source, model, limits) {
                     "ParameterBindingValidationException",
                   );
               } else if (val.kind === "length") {
-                const len =
-                  typeof v === "string"
-                    ? v.length
-                    : Array.isArray(v)
-                      ? v.length
-                      : isNull
+                // R30-N12: ValidateLength は ValidateEnumeratedArguments
+                // Attribute の派生であり、配列に対しては要素数ではなく
+                // 「各要素の Length」を検証する（Microsoft Learn の
+                // ValidateLengthAttribute 定義："Validates that the
+                // length of each parameter argument's Length falls in
+                // the range"）。要素数の検証は ValidateCount の役割。
+                // 従来は配列の要素数を「長さ」と称して検証しており、
+                // 受理・拒否が実物と逆転する組み合わせがあった。
+                // スカラー（文字列等）の扱いは従来どおり。
+                const lengthOf = (el) =>
+                  typeof el === "string"
+                    ? el.length
+                    : Array.isArray(el)
+                      ? el.length
+                      : el === null || el === undefined
                         ? 0
-                        : String(v).length;
-                if (len < val.min || len > val.max)
-                  fail(
-                    "パラメータの値が検証属性 ValidateLength に一致しません：$" +
-                      param.name +
-                      " の長さは " +
-                      len +
-                      " です（範囲：" +
-                      val.min +
-                      " ～ " +
-                      val.max +
-                      "）",
-                    c.line,
-                    "ParameterBindingValidationException",
-                  );
+                        : String(el).length;
+                const targets = Array.isArray(v) ? v : [v];
+                for (const el of targets) {
+                  const len = lengthOf(el);
+                  if (len < val.min || len > val.max)
+                    fail(
+                      "パラメータの値が検証属性 ValidateLength に一致しません：$" +
+                        param.name +
+                        " の長さは " +
+                        len +
+                        " です（範囲：" +
+                        val.min +
+                        " ～ " +
+                        val.max +
+                        "）",
+                      c.line,
+                      "ParameterBindingValidationException",
+                    );
+                }
               } else if (val.kind === "range") {
-                let num = NaN;
-                try {
-                  num = numeric(v, c);
-                } catch {
-                  num = NaN;
+                // R30-N12（同根の隣接形）: ValidateRange も
+                // ValidateEnumeratedArgumentsAttribute の派生であり、
+                // 配列は各要素を検証する（Microsoft Learn：
+                // "Validates that each parameter argument falls in
+                // the range"）。従来は配列全体を数値化しようとして
+                // 常に範囲外になっていた。
+                const targets = Array.isArray(v) ? v : [v];
+                for (const el of targets) {
+                  let num = NaN;
+                  try {
+                    num = numeric(el, c);
+                  } catch {
+                    num = NaN;
+                  }
+                  if (
+                    typeof num !== "number" ||
+                    Number.isNaN(num) ||
+                    num < val.min ||
+                    num > val.max
+                  )
+                    fail(
+                      "パラメータの値が検証属性 ValidateRange に一致しません：$" +
+                        param.name +
+                        " の値 " +
+                        psFormat(el) +
+                        " は範囲外です（範囲：" +
+                        val.min +
+                        " ～ " +
+                        val.max +
+                        "）",
+                      c.line,
+                      "ParameterBindingValidationException",
+                    );
                 }
-                if (
-                  typeof num !== "number" ||
-                  Number.isNaN(num) ||
-                  num < val.min ||
-                  num > val.max
-                )
-                  fail(
-                    "パラメータの値が検証属性 ValidateRange に一致しません：$" +
-                      param.name +
-                      " の値 " +
-                      psFormat(v) +
-                      " は範囲外です（範囲：" +
-                      val.min +
-                      " ～ " +
-                      val.max +
-                      "）",
-                    c.line,
-                    "ParameterBindingValidationException",
-                  );
               } else if (val.kind === "pattern") {
-                let ok = false;
-                try {
-                  ok = new RegExp(val.pattern, "i").test(
-                    typeof v === "string" ? v : text(v, c),
-                  );
-                } catch {
-                  ok = false;
+                // R30-N12（同根の隣接形）: ValidatePattern も列挙型
+                // 検証属性であり、配列は各要素を検証する。従来は
+                // 配列を空白連結した文字列で検証していた。
+                const targets = Array.isArray(v) ? v : [v];
+                for (const el of targets) {
+                  let ok = false;
+                  try {
+                    ok = new RegExp(val.pattern, "i").test(
+                      typeof el === "string" ? el : text(el, c),
+                    );
+                  } catch {
+                    ok = false;
+                  }
+                  if (!ok)
+                    fail(
+                      "パラメータの値が検証属性 ValidatePattern に一致しません：$" +
+                        param.name +
+                        " の値 " +
+                        psFormat(el) +
+                        " はパターンに一致しません",
+                      c.line,
+                      "ParameterBindingValidationException",
+                    );
                 }
-                if (!ok)
-                  fail(
-                    "パラメータの値が検証属性 ValidatePattern に一致しません：$" +
-                      param.name +
-                      " の値 " +
-                      psFormat(v) +
-                      " はパターンに一致しません",
-                    c.line,
-                    "ParameterBindingValidationException",
-                  );
               }
             }
           ciSet(s.vars, param.name, v);
@@ -2764,6 +2820,21 @@ export function simulatePowerShell(source, model, limits) {
                   r.s,
                 ),
             );
+          // R30-N11: 型付き代入文（[int]$x = "42" 等）は、通常の
+          // キャスト評価で右辺を型変換してから代入する（実
+          // PowerShell の型付き変数の意味論）。変換できない値は
+          // キャスト側の変換エラーのまま正直に停止する。
+          if (n.castType)
+            v = read(
+              {
+                k: "cast",
+                type: n.castType,
+                arg: { k: "literal", value: v, line: n.line },
+                line: n.line,
+              },
+              r.s,
+              api,
+            );
           set(r.s, n.target, v, n, api);
           // R28-N3: 整数値の代入では、右辺（複合代入では対象と右辺）の
           // 由来で小数の記録を付け替える（$x = 1.0 の後に $x = 1 と
@@ -2778,8 +2849,16 @@ export function simulatePowerShell(source, model, limits) {
               n.value.stages[0].k === "expression"
                 ? n.value.stages[0].value
                 : null;
+            // R30-N11: [double] への型付き代入では、変換後の値が
+            // 整数でも double 由来として記録する。
+            const castDbl =
+              typeof n.castType === "string" &&
+              ["double", "system.double"].includes(
+                n.castType.toLowerCase().replace(/\s+/g, ""),
+              );
             const isDbl =
-              n.op === "="
+              castDbl ||
+              (n.op === "="
                 ? valueNode
                   ? exprIsDouble(valueNode, r.s)
                   : // R29-N2: コマンド（関数呼び出し）結果の由来は
@@ -2788,7 +2867,7 @@ export function simulatePowerShell(source, model, limits) {
                 : exprIsDouble(n.target, r.s) ||
                   (valueNode
                     ? exprIsDouble(valueNode, r.s)
-                    : !!r.s.ps.lastDbl);
+                    : !!r.s.ps.lastDbl));
             if (isDbl) (r.s.ps.dbl ??= {})[n.target.name.toLowerCase()] = true;
             else if (r.s.ps.dbl) delete r.s.ps.dbl[n.target.name.toLowerCase()];
           }

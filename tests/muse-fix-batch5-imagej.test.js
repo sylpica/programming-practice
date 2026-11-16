@@ -92,9 +92,12 @@ test('R26-N10 isNaN accepts a string numeric', async () => {
   const p = await first('print(isNaN("5")); print(isNaN(0/0));');
   assert.deepEqual(outputs(p), ['0', '1']);
 });
-test('R26-N10 unreadable strings stay undetermined (RG-188 convention, no invented NaN)', async () => {
-  const p = await first('print(abs("abc")); print(pow("2", "x"));');
-  assert.deepEqual(outputs(p), ['（実行時に決まる値）', '（実行時に決まる値）']);
+test('R30-N21 supersedes RG-188: unreadable strings convert to NaN (Variable.convertToDouble)', async () => {
+  // バッチ9で追随: RG-188 の「読めない文字列は未確定」裁定は、R30 で Variable.java
+  // convertToDouble()（Double.valueOf の全体変換・失敗時は NaN）を一次確認できた
+  // ため置き換えられた。abs("abc") は NaN が確定し、isNaN("abc") は 1 を返す
+  const p = await first('print(abs("abc")); print(pow("2", "x")); print(isNaN("abc"));');
+  assert.deepEqual(outputs(p), ['NaN', 'NaN', '1']);
 });
 
 /* R26-N9/N10 兄弟表面: 同じ根本原因で棚卸しして一掃した表面 */

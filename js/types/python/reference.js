@@ -195,12 +195,12 @@ export const REFERENCE = [
   "importance": "重要",
   "level": "入門",
   "summary": "オブジェクトの型を返す関数。",
-  "syntax": "type(obj)",
+  "syntax": "type(obj) / type(name, bases, dict)",
   "args": "obj: 調べたいオブジェクト",
   "returns": "type オブジェクト",
   "example": "print(type(3.5).__name__)",
   "expected": "float",
-  "pitfalls": "型の判定には通常 isinstance() の方が適する（継承を考慮するため）。",
+  "pitfalls": "型の判定には通常 isinstance() の方が適する（継承を考慮するため）。3引数形 type(name, bases, dict) では新しいクラスを作成できる。",
   "related": [
    "isinstance",
    "int",
@@ -946,7 +946,7 @@ export const REFERENCE = [
   "returns": "逆順イテレータ",
   "example": "print(list(reversed([1, 2, 3])))",
   "expected": "[3, 2, 1]",
-  "pitfalls": "結果はイテレータなので一覧表示には list() が必要。元のシーケンスは変更されない（リストを直接逆転させるなら list.reverse()）。",
+  "pitfalls": "結果はイテレータなので一覧表示には list() が必要。元のシーケンスは変更されない（リストを直接逆転させるなら list.reverse()）。集合・イテレータ・ジェネレータなど、逆順にたどれない対象に使うと TypeError になる。",
   "related": [
    "list",
    "sorted",

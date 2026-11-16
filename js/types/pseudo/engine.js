@@ -61,7 +61,11 @@ export function fmtVal(value) {
   if (isUndef(value)) return "未定義";
   if (isUnknown(value)) return unknownLabel(value);
   if (typeof value === "string") return `“${value}”`;
-  if (typeof value === "number") return String(value);
+  if (typeof value === "number") {
+    if (value === Infinity) return "∞";
+    if (value === -Infinity) return "-∞";
+    return String(value);
+  }
   if (typeof value === "boolean") return value ? "true" : "false";
   if (Array.isArray(value)) return `{${value.map(fmtVal).join(", ")}}`;
   if (isObj(value)) {
@@ -131,13 +135,49 @@ function normalizeGlyphs(text) {
     .replace(/　/g, " ");
 }
 
+// プログラム中の注釈（/* */ または //）に「実数として計算する」が含まれるかを調べる
+// （裁定 C1 改訂版。サンプル問5の問題文定義・令和6年度問5の行内注釈が根拠）。
+// 文字列リテラルの中身は注釈ではないので数えない。
+export function hasRealDivAnnotation(code) {
+  const text = String(code);
+  let inString = false;
+  let inBlock = false;
+  let inLine = false;
+  let commentText = "";
+  const comments = [];
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    const pair = text.slice(i, i + 2);
+    if (inBlock) {
+      if (pair === "*/") { inBlock = false; comments.push(commentText); commentText = ""; i++; } else commentText += ch;
+      continue;
+    }
+    if (inLine) {
+      if (ch === "\n" || ch === "\r") { inLine = false; comments.push(commentText); commentText = ""; } else commentText += ch;
+      continue;
+    }
+    if (inString) {
+      if (ch === "\"" || ch === "＂") inString = false;
+      continue;
+    }
+    if (ch === "\"" || ch === "＂") { inString = true; continue; }
+    if (pair === "/*") { inBlock = true; i++; continue; }
+    if (pair === "//") { inLine = true; i++; continue; }
+  }
+  if (commentText) comments.push(commentText);
+  return comments.some((c) => c.includes("実数として計算する"));
+}
+
 // ソースを行に分け、注釈 /* */ と // を取り除く。行末注釈は繰返しのラベルとして保持する。
+// 全角 glyph の正規化（C5）は字句（コード側）だけに適用し、文字列リテラルの中身は
+// 原文どおり保持する（R30-PAR-8。是正前は行全体を先に正規化していたため、
+// リテラル内の全角英数字・記号まで半角化されて値が変わっていた）。
 export function splitLines(code) {
   const rawLines = String(code).split(/\r\n|\r|\n/);
   const lines = [];
   let inBlock = false;
   rawLines.forEach((rawOriginal, index) => {
-    const raw = normalizeGlyphs(rawOriginal);
+    const raw = rawOriginal;
     let text = "";
     let comment = null;
     let j = 0;
@@ -151,18 +191,18 @@ export function splitLines(code) {
         continue;
       }
       if (inString) {
-        text += ch;
-        if (ch === "\"") inString = false;
+        // リテラル内は正規化しない。ただし閉じ引用符（全角 ＂ を含む）は半角 " にそろえる。
+        if (ch === "\"" || ch === "＂") { text += "\""; inString = false; } else text += ch;
         j++;
         continue;
       }
-      if (ch === "\"") { inString = true; text += ch; j++; continue; }
+      if (ch === "\"" || ch === "＂") { inString = true; text += "\""; j++; continue; }
       if (pair === "/*") { inBlock = true; j += 2; continue; }
-      if (pair === "//") { comment = raw.slice(j + 2).trim(); break; }
-      text += ch;
+      if (pair === "//") { comment = normalizeGlyphs(raw.slice(j + 2)).trim(); break; }
+      text += normalizeGlyphs(ch);
       j++;
     }
-    const indent = /^[ \t]*/.exec(raw)[0].length;
+    const indent = /^[ \t　]*/.exec(raw)[0].length;
     lines.push({ no: index + 1, text: text.trim(), comment, indent });
   });
   return lines;
@@ -211,6 +251,12 @@ function tokenizeExpr(text, line) {
       if (end < 0) fail(line, "文字列が閉じていません。二重引用符 \" で囲みます", "構文エラー");
       push("str", text.slice(i + 1, end), i, end + 1);
       i = end + 1;
+      continue;
+    }
+    if (ch === "∞") {
+      // 無限大のリテラル（令和6年度問5の実例 `maxL ← －∞`）。符号は単項演算子として読む。
+      tokens.push({ kind: "num", value: Infinity, start: i, end: i + 1, real: true });
+      i++;
       continue;
     }
     if (/[0-9]/.test(ch)) {
@@ -313,7 +359,26 @@ class ExprParser {
   }
   parseMul() {
     let left = this.parseUnary();
-    while (this.isOp("mod", "×", "÷")) { const op = this.next().value; left = { k: "bin", op, l: left, r: this.parseUnary(), line: this.line }; }
+    while (this.isOp("mod", "×", "÷")) {
+      const op = this.next().value;
+      let right = this.parseUnary();
+      // 「式 ÷ 式 の商」の連鎖形では、「の商」は除数だけではなく除算全体の結果に
+      // 掛かる（R30F01B-N5。裁定 C1「『の商』の句は常に trunc」）。後置の quot が
+      // 右辺の先頭に付いていたら剥がし、乗除の結果全体へ付け直す。
+      const peelQuot = (node) => {
+        if (node.k === "quot") { const inner = peelQuot(node.v); return { base: inner.base, layers: inner.layers + 1 }; }
+        if (node.k === "un" && (node.op === "-" || node.op === "+")) {
+          const inner = peelQuot(node.v);
+          if (inner.layers > 0) return { base: { ...node, v: inner.base }, layers: inner.layers };
+        }
+        return { base: node, layers: 0 };
+      };
+      const peeled = peelQuot(right);
+      const quotLayers = peeled.layers;
+      right = peeled.base;
+      left = { k: "bin", op, l: left, r: right, line: this.line };
+      for (let n = 0; n < quotLayers; n++) left = { k: "quot", v: left, line: this.line };
+    }
     return left;
   }
   parseUnary() {
@@ -545,6 +610,7 @@ function headKeyword(text) {
 
 class Parser {
   constructor(code) {
+    this.code = String(code);
     this.lines = splitLines(code).filter((line) => line.text !== "");
     this.pos = 0;
   }
@@ -552,7 +618,7 @@ class Parser {
   takeLine() { return this.lines[this.pos++]; }
 
   parseProgram() {
-    const program = { globals: [], funcs: new Map(), funcOrder: [], classNames: new Set(), main: [] };
+    const program = { globals: [], funcs: new Map(), funcOrder: [], classNames: new Set(), main: [], realDiv: hasRealDivAnnotation(this.code) };
     this.program = program;
     while (this.pos < this.lines.length) {
       const line = this.peekLine();
@@ -715,6 +781,11 @@ class Parser {
     match = /^(.+?)の値と(.+?)の値をこの順にコンマ区切りで出力する$/.exec(text);
     if (match) {
       return { k: "output", exprs: [parseTextExpr(match[1], line.no), parseTextExpr(match[2], line.no)], line: line.no };
+    }
+    // 対応していない出力文の形は、属性句の文法ではなく出力文自体を真因として名指す
+    // （R30-PAR-9）。対応形式を案内して止める。
+    if (/出力する$/.test(text)) {
+      fail(line.no, `「${text}」という形の出力文には対応していません。対応している出力形式は「式の値と式の値をこの順にコンマ区切りで出力する」です`);
     }
     match = /^(?:(.+?)の行から始まる)?繰返し処理を終了する$/.exec(text);
     if (match) {
@@ -995,6 +1066,7 @@ function evalExpr(node, state, ctx) {
     case "fill": return evalChain(node.n, state, ctx, (n, s1) => evalChain(node.v, s1, ctx, (v, s2, vReal) => {
       if (isUnknown(n)) return [{ v: makeUnknown("要素数が実行時に決まる配列"), s: s2, real: false }];
       checkFillCount(n, node);
+      checkFillTotal(n * leafSize(v), node, `入れ子を含む合計`);
       const array = Array.from({ length: n }, () => cloneVal(v));
       attachReals(array, Array.from({ length: n }, () => !!vReal));
       return [{ v: array, s: s2, real: false }];
@@ -1004,6 +1076,7 @@ function evalExpr(node, state, ctx) {
       checkFillCount(r, node);
       checkFillCount(c, node);
       if (r * c > MAX_FILL_TOTAL) fail(node.line, `要素数の指定が大きすぎます（${r}行×${c}列＝${r * c}個）`, "実行時エラー");
+      checkFillTotal(r * c * leafSize(v), node, `入れ子を含む合計`);
       const array = Array.from({ length: r }, () => {
         const row = Array.from({ length: c }, () => cloneVal(v));
         attachReals(row, Array.from({ length: c }, () => !!vReal));
@@ -1021,6 +1094,20 @@ const MAX_FILL_TOTAL = 10000;
 function checkFillCount(n, node) {
   if (typeof n !== "number" || !Number.isInteger(n) || n < 0) fail(node.line, `要素数の指定は0以上の整数で書きます（実際：${fmtVal(n)}）`, "実行時エラー");
   if (n > MAX_FILL_TOTAL) fail(node.line, `要素数の指定が大きすぎます（${n}個）`, "実行時エラー");
+}
+
+// 入れ子生成でも上限を葉の総数で数えるための、値1個が占める葉の数（R30 D3）。
+// 配列は要素の葉の数の合計、空配列とスカラー・オブジェクト等は1と数える。
+function leafSize(value) {
+  if (Array.isArray(value)) {
+    if (value.length === 0) return 1;
+    return value.reduce((sum, elem) => sum + leafSize(elem), 0);
+  }
+  return 1;
+}
+
+function checkFillTotal(total, node, label) {
+  if (total > MAX_FILL_TOTAL) fail(node.line, `要素数の指定が大きすぎます（${label} ${total}個）`, "実行時エラー");
 }
 
 function applyUnary(node, v, real) {
@@ -1050,15 +1137,24 @@ function evalBinary(node, state, ctx) {
     });
   }
   return evalChain(node.l, state, ctx, (lv, s1, lvReal) => evalChain(node.r, s1, ctx, (rv, s2, rvReal) => {
-    const applied = applyBinary(node, lv, rv, lvReal, rvReal);
+    const applied = applyBinary(node, lv, rv, lvReal, rvReal, ctx);
     return [{ v: applied.v, s: s2, real: applied.real }];
   }));
 }
 
 // ÷ は値駆動：整数÷整数は商（0方向への切捨て）、実数を含むときは実数除算（C1）。
 // 「実数を含む」は、実数リテラル（小数点表記）か実数型で宣言された値が相手にいることで判定する。
+// ただし問題文・注釈で「実数として計算する」と明示定義されたプログラムでは、
+// 注釈の指定が優先し、そのプログラムの ÷ は全て実数除算になる（C1 改訂版、R30 D1）。
 // mod は a - trunc(a/b)*b（被除数符号）。文字列の + は連結として採用する（C2）。
-function applyBinary(node, lv, rv, lvReal, rvReal) {
+function checkedNum(node, value) {
+  if (typeof value === "number" && Number.isNaN(value)) {
+    fail(node.line, "この演算の結果は定義されません（∞ － ∞、∞ ÷ ∞、∞ × 0 のように、無限大どうしの組合せで値が定まらないためです）", "実行時エラー");
+  }
+  return value;
+}
+
+function applyBinary(node, lv, rv, lvReal, rvReal, ctx = null) {
   const op = node.op;
   const anyReal = !!(lvReal || rvReal);
   if (isUnknown(lv) || isUnknown(rv)) {
@@ -1083,23 +1179,24 @@ function applyBinary(node, lv, rv, lvReal, rvReal) {
       }
       return { v: lv + rv, real: false };
     }
-    if (typeof lv === "number" && typeof rv === "number") return { v: lv + rv, real: anyReal };
+    if (typeof lv === "number" && typeof rv === "number") return { v: checkedNum(node, lv + rv), real: anyReal };
     fail(node.line, `+ は数値の加算か文字列の連結に使います（${valueTypeName(lv)} と ${valueTypeName(rv)}）`, "実行時エラー");
   }
   if (typeof lv !== "number" || typeof rv !== "number") {
     fail(node.line, `演算子 ${op} は数値に使います（${valueTypeName(lv)} と ${valueTypeName(rv)}）`, "実行時エラー");
   }
   switch (op) {
-    case "-": return { v: lv - rv, real: anyReal };
-    case "×": return { v: lv * rv, real: anyReal };
+    case "-": return { v: checkedNum(node, lv - rv), real: anyReal };
+    case "×": return { v: checkedNum(node, lv * rv), real: anyReal };
     case "÷": {
       if (rv === 0) fail(node.line, "0で割ることはできません", "実行時エラー");
+      if (ctx && ctx.program && ctx.program.realDiv) return { v: checkedNum(node, lv / rv), real: true };
       if (!anyReal) return { v: Math.trunc(lv / rv), real: false };
-      return { v: lv / rv, real: true };
+      return { v: checkedNum(node, lv / rv), real: true };
     }
     case "mod": {
       if (rv === 0) fail(node.line, "0で割ることはできません（mod の余りは求められません）", "実行時エラー");
-      return { v: lv - Math.trunc(lv / rv) * rv, real: anyReal };
+      return { v: checkedNum(node, lv - Math.trunc(lv / rv) * rv), real: anyReal };
     }
     case "<": return { v: lv < rv, real: false };
     case "≦": return { v: lv <= rv, real: false };
@@ -1171,6 +1268,7 @@ function sumValue(value, node) {
       const part = sumValue(elem, node);
       if (part === UNKNOWN_SUM) return UNKNOWN_SUM;
       total += part;
+      if (Number.isNaN(total)) fail(node.line, "要素の和は定義されません（∞ と -∞ のように、無限大どうしの組合せで値が定まらないためです）", "実行時エラー");
     }
     return total;
   }

@@ -669,8 +669,18 @@ export const definition = {
         copyOnAssign: true,
         step(n, s, api) {
           if (n.internalSwitch) {
-            s.vars[n.target.name] = api.read(n.value, s);
-            api.note(s, n, "Switchの比較値を一度評価します：" + fxFormatValue(s.vars[n.target.name]));
+            // R30-N34: Switch の比較値はエンジンが合成した一時変数であり、
+            // 学習者の変数空間（s.vars＝最終状態として表示される）には
+            // 入れない。合成代入ノード（internalSwitch）であることを
+            // 出所として、専用の内部ストア switchTemps に行番号キーで
+            // 保持する。読み出し側（read）は、このストアに実在する
+            // 合成変数だけを解決するので、学習者が自分で書いた
+            // __switch_N と同名の変数は s.vars 側に残り、最終状態にも
+            // 従来どおり表示される。
+            s.switchTemps ??= {};
+            const tempKey = n.target.name.slice("__switch_".length);
+            s.switchTemps[tempKey] = api.read(n.value, s);
+            api.note(s, n, "Switchの比較値を一度評価します：" + fxFormatValue(s.switchTemps[tempKey]));
             return [s];
           }
         },
@@ -686,6 +696,17 @@ export const definition = {
         },
         read(a, s, api) {
           if (a.k === "var") {
+            // R30-N34: lowerBehavior が Switch 比較用に合成した一時変数
+            // （__switch_<行>）の参照は、step が内部ストア switchTemps へ
+            // 格納した値で解決する。ストアに無い同名の名前は合成変数では
+            // ない（学習者の変数）ので、通常の解決へ fall through する。
+            const switchTemp = /^__switch_(\d+)$/.exec(a.name);
+            if (
+              switchTemp &&
+              s.switchTemps &&
+              Object.hasOwn(s.switchTemps, switchTemp[1])
+            )
+              return { handled: true, value: s.switchTemps[switchTemp[1]] };
             let lower = a.name.toLowerCase();
             // Power Fx identifiers and literals are case-insensitive in
             // this model (see syntax.caseSensitive): True / False in any
@@ -1377,7 +1398,12 @@ export const definition = {
           },
         ],
       };
-      return executeProgram(nodes, model, semantics, limits);
+      const result = executeProgram(nodes, model, semantics, limits);
+      // R30-N34: 内部ストア switchTemps は実行中だけの保持場所であり、
+      // 結果（最終状態）には含めない。s.vars へは最初から入れていない
+      // ため、学習者の同名変数がここで消えることはない。
+      for (const p of result.paths || []) delete p.switchTemps;
+      return result;
     } catch (e) {
       // P-N3 受け皿：解析・後処理（groups 整形など executeProgram の
       // 内部 catch の外側）から漏れたホスト例外は、生文言のまま返さず

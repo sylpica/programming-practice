@@ -1,6 +1,6 @@
 # 本体開発の実装範囲（2026-11-15 JST）
 
-本体初版と監査修正後の対応範囲です。Muse／Codexの独立監査は第29ラウンド（CodexはR6）まで実施され、各修正バッチ（RG-87〜RG-292）を適用済みです。2026-11-16 に第16種 IPA擬似言語を追加しました（RG-293〜RG-296、報告書は `docs/audit/MUSE-ADD-PSEUDO.md`）。二重監査の収束は宣言していません。
+本体初版と監査修正後の対応範囲です。Muse／Codexの独立監査は第30ラウンド（CodexはR6）まで実施され、各修正バッチ（RG-87〜RG-331）を適用済みです。2026-11-16 に第16種 IPA擬似言語を追加しました（RG-293〜RG-296、報告書は `docs/audit/MUSE-ADD-PSEUDO.md`）。二重監査の収束は宣言していません。
 
 ## 共通基盤
 
@@ -52,7 +52,7 @@
 - C/C++/C#：掲載APIを対象言語別に整理。C#配列の別名・要素型・初期値、C++のbool昇格・出力、実行入力の識別を修正した。
 - 共通UI：モデル入力はコード側で開閉。使用項目・リファレンス・用語集は右（375pxは下）、終了状態はコードの下。テンプレート解説はその下へ全展開し、内側スクロールを設けない。「なし」にすると非表示になる。
 
-対応表示リファレンスの使用例は、自立コードとして実行確認する対象である（現行1,266件の対応項目の使用例はテストで全件実行される）。説明文・実物仕様の照合は項目単位の個票（REFERENCE-R2.md、reference-r2.json／reference-r6.json、MUSE-REF-R22.md）で管理し、使用例試験と区別する。
+対応表示リファレンスの使用例は、自立コードとして実行確認する対象である（現行1,319件の対応項目の使用例はテストで全件実行される）。説明文・実物仕様の照合は項目単位の個票（REFERENCE-R2.md、reference-r2.json／reference-r6.json、MUSE-REF-R22.md）で管理し、使用例試験と区別する。
 
 ### 練習テンプレートの補充
 
@@ -68,7 +68,7 @@
 - JavaScript：typeof（未宣言名とTDZを区別）とReferenceError表示。戻り値のない出力文の重複説明を除去。
 - AutoHotkey：SetTitleMatchModeが変更前のモードを返す。UI.Vision：storeText/storeValueのロケーター不一致は#LNFを保存して継続する。
 - CloudFormation：TransformのName/Parametersオブジェクトと配列内オブジェクトを解析する。カスタムLambdaのトップレベルparamsは公式のevent仕様に従い空にする。AWS::IncludeのトップレベルParametersは専用の組込み仕様であり、このモデルでは実装しない。Fn::Transformのparamsとは混同しない。
-- リファレンスは説明・戻り値・注意点を一次資料へ対応付ける。戻り値と公式資料リンクも表示する。対応／参照専用の区別は維持（現行は対応1,266件／参照専用74件）。静的説明文の照合と、任意コード・全引数の実環境互換性は別である。個票はdocs/audit/REFERENCE-R2.mdとMUSE-REF-R22.mdを参照。
+- リファレンスは説明・戻り値・注意点を一次資料へ対応付ける。戻り値と公式資料リンクも表示する。対応／参照専用の区別は維持（現行は対応1,319件／参照専用74件）。静的説明文の照合と、任意コード・全引数の実環境互換性は別である。個票はdocs/audit/REFERENCE-R2.mdとMUSE-REF-R22.mdを参照。
 
 新アイコンはMuse側の25e40db以降で反映済み。636f8d0でmanifest変更後のprecache再生成も完了し、Codex第3ラウンドではPNGの実体・寸法を確認して保持する。
 
@@ -165,6 +165,8 @@ IPA『試験で使用する情報技術に関する用語・プログラム言�
 その後の修正バッチ6（2026-11-15）で、VBA 組み込み定数94件の項目化（R27-N7：色・MsgBox・曜日・TriState・VarType 等の定数族84件の新規定義＋項目化と、RG-204 で定義済みだった10件の項目化）と、Python 組み込み定数3件（Ellipsis／NotImplemented／__debug__。CloudFormation 伝播を含む。R27-N20）の項目化を行い、その後の修正バッチ7（2026-11-16）で、VBA 組み込み定数の完成（R28-N9：StrConv／Shell／CallType／IMEStatus／QueryClose／Form／KeyCode／Calendar 等141件の新規定義＋項目化）を行い、その後の修正バッチ8（2026-11-16）で、PowerShell 三項演算子の項目化（R29-N3）と、VBA 参照専用12件（StrConv／Shell／CallByName／QueryClose／Show／Unload／GetAttr／SetAttr／Dir／FormatDateTime／VarType／Weekday）の追加を行い、現在の件数は次のとおり：Excel VBA 338、ImageJ 201、CloudFormation 224（固有11＋Python委譲213）、Power Automate 15、AutoHotkey 26、UI.Vision 22、Power Apps 28、Python 213、R 44、C 26、C++ 31、C# 53、JavaScript 39、cmd 28、PowerShell 52。合計 **1,340件（対応1,266／参照専用74）**。照合個票は `docs/audit/reference-r2.json` 1,260行／`docs/audit/reference-r6.json` 80行。詳細は `docs/audit/MUSE-FIX-BATCH8.md`（バッチ7分は `docs/audit/MUSE-FIX-BATCH7.md`）。
 
 その後の第16種追加（2026-11-16、MUSE-ADD-PSEUDO）で、IPA擬似言語 53件（全件対応）を追加し、現在の件数は次のとおり：Excel VBA 338、ImageJ 201、CloudFormation 224（固有11＋Python委譲213）、Power Automate 15、AutoHotkey 26、UI.Vision 22、Power Apps 28、Python 213、R 44、C 26、C++ 31、C# 53、JavaScript 39、cmd 28、PowerShell 52、IPA擬似言語 53。合計 **1,393件（対応1,319／参照専用74）**。テンプレートは全112件（新種8件：基礎3・実践3・応用2）、用語集は全124件（新種13語）。照合個票は `docs/audit/reference-r2.json` 1,313行／`docs/audit/reference-r6.json` 80行。詳細は `docs/audit/MUSE-ADD-PSEUDO.md`。
+
+その後の修正バッチ9（2026-11-16）ではリファレンス件数に変更はなく、現行 **1,393件（対応1,319／参照専用74）** を維持している（第30ラウンド監査の新規欠陥39件＝擬似言語の統合・仕様適合、PowerShell／R／JS／C#／VBA／ImageJ／Python の隣接形・一次情報確定分、合成変数の露出、precache 陳腐化、文書ドリフト回帰1件を含む、を処置。あわせて第16種追加の配信コミットで失敗した CI の原因が precache の内容ハッシュ陳腐化であることを特定し、再生成で是正した）。詳細は `docs/audit/MUSE-FIX-BATCH9.md`。
 
 **F-02 の到達性基準（修正バッチ4で明文化、2026-11-15）**：束ね項目は「各名前から検索・チップで到達できる場合のみ項目あり」と数える。ここでいう検索による到達とは、アプリのリファレンス検索の述語そのもの（`js/app.js` の `renderRefs`／`fullRefs` が使う、name／category／description／syntax を対象とする小文字部分一致）で、その名前をクエリとして自項目がヒットすること（名前解決できること）を指す。**syntax 欄に綴りが列挙されているだけでは到達とはみなさない**（第25ラウンド R25-N7：述語が syntax を対象にしていなかったため、PowerShell「比較演算子」の基本形8綴り・「プロパティ」のドット付き9綴り・Python「数値の属性」のドット付き4綴りが検索で自項目に到達できなかった）。修正バッチ4で検索述語に syntax を含め、「比較演算子」の description にも基本形8綴りを列挙した。是正後の到達性は、syntax 欄の綴り一覧から抽出した全束ね項目の全名前について、名前単位の機械照合で未到達ゼロを回帰テスト（`tests/muse-fix-batch4-docs.test.js`）に固定する。
 

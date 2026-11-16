@@ -902,7 +902,7 @@
   "fields": {
    "description": "文字列の先頭にある数値部分を読みます。",
    "returns": "数値",
-   "caution": "小数点はピリオドです。16進数・型接尾辞はこのモデルでは未対応です。",
+   "caution": "小数点はピリオドです。型接尾辞はこのモデルでは未対応です。",
    "example": "Debug.Print Val(\"12abc\")",
    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/val-function.md"
   },
@@ -918,7 +918,7 @@
   "fields": {
    "description": "数値として評価できるか調べます。",
    "returns": "Boolean",
-   "caution": "本アプリは10進数の通常表記に対応します。",
+   "caution": "本アプリは10進数の通常表記と &H／&O 表記に対応します。",
    "example": "Debug.Print IsNumeric(\"12\")",
    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/isnumeric-function.md"
   },
@@ -3587,11 +3587,11 @@
   "fields": {
    "description": "オブジェクトの型を返す関数。",
    "returns": "type オブジェクト",
-   "caution": "型の判定には通常 isinstance() の方が適する（継承を考慮するため）。",
+   "caution": "型の判定には通常 isinstance() の方が適する（継承を考慮するため）。3引数形 type(name, bases, dict) では新しいクラスを作成できる。",
    "example": "def handler(event, context):\n    print(type(3.5).__name__)\n    return {\"requestId\":event[\"requestId\"],\"status\":\"success\",\"fragment\":event[\"fragment\"]}",
    "source": "https://docs.python.org/ja/3.12/library/functions.html#type"
   },
-  "sha256": "092926b16cabe3b980f74d996f9e7db5e0669b0b21039425334cf5b0ece61cc4",
+  "sha256": "ede7717fccbdc53445f8866edd40032b2bff646f0f4925dbff8625486f17996a",
   "description": "照合済",
   "returns": "照合済",
   "caution": "照合済（モデル固有の限定は実装・試験で確認）"
@@ -5395,11 +5395,11 @@
   "fields": {
    "description": "オブジェクトの型を返す関数。",
    "returns": "type オブジェクト",
-   "caution": "型の判定には通常 isinstance() の方が適する（継承を考慮するため）。",
+   "caution": "型の判定には通常 isinstance() の方が適する（継承を考慮するため）。3引数形 type(name, bases, dict) では新しいクラスを作成できる。",
    "example": "print(type(3.5).__name__)",
    "source": "https://docs.python.org/ja/3.12/library/functions.html#type"
   },
-  "sha256": "13c8f03f32a9f222c47dc69cb681987e828433392d73c84a7e77830977c19a85",
+  "sha256": "1947e2809b786347e52734c06984bde66e1bf6454234163ff6f51e3fc44c1c03",
   "description": "照合済",
   "returns": "照合済",
   "caution": "照合済（モデル固有の限定は実装・試験で確認）"
@@ -9801,11 +9801,11 @@
   "fields": {
    "description": "シーケンスを逆順にたどるイテレータを返す関数。",
    "returns": "逆順イテレータ",
-   "caution": "結果はイテレータなので一覧表示には list() が必要。元のシーケンスは変更されない（リストを直接逆転させるなら list.reverse()）。",
+   "caution": "結果はイテレータなので一覧表示には list() が必要。元のシーケンスは変更されない（リストを直接逆転させるなら list.reverse()）。集合・イテレータ・ジェネレータなど、逆順にたどれない対象に使うと TypeError になる。",
    "example": "print(list(reversed([1, 2, 3])))",
    "source": "https://docs.python.org/ja/3.12/library/functions.html#reversed"
   },
-  "sha256": "6f3b616c0ab35b97ee5c8ea730b9894fce2d1626f8d3ef863aac6811a1679772"
+  "sha256": "e9d5b5a6b6820218cc46df05704a425cdcde1f103867d6270053887bd5386aa4"
  },
  {
   "kind": "python",
@@ -13827,11 +13827,11 @@
   "fields": {
    "description": "シーケンスを逆順にたどるイテレータを返す関数。",
    "returns": "逆順イテレータ",
-   "caution": "結果はイテレータなので一覧表示には list() が必要。元のシーケンスは変更されない（リストを直接逆転させるなら list.reverse()）。",
+   "caution": "結果はイテレータなので一覧表示には list() が必要。元のシーケンスは変更されない（リストを直接逆転させるなら list.reverse()）。集合・イテレータ・ジェネレータなど、逆順にたどれない対象に使うと TypeError になる。",
    "example": "def handler(event, context):\n    print(list(reversed([1, 2, 3])))\n    return {\"requestId\":event[\"requestId\"],\"status\":\"success\",\"fragment\":event[\"fragment\"]}",
    "source": "https://docs.python.org/ja/3.12/library/functions.html#reversed"
   },
-  "sha256": "4a5bf027e391a258a8becac94c9025448ec88c9dc5a5af0f9ae9ac95c64cddeb"
+  "sha256": "f216227f51f518609e4940855c124400189b828035471f512b3ee79d4c7a6d93"
  },
  {
   "kind": "cloudformation",
@@ -18064,11 +18064,11 @@
   "fields": {
    "description": "小数を含む数を表す型です。実数を含む ÷ は通常の割算（実数除算）になります。",
    "returns": "実数の値を扱います。",
-   "caution": "整数と実数の区別は、÷ の結果（商か実数除算か）に影響します。",
+   "caution": "整数と実数の区別は、÷ の結果（商か実数除算か）に影響します。無限大は ∞ と書き、－∞／＋∞（令和6年度問5の maxL ← －∞ が実例）も実数として代入・比較に使えます。∞ － ∞ のように結果が定義できない組合せは、値を捏造せず理由を表示して止まります。",
    "example": "実数型: x ← 7.0\nx ← x ÷ 2",
    "source": "https://www.ipa.go.jp/shiken/syllabus/doe3um0000002djj-att/shiken_yougo_ver5_1.pdf"
   },
-  "sha256": "4c5279dca1fb37f077432ad50b0228cbc14eec964a4c57b6b5eaa89bd0fa8069",
+  "sha256": "4e81669dd00f433f7fb17a6cdc6b9277c038d7fe5ef5b16f16b176cd4ce6c687",
   "description": "照合済",
   "returns": "照合済",
   "caution": "照合済（モデル固有の限定は実装・試験で確認）"
@@ -18288,11 +18288,11 @@
   "fields": {
    "description": "/* と */ で囲んだ部分と、// から行末までは注釈として無視されます。行末注釈に短い語を1つだけ書くと、繰返しのラベルとして使えます。",
    "returns": "実行には影響しません。",
-   "caution": "",
+   "caution": "注釈に「実数として計算する」と書くと、そのプログラムの ÷ は実数除算として計算します。問題文で ÷ の意味がそのように定義された問題のための約束です。詳細は ÷ の項目を見てください。",
    "example": "/* 合計を求める */\n整数型: total ← 0  // 初期化\ntotal ← total + 1",
    "source": "https://www.ipa.go.jp/shiken/syllabus/doe3um0000002djj-att/shiken_yougo_ver5_1.pdf"
   },
-  "sha256": "0790bd76da1433bf1cbbea79402c07d97677d7151960b865f28f3ae88f8f0523",
+  "sha256": "bf6d31184585915b5b3c2f4b3c7d0a6cb3dd1b41a054eacca6e4d8f7abbdfaac",
   "description": "照合済",
   "returns": "照合済",
   "caution": "照合済（モデル固有の限定は実装・試験で確認）"
@@ -18336,11 +18336,11 @@
   "fields": {
    "description": "除算です。整数どうしでは商（割り切れる部分だけの整数）になり、実数を含むときは実数除算になります。「式 の商」と書いても同じく商を求めます。",
    "returns": "商または割算の結果（数値）。",
-   "caution": "記述形式には ÷ が商か実数除算かの区別が明記されていません。本アプリでは、試験の典型的な使い方（整数は商）に合わせて、両辺が整数のときは商、実数を含むときは実数除算として裁定しています。0で割るとエラーになります。",
+   "caution": "記述形式には ÷ が商か実数除算かの区別が明記されていません。本アプリでは、試験の典型的な使い方（整数は商）に合わせて、両辺が整数のときは商、実数を含むときは実数除算として裁定しています（既定の解釈）。ただし問題ごとに ÷ の意味が定義される場合はその定義に従います：問題文で「実数として計算する」と定義された問題（科目Bサンプル問題問5、令和6年度問5の注釈が実例）では、プログラム中に /* 実数として計算する */ または // 実数として計算する という注釈を含めると、そのプログラムの ÷ は全て実数除算として計算します。注釈がなければ既定の解釈のままです。「式 の商」は、注釈の有無にかかわらず常に商（0方向への切捨て）です。0で割るとエラーになります。",
    "example": "整数型: q ← 7 ÷ 2\n実数型: d ← 7.0 ÷ 2",
    "source": "https://www.ipa.go.jp/shiken/syllabus/doe3um0000002djj-att/shiken_yougo_ver5_1.pdf"
   },
-  "sha256": "318b6b88966091d6cc3ac939d6ba617d33174514eb7ca8f7402d7780121ed958",
+  "sha256": "037878ea1d519d8b01183c922e4cab3780240048e706e888b0318d0466812d0b",
   "description": "照合済",
   "returns": "照合済",
   "caution": "照合済（モデル固有の限定は実装・試験で確認）"
@@ -18368,11 +18368,11 @@
   "fields": {
    "description": "減算です。式の前置きでは負の数を表します（単項の －）。",
    "returns": "差（数値）。",
-   "caution": "",
+   "caution": "－∞ と書くと無限大の負数を表します（令和6年度問5の実例）。",
    "example": "整数型: a ← 5 - 8\na ← -a",
    "source": "https://www.ipa.go.jp/shiken/syllabus/doe3um0000002djj-att/shiken_yougo_ver5_1.pdf"
   },
-  "sha256": "f383c753de9b7c23c31e9612d3ead33308b20628e2aa689c766aae00a5a003da",
+  "sha256": "4c69ddb56bfcb02d32115167412a61a66dabed183de81b5017b6c3d8dd3e2790",
   "description": "照合済",
   "returns": "照合済",
   "caution": "照合済（モデル固有の限定は実装・試験で確認）"
@@ -18784,11 +18784,11 @@
   "fields": {
    "description": "同じ値で埋めた配列を、個数を指定して生成します。二次元では「{行数行 列数列の 値}」の形で書きます。",
    "returns": "指定した大きさの配列。",
-   "caution": "問題文の中で大きさを表すために使われる書き方です。このアプリでは生成できる要素数に上限（合計10,000個）があり、超えると理由を表示して止まります。",
+   "caution": "問題文の中で大きさを表すために使われる書き方です。このアプリでは生成できる要素数に上限（合計10,000個）があり、超えると理由を表示して止まります。入れ子で生成した場合も、葉の要素の総数で数えます。",
    "example": "整数型の配列: a ← {3個の 0}\n整数型の二次元配列: m ← {2行2列の 未定義の値}",
    "source": "https://www.ipa.go.jp/shiken/syllabus/ps6vr7000000oett-att/fe_kamoku_b_sample.pdf"
   },
-  "sha256": "c9a5077707d04f73199540f6f8dd2f88354b4982894bdaea7349d1f5327dc310",
+  "sha256": "bb1162d5aa3711108a9231044b87cf49d8500ca747f5df4bd4feac699094fe17",
   "description": "照合済",
   "returns": "照合済",
   "caution": "照合済（モデル固有の限定は実装・試験で確認）"
@@ -18832,11 +18832,11 @@
   "fields": {
    "description": "2つの式の値を、カンマで区切ってその順に出力します。試験問題で値の出力を表す文です。",
    "returns": "出力欄に「値1, 値2」の形で記録されます。",
-   "caution": "擬似言語の記述形式自体には入出力の書き方は定められておらず、問題文で使われる文として対応しています。",
+   "caution": "擬似言語の記述形式自体には入出力の書き方は定められておらず、問題文で使われる文として対応しています。「X の値を出力する」のような単独の値の出力文には対応しておらず、使うと対応形式を案内して止まります。",
    "example": "整数型: a ← 1\n整数型: b ← 2\naの値とbの値をこの順にコンマ区切りで出力する",
    "source": "https://www.ipa.go.jp/shiken/mondai-kaiotu/sg_fe/koukai/eid2eo0000007g1d-att/2024r06_fe_kamoku_b_qs.pdf"
   },
-  "sha256": "33af690837ac8856725532063aa7be68b1485e4b647876b3ee6b14338df7210b",
+  "sha256": "94d70958c861b7cbe6af023237db7f79aa5d016fb41d99fff13bc53ca4d01516",
   "description": "照合済",
   "returns": "照合済",
   "caution": "照合済（モデル固有の限定は実装・試験で確認）"

@@ -751,7 +751,10 @@ function simRunProgram(code, forkCtl, model){
     if (simIsUnk(v)) return SIM_UNK;
     if (typeof v === "number") return v;
     if (typeof v === "boolean") return v ? 1 : 0;
-    if (typeof v === "string"){ var x = parseFloat(v); if (!isNaN(x) && v.trim() !== "") return x; }
+    /* R30-N21: 文字列→数値は Variable.java の convertToDouble()（Double.valueOf の
+       全体変換、失敗時は NaN）。部分パース（前方一致の parseFloat）にはしない。
+       変換できない文字列はエラーではなく NaN として計算が進むのが実 ImageJ の挙動 */
+    if (typeof v === "string") return simParseDouble(v);
     throw simErr(line || 0, "数値が必要な場所で、数値でない値が使われています", "文字列の連結には + を、計算には数値を使ってください。");
   }
   function ev(e){ return evExpr(e); }
@@ -1042,6 +1045,9 @@ function simRunProgram(code, forkCtl, model){
   function evMethod(e, mode){
     var o = evExpr(e.obj);
     if (simIsUnk(o)) return SIM_UNK;
+    /* R30-N23: メソッド形のレシーバも、実 ImageJ の文字列関数と同じく
+       getStringTerm で文字列化される（数値レシーバを未確定にしない） */
+    if (typeof o === "number") o = simFmtNum(o);
     var m = e.method;
     var av = e.args.map(function(a){ return evExpr(a); });
     if (typeof o === "string"){
@@ -1069,7 +1075,7 @@ function simRunProgram(code, forkCtl, model){
             throw simErr(e.line, "substring の範囲（" + bi + "〜" + bj + "）が文字列の長さ（" + o.length + "）を超えています", "ImageJ ではここでエラーになり止まります。lengthOf で長さを確認してください。");
           return o.substring(bi, bj);
         }
-        case "replace": return simReplaceStr(o, av[0], av[1]);
+        case "replace": return simReplaceStr(o, av[0], av[1], e.line);
         case "split": return simSplitStr(o, av.length ? av[0] : undefined, e.line);
       }
       if (Object.prototype.hasOwnProperty.call(SIM_OFFICIAL, m) || funcByName(m)) throw simErr(e.line, "未対応：文字列メソッド " + m + " はモデルで未対応です", "後続結果は生成しません。");
@@ -1351,10 +1357,61 @@ var SIM_EXTRA = { sin: 1, cos: 1, tan: 1, asin: 1, acos: 1, atan: 1, minOf: 1, m
    リファレンス未収録でも ImageJ に実在するので、未定義エラーにせず実行時の説明省略で扱う */
 var SIM_OFFICIAL = { "Array.concat": 1, "Array.copy": 1, "Array.deleteIndex": 1, "Array.deleteValue": 1, "Array.fill": 1, "Array.filter": 1, "Array.findMaxima": 1, "Array.findMinima": 1, "Array.fourier": 1, "Array.getSequence": 1, "Array.getStatistics": 1, "Array.getVertexAngles": 1, "Array.print": 1, "Array.rankPositions": 1, "Array.resample": 1, "Array.reverse": 1, "Array.rotate": 1, "Array.show": 1, "Array.slice": 1, "Array.sort": 1, "Array.trim": 1, "Color.getLut": 1, "Color.set": 1, "Color.setBackground": 1, "Color.setBackgroundValue": 1, "Color.setForeground": 1, "Color.setForegroundValue": 1, "Color.setLut": 1, "Color.toArray": 1, "Color.toString": 1, "Color.wavelengthToColor": 1, "Dialog.addCheckbox": 1, "Dialog.addCheckboxGroup": 1, "Dialog.addChoice": 1, "Dialog.addDirectory": 1, "Dialog.addFile": 1, "Dialog.addHelp": 1, "Dialog.addImage": 1, "Dialog.addImageChoice": 1, "Dialog.addMessage": 1, "Dialog.addNumber": 1, "Dialog.addRadioButtonGroup": 1, "Dialog.addSlider": 1, "Dialog.addString": 1, "Dialog.addToSameRow": 1, "Dialog.create": 1, "Dialog.createNonBlocking": 1, "Dialog.getCheckbox": 1, "Dialog.getChoice": 1, "Dialog.getImageChoice": 1, "Dialog.getLocation": 1, "Dialog.getNumber": 1, "Dialog.getRadioButton": 1, "Dialog.getString": 1, "Dialog.setInsets": 1, "Dialog.setLocation": 1, "Dialog.show": 1, "File.append": 1, "File.close": 1, "File.copy": 1, "File.dateLastModified": 1, "File.delete": 1, "File.exists": 1, "File.getDirectory": 1, "File.getName": 1, "File.getNameWithoutExtension": 1, "File.getParent": 1, "File.isDirectory": 1, "File.isFile": 1, "File.lastModified": 1, "File.length": 1, "File.makeDirectory": 1, "File.open": 1, "File.openAsRawString": 1, "File.openAsString": 1, "File.openDialog": 1, "File.openSequence": 1, "File.openUrlAsString": 1, "File.rename": 1, "File.saveString": 1, "File.setDefaultDir": 1, "Fit.doFit": 1, "Fit.doWeightedFit": 1, "Fit.f": 1, "Fit.getEquation": 1, "Fit.p": 1, "IJ.checksum": 1, "IJ.currentMemory": 1, "IJ.deleteRows": 1, "IJ.freeMemory": 1, "IJ.getToolName": 1, "IJ.log": 1, "IJ.maxMemory": 1, "IJ.pad": 1, "IJ.redirectErrorMessages": 1, "IJ.renameResults": 1, "Image.paste": 1, "List.clear": 1, "List.fromArrays": 1, "List.get": 1, "List.getValue": 1, "List.indexOf": 1, "List.set": 1, "List.setList": 1, "List.setMeasurements": 1, "List.toArrays": 1, "Math.abs": 1, "Math.acos": 1, "Math.asin": 1, "Math.atan": 1, "Math.atan2": 1, "Math.ceil": 1, "Math.constrain": 1, "Math.cos": 1, "Math.erf": 1, "Math.exp": 1, "Math.floor": 1, "Math.log": 1, "Math.log10": 1, "Math.map": 1, "Math.max": 1, "Math.min": 1, "Math.pow": 1, "Math.round": 1, "Math.sin": 1, "Math.sqr": 1, "Math.sqrt": 1, "Math.tan": 1, "Math.toDegrees": 1, "Math.toRadians": 1, "Overlay.activateSelection": 1, "Overlay.activateSelectionAndWait": 1, "Overlay.addSelection": 1, "Overlay.cropAndSave": 1, "Overlay.drawEllipse": 1, "Overlay.drawLabels": 1, "Overlay.drawLine": 1, "Overlay.drawRect": 1, "Overlay.drawString": 1, "Overlay.fill": 1, "Overlay.getBounds": 1, "Overlay.indexAt": 1, "Overlay.lineTo": 1, "Overlay.moveSelection": 1, "Overlay.moveTo": 1, "Overlay.removeRois": 1, "Overlay.removeSelection": 1, "Overlay.selectable": 1, "Overlay.setLabelColor": 1, "Overlay.setLabelFontSize": 1, "Overlay.setPosition": 1, "Overlay.setStrokeColor": 1, "Overlay.setStrokeWidth": 1, "Overlay.update": 1, "Overlay.useNamesAsLabels": 1, "Overlay.xor": 1, "Plot.add": 1, "Plot.addHistogram": 1, "Plot.addText": 1, "Plot.create": 1, "Plot.drawBoxes": 1, "Plot.drawGrid": 1, "Plot.drawLine": 1, "Plot.drawNormalizedLine": 1, "Plot.drawShapes": 1, "Plot.drawVectors": 1, "Plot.eneableLive": 1, "Plot.freeze": 1, "Plot.getFrameBounds": 1, "Plot.getLimits": 1, "Plot.getValues": 1, "Plot.makeHighResolution": 1, "Plot.removeNaNs": 1, "Plot.replace": 1, "Plot.setAxisLabelSize": 1, "Plot.setBackgroundColor": 1, "Plot.setColor": 1, "Plot.setFontSize": 1, "Plot.setFormatFlags": 1, "Plot.setFrameSize": 1, "Plot.setJustification": 1, "Plot.setLegend": 1, "Plot.setLimits": 1, "Plot.setLimitsToFit": 1, "Plot.setLineWidth": 1, "Plot.setLogScaleX": 1, "Plot.setLogScaleY": 1, "Plot.setOptions": 1, "Plot.setStyle": 1, "Plot.setXYLabels": 1, "Plot.show": 1, "Plot.showValues": 1, "Plot.showValuesWithLabels": 1, "Plot.update": 1, "Plot.useTemplate": 1, "Property.get": 1, "Property.getInfo": 1, "Property.getNumber": 1, "Property.getValue": 1, "Property.set": 1, "Property.setList": 1, "Property.setSliceLabel": 1, "Roi.contains": 1, "Roi.getBounds": 1, "Roi.getContainedPoints": 1, "Roi.getCoordinates": 1, "Roi.getFeretPoints": 1, "Roi.getFloatBounds": 1, "Roi.getPointPosition": 1, "Roi.getPosition": 1, "Roi.getProperty": 1, "Roi.getSplineAnchors": 1, "Roi.move": 1, "Roi.setAntiAlias": 1, "Roi.setDefaultGroup": 1, "Roi.setFillColor": 1, "Roi.setFontSize": 1, "Roi.setGroup": 1, "Roi.setGroupNames": 1, "Roi.setJustification": 1, "Roi.setMinStrokeWidth": 1, "Roi.setName": 1, "Roi.setPolygonSplineAnchors": 1, "Roi.setPolylineSplineAnchors": 1, "Roi.setPosition": 1, "Roi.setProperty": 1, "Roi.setStrokeColor": 1, "Roi.setStrokeWidth": 1, "Roi.setUnscalableStrokeWidth": 1, "Roi.translate": 1, "RoiManager.associateROIsWithSlices": 1, "RoiManager.delete": 1, "RoiManager.getIndex": 1, "RoiManager.getName": 1, "RoiManager.multiCrop": 1, "RoiManager.restoreCentered": 1, "RoiManager.rotate": 1, "RoiManager.scale": 1, "RoiManager.select": 1, "RoiManager.selectByName": 1, "RoiManager.selectGroup": 1, "RoiManager.selectPosition": 1, "RoiManager.setGroup": 1, "RoiManager.setPosition": 1, "RoiManager.translate": 1, "RoiManager.useNamesAsLabels": 1, "Stack.getActiveChannels": 1, "Stack.getDimensions": 1, "Stack.getDisplayMode": 1, "Stack.getFrameInterval": 1, "Stack.getFrameRate": 1, "Stack.getOrthoViews": 1, "Stack.getOrthoViewsIDs": 1, "Stack.getPosition": 1, "Stack.getStatistics": 1, "Stack.getUnits": 1, "Stack.setActiveChannels": 1, "Stack.setChannel": 1, "Stack.setDimensions": 1, "Stack.setDisplayMode": 1, "Stack.setFrame": 1, "Stack.setFrameInterval": 1, "Stack.setFrameRate": 1, "Stack.setOrthoViews": 1, "Stack.setPosition": 1, "Stack.setSlice": 1, "Stack.setTUnit": 1, "Stack.setUnits": 1, "Stack.setXUnit": 1, "Stack.setYUnit": 1, "Stack.setZUnit": 1, "Stack.swap": 1, "Stack.toggleChannel": 1, "String.append": 1, "String.copy": 1, "String.format": 1, "String.join": 1, "String.pad": 1, "String.setFontSize": 1, "String.show": 1, "String.trim": 1, "Table.applyMacro": 1, "Table.columnExists": 1, "Table.create": 1, "Table.deleteColumn": 1, "Table.deleteRows": 1, "Table.get": 1, "Table.getColumn": 1, "Table.getString": 1, "Table.open": 1, "Table.rename": 1, "Table.renameColumn": 1, "Table.reset": 1, "Table.save": 1, "Table.saveColumnHeader": 1, "Table.set": 1, "Table.setColumn": 1, "Table.setLocationAndSize": 1, "Table.setSelection": 1, "Table.showArrays": 1, "Table.showRowIndexes": 1, "Table.showRowNumbers": 1, "Table.sort": 1, "abs": 1, "acos": 1, "asin": 1, "atan": 1, "atan2": 1, "autoUpdate": 1, "beep": 1, "bitDepth": 1, "calibrate": 1, "call": 1, "changeValues": 1, "charCodeAt": 1, "close": 1, "contains": 1, "cos": 1, "d2s": 1, "debug": 1, "doCommand": 1, "doWand": 1, "drawLine": 1, "drawOval": 1, "drawRect": 1, "drawString": 1, "dump": 1, "endsWith": 1, "eval": 1, "exec": 1, "exit": 1, "exp": 1, "fill": 1, "fillOval": 1, "fillRect": 1, "floodFill": 1, "floor": 1, "fromCharCode": 1, "getArgument": 1, "getBoolean": 1, "getBoundingRect": 1, "getCursorLoc": 1, "getDateAndTime": 1, "getDimensions": 1, "getDir": 1, "getDirectory": 1, "getDisplayedArea": 1, "getFileList": 1, "getFontList": 1, "getHeight": 1, "getHistogram": 1, "getImageID": 1, "getImageInfo": 1, "getInfo": 1, "getLine": 1, "getList": 1, "getLocationAndSize": 1, "getLut": 1, "getMetadata": 1, "getMinAndMax": 1, "getNumber": 1, "getPixel": 1, "getPixelSize": 1, "getProfile": 1, "getRawStatistics": 1, "getResult": 1, "getResultLabel": 1, "getResultString": 1, "getSelectionBounds": 1, "getSelectionCoordinates": 1, "getSliceNumber": 1, "getStatistics": 1, "getString": 1, "getStringWidth": 1, "getThreshold": 1, "getTime": 1, "getTitle": 1, "getValue": 1, "getVersion": 1, "getVoxelSize": 1, "getWidth": 1, "getZoom": 1, "imageCalculator": 1, "indexOf": 1, "is": 1, "isActive": 1, "isKeyDown": 1, "isNaN": 1, "isOpen": 1, "lastIndexOf": 1, "lengthOf": 1, "lineTo": 1, "log": 1, "makeArrow": 1, "makeEllipse": 1, "makeLine": 1, "makeOval": 1, "makePoint": 1, "makePolygon": 1, "makeRectangle": 1, "makeRotatedRectangle": 1, "makeSelection": 1, "makeText": 1, "matches": 1, "maxOf": 1, "minOf": 1, "moveTo": 1, "newArray": 1, "newImage": 1, "newMenu": 1, "open": 1, "parseFloat": 1, "parseInt": 1, "pow": 1, "print": 1, "random": 1, "rename": 1, "replace": 1, "requires": 1, "roiManager": 1, "round": 1, "run": 1, "runMacro": 1, "save": 1, "saveAs": 1, "saveSettings": 1, "selectImage": 1, "selectWindow": 1, "selectionContains": 1, "setAutoThreshold": 1, "setBackgroundColor": 1, "setBatchMode": 1, "setColor": 1, "setFont": 1, "setForegroundColor": 1, "setJustification": 1, "setKeyDown": 1, "setLineWidth": 1, "setLocation": 1, "setLut": 1, "setMetadata": 1, "setMinAndMax": 1, "setOption": 1, "setPasteMode": 1, "setPixel": 1, "setRGBWeights": 1, "setResult": 1, "setSelectionLocation": 1, "setSelectionName": 1, "setSlice": 1, "setThreshold": 1, "setTool": 1, "setVoxelSize": 1, "setZCoordinate": 1, "setupUndo": 1, "showMessage": 1, "showMessageWithCancel": 1, "showProgress": 1, "showStatus": 1, "showText": 1, "sin": 1, "snapshot": 1, "split": 1, "sqrt": 1, "startsWith": 1, "substring": 1, "tan": 1, "toBinary": 1, "toHex": 1, "toLowerCase": 1, "toScaled": 1, "toString": 1, "toUnscaled": 1, "toUpperCase": 1, "updateDisplay": 1, "updateResults": 1, "wait": 1, "waitForUser": 1, "trim": 1, "resetMinAndMax": 1, "restoreSettings": 1, "IJ.getFullVersion": 1, "File.getDefaultDir": 1, "Image.copy": 1, "List.getList": 1, "List.setCommands": 1, "Fit.plot": 1, "Fit.logResults": 1, "Fit.showDialog": 1, "Overlay.add": 1, "Overlay.show": 1, "Overlay.hide": 1, "Overlay.remove": 1, "Overlay.clear": 1, "Overlay.measure": 1, "Overlay.flatten": 1, "Overlay.copy": 1, "Overlay.paste": 1, "Property.getSliceLabel": 1, "Roi.getName": 1, "Roi.getDefaultColor": 1, "Roi.getStrokeColor": 1, "Roi.getFillColor": 1, "Roi.getProperties": 1, "Roi.getType": 1, "Roi.getStrokeWidth": 1, "Roi.getGroup": 1, "Roi.getDefaultGroup": 1, "Roi.getGroupNames": 1, "Roi.remove": 1, "Roi.selectNone": 1, "Roi.copy": 1, "Roi.paste": 1, "RoiManager.selected": 1, "Stack.isHyperstack": 1, "Stack.getOrthoViewsID": 1, "Stack.startOrthoViews": 1, "Stack.stopOrthoViews": 1, "String.resetBuffer": 1, "String.copyResults": 1, "String.getResultsHeadings": 1, "Table.allHeadings": 1, "Table.update": 1, "Table.getSelectionStart": 1, "Table.getSelectionEnd": 1, "Table.showHistogramTable": 1 };
 
-/* replace: 1文字なら文字どおり、2文字以上なら正規表現（ij.macro.Functions.replace） */
-function simReplaceStr(s, oldS, newS){
-  if (typeof s !== "string") return SIM_UNK;
-  var o = String(oldS), n = String(newS);
+/* replace の置換文字列の Java 展開（Matcher.appendReplacement の規則、R30-N24）:
+   \ は次の1文字を文字どおりにする（末尾の単独 \ は IllegalArgumentException）。
+   $ はグループ参照で、$0 はマッチ全体、$1〜 はグループ（存在しない番号は
+   IndexOutOfBoundsException、数字はグループ数を超えない最大まで取り込む）、
+   ${名前} は名前付きグループ。$ の後に数字でも ${ でもない文字（$& など）が
+   来る場合や、$ が末尾にある場合は IllegalArgumentException でマクロが止まる。
+   JS の String.replace の置換規則（$&＝マッチ全体、$$、$` など）とは異なる */
+function simJavaReplacement(n, m, line){
+  var groupCount = m.length - 1;
+  var out = "", i = 0;
+  function jerr(detail){
+    throw simErr(line || 0, "replace の置換文字列「" + n + "」が不正です（" + detail + "）", "実 ImageJ では Java の置換文字列の規則違反でマクロが止まります。文字どおりの $ は \\$ と書きます（\\ は次の1文字をそのままの意味にします）。");
+  }
+  while (i < n.length){
+    var c = n[i];
+    if (c === "\\"){
+      if (i + 1 >= n.length) jerr("末尾のバックスラッシュに対応する文字がありません");
+      out += n[i + 1]; i += 2; continue;
+    }
+    if (c === "$"){
+      if (i + 1 >= n.length) jerr("$ の後にグループ参照がありません");
+      var nx = n[i + 1];
+      if (nx === "{"){
+        var closeB = n.indexOf("}", i + 2);
+        if (closeB < 0) jerr("${ が } で閉じていません");
+        var gname = n.slice(i + 2, closeB);
+        var gv = m.groups ? m.groups[gname] : undefined;
+        if (gv === undefined) jerr("名前付きグループ \"" + gname + "\" がパターンにありません");
+        out += gv; i = closeB + 1; continue;
+      }
+      if (!(nx >= "0" && nx <= "9")) jerr("$ の後は数字か ${名前} でなければなりません");
+      var ref = nx.charCodeAt(0) - 48, j = i + 2;
+      while (j < n.length && n[j] >= "0" && n[j] <= "9"){
+        var cand = ref * 10 + (n[j].charCodeAt(0) - 48);
+        if (cand > groupCount) break;
+        ref = cand; j++;
+      }
+      if (ref > groupCount)
+        throw simErr(line || 0, "replace の置換文字列で、存在しないグループ $" + ref + " が参照されています", "実 ImageJ では Java の IndexOutOfBoundsException でマクロが止まります。パターンのグループ数を確認してください。");
+      var gval = m[ref];
+      out += gval == null ? "" : gval;
+      i = j; continue;
+    }
+    out += c; i++;
+  }
+  return out;
+}
+/* replace: 1文字なら文字どおり、2文字以上（と空文字列）なら正規表現
+   （ij.macro.Functions.replace。1文字経路は置換文字列をそのまま連結し、
+   正規表現経路は String.replaceAll で、エラー時は interp.error で止まる） */
+function simReplaceStr(s, oldS, newS, line){
+  /* R30-N23: 第1引数（と pattern／replacement）も getString 経由で文字列化する */
+  var str = simStrArg(s), o = simStrArg(oldS), n = simStrArg(newS);
+  if (typeof str !== "string" || typeof o !== "string" || typeof n !== "string") return SIM_UNK;
+  s = str;
   /* P-N1（連結以外の成長経路）: 置換は置換文字列を出現回数だけ繰り返す
      ため結果が爆発しうる。出現回数の上限から結果長を見積もり、上限を
      超える場合は実体を作らず未確定値へ倒す。 */
@@ -1363,15 +1420,37 @@ function simReplaceStr(s, oldS, newS){
     if (s.length + hits * (n.length - 1) > SIM_VALUE_LIMIT) return SIM_UNK;
     return s.split(o).join(n);
   }
-  if (o.length === 0) return s;
   /* 正規表現経路は、空マッチで各位置に挿入されうることと、置換文字列中の
-     $& 等がマッチ全体（最大で対象文字列長）へ展開されうることまで含めた
-     上限で見積もる（$ を含まない通常の置換では締まった見積もりになる）。 */
+     グループ参照がマッチ全体（最大で対象文字列長）へ展開されうることまで
+     含めた上限で見積もる（$ を含まない通常の置換では締まった見積もりになる）。 */
   var dollarCount = (n.match(/\$/g) || []).length;
   if (n.length > 0 && s.length + (s.length + 1) * (n.length + dollarCount * s.length) > SIM_VALUE_LIMIT)
     return SIM_UNK;
-  try { var replaced = s.replace(new RegExp(o, "g"), n); return replaced.length > SIM_VALUE_LIMIT ? SIM_UNK : replaced; }
-  catch (ex) { return SIM_UNK; }
+  /* R30-N24: Java のエラー意味論に合わせる。不正パターンは
+     PatternSyntaxException、置換文字列の $ の不正な使い方は
+     IllegalArgumentException／IndexOutOfBoundsException で、いずれも
+     Functions.replace が interp.error としてマクロを止める。未確定値で
+     ごまかしたり JS 式の展開で誤置換したりしない。置換文字列の検査は
+     マッチが実際に処理される時点で行われる（マッチが無ければ Java も
+     置換文字列を解釈せず、エラーにならない）。 */
+  var re;
+  try { re = new RegExp(o, "g"); }
+  catch (ex) { throw simErr(line || 0, "replace の正規表現パターン「" + o + "」が不正です", "実 ImageJ では Java の PatternSyntaxException でマクロが止まります。パターンの書き方を確認してください。"); }
+  var out = "", last = 0, m, guard = 0;
+  while ((m = re.exec(s)) !== null){
+    out += s.slice(last, m.index);
+    out += simJavaReplacement(n, m, line);
+    last = m.index + m[0].length;
+    if (m[0].length === 0){
+      /* 空マッチでは次の1文字をそのまま通して前進する（Matcher.find の前進規則） */
+      if (m.index < s.length){ out += s[m.index]; last = m.index + 1; }
+      re.lastIndex = m.index + 1;
+    }
+    if (out.length > SIM_VALUE_LIMIT) return SIM_UNK;
+    if (++guard > s.length + 2) break;
+  }
+  out += s.slice(last);
+  return out.length > SIM_VALUE_LIMIT ? SIM_UNK : out;
 }
 /* ImageJ の数値文字列パース（Tools.parseDouble）: 全体が数値でなければ NaN */
 /* ImageJ のバージョン比較（D2）。"1.54p" のように 数値部＋1文字のサフィックスで比べる */
@@ -1395,10 +1474,44 @@ function simVoxelAreaScale(im){
 function simParseDouble(v){
   if (typeof v === "number") return v;
   if (typeof v !== "string") return NaN;
-  var s = v.trim();
-  if (s === "NaN") return NaN;
-  if (!/^[+-]?(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?$/.test(s)) return NaN;
-  return Number(s);
+  /* Java の Double.valueOf（Variable.convertToDouble と Tools.parseDouble の実体）:
+     前後の空白（U+0020 以下）を取り除き、全体が数値として読めなければ NaN。
+     "NaN"／"Infinity"（符号つき可）、16進浮動小数（0x1.8p1）、型サフィックス
+     （1.0f／2d）も受理するのが Java の文法。部分一致は一切しない（R30-N21） */
+  var s = v.replace(/^[\x00-\x20]+/, "").replace(/[\x00-\x20]+$/, "");
+  if (s === "NaN" || s === "+NaN" || s === "-NaN") return NaN;
+  if (s === "Infinity" || s === "+Infinity") return Infinity;
+  if (s === "-Infinity") return -Infinity;
+  var hx = /^([+-]?)0[xX]([0-9a-fA-F]+(?:\.[0-9a-fA-F]*)?|\.[0-9a-fA-F]+)[pP]([+-]?\d+)[fFdD]?$/.exec(s);
+  if (hx){
+    var hp = hx[2].split("."), hv = parseInt(hp[0] || "0", 16);
+    if (hp[1]) hv += parseInt(hp[1], 16) / Math.pow(16, hp[1].length);
+    return (hx[1] === "-" ? -1 : 1) * hv * Math.pow(2, parseInt(hx[3], 10));
+  }
+  if (!/^[+-]?(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?[fFdD]?$/.test(s)) return NaN;
+  return Number(s.replace(/[fFdD]$/, ""));
+}
+/* Functions.java の parseDouble(String)（parseFloat と parseInt の基数10が使う経路）:
+   trim の後、最初のスペース（U+0020）で切り捨ててから Tools.parseDouble の
+   全体変換へ渡す。Variable の全体変換（R30-N21）とは別規則であり、混同しない
+   （例: 暗黙変換では "12 abc" は NaN だが、parseFloat("12 abc") は 12）。R30-N22 */
+function simParseFnDouble(v){
+  if (simIsUnk(v)) return SIM_UNK;
+  if (typeof v === "number") return v;
+  if (typeof v !== "string") return SIM_UNK;
+  var s = v.replace(/^[\x00-\x20]+/, "").replace(/[\x00-\x20]+$/, "");
+  var sp = s.indexOf(" ");
+  if (sp >= 0) s = s.slice(0, sp);
+  return simParseDouble(s);
+}
+/* 文字列引数の文字列化（R30-N23）: Functions.java の文字列関数は第1引数を
+   getString／getFirstString／getStringArg で読み、Interpreter.getStringTerm が
+   数値を文字列化する（整数値は IJ.d2s(value, 0)、それ以外は IJ.d2s(value, 4, 9)
+   相当＝ simFmtNum）。数値が誤値 0 や未確定値になることはない */
+function simStrArg(v){
+  if (typeof v === "string") return v;
+  if (typeof v === "number") return simFmtNum(v);
+  return SIM_UNK;
 }
 /* split: ","/";" は空要素を残す正規表現分割、それ以外は区切り文字集合で空要素を捨てる（Functions.split / Tools.split） */
 function simSplitStr(s, delim, line){
@@ -1449,15 +1562,19 @@ function simInt(v){
 }
 /* R25-N22: ImageJ マクロの数値引数は Variable の数値変換を経て渡されるため、
    数値として読める文字列（"1" や "2" など）も数値として解釈される。配列添字・
-   getPixel／setPixel の文字列座標で既に採っている解釈（num() と同じ parseFloat
-   方式）に、substring／charCodeAt／indexOf／roiManager("select")／setSlice／
-   Stack.setPosition／getHistogram の範囲引数を統一する。数値として読めない
-   文字列はそのまま返し、呼び出し側の従来の型判定に委ねる。 */
+   getPixel／setPixel の文字列座標で既に採っている解釈に、substring／charCodeAt／
+   indexOf／roiManager("select")／setSlice／Stack.setPosition／getHistogram の
+   範囲引数を統一する。
+   R30-N21（RG-188 の「読めない文字列は未確定化」裁定を一次情報で置き換え）:
+   Variable.java の convertToDouble() は Double.valueOf の全体変換で、変換
+   できない文字列は NaN（確定値）を返す。部分パース（前方一致）も未確定化も
+   しないため、simNumArg は文字列を simParseDouble（全体変換）経由にし、
+   変換できない文字列は NaN を返す。呼び出し側の「数値でなければ未確定」
+   判定は、NaN が数値として確定することに追随する（例: abs("abc") は NaN、
+   isNaN("abc") は 1、charCodeAt("ABC", "1x") の添字は NaN→(int)変換で 0）。 */
 function simNumArg(v){
   if (typeof v !== "string") return v;
-  if (v.trim() === "") return v;
-  var x = parseFloat(v);
-  return isNaN(x) ? v : x;
+  return simParseDouble(v);
 }
 /* R26-N9／N10: RG-188 の統一が届いていなかった残存表面を一掃する。数値引数を
    取る全関数・全引数位置（d2s の両引数、parseInt の基数、setResult／getResult／
@@ -1470,9 +1587,8 @@ function simNumArg(v){
    IJ.d2s(getFirstArg(), (int)getLastArg())、parseInt の radix＝
    (int)interp.getExpression()、setMinAndMax＝getFirstArg／getNextArg、
    fromCharCode＝(int)interp.getExpression() の繰り返し、math／math2＝
-   getArg／getFirstArg／getLastArg）。数値として読めない文字列は simNumArg が
-   そのまま返すため、従来の型判定（未確定化）のままになる（RG-188 の裁定どおり、
-   NaN への読み替えはしない）。 */
+   getArg／getFirstArg／getLastArg）。数値として読めない文字列の扱いは
+   R30-N21 で全体変換＋NaN 確定に置き換えられた（simNumArg の注記を参照）。 */
 function simBuiltin(S, e, args, refs, H){
   var name = e.name, line = e.line, step = H.step, warn = H.warn;
   if (["setPixel","setResult","setThreshold","setAutoThreshold","setSlice","Stack.setPosition","rename","makeRectangle","makeOval","makeLine","makePolygon","makeSelection","setMinAndMax","newImage","changeValues"].includes(name) && args.some(simIsUnk))
@@ -1729,18 +1845,23 @@ function simBuiltin(S, e, args, refs, H){
       return SIM_UNK;
     }
     case "lengthOf": return typeof args[0] === "string" || Array.isArray(args[0]) ? args[0].length : (typeof args[0] === "number" ? simFmtNum(args[0]).length : SIM_UNK);
-    case "lastIndexOf": return typeof args[0] === "string" ? args[0].lastIndexOf(String(args[1])) : SIM_UNK;
-    case "trim": return typeof args[0] === "string" ? args[0].replace(/^[\x00-\x20]+/, "").replace(/[\x00-\x20]+$/, "") : SIM_UNK; /* Java の String.trim（U+0020 以下を除去） */
-    case "toLowerCase": return typeof args[0] === "string" ? args[0].toLowerCase() : SIM_UNK;
-    case "toUpperCase": return typeof args[0] === "string" ? args[0].toUpperCase() : SIM_UNK;
+    /* R30-N23: 文字列関数の第1引数は getString 系で文字列化される（simStrArg）。
+       数値を渡しても誤値 0 や未確定にはならず、文字列化して処理する */
+    case "lastIndexOf": { var li0 = simStrArg(args[0]), li1 = simStrArg(args[1]); return (typeof li0 === "string" && typeof li1 === "string") ? li0.lastIndexOf(li1) : SIM_UNK; }
+    case "trim": { var tr0 = simStrArg(args[0]); return typeof tr0 === "string" ? tr0.replace(/^[\x00-\x20]+/, "").replace(/[\x00-\x20]+$/, "") : SIM_UNK; } /* Java の String.trim（U+0020 以下を除去） */
+    case "toLowerCase": { var tl0 = simStrArg(args[0]); return typeof tl0 === "string" ? tl0.toLowerCase() : SIM_UNK; }
+    case "toUpperCase": { var tu0 = simStrArg(args[0]); return typeof tu0 === "string" ? tu0.toUpperCase() : SIM_UNK; }
     case "charCodeAt": {
       /* D7: 位置が範囲外なら NaN を返さずエラーで止める（実 ImageJ の checkIndex の挙動） */
       /* R25-N22: 位置の文字列数値（"1" など）は simNumArg で数値として解釈する */
-      if (typeof args[0] !== "string" || typeof simNumArg(args[1]) !== "number") return SIM_UNK;
+      /* R30-N23: 第1引数の数値は文字列化する。R30-N21: 位置の変換できない文字列は
+         NaN になり、(int) 変換で 0 になる（charCodeAt("ABC", "1x") は 'A'＝65） */
+      var cs0 = simStrArg(args[0]);
+      if (typeof cs0 !== "string" || typeof simNumArg(args[1]) !== "number") return SIM_UNK;
       var cix = simInt(simNumArg(args[1]));
-      if (cix < 0 || cix >= args[0].length)
-        throw simErr(line, "charCodeAt の位置（" + cix + "）が文字列の長さ（" + args[0].length + "）の範囲外です", "位置は 0〜" + (args[0].length - 1) + " で指定します。ImageJ ではここでエラーになり止まります。");
-      return args[0].charCodeAt(cix);
+      if (cix < 0 || cix >= cs0.length)
+        throw simErr(line, "charCodeAt の位置（" + cix + "）が文字列の長さ（" + cs0.length + "）の範囲外です", "位置は 0〜" + (cs0.length - 1) + " で指定します。ImageJ ではここでエラーになり止まります。");
+      return cs0.charCodeAt(cix);
     }
     case "fromCharCode": {
       /* R24-N21: Functions.java の fromCharCode() は引数をすべてループ処理し、
@@ -1757,8 +1878,9 @@ function simBuiltin(S, e, args, refs, H){
       }
       return fcc;
     }
-    case "indexOf": return typeof args[0] === "string" ? args[0].indexOf(String(args[1]), typeof simNumArg(args[2]) === "number" ? simInt(simNumArg(args[2])) : 0) : SIM_UNK;
+    case "indexOf": { var io0 = simStrArg(args[0]), io1 = simStrArg(args[1]); return (typeof io0 === "string" && typeof io1 === "string") ? io0.indexOf(io1, typeof simNumArg(args[2]) === "number" ? simInt(simNumArg(args[2])) : 0) : SIM_UNK; }
     case "substring": {
+      args[0] = simStrArg(args[0]); /* R30-N23: 第1引数の数値は文字列化する */
       if (typeof args[0] !== "string") return SIM_UNK;
       /* R25-N22: 開始・終了位置の文字列数値（"1" など）は simNumArg で数値として
          解釈する。型で弾いて「範囲超過」という虚偽の原因を表示しない。 */
@@ -1767,13 +1889,14 @@ function simBuiltin(S, e, args, refs, H){
         throw simErr(line, "substring の範囲（" + bi + "〜" + bj + "）が文字列の長さ（" + sb.length + "）を超えています", "ImageJ ではここでエラーになり止まります。lengthOf で長さを確認してください。");
       return sb.substring(bi, bj);
     }
-    case "startsWith": return typeof args[0] === "string" && args[0].indexOf(String(args[1])) === 0 ? 1 : 0;
-    case "endsWith": return typeof args[0] === "string" && (String(args[1]) === "" || args[0].slice(-String(args[1]).length) === String(args[1])) ? 1 : 0;
-    case "replace": return simReplaceStr(args[0], args[1], args[2]);
-    case "split": return simSplitStr(args[0], args.length > 1 ? args[1] : undefined, line);
+    case "startsWith": { var sw0 = simStrArg(args[0]), sw1 = simStrArg(args[1]); if (typeof sw0 !== "string" || typeof sw1 !== "string") return SIM_UNK; return sw0.indexOf(sw1) === 0 ? 1 : 0; }
+    case "endsWith": { var ew0 = simStrArg(args[0]), ew1 = simStrArg(args[1]); if (typeof ew0 !== "string" || typeof ew1 !== "string") return SIM_UNK; return (ew1 === "" || ew0.slice(-ew1.length) === ew1) ? 1 : 0; }
+    case "replace": return simReplaceStr(args[0], args[1], args[2], line);
+    case "split": return simSplitStr(simStrArg(args[0]), args.length > 1 ? simStrArg(args[1]) : undefined, line);
     case "parseInt": {
       /* D12: 基数指定時は Java の Integer.parseInt と同じ厳密な変換（全体が数字でなければ NaN）。
          基数が 2〜36 の範囲外なら ImageJ は 10 として扱う */
+      if (simIsUnk(args[0])) return SIM_UNK;
       if (typeof args[0] !== "string" && typeof args[0] !== "number") return SIM_UNK;
       var ps = String(args[0]), radix = typeof simNumArg(args[1]) === "number" ? simInt(simNumArg(args[1])) : 10; /* R26-N9: 基数の文字列数値も数値として解釈する（Functions.java は (int)getExpression() で読む） */
       if (radix !== 10){
@@ -1790,10 +1913,13 @@ function simBuiltin(S, e, args, refs, H){
           return pm[1] === "-" ? -pval : pval;
         }
       }
-      var pd = simParseDouble(ps);
+      /* R30-N22: 基数10では Functions.parseDouble の「空白で切る」規則が入る */
+      var pd = typeof args[0] === "string" ? simParseFnDouble(args[0]) : simParseDouble(ps);
       return isNaN(pd) ? NaN : Math.round(pd);
     }
-    case "parseFloat": return simParseDouble(args[0]);
+    /* R30-N22: parseFloat は Functions.parseDouble（空白で切って全体変換）。
+       暗黙の全体変換（simParseDouble）とは別経路で、"12 abc" は 12 になる */
+    case "parseFloat": return simParseFnDouble(args[0]);
     case "d2s": {
       /* R26-N9／N10: Functions.java の d2s は IJ.d2s(getFirstArg(), (int)getLastArg())
          で、値・桁数の両方が数値として読み取られる。文字列数値も数値として解釈する */
@@ -1843,7 +1969,7 @@ function simBuiltin(S, e, args, refs, H){
     case "sin": case "cos": case "tan": case "asin": case "acos": case "atan":
       return typeof simNumArg(args[0]) === "number" ? Math[name](simNumArg(args[0])) : SIM_UNK;
     case "toString": return simFmt(args[0]);
-    case "String.trim": return typeof args[0] === "string" ? args[0].trim() : SIM_UNK;
+    case "String.trim": { var st0 = simStrArg(args[0]); return typeof st0 === "string" ? st0.replace(/^[\x00-\x20]+/, "").replace(/[\x00-\x20]+$/, "") : SIM_UNK; } /* R30-N23: 数値は文字列化。Java の String.trim（U+0020 以下）で trim 関数と揃える */
     case "selectWindow": {
       var tgt = null;
       S.images.forEach(function(m, i){ if (m.title === String(args[0])) tgt = i; });
@@ -2283,7 +2409,28 @@ function simBuiltin(S, e, args, refs, H){
       var imL = needImg("setPixel");
       var spx = typeof simNumArg(args[0]) === "number" ? simInt(simNumArg(args[0])) : args[0], spy = typeof simNumArg(args[1]) === "number" ? simInt(simNumArg(args[1])) : args[1]; /* R26-N9／N10 の兄弟表面: 座標・値の文字列数値も数値として解釈する */
       var spvN = simNumArg(args[2]);
-      var spv = (imL.bit === 32 || typeof spvN !== "number") ? spvN : simInt(spvN);
+      /* R30-N25（バッチ9統合側で再裁定）: 画素型ごとの範囲変換。マクロの
+         setPixel(x, y, value) は Functions.java の setPixel() が非 float 画像で
+         値を (int) 切捨て変換して ImageProcessor.putPixel へ渡す経路であり、
+         ByteProcessor.putPixel／ShortProcessor.putPixel は javadoc 明記のとおり
+         範囲外の値をクランプしてからキャストする（8bit: 0〜255。例: 300→255、
+         -5→0、300.9→(int)300→255。16bit: 0〜65535。例: 70000→65535、-5→0）。
+         R30 所見 F01A-N8 の期待値（(byte) キャストによる折り返し 300→44）は
+         putPixel のクランプ行を見落としたもので、一次情報（現行 master の
+         実ソース）で期待値を是正した。折り返しになるのは、2引数形が経由する
+         ByteProcessor.setf(int, float) の (byte) キャスト（300→44）であり、
+         本エンジンの setPixel は3引数形のみをモデル化するため対象外。
+         32bit float は putPixelValue の (float) 化のみで範囲変換はないため
+         値をそのまま保持する（float32 への丸め自体はモデル化しない）。
+         RGB（24bit）は ColorProcessor.putPixel が (int) 値をそのまま保持する
+         ため変換なし */
+      var spv = spvN;
+      if (typeof spvN === "number"){
+        if (imL.bit === 8) spv = Math.min(255, Math.max(0, simInt(spvN)));
+        else if (imL.bit === 16) spv = Math.min(65535, Math.max(0, simInt(spvN)));
+        else if (imL.bit === 32) spv = spvN;
+        else spv = simInt(spvN);
+      }
       if (typeof imL.w === "number" && (spx < 0 || spx >= imL.w || spy < 0 || spy >= imL.h)){ warn(line, "setPixel の座標が画像の範囲外です", "範囲外への書き込みは ImageJ では無視されます。"); return SIM_UNK; }
       imL.pix[spx + "," + spy] = spv;
       if (!imL.writtenPix) imL.writtenPix = {};

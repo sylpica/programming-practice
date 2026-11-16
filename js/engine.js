@@ -137,6 +137,37 @@ export function charLabel(c) {
   if (cp >= 0xff01 && cp <= 0xff5e) return `全角文字（${hex}）`;
   return `文字（${hex}）`;
 }
+// R30-N15／N18: 基数リテラル（&H＝16進／&O＝8進）の符号解釈は実 VBA
+// どおり「最小の符号付き型に収まる解釈」とする。接尾辞なしは値の大きさで
+// 決まる（&HFFFF は Integer として -1。Microsoft Learn「Val function」の
+// 例でも Val("&HFFFF") は -1 を返す）。型接尾辞 % は Integer（16ビット
+// 符号付き）、& は Long（32ビット符号付き）として解釈し、その範囲を
+// 超えたらオーバーフローとして呼び出し側で停止する。!（Single）／#
+// （Double）／@（Currency）は浮動小数型なので符号なしの値のままにする。
+// 32ビットを超える接尾辞なしリテラルは、一次情報で確定できないため
+// オーバーフローにはせず Double の範囲の符号なし値として扱う（裁定は
+// バッチ9報告書に明記）。
+function wrapSigned(unsigned, bits) {
+  const mod = 2 ** bits;
+  return unsigned >= mod / 2 ? unsigned - mod : unsigned;
+}
+function basedLiteralValue(unsigned, suffix) {
+  if (suffix === "%")
+    return unsigned <= 0xffff
+      ? { value: wrapSigned(unsigned, 16) }
+      : { overflow: true };
+  if (suffix === "&")
+    return unsigned <= 0xffffffff
+      ? { value: wrapSigned(unsigned, 32) }
+      : { overflow: true };
+  if (suffix === "!") return { value: Math.fround(unsigned) };
+  if (suffix === "#" || suffix === "@") return { value: unsigned };
+  if (unsigned <= 0x7fff) return { value: unsigned };
+  if (unsigned <= 0xffff) return { value: wrapSigned(unsigned, 16) };
+  if (unsigned <= 0x7fffffff) return { value: unsigned };
+  if (unsigned <= 0xffffffff) return { value: wrapSigned(unsigned, 32) };
+  return { value: unsigned };
+}
 export function lex(source) {
   // 先頭の BOM は取り込み経路（import）と揃えて取り除く
   if (source.charCodeAt(0) === 0xfeff) source = source.slice(1);
@@ -189,10 +220,53 @@ export function lex(source) {
       result.push({ v: value, type: "string", line: start });
       continue;
     }
+    // R30-N15: 16進・8進リテラル &H…／&O…。連結演算子 & との衝突は
+    // 「& の直後が H／O＋有効数字」で判定する。空白を伴う通常の連結
+    // （"a" & "b" 等）は & の直後が空白・引用符・識別子のため従来どおり
+    // 演算子として字句化される。型接尾辞（% & ! # @）が数字の直後に
+    // 密着している形も実 VBA どおりリテラルの一部として読む。
+    if (c === "&" && /[hHoO]/.test(source[i + 1] || "")) {
+      const isHex = /[hH]/.test(source[i + 1]);
+      const dm = source
+        .slice(i + 2)
+        .match(isHex ? /^[0-9A-Fa-f]+/ : /^[0-7]+/);
+      if (!dm)
+        lexFail(
+          `${isHex ? "16進" : "8進"}リテラル &${source[i + 1].toUpperCase()} の後に${isHex ? "16進" : "8進"}数が必要です`,
+          line,
+        );
+      const j = i + 2 + dm[0].length;
+      const suffix =
+        source[j] && "%&!#@".includes(source[j]) ? source[j] : "";
+      const litText = source.slice(i, j) + suffix;
+      const r = basedLiteralValue(
+        parseInt(dm[0], isHex ? 16 : 8),
+        suffix,
+      );
+      if (r.overflow)
+        lexFail(`リテラルの値が型の範囲を超えています：${litText}`, line);
+      result.push({ v: String(r.value), type: "number", line });
+      i = j + suffix.length;
+      continue;
+    }
     let m = source.slice(i).match(/^(?:\d+(?:\.\d*)?|\.\d+)(?:[Ee][+-]?\d+)?/);
     if (m) {
-      result.push({ v: m[0], type: "number", line });
-      i += m[0].length;
+      // R30-N15（付随）: 10進リテラルの型接尾辞（5&／5%／5!／5#／5@）。
+      // 従来は 5& が連結演算子と誤字句化され「式が必要です」という
+      // 原因不明瞭な文言で停止していた。%／& は整数型の範囲で検証し、
+      // ! は Single へ丸める。空白を置いた連結（5 & 3 等）は接尾辞が
+      // 密着していないため従来どおり連結演算子として扱う。
+      const j = i + m[0].length;
+      const suffix =
+        source[j] && "%&!#@".includes(source[j]) ? source[j] : "";
+      let v = Number(m[0]);
+      if (suffix === "%" && (!Number.isInteger(v) || v > 32767))
+        lexFail(`リテラルの値が型の範囲を超えています：${m[0]}%`, line);
+      if (suffix === "&" && (!Number.isInteger(v) || v > 2147483647))
+        lexFail(`リテラルの値が型の範囲を超えています：${m[0]}&`, line);
+      if (suffix === "!") v = Math.fround(v);
+      result.push({ v: String(v), type: "number", line });
+      i = j + suffix.length;
       continue;
     }
     m = source.slice(i).match(/^[A-Za-z_\u0080-\uFFFF][\w\u0080-\uFFFF]*/);
@@ -297,7 +371,15 @@ class ExprParser {
         k: "binary",
         op,
         a,
-        b: this.expr(prec + (op === "^" ? 0 : 1), depth + 1),
+        // R30-N32（R30-SEM-N1）: VBA の ^ は左結合。Microsoft Learn
+        // 「Operator precedence」は同一優先順位の演算子を左から右へ
+        // 評価するとし、VB 公式の Exponentiation Operator 項も
+        // 「^ は左から右に評価される」と明示する（(2^3)^2 = 64）。
+        // 従来は ^ だけ右結合（prec + 0）になっており 2 ^ 3 ^ 2 が
+        // 512 になっていた。他演算子と同じく prec + 1 で左結合にする。
+        // 本パーサは VBA 専用（js/engine.js）であり、右結合が正しい
+        // Python の **／R の ^（別ファイルの別エンジン）には影響しない。
+        b: this.expr(prec + 1, depth + 1),
       };
     }
     return a;
@@ -690,13 +772,50 @@ export function parse(source) {
   }
   return { body, base, explicit };
 }
+// R30-N18（F01A-N1）: 文字列→数値変換は実 VBA の規則で行う。JS の
+// Number() は 0x／0o／0b 接頭辞を受理し &H／&O を知らないため、そのまま
+// 使うと基数接頭辞の受理・拒否が実 VBA と逆転していた（CDbl("0x10") が
+// 16 になり、CDbl("&H10") がエラー13になっていた）。実 VBA の規則：
+// ・前後の空白は取り除く
+// ・&H…（16進）／&O…（8進）は基数リテラルと同じ符号解釈で全体一致変換
+// ・10進は符号・小数部・指数部（E）までの全体一致のみ受理する
+// ・それ以外（0x／0o／0b 等、VBA に存在しない記法）は変換できない
+// 変換できない場合は null を返す（呼び出し側でエラー13にする）。
+// 符号が基数接頭辞の前に付いた形（"-&H10"）は、変換後の値への符号として
+// 扱う（裁定はバッチ9報告書に明記）。この変換を使う経路は num() を通る
+// 全て（CInt／CLng／CDbl、Abs／Int／Fix／Round、算術・比較演算、型付き
+// 代入の cast、条件位置の bool 等）と IsNumeric であり、同根を一括で直す。
+// Val は前方一致の別規則のため、この関数を使わない（Val の項を参照）。
+function vbaStringNumber(text) {
+  if (typeof text !== "string") return null;
+  const t = text.trim();
+  if (t === "") return null;
+  const basedHex = t.match(/^([+-]?)&[hH]([0-9A-Fa-f]+)$/);
+  const basedOct = basedHex ? null : t.match(/^([+-]?)&[oO]([0-7]+)$/);
+  const based = basedHex || basedOct;
+  if (based) {
+    const n = basedLiteralValue(
+      parseInt(based[2], basedHex ? 16 : 8),
+      "",
+    ).value;
+    const signed = based[1] === "-" ? -n : n;
+    return Number.isFinite(signed) ? signed : null;
+  }
+  if (/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[Ee][+-]?\d+)?$/.test(t)) {
+    const n = Number(t);
+    return Number.isFinite(n) ? n : null;
+  }
+  return null;
+}
 const num = (v) => {
   if (v?.kind === "empty") return 0;
   if (v === true) return -1;
   if (v === false) return 0;
   if (typeof v === "number") return v;
-  if (typeof v === "string" && v.trim() !== "" && Number.isFinite(Number(v)))
-    return Number(v);
+  if (typeof v === "string") {
+    const n = vbaStringNumber(v);
+    if (n !== null) return n;
+  }
   fail("型が一致しません", 13);
 };
 const str = (v) => {
@@ -1123,6 +1242,12 @@ const VBA_BUILTIN_CONSTANT_NAMES = new Set([
   ...Object.keys(VBA_ENUM_CONSTANTS),
   "vbcrlf", "vbcr", "vblf", "vbnewline", "vbnullchar", "vbnullstring",
   "vbtab", "vbformfeed", "vbverticaltab",
+  // R30-N19（F01A-N2）: 比較定数3件は evalExpr のインライン分岐で解決
+  // されるため VBA_ENUM_CONSTANTS に無く、代入ガードの到達範囲から
+  // 漏れていた（RG-240 系是正の取り残し）。他の定数と同じく読み取り
+  // 専用として代入・同名宣言・ループ変数化を全て名指し停止に揃える。
+  // 値の利用（InStr／Replace の compare 引数等）は従来どおり使える。
+  "vbbinarycompare", "vbtextcompare", "vbdatabasecompare",
 ]);
 const isVbaBuiltinConstant = (name) => VBA_BUILTIN_CONSTANT_NAMES.has(name);
 const failConstAssign = (name) =>
@@ -1234,9 +1359,26 @@ function evalExpr(a, s) {
       break;
     }
     case "call": {
-      let args = a.args.map((x) => value(evalExpr(x, s), s));
       if (a.target.k !== "id") unsupported("オブジェクトのメソッド呼び出し");
       let name = a.target.name;
+      // R30-N20（F01A-N3）: IsNull／IsEmpty は Nothing を検査するための
+      // 関数であり、実 VBA では IsNull(Nothing)／IsEmpty(Nothing) は
+      // いずれもエラーにならず False を返す（Nothing は Null でも Empty
+      // でもない）。引数を value() で解決すると Nothing の時点で
+      // エラー91になり検査自体ができないため、この2関数に限って
+      // Nothing をそのまま渡す。Range の既定プロパティ解決（単一セル→
+      // セル値）は従来どおり value() で行うため、IsEmpty(Range("A5"))
+      // 等の既存の挙動は変わらない。Nothing の値式そのもの（Debug.Print
+      // Nothing や Let 代入）がエラー91になる点も実 VBA どおり不変。
+      let args = a.args.map((x) => {
+        let v = evalExpr(x, s);
+        if (
+          (name === "isnull" || name === "isempty") &&
+          v?.kind === "nothing"
+        )
+          return v;
+        return value(v, s);
+      });
       if (name === "inputbox") {
         // F-VBA-08: InputBox は prompt 以外にも title／default／xpos／ypos／
         // helpfile／context まで最大7引数が有効。4引数以降を個数エラー(450)
@@ -1437,11 +1579,30 @@ function evalExpr(a, s) {
       if (name === "cdbl") return num(x);
       if (name === "cstr") return str(x);
       if (name === "val") {
-        if (/^[\s]*[&]|[%&!#@]/.test(str(x)))
-          unsupported("Val の16進数・型接尾辞");
-        let m = str(x)
-          .replace(/[ \t\r\n]/g, "")
-          .match(/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)/);
+        // R30-N18: Val は CDbl 系（全体一致）とは異なる前方一致（部分
+        // パース）の関数であり、基数接頭辞 &H／&O を認識する
+        // （Microsoft Learn「Val function」：radix prefixes &O／&H を
+        // 認識し、空白・タブ・改行は取り除かれ、Val("&HFFFF") は -1）。
+        // 基数形は接頭辞の後の有効数字だけを読み、最初に読めない文字で
+        // 止まる。型接尾辞は従来どおり未対応として名指しする。
+        const cleaned = str(x).replace(/[ \t\r\n]/g, "");
+        const basedPrefix = cleaned.match(/^([+-]?)&([hHoO])/);
+        if (basedPrefix) {
+          const isHex = basedPrefix[2].toLowerCase() === "h";
+          const dm = cleaned
+            .slice(basedPrefix[0].length)
+            .match(isHex ? /^[0-9A-Fa-f]+/ : /^[0-7]+/);
+          if (!dm) return 0;
+          const rest = cleaned.slice(basedPrefix[0].length + dm[0].length);
+          if (/^[%&!#@]/.test(rest)) unsupported("Val の型接尾辞");
+          const n = basedLiteralValue(
+            parseInt(dm[0], isHex ? 16 : 8),
+            "",
+          ).value;
+          return basedPrefix[1] === "-" ? -n : n;
+        }
+        if (/[%&!#@]/.test(cleaned)) unsupported("Val の型接尾辞");
+        let m = cleaned.match(/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)/);
         return m ? Number(m[0]) : 0;
       }
       if (name === "isnumeric") {
@@ -1453,7 +1614,9 @@ function evalExpr(a, s) {
         if (x?.kind) return false;
         if (typeof x === "boolean") return false;
         if (typeof x === "number") return true;
-        return str(x).trim() !== "" && Number.isFinite(Number(x));
+        // R30-N18: IsNumeric も CDbl 系と同じ実 VBA の変換規則で判定する
+        // （"&H10" は True、"0x10" は False。JS の Number() 判定は逆転していた）。
+        return vbaStringNumber(x) !== null;
       }
       if (name === "round") {
         // F-VBA-06: 桁数は Long 引数として銀行丸めで変換してから判定する。

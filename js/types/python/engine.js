@@ -1736,7 +1736,20 @@ class Interp {
         this.diag(0, 'note', '説明の上限', 'コードの入れ子や計算が大きすぎて、この説明では最後まで追いきれませんでした。以降の出力と最終状態は実行して確認してください', '');
         this.emitLine('（大きすぎるため、ここから先の出力は省略します）');
       }
-      else if (e instanceof SimDiag) this.diag(e.line, 'error', e.kind, e.message, e.fix);
+      else if (e instanceof SimDiag) {
+        this.diag(e.line, 'error', e.kind, e.message, e.fix);
+        // R30-P-N1（バッチ9 N3）：エンジンが発生させた RecursionError が
+        // 捕捉されずにトップレベルへ届いた場合は、他の上限（繰返し予算）と
+        // 同形式にする：truncated を立て、「説明の上限」診断（normalize で
+        // limit 種別トレースになる）を残し、後続出力を省略として示す。
+        // ユーザーが raise した RecursionError（depthLimit フラグなし）は
+        // 通常のエラーとして扱い、打ち切りにはしない。
+        if (e.depthLimit) {
+          this.truncated = true;
+          this.diag(0, 'note', '説明の上限', '関数の呼び出しの深さの上限（' + MAX_CALL_DEPTH + '）に達したため、ここで説明を打ち切りました。以降の出力と最終状態は実行して確認してください', '');
+          this.emitLine('（呼び出しが深くなりすぎたため、ここから先の出力は省略します）');
+        }
+      }
       else if (e instanceof Flow && e.kind === 'budget') {
         this.truncated = true;
         this.diag(0, 'note', '説明の上限', '繰り返しが多いため、ここで説明を打ち切りました。以降の出力と最終状態は実行して確認してください', '');
@@ -2349,7 +2362,7 @@ function targetName(t) {
 const PY_BUILTINS = new Set('abs all any ascii bin bool breakpoint bytearray bytes callable chr classmethod compile complex delattr dict dir divmod enumerate eval exec filter float format frozenset getattr globals hasattr hash help hex id input int isinstance issubclass iter len list locals map max memoryview min next object oct open ord pow print property range repr reversed round set setattr slice sorted staticmethod str sum super tuple type vars zip Exception BaseException ValueError TypeError KeyError IndexError ZeroDivisionError NameError AttributeError RuntimeError StopIteration AssertionError ImportError ModuleNotFoundError OSError FileNotFoundError NotImplementedError ArithmeticError LookupError OverflowError RecursionError UnicodeError EOFError KeyboardInterrupt SystemExit BaseExceptionGroup ExceptionGroup BlockingIOError BrokenPipeError BufferError BytesWarning ChildProcessError ConnectionAbortedError ConnectionError ConnectionRefusedError ConnectionResetError DeprecationWarning EncodingWarning EnvironmentError FileExistsError FloatingPointError FutureWarning GeneratorExit IOError ImportWarning IndentationError InterruptedError IsADirectoryError MemoryError NotADirectoryError PendingDeprecationWarning PermissionError ProcessLookupError ReferenceError ResourceWarning RuntimeWarning StopAsyncIteration SyntaxError SyntaxWarning SystemError TabError TimeoutError UnboundLocalError UnicodeDecodeError UnicodeEncodeError UnicodeTranslateError UnicodeWarning UserWarning Warning'.split(' '));
 const BUILTIN_NAMES = ['print', 'len', 'range', 'str', 'int', 'float', 'bool', 'list', 'tuple', 'dict', 'set', 'sum', 'min', 'max', 'abs', 'round', 'sorted', 'reversed', 'enumerate', 'zip', 'type', 'input', 'isinstance', 'ord', 'chr', 'divmod', 'pow', 'any', 'all', 'open'];
 BUILTIN_NAMES.push('repr', 'map', 'filter', 'hex', 'bin', 'oct', 'format', 'next', 'iter');
-const ARITY = { repr: [1, 1], map: [2, 99], filter: [2, 2], hex: [1, 1], bin: [1, 1], oct: [1, 1], format: [1, 2], print: [0, 99], len: [1, 1], range: [1, 3], str: [0, 1], int: [0, 2], float: [0, 1], bool: [0, 1], next: [1, 2], iter: [1, 1], list: [0, 1], tuple: [0, 1], set: [0, 1], dict: [0, 1], sum: [1, 2], min: [0, 99], max: [0, 99], abs: [1, 1], round: [1, 2], sorted: [1, 1], reversed: [1, 1], enumerate: [1, 2], zip: [0, 99], type: [1, 1], input: [0, 1], isinstance: [2, 2], ord: [1, 1], chr: [1, 1], divmod: [2, 2], pow: [2, 3], any: [1, 1], all: [1, 1], open: [1, 3] };
+const ARITY = { repr: [1, 1], map: [2, 99], filter: [2, 2], hex: [1, 1], bin: [1, 1], oct: [1, 1], format: [1, 2], print: [0, 99], len: [1, 1], range: [1, 3], str: [0, 1], int: [0, 2], float: [0, 1], bool: [0, 1], next: [1, 2], iter: [1, 1], list: [0, 1], tuple: [0, 1], set: [0, 1], dict: [0, 1], sum: [1, 2], min: [0, 99], max: [0, 99], abs: [1, 1], round: [1, 2], sorted: [1, 1], reversed: [1, 1], enumerate: [1, 2], zip: [0, 99], type: [1, 3], input: [0, 1], isinstance: [2, 2], ord: [1, 1], chr: [1, 1], divmod: [2, 2], pow: [2, 3], any: [1, 1], all: [1, 1], open: [1, 3] };
 
 // バッチ4 Python追随＋バッチ5是正（R26-N3／N4）：except ハンドラ式の評価・検証
 // （実 CPython 3.12.3 の規則を実走で確認）。
@@ -2486,6 +2499,10 @@ Interp.prototype.eval = function (n, env) {
         if (p.conv === 'r' || p.conv === 'a' || (p.doc && !p.fmt && !p.conv)) base = reprVal(v);
         else if (p.conv === 's') base = strVal(v);
         const fs = fmtSpec(base, p.fmt);
+        // R30F01B-N3（バッチ9 N28）：f文字列側でも、不正な書式指定は
+        // 実 CPython どおり ValueError／TypeError で停止する（正当だが
+        // 未対応な指定だけが従来どおり「対応外」の名指し停止になる）。
+        if (fs && fs.__fmtErr) this.err(n.line, fs.kind, fs.msg, '');
         if (fs === null) { hasUnk = true; out += '（実行時に決まる値）'; this.diag(n.line, 'note', '対応外', '書式指定「' + p.fmt + '」はこの説明では扱いません。その部分は「実行時に決まる値」として示します', ''); continue; }
         out += fs;
       }
@@ -2570,9 +2587,9 @@ Interp.prototype.eval = function (n, env) {
       const obj = this.eval(n.obj, env);
       if (obj && obj.__instance) {
         if (obj.attrs.has(n.name)) return obj.attrs.get(n.name);
-        if (obj.cls.cenv.vars.has(n.name)) {
-          const value = obj.cls.cenv.vars.get(n.name);
-          return isFunc(value) ? { __bound: true, fn: value, instance: obj } : value;
+        const classValue = classLookup(obj.cls, n.name);
+        if (classValue !== undefined) {
+          return isFunc(classValue) ? { __bound: true, fn: classValue, instance: obj } : classValue;
         }
         this.err(n.line, 'AttributeError', '属性がありません：' + n.name, '');
       }
@@ -2597,7 +2614,7 @@ Interp.prototype.eval = function (n, env) {
       if (isBool(obj) && n.name === 'numerator') return NUM(obj.v ? 1 : 0, false);
       if (isBool(obj) && n.name === 'denominator') return NUM(1, false);
       if (obj && obj.__range && obj.rng && (n.name === 'start' || n.name === 'stop' || n.name === 'step')) return NUM(obj.rng[n.name === 'start' ? 0 : n.name === 'stop' ? 1 : 2], false);
-      if (obj && obj.__class) { if (obj.cenv.vars.has(n.name)) return obj.cenv.vars.get(n.name); return UNK('クラス属性「' + n.name + '」の値'); }
+      if (obj && obj.__class) { const cv = classLookup(obj, n.name); if (cv !== undefined) return cv; return UNK('クラス属性「' + n.name + '」の値'); }
       { const tn = typeName(obj); if (TYPE_ATTRS[tn] && !TYPE_ATTRS[tn].has(n.name)) this.err(n.line, 'AttributeError', tn + ' には属性「' + n.name + '」はありません', '綴りを確認するか、リファレンスで使える名前を確認してください'); }
       { const tn = typeName(obj); if (TYPE_ATTRS[tn] && TYPE_ATTRS[tn].has(n.name) && (typeof obj === 'string' || isList(obj) || isDict(obj) || isSet(obj) || isTuple(obj) || (obj && obj.__range) || isNum(obj) || isBool(obj))) return METHODREF(obj, n.name); }
       return UNK('属性「' + n.name + '」の値');
@@ -2808,7 +2825,12 @@ Interp.prototype.compare = function (op, l, r, line) {
     else if (isUnk(l) || isUnk(r)) res = null;
     else {
       this.diag(line, 'note', '注意', 'is は「同じものかどうか」を見る演算子です。値の比較には == を使うのが普通です', '');
-      const mut = (x) => isList(x) || isDict(x) || isSet(x) || isFunc(x) || isIter(x);
+      // R30F01B-N4（バッチ9 N29）: クラスとそのインスタンスも同一性で
+      // 決まるオブジェクトなので、is の判定対象に含める（type(x) is クラス
+      // が、type() が実クラスを返すようになったことと連携する）。
+      // TYPEVAL／組み込み型名は同一オブジェクトとは限らないため従来どおり
+      // 未確定のままにする。
+      const mut = (x) => isList(x) || isDict(x) || isSet(x) || isFunc(x) || isIter(x) || !!(x && (x.__class || x.__instance));
       if (mut(l) || mut(r)) res = l === r; // 別々に作ったリストなどは別のもの
       else res = null; // 数値・文字列・タプルが同じものかは Python の実装によって変わる
     }
@@ -2962,10 +2984,29 @@ Interp.prototype.evalCall = function (n, env) {
 //     __index__ 経由で整数化する（operator.index の規則）。
 //   - メソッド本体の結果が未確定（入力依存・BIG 等）なら判定も未確定に倒し、
 //     黙って True に倒さない。
+// R30F01B-N4（バッチ9 N29）：type() の3引数形で作ったクラスの継承連携用。
+// クラスの属性を、自クラス→継承元（bases）の順に辿って引く。class 文で
+// 作ったクラスは bases を持たないため従来どおり自クラスだけを見るのと等価。
+function classChain(cls) {
+  const out = []; const seen = new Set(); const queue = [cls];
+  while (queue.length) {
+    const c = queue.shift();
+    if (!c || seen.has(c)) continue;
+    seen.add(c); out.push(c);
+    for (const b of (c.bases || [])) queue.push(b);
+  }
+  return out;
+}
+function classLookup(cls, name) {
+  for (const c of classChain(cls)) {
+    if (c.cenv && c.cenv.vars && c.cenv.vars.has(name)) return c.cenv.vars.get(name);
+  }
+  return undefined;
+}
 Interp.prototype.specialLookup = function (inst, name) {
   const cls = inst && inst.cls;
-  if (!cls || !cls.cenv || !cls.cenv.vars || !cls.cenv.vars.has(name)) return undefined;
-  return cls.cenv.vars.get(name);
+  if (!cls) return undefined;
+  return classLookup(cls, name);
 };
 Interp.prototype.callSpecial = function (inst, name, line, env) {
   const m = this.specialLookup(inst, name);
@@ -3023,7 +3064,7 @@ Interp.prototype.truthyOf = function (v, line, env) {
 // インスタンスそのものは追跡しない（UNK）が、__init__ は実行して副作用（クラス属性や外側の変数の書き換え）を追う
 Interp.prototype.instantiate = function (cls, args, kwargs, env, line) {
   const inst = { __instance: true, cls, attrs: new Map() };
-  const init = cls.cenv && cls.cenv.vars.get('__init__');
+  const init = classLookup(cls, '__init__');
   if (isFunc(init)) {
     try { const value = this.callUserFunc(init, [inst, ...args], kwargs || {}, env, line); if (!isNone(value)) this.err(line, 'TypeError', '__init__はNoneを返す必要があります', ''); }
     catch (e) { if (!(e instanceof Flow && e.kind === 'return')) throw e; }
@@ -3053,7 +3094,7 @@ Interp.prototype.isinstanceCheck = function (obj, ci, line) {
   if (isUnk(ci)) return null;
   if (isTuple(ci)) { for (const el of ci.__tuple) { const r = this.isinstanceCheck(obj, el, line); if (r !== false) return r; } return false; }
   if (ci && ci.__union) { for (const el of ci.__union) { const r = this.isinstanceCheck(obj, el, line); if (r !== false) return r; } return false; }
-  if (ci && ci.__class) { if (isUnk(obj)) return null; return !!(obj && obj.__instance && obj.cls === ci); }
+  if (ci && ci.__class) { if (isUnk(obj)) return null; return !!(obj && obj.__instance && classChain(obj.cls).includes(ci)); }
   let name = null;
   if (ci && ci.__type) name = ci.__type;
   else if (ci && ci.__builtin) name = ci.__builtin;
@@ -3063,6 +3104,14 @@ Interp.prototype.isinstanceCheck = function (obj, ci, line) {
       if (!(obj && obj.__exc)) return false;
       // R25-N1：except 照合と同じ完成した階層（excMatches）を使う
       return excMatches(obj.kind, name);
+    }
+    // R30F01B-N4（バッチ9 N29）：type() 3引数形で組み込み型を継承元に指定した
+    // クラス（例：type('B', (int,), {})）のインスタンスは、その組み込み型の
+    // インスタンスとしても扱う（実 CPython どおり。値としての数値演算等の
+    // 振る舞いまでは再現しない＝報告書の裁定参照）。
+    if (obj && obj.__instance) {
+      const baseNames = classChain(obj.cls).flatMap(c => c.baseTypeNames || []);
+      if (baseNames.includes(name)) return true;
     }
     if (TYPE_BUILTINS.includes(name) || name === 'NoneType' || name === 'enumerate' || name === 'zip' || name === 'map' || name === 'filter' || name === 'reversed' || name === 'slice' || name === 'bytearray' || name === 'memoryview') {
       if (isUnk(obj)) return null;
@@ -3129,7 +3178,19 @@ Interp.prototype.callUserFunc = function (fn, args, kwargs, env, line) {
     this.err(line, 'TypeError', '関数「' + def.name + '」の引数「' + p.name + '」の値が渡されていません（必須の引数です）', '呼び出しの引数を確認してください');
   }
   this.step(line, '関数「' + def.name + '」を呼び出します（' + params.filter(p => !p.bare).map((p) => p.name + ' = ' + reprVal(local.get(p.name))).join('、') + '）');
-  if (this.depth >= MAX_CALL_DEPTH) { this.diag(line, 'note', '注意', '関数の呼び出しが深くなりすぎたため、ここで止めます（再帰が終わらない可能性があります）', '自分自身を呼び出すときは、止まる条件があるか確認してください'); return UNK(); }
+  // R30-P-N1（バッチ9 N3）：呼出し深さの上限は「値を未確定化して継続」ではなく、
+  // 実 CPython どおり RecursionError として発生させる。ユーザーコードの
+  // try/except RecursionError（および親の RuntimeError／Exception 等）で
+  // 捕捉できる（isCatchableDiag の対象）。捕捉されなければ run() 側で
+  // truncated＋「説明の上限」（limit 種別）として正直に打ち切る。
+  // 上限値 40 は本エンジンの説明モデル上の上限（手順・作業量予算と JS
+  // スタックの安全域）であり、CPython 既定の約1000とは異なる旨は
+  // メッセージと報告書で開示する（値を失って継続する形は残さない）。
+  if (this.depth >= MAX_CALL_DEPTH) {
+    const d = new SimDiag(line, 'RecursionError', '関数の呼び出しが深くなりすぎました（maximum recursion depth exceeded：この説明での呼び出しの深さの上限 ' + MAX_CALL_DEPTH + ' に達しました）', '自分自身を呼び出すときは、止まる条件があるか確認してください');
+    d.excStr = 'maximum recursion depth exceeded'; d.excRepr = ''; d.depthLimit = true;
+    throw d;
+  }
   this.depth++;
   let ret = NONE; const prevOF = this.orderFree; this.orderFree = false;
   try { this.execBlock(def.body, local, { inFunc: true }); }
@@ -3177,7 +3238,18 @@ Interp.prototype.callBuiltin0 = function (name, args, kwargs, env, line, node) {
     case 'repr': return isUnk(args[0]) || isIter(args[0]) ? UNK() : reprVal(args[0]);
     case 'iter': { const v = args[0]; if (isUnk(v)) return UNK(); if (isIter(v)) return v; const kind = isList(v) ? 'list_iterator' : isTuple(v) ? 'tuple_iterator' : typeof v === 'string' ? (/^[\x00-\x7f]*$/.test(v) ? 'str_ascii_iterator' : 'str_iterator') : isDict(v) ? 'dict_keyiterator' : isSet(v) ? 'set_iterator' : v && v.__range ? 'range_iterator' : null; const seq = kind ? this.iterable(v, line, true) : null; if (seq === null) { if (kind) return UNK(); this.err(line, 'TypeError', typeName(v) + ' は繰り返しに使えません', ''); } return ITER(seq, kind); }
     case 'next': { const v = args[0]; if (isUnk(v)) return UNK(); if (!isIter(v)) this.err(line, 'TypeError', typeName(v) + ' は next() に使えません（イテレータではありません）', 'iter() でイテレータにしてから使ってください'); { this.materialize(v); if (v.failed) return UNK(); } const pos = v.pos || 0; if (pos < v.__iter.length) { v.pos = pos + 1; this.step(line, v.kind + ' から次の値 ' + reprVal(v.__iter[pos]) + ' を取り出します'); return v.__iter[pos]; } if (args.length > 1) return args[1]; this.err(line, 'StopIteration', 'これ以上取り出せる値がありません', 'next(it, 既定値) のように2つ目を渡すと、終わったときにその値が返ります'); return UNK(); }
-    case 'format': { if (isUnk(args[0])) return UNK(); const r = fmtSpec(args[0], args.length > 1 ? args[1] : ''); return r === null ? UNK('format の結果') : r; }
+    case 'format': {
+      // R30F01B-N3（バッチ9 N28）：不正な書式指定は未確定値に化けさせず、
+      // 実 CPython どおり ValueError／TypeError で停止する。書式指定が
+      // 文字列でない場合も実物どおり TypeError（argument 2 must be str）。
+      if (isUnk(args[0])) return UNK();
+      const spec = args.length > 1 ? args[1] : '';
+      if (isUnk(spec)) return UNK();
+      if (typeof spec !== 'string') this.err(line, 'TypeError', 'format() の2つ目（書式指定）は文字列にしてください（format() argument 2 must be str）', '');
+      const r = fmtSpec(args[0], spec);
+      if (r && r.__fmtErr) this.err(line, r.kind, r.msg, '');
+      return r === null ? UNK('format の結果') : r;
+    }
     case 'hex': case 'bin': case 'oct': { let v = args[0]; if (isUnk(v)) return UNK(); if (isBool(v)) v = NUM(v.v ? 1 : 0, false); if (!isNum(v) || v.f) this.err(line, 'TypeError', name + '() には整数を渡してください', ''); const base = { hex: 16, bin: 2, oct: 8 }[name]; const pre = { hex: '0x', bin: '0b', oct: '0o' }[name]; return (v.v < 0 ? '-' : '') + pre + Math.abs(v.v).toString(base); }
     case 'map': {
       const takers = []; // ITER 引数はカーソルを共有して歩調を合わせて取る（同じイテレータを2回渡しても CPython と同じになる）
@@ -3347,7 +3419,42 @@ Interp.prototype.callBuiltin0 = function (name, args, kwargs, env, line, node) {
       idx.sort((a, b) => { const c = this.cmpVals(keys[a], keys[b], line); return (rev ? -c : c) || a - b; });
       return LIST(idx.map(i => seq[i]));
     }
-    case 'reversed': { const seq = this.iterable(args[0], line); if (seq === null) return UNK(); return ITER(seq.slice().reverse(), 'reversed'); }
+    case 'reversed': {
+      // R30F01B-N2（バッチ9 N27）：reversed() が受理するのは __reversed__ を
+      // 持つもの／__len__＋__getitem__ のシーケンスプロトコルを持つものだけ
+      // （docs.python.org 3.12「reversed()」、実 CPython 3.12.3 で機械突合）。
+      // 集合・イテレータ・ジェネレータ・map／filter／zip／enumerate の結果は
+      // TypeError。従来は iterable() で任意のイテラブルを実体化して反転し、
+      // 集合等の逆順を捏造していた。
+      const v = args[0];
+      if (isUnk(v)) return UNK();
+      const notRev = () => this.err(line, 'TypeError', typeName(v) + ' は reversed() で逆順にできません（\'' + typeName(v) + '\' object is not reversible）', 'reversed() が使えるのはリスト・タプル・文字列・range・辞書など順序のある並びだけです');
+      if (isIter(v)) notRev();
+      if (isSet(v)) notRev();
+      if (isList(v) || isTuple(v) || typeof v === 'string' || isDict(v) || isView(v) || (v && v.__range)) {
+        const seq = this.iterable(v, line); if (seq === null) return UNK(); return ITER(seq.slice().reverse(), 'reversed');
+      }
+      if (v && v.__instance) {
+        if (this.specialLookup(v, '__reversed__') !== undefined) {
+          const r = this.callSpecial(v, '__reversed__', line, env);
+          if (r === undefined || isUnk(r)) return UNK();
+          if (isIter(r)) return r;
+          const seq = this.iterable(r, line, true); if (seq === null) return UNK(); return ITER(seq, 'reversed');
+        }
+        if (this.specialLookup(v, '__len__') !== undefined && this.specialLookup(v, '__getitem__') !== undefined) {
+          const lr = this.lenOfInstance(v, line, env);
+          if (lr === null || !lr.known) return UNK();
+          if (lr.len > 10000) return UNK('reversed の結果');
+          const gm = this.specialLookup(v, '__getitem__');
+          const items = [];
+          for (let i = 0; i < lr.len; i++) items.push(this.callFn(gm, [v, NUM(i, false)], env, line));
+          return ITER(items.reverse(), 'reversed');
+        }
+        notRev();
+      }
+      notRev();
+      return UNK();
+    }
     case 'enumerate': {
       const seq = this.iterable(args[0], line); if (seq === null) return UNK();
       const sv = args.length > 1 ? args[1] : kw.start;
@@ -3366,7 +3473,44 @@ Interp.prototype.callBuiltin0 = function (name, args, kwargs, env, line, node) {
       while (takers.length) { const row = []; let done = false; for (const t of takers) { const r = t(); if (r === EXH) { done = true; break; } row.push(r); } if (done) break; out.push(TUPLE(row)); }
       return ITER(out, 'zip');
     }
-    case 'type': return isUnk(args[0]) ? UNK('型は実行時に決まります') : TYPEVAL(typeName(args[0]));
+    case 'type': {
+      // R30F01B-N4（バッチ9 N29）：type() には1引数形（型の取得）と3引数形
+      // （クラスの生成）の2つの正当な形がある（docs.python.org 3.12「type()」、
+      // 実 CPython 3.12.3 で機械突合）。従来は ARITY が [1,1] 固定で、3引数形が
+      // 「1個必要ですが3個渡しています」という虚偽原因で停止していた。
+      if (args.length === 2) this.err(line, 'TypeError', 'type() の引数は1個（型の取得）か3個（クラスの生成）で渡してください（2個では呼び出せません）', 'type(値) か type(名前, 継承元のタプル, 属性の辞書) の形で使ってください');
+      if (args.length === 3) {
+        const [nm, bs, ns] = args;
+        if (isUnk(nm) || isUnk(bs) || isUnk(ns)) return UNK('type() が作る型');
+        if (typeof nm !== 'string') this.err(line, 'TypeError', 'type() の1つ目（クラス名）は文字列にしてください（type.__new__() argument 1 must be str）', '');
+        if (!isTuple(bs)) this.err(line, 'TypeError', 'type() の2つ目（継承元）はタプルにしてください（type.__new__() argument 2 must be tuple）', '継承元が無いときは () を渡してください');
+        if (!isDict(ns)) this.err(line, 'TypeError', 'type() の3つ目（属性）は辞書にしてください（type.__new__() argument 3 must be dict）', '');
+        const bases = []; const baseTypeNames = [];
+        for (const b of bs.__tuple) {
+          if (isUnk(b)) return UNK('type() が作る型');
+          if (b && b.__class) { bases.push(b); continue; }
+          if (b && b.__type) { baseTypeNames.push(b.__type); continue; }
+          if (b && b.__builtin && (TYPE_BUILTINS.includes(b.__builtin) || EXC_NAMES.has(b.__builtin))) { baseTypeNames.push(b.__builtin); continue; }
+          this.err(line, 'TypeError', 'type() の継承元には型だけを書いてください（bases must be types）', '');
+        }
+        // class 文と同じ形のクラス値（__class／cname／cenv）を作り、属性辞書の
+        // 文字列キーをクラス属性として cenv へ入れる。これにより生成・属性
+        // アクセス・メソッド呼び出し・特殊メソッド参照が既存のクラス機構
+        // （instantiate／classLookup／isinstance の継承辿り）とそのまま連携する。
+        // 文字列でないキーは実 CPython でも属性にならないため取り込まない。
+        const classEnv = new Env(env);
+        for (const e of ns.__dict.values()) { if (typeof e.k === 'string') classEnv.vars.set(e.k, e.v); }
+        const cls = { __class: true, cname: nm, cenv: classEnv, bases, baseTypeNames };
+        this.step(line, 'type() でクラス「' + nm + '」を作ります');
+        return cls;
+      }
+      if (isUnk(args[0])) return UNK('型は実行時に決まります');
+      // インスタンスについては TYPEVAL（名前だけの型値）ではなく実クラスを
+      // 返す。これにより type(x) == クラス／type(x) is クラス が実物どおり
+      // 成立し、isinstance の第2引数にもそのまま使える。
+      if (args[0] && args[0].__instance) return args[0].cls;
+      return TYPEVAL(typeName(args[0]));
+    }
     case 'isinstance': {
       // 第2引数（型・型のタプル・合併型）を CPython どおり照合する（PY-04）。
       // タプルは先頭から評価され、一致した時点で True、型でない要素に行き当たれば TypeError。
@@ -3433,7 +3577,7 @@ Interp.prototype.callMethod = function (obj, name, args, kwargs, env, line) {
   if (obj && (obj.__instance || obj.__class)) {
     const cls = obj.__instance ? obj.cls : obj;
     const own = obj.__instance && obj.attrs.has(name);
-    const method = own ? obj.attrs.get(name) : cls.cenv.vars.get(name);
+    const method = own ? obj.attrs.get(name) : classLookup(cls, name);
     if (isFunc(method)) return this.callUserFunc(method, obj.__instance && !own ? [obj, ...args] : args, kwargs, env, line);
     if (method === undefined) this.err(line, 'AttributeError', '属性がありません：' + name, '');
     return this.callFn(method, args, env, line);
@@ -3599,10 +3743,13 @@ Interp.prototype.callMethod = function (obj, name, args, kwargs, env, line) {
   if (obj && obj.__range && name === 'count') { if (isUnk(args[0])) return UNK(); return NUM(obj.__range.filter(x => eqVal(x, args[0]) === true).length, false); }
   if (obj && obj.__range && name === 'index') { if (isUnk(args[0])) return UNK(); const at = obj.__range.findIndex(x => eqVal(x, args[0]) === true); if (at < 0) this.err(line, 'ValueError', reprVal(args[0]) + ' は range の中にありません', ''); return NUM(at, false); }
   if (isTuple(obj) && name === 'count') { if (isUnk(args[0])) return UNK(); return NUM(obj.__tuple.filter(x => eqVal(x, args[0]) === true).length, false); }
-  if (isTuple(obj) && name === 'index') { if (isUnk(args[0])) return UNK(); const at = obj.__tuple.findIndex(x => eqVal(x, args[0]) === true); if (at < 0) this.err(line, 'ValueError', reprVal(args[0]) + ' はタプルにありません', ''); return NUM(at, false); }
+  // R30F01B-N1（バッチ9 N26）：tuple.index も list.index と同じく start／stop を
+  // honor する（実 CPython 3.12.3 で機械突合：負数は長さを加えて正規化し、
+  // 範囲内に無ければ ValueError）。list.index の既存の正しい実装に揃える。
+  if (isTuple(obj) && name === 'index') { if (!args.length || args.length > 3) arityErr('1〜3 個'); if (args.some(isUnk) || obj.__tuple.some(isUnk)) return UNK(); const L = obj.__tuple.length; const bd = (v, d) => { if (v === undefined) return d; let k = this.intIndex(v, line, '開始・終了位置'); if (k < 0) { k += L; if (k < 0) k = 0; } return Math.min(k, L); }; const st = bd(args[1], 0), en = bd(args[2], L); let at = -1; for (let k = st; k < en; k++) if (eqVal(obj.__tuple[k], args[0]) === true) { at = k; break; } if (at < 0) this.err(line, 'ValueError', reprVal(args[0]) + ' はタプルにありません', ''); return NUM(at, false); }
   // モジュール属性など
   if (isUnk(obj) && obj.mod === 'math') return this.mathCall(name, args, line);
-  if (obj && obj.__class) { if (obj.cenv.vars.has(name)) return obj.cenv.vars.get(name); return UNK('クラス属性「' + name + '」の値'); }
+  if (obj && obj.__class) { const cv = classLookup(obj, name); if (cv !== undefined) return cv; return UNK('クラス属性「' + name + '」の値'); }
   if (obj && typeof obj === 'object' && obj.__unk) return UNK();
   { const tn = typeName(obj); if (TYPE_ATTRS[tn] && !TYPE_ATTRS[tn].has(name)) this.err(line, 'AttributeError', tn + ' には「' + name + '」という属性（メソッド）はありません', '綴りを確認するか、リファレンスで使えるメソッドを確認してください'); }
   this.diag(line, 'note', '対応外', typeName(obj) + ' の「' + name + '」はこの説明では解釈できません', 'リファレンスで使い方を確認し、実際の動きは実行して確かめてください');
@@ -3673,30 +3820,74 @@ function padTo(s, fill, align, width) {
   return fill.repeat(n) + s;
 }
 function groupDigits(intPart, g) { return intPart.replace(/\B(?=(\d{3})+(?!\d))/g, g); }
-// Python の書式指定（format spec）。扱えない組み合わせは null（＝実行時に決まる値として示す）を返す
+// Python の書式指定（format spec）。
+// 戻り値の契約（R30F01B-N3／バッチ9 N28 で是正）：
+//   - 文字列：整形結果（従来どおり計算できる範囲）。
+//   - null：正当だが本エンジンが未対応な指定（g／G／c、無限大・NaN の整形、
+//     float の n 等）。呼び出し側は従来どおり「実行時に決まる値」として示す。
+//   - {__fmtErr, kind, msg}：実 CPython が例外にする不正な指定。呼び出し側は
+//     kind（ValueError／TypeError）で停止させる。未確定値には化けさせない。
+// 一次情報：実 CPython 3.12.3 の format() 実走（報告書に突合表を記載）。
+//   例：format(5,'q')／format('a','d')／format(5.5,'d') は ValueError、
+//   format(True,'d') は '1'（bool は int として扱う。ただしエラー時の型名は
+//   bool）、format([1],'>5') は TypeError（unsupported format string）、
+//   format(5,'.2d') は ValueError（整数書式に精度は書けない）、
+//   format('a','+s')／'#s'／'=5'／',s'／'zs' はいずれも ValueError。
+const FMT_ERR = (kind, msg) => ({ __fmtErr: true, kind, msg });
 function fmtSpec(v, fmt) {
   if (fmt === null || fmt === undefined || fmt === '') return strVal(v);
-  const m = /^(?:([\s\S])?([<>^=]))?([+\- ]?)(#?)(0?)(\d*)([,_]?)(?:\.(\d+))?([bcdeEfFgGnosxX%]?)$/.exec(fmt);
-  if (!m) return null;
-  let [, fill, align, sign, alt, zero, width, group, prec, type] = m;
-  if (fill !== undefined && align === undefined) { fill = undefined; }
-  if (!fill) fill = zero && !align ? '0' : ' ';
-  if (zero && !align) align = '=';
+  const m = /^(?:([\s\S])?([<>^=]))?([+\- ]?)(z?)(#?)(0?)(\d*)([,_]?)(?:\.(\d+))?([bcdeEfFgGnosxX%]?)$/.exec(fmt);
+  if (!m) return FMT_ERR('ValueError', '書式指定「' + fmt + '」が正しくありません（Invalid format specifier）');
+  let [, fill, align, sign, zflag, alt, zero, width, group, prec, type] = m;
+  const explicitAlign = align;
   width = width ? parseInt(width, 10) : 0; prec = prec !== undefined ? parseInt(prec, 10) : null;
+  // ---- 文字列 ----
   if (typeof v === 'string') {
-    if ((type && type !== 's') || sign || group || alt || align === '=') return null;
+    if (type && type !== 's') return FMT_ERR('ValueError', '文字列に書式コード「' + type + '」は使えません（Unknown format code \'' + type + '\' for object of type \'str\'）');
+    if (sign) return FMT_ERR('ValueError', '文字列の書式指定に符号は書けません（Sign not allowed in string format specifier）');
+    if (zflag) return FMT_ERR('ValueError', '文字列の書式指定に z は書けません（Negative zero coercion (z) not allowed in string format specifier）');
+    if (alt) return FMT_ERR('ValueError', '文字列の書式指定に # は書けません（Alternate form (#) not allowed in string format specifier）');
+    if (group) return FMT_ERR('ValueError', '文字列の書式指定に桁区切り（' + group + '）は書けません（Cannot specify \'' + group + '\' with \'s\'）');
+    if (explicitAlign === '=') return FMT_ERR('ValueError', '文字列の書式指定に = 揃えは書けません（\'=\' alignment not allowed in string format specifier）');
+    // 0 フラグは文字列では符号側パディング（= 揃え）ではなく 0 埋めとして働く
+    const sfill = fill !== undefined && explicitAlign !== undefined ? fill : (zero ? '0' : ' ');
     const body = prec !== null ? [...v].slice(0, prec).join('') : v;
-    return padTo(body, fill, align || '<', width);
+    return padTo(body, sfill, explicitAlign || '<', width);
   }
-  if (!isNum(v)) return null; // bool・リストなどの書式は扱わない
-  const x = v.v; if (!Number.isFinite(x)) return null;
-  const neg = x < 0 || (v.f && Object.is(x, -0)); const ax = Math.abs(x);
+  // ---- 数値以外（bool は数値として別扱い） ----
+  const isBoolV = isBool(v);
+  if (!isNum(v) && !isBoolV) {
+    if (v && v.__instance) return null; // __format__ を持つ可能性があるため断定しない
+    return FMT_ERR('TypeError', typeName(v) + ' には書式指定は使えません（unsupported format string passed to ' + typeName(v) + '.__format__）');
+  }
+  const nv = isBoolV ? NUM(v.v ? 1 : 0, false) : v;
+  const tn = isBoolV ? 'bool' : (nv.f ? 'float' : 'int');
+  const floatFmtType = (t) => t === 'e' || t === 'E' || t === 'f' || t === 'F' || t === 'g' || t === 'G' || t === '%';
+  // 書式コード 's' は文字列専用。数値への 's' は実物では Unknown format code
+  // の ValueError（型名は int／float／bool のいずれかで報告される）。
+  if (type === 's') return FMT_ERR('ValueError', '書式コード「s」は文字列専用です（Unknown format code \'s\' for object of type \'' + tn + '\'）');
+  if (!nv.f) {
+    // ---- 整数（bool を含む） ----
+    if (zflag && !floatFmtType(type)) return FMT_ERR('ValueError', '整数の書式指定に z は書けません（Negative zero coercion (z) not allowed in integer format specifier）');
+    if (prec !== null && (!type || 'bcdoxXn'.includes(type))) return FMT_ERR('ValueError', '整数の書式指定に精度（.桁数）は書けません（Precision not allowed in integer format specifier）');
+    if (type === 'g' || type === 'G' || type === 'c') return null; // 正当だが未対応
+  } else {
+    // ---- 小数 ----
+    if (type && 'bcdoxX'.includes(type)) return FMT_ERR('ValueError', '小数に書式コード「' + type + '」は使えません（Unknown format code \'' + type + '\' for object of type \'float\'）');
+    if (type === 'g' || type === 'G') return null; // 正当だが未対応
+    if (!Number.isFinite(nv.v)) return null; // inf／nan の整形は正当だが未対応（不正なコードは上で停止済み）
+  }
+  if (fill !== undefined && explicitAlign === undefined) { fill = undefined; }
+  if (!fill) fill = zero && !explicitAlign ? '0' : ' ';
+  if (zero && !explicitAlign) align = '=';
+  const x = nv.v;
+  const neg = (x < 0 || (nv.f && Object.is(x, -0))) && !(zflag && nv.f && Object.is(x, -0)); const ax = Math.abs(x);
   let body;
-  if (!type) { if (prec !== null) return null; body = v.f ? pyFloatRepr(ax) : String(ax); }
-  else if (type === 'd' || type === 'n') { if (v.f || prec !== null) return null; body = String(ax); }
+  if (!type) { if (prec !== null) return null; body = nv.f ? pyFloatRepr(ax) : String(ax); }
+  else if (type === 'd' || type === 'n') { if (nv.f || prec !== null) return null; body = String(ax); }
   else if (type === 'f' || type === 'F' || type === '%') { const p = prec === null ? 6 : prec; const scaled = type === '%' ? ax * 100 : ax; body = (Number.isFinite(scaled) ? decFixed(scaled, p).replace(/^-/, '') : (type === 'F' ? 'INF' : 'inf')) + (type === '%' ? '%' : ''); }
   else if (type === 'e' || type === 'E') { const p = prec === null ? 6 : prec; const de = decExp(ax, p); body = de.body + 'e' + (de.exp < 0 ? '-' : '+') + String(Math.abs(de.exp)).padStart(2, '0'); if (type === 'E') body = body.toUpperCase(); }
-  else if ('bxXo'.includes(type)) { if (v.f || prec !== null) return null; const base = { b: 2, o: 8, x: 16, X: 16 }[type]; body = ax.toString(base); if (type === 'X') body = body.toUpperCase(); if (alt) body = '0' + (type === 'X' ? 'X' : type) + body; }
+  else if ('bxXo'.includes(type)) { if (nv.f || prec !== null) return null; const base = { b: 2, o: 8, x: 16, X: 16 }[type]; body = ax.toString(base); if (type === 'X') body = body.toUpperCase(); if (alt) body = '0' + (type === 'X' ? 'X' : type) + body; }
   else return null;
   if (group) { const at = body.search(/[.e%]/); const ip = at < 0 ? body : body.slice(0, at); body = groupDigits(ip, group) + (at < 0 ? '' : body.slice(at)); }
   const signStr = neg ? '-' : sign === '+' ? '+' : sign === ' ' ? ' ' : '';

@@ -15,6 +15,12 @@ export function tokenizePS(source) {
     if (c === "\n") {
       i++;
       push("sep", ";", start);
+      // R30-N10: 改行由来の区切りは明示的な ";" と区別する（nl フラグ）。
+      // 実 PowerShell では改行は文の区切りだが、演算子の後・括弧内など
+      // 式が継続する位置では文を終えない（about_Parsing／言語仕様）。
+      // パーサは継続位置でのみ nl 区切りを読み飛ばし、明示的な ";" の
+      // 扱いは従来どおりにする。
+      ts.at(-1).nl = true;
       line++;
       continue;
     }
@@ -358,6 +364,12 @@ export class PSParser {
   skip() {
     while (this.peek(";")) this.i++;
   }
+  // R30-N10: 改行由来の区切りだけを読み飛ばす。式が継続する位置
+  // （二項演算子の右辺・カンマの後・括弧の内側など）で使う。
+  // 明示的な ";" は文の区切りとして残す。
+  skipNl() {
+    while (this.ts[this.i]?.k === "sep" && this.ts[this.i]?.nl) this.i++;
+  }
   block() {
     this.skip();
     this.take("{");
@@ -436,6 +448,8 @@ export class PSParser {
       if (variable.k !== "var" || this.take().v.toLowerCase() !== "in")
         fail("foreach ($変数 in 式) の形が必要です", line, "SyntaxError");
       const collection = this.pipeline();
+      // R30-N10: foreach ヘッダの閉じ括弧の前の改行は文を終えない。
+      this.skipNl();
       this.take(")");
       return {
         k: "foreach",
@@ -557,6 +571,9 @@ export class PSParser {
           break;
         }
         sawAttribute = true;
+        // R30-N10: 属性と param の間の改行は文を終えない
+        // （[OutputType([int])]\nparam($x) は実物で受理される形）。
+        this.skipNl();
         if (this.ts[this.i]?.v.toLowerCase() === "param") {
           followedByParam = true;
           break;
@@ -575,7 +592,26 @@ export class PSParser {
       this.take();
       if (pipe.stages.length !== 1 || pipe.stages[0].k !== "expression")
         fail("代入先が不正です", line, "SyntaxError");
-      const target = pipe.stages[0].value;
+      let target = pipe.stages[0].value,
+        castType = null;
+      // R30-N11: 型付き代入文 [型]$x = 値（Microsoft Learn の型付き変数。
+      // 例：[ValidateLength(8,12)][string]$computername = '...' の形で
+      // 型制約つき代入が示される）。パーサ上はキャスト式の被演算子が
+      // 代入先になっている形であり、左辺は変数への代入そのものなので、
+      // 「変数へ代入してください」という虚偽原因で止めず、型変換つき
+      // 代入として解釈する。変換は engine 側で通常のキャスト評価を
+      // 再利用し、変換できない値は変換エラーで停止する。
+      // RG-263／271 との関係：括弧なし属性名の型リテラル解釈（RG-263）
+      // は param 内の話であり、ここでは被演算子が代入先のときに限って
+      // 型付き代入として読むため競合しない。括弧付き代入式（RG-271）
+      // の隣接形として expr 側の assign-expr でも同じ解釈をする。
+      if (
+        target.k === "cast" &&
+        ["var", "member", "index"].includes(target.arg.k)
+      ) {
+        castType = target.type;
+        target = target.arg;
+      }
       if (!["var", "member", "index"].includes(target.k))
         fail("変数・プロパティ・添字へ代入してください", line, "SyntaxError");
       // R29-N13: 代入の右辺では連鎖代入（$y = $x = 5）が式として
@@ -588,7 +624,7 @@ export class PSParser {
       } finally {
         this.assignDepth = savedAssign;
       }
-      return { k: "assign", target, op, value, line };
+      return { k: "assign", target, op, value, line, castType };
     }
     return {
       k: "pipeline",
@@ -658,7 +694,11 @@ export class PSParser {
       // [string]$a）。角括弧グループを繰り返し読み、括弧を含むものは
       // 属性、含まないものは型名として解釈する。対応しない属性は
       // 属性名を名指して止める。
-      while (this.peek("[")) {
+      // R30-N10: param 括弧内では改行は文を終えないため、角括弧
+      // グループ間・変数の前の改行由来区切りは読み飛ばす。
+      for (;;) {
+        this.skipNl();
+        if (!this.peek("[")) break;
         const bc = this.bracketContent(),
           text = bc.text.trim();
         if (!text.includes("(")) {
@@ -775,6 +815,7 @@ export class PSParser {
           );
         else fail("未対応のパラメータ属性：[" + text + "]", bc.line);
       }
+      this.skipNl();
       const t = this.take();
       if (t.k !== "var")
         fail("paramには$変数が必要です", t.line, "SyntaxError");
@@ -804,6 +845,8 @@ export class PSParser {
         aliases,
         line: t.line,
       });
+      // R30-N10: パラメータ区切り・閉じ括弧の前の改行も継続として扱う。
+      this.skipNl();
       if (!this.peek(",")) break;
       this.take();
     }
@@ -829,6 +872,8 @@ export class PSParser {
       this.argGlued = savedGlued;
       this.assignDepth = savedAssign;
     }
+    // R30-N10: 条件括弧の閉じ括弧の前の改行は文を終えない。
+    this.skipNl();
     this.take(")");
     return p;
   }
@@ -843,6 +888,10 @@ export class PSParser {
     return { stages, line: stages[0].line };
   }
   stage() {
+    // R30-N10: ステージ先頭の改行由来区切りは、継続位置（代入の右辺・
+    // 括弧内・パイプの後等）では読み飛ばす。文頭では program 側の
+    // skip() が既に消費しているため、文の区切り意味論は変わらない。
+    this.skipNl();
     const t = this.ts[this.i];
     if (t.k === "word" || (t.k === "op" && (t.v === "%" || t.v === "?"))) {
       const name = this.take().v,
@@ -1157,6 +1206,14 @@ export class PSParser {
   expr(min = 0) {
     if (++this.depth > 64)
       fail("PowerShellの式が深すぎます", this.ts[this.i]?.line, "limit");
+    // R30-N10: expr() は被演算子が期待される位置（演算子の右辺・
+    // カンマの後・括弧や添字の内側・単項演算子の被演算子等）から
+    // 呼ばれるため、先頭の改行由来区切りは式の継続として読み飛ばす。
+    // 被演算子を読み終えた後の改行はここでは消費しないため、文の
+    // 区切りとしての意味は保たれる。例外はキャストの被演算子で、
+    // 型リテラル [int] 自体が完結した式であるため改行を跨いで
+    // 被演算子を取らない（キャスト分岐側で事前に判定する）。
+    this.skipNl();
     const t = this.take(),
       line = t.line;
     let a;
@@ -1305,6 +1362,8 @@ export class PSParser {
         this.noComma = savedComma;
         this.assignDepth = savedAssign;
       }
+      // R30-N10: 閉じ括弧の前の改行は文を終えない（(1+2\n) も受理）。
+      this.skipNl();
       this.take(")");
       a = { k: "subexpression", pipe, line };
     } else if (t.v === "$(") {
@@ -1386,26 +1445,45 @@ export class PSParser {
       // 型名文字列として評価側へ渡す（対応可否は評価側が型名を
       // 名指して裁定する）。
       const type = this.bracketContent(t).text.replace(/\s+/g, "");
-      // R24-N3: キャストの被演算子もカンマ演算子を含まない（単項と同様）。
-      // R25-N12: 被演算子は式モードのため接着判定を下ろす。
-      // R26-N1: 被演算子の内側へ noComma を継承しない（単項と同じ）。
-      const savedGlued = this.argGlued,
-        savedComma = this.noComma;
-      this.argGlued = 0;
-      this.noComma = 0;
-      let castArg;
-      try {
-        castArg = this.expr(8);
-      } finally {
-        this.argGlued = savedGlued;
-        this.noComma = savedComma;
+      // R30-N10: 被演算子が続かない型リテラル単独形（[int] 単独文等）。
+      // 型リテラル自体が完結した式であるため、改行・文区切り・閉じ
+      // 括弧・パイプ・カンマが直後に来れば被演算子は無い。この形を
+      // キャストとして読み進めると、存在しない ";" や "<eof>" が
+      // 原因として表示される（虚偽原因）ため、typeliteral ノードに
+      // して評価側で型リテラルそのものを名指して止める。改行を
+      // 跨いだ次の文の式を被演算子として取り込むこともしない。
+      const afterType = this.ts[this.i];
+      if (
+        !afterType ||
+        afterType.k === "eof" ||
+        afterType.k === "sep" ||
+        [")", "}", "]", "|", ","].includes(afterType.v)
+      ) {
+        a = { k: "typeliteral", type, line };
+      } else {
+        // R24-N3: キャストの被演算子もカンマ演算子を含まない（単項と同様）。
+        // R25-N12: 被演算子は式モードのため接着判定を下ろす。
+        // R26-N1: 被演算子の内側へ noComma を継承しない（単項と同じ）。
+        const savedGlued = this.argGlued,
+          savedComma = this.noComma;
+        this.argGlued = 0;
+        this.noComma = 0;
+        let castArg;
+        try {
+          castArg = this.expr(8);
+        } finally {
+          this.argGlued = savedGlued;
+          this.noComma = savedComma;
+        }
+        a = { k: "cast", type, arg: castArg, line };
       }
-      a = { k: "cast", type, arg: castArg, line };
     } else
       fail("未対応または不正なPowerShellの式：" + t.v, line, "SyntaxError");
     while (true) {
       if (this.peek(".")) {
         this.take();
+        // R30-N10: メンバー区切りの後の改行は式の継続として扱う。
+        this.skipNl();
         const key = this.ts[this.i];
         // R28-N5: member-name（文法 B.2）は simple-name のほかに
         // string-literal（$h.'k'／$h."k"）、variable（$h.$name）、
@@ -1542,6 +1620,8 @@ export class PSParser {
           this.argGlued = savedGlued;
           this.noComma = savedComma;
         }
+        // R30-N10: 添字の閉じ括弧の前の改行は文を終えない。
+        this.skipNl();
         this.take("]");
         a = { k: "index", target: a, index, line };
         continue;
@@ -1643,16 +1723,29 @@ export class PSParser {
       this.assignDepth > 0 &&
       min <= 1 &&
       ["=", "+=", "-=", "*=", "/=", "%="].includes(this.ts[this.i]?.v) &&
-      ["var", "member", "index"].includes(a.k)
+      (["var", "member", "index"].includes(a.k) ||
+        // R30-N11: 括弧内でも型付き代入式（[int]$x = "42"）を文位置と
+        // 同じく型変換つき代入として読む（RG-271 の隣接形）。
+        (a.k === "cast" && ["var", "member", "index"].includes(a.arg.k)))
     ) {
       const assignOp = this.take().v;
-      a = {
-        k: "assign-expr",
-        target: a,
-        op: assignOp,
-        value: this.pipeline(),
-        line,
-      };
+      a =
+        a.k === "cast"
+          ? {
+              k: "assign-expr",
+              target: a.arg,
+              castType: a.type,
+              op: assignOp,
+              value: this.pipeline(),
+              line,
+            }
+          : {
+              k: "assign-expr",
+              target: a,
+              op: assignOp,
+              value: this.pipeline(),
+              line,
+            };
     }
     // R28-N7: 三項（条件）演算子（言語仕様 7.4。PowerShell 7 以降の
     // 正規の演算子）。優先順位は全二項演算子より下であるため、最も

@@ -467,7 +467,7 @@ export function tokenize(source, dialect = "js") {
     m = source
       .slice(i)
       .match(
-        /^(===|!==|%\/%|%%|%in%|<-|->|:=|==|!=|<=|>=|&&|\|\||\+\+|--|\*\*=|>>>=|\*\*|\+=|-=|\*=|\/=|<<=|<<|>>=|>>>|>>|&=|\|=|\^=|::|=>|<>|\[\[|\]\]|[+\-*\/%^&|!<>=(){}\[\],;:.$?])/,
+        /^(===|!==|%\/%|%%|%in%|<-|->|:=|==|!=|<=|>=|&&=|\|\|=|\?\?=|&&|\|\||\+\+|--|\*\*=|>>>=|\*\*|\+=|-=|\*=|\/=|<<=|<<|>>=|>>>|>>|&=|\|=|\^=|::|=>|<>|\[\[|\]\]|[+\-*\/%^&|!<>=(){}\[\],;:.$?])/,
       );
     if (!m) {
       // RG-61：不可視文字・制御文字は、そのまま出すと原因表示が空に見えるため名指しする。
@@ -500,6 +500,16 @@ export function tokenize(source, dialect = "js") {
     if (compoundHeads[m[0]] !== undefined && dialect !== "ahk") {
       out.push({ v: compoundHeads[m[0]], line });
       i += compoundHeads[m[0]].length;
+      continue;
+    }
+    // R30-N16：論理代入（&&= ／ ||= ／ ??=）を単一トークンにするのは
+    // JavaScript だけ。他方言では従来の構成トークン列へ戻し（先頭の
+    // 演算子だけを出し、残りは次の周回で字句化する）、トークン列を
+    // 一切変えない（C系は c-family 側の変換で別途処理される）。
+    const logicalAssignHeads = { "&&=": "&&", "||=": "||", "??=": "?" };
+    if (logicalAssignHeads[m[0]] !== undefined && dialect !== "js") {
+      out.push({ v: logicalAssignHeads[m[0]], line });
+      i += logicalAssignHeads[m[0]].length;
       continue;
     }
     // RG-43: `<-`（R の代入）と `:=`（AutoHotkey の代入）を単一トークンにするのは
@@ -723,7 +733,7 @@ export class ScriptParser {
     }
     else if (t.k === "string") a = { ...meta, k: "literal", value: t.v, quote: t.quote };
     else if (t.v === "sizeof" && this.parseSizeof?.()) a = this.parseSizeof(meta, true);
-    else if (["!", "not", "-", "+", "&", "*", ...(this.dialect === "js" ? ["typeof"] : []), ...(["c", "cpp"].includes(this.dialect) ? ["sizeof"] : [])].includes(t.v))
+    else if (["!", "not", "-", "+", "&", "*", ...(this.dialect === "js" ? ["typeof", "void", "delete"] : []), ...(["c", "cpp"].includes(this.dialect) ? ["sizeof"] : [])].includes(t.v))
       a = { ...meta, k: "unary", op: t.v, arg: this.expr(this.unaryMin(t.v)) };
     else if (t.v === "(") {
       a = this.parseCast?.(meta);
@@ -828,6 +838,30 @@ export class ScriptParser {
         let entries = [];
         this.skipLines();
         while (!this.peek("}")) {
+          // R30-N14：JavaScript のオブジェクトリテラル内スプレッド
+          // {...式}。従来は先頭の "." をフィールド名として読もうとして
+          // 「レコードのフィールド名が必要です」という虚偽原因になって
+          // いた（RG-291 の到達範囲の取り残し）。ECMA-262 の
+          // CopyDataProperties 意味論で実装する：元オブジェクトの自分自身
+          // の列挙可能なプロパティを、定義順に、新しいオブジェクトへ
+          // シャローコピーする（評価は read 側の record 分岐）。
+          if (
+            this.dialect === "js" &&
+            this.ts[this.i]?.v === "." &&
+            this.ts[this.i + 1]?.v === "." &&
+            this.ts[this.i + 2]?.v === "."
+          ) {
+            const spreadLine = this.ts[this.i].line;
+            this.take();
+            this.take();
+            this.take();
+            entries.push({ spread: this.exprCtx(1), line: spreadLine });
+            this.skipLines();
+            if (!this.peek(",")) break;
+            this.take();
+            this.skipLines();
+            continue;
+          }
           let key = this.take();
           if (!["id", "string"].includes(key.k))
             throw new PracticeError("レコードのフィールド名が必要です", key.line);
@@ -863,7 +897,12 @@ export class ScriptParser {
       };
       let then = branch(),
         save = this.i;
-      this.skipLines();
+      // R30-N13：R では文が完結した後の改行 else は parse error
+      // （"unexpected else"）であり、else は if と同じ行（同じ式の中）
+      // に無ければならない（R Language Definition の制御構造／
+      // ?Control の "you should not have a newline between } and else"）。
+      // 改行を読み飛ばして else を結ぶのは他方言だけにする。
+      if (this.dialect !== "r") this.skipLines();
       let otherwise = null;
       if (this.peek("else")) {
         this.take();
@@ -1029,7 +1068,7 @@ export class ScriptParser {
     ) {
       const assignOpsHere =
         this.dialect === "js"
-          ? ["=", "+=", "-=", "*=", "/="]
+          ? ["=", "+=", "-=", "*=", "/=", "&&=", "||=", "??="]
           : [":=", "+=", "-=", "*=", "/=", "&=", "|=", "^=", "<<=", ">>=", ">>>="];
       if (assignOpsHere.includes(this.ts[this.i]?.v)) {
         const op = this.take().v;
@@ -1359,7 +1398,10 @@ export class ScriptParser {
     // になっていた。本体側で ; を消費すれば、else／else if／while の
     // 照合が実文法どおりに働く（波括弧あり本体の後ろの ; は従来どおり
     // 空文として扱われ、else とは結ばない）。
-    if (this.peek(";")) this.take();
+    // R30-N13：R では ; も文の完結であり、その後の else は実 R でも
+    // parse error になるため、R では ; を消費せず文の区切りとして残す
+    // （後続の else は対応する if のない else として名指される）。
+    if (this.dialect !== "r" && this.peek(";")) this.take();
     return [stmt];
   }
   statement() {
@@ -1367,6 +1409,18 @@ export class ScriptParser {
     let t = this.ts[this.i],
       line = t.line,
       v = t.v;
+    // R30-N13：文頭の else は、直前の if に結ばれなかった孤立した else
+    // である。実 R では "unexpected else" の parse error、JavaScript
+    // でも SyntaxError であり、対象（else 自身）を名指して停止する
+    // （従来は式文として読み進めて別のトークンを原因にしていた）。
+    if (v === "else")
+      throw new PracticeError(
+        this.dialect === "r"
+          ? "対応する if のない else です（R では else は if と同じ行に書きます）"
+          : "対応する if のない else です",
+        line,
+        "SyntaxError",
+      );
     if (v === "if") {
       this.take();
       let test;
@@ -1376,7 +1430,10 @@ export class ScriptParser {
         this.take(")");
       } else test = this.exprCtx(1);
       let body = this.body();
-      this.skipLines();
+      // R30-N13：R では改行を跨いだ else を結ばない（式位置の if と同じ
+      // 規則。実 R では文が完結した後の else は "unexpected else" の
+      // parse error）。他方言は従来どおり改行を読み飛ばす。
+      if (this.dialect !== "r") this.skipLines();
       let otherwise = [];
       if (this.peek("else")) {
         this.take();
@@ -1676,7 +1733,8 @@ export class ScriptParser {
     let target = this.expr();
     // RG-43：代入演算子は方言ごとに限定する（他方言の演算子の無言受理を防ぐ）。
     const assignOps = {
-      js: ["=", "+=", "-=", "*=", "/="],
+      // R30-N16：JavaScript の論理代入（&&= ／ ||= ／ ??=）を追加。
+      js: ["=", "+=", "-=", "*=", "/=", "&&=", "||=", "??="],
       r: ["=", "<-", "+=", "-=", "*=", "/="],
       // R27-N8：AutoHotkey v2 公式の代入演算子表にある複合代入を追加。
       // **= は公式の代入演算子表に無いため含めない（式位置では ** の
@@ -1742,7 +1800,12 @@ export class ScriptParser {
         unsupported(this.ts[this.i].v, line);
       return { k: "expression", value: left, line };
     }
-    if (!["\n", ";", "}", ")", "<eof>"].includes(this.ts[this.i]?.v))
+    // R30-N13：式文も else の手前で終端する（波括弧なし if 本体の
+    // 呼び出し文 `print(1) else …`／`f() else …`）。else 自体は外側の
+    // if 文が照合し、結ばれない else は文頭の else として名指される。
+    // 従来は else が終端集合に無く、式文の本体が「未対応：else」と
+    // 虚偽原因で停止していた（代入文の終端集合には既に含まれていた）。
+    if (!["\n", ";", "}", ")", "<eof>", "else"].includes(this.ts[this.i]?.v))
       unsupported(this.ts[this.i].v, line);
     return { k: "expression", value: target, line };
   }
@@ -1937,6 +2000,29 @@ export function executeProgram(nodes, model, semantics = {}, custom = {}) {
     });
     s.pendingRefs = [];
   }
+  // R30-N16：JavaScript の論理代入（&&= ／ ||= ／ ??=）の評価。
+  // ECMA-262 どおり、現在の代入先の値で短絡判定し、代入が必要な場合
+  // だけ右辺を評価して書き込む。式としての値は、代入した場合はその
+  // 値、短絡した場合は現在の値。未確定値では判定できないため、結果を
+  // 未確定値として書き込む（黙って確定値を捏造しない）。
+  function evalLogicalAssign(target, op, valueNode, s, node) {
+    const cur = read(target, s);
+    if (isUnknown(cur)) {
+      const u = unknown("論理代入の結果による");
+      write(target, u, s, node);
+      return u;
+    }
+    const need =
+      op === "&&="
+        ? truth(cur, node.line, target, s)
+        : op === "||="
+          ? !truth(cur, node.line, target, s)
+          : cur === null || cur === undefined;
+    if (!need) return cur;
+    const v = read(valueNode, s);
+    write(target, v, s, node);
+    return v;
+  }
   function read(a, s) {
     check();
     if (!a) return null;
@@ -1962,9 +2048,66 @@ export function executeProgram(nodes, model, semantics = {}, custom = {}) {
       }
       case "array":
         return a.values.map((x) => read(x, s));
-      case "record":
-        return Object.fromEntries(a.entries.map(([k, v]) => [k, read(v, s)]));
+      case "record": {
+        // R30-N14：スプレッド要素 {…式} は ECMA-262 の CopyDataProperties
+        // どおり、元値の自分自身の列挙可能なプロパティを定義順にコピー
+        // する（浅いコピー：値そのものは共有し、元オブジェクトの後からの
+        // 変更はコピー先のプロパティ集合に影響しない）。null／undefined
+        // は無視され、文字列は文字ごとの添字プロパティになる
+        // （Object.entries の列挙が実物と一致する）。後勝ちの上書きと
+        // キーの初出順は Object.fromEntries の蓄積で再現する。
+        const pairs = [];
+        for (const e of a.entries) {
+          if (Array.isArray(e)) pairs.push([e[0], read(e[1], s)]);
+          else {
+            const src = read(e.spread, s);
+            if (isUnknown(src)) return unknown("スプレッド元の値による");
+            if (src === null || src === undefined) continue;
+            for (const [k, v] of Object.entries(Object(src)))
+              pairs.push([k, v]);
+          }
+        }
+        return Object.fromEntries(pairs);
+      }
       case "unary": {
+        // R30-N16：JavaScript の void／delete（ECMA-262 の意味論）。
+        // void は被演算子を評価（副作用は実行）して undefined を返す。
+        if (a.op === "void") {
+          read(a.arg, s);
+          return undefined;
+        }
+        // delete はプロパティを削除して成否を返す。存在しないプロパティ
+        // の削除も true（参照の読み取りで止めない）。変数そのものは
+        // 削除できない（通常スクリプトの意味論で false を返し、変数は
+        // 残る）。参照でない形は被演算子を評価して true。
+        if (a.op === "delete") {
+          const arg = a.arg;
+          if (arg.k === "member" || arg.k === "index") {
+            const obj = read(arg.target, s);
+            if (isUnknown(obj)) return unknown("delete の結果による");
+            if (obj === null || obj === undefined)
+              throw new PracticeError(
+                "null / undefined のプロパティは削除できません",
+                a.line,
+                "TypeError",
+              );
+            const key =
+              arg.k === "member" ? arg.name : read(arg.indexes[0], s);
+            if (isUnknown(key)) return unknown("delete の結果による");
+            if (Array.isArray(obj) && key === "length") return false;
+            if (typeof obj === "string") return false;
+            if (typeof obj === "object") delete obj[key];
+            return true;
+          }
+          if (arg.k === "var") {
+            if (Object.hasOwn(s.vars, arg.name)) return false;
+            if (["undefined", "NaN", "Infinity"].includes(arg.name))
+              return false;
+            return true;
+          }
+          read(arg, s);
+          return true;
+        }
         let x = read(a.arg, s);
         if (isUnknown(x))
           return { ...unknown(a.op + formatValue(x)), op: a.op, a: x };
@@ -2030,6 +2173,9 @@ export function executeProgram(nodes, model, semantics = {}, custom = {}) {
             a.line,
             "SyntaxError",
           );
+        // R30-N16：論理代入は短絡評価が本質のため専用経路で評価する。
+        if (["&&=", "||=", "??="].includes(a.op))
+          return evalLogicalAssign(a.target, a.op, a.value, s, a);
         let v;
         if (a.op === "=" || a.op === ":=")
           v = read(a.value, s);
@@ -2582,7 +2728,19 @@ export function executeProgram(nodes, model, semantics = {}, custom = {}) {
             "SyntaxError",
           );
         }
-        let v = read(n.value, s);
+        // R30-N16：論理代入は短絡評価が本質のため専用経路で評価する
+        // （右辺の評価を先に行うと、短絡すべき副作用が実行されてしまう）。
+        let v;
+        if (["&&=", "||=", "??="].includes(n.op)) {
+          v = evalLogicalAssign(n.target, n.op, n.value, s, n);
+          note(
+            s,
+            n,
+            `${callName(n.target) || "対象"} に ${fmt(v)} を代入します`,
+          );
+          return [s];
+        }
+        v = read(n.value, s);
         // R27-N8：複合代入の基底演算子への対応表（従来の op[0] では
         // **= ／ <<= 等の複数文字演算子を扱えない）。
         const compoundBase = {
