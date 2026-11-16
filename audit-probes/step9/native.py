@@ -12,9 +12,9 @@ with tempfile.TemporaryDirectory()as td:
     if f['type']=='directory':dest.mkdir(parents=True,exist_ok=True)
     else:dest.parent.mkdir(parents=True,exist_ok=True);dest.write_bytes(f['content'].encode())
    code='@echo off\r\ncmd /d /c exit '+str(r.get('seed',0))+'\r\n'+r['code'].replace('\n','\r\n')+'\r\n'
-   probe=folder/'probe.cmd';probe.write_bytes(code.encode('ascii'));start=time.perf_counter()
+   probe=root/'probe.cmd';probe.write_bytes(code.encode('ascii'));start=time.perf_counter()
    try:
-    x=subprocess.run(['cmd.exe','/d','/q','/c','probe.cmd'],cwd=folder,input=r.get('stdin',''),capture_output=True,text=True,errors='replace',timeout=8)
+    x=subprocess.run(['cmd.exe','/d','/q','/c',str(probe)],cwd=folder,input=r.get('stdin',''),capture_output=True,text=True,errors='replace',timeout=8)
     native.append(dict(id=r['id'],stdout=x.stdout,stderr=x.stderr,returncode=x.returncode,ms=(time.perf_counter()-start)*1000))
    except subprocess.TimeoutExpired:native.append(dict(id=r['id'],timeout=True))
  started=time.perf_counter();r=subprocess.run([str(exe),'-NoLogo','-NoProfile','-NonInteractive','-File',str(p/'run-ps.ps1'),'-Cases',str(p/'cases.json'),'-Fixture',str(p/'fixture.json'),'-Result',str(p/'results-ps.json')],capture_output=True,text=True,encoding='utf-8',errors='replace',timeout=180);print('PS_PROCESS:'+json.dumps(dict(code=r.returncode,stdout=r.stdout[-2000:],stderr=r.stderr[-2000:],ms=(time.perf_counter()-started)*1000)),flush=True)

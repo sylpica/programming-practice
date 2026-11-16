@@ -2193,5 +2193,414 @@
     "name": "other",
     "code": "New-Item -Path notes.txt -ItemType Directory -Force",
     "id": 353
+  },
+  {
+    "kind": "powershell",
+    "name": "quoted-token",
+    "code": "';'; 'after'",
+    "id": 354
+  },
+  {
+    "kind": "powershell",
+    "name": "quoted-token",
+    "code": "Write-Output ';'",
+    "id": 355
+  },
+  {
+    "kind": "powershell",
+    "name": "quoted-token",
+    "code": "'|'; 'after'",
+    "id": 356
+  },
+  {
+    "kind": "powershell",
+    "name": "quoted-token",
+    "code": "Write-Output '|'",
+    "id": 357
+  },
+  {
+    "kind": "powershell",
+    "name": "quoted-token",
+    "code": "')'; 'after'",
+    "id": 358
+  },
+  {
+    "kind": "powershell",
+    "name": "quoted-token",
+    "code": "Write-Output ')'",
+    "id": 359
+  },
+  {
+    "kind": "powershell",
+    "name": "quoted-token",
+    "code": "'}'; 'after'",
+    "id": 360
+  },
+  {
+    "kind": "powershell",
+    "name": "quoted-token",
+    "code": "Write-Output '}'",
+    "id": 361
+  },
+  {
+    "kind": "powershell",
+    "name": "quoted-token",
+    "code": "'{'; 'after'",
+    "id": 362
+  },
+  {
+    "kind": "powershell",
+    "name": "quoted-token",
+    "code": "Write-Output '{'",
+    "id": 363
+  },
+  {
+    "kind": "powershell",
+    "name": "quoted-token",
+    "code": "'return'; 'after'",
+    "id": 364
+  },
+  {
+    "kind": "powershell",
+    "name": "quoted-token",
+    "code": "Write-Output 'return'",
+    "id": 365
+  },
+  {
+    "kind": "powershell",
+    "name": "quoted-token",
+    "code": "'break'; 'after'",
+    "id": 366
+  },
+  {
+    "kind": "powershell",
+    "name": "quoted-token",
+    "code": "Write-Output 'break'",
+    "id": 367
+  },
+  {
+    "kind": "powershell",
+    "name": "quoted-token",
+    "code": "'if'; 'after'",
+    "id": 368
+  },
+  {
+    "kind": "powershell",
+    "name": "quoted-token",
+    "code": "Write-Output 'if'",
+    "id": 369
+  },
+  {
+    "kind": "powershell",
+    "name": "quoted-token",
+    "code": "'for'; 'after'",
+    "id": 370
+  },
+  {
+    "kind": "powershell",
+    "name": "quoted-token",
+    "code": "Write-Output 'for'",
+    "id": 371
+  },
+  {
+    "kind": "powershell",
+    "name": "quoted-token",
+    "code": "'function'; 'after'",
+    "id": 372
+  },
+  {
+    "kind": "powershell",
+    "name": "quoted-token",
+    "code": "Write-Output 'function'",
+    "id": 373
+  },
+  {
+    "kind": "powershell",
+    "name": "quoted-token",
+    "code": "'param'; 'after'",
+    "id": 374
+  },
+  {
+    "kind": "powershell",
+    "name": "quoted-token",
+    "code": "Write-Output 'param'",
+    "id": 375
+  },
+  {
+    "kind": "powershell",
+    "name": "quoted-token",
+    "code": "'else'; 'after'",
+    "id": 376
+  },
+  {
+    "kind": "powershell",
+    "name": "quoted-token",
+    "code": "Write-Output 'else'",
+    "id": 377
+  },
+  {
+    "kind": "powershell",
+    "name": "quoted-token",
+    "code": "\";\"; 'after'",
+    "id": 378
+  },
+  {
+    "kind": "powershell",
+    "name": "quoted-token",
+    "code": "Write-Output \";\"",
+    "id": 379
+  },
+  {
+    "kind": "powershell",
+    "name": "quoted-token",
+    "code": "\"|\"; 'after'",
+    "id": 380
+  },
+  {
+    "kind": "powershell",
+    "name": "quoted-token",
+    "code": "Write-Output \"|\"",
+    "id": 381
+  },
+  {
+    "kind": "powershell",
+    "name": "quoted-token",
+    "code": "\")\"; 'after'",
+    "id": 382
+  },
+  {
+    "kind": "powershell",
+    "name": "quoted-token",
+    "code": "Write-Output \")\"",
+    "id": 383
+  },
+  {
+    "kind": "powershell",
+    "name": "quoted-token",
+    "code": "\"}\"; 'after'",
+    "id": 384
+  },
+  {
+    "kind": "powershell",
+    "name": "quoted-token",
+    "code": "Write-Output \"}\"",
+    "id": 385
+  },
+  {
+    "kind": "powershell",
+    "name": "quoted-token",
+    "code": "\"{\"; 'after'",
+    "id": 386
+  },
+  {
+    "kind": "powershell",
+    "name": "quoted-token",
+    "code": "Write-Output \"{\"",
+    "id": 387
+  },
+  {
+    "kind": "powershell",
+    "name": "quoted-token",
+    "code": "\"return\"; 'after'",
+    "id": 388
+  },
+  {
+    "kind": "powershell",
+    "name": "quoted-token",
+    "code": "Write-Output \"return\"",
+    "id": 389
+  },
+  {
+    "kind": "powershell",
+    "name": "quoted-token",
+    "code": "\"break\"; 'after'",
+    "id": 390
+  },
+  {
+    "kind": "powershell",
+    "name": "quoted-token",
+    "code": "Write-Output \"break\"",
+    "id": 391
+  },
+  {
+    "kind": "powershell",
+    "name": "quoted-token",
+    "code": "\"if\"; 'after'",
+    "id": 392
+  },
+  {
+    "kind": "powershell",
+    "name": "quoted-token",
+    "code": "Write-Output \"if\"",
+    "id": 393
+  },
+  {
+    "kind": "powershell",
+    "name": "quoted-token",
+    "code": "\"for\"; 'after'",
+    "id": 394
+  },
+  {
+    "kind": "powershell",
+    "name": "quoted-token",
+    "code": "Write-Output \"for\"",
+    "id": 395
+  },
+  {
+    "kind": "powershell",
+    "name": "quoted-token",
+    "code": "\"function\"; 'after'",
+    "id": 396
+  },
+  {
+    "kind": "powershell",
+    "name": "quoted-token",
+    "code": "Write-Output \"function\"",
+    "id": 397
+  },
+  {
+    "kind": "powershell",
+    "name": "quoted-token",
+    "code": "\"param\"; 'after'",
+    "id": 398
+  },
+  {
+    "kind": "powershell",
+    "name": "quoted-token",
+    "code": "Write-Output \"param\"",
+    "id": 399
+  },
+  {
+    "kind": "powershell",
+    "name": "quoted-token",
+    "code": "\"else\"; 'after'",
+    "id": 400
+  },
+  {
+    "kind": "powershell",
+    "name": "quoted-token",
+    "code": "Write-Output \"else\"",
+    "id": 401
+  },
+  {
+    "kind": "powershell",
+    "name": "aux",
+    "code": "Add-Content -Path notes.txt -Value $null",
+    "id": 402
+  },
+  {
+    "kind": "powershell",
+    "name": "aux",
+    "code": "Set-Content -Path notes.txt -Value $null",
+    "id": 403
+  },
+  {
+    "kind": "powershell",
+    "name": "aux",
+    "code": "Set-Content -Path fresh.txt -Value @($null,'a',$null,'b')",
+    "id": 404
+  },
+  {
+    "kind": "powershell",
+    "name": "aux",
+    "code": "Add-Content -Path fresh.txt -Value @($null,'a',$null,'b')",
+    "id": 405
+  },
+  {
+    "kind": "powershell",
+    "name": "aux",
+    "code": "New-Item -Path fresh.txt -ItemType File -Value @()",
+    "id": 406
+  },
+  {
+    "kind": "powershell",
+    "name": "aux",
+    "code": "New-Item -Path fresh.txt -ItemType File -Value @(1,2)",
+    "id": 407
+  },
+  {
+    "kind": "powershell",
+    "name": "aux",
+    "code": "Remove-Item -Path logs -Force",
+    "id": 408
+  },
+  {
+    "kind": "powershell",
+    "name": "aux",
+    "code": "$x=@([pscustomobject]@{a=1},[pscustomobject]@{b=2});$x.a.Count",
+    "id": 409
+  },
+  {
+    "kind": "powershell",
+    "name": "aux",
+    "code": "$x=@(@{a=$null},@{b=2});$x.a.Count",
+    "id": 410
+  },
+  {
+    "kind": "powershell",
+    "name": "aux",
+    "code": "$x=@(@{a=1},@{a=2});$x.a.Count",
+    "id": 411
+  },
+  {
+    "kind": "powershell",
+    "name": "aux",
+    "code": "$x=@(@{a=1},@{b=2});$x.a[1]",
+    "id": 412
+  },
+  {
+    "kind": "powershell",
+    "name": "aux",
+    "code": "$x=@(@{a=1},@{b=2});$x.a -eq $null",
+    "id": 413
+  },
+  {
+    "kind": "cmd",
+    "name": "aux-errorlevel",
+    "code": "if errorlevel 7 echo BEFORE7\nsetlocal\necho AFTER=%ERRORLEVEL%\nif errorlevel 1 echo NONZERO",
+    "id": 414,
+    "seed": 7
+  },
+  {
+    "kind": "cmd",
+    "name": "aux-errorlevel",
+    "code": "setlocal DisableDelayedExpansion\necho AFTER=%ERRORLEVEL%",
+    "id": 415,
+    "seed": 7
+  },
+  {
+    "kind": "cmd",
+    "name": "aux-errorlevel",
+    "code": "setlocal EnableDelayedExpansion\necho AFTER=%ERRORLEVEL%",
+    "id": 416,
+    "seed": 7
+  },
+  {
+    "kind": "cmd",
+    "name": "aux-errorlevel",
+    "code": "setlocal\nendlocal\necho AFTER=%ERRORLEVEL%",
+    "id": 417,
+    "seed": 7
+  },
+  {
+    "kind": "cmd",
+    "name": "aux-errorlevel",
+    "code": "set X=one\nif errorlevel 1 (echo BAD) else (echo GOOD)",
+    "id": 418,
+    "seed": 7
+  },
+  {
+    "kind": "cmd",
+    "name": "aux-errorlevel",
+    "code": "type notes.txt\nif errorlevel 1 (echo BAD) else (echo GOOD)",
+    "id": 419,
+    "seed": 7
+  },
+  {
+    "kind": "cmd",
+    "name": "aux-errorlevel",
+    "code": "rd empty\nif errorlevel 1 (echo HIGH) else (echo ZERO)",
+    "id": 420,
+    "seed": 7
   }
 ]
