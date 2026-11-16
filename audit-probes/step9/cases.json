@@ -2602,5 +2602,17 @@
     "code": "rd empty\nif errorlevel 1 (echo HIGH) else (echo ZERO)",
     "id": 420,
     "seed": 7
+  },
+  {
+    "id": 421,
+    "kind": "cmd",
+    "name": "success-output-pipe",
+    "code": "copy /y notes.txt fresh.txt | find \"copied\"\nif errorlevel 1 (echo BAD) else (echo GOOD)"
+  },
+  {
+    "id": 422,
+    "kind": "cmd",
+    "name": "success-output-pipe",
+    "code": "move /y notes.txt fresh.txt | find \"moved\"\nif errorlevel 1 (echo BAD) else (echo GOOD)"
   }
 ]
