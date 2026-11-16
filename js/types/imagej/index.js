@@ -138,12 +138,45 @@ export const definition = {
   },
   async simulate(code, model) {
     try {
+      // R31-N13: モデルの images の形状を入口で検証する。images が配列で
+      // ない・要素が画像オブジェクトでない・pix／buckets の型が違う場合に、
+      // エンジン内部の TypeError を汎用文言（「処理中に予期しないエラーが
+      // 発生しました」）で返したり、数値・文字列の要素をデモ画像へ黙って
+      // 置き換えたりせず、モデル側を名指して停止する（shell 種類の
+      // 「モデルfilesは配列で指定してください」と同方針）。images が
+      // 未指定（undefined／null）の場合は従来どおりデモ画像を使う。
+      const imagesError = (() => {
+        if (!model || typeof model !== "object") return null;
+        const images = model.images;
+        if (images === undefined || images === null) return null;
+        if (!Array.isArray(images))
+          return "モデルの images は配列で指定してください";
+        for (let idx = 0; idx < images.length; idx++) {
+          const im = images[idx];
+          if (!im || typeof im !== "object" || Array.isArray(im))
+            return `モデルの images[${idx}] は画像オブジェクトで指定してください`;
+          if (im.pix !== undefined && im.pix !== null && typeof im.pix !== "object")
+            return `モデルの images[${idx}].pix はオブジェクトで指定してください`;
+          if (im.buckets !== undefined && im.buckets !== null && !Array.isArray(im.buckets))
+            return `モデルの images[${idx}].buckets は配列で指定してください`;
+        }
+        return null;
+      })();
+      if (imagesError)
+        return {
+          paths: [],
+          truncated: false,
+          limits: LIMITS,
+          error: { line: 1, message: imagesError },
+        };
       // R25-N6: 長さ検査を try の内側へ移す。try の外にあると
       // simulate(null) 等で code.length の TypeError がガードつき
       // catch（RG-173）を通らず投げ返されてしまう。
       if (code.length > LIMITS.source)
         return {
           paths: [],
+          truncated: false,
+          limits: LIMITS,
           error: { line: 1, message: "コードは100000文字以内にしてください" },
         };
       let engine = await import("./engine.js");
@@ -203,8 +236,12 @@ export const definition = {
         reasons: truncated ? ["探索またはループの上限"] : [],
       };
     } catch (e) {
+      // R31-N13: エラー経路でも共通結果契約どおり truncated を必ず含める
+      // （EXTENDING.md の共通結果契約。従来はキー自体が欠落していた）。
       return {
         paths: [],
+        truncated: false,
+        limits: LIMITS,
         error: {
           line: e.line || 1,
           message: e.text || (e?.category ? e.message : toLearnerError(e).message),

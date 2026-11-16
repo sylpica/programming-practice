@@ -116,7 +116,38 @@ export function listFiles(state, pattern = "*", line = 1) {
       regex.test(e.path.slice(e.path.lastIndexOf("\\") + 1)),
   );
 }
+// R31-N13（修正バッチ10・シェル班）: モデル自体の形状検証。モデルが
+// オブジェクトでない（null／数値／文字列／配列／真偽値等）と、従来は
+// 実行基盤がモデル項目へ触れた時点でホスト例外になり、「処理中に
+// 予期しないエラーが発生しました」「null / undefined のプロパティは
+// 参照できません」というモデル側を指さない汎用文言に落ちていた。
+// 既存の項目別検証（files は配列・各要素に path／type が必要等）と
+// 同じ水準・カテゴリ（モデルエラー）で、モデル自体を名指して止める。
+// variables もオブジェクトでない場合は同じく名指す（cmd では文字列の
+// variables が汎用文言に落ち、PS では添字として黙って取り込まれて
+// いたため、入口で揃える）。この検証は initFiles（初期化経路）からも、
+// 実行基盤が model.variables へ触れる前の simulate 入口からも呼ぶ
+// （null／undefined は基盤側の structuredClone 前段で落ちるため、
+// 入口側の事前検証が無いと名指しに到達しない）。
+export function assertModelShape(model) {
+  if (!model || typeof model !== "object" || Array.isArray(model))
+    fail("モデルはオブジェクトで指定してください", 1, "モデルエラー");
+  // variables の null は、基盤側の `model.variables || {}` と同じく
+  // 「未指定」として扱い、対象にしない（files の null が ??= で
+  // 既定値になる扱いとも揃える）。
+  if (
+    model.variables !== undefined &&
+    model.variables !== null &&
+    (typeof model.variables !== "object" || Array.isArray(model.variables))
+  )
+    fail(
+      "モデルvariablesはオブジェクトで指定してください",
+      1,
+      "モデルエラー",
+    );
+}
 export function initFiles(state) {
+  assertModelShape(state.model);
   const m = state.model;
   m.cwd = windowsPath(m.cwd || "C:\\Practice");
   m.files ??= [];

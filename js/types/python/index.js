@@ -82,6 +82,31 @@ export const definition = {
   },
   async simulate(code, model, limits) {
     try {
+      // R31-N13（script系モデル分）：モデル形状の入口検証。モデルが
+      // null／undefined の場合（従来は「null / undefined のプロパティ
+      // は参照できません」という汎用文言になっていた）と、globals の
+      // 型違いは、モデル／項目名を名指して停止する。検証は try の中で
+      // 行い、getter が例外を投げる敵対的モデルでもホスト文言を漏ら
+      // さず従来の変換層（R25-N5）へ委ねる。非 null のプリミティブ等
+      // の形状は R25-N5 の裁定どおり従来の受理（globals のフォール
+      // バックで空の初期変数として扱う）を維持し、globals の欠落も
+      // 同じ意味になるため受理する。
+      const isModelObject = (v) =>
+        !!v && typeof v === "object" && !Array.isArray(v);
+      const modelFailure = (message) => ({
+        paths: [],
+        error: { line: 1, message, category: "モデルエラー" },
+        truncated: false,
+        limits: LIMITS,
+      });
+      if (model === null || model === undefined)
+        return modelFailure("モデルはオブジェクト（JSON）で指定してください");
+      if (
+        isModelObject(model) &&
+        model.globals !== undefined &&
+        !isModelObject(model.globals)
+      )
+        return modelFailure("モデルglobalsはオブジェクトで指定してください");
       let engine = await import("./engine.js");
       if (code.length > LIMITS.source)
         return {

@@ -12,6 +12,7 @@ import {
   unquote,
   words,
   initFiles,
+  assertModelShape,
   fsEntry,
   listFiles,
   fileDisplay,
@@ -1448,6 +1449,9 @@ export function simulateCmd(source, model, limits) {
         throw toLearnerError(e);
       }
     };
+    // R31-N13: モデル自体の形状は、実行基盤が model.variables へ触れる
+    // 前に名指す（initFiles 側の検証だけでは null 等に到達しない）。
+    assertModelShape(model);
     return shellRuntime(
       [program(0)],
       model,

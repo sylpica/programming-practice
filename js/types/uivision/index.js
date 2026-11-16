@@ -164,6 +164,59 @@ reference.push({
   caution: "このモデルでは文字列\"true\"のときだけ有効です。",
   supported: true,
 });
+// R31-N13: モデル形状の入口検証。モデル自体がオブジェクトでない場合と、
+// defaults の実項目（pages／url／variables／clicks）の欠落・型違い、各
+// ページとその elements の型違いを、汎用のホスト文言（「null / undefined
+// のプロパティは参照できません」等）に落とさず、モデル側の言葉で項目名
+// を名指して停止する。文言の水準は shell の「モデルfilesは配列で指定
+// してください」、CloudFormation の「モデルにマクロ定義がありません：
+// …」に揃える。
+function isUiModelObject(v) {
+  return v !== null && typeof v === "object" && !Array.isArray(v);
+}
+function validateUiModel(model) {
+  const fail = (message) => {
+    throw new PracticeError(message, 1, "モデルエラー");
+  };
+  if (!isUiModelObject(model)) fail("モデルはオブジェクトで指定してください");
+  if (!("pages" in model)) fail("モデルにpagesがありません");
+  if (!isUiModelObject(model.pages))
+    fail("モデルpagesはオブジェクトで指定してください");
+  if (!("url" in model)) fail("モデルにurlがありません");
+  if (typeof model.url !== "string")
+    fail("モデルurlは文字列で指定してください");
+  if (!("variables" in model)) fail("モデルにvariablesがありません");
+  if (!isUiModelObject(model.variables))
+    fail("モデルvariablesはオブジェクトで指定してください");
+  if (!("clicks" in model)) fail("モデルにclicksがありません");
+  if (!Array.isArray(model.clicks))
+    fail("モデルclicksは配列で指定してください");
+  for (const [url, page] of Object.entries(model.pages)) {
+    if (!isUiModelObject(page))
+      fail(`モデルpages.${url}はオブジェクトで指定してください`);
+    if (page.elements !== undefined) {
+      if (!isUiModelObject(page.elements))
+        fail(`モデルpages.${url}.elementsはオブジェクトで指定してください`);
+      for (const [locator, element] of Object.entries(page.elements))
+        if (!isUiModelObject(element))
+          fail(
+            `モデルpages.${url}.elements.${locator}はオブジェクトで指定してください`,
+          );
+    }
+  }
+}
+// R31 横断スイープ(c)：while 条件や executeScript_Sandbox の return 式が
+// 途中終了していた場合のパーサエラーが内部トークン「<eof>」を含めて
+// いた。AutoHotkey の RG-08 サニタイズと同じ文言・方針で置き換える。
+function sanitizeUiEof(e) {
+  if (typeof e?.message === "string" && e.message.includes("<eof>"))
+    return new PracticeError(
+      "式を解釈できません（式が途中で終わっています）",
+      e.line || 1,
+      e.category || "エラー",
+    );
+  return e;
+}
 export const definition = {
   id: "uivision",
   name: "UI.Vision RPA",
@@ -294,6 +347,8 @@ export const definition = {
   },
   async simulate(code, model, limits) {
     try {
+      // R31-N13: モデル形状は入口で検証し、項目名を名指して停止する。
+      validateUiModel(model);
       let { nodes } = actionProgram(code, {
         key: "Commands",
         command: "Command",
@@ -595,12 +650,20 @@ export const definition = {
       // （RG-02 と同型）。実行完了後のスナップショットに限り、非有限
       // 数を echo と同じ文字列表現へ置き換え、直列化しても矛盾しない
       // 形にする（実行中の数値としての働きは変えない）。
-      for (let p of result.paths || [])
+      // R31 横断スイープ(c)：パスエラー・全体エラーにも <eof> を出さない。
+      if (result.error?.message?.includes("<eof>"))
+        result.error.message = "式を解釈できません（式が途中で終わっています）";
+      for (let p of result.paths || []) {
         p.vars = finiteSafeSnapshot(p.vars);
+        if (p.error?.message?.includes("<eof>"))
+          p.error.message = "式を解釈できません（式が途中で終わっています）";
+      }
       return result;
     } catch (e) {
       return sourceFailure(
-        e instanceof PracticeError || e?.category ? e : toLearnerError(e),
+        sanitizeUiEof(
+          e instanceof PracticeError || e?.category ? e : toLearnerError(e),
+        ),
       );
     }
   },

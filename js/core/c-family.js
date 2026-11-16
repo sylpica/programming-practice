@@ -31,6 +31,23 @@ function hostErrorAsPractice(e, line) {
     "エラー",
   );
 }
+// R31-N8（C家族分）：共有字句解析器の終端トークン値 <eof> は入力の
+// どこにも現れない内部名で、式の途中終了（int x = 等）で「式を解釈
+// できません：<eof>」として学習者向け文言に露出していた（RG-08 と
+// 同型）。C家族の解析は共有パーサに委ねるため、このファイルの境界
+// （simulate の例外変換と実行結果のエラー欄）で、途中終了を表す
+// 学習者の言葉へ翻訳する。
+function translateEofMessage(message) {
+  if (typeof message !== "string" || !message.includes("<eof>")) return message;
+  return message
+    .replace("式を解釈できません：<eof>", "式を解釈できません（式が途中で終わっています）")
+    .replaceAll("<eof>", "文末");
+}
+function translateEofError(e) {
+  if (e instanceof PracticeError && e.message?.includes("<eof>"))
+    return new PracticeError(translateEofMessage(e.message), e.line, e.category);
+  return e;
+}
 // semantics の各境界でホスト例外を受け止め、日本語の停止理由へ変換する。
 function guardHostErrors(fn) {
   return function (...args) {
@@ -2458,6 +2475,13 @@ export function createCFamily({ id, name, extensions, language }) {
         const deadline =
           performance.now() + (limits?.milliseconds ?? LIMITS.milliseconds);
         let { nodes, classes } = parse(code, language, deadline);
+        // R31-N12：モデルが null／undefined の場合は共有実行系の初期化が
+        // モデル参照でホスト例外になり汎用文言へ落ちるため、initialize の
+        // 形状検証と同じモデル側の原因でここで停止する。
+        if (model === null || model === undefined)
+          return sourceFailure(
+            new PracticeError("モデルに intBits が必要です", 1, "エラー"),
+          );
         function netParts(av, isFloat) {
           let s;
           if (isFloat) {
@@ -2809,7 +2833,7 @@ export function createCFamily({ id, name, extensions, language }) {
                   : "int";
           }
           if (managed && a.k === "member") return classes[typeOf(a.target, s)]?.[a.name]?.type || "int";
-          if (a.k === "var") return s.types[a.name] || (["true", "false"].includes(a.name) && language !== "c" ? "bool" : "int");
+          if (a.k === "var") return s.types[a.name] || s.loopVarTypes?.[a.name] || (["true", "false"].includes(a.name) && language !== "c" ? "bool" : "int");
           if (a.k === "binary") {
             if (["==", "!=", "<", ">", "<=", ">=", "&&", "||"].includes(a.op)) return language === "c" ? "int" : "bool";
             let l = typeOf(a.a, s),
@@ -3367,7 +3391,24 @@ export function createCFamily({ id, name, extensions, language }) {
           nestedShadowError: managed,
           manualLifetime: !managed,
           initialize(s, api) {
-            if (s.model.intBits !== 32)
+            // R31-N12（PLAT-N1）：従来は intBits !== 32 の一条件で「未対応の
+            // 幅」と「フィールド欠落・モデル自体の形状不正」を区別せず、
+            // {}・数値・文字列・配列のモデルでも「intは32ビットのみ対応」
+            // という虚偽原因になっていた。形状不正はモデル側を名指し、
+            // 正当な形状の未対応幅（64 等）にだけ従来文言を使う。
+            const model = s.model;
+            if (
+              !model ||
+              typeof model !== "object" ||
+              Array.isArray(model) ||
+              !Object.hasOwn(model, "intBits") ||
+              model.intBits === undefined ||
+              model.intBits === null
+            )
+              api.fail("モデルに intBits が必要です", { line: 1 });
+            if (typeof model.intBits !== "number")
+              api.fail("モデルの intBits は数値で指定してください", { line: 1 });
+            if (model.intBits !== 32)
               api.fail("このモデルのintは32ビットのみ対応です", { line: 1 });
             s.vars = {};
             s.addresses = {};
@@ -3432,6 +3473,43 @@ export function createCFamily({ id, name, extensions, language }) {
                     target: n.collection,
                     line: n.line,
                   };
+              }
+              // R31-N7：C# の string は IEnumerable<char> で foreach の
+              // 正当な対象（Microsoft Learn の iteration statements、
+              // dotnet 8.0 実走で確定）。共有 loop() は配列しか受け付けず
+              // 確定した文字列にも「未確定または配列でない」という虚偽
+              // 原因になっていた。文字列を文字の列へ読み替える専用
+              // ノードへ差し替え、反復・break／continue・スコープ処理は
+              // 共有 loop() のまま使う。配列・未確定値・数値等は read 側で
+              // そのまま返るため、既存の動作と文言（未定義名の名指し、
+              // 数値への実態どおりの停止）は変わらない。
+              if (n.collection?.k !== "rectFlat" && n.collection?.k !== "stringChars")
+                n.collection = {
+                  k: "stringChars",
+                  target: n.collection,
+                  line: n.line,
+                };
+              // R31-N7 隣接形：foreach の反復変数は共有 loop() が vars へ
+              // 直接書くため s.types に型が残らず、typeOf が int とみなして
+              // char 要素との比較（c == 'b' 等）が「int と char は比較
+              // できません」という虚偽原因になっていた（char[] 対象でも
+              // 同根）。反復変数の要素型を状態へ記録し、typeOf が参照
+              // する（スコープ終了後の除去は vars／types と同じく共有側の
+              // 登録機構が担う範囲外のため、最終状態には記録が残るが
+              // 表示は vars／types／model のみを使う）。
+              {
+                const collNode =
+                  n.collection?.k === "stringChars" || n.collection?.k === "rectFlat"
+                    ? n.collection.target
+                    : n.collection;
+                const ct = collNode ? typeOf(collNode, s) : null;
+                let elem = null;
+                if (ct === "string") elem = "char";
+                else if (ct && /\[[^\]]*\]$/.test(ct)) elem = ct.replace(/\[[^\]]*\]$/, "");
+                else if (n.varType && n.varType !== "var") elem = n.varType;
+                if (elem && elem !== ct) (s.loopVarTypes ??= {})[n.name] = elem;
+                else if (elem && n.varType && n.varType !== "var" && ct === elem)
+                  (s.loopVarTypes ??= {})[n.name] = elem;
               }
             }
             if (n.k === "assign") {
@@ -4256,6 +4334,17 @@ export function createCFamily({ id, name, extensions, language }) {
               };
               walkFlat(target);
               return { handled: true, value: flat };
+            }
+            // R31-N7：foreach の文字列対象を文字の列として読む（step で
+            // 差し替えられた専用ノード）。C# の char は UTF-16 コード
+            // 単位のため、コードポイント単位ではなくコード単位で
+            // 分割する（split("") の挙動）。文字列でなければ対象を
+            // そのまま返し、共有 loop() の既存判定に委ねる。
+            if (managed && a.k === "stringChars") {
+              const target = api.read(a.target, s);
+              if (typeof target === "string")
+                return { handled: true, value: target.split("") };
+              return { handled: true, value: target };
             }
             if (
               a.k === "literal" &&
@@ -5724,6 +5813,16 @@ export function createCFamily({ id, name, extensions, language }) {
         for (const key of ["step", "read", "write", "binary", "call", "action"])
           if (semantics[key]) semantics[key] = guardHostErrors(semantics[key]);
         const result = executeProgram(nodes, model, semantics, limits);
+        // R31-N8：実行段階のエラー欄・トレースにも内部トークン <eof> を
+        // 残さない（解析段階は simulate の catch 側で翻訳する）。
+        if (result.paths)
+          for (const p of result.paths) {
+            if (p.error?.message) p.error.message = translateEofMessage(p.error.message);
+            for (const tr of p.trace || [])
+              if (tr.text) tr.text = translateEofMessage(tr.text);
+          }
+        if (result.error?.message)
+          result.error.message = translateEofMessage(result.error.message);
         if (result.paths) {
           // User-defined names (C# class names and their field names) can
           // never be reference entries, so they must not leak into trace
@@ -5781,7 +5880,7 @@ export function createCFamily({ id, name, extensions, language }) {
         return result;
       } catch (e) {
         // P-N3：解析・後処理段階のホスト例外も日本語の停止理由へ変換する。
-        return sourceFailure(hostErrorAsPractice(e, e?.line));
+        return sourceFailure(hostErrorAsPractice(translateEofError(e), e?.line));
       }
     },
   };

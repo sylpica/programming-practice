@@ -1381,6 +1381,33 @@ export const definition = {
     return [...new Set(found)];
   },
   async simulate(code, model, limits) {
+    // R31-N13（script系モデル分）：モデル形状の入口検証。モデル自体が
+    // オブジェクトでない場合はモデルを、必須項目 windows の欠落・
+    // 型違いや variables／keys／mouse の型違いは項目名を名指して
+    // 停止する（従来はモデル null で「null / undefined のプロパティ
+    // は参照できません」という汎用文言になっていた）。event は
+    // null（自動実行部分だけ）が正当な形のため、文字列か null の
+    // 場合だけ受理する。
+    const isModelObject = (v) =>
+      !!v && typeof v === "object" && !Array.isArray(v);
+    const modelFailure = (message) =>
+      sourceFailure(new PracticeError(message, 1, "モデルエラー"));
+    if (!isModelObject(model))
+      return modelFailure("モデルはオブジェクト（JSON）で指定してください");
+    if (!Array.isArray(model.windows))
+      return modelFailure("モデルwindowsは配列で指定してください");
+    if (model.variables !== undefined && !isModelObject(model.variables))
+      return modelFailure("モデルvariablesはオブジェクトで指定してください");
+    if (model.keys !== undefined && !Array.isArray(model.keys))
+      return modelFailure("モデルkeysは配列で指定してください");
+    if (model.mouse !== undefined && !isModelObject(model.mouse))
+      return modelFailure("モデルmouseはオブジェクトで指定してください");
+    if (
+      model.event !== undefined &&
+      model.event !== null &&
+      typeof model.event !== "string"
+    )
+      return modelFailure("モデルeventは文字列または null で指定してください");
     try {
       let { nodes } = parseAHK(code, model.event);
       // RG-72／RG-73: v2 では数値文字列は数値として解釈される。空文字列や

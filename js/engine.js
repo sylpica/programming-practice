@@ -1607,12 +1607,18 @@ function evalExpr(a, s) {
       }
       if (name === "isnumeric") {
         // F-VBA-05: Empty は数値文脈では 0 として扱われるため True。
-        // Null は上の関数別規則で False を返済み。Boolean は False、
-        // 配列等の値そのものは数値として評価できないため False
-        // （文字列化して捏造しない）。
+        // Null は上の関数別規則で False を返済み。配列等の値そのものは
+        // 数値として評価できないため False（文字列化して捏造しない）。
+        // R31-N9: Boolean は実 VBA では数値のサブタイプであり（True は
+        // 数値として -1、False は 0。Microsoft Learn「IsNumeric
+        // function」も Boolean を数値として受理する）、IsNumeric(True)／
+        // IsNumeric(False) はいずれも True。本エンジンの num()／CInt 等も
+        // Boolean を -1／0 に変換しており、False を返すと内部矛盾する。
+        // RG-319 の変換ヘルパ是正は文字列経路のみで Boolean が取り残されて
+        // いたため、ここで Boolean を True に是正する。
         if (x?.kind === "empty") return true;
         if (x?.kind) return false;
-        if (typeof x === "boolean") return false;
+        if (typeof x === "boolean") return true;
         if (typeof x === "number") return true;
         // R30-N18: IsNumeric も CDbl 系と同じ実 VBA の変換規則で判定する
         // （"&H10" は True、"0x10" は False。JS の Number() 判定は逆転していた）。

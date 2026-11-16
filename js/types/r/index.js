@@ -863,6 +863,26 @@ export const definition = {
   },
   scan: (code) => scanScript(code, reference, "r"),
   async simulate(code, model, limits) {
+    // R31-N13（script系モデル分）：モデル形状の入口検証。モデル自体が
+    // オブジェクトでない場合はモデルを、variables／files の型違いは
+    // 項目名を名指して停止する（従来はモデル null で「null /
+    // undefined のプロパティは参照できません」という汎用文言に
+    // なっていた）。variables／files の欠落は空の初期状態として
+    // 受理する（実行側にフォールバックがあるため）。
+    const isModelObject = (v) =>
+      !!v && typeof v === "object" && !Array.isArray(v);
+    const modelFailure = (message) => ({
+      paths: [],
+      error: { line: 1, message, category: "モデルエラー" },
+      truncated: false,
+      limits: { ...LIMITS, ...limits },
+    });
+    if (!isModelObject(model))
+      return modelFailure("モデルはオブジェクト（JSON）で指定してください");
+    if (model.variables !== undefined && !isModelObject(model.variables))
+      return modelFailure("モデルvariablesはオブジェクトで指定してください");
+    if (model.files !== undefined && !isModelObject(model.files))
+      return modelFailure("モデルfilesはオブジェクトで指定してください");
     // RG-14: the shared parser cannot represent `function` expressions and
     // otherwise reports false causes (a parameter NameError, or a missing
     // ")"). Detect the keyword on R tokens and stop honestly, naming it.

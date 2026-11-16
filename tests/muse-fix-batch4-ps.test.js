@@ -98,7 +98,7 @@ test("batch4-ps R25-N3 model-boundary host exceptions are converted", () => {
   const nul = d.simulate("Write-Output 1", null);
   assert.ok(nul.error);
   assert.doesNotMatch(nul.error.message, HOST_TEXT);
-  assert.equal(nul.error.category, "TypeError");
+  assert.equal(nul.error.category, "モデルエラー");
   for (const extra of [
     { variables: { f: () => 1 } },
     { variables: { s: Symbol("x") } },

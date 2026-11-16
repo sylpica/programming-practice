@@ -267,6 +267,24 @@ export const definition = {
     }
   },
   async simulate(code, model, limits) {
+    // R31-N13（script系モデル分）：モデル形状の入口検証。モデル自体が
+    // オブジェクトでない場合はモデルを、variables／files／sentMail
+    // の型違いは項目名を名指して停止する（従来はモデル null で
+    // 「null / undefined のプロパティは参照できません」という汎用
+    // 文言になっていた）。各項目の欠落は実行側のフォールバック
+    // （??= による初期化）があるため受理する。
+    const isModelObject = (v) =>
+      !!v && typeof v === "object" && !Array.isArray(v);
+    const modelFailure = (message) =>
+      sourceFailure(new PracticeError(message, 1, "モデルエラー"));
+    if (!isModelObject(model))
+      return modelFailure("モデルはオブジェクト（JSON）で指定してください");
+    if (model.variables !== undefined && !isModelObject(model.variables))
+      return modelFailure("モデルvariablesはオブジェクトで指定してください");
+    if (model.files !== undefined && !isModelObject(model.files))
+      return modelFailure("モデルfilesはオブジェクトで指定してください");
+    if (model.sentMail !== undefined && !Array.isArray(model.sentMail))
+      return modelFailure("モデルsentMailは配列で指定してください");
     try {
       let { nodes } = actionProgram(code, {
         classify: (n) =>

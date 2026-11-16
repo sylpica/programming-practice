@@ -330,6 +330,33 @@ export function psNumber(text) {
       ];
   return v;
 }
+// R31-N8（修正バッチ10・シェル班）: 式が途中で終わった位置では、字句
+// 解析器の内部終端トークン名 "<eof>" を学習者向け文言に出さず、入力が
+// 途中で終わっている旨を学習者の言葉で示す。接頭辞は従来の式エラーと
+// 揃え、stage() のパラメータ値の名指しラップ（正規表現照合）も従来
+// どおり効くようにする。
+export function failTruncatedExpression(line) {
+  fail(
+    "未対応または不正なPowerShellの式：式が途中で終わっています",
+    line,
+    "SyntaxError",
+  );
+}
+// R31-N10: 代入先の先頭ブラケット列（キャストの積み重ね）を外側から
+// 順にほどく。単一ブラケット形は従来どおり castType として engine の
+// キャスト評価へ渡すが、2個以上の積み重ねは検証属性＋型・型同士の
+// 積み重ねのいずれも、このモデルでは代入先の型制約として未対応で
+// あるため、ブラケット列全体を castTypes として保持し、engine 側で
+// 列全体を名指して止める（「代入してください」という虚偽原因にしない）。
+export function castChain(node) {
+  const types = [];
+  let target = node;
+  while (target?.k === "cast") {
+    types.push(target.type);
+    target = target.arg;
+  }
+  return { types, target };
+}
 export class PSParser {
   constructor(source, line = 1) {
     this.source = source;
@@ -510,6 +537,8 @@ export class PSParser {
         const value = this.take();
         // R27-N5: switch の条件値の位置も式モードとして扱う。
         if (value.k === "badnum") fail(value.msg, value.line, value.cat);
+        // R31-N8: switch 本体が途中で終わった場合は途中終了として示す。
+        if (value.k === "eof") failTruncatedExpression(value.line);
         if (!["string", "number", "word"].includes(value.k))
           fail("未対応：switchの条件形式", value.line);
         cases.push({
@@ -593,7 +622,8 @@ export class PSParser {
       if (pipe.stages.length !== 1 || pipe.stages[0].k !== "expression")
         fail("代入先が不正です", line, "SyntaxError");
       let target = pipe.stages[0].value,
-        castType = null;
+        castType = null,
+        castTypes = null;
       // R30-N11: 型付き代入文 [型]$x = 値（Microsoft Learn の型付き変数。
       // 例：[ValidateLength(8,12)][string]$computername = '...' の形で
       // 型制約つき代入が示される）。パーサ上はキャスト式の被演算子が
@@ -605,12 +635,24 @@ export class PSParser {
       // は param 内の話であり、ここでは被演算子が代入先のときに限って
       // 型付き代入として読むため競合しない。括弧付き代入式（RG-271）
       // の隣接形として expr 側の assign-expr でも同じ解釈をする。
-      if (
-        target.k === "cast" &&
-        ["var", "member", "index"].includes(target.arg.k)
-      ) {
-        castType = target.type;
-        target = target.arg;
+      // R31-N10: ブラケットが2個以上積み重なる形（検証属性＋型、
+      // 型＋検証属性、型同士、三重以上、メンバー／添字への同形）も
+      // 代入先としてほどく。単一形は従来どおり castType で engine の
+      // キャスト評価へ渡し（[ValidateLength(1,2)] 単独形が
+      // 「未対応の型変換：[ValidateLength(1,2)]」と名指される経路を
+      // 維持する）、積み重ねは castTypes として保持し、engine 側で
+      // ブラケット列全体を名指して止める。ここで「代入してください」
+      // へ落とすと、代入文に対して代入を指示する虚偽原因になる。
+      {
+        const chain = castChain(target);
+        if (
+          chain.types.length &&
+          ["var", "member", "index"].includes(chain.target.k)
+        ) {
+          if (chain.types.length === 1) castType = chain.types[0];
+          else castTypes = chain.types;
+          target = chain.target;
+        }
       }
       if (!["var", "member", "index"].includes(target.k))
         fail("変数・プロパティ・添字へ代入してください", line, "SyntaxError");
@@ -624,7 +666,7 @@ export class PSParser {
       } finally {
         this.assignDepth = savedAssign;
       }
-      return { k: "assign", target, op, value, line, castType };
+      return { k: "assign", target, op, value, line, castType, castTypes };
     }
     return {
       k: "pipeline",
@@ -1423,6 +1465,9 @@ export class PSParser {
           // R27-N5: ハッシュキーの位置も式モードであり、不完全な数値
           // リテラルはリテラル自体を名指して止める。
           if (key.k === "badnum") fail(key.msg, key.line, key.cat);
+          // R31-N8: ハッシュリテラルが途中で終わった場合は、存在しない
+          // キーを原因にせず途中終了として示す。
+          if (key.k === "eof") failTruncatedExpression(key.line);
           if (!["word", "string", "number"].includes(key.k))
             fail("未対応：ハッシュテーブルのキー", key.line);
           this.take("=");
@@ -1477,7 +1522,10 @@ export class PSParser {
         }
         a = { k: "cast", type, arg: castArg, line };
       }
-    } else
+    } else if (t.k === "eof")
+      // R31-N8: 内部終端トークン名 "<eof>" を出さず、途中終了として示す。
+      failTruncatedExpression(line);
+    else
       fail("未対応または不正なPowerShellの式：" + t.v, line, "SyntaxError");
     while (true) {
       if (this.peek(".")) {
@@ -1719,6 +1767,11 @@ export class PSParser {
     // なし）が従来どおり処理するため、ここでは読まない。従来はこの
     // 読みが無く、括弧が揃っているのに「) が必要です」という虚偽
     // 原因で止まっていた。
+    // R31-N10: 括弧内でもブラケットの積み重ねを文位置と同じくほどく。
+    // ほどけない場合は従来どおり代入式として読まず、外側の
+    // 「) が必要です」等の虚偽原因にも、代入先の虚偽原因にもしない
+    // ため、条件判定は castChain の結果で行う。
+    const assignChain = castChain(a);
     if (
       this.assignDepth > 0 &&
       min <= 1 &&
@@ -1726,26 +1779,29 @@ export class PSParser {
       (["var", "member", "index"].includes(a.k) ||
         // R30-N11: 括弧内でも型付き代入式（[int]$x = "42"）を文位置と
         // 同じく型変換つき代入として読む（RG-271 の隣接形）。
-        (a.k === "cast" && ["var", "member", "index"].includes(a.arg.k)))
+        (assignChain.types.length &&
+          ["var", "member", "index"].includes(assignChain.target.k)))
     ) {
       const assignOp = this.take().v;
-      a =
-        a.k === "cast"
-          ? {
-              k: "assign-expr",
-              target: a.arg,
-              castType: a.type,
-              op: assignOp,
-              value: this.pipeline(),
-              line,
-            }
-          : {
-              k: "assign-expr",
-              target: a,
-              op: assignOp,
-              value: this.pipeline(),
-              line,
-            };
+      a = assignChain.types.length
+        ? {
+            k: "assign-expr",
+            target: assignChain.target,
+            castType:
+              assignChain.types.length === 1 ? assignChain.types[0] : null,
+            castTypes:
+              assignChain.types.length > 1 ? assignChain.types : null,
+            op: assignOp,
+            value: this.pipeline(),
+            line,
+          }
+        : {
+            k: "assign-expr",
+            target: a,
+            op: assignOp,
+            value: this.pipeline(),
+            line,
+          };
     }
     // R28-N7: 三項（条件）演算子（言語仕様 7.4。PowerShell 7 以降の
     // 正規の演算子）。優先順位は全二項演算子より下であるため、最も

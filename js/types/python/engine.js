@@ -1457,7 +1457,9 @@ function parseAtom(tc, line) {
     return { k: 'set', items, line };
   }
   if (t.t === 'OP' && t.v === '*') { const e = parseExpr(tc, line); return { k: 'star', e, line }; }
-  throw new SimDiag(line, 'SyntaxError', '式の読み取りに失敗しました（「' + (t.v !== undefined ? t.v : t.t) + '」のあたり）', '括弧や演算子の書き方を確認してください');
+  // R31-N8：終端トークンの内部名（END）を学習者向け文言に出さない。
+  // 式が途中で終わっている場合は ImageJ の前例（「文末」）に揃える。
+  throw new SimDiag(line, 'SyntaxError', '式の読み取りに失敗しました（「' + (t.t === 'END' ? '文末' : (t.v !== undefined ? t.v : t.t)) + '」のあたり）', '括弧や演算子の書き方を確認してください');
 }
 function parseCompItem(tc, line) {
   if (tc.isOp('*')) { tc.next(); return { star: true, e: parseExpr(tc, line) }; }

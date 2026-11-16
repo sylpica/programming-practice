@@ -12,6 +12,7 @@ import {
   ciSet,
   windowsPath,
   initFiles,
+  assertModelShape,
   fsEntry,
   listFiles,
   fileDisplay,
@@ -1222,6 +1223,15 @@ export function simulatePowerShell(source, model, limits) {
         // R29-N13: 括弧内・条件内の代入式。代入した値そのものが式の値。
         let v = only(a.value, s, api, a);
         if (v === undefined) v = null;
+        // R31-N10: ブラケットの積み重ね（検証属性＋型・型同士等）は
+        // 代入先の型制約として未対応であり、単一形のキャスト停止と
+        // 同じ文言でブラケット列全体を名指して止める。複合代入の
+        // 二項演算より前に判定し、演算側の変換エラーに化けさせない。
+        if (a.castTypes?.length > 1)
+          fail(
+            "未対応の型変換：[" + a.castTypes.join("][") + "]",
+            a.line,
+          );
         if (a.op !== "=")
           v = binary(
             a.op[0],
@@ -2803,6 +2813,15 @@ export function simulatePowerShell(source, model, limits) {
             ? r.expressionValue
             : scalar(r.values);
           if (v === undefined) v = null;
+          // R31-N10: ブラケットの積み重ねは代入先の型制約として
+          // 未対応であり、ブラケット列全体を名指して止める
+          // （代入式側と同じ文言・経路）。複合代入の二項演算より
+          // 前に判定し、演算側の変換エラーに化けさせない。
+          if (n.castTypes?.length > 1)
+            fail(
+              "未対応の型変換：[" + n.castTypes.join("][") + "]",
+              n.line,
+            );
           if (n.op !== "=")
             v = binary(
               n.op[0],
@@ -3048,6 +3067,9 @@ export function simulatePowerShell(source, model, limits) {
       return states;
     }
     let sDepth = 0;
+    // R31-N13: モデル自体の形状は、実行基盤が model.variables へ触れる
+    // 前に名指す（initFiles 側の検証だけでは null 等に到達しない）。
+    assertModelShape(model);
     const result = shellRuntime(
       [{ k: "ps-program", body: nodes, line: 1 }],
       model,

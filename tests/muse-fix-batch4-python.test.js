@@ -175,17 +175,25 @@ test("R25-N1: explicitly raised SyntaxError family is catchable, parse errors ar
 
 // ---------- R25-N5：simulate の変換層 ----------
 test("R25-N5: null model / null code return a learner error instead of throwing", async () => {
-  for (const [code, model] of [
-    ["print(1)", null],
-    [null, structuredClone(py.model.defaults)],
-    ["print(1)", undefined],
-  ]) {
-    const r = await py.simulate(code, model);
+  // コード側の null は従来どおり変換層の文言（TypeError）。
+  {
+    const r = await py.simulate(null, structuredClone(py.model.defaults));
     assert.ok(r.error, "error result expected");
     assert.equal(r.paths.length, 0);
     assert.doesNotMatch(r.error.message, /Cannot read properties/);
     assert.match(r.error.message, /null \/ undefined/);
     assert.equal(r.error.category, "TypeError");
+  }
+  // モデル側の null／undefined は、修正バッチ10（R31-N13）の入口検証が
+  // モデル自体を名指して停止させる（本テストの旧期待は R31-N13 が欠陥と
+  // 名指した汎用文言を固定していたため、統合側裁定で更新した）。
+  for (const model of [null, undefined]) {
+    const r = await py.simulate("print(1)", model);
+    assert.ok(r.error, "error result expected");
+    assert.equal(r.paths.length, 0);
+    assert.doesNotMatch(r.error.message, /Cannot read properties/);
+    assert.match(r.error.message, /モデルはオブジェクト/);
+    assert.equal(r.error.category, "モデルエラー");
   }
 });
 

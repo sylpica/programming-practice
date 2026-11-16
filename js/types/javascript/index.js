@@ -6,7 +6,7 @@ import {
   callName,
 } from "../../core/script.js";
 import { rows } from "../../core/data.js";
-import { formatModelValue as formatValue, unknown, isUnknown } from "../../core/contract.js";
+import { formatModelValue as formatValue, unknown, isUnknown, LIMITS } from "../../core/contract.js";
 const reference = rows([
   [
     "console.log",
@@ -504,6 +504,37 @@ export const definition = {
   },
   scan: (code) => scanScript(code, reference),
   async simulate(code, model, limits) {
+    // R31-N13：モデル形状の入口検証。モデル自体がオブジェクトでない
+    // 場合や、必須項目（dom／dom.elements／dom.body）の欠落・型違いが
+    // ある場合は、実行時の汎用文言（「null / undefined のプロパティ
+    // は参照できません」）ではなく、モデル側の問題として項目名を
+    // 名指して停止する（shell 種類の「モデルfilesは配列で指定して
+    // ください」と同水準）。selectors／variables は欠落時のフォール
+    // バックが実装にあるため、型違いの場合だけ名指す。
+    const isModelObject = (v) =>
+      !!v && typeof v === "object" && !Array.isArray(v);
+    const modelFailure = (message) => ({
+      paths: [],
+      error: { line: 1, message, category: "モデルエラー" },
+      truncated: false,
+      limits: { ...LIMITS, ...limits },
+    });
+    if (!isModelObject(model))
+      return modelFailure("モデルはオブジェクト（JSON）で指定してください");
+    if (!isModelObject(model.dom))
+      return modelFailure("モデルdomはオブジェクトで指定してください");
+    if (!isModelObject(model.dom.elements))
+      return modelFailure(
+        "モデルdom.elementsはオブジェクトで指定してください",
+      );
+    if (!isModelObject(model.dom.body))
+      return modelFailure("モデルdom.bodyはオブジェクトで指定してください");
+    if (model.dom.selectors !== undefined && !isModelObject(model.dom.selectors))
+      return modelFailure(
+        "モデルdom.selectorsはオブジェクトで指定してください",
+      );
+    if (model.variables !== undefined && !isModelObject(model.variables))
+      return modelFailure("モデルvariablesはオブジェクトで指定してください");
     const result = simulateScript(
       code,
       model,
@@ -555,7 +586,12 @@ export const definition = {
                   if (!Object.hasOwn(s.vars, nm)) s.vars[nm] = undefined;
                 }
               }
-              if (n.k === "for") hoist([n.init], visible);
+              // R31 横断スイープ：for の初期化部が無い形（for (;;) 等）
+              // では n.init が null で、巻き上げ走査が null を読んで
+              // 「null / undefined のプロパティは参照できません」と
+              // いう無関係な原因で停止していた。初期化部がある場合だけ
+              // 走査する（step 側の enterScope は既に同じガードを持つ）。
+              if (n.k === "for" && n.init) hoist([n.init], visible);
               if (n.body) hoist(n.body, visible);
               if (n.otherwise) hoist(n.otherwise, visible);
             }
@@ -662,7 +698,9 @@ export const definition = {
           if (a.k === "var" && ["True", "False", "TRUE", "FALSE", "NULL", "None", "Blank"].includes(a.name) && !Object.hasOwn(s.vars, a.name))
             api.fail("未定義の名前：" + a.name, a, "ReferenceError");
           if (a.k === "unary" && ["not", "&", "*"].includes(a.op))
-            api.fail("このJavaScript演算子は未対応です", a, "未対応");
+            // R31-N5 兄弟表面：単項演算子も演算子名を名指す（** の
+            // 二項形と水準を揃える）。
+            api.fail("このJavaScript演算子は未対応です：" + a.op, a, "未対応");
           if (a.k === "var" && a.name === "undefined")
             return { handled: true, value: undefined };
           if (a.k === "var" && a.name === "NaN")

@@ -37,7 +37,19 @@ const HOST_ERROR_MESSAGES = [
 ];
 const GENERIC_HOST_ERROR_MESSAGE = "処理中に予期しないエラーが発生しました";
 export function toLearnerError(e) {
-  if (e instanceof PracticeError) return e;
+  if (e instanceof PracticeError) {
+    // R31-N8：内部終端トークン名（<eof>）が著作者エラーの文言に混入して
+    // いた場合は、学習者の言葉（文末）へ翻訳してから返す。式の先頭で
+    // 終端に当たった場合は expr() 側が文ごと組み替えるため、ここは
+    // その他の経路（方言側の補間等）に対する受け皿。
+    if (e.message.includes("<eof>"))
+      return new PracticeError(
+        e.message.replaceAll("<eof>", "文末"),
+        e.line,
+        e.category,
+      );
+    return e;
+  }
   const raw = e instanceof Error ? e.message : "";
   for (const [pattern, message, category] of HOST_ERROR_MESSAGES) {
     if (pattern.test(raw))
@@ -264,6 +276,17 @@ export function tokenize(source, dialect = "js") {
       continue;
     }
     if (dialect === "ahk" && source.slice(i, i + 2) === "//") unsupported("AutoHotkeyの整数除算 // は未対応です", line);
+    // R31-N6：スプレッド／残余（...）は3つのドットをまとめて字句化する。
+    // 1つずつ読むと、3つ目のドットが直後の数値リテラル（42／1.5／10n／
+    // 0x10 等）の先頭ドットとして誤って取り込まれ、「レコードの
+    // フィールド名が必要です」や存在しない表記（.42／.1.5）を原因と
+    // する虚偽のエラーになっていた。出すトークン列は従来どおり
+    // "." 3個であり、数値が直後にない ... の字句結果は変わらない。
+    if (source.slice(i, i + 3) === "...") {
+      out.push({ v: ".", line }, { v: ".", line }, { v: ".", line });
+      i += 3;
+      continue;
+    }
     // RG-11 追加表面（R21-N12）: JavaScript の数値区切り（1_000 等）。
     // 区切りは数字の間にだけ置ける。妥当な形は区切りを除去して通常の
     // 数値／BigInt として扱い、不正な配置はリテラルを名指しして弾く
@@ -484,7 +507,12 @@ export function tokenize(source, dialect = "js") {
     }
     // R26-N16：`**` を単一トークンにするのは AutoHotkey（累乗演算子）だけ。
     // 他方言では従来どおり `*` 2つとして扱い、挙動を変えない。
-    if (m[0] === "**" && dialect !== "ahk") {
+    // R31-N5（JS 分）：JavaScript では `**`（べき乗）も単一トークンに
+    // する。`*` 2つに割ると2つ目が単項演算子として読まれ、「この
+    // JavaScript演算子は未対応です」という演算子名のない文言や
+    // `*=` という別演算子の名指しになっていた。parser 側で `**`／
+    // `**=` を名指して停止する（評価はしない）。
+    if (m[0] === "**" && dialect !== "ahk" && dialect !== "js") {
       out.push({ v: "*", line });
       i += 1;
       continue;
@@ -498,8 +526,13 @@ export function tokenize(source, dialect = "js") {
       "<<=": "<<", ">>=": ">>", ">>>=": ">>>",
     };
     if (compoundHeads[m[0]] !== undefined && dialect !== "ahk") {
-      out.push({ v: compoundHeads[m[0]], line });
-      i += compoundHeads[m[0]].length;
+      // R31-N5（JS 分）：`**=` は JavaScript では `**`＋`=` として出し、
+      // parser 側で `**=` 演算子として名指せるようにする（従来の
+      // `*`＋`= `分割では `*=` という別演算子の名指しになっていた）。
+      const head =
+        dialect === "js" && m[0] === "**=" ? "**" : compoundHeads[m[0]];
+      out.push({ v: head, line });
+      i += head.length;
       continue;
     }
     // R30-N16：論理代入（&&= ／ ||= ／ ??=）を単一トークンにするのは
@@ -703,6 +736,14 @@ export class ScriptParser {
     let t = this.take(),
       a;
     if (!t) throw new PracticeError("式が必要です");
+    // R31-N8：式が途中で終わっている場合は、内部終端トークン名
+    // （<eof>）を出さず、入力が途中で終わっている旨を学習者の言葉で
+    // 示す（AutoHotkey の既存文言と同水準）。
+    if (t.v === "<eof>")
+      throw new PracticeError(
+        "式を解釈できません（式が途中で終わっています）",
+        t.line,
+      );
     // RG-07（R11-N8）：スプレッド構文は対象を名指して停止する。
     if (
       t.v === "." &&
@@ -710,6 +751,37 @@ export class ScriptParser {
       this.ts[this.i + 1]?.v === "."
     )
       unsupported("スプレッド構文（...）", t.line);
+    // R31-N5：JavaScript の未対応構文は、式の先頭トークンそのものを
+    // 名指して停止する。従来は var として読み進めてしまい、後続の
+    // 識別子・句読点・「宣言の区切りが必要です」等の無関係な原因で
+    // 停止していた（関数式／class 式／new／宣言初期化子・引数・条件
+    // 等の全位置が対象）。await／yield は識別子として使う形（宣言済み
+    // 変数の参照・代入先等）と両立させるため、直後に被演算子らしい
+    // トークンが続く場合だけ演算子として名指す。async は function が
+    // 続く形と単独引数のアロー形だけを対象にする。
+    if (this.dialect === "js" && t.k === "id") {
+      const nx = this.ts[this.i],
+        nv = nx?.v;
+      const operandHead =
+        nx?.k === "id" ||
+        nx?.k === "number" ||
+        nx?.k === "string" ||
+        ["[", "{", "-", "!", "typeof", "void", "delete", "new", "function", "class"].includes(nv);
+      if (t.v === "new") unsupported("new 演算子", t.line);
+      if (t.v === "function")
+        unsupported(
+          nv === "*" ? "ジェネレータ関数（function*）" : "関数式（function）",
+          t.line,
+        );
+      if (t.v === "class") unsupported("class 式", t.line);
+      if (t.v === "import") unsupported("import 式", t.line);
+      if (t.v === "await" && operandHead) unsupported("await 演算子", t.line);
+      if (t.v === "yield" && operandHead) unsupported("yield 演算子", t.line);
+      if (t.v === "async" && nv === "function")
+        unsupported("async function（非同期関数）", t.line);
+      if (t.v === "async" && nx?.k === "id" && this.ts[this.i + 1]?.v === "=>")
+        unsupported("アロー関数（=>）", t.line);
+    }
     let meta = { line: t.line };
     if (t.k === "number" && this.dialect === "js" && /[LfF]$/.test(t.v) && !/^0[xXbBoO]/.test(t.v))
       throw new PracticeError("JavaScriptに数値の型接尾辞はありません", t.line, "SyntaxError");
@@ -792,6 +864,16 @@ export class ScriptParser {
         let values = [];
         this.skipLines();
         while (!this.peek("]")) {
+          // R31 横断スイープ：JavaScript の疎な配列の穴（[1, , 2] 等）。
+          // 実 JavaScript では穴は読み出すと undefined になる正当な
+          // 要素であり、「式を解釈できません：,」というカンマ原因で
+          // 止めず、undefined 要素として受理する（JS 方言のみ）。
+          if (this.dialect === "js" && this.peek(",")) {
+            values.push({ ...meta, k: "literal", value: undefined });
+            this.take();
+            this.skipLines();
+            continue;
+          }
           values.push(this.exprCtx(1));
           this.skipLines();
           if (!this.peek(",")) break;
@@ -863,10 +945,53 @@ export class ScriptParser {
             continue;
           }
           let key = this.take();
-          if (!["id", "string"].includes(key.k))
+          // R31 横断スイープ（JS 分）：オブジェクトリテラル内の未対応
+          // 形は、句読点や汎用のフィールド名文言ではなく構文そのもの
+          // を名指す。数値キーと省略記法（{x}）は実 JavaScript の正当
+          // な形なので、名指し停止ではなくそのまま受理する。
+          if (this.dialect === "js" && key.v === "[")
+            unsupported("計算済みプロパティ名（[...]）", key.line);
+          if (this.dialect === "js" && key.v === "*")
+            unsupported("オブジェクトリテラルのメソッド", key.line);
+          if (
+            !["id", "string", ...(this.dialect === "js" ? ["number"] : [])].includes(key.k)
+          )
             throw new PracticeError("レコードのフィールド名が必要です", key.line);
+          if (
+            this.dialect === "js" &&
+            key.k === "id" &&
+            (key.v === "get" || key.v === "set") &&
+            ["id", "string", "number"].includes(this.ts[this.i]?.k)
+          )
+            unsupported(`オブジェクトリテラルの ${key.v} アクセサ`, key.line);
+          if (
+            this.dialect === "js" &&
+            key.k === "id" &&
+            key.v === "async" &&
+            this.ts[this.i]?.k === "id" &&
+            this.ts[this.i + 1]?.v === "("
+          )
+            unsupported("オブジェクトリテラルのメソッド", key.line);
+          if (this.dialect === "js" && this.peek("("))
+            unsupported("オブジェクトリテラルのメソッド", key.line);
+          if (
+            this.dialect === "js" &&
+            key.k === "id" &&
+            (this.peek(",") || this.peek("}"))
+          ) {
+            // 省略記法 {x} は {x: x} と同じ（ECMA-262 の ShorthandPropertyDefinition）。
+            entries.push([key.v, { k: "var", name: key.v, line: key.line }]);
+            this.skipLines();
+            if (!this.peek(",")) break;
+            this.take();
+            this.skipLines();
+            continue;
+          }
           this.take(":");
-          entries.push([key.v, this.exprCtx(1)]);
+          entries.push([
+            key.k === "number" ? String(key.v) : key.v,
+            this.exprCtx(1),
+          ]);
           this.skipLines();
           if (!this.peek(",")) break;
           this.take();
@@ -1042,6 +1167,15 @@ export class ScriptParser {
         (v === "in" || v === "instanceof")
       )
         unsupported(`${v} 演算子`, next.line);
+      // R31-N5：JavaScript のべき乗（**）とべき乗代入（**=）は未対応。
+      // in／instanceof と同じく演算子名を名指して停止する（字句側で
+      // `**` を単一トークン化したため、ここで直接照合できる。` **=`
+      // は字句側で `**`＋`=` に分かれるため、直後の `=` で判別する）。
+      if (this.dialect === "js" && v === "**")
+        unsupported(
+          this.ts[this.i + 1]?.v === "=" ? "**= 演算子" : "** 演算子",
+          next.line,
+        );
       let p = this.precTable()[v];
       if (
         p === undefined ||
@@ -1421,6 +1555,32 @@ export class ScriptParser {
         line,
         "SyntaxError",
       );
+    // R31-N5＋横断スイープ：文頭の未対応構文（JavaScript）は、後続の
+    // 識別子・本体の {・ラベルの : 等ではなく、文頭のキーワードや
+    // 構文そのものを名指して停止する。switch 文が既にこの水準で
+    // 名指していることと揃える。
+    if (this.dialect === "js") {
+      if (v === "function")
+        unsupported(
+          this.ts[this.i + 1]?.v === "*"
+            ? "ジェネレータ関数（function*）"
+            : "関数定義（function）",
+          line,
+        );
+      if (v === "class") unsupported("class 宣言", line);
+      if (v === "try") unsupported("try 文", line);
+      if (v === "throw") unsupported("throw 文", line);
+      if (v === "with") unsupported("with 文", line);
+      if (v === "export") unsupported("export 文", line);
+      if (v === "import") unsupported("import 文", line);
+      if (v === "debugger") unsupported("debugger 文", line);
+      if (v === "catch") unsupported("catch 節", line);
+      if (v === "finally") unsupported("finally 節", line);
+      // ラベル付き文（識別子＋コロン）。式文の三項演算子は ? が先に
+      // 来るため、この形になるのはラベルだけである。
+      if (t.k === "id" && this.ts[this.i + 1]?.v === ":")
+        unsupported(`ラベル（${v}:）`, line);
+    }
     if (v === "if") {
       this.take();
       let test;
@@ -1630,6 +1790,18 @@ export class ScriptParser {
         }
         break;
       }
+      // R31-N4：for-of／for-in の通常の変数形（for (let v of ...) 等）。
+      // 分割代入形が「分割代入（for-of / for-in の反復変数）」と名指し、
+      // 宣言なし形が「of」を名指すのと水準を揃え、内部期待文（宣言の
+      // 区切り）ではなく for-of／for-in そのものを名指して停止する。
+      // 宣言の直後に of／in が続く形は、for ヘッダ以外では実
+      // JavaScript でも文法エラーであり、この帰属で誤らない。
+      if (
+        kind === "js" &&
+        this.ts[this.i]?.k === "id" &&
+        ["of", "in"].includes(this.ts[this.i]?.v)
+      )
+        unsupported(`for-${this.ts[this.i].v} 文`, line);
       if (!["\n", ";", ")", "}", "<eof>"].includes(this.ts[this.i]?.v))
         unsupported("宣言の区切りが必要です", line);
       if (declarators.length === 1) {

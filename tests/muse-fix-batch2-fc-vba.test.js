@@ -99,7 +99,7 @@ test("F-VBA-05 per-function Null rules win over the generic Null shortcut", () =
   // IsNumeric の通常判定は従来どおり
   assert.deepEqual(outputs('Debug.Print IsNumeric("12")'), ["True"]);
   assert.deepEqual(outputs('Debug.Print IsNumeric("abc")'), ["False"]);
-  assert.deepEqual(outputs("Debug.Print IsNumeric(True)"), ["False"]);
+  assert.deepEqual(outputs("Debug.Print IsNumeric(True)"), ["True"]);
 });
 
 // ---- F-VBA-06: 整数引数は銀行丸めで暗黙変換される ----

@@ -42,6 +42,29 @@ function elemReal(array, index) {
   return !!(array && array.__reals && array.__reals[index]);
 }
 
+// 配列（入れ子を含む）の要素のうち、実数として扱うべきものが1つでもあるか。
+// 実数性の印（__reals）のほか、整数でない数値そのものも実数として数える
+// （画面入力など印が付かない経路で入った 7.5 のような値のため）。
+function anyRealElems(value) {
+  if (!Array.isArray(value)) return false;
+  for (let i = 0; i < value.length; i++) {
+    const elem = value[i];
+    if (elemReal(value, i)) return true;
+    if (typeof elem === "number" && !Number.isInteger(elem)) return true;
+    if (anyRealElems(elem)) return true;
+  }
+  return false;
+}
+
+// 属性句の対象が名前で、その宣言型が実数型（配列型を含む）かどうか。
+function declaredObjReal(node, state) {
+  if (node && node.obj && node.obj.k === "name") {
+    const cell = findCell(state, node.obj.name);
+    return !!(cell && cell.t && cell.t.base === "実数型");
+  }
+  return false;
+}
+
 // 配列変数に宣言型がある場合、要素の実数性も型で決める（スカラーと同じ原則）。
 function forcedElemReal(node, state, real) {
   if (node.obj && node.obj.k === "name") {
@@ -366,6 +389,10 @@ class ExprParser {
       // 掛かる（R30F01B-N5。裁定 C1「『の商』の句は常に trunc」）。後置の quot が
       // 右辺の先頭に付いていたら剥がし、乗除の結果全体へ付け直す。
       const peelQuot = (node) => {
+        // 括弧で明示的にくくった部分（grouped）は付け直しの対象にしない。
+        // 別紙2で () は最高位の優先順位であり、学習者が括弧で示した
+        // 「この部分の商」という範囲を勝手に広げてはならない（R31-N1）。
+        if (node.grouped) return { base: node, layers: 0 };
         if (node.k === "quot") { const inner = peelQuot(node.v); return { base: inner.base, layers: inner.layers + 1 }; }
         if (node.k === "un" && (node.op === "-" || node.op === "+")) {
           const inner = peelQuot(node.v);
@@ -470,9 +497,13 @@ class ExprParser {
     if (t.kind === "punct" && t.value === "(") {
       const inner = this.parseOr();
       this.expectPunct(")");
+      // 括弧によるグループ化の情報を保持する（「の商」の付け直しが
+      // 括弧の中へ及ばないようにするため。R31-N1）。
+      inner.grouped = true;
       return inner;
     }
     if (t.kind === "punct" && t.value === "{") return this.parseArrayLiteral(t);
+    if (t.kind === "eof") fail(this.line, "式を解釈できません（式が途中で終わっています）", "構文エラー");
     fail(this.line, `式が解釈できません：${this.text}`, "構文エラー");
   }
   // { } の中身は元の文字列から切り出し、カンマの深さで分割して解釈する。
@@ -705,6 +736,7 @@ class Parser {
     const items = [];
     for (const part of splitTopLevel(decl.rest)) {
       const piece = part.trim();
+      if (!piece) fail(lineNo, "変数名が書かれていません（宣言が途中で終わっているか、カンマの前後が空になっています）", "構文エラー");
       const arrow = piece.indexOf("←");
       let name = piece;
       let init = null;
@@ -758,6 +790,11 @@ class Parser {
       return { k: "return", expr: rest ? parseTextExpr(rest, line.no) : null, line: line.no };
     }
 
+    // 「型名:」だけで終わる宣言は、式の解釈に落とさず宣言の途中終了として名指す。
+    if (new RegExp(`^(${IDENT})\\s*:\\s*$`).test(text)) {
+      fail(line.no, `宣言が途中で終わっています。「型名: 変数名」の形で変数名まで書きます：${text}`, "構文エラー");
+    }
+
     const decl = this.tryParseDecl(text, line.no);
     if (decl) { decl.line = line.no; return decl; }
 
@@ -778,9 +815,22 @@ class Parser {
       if (match[3] === "減らす") fail(line.no, "「の値を〜減らす」は、確認した試験問題の範囲では見つかりませんでした。本アプリでは未対応です");
       fail(line.no, `「の値を〜増やす」の増分は数値で書きます（「${match[2]}」のような式は、確認した試験問題の範囲に無いため未対応です）`);
     }
-    match = /^(.+?)の値と(.+?)の値をこの順にコンマ区切りで出力する$/.exec(text);
-    if (match) {
-      return { k: "output", exprs: [parseTextExpr(match[1], line.no), parseTextExpr(match[2], line.no)], line: line.no };
+    // 対応形式は2値だけなので、最上位の区切り「の値と」がちょうど1つでない
+    // 出力文（3値以上など）は、式の解釈に進めず出力文自体を名指して止める。
+    // 2値用正規表現の非欲張りマッチが第2式へ後続の値を吸収し、属性句の
+    // 文法を原因としてしまう誤帰属を防ぐ（R31-N3）。分割も正規表現では
+    // なく最上位の区切り位置で行い、文字列リテラル内の同文言に引きずられない。
+    if (/をこの順にコンマ区切りで出力する$/.test(text)) {
+      const suffix = "の値をこの順にコンマ区切りで出力する";
+      const seps = topLevelPhraseIndexes(text, "の値と");
+      if (seps.length === 1 && text.endsWith(suffix)) {
+        const expr1 = text.slice(0, seps[0]);
+        const expr2 = text.slice(seps[0] + "の値と".length, text.length - suffix.length);
+        if (expr1.trim() && expr2.trim()) {
+          return { k: "output", exprs: [parseTextExpr(expr1, line.no), parseTextExpr(expr2, line.no)], line: line.no };
+        }
+      }
+      fail(line.no, `「${text}」という形の出力文には対応していません。対応している出力形式は「式の値と式の値をこの順にコンマ区切りで出力する」です`);
     }
     // 対応していない出力文の形は、属性句の文法ではなく出力文自体を真因として名指す
     // （R30-PAR-9）。対応形式を案内して止める。
@@ -870,6 +920,7 @@ class Parser {
 
 // for の制御記述：実例で確認した3形式だけを受理する（C7）。
 function parseForControl(text, line) {
+  if (!text.trim()) fail(line, "for の制御記述が書かれていません（式が途中で終わっています）。対応形式は「変数 を 初期値 から 終値 まで 増分 ずつ増やす」「変数に配列の要素を順に代入する」です", "構文エラー");
   let match = /^(.+?)に(.+?)の要素を順に代入する$/.exec(text);
   if (match) {
     const varName = match[1].trim();
@@ -886,6 +937,22 @@ function parseForControl(text, line) {
   }
   if (/ずつ減らす/.test(text)) fail(line, "「ずつ減らす」は、確認した試験問題の範囲では見つかりませんでした。本アプリでは未対応です");
   fail(line, `for の制御記述が解釈できません。対応形式は「変数 を 初期値 から 終値 まで 増分 ずつ増やす」「変数に配列の要素を順に代入する」です：${text}`);
+}
+
+// 文字列リテラルの中と括弧の内側を除いた「最上位」に現れる句の位置の一覧。
+function topLevelPhraseIndexes(text, phrase) {
+  const indexes = [];
+  let depth = 0;
+  let inString = false;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (inString) { if (ch === "\"") inString = false; continue; }
+    if (ch === "\"") { inString = true; continue; }
+    if ("({[".includes(ch)) { depth++; continue; }
+    if (")}]".includes(ch)) { depth--; continue; }
+    if (depth === 0 && text.startsWith(phrase, i)) { indexes.push(i); i += phrase.length - 1; }
+  }
+  return indexes;
 }
 
 // 文字列・括弧の外にある最初の ← の位置。無ければ -1。
@@ -1032,11 +1099,26 @@ function evalExpr(node, state, ctx) {
     });
     case "member": return evalChain(node.obj, state, ctx, (obj, s) => [{ v: readMember(obj, node), s, real: !!(isObj(obj) && obj.fieldReals && obj.fieldReals.get(node.name)) }]);
     case "prop": return evalChain(node.obj, state, ctx, (obj, s) => {
-      const typeReal = !!(node.obj.k === "name" && (() => { const c = findCell(s, node.obj.name); return c && c.t && c.t.base === "実数型"; })());
-      return [{ v: readProp(obj, node), s, real: node.prop === "要素の和" ? typeReal : false }];
+      // 「要素の和」の実数性は値駆動（C1）：宣言型が実数型であるか、
+      // 合計した要素のいずれかが実数であれば実数として扱う（R31-N2）。
+      const sumReal = node.prop === "要素の和" && (declaredObjReal(node, s) || anyRealElems(obj));
+      return [{ v: readProp(obj, node), s, real: sumReal }];
     });
-    case "rowsum": return evalChain(node.obj, state, ctx, (obj, s1) => evalChain(node.i, s1, ctx, (iv, s2) => [{ v: readRowSum(obj, iv, node), s: s2, real: false }]));
-    case "colsum": return evalChain(node.obj, state, ctx, (obj, s1) => evalChain(node.i, s1, ctx, (iv, s2) => [{ v: readColSum(obj, iv, node), s: s2, real: false }]));;
+    case "rowsum": return evalChain(node.obj, state, ctx, (obj, s1) => evalChain(node.i, s1, ctx, (iv, s2) => {
+      const v = readRowSum(obj, iv, node);
+      const row = Array.isArray(obj) && Number.isInteger(iv) ? obj[iv - 1] : null;
+      const real = declaredObjReal(node, s2) || anyRealElems(row);
+      return [{ v, s: s2, real }];
+    }));
+    case "colsum": return evalChain(node.obj, state, ctx, (obj, s1) => evalChain(node.i, s1, ctx, (iv, s2) => {
+      const v = readColSum(obj, iv, node);
+      let real = declaredObjReal(node, s2);
+      if (!real && Array.isArray(obj) && Number.isInteger(iv)) {
+        real = obj.some((row) => Array.isArray(row) && iv >= 1 && iv <= row.length
+          && (elemReal(row, iv - 1) || (typeof row[iv - 1] === "number" && !Number.isInteger(row[iv - 1])) || anyRealElems(row[iv - 1])));
+      }
+      return [{ v, s: s2, real }];
+    }));
     case "charat": return evalChain(node.obj, state, ctx, (obj, s1) => evalChain(node.i, s1, ctx, (iv, s2) => [{ v: readCharAt(obj, iv, node), s: s2, real: false }]));
     case "quot": return evalChain(node.v, state, ctx, (v, s) => {
       if (isUnknown(v)) return [{ v: makeUnknown("商", { op: "の商", a: v }), s, real: false }];

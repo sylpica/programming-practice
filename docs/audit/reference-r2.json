@@ -906,7 +906,7 @@
    "example": "Debug.Print Val(\"12abc\")",
    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/val-function.md"
   },
-  "sha256": "ad0c3cb3eb9a1a7265cb31025511334da9f7f1e7a1b71feea3c9c09de33a4895",
+  "sha256": "9336d074f861ceea1b2bc537b0578c2311777b54c951abd80df958cd09426279",
   "description": "照合済",
   "returns": "照合済",
   "caution": "照合済（モデル固有の限定は実装・試験で確認）"
@@ -922,7 +922,7 @@
    "example": "Debug.Print IsNumeric(\"12\")",
    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/isnumeric-function.md"
   },
-  "sha256": "6b20e839195c2077f0d97c95a82b9903e9b3fe31c65a63b34f7599b455fc728e",
+  "sha256": "11691986fc083a52d837d1de7ba1c34575b2239a6fc0e5d0138f2c86aea76be7",
   "description": "照合済",
   "returns": "照合済",
   "caution": "照合済（モデル固有の限定は実装・試験で確認）"
@@ -5011,11 +5011,11 @@
   "fields": {
    "description": "Value列を持つ数列テーブルを生成します。Start（既定値1）とStep（既定値1）は省略できます。",
    "returns": "Value列の数列テーブル",
-   "caution": "",
+   "caution": "生成する件数は最も近い整数へ切り捨てられます（例：Sequence(0.9)は0件になり、空表を生成します）。この説明では上限1,000件です（Microsoft Learnでの上限は50,000件）。",
    "example": "Sequence(3)",
    "source": "https://learn.microsoft.com/en-us/power-platform/power-fx/reference/function-sequence"
   },
-  "sha256": "864db204d950629676dff81f3732ffad67469cbd227b77afaeba5db3232f9e60",
+  "sha256": "cbf153cffd9e22d9ea3ae526004fcf869a81358ebb0158c04cf38ddddaf5fb3f",
   "description": "照合済",
   "returns": "照合済",
   "caution": "照合済（モデル固有の限定は実装・試験で確認）"

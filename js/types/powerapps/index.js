@@ -77,6 +77,7 @@ const reference = rows([
     "Sequence(Records [, Start [, Step]])",
     "Value列を持つ数列テーブルを生成します。Start（既定値1）とStep（既定値1）は省略できます。",
     "Sequence(3)",
+    "生成する件数は最も近い整数へ切り捨てられます（例：Sequence(0.9)は0件になり、空表を生成します）。この説明では上限1,000件です（Microsoft Learnでの上限は50,000件）。",
   ],
   [
     "ForAll",
@@ -376,6 +377,75 @@ function fxTruth(v, line) {
   }
   return Boolean(v);
 }
+// R31-N13: モデル形状の入口検証。モデル自体がオブジェクトでない場合と、
+// defaults の実項目（screens／controls／variables／collections／
+// dataSources／defaults／bindings／screen／language）の欠落・型違いを、
+// 汎用のホスト文言（「null / undefined のプロパティは参照できません」等）
+// に落とさず、モデル側の言葉で項目名を名指して停止する。文言の水準は
+// shell の「モデルfilesは配列で指定してください」、CloudFormation の
+// 「モデルにマクロ定義がありません：…」に揃える。なお screen が指す画面が
+// screens に実在するかは検証しない（UpdateContext／Navigate 側の既存の
+// 名指し停止が担当する。RG-10 の文言を変えないため）。
+function isFxModelObject(v) {
+  return v !== null && typeof v === "object" && !Array.isArray(v);
+}
+function validateFxModel(model) {
+  const fail = (message) => {
+    throw new PracticeError(message, 1, "モデルエラー");
+  };
+  if (!isFxModelObject(model)) fail("モデルはオブジェクトで指定してください");
+  for (const key of [
+    "screens",
+    "controls",
+    "variables",
+    "collections",
+    "dataSources",
+    "defaults",
+    "bindings",
+  ]) {
+    if (!(key in model)) fail(`モデルに${key}がありません`);
+    if (!isFxModelObject(model[key]))
+      fail(`モデル${key}はオブジェクトで指定してください`);
+  }
+  for (const key of ["screen", "language"]) {
+    if (!(key in model)) fail(`モデルに${key}がありません`);
+    if (typeof model[key] !== "string")
+      fail(`モデル${key}は文字列で指定してください`);
+  }
+  for (const [name, screen] of Object.entries(model.screens)) {
+    if (!isFxModelObject(screen))
+      fail(`モデルscreens.${name}はオブジェクトで指定してください`);
+    if (screen.context !== undefined && !isFxModelObject(screen.context))
+      fail(`モデルscreens.${name}.contextはオブジェクトで指定してください`);
+  }
+  for (const [name, control] of Object.entries(model.controls))
+    if (!isFxModelObject(control))
+      fail(`モデルcontrols.${name}はオブジェクトで指定してください`);
+  for (const [name, table] of Object.entries(model.dataSources))
+    if (!Array.isArray(table))
+      fail(`モデルdataSources.${name}は配列で指定してください`);
+  for (const [name, record] of Object.entries(model.defaults))
+    if (!isFxModelObject(record))
+      fail(`モデルdefaults.${name}はオブジェクトで指定してください`);
+  for (const [name, table] of Object.entries(model.collections))
+    if (!Array.isArray(table))
+      fail(`モデルcollections.${name}は配列で指定してください`);
+  for (const [name, formula] of Object.entries(model.bindings))
+    if (typeof formula !== "string")
+      fail(`モデルbindings.${name}は文字列で指定してください`);
+}
+// R31 横断スイープ(c)：途中終了した式のパーサエラーが内部トークン
+// 「<eof>」を学習者向け文言に含めていた（例：「式を解釈できません：
+// <eof>」）。AutoHotkey の RG-08 サニタイズと同じ文言・方針で置き換える。
+function sanitizeFxEof(e) {
+  if (typeof e?.message === "string" && e.message.includes("<eof>"))
+    return new PracticeError(
+      "式を解釈できません（式が途中で終わっています）",
+      e.line || 1,
+      e.category || "エラー",
+    );
+  return e;
+}
 export const definition = {
   id: "powerapps",
   name: "Power Apps",
@@ -475,6 +545,8 @@ export const definition = {
   scan: (code) => scanScript(code, reference, "fx"),
   async simulate(code, model, limits) {
     try {
+      // R31-N13: モデル形状は入口で検証し、項目名を名指して停止する。
+      validateFxModel(model);
       // RG-18: record / table values are shown with the app's human-readable
       // formatter instead of JavaScript's String(), which leaks
       // "[object Object]" for records.
@@ -1037,11 +1109,33 @@ export const definition = {
             case "table":
               return args.map((_, i) => get(i));
             case "sequence": {
-              let n = Number(get(0)),
+              // R31-N11: 件数（Records）は Microsoft Learn の規則どおり
+              // 最も近い整数へ切り捨てて受理する（Sequence(0.9) は0件＝
+              // 空表、Sequence(2.9) は2件）。範囲は 0〜50,000 が Learn の
+              // 規定だが、このモデルでは上限1,000件とし、項目の caution
+              // で開示する。不正（数値でない・負数）と上限超過は文言を
+              // 分け、上限超過では上限値を正直に示す。Start／Step は
+              // Learn に切り捨て・丸めの規定がなく、小数の Step（0.5）の
+              // 例もあるため、従来どおり値をそのまま使う。
+              let raw = Number(get(0)),
                 start = args[1] ? Number(get(1)) : 1,
                 step = args[2] ? Number(get(2)) : 1;
-              if (!Number.isInteger(n) || n < 0 || n > 1000)
-                api.fail("Sequenceの行数が不正または上限を超えています", node);
+              if (Number.isNaN(raw))
+                api.fail(
+                  "Sequenceの行数が不正です（0以上の数で指定してください）",
+                  node,
+                );
+              let n = Math.floor(raw);
+              if (n < 0)
+                api.fail(
+                  "Sequenceの行数が不正です（0以上の数で指定してください）",
+                  node,
+                );
+              if (n > 1000)
+                api.fail(
+                  "Sequenceの行数が上限（1,000件）を超えています",
+                  node,
+                );
               return Array.from({ length: n }, (_, i) => ({
                 Value: start + i * step,
               }));
@@ -1402,13 +1496,22 @@ export const definition = {
       // R30-N34: 内部ストア switchTemps は実行中だけの保持場所であり、
       // 結果（最終状態）には含めない。s.vars へは最初から入れていない
       // ため、学習者の同名変数がここで消えることはない。
-      for (const p of result.paths || []) delete p.switchTemps;
+      // R31 横断スイープ(c)：bindings 数式など実行中に解析される式が
+      // 途中終了していた場合のエラー（パスエラー・全体エラーとも）に
+      // <eof> を出さない。
+      if (result.error?.message?.includes("<eof>"))
+        result.error.message = "式を解釈できません（式が途中で終わっています）";
+      for (const p of result.paths || []) {
+        delete p.switchTemps;
+        if (p.error?.message?.includes("<eof>"))
+          p.error.message = "式を解釈できません（式が途中で終わっています）";
+      }
       return result;
     } catch (e) {
       // P-N3 受け皿：解析・後処理（groups 整形など executeProgram の
       // 内部 catch の外側）から漏れたホスト例外は、生文言のまま返さず
       // 学習者向け文言へ変換する（PracticeError はそのまま通る）。
-      return sourceFailure(toLearnerError(e));
+      return sourceFailure(sanitizeFxEof(toLearnerError(e)));
     }
   },
 };

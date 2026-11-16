@@ -1560,6 +1560,22 @@ function simInt(v){
   if (v < -2147483648) return -2147483648;
   return Math.trunc(v);
 }
+/* putPixel 経由の書き込み値の変換（setPixel と changeValues で共用）。
+   実 ImageJ ではどちらの関数も、非 float 画像では値を (int) 切捨て変換して
+   ImageProcessor.putPixel へ渡し、ByteProcessor.putPixel／
+   ShortProcessor.putPixel が画素型の範囲へクランプする（8bit: 0〜255、
+   16bit: 0〜65535）。32bit float は putPixelValue の (float) 化のみで
+   範囲変換はないため値をそのまま保持する（float32 への丸め自体は
+   モデル化しない）。RGB（24bit）は ColorProcessor.putPixel が (int) 値を
+   そのまま保持するため切捨てのみ。数値でない値は変換せずそのまま返す
+   （呼び出し側の未確定値チェックが先行する）。 */
+function simPutPixelValue(bit, v){
+  if (typeof v !== "number") return v;
+  if (bit === 8) return Math.min(255, Math.max(0, simInt(v)));
+  if (bit === 16) return Math.min(65535, Math.max(0, simInt(v)));
+  if (bit === 32) return v;
+  return simInt(v);
+}
 /* R25-N22: ImageJ マクロの数値引数は Variable の数値変換を経て渡されるため、
    数値として読める文字列（"1" や "2" など）も数値として解釈される。配列添字・
    getPixel／setPixel の文字列座標で既に採っている解釈に、substring／charCodeAt／
@@ -2423,14 +2439,9 @@ function simBuiltin(S, e, args, refs, H){
          32bit float は putPixelValue の (float) 化のみで範囲変換はないため
          値をそのまま保持する（float32 への丸め自体はモデル化しない）。
          RGB（24bit）は ColorProcessor.putPixel が (int) 値をそのまま保持する
-         ため変換なし */
-      var spv = spvN;
-      if (typeof spvN === "number"){
-        if (imL.bit === 8) spv = Math.min(255, Math.max(0, simInt(spvN)));
-        else if (imL.bit === 16) spv = Math.min(65535, Math.max(0, simInt(spvN)));
-        else if (imL.bit === 32) spv = spvN;
-        else spv = simInt(spvN);
-      }
+         ため変換なし。この変換は simPutPixelValue に共用化し、changeValues
+         （同じく putPixel 経由）も同じ規則を使う */
+      var spv = simPutPixelValue(imL.bit, spvN);
       if (typeof imL.w === "number" && (spx < 0 || spx >= imL.w || spy < 0 || spy >= imL.h)){ warn(line, "setPixel の座標が画像の範囲外です", "範囲外への書き込みは ImageJ では無視されます。"); return SIM_UNK; }
       imL.pix[spx + "," + spy] = spv;
       if (!imL.writtenPix) imL.writtenPix = {};
@@ -2441,9 +2452,32 @@ function simBuiltin(S, e, args, refs, H){
     case "changeValues": {
       var imM = needImg("changeValues");
       /* R26-N9／N10 の兄弟表面: 範囲と置換値の文字列数値も数値として解釈する */
-      var cv0 = simNumArg(args[0]), cv1 = simNumArg(args[1]), cv2 = simNumArg(args[2]);
-      simPushOp(imM, function(v){ return v >= cv0 && v <= cv1 ? cv2 : v; });
-      if (imM.pix) Object.keys(imM.pix).forEach(function(k){ var pv = imM.pix[k]; if (typeof pv === "number" && pv >= cv0 && pv <= cv1){ imM.pix[k] = cv2; if (!imM.writtenPix) imM.writtenPix = {}; imM.writtenPix[k] = 1; } });
+      var cv0 = simNumArg(args[0]), cv1 = simNumArg(args[1]), cv2raw = simNumArg(args[2]);
+      /* R31 既知確定（f01a §3-2）: 置換値 v3 は書き込み値であり、実 ImageJ
+         （ij.macro.Functions.changeValues）は float 画像では
+         putPixelValue(x, y, darg3)、それ以外では putPixel(x, y, (int)darg3)
+         で書くため、setPixel と同じ putPixel 変換（(int) 切捨て＋画素型の
+         範囲へのクランプ。32bit float は変換なし）を受ける。従来は v3 を
+         そのまま保持していた（8bit で 300 が 300 のまま残る等）。
+         一方、範囲引数 v1／v2 は書き込み値ではないため変換しない：
+         Functions.java は darg1／darg2 を double のまま画素値と比較する
+         （v >= darg1 && v <= darg2）。例外は 24bit（RGB）のときだけで、
+         darg1／darg2 と読み取る画素値の双方に (int) 化と & 0xffffff の
+         マスクがかかるため、その形だけ実処理どおりに揃える。 */
+      if (imM.bit === 24){
+        if (typeof cv0 === "number") cv0 = simInt(cv0) & 0xffffff;
+        if (typeof cv1 === "number") cv1 = simInt(cv1) & 0xffffff;
+      }
+      var cv2 = simPutPixelValue(imM.bit, cv2raw);
+      var cvCmp = function(v){ return (imM.bit === 24 && typeof v === "number" ? (simInt(v) & 0xffffff) : v); };
+      /* Functions.java L1166 の NaN 特殊形: 範囲引数が両方とも NaN のときは
+         NaN の画素が置換対象になる（1.52d 以降の仕様として公式関数一覧にも
+         明記）。通常の大小比較では NaN は常に対象外になるため分けて扱う。
+         24bit では範囲引数が先に (int) 化され NaN にならないため発動しない */
+      var cvNaNRange = typeof cv0 === "number" && typeof cv1 === "number" && Number.isNaN(cv0) && Number.isNaN(cv1);
+      var cvHit = function(v){ return (typeof v === "number" && cvNaNRange && Number.isNaN(v)) || (cvCmp(v) >= cv0 && cvCmp(v) <= cv1); };
+      simPushOp(imM, function(v){ return cvHit(v) ? cv2 : v; });
+      if (imM.pix) Object.keys(imM.pix).forEach(function(k){ var pv = imM.pix[k]; if (typeof pv === "number" && cvHit(pv)){ imM.pix[k] = cv2; if (!imM.writtenPix) imM.writtenPix = {}; imM.writtenPix[k] = 1; } });
       step(line, "画素値が " + simFmt(cv0) + "〜" + simFmt(cv1) + " の画素を、すべて " + simFmt(cv2) + " に置き換えます");
       return SIM_UNK;
     }
