@@ -1,0 +1,2612 @@
+[
+  {
+    "name": "Len:0",
+    "expr": "Len(0)",
+    "code": "Debug.Print Len(0)"
+  },
+  {
+    "name": "Len:1",
+    "expr": "Len(1)",
+    "code": "Debug.Print Len(1)"
+  },
+  {
+    "name": "Len:-1",
+    "expr": "Len(-1)",
+    "code": "Debug.Print Len(-1)"
+  },
+  {
+    "name": "Len:Empty",
+    "expr": "Len(Empty)",
+    "code": "Debug.Print Len(Empty)"
+  },
+  {
+    "name": "Len:Null",
+    "expr": "Len(Null)",
+    "code": "Debug.Print Len(Null)"
+  },
+  {
+    "name": "Len:True",
+    "expr": "Len(True)",
+    "code": "Debug.Print Len(True)"
+  },
+  {
+    "name": "Len:False",
+    "expr": "Len(False)",
+    "code": "Debug.Print Len(False)"
+  },
+  {
+    "name": "Len:\"\"",
+    "expr": "Len(\"\")",
+    "code": "Debug.Print Len(\"\")"
+  },
+  {
+    "name": "Len:\"abc\"",
+    "expr": "Len(\"abc\")",
+    "code": "Debug.Print Len(\"abc\")"
+  },
+  {
+    "name": "Len:\"1\"",
+    "expr": "Len(\"1\")",
+    "code": "Debug.Print Len(\"1\")"
+  },
+  {
+    "name": "Len:Array()",
+    "expr": "Len(Array())",
+    "code": "Debug.Print Len(Array())"
+  },
+  {
+    "name": "Len:Array(1)",
+    "expr": "Len(Array(1))",
+    "code": "Debug.Print Len(Array(1))"
+  },
+  {
+    "name": "Len:Array(\"a\")",
+    "expr": "Len(Array(\"a\"))",
+    "code": "Debug.Print Len(Array(\"a\"))"
+  },
+  {
+    "name": "Len:1E20",
+    "expr": "Len(1E20)",
+    "code": "Debug.Print Len(1E20)"
+  },
+  {
+    "name": "Len:1E-20",
+    "expr": "Len(1E-20)",
+    "code": "Debug.Print Len(1E-20)"
+  },
+  {
+    "name": "Len:\"IİıßΟΣ\"",
+    "expr": "Len(\"IİıßΟΣ\")",
+    "code": "Debug.Print Len(\"IİıßΟΣ\")"
+  },
+  {
+    "name": "Trim:0",
+    "expr": "Trim(0)",
+    "code": "Debug.Print Trim(0)"
+  },
+  {
+    "name": "Trim:1",
+    "expr": "Trim(1)",
+    "code": "Debug.Print Trim(1)"
+  },
+  {
+    "name": "Trim:-1",
+    "expr": "Trim(-1)",
+    "code": "Debug.Print Trim(-1)"
+  },
+  {
+    "name": "Trim:Empty",
+    "expr": "Trim(Empty)",
+    "code": "Debug.Print Trim(Empty)"
+  },
+  {
+    "name": "Trim:Null",
+    "expr": "Trim(Null)",
+    "code": "Debug.Print Trim(Null)"
+  },
+  {
+    "name": "Trim:True",
+    "expr": "Trim(True)",
+    "code": "Debug.Print Trim(True)"
+  },
+  {
+    "name": "Trim:False",
+    "expr": "Trim(False)",
+    "code": "Debug.Print Trim(False)"
+  },
+  {
+    "name": "Trim:\"\"",
+    "expr": "Trim(\"\")",
+    "code": "Debug.Print Trim(\"\")"
+  },
+  {
+    "name": "Trim:\"abc\"",
+    "expr": "Trim(\"abc\")",
+    "code": "Debug.Print Trim(\"abc\")"
+  },
+  {
+    "name": "Trim:\"1\"",
+    "expr": "Trim(\"1\")",
+    "code": "Debug.Print Trim(\"1\")"
+  },
+  {
+    "name": "Trim:Array()",
+    "expr": "Trim(Array())",
+    "code": "Debug.Print Trim(Array())"
+  },
+  {
+    "name": "Trim:Array(1)",
+    "expr": "Trim(Array(1))",
+    "code": "Debug.Print Trim(Array(1))"
+  },
+  {
+    "name": "Trim:Array(\"a\")",
+    "expr": "Trim(Array(\"a\"))",
+    "code": "Debug.Print Trim(Array(\"a\"))"
+  },
+  {
+    "name": "Trim:1E20",
+    "expr": "Trim(1E20)",
+    "code": "Debug.Print Trim(1E20)"
+  },
+  {
+    "name": "Trim:1E-20",
+    "expr": "Trim(1E-20)",
+    "code": "Debug.Print Trim(1E-20)"
+  },
+  {
+    "name": "Trim:\"IİıßΟΣ\"",
+    "expr": "Trim(\"IİıßΟΣ\")",
+    "code": "Debug.Print Trim(\"IİıßΟΣ\")"
+  },
+  {
+    "name": "LCase:0",
+    "expr": "LCase(0)",
+    "code": "Debug.Print LCase(0)"
+  },
+  {
+    "name": "LCase:1",
+    "expr": "LCase(1)",
+    "code": "Debug.Print LCase(1)"
+  },
+  {
+    "name": "LCase:-1",
+    "expr": "LCase(-1)",
+    "code": "Debug.Print LCase(-1)"
+  },
+  {
+    "name": "LCase:Empty",
+    "expr": "LCase(Empty)",
+    "code": "Debug.Print LCase(Empty)"
+  },
+  {
+    "name": "LCase:Null",
+    "expr": "LCase(Null)",
+    "code": "Debug.Print LCase(Null)"
+  },
+  {
+    "name": "LCase:True",
+    "expr": "LCase(True)",
+    "code": "Debug.Print LCase(True)"
+  },
+  {
+    "name": "LCase:False",
+    "expr": "LCase(False)",
+    "code": "Debug.Print LCase(False)"
+  },
+  {
+    "name": "LCase:\"\"",
+    "expr": "LCase(\"\")",
+    "code": "Debug.Print LCase(\"\")"
+  },
+  {
+    "name": "LCase:\"abc\"",
+    "expr": "LCase(\"abc\")",
+    "code": "Debug.Print LCase(\"abc\")"
+  },
+  {
+    "name": "LCase:\"1\"",
+    "expr": "LCase(\"1\")",
+    "code": "Debug.Print LCase(\"1\")"
+  },
+  {
+    "name": "LCase:Array()",
+    "expr": "LCase(Array())",
+    "code": "Debug.Print LCase(Array())"
+  },
+  {
+    "name": "LCase:Array(1)",
+    "expr": "LCase(Array(1))",
+    "code": "Debug.Print LCase(Array(1))"
+  },
+  {
+    "name": "LCase:Array(\"a\")",
+    "expr": "LCase(Array(\"a\"))",
+    "code": "Debug.Print LCase(Array(\"a\"))"
+  },
+  {
+    "name": "LCase:1E20",
+    "expr": "LCase(1E20)",
+    "code": "Debug.Print LCase(1E20)"
+  },
+  {
+    "name": "LCase:1E-20",
+    "expr": "LCase(1E-20)",
+    "code": "Debug.Print LCase(1E-20)"
+  },
+  {
+    "name": "LCase:\"IİıßΟΣ\"",
+    "expr": "LCase(\"IİıßΟΣ\")",
+    "code": "Debug.Print LCase(\"IİıßΟΣ\")"
+  },
+  {
+    "name": "UCase:0",
+    "expr": "UCase(0)",
+    "code": "Debug.Print UCase(0)"
+  },
+  {
+    "name": "UCase:1",
+    "expr": "UCase(1)",
+    "code": "Debug.Print UCase(1)"
+  },
+  {
+    "name": "UCase:-1",
+    "expr": "UCase(-1)",
+    "code": "Debug.Print UCase(-1)"
+  },
+  {
+    "name": "UCase:Empty",
+    "expr": "UCase(Empty)",
+    "code": "Debug.Print UCase(Empty)"
+  },
+  {
+    "name": "UCase:Null",
+    "expr": "UCase(Null)",
+    "code": "Debug.Print UCase(Null)"
+  },
+  {
+    "name": "UCase:True",
+    "expr": "UCase(True)",
+    "code": "Debug.Print UCase(True)"
+  },
+  {
+    "name": "UCase:False",
+    "expr": "UCase(False)",
+    "code": "Debug.Print UCase(False)"
+  },
+  {
+    "name": "UCase:\"\"",
+    "expr": "UCase(\"\")",
+    "code": "Debug.Print UCase(\"\")"
+  },
+  {
+    "name": "UCase:\"abc\"",
+    "expr": "UCase(\"abc\")",
+    "code": "Debug.Print UCase(\"abc\")"
+  },
+  {
+    "name": "UCase:\"1\"",
+    "expr": "UCase(\"1\")",
+    "code": "Debug.Print UCase(\"1\")"
+  },
+  {
+    "name": "UCase:Array()",
+    "expr": "UCase(Array())",
+    "code": "Debug.Print UCase(Array())"
+  },
+  {
+    "name": "UCase:Array(1)",
+    "expr": "UCase(Array(1))",
+    "code": "Debug.Print UCase(Array(1))"
+  },
+  {
+    "name": "UCase:Array(\"a\")",
+    "expr": "UCase(Array(\"a\"))",
+    "code": "Debug.Print UCase(Array(\"a\"))"
+  },
+  {
+    "name": "UCase:1E20",
+    "expr": "UCase(1E20)",
+    "code": "Debug.Print UCase(1E20)"
+  },
+  {
+    "name": "UCase:1E-20",
+    "expr": "UCase(1E-20)",
+    "code": "Debug.Print UCase(1E-20)"
+  },
+  {
+    "name": "UCase:\"IİıßΟΣ\"",
+    "expr": "UCase(\"IİıßΟΣ\")",
+    "code": "Debug.Print UCase(\"IİıßΟΣ\")"
+  },
+  {
+    "name": "CStr:0",
+    "expr": "CStr(0)",
+    "code": "Debug.Print CStr(0)"
+  },
+  {
+    "name": "CStr:1",
+    "expr": "CStr(1)",
+    "code": "Debug.Print CStr(1)"
+  },
+  {
+    "name": "CStr:-1",
+    "expr": "CStr(-1)",
+    "code": "Debug.Print CStr(-1)"
+  },
+  {
+    "name": "CStr:Empty",
+    "expr": "CStr(Empty)",
+    "code": "Debug.Print CStr(Empty)"
+  },
+  {
+    "name": "CStr:Null",
+    "expr": "CStr(Null)",
+    "code": "Debug.Print CStr(Null)"
+  },
+  {
+    "name": "CStr:True",
+    "expr": "CStr(True)",
+    "code": "Debug.Print CStr(True)"
+  },
+  {
+    "name": "CStr:False",
+    "expr": "CStr(False)",
+    "code": "Debug.Print CStr(False)"
+  },
+  {
+    "name": "CStr:\"\"",
+    "expr": "CStr(\"\")",
+    "code": "Debug.Print CStr(\"\")"
+  },
+  {
+    "name": "CStr:\"abc\"",
+    "expr": "CStr(\"abc\")",
+    "code": "Debug.Print CStr(\"abc\")"
+  },
+  {
+    "name": "CStr:\"1\"",
+    "expr": "CStr(\"1\")",
+    "code": "Debug.Print CStr(\"1\")"
+  },
+  {
+    "name": "CStr:Array()",
+    "expr": "CStr(Array())",
+    "code": "Debug.Print CStr(Array())"
+  },
+  {
+    "name": "CStr:Array(1)",
+    "expr": "CStr(Array(1))",
+    "code": "Debug.Print CStr(Array(1))"
+  },
+  {
+    "name": "CStr:Array(\"a\")",
+    "expr": "CStr(Array(\"a\"))",
+    "code": "Debug.Print CStr(Array(\"a\"))"
+  },
+  {
+    "name": "CStr:1E20",
+    "expr": "CStr(1E20)",
+    "code": "Debug.Print CStr(1E20)"
+  },
+  {
+    "name": "CStr:1E-20",
+    "expr": "CStr(1E-20)",
+    "code": "Debug.Print CStr(1E-20)"
+  },
+  {
+    "name": "CStr:\"IİıßΟΣ\"",
+    "expr": "CStr(\"IİıßΟΣ\")",
+    "code": "Debug.Print CStr(\"IİıßΟΣ\")"
+  },
+  {
+    "name": "Val:0",
+    "expr": "Val(0)",
+    "code": "Debug.Print Val(0)"
+  },
+  {
+    "name": "Val:1",
+    "expr": "Val(1)",
+    "code": "Debug.Print Val(1)"
+  },
+  {
+    "name": "Val:-1",
+    "expr": "Val(-1)",
+    "code": "Debug.Print Val(-1)"
+  },
+  {
+    "name": "Val:Empty",
+    "expr": "Val(Empty)",
+    "code": "Debug.Print Val(Empty)"
+  },
+  {
+    "name": "Val:Null",
+    "expr": "Val(Null)",
+    "code": "Debug.Print Val(Null)"
+  },
+  {
+    "name": "Val:True",
+    "expr": "Val(True)",
+    "code": "Debug.Print Val(True)"
+  },
+  {
+    "name": "Val:False",
+    "expr": "Val(False)",
+    "code": "Debug.Print Val(False)"
+  },
+  {
+    "name": "Val:\"\"",
+    "expr": "Val(\"\")",
+    "code": "Debug.Print Val(\"\")"
+  },
+  {
+    "name": "Val:\"abc\"",
+    "expr": "Val(\"abc\")",
+    "code": "Debug.Print Val(\"abc\")"
+  },
+  {
+    "name": "Val:\"1\"",
+    "expr": "Val(\"1\")",
+    "code": "Debug.Print Val(\"1\")"
+  },
+  {
+    "name": "Val:Array()",
+    "expr": "Val(Array())",
+    "code": "Debug.Print Val(Array())"
+  },
+  {
+    "name": "Val:Array(1)",
+    "expr": "Val(Array(1))",
+    "code": "Debug.Print Val(Array(1))"
+  },
+  {
+    "name": "Val:Array(\"a\")",
+    "expr": "Val(Array(\"a\"))",
+    "code": "Debug.Print Val(Array(\"a\"))"
+  },
+  {
+    "name": "Val:1E20",
+    "expr": "Val(1E20)",
+    "code": "Debug.Print Val(1E20)"
+  },
+  {
+    "name": "Val:1E-20",
+    "expr": "Val(1E-20)",
+    "code": "Debug.Print Val(1E-20)"
+  },
+  {
+    "name": "Val:\"IİıßΟΣ\"",
+    "expr": "Val(\"IİıßΟΣ\")",
+    "code": "Debug.Print Val(\"IİıßΟΣ\")"
+  },
+  {
+    "name": "Abs:0",
+    "expr": "Abs(0)",
+    "code": "Debug.Print Abs(0)"
+  },
+  {
+    "name": "Abs:1",
+    "expr": "Abs(1)",
+    "code": "Debug.Print Abs(1)"
+  },
+  {
+    "name": "Abs:-1",
+    "expr": "Abs(-1)",
+    "code": "Debug.Print Abs(-1)"
+  },
+  {
+    "name": "Abs:Empty",
+    "expr": "Abs(Empty)",
+    "code": "Debug.Print Abs(Empty)"
+  },
+  {
+    "name": "Abs:Null",
+    "expr": "Abs(Null)",
+    "code": "Debug.Print Abs(Null)"
+  },
+  {
+    "name": "Abs:True",
+    "expr": "Abs(True)",
+    "code": "Debug.Print Abs(True)"
+  },
+  {
+    "name": "Abs:False",
+    "expr": "Abs(False)",
+    "code": "Debug.Print Abs(False)"
+  },
+  {
+    "name": "Abs:\"\"",
+    "expr": "Abs(\"\")",
+    "code": "Debug.Print Abs(\"\")"
+  },
+  {
+    "name": "Abs:\"abc\"",
+    "expr": "Abs(\"abc\")",
+    "code": "Debug.Print Abs(\"abc\")"
+  },
+  {
+    "name": "Abs:\"1\"",
+    "expr": "Abs(\"1\")",
+    "code": "Debug.Print Abs(\"1\")"
+  },
+  {
+    "name": "Abs:Array()",
+    "expr": "Abs(Array())",
+    "code": "Debug.Print Abs(Array())"
+  },
+  {
+    "name": "Abs:Array(1)",
+    "expr": "Abs(Array(1))",
+    "code": "Debug.Print Abs(Array(1))"
+  },
+  {
+    "name": "Abs:Array(\"a\")",
+    "expr": "Abs(Array(\"a\"))",
+    "code": "Debug.Print Abs(Array(\"a\"))"
+  },
+  {
+    "name": "Abs:1E20",
+    "expr": "Abs(1E20)",
+    "code": "Debug.Print Abs(1E20)"
+  },
+  {
+    "name": "Abs:1E-20",
+    "expr": "Abs(1E-20)",
+    "code": "Debug.Print Abs(1E-20)"
+  },
+  {
+    "name": "Abs:\"IİıßΟΣ\"",
+    "expr": "Abs(\"IİıßΟΣ\")",
+    "code": "Debug.Print Abs(\"IİıßΟΣ\")"
+  },
+  {
+    "name": "Int:0",
+    "expr": "Int(0)",
+    "code": "Debug.Print Int(0)"
+  },
+  {
+    "name": "Int:1",
+    "expr": "Int(1)",
+    "code": "Debug.Print Int(1)"
+  },
+  {
+    "name": "Int:-1",
+    "expr": "Int(-1)",
+    "code": "Debug.Print Int(-1)"
+  },
+  {
+    "name": "Int:Empty",
+    "expr": "Int(Empty)",
+    "code": "Debug.Print Int(Empty)"
+  },
+  {
+    "name": "Int:Null",
+    "expr": "Int(Null)",
+    "code": "Debug.Print Int(Null)"
+  },
+  {
+    "name": "Int:True",
+    "expr": "Int(True)",
+    "code": "Debug.Print Int(True)"
+  },
+  {
+    "name": "Int:False",
+    "expr": "Int(False)",
+    "code": "Debug.Print Int(False)"
+  },
+  {
+    "name": "Int:\"\"",
+    "expr": "Int(\"\")",
+    "code": "Debug.Print Int(\"\")"
+  },
+  {
+    "name": "Int:\"abc\"",
+    "expr": "Int(\"abc\")",
+    "code": "Debug.Print Int(\"abc\")"
+  },
+  {
+    "name": "Int:\"1\"",
+    "expr": "Int(\"1\")",
+    "code": "Debug.Print Int(\"1\")"
+  },
+  {
+    "name": "Int:Array()",
+    "expr": "Int(Array())",
+    "code": "Debug.Print Int(Array())"
+  },
+  {
+    "name": "Int:Array(1)",
+    "expr": "Int(Array(1))",
+    "code": "Debug.Print Int(Array(1))"
+  },
+  {
+    "name": "Int:Array(\"a\")",
+    "expr": "Int(Array(\"a\"))",
+    "code": "Debug.Print Int(Array(\"a\"))"
+  },
+  {
+    "name": "Int:1E20",
+    "expr": "Int(1E20)",
+    "code": "Debug.Print Int(1E20)"
+  },
+  {
+    "name": "Int:1E-20",
+    "expr": "Int(1E-20)",
+    "code": "Debug.Print Int(1E-20)"
+  },
+  {
+    "name": "Int:\"IİıßΟΣ\"",
+    "expr": "Int(\"IİıßΟΣ\")",
+    "code": "Debug.Print Int(\"IİıßΟΣ\")"
+  },
+  {
+    "name": "Fix:0",
+    "expr": "Fix(0)",
+    "code": "Debug.Print Fix(0)"
+  },
+  {
+    "name": "Fix:1",
+    "expr": "Fix(1)",
+    "code": "Debug.Print Fix(1)"
+  },
+  {
+    "name": "Fix:-1",
+    "expr": "Fix(-1)",
+    "code": "Debug.Print Fix(-1)"
+  },
+  {
+    "name": "Fix:Empty",
+    "expr": "Fix(Empty)",
+    "code": "Debug.Print Fix(Empty)"
+  },
+  {
+    "name": "Fix:Null",
+    "expr": "Fix(Null)",
+    "code": "Debug.Print Fix(Null)"
+  },
+  {
+    "name": "Fix:True",
+    "expr": "Fix(True)",
+    "code": "Debug.Print Fix(True)"
+  },
+  {
+    "name": "Fix:False",
+    "expr": "Fix(False)",
+    "code": "Debug.Print Fix(False)"
+  },
+  {
+    "name": "Fix:\"\"",
+    "expr": "Fix(\"\")",
+    "code": "Debug.Print Fix(\"\")"
+  },
+  {
+    "name": "Fix:\"abc\"",
+    "expr": "Fix(\"abc\")",
+    "code": "Debug.Print Fix(\"abc\")"
+  },
+  {
+    "name": "Fix:\"1\"",
+    "expr": "Fix(\"1\")",
+    "code": "Debug.Print Fix(\"1\")"
+  },
+  {
+    "name": "Fix:Array()",
+    "expr": "Fix(Array())",
+    "code": "Debug.Print Fix(Array())"
+  },
+  {
+    "name": "Fix:Array(1)",
+    "expr": "Fix(Array(1))",
+    "code": "Debug.Print Fix(Array(1))"
+  },
+  {
+    "name": "Fix:Array(\"a\")",
+    "expr": "Fix(Array(\"a\"))",
+    "code": "Debug.Print Fix(Array(\"a\"))"
+  },
+  {
+    "name": "Fix:1E20",
+    "expr": "Fix(1E20)",
+    "code": "Debug.Print Fix(1E20)"
+  },
+  {
+    "name": "Fix:1E-20",
+    "expr": "Fix(1E-20)",
+    "code": "Debug.Print Fix(1E-20)"
+  },
+  {
+    "name": "Fix:\"IİıßΟΣ\"",
+    "expr": "Fix(\"IİıßΟΣ\")",
+    "code": "Debug.Print Fix(\"IİıßΟΣ\")"
+  },
+  {
+    "name": "CInt:0",
+    "expr": "CInt(0)",
+    "code": "Debug.Print CInt(0)"
+  },
+  {
+    "name": "CInt:1",
+    "expr": "CInt(1)",
+    "code": "Debug.Print CInt(1)"
+  },
+  {
+    "name": "CInt:-1",
+    "expr": "CInt(-1)",
+    "code": "Debug.Print CInt(-1)"
+  },
+  {
+    "name": "CInt:Empty",
+    "expr": "CInt(Empty)",
+    "code": "Debug.Print CInt(Empty)"
+  },
+  {
+    "name": "CInt:Null",
+    "expr": "CInt(Null)",
+    "code": "Debug.Print CInt(Null)"
+  },
+  {
+    "name": "CInt:True",
+    "expr": "CInt(True)",
+    "code": "Debug.Print CInt(True)"
+  },
+  {
+    "name": "CInt:False",
+    "expr": "CInt(False)",
+    "code": "Debug.Print CInt(False)"
+  },
+  {
+    "name": "CInt:\"\"",
+    "expr": "CInt(\"\")",
+    "code": "Debug.Print CInt(\"\")"
+  },
+  {
+    "name": "CInt:\"abc\"",
+    "expr": "CInt(\"abc\")",
+    "code": "Debug.Print CInt(\"abc\")"
+  },
+  {
+    "name": "CInt:\"1\"",
+    "expr": "CInt(\"1\")",
+    "code": "Debug.Print CInt(\"1\")"
+  },
+  {
+    "name": "CInt:Array()",
+    "expr": "CInt(Array())",
+    "code": "Debug.Print CInt(Array())"
+  },
+  {
+    "name": "CInt:Array(1)",
+    "expr": "CInt(Array(1))",
+    "code": "Debug.Print CInt(Array(1))"
+  },
+  {
+    "name": "CInt:Array(\"a\")",
+    "expr": "CInt(Array(\"a\"))",
+    "code": "Debug.Print CInt(Array(\"a\"))"
+  },
+  {
+    "name": "CInt:1E20",
+    "expr": "CInt(1E20)",
+    "code": "Debug.Print CInt(1E20)"
+  },
+  {
+    "name": "CInt:1E-20",
+    "expr": "CInt(1E-20)",
+    "code": "Debug.Print CInt(1E-20)"
+  },
+  {
+    "name": "CInt:\"IİıßΟΣ\"",
+    "expr": "CInt(\"IİıßΟΣ\")",
+    "code": "Debug.Print CInt(\"IİıßΟΣ\")"
+  },
+  {
+    "name": "CLng:0",
+    "expr": "CLng(0)",
+    "code": "Debug.Print CLng(0)"
+  },
+  {
+    "name": "CLng:1",
+    "expr": "CLng(1)",
+    "code": "Debug.Print CLng(1)"
+  },
+  {
+    "name": "CLng:-1",
+    "expr": "CLng(-1)",
+    "code": "Debug.Print CLng(-1)"
+  },
+  {
+    "name": "CLng:Empty",
+    "expr": "CLng(Empty)",
+    "code": "Debug.Print CLng(Empty)"
+  },
+  {
+    "name": "CLng:Null",
+    "expr": "CLng(Null)",
+    "code": "Debug.Print CLng(Null)"
+  },
+  {
+    "name": "CLng:True",
+    "expr": "CLng(True)",
+    "code": "Debug.Print CLng(True)"
+  },
+  {
+    "name": "CLng:False",
+    "expr": "CLng(False)",
+    "code": "Debug.Print CLng(False)"
+  },
+  {
+    "name": "CLng:\"\"",
+    "expr": "CLng(\"\")",
+    "code": "Debug.Print CLng(\"\")"
+  },
+  {
+    "name": "CLng:\"abc\"",
+    "expr": "CLng(\"abc\")",
+    "code": "Debug.Print CLng(\"abc\")"
+  },
+  {
+    "name": "CLng:\"1\"",
+    "expr": "CLng(\"1\")",
+    "code": "Debug.Print CLng(\"1\")"
+  },
+  {
+    "name": "CLng:Array()",
+    "expr": "CLng(Array())",
+    "code": "Debug.Print CLng(Array())"
+  },
+  {
+    "name": "CLng:Array(1)",
+    "expr": "CLng(Array(1))",
+    "code": "Debug.Print CLng(Array(1))"
+  },
+  {
+    "name": "CLng:Array(\"a\")",
+    "expr": "CLng(Array(\"a\"))",
+    "code": "Debug.Print CLng(Array(\"a\"))"
+  },
+  {
+    "name": "CLng:1E20",
+    "expr": "CLng(1E20)",
+    "code": "Debug.Print CLng(1E20)"
+  },
+  {
+    "name": "CLng:1E-20",
+    "expr": "CLng(1E-20)",
+    "code": "Debug.Print CLng(1E-20)"
+  },
+  {
+    "name": "CLng:\"IİıßΟΣ\"",
+    "expr": "CLng(\"IİıßΟΣ\")",
+    "code": "Debug.Print CLng(\"IİıßΟΣ\")"
+  },
+  {
+    "name": "CDbl:0",
+    "expr": "CDbl(0)",
+    "code": "Debug.Print CDbl(0)"
+  },
+  {
+    "name": "CDbl:1",
+    "expr": "CDbl(1)",
+    "code": "Debug.Print CDbl(1)"
+  },
+  {
+    "name": "CDbl:-1",
+    "expr": "CDbl(-1)",
+    "code": "Debug.Print CDbl(-1)"
+  },
+  {
+    "name": "CDbl:Empty",
+    "expr": "CDbl(Empty)",
+    "code": "Debug.Print CDbl(Empty)"
+  },
+  {
+    "name": "CDbl:Null",
+    "expr": "CDbl(Null)",
+    "code": "Debug.Print CDbl(Null)"
+  },
+  {
+    "name": "CDbl:True",
+    "expr": "CDbl(True)",
+    "code": "Debug.Print CDbl(True)"
+  },
+  {
+    "name": "CDbl:False",
+    "expr": "CDbl(False)",
+    "code": "Debug.Print CDbl(False)"
+  },
+  {
+    "name": "CDbl:\"\"",
+    "expr": "CDbl(\"\")",
+    "code": "Debug.Print CDbl(\"\")"
+  },
+  {
+    "name": "CDbl:\"abc\"",
+    "expr": "CDbl(\"abc\")",
+    "code": "Debug.Print CDbl(\"abc\")"
+  },
+  {
+    "name": "CDbl:\"1\"",
+    "expr": "CDbl(\"1\")",
+    "code": "Debug.Print CDbl(\"1\")"
+  },
+  {
+    "name": "CDbl:Array()",
+    "expr": "CDbl(Array())",
+    "code": "Debug.Print CDbl(Array())"
+  },
+  {
+    "name": "CDbl:Array(1)",
+    "expr": "CDbl(Array(1))",
+    "code": "Debug.Print CDbl(Array(1))"
+  },
+  {
+    "name": "CDbl:Array(\"a\")",
+    "expr": "CDbl(Array(\"a\"))",
+    "code": "Debug.Print CDbl(Array(\"a\"))"
+  },
+  {
+    "name": "CDbl:1E20",
+    "expr": "CDbl(1E20)",
+    "code": "Debug.Print CDbl(1E20)"
+  },
+  {
+    "name": "CDbl:1E-20",
+    "expr": "CDbl(1E-20)",
+    "code": "Debug.Print CDbl(1E-20)"
+  },
+  {
+    "name": "CDbl:\"IİıßΟΣ\"",
+    "expr": "CDbl(\"IİıßΟΣ\")",
+    "code": "Debug.Print CDbl(\"IİıßΟΣ\")"
+  },
+  {
+    "name": "IsNumeric:0",
+    "expr": "IsNumeric(0)",
+    "code": "Debug.Print IsNumeric(0)"
+  },
+  {
+    "name": "IsNumeric:1",
+    "expr": "IsNumeric(1)",
+    "code": "Debug.Print IsNumeric(1)"
+  },
+  {
+    "name": "IsNumeric:-1",
+    "expr": "IsNumeric(-1)",
+    "code": "Debug.Print IsNumeric(-1)"
+  },
+  {
+    "name": "IsNumeric:Empty",
+    "expr": "IsNumeric(Empty)",
+    "code": "Debug.Print IsNumeric(Empty)"
+  },
+  {
+    "name": "IsNumeric:Null",
+    "expr": "IsNumeric(Null)",
+    "code": "Debug.Print IsNumeric(Null)"
+  },
+  {
+    "name": "IsNumeric:True",
+    "expr": "IsNumeric(True)",
+    "code": "Debug.Print IsNumeric(True)"
+  },
+  {
+    "name": "IsNumeric:False",
+    "expr": "IsNumeric(False)",
+    "code": "Debug.Print IsNumeric(False)"
+  },
+  {
+    "name": "IsNumeric:\"\"",
+    "expr": "IsNumeric(\"\")",
+    "code": "Debug.Print IsNumeric(\"\")"
+  },
+  {
+    "name": "IsNumeric:\"abc\"",
+    "expr": "IsNumeric(\"abc\")",
+    "code": "Debug.Print IsNumeric(\"abc\")"
+  },
+  {
+    "name": "IsNumeric:\"1\"",
+    "expr": "IsNumeric(\"1\")",
+    "code": "Debug.Print IsNumeric(\"1\")"
+  },
+  {
+    "name": "IsNumeric:Array()",
+    "expr": "IsNumeric(Array())",
+    "code": "Debug.Print IsNumeric(Array())"
+  },
+  {
+    "name": "IsNumeric:Array(1)",
+    "expr": "IsNumeric(Array(1))",
+    "code": "Debug.Print IsNumeric(Array(1))"
+  },
+  {
+    "name": "IsNumeric:Array(\"a\")",
+    "expr": "IsNumeric(Array(\"a\"))",
+    "code": "Debug.Print IsNumeric(Array(\"a\"))"
+  },
+  {
+    "name": "IsNumeric:1E20",
+    "expr": "IsNumeric(1E20)",
+    "code": "Debug.Print IsNumeric(1E20)"
+  },
+  {
+    "name": "IsNumeric:1E-20",
+    "expr": "IsNumeric(1E-20)",
+    "code": "Debug.Print IsNumeric(1E-20)"
+  },
+  {
+    "name": "IsNumeric:\"IİıßΟΣ\"",
+    "expr": "IsNumeric(\"IİıßΟΣ\")",
+    "code": "Debug.Print IsNumeric(\"IİıßΟΣ\")"
+  },
+  {
+    "name": "IsEmpty:0",
+    "expr": "IsEmpty(0)",
+    "code": "Debug.Print IsEmpty(0)"
+  },
+  {
+    "name": "IsEmpty:1",
+    "expr": "IsEmpty(1)",
+    "code": "Debug.Print IsEmpty(1)"
+  },
+  {
+    "name": "IsEmpty:-1",
+    "expr": "IsEmpty(-1)",
+    "code": "Debug.Print IsEmpty(-1)"
+  },
+  {
+    "name": "IsEmpty:Empty",
+    "expr": "IsEmpty(Empty)",
+    "code": "Debug.Print IsEmpty(Empty)"
+  },
+  {
+    "name": "IsEmpty:Null",
+    "expr": "IsEmpty(Null)",
+    "code": "Debug.Print IsEmpty(Null)"
+  },
+  {
+    "name": "IsEmpty:True",
+    "expr": "IsEmpty(True)",
+    "code": "Debug.Print IsEmpty(True)"
+  },
+  {
+    "name": "IsEmpty:False",
+    "expr": "IsEmpty(False)",
+    "code": "Debug.Print IsEmpty(False)"
+  },
+  {
+    "name": "IsEmpty:\"\"",
+    "expr": "IsEmpty(\"\")",
+    "code": "Debug.Print IsEmpty(\"\")"
+  },
+  {
+    "name": "IsEmpty:\"abc\"",
+    "expr": "IsEmpty(\"abc\")",
+    "code": "Debug.Print IsEmpty(\"abc\")"
+  },
+  {
+    "name": "IsEmpty:\"1\"",
+    "expr": "IsEmpty(\"1\")",
+    "code": "Debug.Print IsEmpty(\"1\")"
+  },
+  {
+    "name": "IsEmpty:Array()",
+    "expr": "IsEmpty(Array())",
+    "code": "Debug.Print IsEmpty(Array())"
+  },
+  {
+    "name": "IsEmpty:Array(1)",
+    "expr": "IsEmpty(Array(1))",
+    "code": "Debug.Print IsEmpty(Array(1))"
+  },
+  {
+    "name": "IsEmpty:Array(\"a\")",
+    "expr": "IsEmpty(Array(\"a\"))",
+    "code": "Debug.Print IsEmpty(Array(\"a\"))"
+  },
+  {
+    "name": "IsEmpty:1E20",
+    "expr": "IsEmpty(1E20)",
+    "code": "Debug.Print IsEmpty(1E20)"
+  },
+  {
+    "name": "IsEmpty:1E-20",
+    "expr": "IsEmpty(1E-20)",
+    "code": "Debug.Print IsEmpty(1E-20)"
+  },
+  {
+    "name": "IsEmpty:\"IİıßΟΣ\"",
+    "expr": "IsEmpty(\"IİıßΟΣ\")",
+    "code": "Debug.Print IsEmpty(\"IİıßΟΣ\")"
+  },
+  {
+    "name": "IsNull:0",
+    "expr": "IsNull(0)",
+    "code": "Debug.Print IsNull(0)"
+  },
+  {
+    "name": "IsNull:1",
+    "expr": "IsNull(1)",
+    "code": "Debug.Print IsNull(1)"
+  },
+  {
+    "name": "IsNull:-1",
+    "expr": "IsNull(-1)",
+    "code": "Debug.Print IsNull(-1)"
+  },
+  {
+    "name": "IsNull:Empty",
+    "expr": "IsNull(Empty)",
+    "code": "Debug.Print IsNull(Empty)"
+  },
+  {
+    "name": "IsNull:Null",
+    "expr": "IsNull(Null)",
+    "code": "Debug.Print IsNull(Null)"
+  },
+  {
+    "name": "IsNull:True",
+    "expr": "IsNull(True)",
+    "code": "Debug.Print IsNull(True)"
+  },
+  {
+    "name": "IsNull:False",
+    "expr": "IsNull(False)",
+    "code": "Debug.Print IsNull(False)"
+  },
+  {
+    "name": "IsNull:\"\"",
+    "expr": "IsNull(\"\")",
+    "code": "Debug.Print IsNull(\"\")"
+  },
+  {
+    "name": "IsNull:\"abc\"",
+    "expr": "IsNull(\"abc\")",
+    "code": "Debug.Print IsNull(\"abc\")"
+  },
+  {
+    "name": "IsNull:\"1\"",
+    "expr": "IsNull(\"1\")",
+    "code": "Debug.Print IsNull(\"1\")"
+  },
+  {
+    "name": "IsNull:Array()",
+    "expr": "IsNull(Array())",
+    "code": "Debug.Print IsNull(Array())"
+  },
+  {
+    "name": "IsNull:Array(1)",
+    "expr": "IsNull(Array(1))",
+    "code": "Debug.Print IsNull(Array(1))"
+  },
+  {
+    "name": "IsNull:Array(\"a\")",
+    "expr": "IsNull(Array(\"a\"))",
+    "code": "Debug.Print IsNull(Array(\"a\"))"
+  },
+  {
+    "name": "IsNull:1E20",
+    "expr": "IsNull(1E20)",
+    "code": "Debug.Print IsNull(1E20)"
+  },
+  {
+    "name": "IsNull:1E-20",
+    "expr": "IsNull(1E-20)",
+    "code": "Debug.Print IsNull(1E-20)"
+  },
+  {
+    "name": "IsNull:\"IİıßΟΣ\"",
+    "expr": "IsNull(\"IİıßΟΣ\")",
+    "code": "Debug.Print IsNull(\"IİıßΟΣ\")"
+  },
+  {
+    "name": "Round:0",
+    "expr": "Round(0)",
+    "code": "Debug.Print Round(0)"
+  },
+  {
+    "name": "Round:1",
+    "expr": "Round(1)",
+    "code": "Debug.Print Round(1)"
+  },
+  {
+    "name": "Round:-1",
+    "expr": "Round(-1)",
+    "code": "Debug.Print Round(-1)"
+  },
+  {
+    "name": "Round:Empty",
+    "expr": "Round(Empty)",
+    "code": "Debug.Print Round(Empty)"
+  },
+  {
+    "name": "Round:Null",
+    "expr": "Round(Null)",
+    "code": "Debug.Print Round(Null)"
+  },
+  {
+    "name": "Round:True",
+    "expr": "Round(True)",
+    "code": "Debug.Print Round(True)"
+  },
+  {
+    "name": "Round:False",
+    "expr": "Round(False)",
+    "code": "Debug.Print Round(False)"
+  },
+  {
+    "name": "Round:\"\"",
+    "expr": "Round(\"\")",
+    "code": "Debug.Print Round(\"\")"
+  },
+  {
+    "name": "Round:\"abc\"",
+    "expr": "Round(\"abc\")",
+    "code": "Debug.Print Round(\"abc\")"
+  },
+  {
+    "name": "Round:\"1\"",
+    "expr": "Round(\"1\")",
+    "code": "Debug.Print Round(\"1\")"
+  },
+  {
+    "name": "Round:Array()",
+    "expr": "Round(Array())",
+    "code": "Debug.Print Round(Array())"
+  },
+  {
+    "name": "Round:Array(1)",
+    "expr": "Round(Array(1))",
+    "code": "Debug.Print Round(Array(1))"
+  },
+  {
+    "name": "Round:Array(\"a\")",
+    "expr": "Round(Array(\"a\"))",
+    "code": "Debug.Print Round(Array(\"a\"))"
+  },
+  {
+    "name": "Round:1E20",
+    "expr": "Round(1E20)",
+    "code": "Debug.Print Round(1E20)"
+  },
+  {
+    "name": "Round:1E-20",
+    "expr": "Round(1E-20)",
+    "code": "Debug.Print Round(1E-20)"
+  },
+  {
+    "name": "Round:\"IİıßΟΣ\"",
+    "expr": "Round(\"IİıßΟΣ\")",
+    "code": "Debug.Print Round(\"IİıßΟΣ\")"
+  },
+  {
+    "name": "Left:0",
+    "expr": "Left(\"abcd\",0)",
+    "code": "Debug.Print Left(\"abcd\",0)"
+  },
+  {
+    "name": "Left:1",
+    "expr": "Left(\"abcd\",1)",
+    "code": "Debug.Print Left(\"abcd\",1)"
+  },
+  {
+    "name": "Left:-1",
+    "expr": "Left(\"abcd\",-1)",
+    "code": "Debug.Print Left(\"abcd\",-1)"
+  },
+  {
+    "name": "Left:0.5",
+    "expr": "Left(\"abcd\",0.5)",
+    "code": "Debug.Print Left(\"abcd\",0.5)"
+  },
+  {
+    "name": "Left:1.5",
+    "expr": "Left(\"abcd\",1.5)",
+    "code": "Debug.Print Left(\"abcd\",1.5)"
+  },
+  {
+    "name": "Left:2.5",
+    "expr": "Left(\"abcd\",2.5)",
+    "code": "Debug.Print Left(\"abcd\",2.5)"
+  },
+  {
+    "name": "Left:-0.5",
+    "expr": "Left(\"abcd\",-0.5)",
+    "code": "Debug.Print Left(\"abcd\",-0.5)"
+  },
+  {
+    "name": "Left:2147483647",
+    "expr": "Left(\"abcd\",2147483647)",
+    "code": "Debug.Print Left(\"abcd\",2147483647)"
+  },
+  {
+    "name": "Left:2147483648",
+    "expr": "Left(\"abcd\",2147483648)",
+    "code": "Debug.Print Left(\"abcd\",2147483648)"
+  },
+  {
+    "name": "Left:1E20",
+    "expr": "Left(\"abcd\",1E20)",
+    "code": "Debug.Print Left(\"abcd\",1E20)"
+  },
+  {
+    "name": "Left:Empty",
+    "expr": "Left(\"abcd\",Empty)",
+    "code": "Debug.Print Left(\"abcd\",Empty)"
+  },
+  {
+    "name": "Left:Null",
+    "expr": "Left(\"abcd\",Null)",
+    "code": "Debug.Print Left(\"abcd\",Null)"
+  },
+  {
+    "name": "Left:True",
+    "expr": "Left(\"abcd\",True)",
+    "code": "Debug.Print Left(\"abcd\",True)"
+  },
+  {
+    "name": "Left:False",
+    "expr": "Left(\"abcd\",False)",
+    "code": "Debug.Print Left(\"abcd\",False)"
+  },
+  {
+    "name": "Left:\"1\"",
+    "expr": "Left(\"abcd\",\"1\")",
+    "code": "Debug.Print Left(\"abcd\",\"1\")"
+  },
+  {
+    "name": "Left:\"1.5\"",
+    "expr": "Left(\"abcd\",\"1.5\")",
+    "code": "Debug.Print Left(\"abcd\",\"1.5\")"
+  },
+  {
+    "name": "Left:Array()",
+    "expr": "Left(\"abcd\",Array())",
+    "code": "Debug.Print Left(\"abcd\",Array())"
+  },
+  {
+    "name": "Right:0",
+    "expr": "Right(\"abcd\",0)",
+    "code": "Debug.Print Right(\"abcd\",0)"
+  },
+  {
+    "name": "Right:1",
+    "expr": "Right(\"abcd\",1)",
+    "code": "Debug.Print Right(\"abcd\",1)"
+  },
+  {
+    "name": "Right:-1",
+    "expr": "Right(\"abcd\",-1)",
+    "code": "Debug.Print Right(\"abcd\",-1)"
+  },
+  {
+    "name": "Right:0.5",
+    "expr": "Right(\"abcd\",0.5)",
+    "code": "Debug.Print Right(\"abcd\",0.5)"
+  },
+  {
+    "name": "Right:1.5",
+    "expr": "Right(\"abcd\",1.5)",
+    "code": "Debug.Print Right(\"abcd\",1.5)"
+  },
+  {
+    "name": "Right:2.5",
+    "expr": "Right(\"abcd\",2.5)",
+    "code": "Debug.Print Right(\"abcd\",2.5)"
+  },
+  {
+    "name": "Right:-0.5",
+    "expr": "Right(\"abcd\",-0.5)",
+    "code": "Debug.Print Right(\"abcd\",-0.5)"
+  },
+  {
+    "name": "Right:2147483647",
+    "expr": "Right(\"abcd\",2147483647)",
+    "code": "Debug.Print Right(\"abcd\",2147483647)"
+  },
+  {
+    "name": "Right:2147483648",
+    "expr": "Right(\"abcd\",2147483648)",
+    "code": "Debug.Print Right(\"abcd\",2147483648)"
+  },
+  {
+    "name": "Right:1E20",
+    "expr": "Right(\"abcd\",1E20)",
+    "code": "Debug.Print Right(\"abcd\",1E20)"
+  },
+  {
+    "name": "Right:Empty",
+    "expr": "Right(\"abcd\",Empty)",
+    "code": "Debug.Print Right(\"abcd\",Empty)"
+  },
+  {
+    "name": "Right:Null",
+    "expr": "Right(\"abcd\",Null)",
+    "code": "Debug.Print Right(\"abcd\",Null)"
+  },
+  {
+    "name": "Right:True",
+    "expr": "Right(\"abcd\",True)",
+    "code": "Debug.Print Right(\"abcd\",True)"
+  },
+  {
+    "name": "Right:False",
+    "expr": "Right(\"abcd\",False)",
+    "code": "Debug.Print Right(\"abcd\",False)"
+  },
+  {
+    "name": "Right:\"1\"",
+    "expr": "Right(\"abcd\",\"1\")",
+    "code": "Debug.Print Right(\"abcd\",\"1\")"
+  },
+  {
+    "name": "Right:\"1.5\"",
+    "expr": "Right(\"abcd\",\"1.5\")",
+    "code": "Debug.Print Right(\"abcd\",\"1.5\")"
+  },
+  {
+    "name": "Right:Array()",
+    "expr": "Right(\"abcd\",Array())",
+    "code": "Debug.Print Right(\"abcd\",Array())"
+  },
+  {
+    "name": "Mid:0:0",
+    "expr": "Mid(\"abcd\",0,0)",
+    "code": "Debug.Print Mid(\"abcd\",0,0)"
+  },
+  {
+    "name": "Mid:0:1",
+    "expr": "Mid(\"abcd\",0,1)",
+    "code": "Debug.Print Mid(\"abcd\",0,1)"
+  },
+  {
+    "name": "Mid:0:-1",
+    "expr": "Mid(\"abcd\",0,-1)",
+    "code": "Debug.Print Mid(\"abcd\",0,-1)"
+  },
+  {
+    "name": "Mid:0:0.5",
+    "expr": "Mid(\"abcd\",0,0.5)",
+    "code": "Debug.Print Mid(\"abcd\",0,0.5)"
+  },
+  {
+    "name": "Mid:0:1.5",
+    "expr": "Mid(\"abcd\",0,1.5)",
+    "code": "Debug.Print Mid(\"abcd\",0,1.5)"
+  },
+  {
+    "name": "Mid:0:2.5",
+    "expr": "Mid(\"abcd\",0,2.5)",
+    "code": "Debug.Print Mid(\"abcd\",0,2.5)"
+  },
+  {
+    "name": "Mid:0:2147483648",
+    "expr": "Mid(\"abcd\",0,2147483648)",
+    "code": "Debug.Print Mid(\"abcd\",0,2147483648)"
+  },
+  {
+    "name": "Mid:0:Null",
+    "expr": "Mid(\"abcd\",0,Null)",
+    "code": "Debug.Print Mid(\"abcd\",0,Null)"
+  },
+  {
+    "name": "Mid:0:Empty",
+    "expr": "Mid(\"abcd\",0,Empty)",
+    "code": "Debug.Print Mid(\"abcd\",0,Empty)"
+  },
+  {
+    "name": "Mid:1:0",
+    "expr": "Mid(\"abcd\",1,0)",
+    "code": "Debug.Print Mid(\"abcd\",1,0)"
+  },
+  {
+    "name": "Mid:1:1",
+    "expr": "Mid(\"abcd\",1,1)",
+    "code": "Debug.Print Mid(\"abcd\",1,1)"
+  },
+  {
+    "name": "Mid:1:-1",
+    "expr": "Mid(\"abcd\",1,-1)",
+    "code": "Debug.Print Mid(\"abcd\",1,-1)"
+  },
+  {
+    "name": "Mid:1:0.5",
+    "expr": "Mid(\"abcd\",1,0.5)",
+    "code": "Debug.Print Mid(\"abcd\",1,0.5)"
+  },
+  {
+    "name": "Mid:1:1.5",
+    "expr": "Mid(\"abcd\",1,1.5)",
+    "code": "Debug.Print Mid(\"abcd\",1,1.5)"
+  },
+  {
+    "name": "Mid:1:2.5",
+    "expr": "Mid(\"abcd\",1,2.5)",
+    "code": "Debug.Print Mid(\"abcd\",1,2.5)"
+  },
+  {
+    "name": "Mid:1:2147483648",
+    "expr": "Mid(\"abcd\",1,2147483648)",
+    "code": "Debug.Print Mid(\"abcd\",1,2147483648)"
+  },
+  {
+    "name": "Mid:1:Null",
+    "expr": "Mid(\"abcd\",1,Null)",
+    "code": "Debug.Print Mid(\"abcd\",1,Null)"
+  },
+  {
+    "name": "Mid:1:Empty",
+    "expr": "Mid(\"abcd\",1,Empty)",
+    "code": "Debug.Print Mid(\"abcd\",1,Empty)"
+  },
+  {
+    "name": "Mid:-1:0",
+    "expr": "Mid(\"abcd\",-1,0)",
+    "code": "Debug.Print Mid(\"abcd\",-1,0)"
+  },
+  {
+    "name": "Mid:-1:1",
+    "expr": "Mid(\"abcd\",-1,1)",
+    "code": "Debug.Print Mid(\"abcd\",-1,1)"
+  },
+  {
+    "name": "Mid:-1:-1",
+    "expr": "Mid(\"abcd\",-1,-1)",
+    "code": "Debug.Print Mid(\"abcd\",-1,-1)"
+  },
+  {
+    "name": "Mid:-1:0.5",
+    "expr": "Mid(\"abcd\",-1,0.5)",
+    "code": "Debug.Print Mid(\"abcd\",-1,0.5)"
+  },
+  {
+    "name": "Mid:-1:1.5",
+    "expr": "Mid(\"abcd\",-1,1.5)",
+    "code": "Debug.Print Mid(\"abcd\",-1,1.5)"
+  },
+  {
+    "name": "Mid:-1:2.5",
+    "expr": "Mid(\"abcd\",-1,2.5)",
+    "code": "Debug.Print Mid(\"abcd\",-1,2.5)"
+  },
+  {
+    "name": "Mid:-1:2147483648",
+    "expr": "Mid(\"abcd\",-1,2147483648)",
+    "code": "Debug.Print Mid(\"abcd\",-1,2147483648)"
+  },
+  {
+    "name": "Mid:-1:Null",
+    "expr": "Mid(\"abcd\",-1,Null)",
+    "code": "Debug.Print Mid(\"abcd\",-1,Null)"
+  },
+  {
+    "name": "Mid:-1:Empty",
+    "expr": "Mid(\"abcd\",-1,Empty)",
+    "code": "Debug.Print Mid(\"abcd\",-1,Empty)"
+  },
+  {
+    "name": "Mid:0.5:0",
+    "expr": "Mid(\"abcd\",0.5,0)",
+    "code": "Debug.Print Mid(\"abcd\",0.5,0)"
+  },
+  {
+    "name": "Mid:0.5:1",
+    "expr": "Mid(\"abcd\",0.5,1)",
+    "code": "Debug.Print Mid(\"abcd\",0.5,1)"
+  },
+  {
+    "name": "Mid:0.5:-1",
+    "expr": "Mid(\"abcd\",0.5,-1)",
+    "code": "Debug.Print Mid(\"abcd\",0.5,-1)"
+  },
+  {
+    "name": "Mid:0.5:0.5",
+    "expr": "Mid(\"abcd\",0.5,0.5)",
+    "code": "Debug.Print Mid(\"abcd\",0.5,0.5)"
+  },
+  {
+    "name": "Mid:0.5:1.5",
+    "expr": "Mid(\"abcd\",0.5,1.5)",
+    "code": "Debug.Print Mid(\"abcd\",0.5,1.5)"
+  },
+  {
+    "name": "Mid:0.5:2.5",
+    "expr": "Mid(\"abcd\",0.5,2.5)",
+    "code": "Debug.Print Mid(\"abcd\",0.5,2.5)"
+  },
+  {
+    "name": "Mid:0.5:2147483648",
+    "expr": "Mid(\"abcd\",0.5,2147483648)",
+    "code": "Debug.Print Mid(\"abcd\",0.5,2147483648)"
+  },
+  {
+    "name": "Mid:0.5:Null",
+    "expr": "Mid(\"abcd\",0.5,Null)",
+    "code": "Debug.Print Mid(\"abcd\",0.5,Null)"
+  },
+  {
+    "name": "Mid:0.5:Empty",
+    "expr": "Mid(\"abcd\",0.5,Empty)",
+    "code": "Debug.Print Mid(\"abcd\",0.5,Empty)"
+  },
+  {
+    "name": "Mid:1.5:0",
+    "expr": "Mid(\"abcd\",1.5,0)",
+    "code": "Debug.Print Mid(\"abcd\",1.5,0)"
+  },
+  {
+    "name": "Mid:1.5:1",
+    "expr": "Mid(\"abcd\",1.5,1)",
+    "code": "Debug.Print Mid(\"abcd\",1.5,1)"
+  },
+  {
+    "name": "Mid:1.5:-1",
+    "expr": "Mid(\"abcd\",1.5,-1)",
+    "code": "Debug.Print Mid(\"abcd\",1.5,-1)"
+  },
+  {
+    "name": "Mid:1.5:0.5",
+    "expr": "Mid(\"abcd\",1.5,0.5)",
+    "code": "Debug.Print Mid(\"abcd\",1.5,0.5)"
+  },
+  {
+    "name": "Mid:1.5:1.5",
+    "expr": "Mid(\"abcd\",1.5,1.5)",
+    "code": "Debug.Print Mid(\"abcd\",1.5,1.5)"
+  },
+  {
+    "name": "Mid:1.5:2.5",
+    "expr": "Mid(\"abcd\",1.5,2.5)",
+    "code": "Debug.Print Mid(\"abcd\",1.5,2.5)"
+  },
+  {
+    "name": "Mid:1.5:2147483648",
+    "expr": "Mid(\"abcd\",1.5,2147483648)",
+    "code": "Debug.Print Mid(\"abcd\",1.5,2147483648)"
+  },
+  {
+    "name": "Mid:1.5:Null",
+    "expr": "Mid(\"abcd\",1.5,Null)",
+    "code": "Debug.Print Mid(\"abcd\",1.5,Null)"
+  },
+  {
+    "name": "Mid:1.5:Empty",
+    "expr": "Mid(\"abcd\",1.5,Empty)",
+    "code": "Debug.Print Mid(\"abcd\",1.5,Empty)"
+  },
+  {
+    "name": "Mid:2.5:0",
+    "expr": "Mid(\"abcd\",2.5,0)",
+    "code": "Debug.Print Mid(\"abcd\",2.5,0)"
+  },
+  {
+    "name": "Mid:2.5:1",
+    "expr": "Mid(\"abcd\",2.5,1)",
+    "code": "Debug.Print Mid(\"abcd\",2.5,1)"
+  },
+  {
+    "name": "Mid:2.5:-1",
+    "expr": "Mid(\"abcd\",2.5,-1)",
+    "code": "Debug.Print Mid(\"abcd\",2.5,-1)"
+  },
+  {
+    "name": "Mid:2.5:0.5",
+    "expr": "Mid(\"abcd\",2.5,0.5)",
+    "code": "Debug.Print Mid(\"abcd\",2.5,0.5)"
+  },
+  {
+    "name": "Mid:2.5:1.5",
+    "expr": "Mid(\"abcd\",2.5,1.5)",
+    "code": "Debug.Print Mid(\"abcd\",2.5,1.5)"
+  },
+  {
+    "name": "Mid:2.5:2.5",
+    "expr": "Mid(\"abcd\",2.5,2.5)",
+    "code": "Debug.Print Mid(\"abcd\",2.5,2.5)"
+  },
+  {
+    "name": "Mid:2.5:2147483648",
+    "expr": "Mid(\"abcd\",2.5,2147483648)",
+    "code": "Debug.Print Mid(\"abcd\",2.5,2147483648)"
+  },
+  {
+    "name": "Mid:2.5:Null",
+    "expr": "Mid(\"abcd\",2.5,Null)",
+    "code": "Debug.Print Mid(\"abcd\",2.5,Null)"
+  },
+  {
+    "name": "Mid:2.5:Empty",
+    "expr": "Mid(\"abcd\",2.5,Empty)",
+    "code": "Debug.Print Mid(\"abcd\",2.5,Empty)"
+  },
+  {
+    "name": "Mid:-0.5:0",
+    "expr": "Mid(\"abcd\",-0.5,0)",
+    "code": "Debug.Print Mid(\"abcd\",-0.5,0)"
+  },
+  {
+    "name": "Mid:-0.5:1",
+    "expr": "Mid(\"abcd\",-0.5,1)",
+    "code": "Debug.Print Mid(\"abcd\",-0.5,1)"
+  },
+  {
+    "name": "Mid:-0.5:-1",
+    "expr": "Mid(\"abcd\",-0.5,-1)",
+    "code": "Debug.Print Mid(\"abcd\",-0.5,-1)"
+  },
+  {
+    "name": "Mid:-0.5:0.5",
+    "expr": "Mid(\"abcd\",-0.5,0.5)",
+    "code": "Debug.Print Mid(\"abcd\",-0.5,0.5)"
+  },
+  {
+    "name": "Mid:-0.5:1.5",
+    "expr": "Mid(\"abcd\",-0.5,1.5)",
+    "code": "Debug.Print Mid(\"abcd\",-0.5,1.5)"
+  },
+  {
+    "name": "Mid:-0.5:2.5",
+    "expr": "Mid(\"abcd\",-0.5,2.5)",
+    "code": "Debug.Print Mid(\"abcd\",-0.5,2.5)"
+  },
+  {
+    "name": "Mid:-0.5:2147483648",
+    "expr": "Mid(\"abcd\",-0.5,2147483648)",
+    "code": "Debug.Print Mid(\"abcd\",-0.5,2147483648)"
+  },
+  {
+    "name": "Mid:-0.5:Null",
+    "expr": "Mid(\"abcd\",-0.5,Null)",
+    "code": "Debug.Print Mid(\"abcd\",-0.5,Null)"
+  },
+  {
+    "name": "Mid:-0.5:Empty",
+    "expr": "Mid(\"abcd\",-0.5,Empty)",
+    "code": "Debug.Print Mid(\"abcd\",-0.5,Empty)"
+  },
+  {
+    "name": "Mid:2147483647:0",
+    "expr": "Mid(\"abcd\",2147483647,0)",
+    "code": "Debug.Print Mid(\"abcd\",2147483647,0)"
+  },
+  {
+    "name": "Mid:2147483647:1",
+    "expr": "Mid(\"abcd\",2147483647,1)",
+    "code": "Debug.Print Mid(\"abcd\",2147483647,1)"
+  },
+  {
+    "name": "Mid:2147483647:-1",
+    "expr": "Mid(\"abcd\",2147483647,-1)",
+    "code": "Debug.Print Mid(\"abcd\",2147483647,-1)"
+  },
+  {
+    "name": "Mid:2147483647:0.5",
+    "expr": "Mid(\"abcd\",2147483647,0.5)",
+    "code": "Debug.Print Mid(\"abcd\",2147483647,0.5)"
+  },
+  {
+    "name": "Mid:2147483647:1.5",
+    "expr": "Mid(\"abcd\",2147483647,1.5)",
+    "code": "Debug.Print Mid(\"abcd\",2147483647,1.5)"
+  },
+  {
+    "name": "Mid:2147483647:2.5",
+    "expr": "Mid(\"abcd\",2147483647,2.5)",
+    "code": "Debug.Print Mid(\"abcd\",2147483647,2.5)"
+  },
+  {
+    "name": "Mid:2147483647:2147483648",
+    "expr": "Mid(\"abcd\",2147483647,2147483648)",
+    "code": "Debug.Print Mid(\"abcd\",2147483647,2147483648)"
+  },
+  {
+    "name": "Mid:2147483647:Null",
+    "expr": "Mid(\"abcd\",2147483647,Null)",
+    "code": "Debug.Print Mid(\"abcd\",2147483647,Null)"
+  },
+  {
+    "name": "Mid:2147483647:Empty",
+    "expr": "Mid(\"abcd\",2147483647,Empty)",
+    "code": "Debug.Print Mid(\"abcd\",2147483647,Empty)"
+  },
+  {
+    "name": "Mid:2147483648:0",
+    "expr": "Mid(\"abcd\",2147483648,0)",
+    "code": "Debug.Print Mid(\"abcd\",2147483648,0)"
+  },
+  {
+    "name": "Mid:2147483648:1",
+    "expr": "Mid(\"abcd\",2147483648,1)",
+    "code": "Debug.Print Mid(\"abcd\",2147483648,1)"
+  },
+  {
+    "name": "Mid:2147483648:-1",
+    "expr": "Mid(\"abcd\",2147483648,-1)",
+    "code": "Debug.Print Mid(\"abcd\",2147483648,-1)"
+  },
+  {
+    "name": "Mid:2147483648:0.5",
+    "expr": "Mid(\"abcd\",2147483648,0.5)",
+    "code": "Debug.Print Mid(\"abcd\",2147483648,0.5)"
+  },
+  {
+    "name": "Mid:2147483648:1.5",
+    "expr": "Mid(\"abcd\",2147483648,1.5)",
+    "code": "Debug.Print Mid(\"abcd\",2147483648,1.5)"
+  },
+  {
+    "name": "Mid:2147483648:2.5",
+    "expr": "Mid(\"abcd\",2147483648,2.5)",
+    "code": "Debug.Print Mid(\"abcd\",2147483648,2.5)"
+  },
+  {
+    "name": "Mid:2147483648:2147483648",
+    "expr": "Mid(\"abcd\",2147483648,2147483648)",
+    "code": "Debug.Print Mid(\"abcd\",2147483648,2147483648)"
+  },
+  {
+    "name": "Mid:2147483648:Null",
+    "expr": "Mid(\"abcd\",2147483648,Null)",
+    "code": "Debug.Print Mid(\"abcd\",2147483648,Null)"
+  },
+  {
+    "name": "Mid:2147483648:Empty",
+    "expr": "Mid(\"abcd\",2147483648,Empty)",
+    "code": "Debug.Print Mid(\"abcd\",2147483648,Empty)"
+  },
+  {
+    "name": "Mid:1E20:0",
+    "expr": "Mid(\"abcd\",1E20,0)",
+    "code": "Debug.Print Mid(\"abcd\",1E20,0)"
+  },
+  {
+    "name": "Mid:1E20:1",
+    "expr": "Mid(\"abcd\",1E20,1)",
+    "code": "Debug.Print Mid(\"abcd\",1E20,1)"
+  },
+  {
+    "name": "Mid:1E20:-1",
+    "expr": "Mid(\"abcd\",1E20,-1)",
+    "code": "Debug.Print Mid(\"abcd\",1E20,-1)"
+  },
+  {
+    "name": "Mid:1E20:0.5",
+    "expr": "Mid(\"abcd\",1E20,0.5)",
+    "code": "Debug.Print Mid(\"abcd\",1E20,0.5)"
+  },
+  {
+    "name": "Mid:1E20:1.5",
+    "expr": "Mid(\"abcd\",1E20,1.5)",
+    "code": "Debug.Print Mid(\"abcd\",1E20,1.5)"
+  },
+  {
+    "name": "Mid:1E20:2.5",
+    "expr": "Mid(\"abcd\",1E20,2.5)",
+    "code": "Debug.Print Mid(\"abcd\",1E20,2.5)"
+  },
+  {
+    "name": "Mid:1E20:2147483648",
+    "expr": "Mid(\"abcd\",1E20,2147483648)",
+    "code": "Debug.Print Mid(\"abcd\",1E20,2147483648)"
+  },
+  {
+    "name": "Mid:1E20:Null",
+    "expr": "Mid(\"abcd\",1E20,Null)",
+    "code": "Debug.Print Mid(\"abcd\",1E20,Null)"
+  },
+  {
+    "name": "Mid:1E20:Empty",
+    "expr": "Mid(\"abcd\",1E20,Empty)",
+    "code": "Debug.Print Mid(\"abcd\",1E20,Empty)"
+  },
+  {
+    "name": "Mid:Empty:0",
+    "expr": "Mid(\"abcd\",Empty,0)",
+    "code": "Debug.Print Mid(\"abcd\",Empty,0)"
+  },
+  {
+    "name": "Mid:Empty:1",
+    "expr": "Mid(\"abcd\",Empty,1)",
+    "code": "Debug.Print Mid(\"abcd\",Empty,1)"
+  },
+  {
+    "name": "Mid:Empty:-1",
+    "expr": "Mid(\"abcd\",Empty,-1)",
+    "code": "Debug.Print Mid(\"abcd\",Empty,-1)"
+  },
+  {
+    "name": "Mid:Empty:0.5",
+    "expr": "Mid(\"abcd\",Empty,0.5)",
+    "code": "Debug.Print Mid(\"abcd\",Empty,0.5)"
+  },
+  {
+    "name": "Mid:Empty:1.5",
+    "expr": "Mid(\"abcd\",Empty,1.5)",
+    "code": "Debug.Print Mid(\"abcd\",Empty,1.5)"
+  },
+  {
+    "name": "Mid:Empty:2.5",
+    "expr": "Mid(\"abcd\",Empty,2.5)",
+    "code": "Debug.Print Mid(\"abcd\",Empty,2.5)"
+  },
+  {
+    "name": "Mid:Empty:2147483648",
+    "expr": "Mid(\"abcd\",Empty,2147483648)",
+    "code": "Debug.Print Mid(\"abcd\",Empty,2147483648)"
+  },
+  {
+    "name": "Mid:Empty:Null",
+    "expr": "Mid(\"abcd\",Empty,Null)",
+    "code": "Debug.Print Mid(\"abcd\",Empty,Null)"
+  },
+  {
+    "name": "Mid:Empty:Empty",
+    "expr": "Mid(\"abcd\",Empty,Empty)",
+    "code": "Debug.Print Mid(\"abcd\",Empty,Empty)"
+  },
+  {
+    "name": "Mid:Null:0",
+    "expr": "Mid(\"abcd\",Null,0)",
+    "code": "Debug.Print Mid(\"abcd\",Null,0)"
+  },
+  {
+    "name": "Mid:Null:1",
+    "expr": "Mid(\"abcd\",Null,1)",
+    "code": "Debug.Print Mid(\"abcd\",Null,1)"
+  },
+  {
+    "name": "Mid:Null:-1",
+    "expr": "Mid(\"abcd\",Null,-1)",
+    "code": "Debug.Print Mid(\"abcd\",Null,-1)"
+  },
+  {
+    "name": "Mid:Null:0.5",
+    "expr": "Mid(\"abcd\",Null,0.5)",
+    "code": "Debug.Print Mid(\"abcd\",Null,0.5)"
+  },
+  {
+    "name": "Mid:Null:1.5",
+    "expr": "Mid(\"abcd\",Null,1.5)",
+    "code": "Debug.Print Mid(\"abcd\",Null,1.5)"
+  },
+  {
+    "name": "Mid:Null:2.5",
+    "expr": "Mid(\"abcd\",Null,2.5)",
+    "code": "Debug.Print Mid(\"abcd\",Null,2.5)"
+  },
+  {
+    "name": "Mid:Null:2147483648",
+    "expr": "Mid(\"abcd\",Null,2147483648)",
+    "code": "Debug.Print Mid(\"abcd\",Null,2147483648)"
+  },
+  {
+    "name": "Mid:Null:Null",
+    "expr": "Mid(\"abcd\",Null,Null)",
+    "code": "Debug.Print Mid(\"abcd\",Null,Null)"
+  },
+  {
+    "name": "Mid:Null:Empty",
+    "expr": "Mid(\"abcd\",Null,Empty)",
+    "code": "Debug.Print Mid(\"abcd\",Null,Empty)"
+  },
+  {
+    "name": "Mid:True:0",
+    "expr": "Mid(\"abcd\",True,0)",
+    "code": "Debug.Print Mid(\"abcd\",True,0)"
+  },
+  {
+    "name": "Mid:True:1",
+    "expr": "Mid(\"abcd\",True,1)",
+    "code": "Debug.Print Mid(\"abcd\",True,1)"
+  },
+  {
+    "name": "Mid:True:-1",
+    "expr": "Mid(\"abcd\",True,-1)",
+    "code": "Debug.Print Mid(\"abcd\",True,-1)"
+  },
+  {
+    "name": "Mid:True:0.5",
+    "expr": "Mid(\"abcd\",True,0.5)",
+    "code": "Debug.Print Mid(\"abcd\",True,0.5)"
+  },
+  {
+    "name": "Mid:True:1.5",
+    "expr": "Mid(\"abcd\",True,1.5)",
+    "code": "Debug.Print Mid(\"abcd\",True,1.5)"
+  },
+  {
+    "name": "Mid:True:2.5",
+    "expr": "Mid(\"abcd\",True,2.5)",
+    "code": "Debug.Print Mid(\"abcd\",True,2.5)"
+  },
+  {
+    "name": "Mid:True:2147483648",
+    "expr": "Mid(\"abcd\",True,2147483648)",
+    "code": "Debug.Print Mid(\"abcd\",True,2147483648)"
+  },
+  {
+    "name": "Mid:True:Null",
+    "expr": "Mid(\"abcd\",True,Null)",
+    "code": "Debug.Print Mid(\"abcd\",True,Null)"
+  },
+  {
+    "name": "Mid:True:Empty",
+    "expr": "Mid(\"abcd\",True,Empty)",
+    "code": "Debug.Print Mid(\"abcd\",True,Empty)"
+  },
+  {
+    "name": "Mid:False:0",
+    "expr": "Mid(\"abcd\",False,0)",
+    "code": "Debug.Print Mid(\"abcd\",False,0)"
+  },
+  {
+    "name": "Mid:False:1",
+    "expr": "Mid(\"abcd\",False,1)",
+    "code": "Debug.Print Mid(\"abcd\",False,1)"
+  },
+  {
+    "name": "Mid:False:-1",
+    "expr": "Mid(\"abcd\",False,-1)",
+    "code": "Debug.Print Mid(\"abcd\",False,-1)"
+  },
+  {
+    "name": "Mid:False:0.5",
+    "expr": "Mid(\"abcd\",False,0.5)",
+    "code": "Debug.Print Mid(\"abcd\",False,0.5)"
+  },
+  {
+    "name": "Mid:False:1.5",
+    "expr": "Mid(\"abcd\",False,1.5)",
+    "code": "Debug.Print Mid(\"abcd\",False,1.5)"
+  },
+  {
+    "name": "Mid:False:2.5",
+    "expr": "Mid(\"abcd\",False,2.5)",
+    "code": "Debug.Print Mid(\"abcd\",False,2.5)"
+  },
+  {
+    "name": "Mid:False:2147483648",
+    "expr": "Mid(\"abcd\",False,2147483648)",
+    "code": "Debug.Print Mid(\"abcd\",False,2147483648)"
+  },
+  {
+    "name": "Mid:False:Null",
+    "expr": "Mid(\"abcd\",False,Null)",
+    "code": "Debug.Print Mid(\"abcd\",False,Null)"
+  },
+  {
+    "name": "Mid:False:Empty",
+    "expr": "Mid(\"abcd\",False,Empty)",
+    "code": "Debug.Print Mid(\"abcd\",False,Empty)"
+  },
+  {
+    "name": "Mid:\"1\":0",
+    "expr": "Mid(\"abcd\",\"1\",0)",
+    "code": "Debug.Print Mid(\"abcd\",\"1\",0)"
+  },
+  {
+    "name": "Mid:\"1\":1",
+    "expr": "Mid(\"abcd\",\"1\",1)",
+    "code": "Debug.Print Mid(\"abcd\",\"1\",1)"
+  },
+  {
+    "name": "Mid:\"1\":-1",
+    "expr": "Mid(\"abcd\",\"1\",-1)",
+    "code": "Debug.Print Mid(\"abcd\",\"1\",-1)"
+  },
+  {
+    "name": "Mid:\"1\":0.5",
+    "expr": "Mid(\"abcd\",\"1\",0.5)",
+    "code": "Debug.Print Mid(\"abcd\",\"1\",0.5)"
+  },
+  {
+    "name": "Mid:\"1\":1.5",
+    "expr": "Mid(\"abcd\",\"1\",1.5)",
+    "code": "Debug.Print Mid(\"abcd\",\"1\",1.5)"
+  },
+  {
+    "name": "Mid:\"1\":2.5",
+    "expr": "Mid(\"abcd\",\"1\",2.5)",
+    "code": "Debug.Print Mid(\"abcd\",\"1\",2.5)"
+  },
+  {
+    "name": "Mid:\"1\":2147483648",
+    "expr": "Mid(\"abcd\",\"1\",2147483648)",
+    "code": "Debug.Print Mid(\"abcd\",\"1\",2147483648)"
+  },
+  {
+    "name": "Mid:\"1\":Null",
+    "expr": "Mid(\"abcd\",\"1\",Null)",
+    "code": "Debug.Print Mid(\"abcd\",\"1\",Null)"
+  },
+  {
+    "name": "Mid:\"1\":Empty",
+    "expr": "Mid(\"abcd\",\"1\",Empty)",
+    "code": "Debug.Print Mid(\"abcd\",\"1\",Empty)"
+  },
+  {
+    "name": "Mid:\"1.5\":0",
+    "expr": "Mid(\"abcd\",\"1.5\",0)",
+    "code": "Debug.Print Mid(\"abcd\",\"1.5\",0)"
+  },
+  {
+    "name": "Mid:\"1.5\":1",
+    "expr": "Mid(\"abcd\",\"1.5\",1)",
+    "code": "Debug.Print Mid(\"abcd\",\"1.5\",1)"
+  },
+  {
+    "name": "Mid:\"1.5\":-1",
+    "expr": "Mid(\"abcd\",\"1.5\",-1)",
+    "code": "Debug.Print Mid(\"abcd\",\"1.5\",-1)"
+  },
+  {
+    "name": "Mid:\"1.5\":0.5",
+    "expr": "Mid(\"abcd\",\"1.5\",0.5)",
+    "code": "Debug.Print Mid(\"abcd\",\"1.5\",0.5)"
+  },
+  {
+    "name": "Mid:\"1.5\":1.5",
+    "expr": "Mid(\"abcd\",\"1.5\",1.5)",
+    "code": "Debug.Print Mid(\"abcd\",\"1.5\",1.5)"
+  },
+  {
+    "name": "Mid:\"1.5\":2.5",
+    "expr": "Mid(\"abcd\",\"1.5\",2.5)",
+    "code": "Debug.Print Mid(\"abcd\",\"1.5\",2.5)"
+  },
+  {
+    "name": "Mid:\"1.5\":2147483648",
+    "expr": "Mid(\"abcd\",\"1.5\",2147483648)",
+    "code": "Debug.Print Mid(\"abcd\",\"1.5\",2147483648)"
+  },
+  {
+    "name": "Mid:\"1.5\":Null",
+    "expr": "Mid(\"abcd\",\"1.5\",Null)",
+    "code": "Debug.Print Mid(\"abcd\",\"1.5\",Null)"
+  },
+  {
+    "name": "Mid:\"1.5\":Empty",
+    "expr": "Mid(\"abcd\",\"1.5\",Empty)",
+    "code": "Debug.Print Mid(\"abcd\",\"1.5\",Empty)"
+  },
+  {
+    "name": "Mid:Array():0",
+    "expr": "Mid(\"abcd\",Array(),0)",
+    "code": "Debug.Print Mid(\"abcd\",Array(),0)"
+  },
+  {
+    "name": "Mid:Array():1",
+    "expr": "Mid(\"abcd\",Array(),1)",
+    "code": "Debug.Print Mid(\"abcd\",Array(),1)"
+  },
+  {
+    "name": "Mid:Array():-1",
+    "expr": "Mid(\"abcd\",Array(),-1)",
+    "code": "Debug.Print Mid(\"abcd\",Array(),-1)"
+  },
+  {
+    "name": "Mid:Array():0.5",
+    "expr": "Mid(\"abcd\",Array(),0.5)",
+    "code": "Debug.Print Mid(\"abcd\",Array(),0.5)"
+  },
+  {
+    "name": "Mid:Array():1.5",
+    "expr": "Mid(\"abcd\",Array(),1.5)",
+    "code": "Debug.Print Mid(\"abcd\",Array(),1.5)"
+  },
+  {
+    "name": "Mid:Array():2.5",
+    "expr": "Mid(\"abcd\",Array(),2.5)",
+    "code": "Debug.Print Mid(\"abcd\",Array(),2.5)"
+  },
+  {
+    "name": "Mid:Array():2147483648",
+    "expr": "Mid(\"abcd\",Array(),2147483648)",
+    "code": "Debug.Print Mid(\"abcd\",Array(),2147483648)"
+  },
+  {
+    "name": "Mid:Array():Null",
+    "expr": "Mid(\"abcd\",Array(),Null)",
+    "code": "Debug.Print Mid(\"abcd\",Array(),Null)"
+  },
+  {
+    "name": "Mid:Array():Empty",
+    "expr": "Mid(\"abcd\",Array(),Empty)",
+    "code": "Debug.Print Mid(\"abcd\",Array(),Empty)"
+  },
+  {
+    "name": "Replace:0.5:-1",
+    "expr": "Replace(\"aaaa\",\"a\",\"b\",0.5,-1)",
+    "code": "Debug.Print Replace(\"aaaa\",\"a\",\"b\",0.5,-1)"
+  },
+  {
+    "name": "Replace:0.5:0",
+    "expr": "Replace(\"aaaa\",\"a\",\"b\",0.5,0)",
+    "code": "Debug.Print Replace(\"aaaa\",\"a\",\"b\",0.5,0)"
+  },
+  {
+    "name": "Replace:0.5:1",
+    "expr": "Replace(\"aaaa\",\"a\",\"b\",0.5,1)",
+    "code": "Debug.Print Replace(\"aaaa\",\"a\",\"b\",0.5,1)"
+  },
+  {
+    "name": "Replace:0.5:1.5",
+    "expr": "Replace(\"aaaa\",\"a\",\"b\",0.5,1.5)",
+    "code": "Debug.Print Replace(\"aaaa\",\"a\",\"b\",0.5,1.5)"
+  },
+  {
+    "name": "Replace:0.5:2.5",
+    "expr": "Replace(\"aaaa\",\"a\",\"b\",0.5,2.5)",
+    "code": "Debug.Print Replace(\"aaaa\",\"a\",\"b\",0.5,2.5)"
+  },
+  {
+    "name": "Replace:0.5:2147483648",
+    "expr": "Replace(\"aaaa\",\"a\",\"b\",0.5,2147483648)",
+    "code": "Debug.Print Replace(\"aaaa\",\"a\",\"b\",0.5,2147483648)"
+  },
+  {
+    "name": "Replace:1:-1",
+    "expr": "Replace(\"aaaa\",\"a\",\"b\",1,-1)",
+    "code": "Debug.Print Replace(\"aaaa\",\"a\",\"b\",1,-1)"
+  },
+  {
+    "name": "Replace:1:0",
+    "expr": "Replace(\"aaaa\",\"a\",\"b\",1,0)",
+    "code": "Debug.Print Replace(\"aaaa\",\"a\",\"b\",1,0)"
+  },
+  {
+    "name": "Replace:1:1",
+    "expr": "Replace(\"aaaa\",\"a\",\"b\",1,1)",
+    "code": "Debug.Print Replace(\"aaaa\",\"a\",\"b\",1,1)"
+  },
+  {
+    "name": "Replace:1:1.5",
+    "expr": "Replace(\"aaaa\",\"a\",\"b\",1,1.5)",
+    "code": "Debug.Print Replace(\"aaaa\",\"a\",\"b\",1,1.5)"
+  },
+  {
+    "name": "Replace:1:2.5",
+    "expr": "Replace(\"aaaa\",\"a\",\"b\",1,2.5)",
+    "code": "Debug.Print Replace(\"aaaa\",\"a\",\"b\",1,2.5)"
+  },
+  {
+    "name": "Replace:1:2147483648",
+    "expr": "Replace(\"aaaa\",\"a\",\"b\",1,2147483648)",
+    "code": "Debug.Print Replace(\"aaaa\",\"a\",\"b\",1,2147483648)"
+  },
+  {
+    "name": "Replace:1.5:-1",
+    "expr": "Replace(\"aaaa\",\"a\",\"b\",1.5,-1)",
+    "code": "Debug.Print Replace(\"aaaa\",\"a\",\"b\",1.5,-1)"
+  },
+  {
+    "name": "Replace:1.5:0",
+    "expr": "Replace(\"aaaa\",\"a\",\"b\",1.5,0)",
+    "code": "Debug.Print Replace(\"aaaa\",\"a\",\"b\",1.5,0)"
+  },
+  {
+    "name": "Replace:1.5:1",
+    "expr": "Replace(\"aaaa\",\"a\",\"b\",1.5,1)",
+    "code": "Debug.Print Replace(\"aaaa\",\"a\",\"b\",1.5,1)"
+  },
+  {
+    "name": "Replace:1.5:1.5",
+    "expr": "Replace(\"aaaa\",\"a\",\"b\",1.5,1.5)",
+    "code": "Debug.Print Replace(\"aaaa\",\"a\",\"b\",1.5,1.5)"
+  },
+  {
+    "name": "Replace:1.5:2.5",
+    "expr": "Replace(\"aaaa\",\"a\",\"b\",1.5,2.5)",
+    "code": "Debug.Print Replace(\"aaaa\",\"a\",\"b\",1.5,2.5)"
+  },
+  {
+    "name": "Replace:1.5:2147483648",
+    "expr": "Replace(\"aaaa\",\"a\",\"b\",1.5,2147483648)",
+    "code": "Debug.Print Replace(\"aaaa\",\"a\",\"b\",1.5,2147483648)"
+  },
+  {
+    "name": "Replace:2.5:-1",
+    "expr": "Replace(\"aaaa\",\"a\",\"b\",2.5,-1)",
+    "code": "Debug.Print Replace(\"aaaa\",\"a\",\"b\",2.5,-1)"
+  },
+  {
+    "name": "Replace:2.5:0",
+    "expr": "Replace(\"aaaa\",\"a\",\"b\",2.5,0)",
+    "code": "Debug.Print Replace(\"aaaa\",\"a\",\"b\",2.5,0)"
+  },
+  {
+    "name": "Replace:2.5:1",
+    "expr": "Replace(\"aaaa\",\"a\",\"b\",2.5,1)",
+    "code": "Debug.Print Replace(\"aaaa\",\"a\",\"b\",2.5,1)"
+  },
+  {
+    "name": "Replace:2.5:1.5",
+    "expr": "Replace(\"aaaa\",\"a\",\"b\",2.5,1.5)",
+    "code": "Debug.Print Replace(\"aaaa\",\"a\",\"b\",2.5,1.5)"
+  },
+  {
+    "name": "Replace:2.5:2.5",
+    "expr": "Replace(\"aaaa\",\"a\",\"b\",2.5,2.5)",
+    "code": "Debug.Print Replace(\"aaaa\",\"a\",\"b\",2.5,2.5)"
+  },
+  {
+    "name": "Replace:2.5:2147483648",
+    "expr": "Replace(\"aaaa\",\"a\",\"b\",2.5,2147483648)",
+    "code": "Debug.Print Replace(\"aaaa\",\"a\",\"b\",2.5,2147483648)"
+  },
+  {
+    "name": "Replace:2147483648:-1",
+    "expr": "Replace(\"aaaa\",\"a\",\"b\",2147483648,-1)",
+    "code": "Debug.Print Replace(\"aaaa\",\"a\",\"b\",2147483648,-1)"
+  },
+  {
+    "name": "Replace:2147483648:0",
+    "expr": "Replace(\"aaaa\",\"a\",\"b\",2147483648,0)",
+    "code": "Debug.Print Replace(\"aaaa\",\"a\",\"b\",2147483648,0)"
+  },
+  {
+    "name": "Replace:2147483648:1",
+    "expr": "Replace(\"aaaa\",\"a\",\"b\",2147483648,1)",
+    "code": "Debug.Print Replace(\"aaaa\",\"a\",\"b\",2147483648,1)"
+  },
+  {
+    "name": "Replace:2147483648:1.5",
+    "expr": "Replace(\"aaaa\",\"a\",\"b\",2147483648,1.5)",
+    "code": "Debug.Print Replace(\"aaaa\",\"a\",\"b\",2147483648,1.5)"
+  },
+  {
+    "name": "Replace:2147483648:2.5",
+    "expr": "Replace(\"aaaa\",\"a\",\"b\",2147483648,2.5)",
+    "code": "Debug.Print Replace(\"aaaa\",\"a\",\"b\",2147483648,2.5)"
+  },
+  {
+    "name": "Replace:2147483648:2147483648",
+    "expr": "Replace(\"aaaa\",\"a\",\"b\",2147483648,2147483648)",
+    "code": "Debug.Print Replace(\"aaaa\",\"a\",\"b\",2147483648,2147483648)"
+  },
+  {
+    "name": "Round:1.015:0",
+    "expr": "Round(1.015,0)",
+    "code": "Debug.Print Round(1.015,0)"
+  },
+  {
+    "name": "Round:2.675:0",
+    "expr": "Round(2.675,0)",
+    "code": "Debug.Print Round(2.675,0)"
+  },
+  {
+    "name": "Round:0.00005:0",
+    "expr": "Round(0.00005,0)",
+    "code": "Debug.Print Round(0.00005,0)"
+  },
+  {
+    "name": "Round:1E20:0",
+    "expr": "Round(1E20,0)",
+    "code": "Debug.Print Round(1E20,0)"
+  },
+  {
+    "name": "Round:1.015:1",
+    "expr": "Round(1.015,1)",
+    "code": "Debug.Print Round(1.015,1)"
+  },
+  {
+    "name": "Round:2.675:1",
+    "expr": "Round(2.675,1)",
+    "code": "Debug.Print Round(2.675,1)"
+  },
+  {
+    "name": "Round:0.00005:1",
+    "expr": "Round(0.00005,1)",
+    "code": "Debug.Print Round(0.00005,1)"
+  },
+  {
+    "name": "Round:1E20:1",
+    "expr": "Round(1E20,1)",
+    "code": "Debug.Print Round(1E20,1)"
+  },
+  {
+    "name": "Round:1.015:1.5",
+    "expr": "Round(1.015,1.5)",
+    "code": "Debug.Print Round(1.015,1.5)"
+  },
+  {
+    "name": "Round:2.675:1.5",
+    "expr": "Round(2.675,1.5)",
+    "code": "Debug.Print Round(2.675,1.5)"
+  },
+  {
+    "name": "Round:0.00005:1.5",
+    "expr": "Round(0.00005,1.5)",
+    "code": "Debug.Print Round(0.00005,1.5)"
+  },
+  {
+    "name": "Round:1E20:1.5",
+    "expr": "Round(1E20,1.5)",
+    "code": "Debug.Print Round(1E20,1.5)"
+  },
+  {
+    "name": "Round:1.015:2.5",
+    "expr": "Round(1.015,2.5)",
+    "code": "Debug.Print Round(1.015,2.5)"
+  },
+  {
+    "name": "Round:2.675:2.5",
+    "expr": "Round(2.675,2.5)",
+    "code": "Debug.Print Round(2.675,2.5)"
+  },
+  {
+    "name": "Round:0.00005:2.5",
+    "expr": "Round(0.00005,2.5)",
+    "code": "Debug.Print Round(0.00005,2.5)"
+  },
+  {
+    "name": "Round:1E20:2.5",
+    "expr": "Round(1E20,2.5)",
+    "code": "Debug.Print Round(1E20,2.5)"
+  },
+  {
+    "name": "Round:1.015:15",
+    "expr": "Round(1.015,15)",
+    "code": "Debug.Print Round(1.015,15)"
+  },
+  {
+    "name": "Round:2.675:15",
+    "expr": "Round(2.675,15)",
+    "code": "Debug.Print Round(2.675,15)"
+  },
+  {
+    "name": "Round:0.00005:15",
+    "expr": "Round(0.00005,15)",
+    "code": "Debug.Print Round(0.00005,15)"
+  },
+  {
+    "name": "Round:1E20:15",
+    "expr": "Round(1E20,15)",
+    "code": "Debug.Print Round(1E20,15)"
+  },
+  {
+    "name": "Round:1.015:16",
+    "expr": "Round(1.015,16)",
+    "code": "Debug.Print Round(1.015,16)"
+  },
+  {
+    "name": "Round:2.675:16",
+    "expr": "Round(2.675,16)",
+    "code": "Debug.Print Round(2.675,16)"
+  },
+  {
+    "name": "Round:0.00005:16",
+    "expr": "Round(0.00005,16)",
+    "code": "Debug.Print Round(0.00005,16)"
+  },
+  {
+    "name": "Round:1E20:16",
+    "expr": "Round(1E20,16)",
+    "code": "Debug.Print Round(1E20,16)"
+  },
+  {
+    "name": "Round:1.015:28",
+    "expr": "Round(1.015,28)",
+    "code": "Debug.Print Round(1.015,28)"
+  },
+  {
+    "name": "Round:2.675:28",
+    "expr": "Round(2.675,28)",
+    "code": "Debug.Print Round(2.675,28)"
+  },
+  {
+    "name": "Round:0.00005:28",
+    "expr": "Round(0.00005,28)",
+    "code": "Debug.Print Round(0.00005,28)"
+  },
+  {
+    "name": "Round:1E20:28",
+    "expr": "Round(1E20,28)",
+    "code": "Debug.Print Round(1E20,28)"
+  },
+  {
+    "name": "Round:1.015:29",
+    "expr": "Round(1.015,29)",
+    "code": "Debug.Print Round(1.015,29)"
+  },
+  {
+    "name": "Round:2.675:29",
+    "expr": "Round(2.675,29)",
+    "code": "Debug.Print Round(2.675,29)"
+  },
+  {
+    "name": "Round:0.00005:29",
+    "expr": "Round(0.00005,29)",
+    "code": "Debug.Print Round(0.00005,29)"
+  },
+  {
+    "name": "Round:1E20:29",
+    "expr": "Round(1E20,29)",
+    "code": "Debug.Print Round(1E20,29)"
+  },
+  {
+    "name": "Round:1.015:-1",
+    "expr": "Round(1.015,-1)",
+    "code": "Debug.Print Round(1.015,-1)"
+  },
+  {
+    "name": "Round:2.675:-1",
+    "expr": "Round(2.675,-1)",
+    "code": "Debug.Print Round(2.675,-1)"
+  },
+  {
+    "name": "Round:0.00005:-1",
+    "expr": "Round(0.00005,-1)",
+    "code": "Debug.Print Round(0.00005,-1)"
+  },
+  {
+    "name": "Round:1E20:-1",
+    "expr": "Round(1E20,-1)",
+    "code": "Debug.Print Round(1E20,-1)"
+  },
+  {
+    "name": "Round:1.015:2147483648",
+    "expr": "Round(1.015,2147483648)",
+    "code": "Debug.Print Round(1.015,2147483648)"
+  },
+  {
+    "name": "Round:2.675:2147483648",
+    "expr": "Round(2.675,2147483648)",
+    "code": "Debug.Print Round(2.675,2147483648)"
+  },
+  {
+    "name": "Round:0.00005:2147483648",
+    "expr": "Round(0.00005,2147483648)",
+    "code": "Debug.Print Round(0.00005,2147483648)"
+  },
+  {
+    "name": "Round:1E20:2147483648",
+    "expr": "Round(1E20,2147483648)",
+    "code": "Debug.Print Round(1E20,2147483648)"
+  },
+  {
+    "name": "targeted",
+    "expr": "Left(Array(1),1)",
+    "code": "Debug.Print Left(Array(1),1)"
+  },
+  {
+    "name": "targeted",
+    "expr": "Right(Array(1),1)",
+    "code": "Debug.Print Right(Array(1),1)"
+  },
+  {
+    "name": "targeted",
+    "expr": "Mid(Array(1),1,1)",
+    "code": "Debug.Print Mid(Array(1),1,1)"
+  },
+  {
+    "name": "targeted",
+    "expr": "Replace(Array(1),\"a\",\"b\")",
+    "code": "Debug.Print Replace(Array(1),\"a\",\"b\")"
+  },
+  {
+    "name": "targeted",
+    "expr": "InStr(Array(1),\"x\")",
+    "code": "Debug.Print InStr(Array(1),\"x\")"
+  },
+  {
+    "name": "targeted",
+    "expr": "InStr(\"abc\",Array(1))",
+    "code": "Debug.Print InStr(\"abc\",Array(1))"
+  },
+  {
+    "name": "targeted",
+    "expr": "Left(\"abc\",Null)",
+    "code": "Debug.Print Left(\"abc\",Null)"
+  },
+  {
+    "name": "targeted",
+    "expr": "Replace(\"abc\",\"a\",\"b\",Null)",
+    "code": "Debug.Print Replace(\"abc\",\"a\",\"b\",Null)"
+  },
+  {
+    "name": "targeted",
+    "expr": "Round(1.234,16)",
+    "code": "Debug.Print Round(1.234,16)"
+  }
+]

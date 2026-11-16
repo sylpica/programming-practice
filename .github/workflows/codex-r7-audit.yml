@@ -16,10 +16,10 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Check independent AutoHotkey boundaries on Windows
-        run: python audit-probes/step4/native-ahk.py
+      - name: Check auxiliary VBScript boundaries and VBA model on Windows
+        run: python audit-probes/step8/native-vb.py
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: codex-r7-native-evidence
-          path: audit-probes/step4/results*.json
+          path: audit-probes/step8/results*.json
