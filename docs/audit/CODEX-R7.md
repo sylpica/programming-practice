@@ -1,4 +1,18 @@
-# Codex R7 独立監査 — ee01f07（節目9・未完了）
+# Codex R7 独立監査 — ee01f07（節目10・未完了）
+
+対象は引き続き **ee01f07402b404c7b9dbcd83935b4be3bc4de187、全15種類・104テンプレート・978リファレンス・111用語**。配信日：2026-11-16 JST。Muse側の指摘一覧・個票を見ず、固定対象の実装・公式資料・実Windowsから独立に確認した。
+
+節目10の追加は **4件（すべてP2）**。累計 **213件（P1：0、P2：195、P3：18）**。Museとの重複を除いた件数ではない。同じ原因の複数入力、R7-209の入力promptへの補強、明示されたモデル差・保留を新規件数へ加算していない。[検証範囲](#節目10の検証範囲と証拠)、[追加指摘](#節目10の追加指摘)、[残作業](#節目10の残作業)を参照。
+
+**使った書き込みコール数：4件（この節目）。累計30件。** 監査専用ブランチへのgit push 3回（105／107／117ソース）と、報告書だけをmainへまとめて配信するgit push 1回。過去の節目は5、4、2、2、1、1、1、6、4件。従来と同じくGitHubへ書き込むgit pushを数え、ローカルの検証コード・データ作成、読取り、CI内の保存を含めない。製品コード・教材・既存テスト・DEVELOPMENT.mdは変更せず、監査ブランチをmainへマージしない。
+
+配信準備時のmainは前回報告 `cdf6c19aa388411378e4b5fafce31106cd471220`。対象製品はee01f07に固定し、その後のmainの修正残存や追加種類を監査済みとする意味ではない。
+
+**観点1〜8は未完了。** 今回はcmd／PSの全16教材（入力候補を分け18実行）と73参照例を実Windowsで照合し、動的名・関数メタデータ・仮引数宣言へ検証を進めた。全15種類・104教材・978項目・111用語・全ビューの未了分を維持する。モデル／推論設定をツールから変更・検証できない制約も継続する。サブエージェント・リセット権は使っていない。
+
+## 節目9までの記録
+
+以下は前回報告を保持した履歴。件数・書き込み回数・未実施の記述は当時の値であり、今回の状況は末尾の節目10で更新する。
 
 対象は引き続き **ee01f07402b404c7b9dbcd83935b4be3bc4de187、全15種類・104テンプレート・978リファレンス・111用語**。配信日：2026-11-16 JST。Muse側の指摘一覧・個票を見ず、固定対象の実装・公式資料・実Windowsから独立に確認した。
 
@@ -4256,3 +4270,135 @@ VBA・ImageJ・CloudFormation・PAD・AutoHotkey・UI.Vision・Power Apps・Pyth
 実Excel／Canvas／PAD／AWS／UI.Visionの製品セッション、実スクリーンリーダー、Safari／Firefox／iOS実機、ImageJ GUIの全経路は接続・環境がなく未実施。実cmdとWindows PowerShell7.4.6の今回ケースは実施済みだが、対話UI・全属性・全Windows版を網羅した意味ではない。Windows CIでできる残作業を不可能とせず、今回の集合内最大時間を全入力の最悪時間と断定しない。
 
 使用量・回数制限とリセット時刻の通知は受けていない。リセット権・サブエージェントは使用していない。依頼モデル／推論レベルをこの会話のツールから変更・検証できない制約は継続し、確認したと偽らない。全範囲完了や欠陥収束の宣言ではなく、継続中の節目報告である。
+
+
+## 節目10の検証範囲と証拠
+
+固定ee01f07、全15種類・104教材・978参照項目・111用語の監査を継続した。今回はcmd／PowerShellの全教材・参照例の実Windows照合を進め、関数の入力・呼出し情報・仮引数宣言も追った。Museの指摘一覧・個票は参照していない。
+
+実測：[run43813248328](https://github.com/sylpica/programming-practice/actions/runs/43813248328)、監査専用コミット `072fc336e1a92d370a8a04a317b86ec033b4e473`、`audit-probes/step10/`。Windows Server2025／build26100、PowerShell7.4.6、Node22.23.4。**117ソース（cmd45／PowerShell72）すべてを回収、タイムアウト・結果欠落0**。途中の105・107ソースのrunも成功し、件数と実結果を回収した。新規4件に対応する通常出力の誤りと、期待されるnativeエラー10形を区別し、ジョブ成功を「全プログラムが正常」と読み替えない。
+
+教材固有modelがあればそれを使い、それ以外は各種類の標準modelを使った。実WindowsではC:\Practice相当の一時フォルダへ同じツリーを作り、notes.txtにはUTF-8の学習メモ＋CRLF（14byte）、data.csv／readme.txt／logsも元モデルどおり置いた。cmdバッチはUTF-8、コードページ65001。set /pは標準入力、PowerShellのRead-HostはNonInteractiveを外した個別プロセスへ標準入力を渡して実コマンドを動かした。Read-Hostを戻り値固定の代理関数へ置き換えていない。物理キーボード・Windows GUI画面の検証ではない。
+
+| 範囲 | 実施結果 | 判定の限界 |
+|---|---|---|
+| 全16教材 | cmd8／PS8を全て固有model・コード・introで照合。入力教材2本のyes／noを分け、18実行。cmdの14、0 1／0 2／0 3、Alice Smithと復帰、ファイル読出し、PSのAlice／4／3、Count4・Sum20、2／4／6、N6・N12、書込み後first／second等が一致 | 記載された数値・文字列・分岐と変更対象に、新規の主張不一致は**確認済み・なし**。cmdのmove成功出力とset /pのプロンプト欠落は既報R7-209の補強として別記する。任意に変更したモデル・未知入力・全実行環境までの完了ではない |
+| 全73参照例 | cmd28、PS45の全コードを標準modelで実行。入力例にはAliceを明示。native／アプリとも参照例での予期しない停止は0。exit /b 3の実終了コード3は意図された結果。各例の計算・戻り値・分岐・記載プロパティを確認 | cmd copy／moveを含む4例の成功通知欠落と入力プロンプトはR7-209の同じ原因。列挙順、パス、表示形、host出力の相違は以下で分ける。73項目の全説明・注意・全引数を完了したという意味ではない |
+| 許容した表示・順序差 | 一時フォルダのパスはC:\Practiceへ対応させ、PSはFileInfo等の名前・長さ・値を照合。Get-ChildItem→Select -First 2のnativeはlogs／data.csv、モデルはnotes.txt／data.csv | DEVELOPMENT.md「共通シェルモデル」が列挙順をfiles配列順と明示し、実機順序・ロケールの再現を宣言していないため、この順序差は欠陥にしない。PSの学習用オブジェクト書式も宣言どおり区別。根拠なく「同じ」とは書かない |
+| host・制御文字 | Write-HostはInformationRecordに印を付けて成功出力と分離。Read-HostのpromptはhostStdoutへ別保存。cmd pauseは案内に続きresumed、clsは捕捉stdoutにFFを取得 | pauseの実機案内は英語、モデルは日本語。言語差と継続の一致を分け、実Windows画面の文言・見た目の完全一致は未判定。clsも実画面消去の見た目を判定せず、モデルがパネルを消す明示仕様との違いを保持する |
+| 動的変数6形 | CMDEXTVERSION／CMDCMDLINE × %形式／!形式／明示した同名変数での隠蔽 | 前2形式の4差分をR7-210へまとめる。同名customを返す2形は一致し、その形の新規欠陥は**確認済み・なし**。全動的名を今回検証したわけではない |
+| 関数自動変数8形 | inputの1回／2回読出し・引数併用、PSBoundParametersの名前／位置束縛、MyInvocationの名前、inputを使わないparam・argsの対照 | R7-211。inputを使わない未束縛paramのnullとargs.Count=0の2対照は、表示・値の意味として新規欠陥は**確認済み・なし**。全列挙子API・全呼出し情報ではない |
+| 仮引数宣言10形 | true／false／nullと、x/x／x/Xの5指定 × paramブロック／関数名後リスト | nativeは6形でVariableNotWritable、4形でParseException。モデルは全て成功。R7-212／213へ原因を分けた。呼出し側の引数割当て（R7-07）とは重複計上しない |
+| set /p標準出力2形 | 明示入力Aliceで、promptを>ファイルへ保存しtypeで読返す形と、findへ渡す形 | nativeはPrompt:を返し、find後GOOD。モデルは空内容／BAD。既報R7-209を入力コマンドまで補強し、新規採番しない |
+| ブラウザ | 新規4件の代表＋関数メタデータ2形＋標準出力補強2形の8ソース、全16教材の選択・実行・解説を確認 | Chromium156、pageerror0。結果と解説を取得。全画面サイズ、全aria、全保存状態・フォーカス経路の完了ではない |
+
+ローカル証拠は `/workspace/work/r7j/` のcases、native/app JSON、解析、ブラウザ記録。公式7.4.6のSemanticChecks.csでOrdinalIgnoreCaseによる仮引数名の重複検査も確認した。資料上の意味と実行結果を突き合わせ、通常のレコードや未定義変数の規則へ誤って一括化しない。
+
+### 既報R7-209の補強（新規件数に含めない）
+
+```bat
+set /p "ANSWER=Prompt:" > out.txt
+type out.txt
+```
+
+model.inputs.ANSWER=Alice、実cmdにもAlice＋改行を入力。実cmdはファイルから `Prompt:` を読み出す（stdout末尾に改行なし）。アプリは空内容を読み出す。これはpromptが単なる説明文ではなく、リダイレクトされる標準出力であることの再現。
+
+```bat
+set /p "ANSWER=Prompt:" | find "Prompt:"
+if errorlevel 1 (echo BAD) else (echo GOOD)
+```
+
+実cmd出力はPrompt:、GOODの2行。アプリはBADだけ。コピー／移動の成功通知と同じ「コマンドの標準出力を落としてパイプの入力を空にする」原因としてR7-209へまとめる。教材cmd-inputと参照set /pにもpromptの欠落があり、cmd-writeや参照del／ren／copy／moveの前処理中の成功通知も同じ既報に含む。
+
+### Windows性能と実施制約
+
+最終runのアプリsimulateは、cmd45件で合計 **31.2425ms**、集合内最長 **10.9488ms**（cmd-hello）。PowerShell72件は合計 **215.8421ms**、最長 **172.8728ms**（ps-files）。WindowsのNodeで順次測定し、ブラウザ描画は含まない。実PowerShell個別プロセス72件の経過時間合計は **37385.0498ms**（プロセス起動・fixture・回収等込み）。両者は測定範囲が違うため速度比を出さない。今回の最大を全入力空間の最重ケースとは呼ばない。
+
+実Excel等の未接続製品、スクリーンリーダー、Safari／Firefox／iOS、実WindowsのGUI／手動入力と全画面描画は未実施。今回の教材・参照コードは実Windowsで実行できたため、それらを環境上不可能とは記さない。setlocalの資料と実測の食い違いは前節の保留を維持し、今回解決済みにしない。
+
+## 節目10の追加指摘
+
+### R7-210（P2）CMDEXTVERSION／CMDCMDLINEを通常の未定義変数として空文字列にする
+
+対象：cmd。位置：`js/types/cmd/engine.js dynamicValue`。
+
+再現：固定ee01f07の標準モデルで次を実行する。
+
+```bat
+echo [%CMDEXTVERSION%]
+```
+
+実際：アプリ出力は `[]`。既知の空文字列として正常終了する。
+
+期待・一次根拠：実Windows build26100の出力は `[2]`。CMDEXTVERSIONはコマンド拡張版を返す動的変数であり、CMDCMDLINEは起動時のコマンド行を返す。未対応なら名前を示して停止するか、実行時に決まる値として扱い、空値を捏造しない。 [Microsoft Learn if（動的変数の説明）](https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/if)。
+
+%形式とEnableDelayedExpansionでの!形式の両方を実測。CMDCMDLINEの実出力は `[cmd.exe /d /q /c ...\probe.cmd]`（一時フォルダ部分を省略）で、モデルは同じく[]。両名を明示的にsetでcustomへ隠す2ケースは実物・モデルとも[custom]。普通の未定義環境変数が空に展開される規則と、cmd自身が用意するこれらの名前を区別する必要がある。新しい動的名の完全実装を要求する指摘ではなく、範囲外の読み出しを既知の空値にする点を指摘する。
+
+### R7-211（P2）関数のinput／PSBoundParameters／MyInvocationを未定義nullにし、入力と呼出し情報を失う
+
+対象：powershell。位置：`js/types/powershell/engine.js get と function呼出しフレーム`。
+
+再現：固定ee01f07の標準モデルで次を実行する。
+
+```powershell
+function Pass { $input };1,2,3 | Pass
+```
+
+実際：アプリ出力はなし。成功扱いで、3つの入力を捨てる。
+
+期待・一次根拠：実PowerShell7.4.6は1、2、3を順に出す。$inputは関数へ渡された入力の列挙子。未対応ならnullへ固定せず明示停止する。 [about_Automatic_Variables のinput／PSBoundParameters／MyInvocation](https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_automatic_variables?view=powershell-7.4)。
+
+追加実測：`function Check {param($x) $PSBoundParameters.Count}; Check -x 7` と位置引数Check 7は実物1／モデル0。`function Check {$MyInvocation.MyCommand.Name}; Check` は実物Check／モデル出力なし。$inputを2回読むケースは実物で1・2・3が1回だけ、引数9も併用すれば1・2・3・9だがモデルは9のみ。begin／process／endや属性を使わない基本関数の例であり、advanced function未対応との宣言を理由に正常なnullとすることはできない。元から$inputを使わない未束縛paramや$args.Countの対照ケースは新規不一致なし。
+
+### R7-212（P2）同名・大小文字違いの仮引数の重複を受理し、後の値で上書きする
+
+対象：powershell。位置：`js/types/powershell/parser.js parameters`。
+
+再現：固定ee01f07の標準モデルで次を実行する。
+
+```powershell
+function Check {param($x,$x) $x};Check 1 2
+```
+
+実際：アプリは正常に2を出力する。
+
+期待・一次根拠：実PowerShell7.4.6は解析時に `Duplicate parameter $x in parameter list.`。同一名のパラメーター宣言は大小文字を区別せず拒否する。 [Microsoft Learn 関数とパラメーター](https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_functions?view=powershell-7.4)、[公式7.4.6 CheckForDuplicateParameters](https://github.com/PowerShell/PowerShell/blob/v7.4.6/src/System.Management.Automation/engine/parser/SemanticChecks.cs#L84)。
+
+param($x,$x)／param($x,$X)と、function Check($x,$x)／Check($x,$X)の4形式で確認。nativeはScriptBlock.Create経由のため外側はMethodInvocationExceptionに包まれるが、FullyQualifiedErrorId=ParseExceptionと内側の重複文言を取得し、公式のOrdinalIgnoreCase検査とも一致した。呼出し側の同じ名前付き引数の重複検査や、既報R7-07の位置引数割当てとは異なる。
+
+### R7-213（P2）保護された自動変数名への仮引数束縛で必要なエラーを消す
+
+対象：powershell。位置：`js/types/powershell/engine.js function のciSetによるパラメーター設定`。
+
+再現：固定ee01f07の標準モデルで次を実行する。
+
+```powershell
+function Check {param($true) $true};Check 7
+```
+
+実際：アプリは正常にTrueを出し、引数7の束縛に問題がないかのように扱う。
+
+期待・一次根拠：実PowerShell7.4.6は `Cannot overwrite variable true because it is read-only or constant.`、FullyQualifiedErrorId=VariableNotWritable。保護された名前への束縛を失敗または未対応として止める。 [Microsoft Learn 自動変数](https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_automatic_variables?view=powershell-7.4)、[保護された変数の変更制約](https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.utility/set-variable?view=powershell-7.4)。
+
+true／false／null × paramブロック／関数名後のリスト、6形式を実測。すべてnativeはVariableNotWritable。モデルはTrue／Falseまたは出力なしで成功する。$nullへの通常の代入の特殊規則と混同せず、ここでは仮引数への束縛時に生じた実エラーを指摘する。自動変数変更を未対応と宣言していても、受理した呼出しを成功させてはいけない。
+
+## 節目10の残作業
+
+**観点1〜8は未完了。** 固定ee01f07の全15種類・104教材・978参照項目・111用語・全ビューを維持する。今回の16教材・73例を、全種類の全関数・全入力・全画面の完了へ読み替えない。
+
+| 観点 | 今回の進捗 | 残作業 |
+|---|---|---|
+| 1 一次情報 | cmd／PS全教材・参照例の実Windows照合、動的名、関数自動変数と宣言、Microsoft Learnと公式7.4.6ソース | 全15種類の残る関数・構文・型・書式。setlocalの資料／実測差を別Windows版・起動条件で検証 |
+| 2 宣言 | 共通シェルの列挙順・書式の明示仕様を照合し、許容差を分類。未対応の自動変数をnull・空へ固定する問題を確認 | DEVELOPMENT.md全宣言の双方向表。全型・値域・名前・未確定入力と外部依存の境界で正直に止まるか |
+| 3 状態・分岐・表示 | input消費・束縛情報・保護名・重複名、promptのリダイレクト／パイプ、固有入力の2分岐 | 全エンジンの未確認パス制約、保存・移行・複数タブ・テンプレート切替の全状態、参照・配列・例外・未知値の残る交差 |
+| 4 cmd／PS | 今回117ソース（45cmd／72PS）を実Windowsで全回収。教材の日本語、set /p・Read-Hostも実コマンドを使用 | 残る全引数位置・展開・修飾・変数・ラベル・パイプライン・関数スコープ・入れ子・エラー・表示。以前の連結echo実測回答は保持し、今回の追加測定とは混ぜない |
+| 5 参照・用語 | 73例を実行し、各例の値・分岐・記載プロパティを照合。動的変数と関数メタデータの説明範囲も確認 | 978項目全説明・書式・期待値・注意、全実装名／属性／変数／別名と参照・除外宣言、111用語の一次逐文・教材語・ビュー間矛盾 |
+| 6 全関数境界 | 関数入力8形、動的名6形、宣言10形、標準出力2形。異常な宣言が偽成功するものを確認 | 全関数の全位置・全型・空／null・巨大値・過不足・ゼロ除算・入れ子・条件・連鎖・パイプライン。PS列挙子・省略／型変換・全メタデータ、cmdの残る全展開等 |
+| 7 全104教材・全停止 | cmd／PS全16教材（入力yes/noを含め18実行）、全73参照例を固有／標準modelで実Windows照合。保護名と重複名の正しいエラーを取得 | 残る教材の未了分、16教材の任意変更モデル・全未知入力、全エンジンの全停止理由の一対一再現。Windowsの手動対話UIの見た目は未実施 |
+| 8 文面・a11y・劣化・性能 | 新規代表等8ソースと16教材を画面で実行・解説確認、promptの正確さ、Windows117ソースの時間 | 全文面・aria・ラベル・全フォーカス・各表示幅、実容量枯渇と保存救出、キャッシュ世代、全エンジンの最重入力探索と実Windows UI描画 |
+
+VBA・ImageJ・CloudFormation・PAD・AutoHotkey・UI.Vision・Power Apps・Python・R・C・C++・C#・JavaScript・cmd・PowerShellの全種類に未了分を維持する。VBAのRound／IsNumeric／Unicode casing等と実Excelによる切分け、Rのmedian／seq／rep／read.csv・名前・属性・精度、C系全オーバーロード・定数式・昇格・型・ポインタ／配列、C# TryParse out修飾子／型、保存・状態の残る交差も落とさない。
+
+実Excel／Canvas／PAD／AWS／UI.Vision製品セッション、実スクリーンリーダー、Safari／Firefox／iOS実機、ImageJ GUI全経路、実Windowsの手動UIは接続・環境がなく未実施。Windows CIで可能なコード実行を不可能とせず、今回得た有限集合の値・最大時間を全入力の結論に一般化しない。
+
+使用量・回数制限、リセット時刻の通知は受けていない。リセット権・サブエージェントは使っていない。モデル／推論設定をこの会話のツールで変更・検証できない制約を維持し、確認したと偽らない。これは継続中の節目報告であり、全範囲完了や欠陥収束の宣言ではない。
