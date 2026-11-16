@@ -4523,5 +4523,405 @@
       }
     },
     "stdin": "Alice\n"
+  },
+  {
+    "id": 107,
+    "kind": "powershell",
+    "name": "parameter-declaration",
+    "code": "function Check {param($true) $true};Check 7",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "学習メモ\r\n",
+          "length": 14
+        },
+        {
+          "path": "C:\\Practice\\data.csv",
+          "type": "file",
+          "content": "Name,Score\r\nAlice,80\r\n",
+          "length": 22
+        },
+        {
+          "path": "C:\\Practice\\readme.txt",
+          "type": "file",
+          "content": "Practice\r\n",
+          "length": 10
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        }
+      ],
+      "inputs": {},
+      "lastExitCode": null
+    }
+  },
+  {
+    "id": 108,
+    "kind": "powershell",
+    "name": "parameter-declaration",
+    "code": "function Check($true) { $true};Check 7",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "学習メモ\r\n",
+          "length": 14
+        },
+        {
+          "path": "C:\\Practice\\data.csv",
+          "type": "file",
+          "content": "Name,Score\r\nAlice,80\r\n",
+          "length": 22
+        },
+        {
+          "path": "C:\\Practice\\readme.txt",
+          "type": "file",
+          "content": "Practice\r\n",
+          "length": 10
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        }
+      ],
+      "inputs": {},
+      "lastExitCode": null
+    }
+  },
+  {
+    "id": 109,
+    "kind": "powershell",
+    "name": "parameter-declaration",
+    "code": "function Check {param($false) $false};Check 7",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "学習メモ\r\n",
+          "length": 14
+        },
+        {
+          "path": "C:\\Practice\\data.csv",
+          "type": "file",
+          "content": "Name,Score\r\nAlice,80\r\n",
+          "length": 22
+        },
+        {
+          "path": "C:\\Practice\\readme.txt",
+          "type": "file",
+          "content": "Practice\r\n",
+          "length": 10
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        }
+      ],
+      "inputs": {},
+      "lastExitCode": null
+    }
+  },
+  {
+    "id": 110,
+    "kind": "powershell",
+    "name": "parameter-declaration",
+    "code": "function Check($false) { $false};Check 7",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "学習メモ\r\n",
+          "length": 14
+        },
+        {
+          "path": "C:\\Practice\\data.csv",
+          "type": "file",
+          "content": "Name,Score\r\nAlice,80\r\n",
+          "length": 22
+        },
+        {
+          "path": "C:\\Practice\\readme.txt",
+          "type": "file",
+          "content": "Practice\r\n",
+          "length": 10
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        }
+      ],
+      "inputs": {},
+      "lastExitCode": null
+    }
+  },
+  {
+    "id": 111,
+    "kind": "powershell",
+    "name": "parameter-declaration",
+    "code": "function Check {param($null) $null};Check 7",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "学習メモ\r\n",
+          "length": 14
+        },
+        {
+          "path": "C:\\Practice\\data.csv",
+          "type": "file",
+          "content": "Name,Score\r\nAlice,80\r\n",
+          "length": 22
+        },
+        {
+          "path": "C:\\Practice\\readme.txt",
+          "type": "file",
+          "content": "Practice\r\n",
+          "length": 10
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        }
+      ],
+      "inputs": {},
+      "lastExitCode": null
+    }
+  },
+  {
+    "id": 112,
+    "kind": "powershell",
+    "name": "parameter-declaration",
+    "code": "function Check($null) { $null};Check 7",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "学習メモ\r\n",
+          "length": 14
+        },
+        {
+          "path": "C:\\Practice\\data.csv",
+          "type": "file",
+          "content": "Name,Score\r\nAlice,80\r\n",
+          "length": 22
+        },
+        {
+          "path": "C:\\Practice\\readme.txt",
+          "type": "file",
+          "content": "Practice\r\n",
+          "length": 10
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        }
+      ],
+      "inputs": {},
+      "lastExitCode": null
+    }
+  },
+  {
+    "id": 113,
+    "kind": "powershell",
+    "name": "parameter-declaration",
+    "code": "function Check {param($x,$x) $x};Check 1 2",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "学習メモ\r\n",
+          "length": 14
+        },
+        {
+          "path": "C:\\Practice\\data.csv",
+          "type": "file",
+          "content": "Name,Score\r\nAlice,80\r\n",
+          "length": 22
+        },
+        {
+          "path": "C:\\Practice\\readme.txt",
+          "type": "file",
+          "content": "Practice\r\n",
+          "length": 10
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        }
+      ],
+      "inputs": {},
+      "lastExitCode": null
+    }
+  },
+  {
+    "id": 114,
+    "kind": "powershell",
+    "name": "parameter-declaration",
+    "code": "function Check($x,$x) { $x};Check 1 2",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "学習メモ\r\n",
+          "length": 14
+        },
+        {
+          "path": "C:\\Practice\\data.csv",
+          "type": "file",
+          "content": "Name,Score\r\nAlice,80\r\n",
+          "length": 22
+        },
+        {
+          "path": "C:\\Practice\\readme.txt",
+          "type": "file",
+          "content": "Practice\r\n",
+          "length": 10
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        }
+      ],
+      "inputs": {},
+      "lastExitCode": null
+    }
+  },
+  {
+    "id": 115,
+    "kind": "powershell",
+    "name": "parameter-declaration",
+    "code": "function Check {param($x,$X) $x};Check 1 2",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "学習メモ\r\n",
+          "length": 14
+        },
+        {
+          "path": "C:\\Practice\\data.csv",
+          "type": "file",
+          "content": "Name,Score\r\nAlice,80\r\n",
+          "length": 22
+        },
+        {
+          "path": "C:\\Practice\\readme.txt",
+          "type": "file",
+          "content": "Practice\r\n",
+          "length": 10
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        }
+      ],
+      "inputs": {},
+      "lastExitCode": null
+    }
+  },
+  {
+    "id": 116,
+    "kind": "powershell",
+    "name": "parameter-declaration",
+    "code": "function Check($x,$X) { $x};Check 1 2",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "学習メモ\r\n",
+          "length": 14
+        },
+        {
+          "path": "C:\\Practice\\data.csv",
+          "type": "file",
+          "content": "Name,Score\r\nAlice,80\r\n",
+          "length": 22
+        },
+        {
+          "path": "C:\\Practice\\readme.txt",
+          "type": "file",
+          "content": "Practice\r\n",
+          "length": 10
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        }
+      ],
+      "inputs": {},
+      "lastExitCode": null
+    }
   }
 ]
