@@ -13,10 +13,17 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Measure PAD and UI Vision model boundaries and path limits
-        run: node audit-probes/step12/app.mjs
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: '4.2.2'
+          use-public-rspm: false
+      - name: Compare R types, extraction, replacement and references
+        run: python audit-probes/step13/run.py
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: codex-r7-native-evidence
-          path: audit-probes/step12/results*.json
+          path: audit-probes/step13/results*
