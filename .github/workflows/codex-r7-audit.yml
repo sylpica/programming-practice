@@ -13,13 +13,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-      - name: Check all shell teaching examples and remaining automatic variables
-        run: python audit-probes/step10/native.py
+      - name: Measure PAD and UI Vision model boundaries and path limits
+        run: node audit-probes/step12/app.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: codex-r7-native-evidence
-          path: audit-probes/step10/results*.json
+          path: audit-probes/step12/results*.json
