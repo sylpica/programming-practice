@@ -22,4 +22,6 @@ jobs:
         if: always()
         with:
           name: codex-r7-native-evidence
-          path: audit-probes/step8/results*.json
+          path: |
+            audit-probes/step8/results*.json
+            audit-probes/step8/native-stdout.txt

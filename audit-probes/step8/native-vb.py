@@ -1,6 +1,6 @@
 import json,os,platform,subprocess,time,gzip,base64
 from pathlib import Path
-p=Path(__file__).parent;rows=json.loads((p/'vb-cases.json').read_text(encoding='utf-8'))
+p=Path(__file__).resolve().parent;rows=json.loads((p/'vb-cases.json').read_text(encoding='utf-8'))
 def vbquote(s):return '"'+s.replace('"','""')+'"'
 number_fn = """Function NumberBits(v)
 Dim q, ex, sg, frac, bits, i
@@ -32,7 +32,7 @@ for i,row in enumerate(rows):
 script=p/'probe.vbs';script.write_bytes(('\ufeff'+'\r\n'.join(lines)).encode('utf-16le'))
 meta={'os':platform.platform(),'python':platform.python_version(),'runtime':'Windows Script Host VBScript (auxiliary; not Excel VBA)'}
 try:
- started=time.perf_counter();r=subprocess.run(['cscript.exe','//Nologo','//U',str(script)],capture_output=True,timeout=60);meta.update(returncode=r.returncode,elapsedMs=(time.perf_counter()-started)*1000);stdout=r.stdout.decode('utf-16le',errors='replace').lstrip('\ufeff');stderr=r.stderr.decode('utf-16le',errors='replace');(p/'native-stdout.txt').write_text(stdout,encoding='utf-8');meta['stderr']=stderr
+ started=time.perf_counter();r=subprocess.run(['cscript.exe','//Nologo','//U',str(script)],capture_output=True,timeout=60);meta.update(returncode=r.returncode,elapsedMs=(time.perf_counter()-started)*1000);stdout=r.stdout.decode('utf-16le',errors='replace').lstrip('\ufeff');stderr=r.stderr.decode('utf-16le',errors='replace');(p/'native-stdout.txt').write_text(stdout,encoding='utf-8');meta['stderr']=stderr;meta['stdoutBytes']=len(r.stdout);meta['stdoutPreview']=repr(r.stdout[:1500]);print('CSCRIPT_DIAGNOSTIC:'+json.dumps(meta),flush=True)
  for line in stdout.splitlines():
   if line.startswith('LOCALE:'):meta['locale']=line[7:]
   if line.startswith('FEATURE:'):
@@ -40,8 +40,14 @@ try:
   if not line.startswith('CASE:'):continue
   i,err,typ,text,bits,descr=line[5:].split('|',5);rows[int(i)]['native']={'errorNumber':int(err),'type':typ,'text':text,'numberBits':bits,'errorDescription':descr}
 except (FileNotFoundError,subprocess.TimeoutExpired)as e:meta['unavailable']=str(e)
+smoke=p/'smoke.vbs';smoke.write_text('WScript.Echo \"R7_SMOKE\"',encoding='ascii')
+for exe in [str(Path(os.environ['SystemRoot'])/'System32'/'cscript.exe'),str(Path(os.environ['SystemRoot'])/'SysWOW64'/'cscript.exe')]:
+ try:
+  z=subprocess.run([exe,'//Nologo','//E:VBScript',str(smoke)],capture_output=True,timeout=15);meta.setdefault('smoke',[]).append({'exe':exe,'code':z.returncode,'stdout':repr(z.stdout),'stderr':repr(z.stderr)})
+ except Exception as e:meta.setdefault('smoke',[]).append({'exe':exe,'exception':str(e)})
+print('SMOKE_DIAGNOSTIC:'+json.dumps(meta.get('smoke')),flush=True)
 missing=[i for i,r in enumerate(rows)if 'native'not in r];meta['missing']=missing
-result={'meta':meta,'rows':rows};(p/'results-vb-native.json').write_text(json.dumps(result,ensure_ascii=False,indent=2),encoding='utf-8');print('NATIVE_META:'+json.dumps(meta,ensure_ascii=False));print('NATIVE_GZIP:'+base64.b64encode(gzip.compress(json.dumps(result,ensure_ascii=False,separators=(',',':')).encode('utf-8'))).decode('ascii'))
+result={'meta':meta,'rows':rows};(p/'results-vb-native.json').write_text(json.dumps(result,ensure_ascii=False,indent=2),encoding='utf-8');print('NATIVE_META:'+json.dumps(meta,ensure_ascii=False),flush=True);print('NATIVE_GZIP:'+base64.b64encode(gzip.compress(json.dumps(result,ensure_ascii=False,separators=(',',':')).encode('utf-8'))).decode('ascii'),flush=True)
 # Measure the fixed application on the same Windows runner; this is not a global worst-case claim.
 node="""import fs from 'node:fs';import {gzipSync}from 'node:zlib';import {getDefinition}from '../../js/types/registry.js';const d=getDefinition('vba'),rows=JSON.parse(fs.readFileSync('audit-probes/step8/vb-cases.json','utf8'));let max={ms:0},total=performance.now();for(const row of rows){let start=performance.now();const r=await d.simulate(row.code,structuredClone(d.model.defaults));const ms=performance.now()-start;row.app={ms,error:r.error,paths:r.paths?.map(p=>({error:p.error,outputs:p.outputs}))};if(ms>max.ms)max={ms,code:row.code};}const result={meta:{node:process.version,totalMs:performance.now()-total,max,commit:'ee01f07 base; audit-only branch'},rows};fs.writeFileSync('audit-probes/step8/results-vb-app.json',JSON.stringify(result,null,2));console.log('APP_GZIP:'+gzipSync(Buffer.from(JSON.stringify(result))).toString('base64'));"""
 (p/'run-app.mjs').write_text(node,encoding='utf-8');subprocess.run(['node',str(p/'run-app.mjs')],check=True,timeout=60)
