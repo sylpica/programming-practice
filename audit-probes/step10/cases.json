@@ -4435,5 +4435,93 @@
       "inputs": {},
       "lastExitCode": null
     }
+  },
+  {
+    "id": 105,
+    "kind": "cmd",
+    "name": "prompt-stdout",
+    "code": "set /p \"ANSWER=Prompt:\" > out.txt\ntype out.txt",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "学習メモ\r\n",
+          "length": 14
+        },
+        {
+          "path": "C:\\Practice\\data.csv",
+          "type": "file",
+          "content": "Name,Score\r\nAlice,80\r\n",
+          "length": 22
+        },
+        {
+          "path": "C:\\Practice\\readme.txt",
+          "type": "file",
+          "content": "Practice\r\n",
+          "length": 10
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        }
+      ],
+      "args": [],
+      "errorlevel": 0,
+      "inputs": {
+        "ANSWER": "Alice"
+      }
+    },
+    "stdin": "Alice\n"
+  },
+  {
+    "id": 106,
+    "kind": "cmd",
+    "name": "prompt-stdout",
+    "code": "set /p \"ANSWER=Prompt:\" | find \"Prompt:\"\nif errorlevel 1 (echo BAD) else (echo GOOD)",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "学習メモ\r\n",
+          "length": 14
+        },
+        {
+          "path": "C:\\Practice\\data.csv",
+          "type": "file",
+          "content": "Name,Score\r\nAlice,80\r\n",
+          "length": 22
+        },
+        {
+          "path": "C:\\Practice\\readme.txt",
+          "type": "file",
+          "content": "Practice\r\n",
+          "length": 10
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        }
+      ],
+      "args": [],
+      "errorlevel": 0,
+      "inputs": {
+        "ANSWER": "Alice"
+      }
+    },
+    "stdin": "Alice\n"
   }
 ]
