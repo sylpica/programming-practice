@@ -193,13 +193,16 @@ test("RG-29 scan of all template intros: preserve legacy links and reject mid-wo
     }
   }
   assert.equal(templates, definitions.reduce((n,d)=>n+d.templates.length,0));
-  assert.equal(legacyTemplates,88);
+  assert.equal(legacyTemplates,96);
   assert.equal(midWord, 0);
   // RG-58 で let／const／var の項目が増え、解説文からのリンクが4件増えた（83→87）。
   // リファレンス完全性修正（RG-116〜RG-135）で A_Index／PI／return／TypeError／$／NA の
   // 項目が増え、解説文中の正当な言及がリンク化されて6件増えた（87→93）。
   // 修正バッチ2の T-1 是正で each テンプレートの intro が For Each へ2回言及するようになり1件増えた（93→94）。
-  assert.equal(legacyLinks, 94);
+  // 第16種 IPA擬似言語の追加（MUSE-ADD-PSEUDO）で、照合対象の種類に pseudo が加わり
+  // テンプレート8件が legacy 側へ移った（88→96）。intro 中の正当な言及（÷／mod／for／
+  // while／未定義の値）がリンク化されて9件増えた（94→103）。
+  assert.equal(legacyLinks, 103);
   assert.ok(total >= legacyLinks);
 });
 

@@ -51,7 +51,7 @@ test("gloss powerautomate: desktop flow definition names the desktop (G-N5)", ()
 });
 
 test("gloss: every type defines the core model term 未確定（値） (G-N6)", () => {
-  assert.equal(definitions.length, 15);
+  assert.equal(definitions.length, 16);
   for (const d of definitions) {
     assert.ok(
       d.glossary.some((g) => g[0] === "未確定（値）"),
@@ -102,6 +102,7 @@ test("gloss: totals and structural sanity across all types", () => {
     javascript: 4,
     cmd: 6,
     powershell: 6,
+    pseudo: 13,
   };
   let total = 0;
   for (const d of definitions) {
@@ -116,5 +117,5 @@ test("gloss: totals and structural sanity across all types", () => {
       seen.add(word);
     }
   }
-  assert.equal(total, 111);
+  assert.equal(total, 124); // 111 + 第16種 IPA擬似言語 13語（MUSE-ADD-PSEUDO）
 });

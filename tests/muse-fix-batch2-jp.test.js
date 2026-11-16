@@ -139,6 +139,7 @@ const MAJORITY = {
   javascript: "polite",
   cmd: "polite",
   powershell: "polite",
+  pseudo: "polite",
 };
 const POLITE_END = /(です|ます|ました|ません|ください|でしょう|でした|ましょう|ませんでした)$/;
 function sentences(t) {

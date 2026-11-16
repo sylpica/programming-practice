@@ -439,7 +439,7 @@ test("r2 rows for changed items match the live definitions (sha256 untouched)", 
       "utf8",
     ),
   );
-  assert.equal(rows.length, 1260); // 統合時：R23-N6 の Python math 定数＋CloudFormation 伝播で +10、修正バッチ3「数値の属性」×2種で +2、修正バッチ4 Python追随班の例外44件×2種で +88、修正バッチ6 R27-N20 組み込み定数×2種で +6、R27-N7 VBA 定数で +94、修正バッチ7 R28-N9 VBA 定数で +141、修正バッチ8 VBA 参照専用12件で +12
+  assert.equal(rows.length, 1313); // 統合時：R23-N6 の Python math 定数＋CloudFormation 伝播で +10、修正バッチ3「数値の属性」×2種で +2、修正バッチ4 Python追随班の例外44件×2種で +88、修正バッチ6 R27-N20 組み込み定数×2種で +6、R27-N7 VBA 定数で +94、修正バッチ7 R28-N9 VBA 定数で +141、修正バッチ8 VBA 参照専用12件で +12、第16種 IPA擬似言語で +53（MUSE-ADD-PSEUDO）
   const targets = {
     cloudformation: ["Transform", "Fn::Transform", "fragment", "params", "region", "accountId", "transformId", "templateParameterValues", "errorMessage"],
     powerapps: ["Filter", "Sum", "Patch", "Value", "Notify"],

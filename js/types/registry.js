@@ -13,6 +13,7 @@ import { definition as c } from "./c/index.js";
 import { definition as cpp } from "./cpp/index.js";
 import { definition as csharp } from "./csharp/index.js";
 import { definition as javascript } from "./javascript/index.js";
+import { pseudoDefinition as pseudo } from "./pseudo/index.js";
 export const definitions = [
   vba,
   imagej,
@@ -29,6 +30,7 @@ export const definitions = [
   javascript,
   cmd,
   powershell,
+  pseudo,
 ];
 export function getDefinition(id) {
   return definitions.find((d) => d.id === id) || definitions[0];

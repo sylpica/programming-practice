@@ -17992,5 +17992,853 @@
    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/weekday-function.md"
   },
   "sha256": "e9dde346598ecf5be356dd1f79b1a4816b4d5d590ba242a86535073dd2fb68ef"
+ },
+ {
+  "kind": "pseudo",
+  "name": "関数・手続の宣言",
+  "supported": true,
+  "fields": {
+   "description": "行頭の ○ で手続き・関数を宣言します。関数では ○ の直後に戻り値の型を書き、引数は「型名: 引数名」の形で並べます。手続きには戻り値の型を書きません。",
+   "returns": "宣言した手続き・関数は、プログラムのどこからでも名前で呼び出せます。",
+   "caution": "クラスを定義する構文は擬似言語にはありません。クラスの構造は問題文の図表で与えられます。",
+   "example": "○整数型: fee(整数型: age)\n  if (age が 3 以下)\n    return 100\n  endif\n  return 500",
+   "source": "https://www.ipa.go.jp/shiken/syllabus/doe3um0000002djj-att/shiken_yougo_ver5_1.pdf"
+  },
+  "sha256": "3bb8465072e85d52eee6faac66621124a27109de9478451be02ba7183e3aee87",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "pseudo",
+  "name": "変数の宣言",
+  "supported": true,
+  "fields": {
+   "description": "「型名: 変数名」で変数を宣言します。カンマで複数の変数を並べることもでき、一部の変数だけに初期値を付けることもできます。初期値を付けない変数は未定義の状態で始まります。",
+   "returns": "宣言した変数が使えるようになります。",
+   "caution": "試験の問題では、宣言なしで代入して使う変数も現れます。本アプリでも宣言なしの代入はそのまま使えます。",
+   "example": "整数型: count ← 0\n文字列型: label\nlabel ← \"個数\"\ncount ← count + 1",
+   "source": "https://www.ipa.go.jp/shiken/syllabus/doe3um0000002djj-att/shiken_yougo_ver5_1.pdf"
+  },
+  "sha256": "4ad15361b25f4730f8fa4cd02fbe0558090ecb8e728e50711b78e3ef2d64d3e5",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "pseudo",
+  "name": "大域変数の宣言",
+  "supported": true,
+  "fields": {
+   "description": "「大域:」を付けた宣言は、プログラム全体で共有される大域変数を宣言します。初期化の代入は省略できます。",
+   "returns": "どの手続き・関数からでも読み書きできる変数になります。",
+   "caution": "",
+   "example": "大域: 整数型: total ← 0\ntotal ← total + 5",
+   "source": "https://www.ipa.go.jp/shiken/syllabus/ps6vr7000000oett-att/fe_kamoku_b_sample.pdf"
+  },
+  "sha256": "43685e78d1371a6ed1b6eaa89fba2eed66083ca7dcee94e2b4c1dabccff7f343",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "pseudo",
+  "name": "整数型",
+  "supported": true,
+  "fields": {
+   "description": "整数を表す型です。整数どうしの ÷ は商（整数の割算）になり、mod は余りを求めます。",
+   "returns": "整数の値を扱います。",
+   "caution": "",
+   "example": "整数型: n ← 7\nn ← n ÷ 2",
+   "source": "https://www.ipa.go.jp/shiken/syllabus/doe3um0000002djj-att/shiken_yougo_ver5_1.pdf"
+  },
+  "sha256": "2e6522de9827277e31e13eabb7cd5ec06280ffab9f9e9c6dcd59f2e67078b9c3",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "pseudo",
+  "name": "実数型",
+  "supported": true,
+  "fields": {
+   "description": "小数を含む数を表す型です。実数を含む ÷ は通常の割算（実数除算）になります。",
+   "returns": "実数の値を扱います。",
+   "caution": "整数と実数の区別は、÷ の結果（商か実数除算か）に影響します。",
+   "example": "実数型: x ← 7.0\nx ← x ÷ 2",
+   "source": "https://www.ipa.go.jp/shiken/syllabus/doe3um0000002djj-att/shiken_yougo_ver5_1.pdf"
+  },
+  "sha256": "4c5279dca1fb37f077432ad50b0228cbc14eec964a4c57b6b5eaa89bd0fa8069",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "pseudo",
+  "name": "文字型",
+  "supported": true,
+  "fields": {
+   "description": "1文字を表す型です。文字は二重引用符で囲んで書きます（例：\"a\"）。",
+   "returns": "1文字の値を扱います。",
+   "caution": "一重引用符は表計算（別紙3）の表記です。擬似言語では二重引用符を使います。",
+   "example": "文字型: initial ← \"A\"",
+   "source": "https://www.ipa.go.jp/shiken/syllabus/doe3um0000002djj-att/shiken_yougo_ver5_1.pdf"
+  },
+  "sha256": "f5e5f110eb26696b9cb5de0f613edd9e6077fd9650923fc768d440f968e46cd2",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "pseudo",
+  "name": "文字列型",
+  "supported": true,
+  "fields": {
+   "description": "文字列を表す型です。文字列は二重引用符で囲んで書きます。",
+   "returns": "文字列の値を扱います。",
+   "caution": "",
+   "example": "文字列型: s ← \"abc\"\n整数型: n ← sの文字数",
+   "source": "https://www.ipa.go.jp/shiken/syllabus/doe3um0000002djj-att/shiken_yougo_ver5_1.pdf"
+  },
+  "sha256": "a25b8e69459753e7d990489f0abd54fe92e1bc6cec467e8b94adfa427c3c4c90",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "pseudo",
+  "name": "論理型",
+  "supported": true,
+  "fields": {
+   "description": "真（true）か偽（false）のどちらかを表す型です。条件式の結果も論理型です。",
+   "returns": "true か false の値を扱います。",
+   "caution": "",
+   "example": "論理型: ok ← true\nok ← not ok",
+   "source": "https://www.ipa.go.jp/shiken/syllabus/doe3um0000002djj-att/shiken_yougo_ver5_1.pdf"
+  },
+  "sha256": "61f5a7514390f5ebb57918995782fb41789969692dc38b357e5718ade0de7844",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "pseudo",
+  "name": "配列型",
+  "supported": true,
+  "fields": {
+   "description": "同じ型の要素を並べた配列の型です。「整数型配列」のように「の」を省いた表記も同じ意味です。",
+   "returns": "配列の値を扱います。",
+   "caution": "要素番号は1から始まります（試験の問題文で断りがある場合の扱いを、本アプリでは全体の約束にしています）。",
+   "example": "整数型の配列: a ← {1, 2, 3}\na[2] ← 9",
+   "source": "https://www.ipa.go.jp/shiken/syllabus/doe3um0000002djj-att/shiken_yougo_ver5_1.pdf"
+  },
+  "sha256": "af64eb2f80799173f270e0faab44a13f495debb551dbd64eddc76786ecf30942",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "pseudo",
+  "name": "二次元配列型",
+  "supported": true,
+  "fields": {
+   "description": "行と列で要素を指定する二次元配列の型です。要素は a[行, 列] の形でも a[行][列] の形でも参照できます。",
+   "returns": "二次元配列の値を扱います。",
+   "caution": "",
+   "example": "整数型の二次元配列: m ← {{1, 2}, {3, 4}}\nm[2, 1] ← 9",
+   "source": "https://www.ipa.go.jp/shiken/syllabus/doe3um0000002djj-att/shiken_yougo_ver5_1.pdf"
+  },
+  "sha256": "767fb31442ce47aab67498da195eeb98c36127ad0bb7c3ffd3074e62a4ffa793",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "pseudo",
+  "name": "配列の配列",
+  "supported": true,
+  "fields": {
+   "description": "配列を要素に持つ配列の型です。「型名配列の配列」という表記も同じ意味です。要素は a[行][列] の形で参照します。",
+   "returns": "配列の配列の値を扱います。",
+   "caution": "",
+   "example": "整数型の配列の配列: rows ← {{1}, {2, 3}}\nrows[2][2] ← 9",
+   "source": "https://www.ipa.go.jp/shiken/mondai-kaiotu/sg_fe/koukai/eid2eo0000007g1d-att/2024r06_fe_kamoku_b_qs.pdf"
+  },
+  "sha256": "09c0a5d89393b79c7537eb2a41d44eecbdf1d4b0fb3ae152ea918a6ee3cfc703",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "pseudo",
+  "name": "クラス型",
+  "supported": true,
+  "fields": {
+   "description": "問題文で定義されたクラス名が、そのまま型名になります。クラス名(引数, …) の形でオブジェクトを生成します。",
+   "returns": "そのクラスのオブジェクトを扱います。",
+   "caution": "クラスの定義（メンバ変数やメソッドの中身）は問題文で与えられます。本アプリではオブジェクトを生成し、メンバの初期値は未定義として扱います。",
+   "example": "ListElement: elem\nelem ← ListElement(\"x\")",
+   "source": "https://www.ipa.go.jp/shiken/syllabus/ps6vr7000000oett-att/fe_kamoku_b_sample.pdf"
+  },
+  "sha256": "833f00f044c1277f6a9fd788d59042d9ba5939724f222b1a977e74e88dfdd29a",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "pseudo",
+  "name": "代入",
+  "supported": true,
+  "fields": {
+   "description": "右辺の式の値を、左辺の変数・配列の要素・メンバ変数に代入します。等号ではなく ← を使うのが擬似言語の特徴です。",
+   "returns": "左辺の値が右辺の値に置き換わります。",
+   "caution": "比較の = と代入の ← を混同しないようにします。",
+   "example": "x ← 1\nx ← x + 2",
+   "source": "https://www.ipa.go.jp/shiken/syllabus/doe3um0000002djj-att/shiken_yougo_ver5_1.pdf"
+  },
+  "sha256": "a6cd3788957b706e7cdc0f12448681cd61b5826e312abd32ca161dfcb321701d",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "pseudo",
+  "name": "手続・関数の呼出し",
+  "supported": true,
+  "fields": {
+   "description": "宣言した手続き・関数を名前で呼び出します。引数はカンマで区切り、宣言の引数の順に値が渡ります。配列やオブジェクトは参照が渡り、手続きの中で変更すると呼び出し側にも反映します。",
+   "returns": "関数は return で決めた値を返します。手続きに戻り値はありません。",
+   "caution": "プログラム中で定義されていない関数は、問題文で定義されているものとして扱い、戻り値は「実行時に決まる値」になります（エラーにはなりません）。",
+   "example": "○整数型: twice(整数型: n)\n  return n × 2\n整数型: y ← twice(21)",
+   "source": "https://www.ipa.go.jp/shiken/syllabus/doe3um0000002djj-att/shiken_yougo_ver5_1.pdf"
+  },
+  "sha256": "06f362fd8456af7c6652ba8f4ee1eb3a392b630f63355fcf275db95892cc8d02",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "pseudo",
+  "name": "return",
+  "supported": true,
+  "fields": {
+   "description": "関数の処理を終えて、式の値を呼び出し側へ返します。手続きの中で値を付けずに使うと、その場で処理を終えます。",
+   "returns": "式の値が関数の戻り値になります。",
+   "caution": "記述形式の表には載っていませんが、試験の問題では全ての関数で使われている事実上の書き方です。",
+   "example": "○整数型: one()\n  return 1\n整数型: y ← one()",
+   "source": "https://www.ipa.go.jp/shiken/syllabus/ps6vr7000000oett-att/fe_kamoku_b_sample.pdf"
+  },
+  "sha256": "bcea75d2b502866fa77a5758e785b9dac7f6c183a26a92f98655ebfef398c584",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "pseudo",
+  "name": "未定義の値",
+  "supported": true,
+  "fields": {
+   "description": "値が格納されていない状態を「未定義」といい、その状態を値として表したものが「未定義の値」です。代入すると変数は未定義の状態に戻ります。「式 が 未定義である」で判定できます。",
+   "returns": "未定義の状態そのものを表します。",
+   "caution": "未定義の値のまま演算するとエラーになります。",
+   "example": "整数型: x\n論理型: b ← x が 未定義である\nx ← 未定義の値",
+   "source": "https://www.ipa.go.jp/shiken/syllabus/doe3um0000002djj-att/shiken_yougo_ver5_1.pdf"
+  },
+  "sha256": "50169baa90e205ff84ba8b1523209a2dcf06aa5f64f5f4fd5a53b8a6c81ed57f",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "pseudo",
+  "name": "true",
+  "supported": true,
+  "fields": {
+   "description": "論理型の定数で「真」を表します。",
+   "returns": "真（論理型）。",
+   "caution": "",
+   "example": "論理型: ok ← true",
+   "source": "https://www.ipa.go.jp/shiken/syllabus/doe3um0000002djj-att/shiken_yougo_ver5_1.pdf"
+  },
+  "sha256": "31d948d1d61521f6edc1e7c3b02aa5ca86a732e76f9d8dd0a942acd30d8afacc",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "pseudo",
+  "name": "false",
+  "supported": true,
+  "fields": {
+   "description": "論理型の定数で「偽」を表します。",
+   "returns": "偽（論理型）。",
+   "caution": "",
+   "example": "論理型: ok ← false",
+   "source": "https://www.ipa.go.jp/shiken/syllabus/doe3um0000002djj-att/shiken_yougo_ver5_1.pdf"
+  },
+  "sha256": "2320c1ef3185f07adce5c289316daf53b99c6a6465ec162b527fe1c4792f20fe",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "pseudo",
+  "name": "注釈",
+  "supported": true,
+  "fields": {
+   "description": "/* と */ で囲んだ部分と、// から行末までは注釈として無視されます。行末注釈に短い語を1つだけ書くと、繰返しのラベルとして使えます。",
+   "returns": "実行には影響しません。",
+   "caution": "",
+   "example": "/* 合計を求める */\n整数型: total ← 0  // 初期化\ntotal ← total + 1",
+   "source": "https://www.ipa.go.jp/shiken/syllabus/doe3um0000002djj-att/shiken_yougo_ver5_1.pdf"
+  },
+  "sha256": "0790bd76da1433bf1cbbea79402c07d97677d7151960b865f28f3ae88f8f0523",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "pseudo",
+  "name": "mod",
+  "supported": true,
+  "fields": {
+   "description": "剰余算です。左辺を右辺で割った余りを求めます。優先順位は × ÷ と同じです。",
+   "returns": "余り（数値）。負の数では被除数（左辺）の符号と同じ符号になります。",
+   "caution": "0で割る mod はエラーになります。",
+   "example": "整数型: r ← 7 mod 2",
+   "source": "https://www.ipa.go.jp/shiken/syllabus/doe3um0000002djj-att/shiken_yougo_ver5_1.pdf"
+  },
+  "sha256": "ba287b433104b636df47b64bc21c281ce0a0bc27257235098c2d2db10e822cff",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "pseudo",
+  "name": "×",
+  "supported": true,
+  "fields": {
+   "description": "乗算です。* ではなく × を使います。",
+   "returns": "積（数値）。",
+   "caution": "",
+   "example": "整数型: a ← 3 × 4",
+   "source": "https://www.ipa.go.jp/shiken/syllabus/doe3um0000002djj-att/shiken_yougo_ver5_1.pdf"
+  },
+  "sha256": "b39832d99c025ca797db8edad77b843afc4344880cbe9ba9606e20ebb4466d84",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "pseudo",
+  "name": "÷",
+  "supported": true,
+  "fields": {
+   "description": "除算です。整数どうしでは商（割り切れる部分だけの整数）になり、実数を含むときは実数除算になります。「式 の商」と書いても同じく商を求めます。",
+   "returns": "商または割算の結果（数値）。",
+   "caution": "記述形式には ÷ が商か実数除算かの区別が明記されていません。本アプリでは、試験の典型的な使い方（整数は商）に合わせて、両辺が整数のときは商、実数を含むときは実数除算として裁定しています。0で割るとエラーになります。",
+   "example": "整数型: q ← 7 ÷ 2\n実数型: d ← 7.0 ÷ 2",
+   "source": "https://www.ipa.go.jp/shiken/syllabus/doe3um0000002djj-att/shiken_yougo_ver5_1.pdf"
+  },
+  "sha256": "318b6b88966091d6cc3ac939d6ba617d33174514eb7ca8f7402d7780121ed958",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "pseudo",
+  "name": "+",
+  "supported": true,
+  "fields": {
+   "description": "加算です。文字列どうし・文字との間では、後ろへつなげる連結としても使われます。",
+   "returns": "和（数値）または連結した文字列。",
+   "caution": "記述形式に文字列連結の専用演算子はありません。問題文で定義される演算として + の連結を採用しています。",
+   "example": "整数型: a ← 1 + 2\n文字列型: s ← \"ab\" + \"cd\"",
+   "source": "https://www.ipa.go.jp/shiken/syllabus/doe3um0000002djj-att/shiken_yougo_ver5_1.pdf"
+  },
+  "sha256": "ba09adf1036139c42487ded6b616d727c67f60d5f9c3f9785096400a9f025805",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "pseudo",
+  "name": "-",
+  "supported": true,
+  "fields": {
+   "description": "減算です。式の前置きでは負の数を表します（単項の －）。",
+   "returns": "差（数値）。",
+   "caution": "",
+   "example": "整数型: a ← 5 - 8\na ← -a",
+   "source": "https://www.ipa.go.jp/shiken/syllabus/doe3um0000002djj-att/shiken_yougo_ver5_1.pdf"
+  },
+  "sha256": "f383c753de9b7c23c31e9612d3ead33308b20628e2aa689c766aae00a5a003da",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "pseudo",
+  "name": "関係演算子",
+  "supported": true,
+  "fields": {
+   "description": "2つの値を比べます。≠（等しくない）≦（以下）≧（以上）＜（より小さい）＝（等しい）＞（より大きい）の6つです。== や != は使いません。",
+   "returns": "成り立てば true、成り立たなければ false（論理型）。",
+   "caution": "代入の ← と、等しいかどうかを比べる ＝ は別の記号です。",
+   "example": "整数型: a ← 3\n論理型: b ← a ≦ 5",
+   "source": "https://www.ipa.go.jp/shiken/syllabus/doe3um0000002djj-att/shiken_yougo_ver5_1.pdf"
+  },
+  "sha256": "c869ddf05b8fe645b9b253f4d35635f98015598781e9a8b3b2aad04cbaeb29a2",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "pseudo",
+  "name": "and",
+  "supported": true,
+  "fields": {
+   "description": "論理積です。両方の条件が真のときに真になります。左辺が偽と決まれば、右辺は評価しません。",
+   "returns": "両方が真なら true、それ以外は false。",
+   "caution": "&& は記述形式にはありません。",
+   "example": "整数型: a ← 3\n論理型: b ← (a > 0) and (a < 10)",
+   "source": "https://www.ipa.go.jp/shiken/syllabus/doe3um0000002djj-att/shiken_yougo_ver5_1.pdf"
+  },
+  "sha256": "da8c6e218f9a81a9f505e852860091155744c388e566d59312307a2fbaf33320",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "pseudo",
+  "name": "or",
+  "supported": true,
+  "fields": {
+   "description": "論理和です。少なくとも一方の条件が真のときに真になります。左辺が真と決まれば、右辺は評価しません。",
+   "returns": "少なくとも一方が真なら true、両方とも偽なら false。",
+   "caution": "|| は記述形式にはありません。",
+   "example": "整数型: a ← 3\n論理型: b ← (a < 0) or (a = 3)",
+   "source": "https://www.ipa.go.jp/shiken/syllabus/doe3um0000002djj-att/shiken_yougo_ver5_1.pdf"
+  },
+  "sha256": "0c726d7d3d8e27a08f10ea34a37d223e0d50439c151b844c9d90b751d4cb8c28",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "pseudo",
+  "name": "not",
+  "supported": true,
+  "fields": {
+   "description": "論理否定です。真を偽に、偽を真に反転します。単項演算子の中で優先順位は高い方です。",
+   "returns": "反転した論理値。",
+   "caution": "! は記述形式にはありません。",
+   "example": "論理型: ok ← false\nok ← not ok",
+   "source": "https://www.ipa.go.jp/shiken/syllabus/doe3um0000002djj-att/shiken_yougo_ver5_1.pdf"
+  },
+  "sha256": "fd649e14740990edbccc75b8bbd9dc8b7aed69123d6311bab8f6178a2a5efd93",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "pseudo",
+  "name": "メンバアクセス",
+  "supported": true,
+  "fields": {
+   "description": "「.」でオブジェクトのメンバ変数を参照したり、メソッドを呼び出したりします。演算子の中で優先順位が最も高い部類です。",
+   "returns": "メンバ変数の値、またはメソッドの戻り値。",
+   "caution": "メソッドの動作は問題文で定義されるため、本アプリではメソッドの戻り値は「実行時に決まる値」として扱います。",
+   "example": "ListElement: elem\nelem ← ListElement(\"x\")\n文字型: v ← elem.value",
+   "source": "https://www.ipa.go.jp/shiken/syllabus/ps6vr7000000oett-att/fe_kamoku_b_sample.pdf"
+  },
+  "sha256": "da1ade41095c31866f25cc094c4a2634c6e13354d976c748899558a8b694dc96",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "pseudo",
+  "name": "if",
+  "supported": true,
+  "fields": {
+   "description": "条件式が真のときだけ、続く処理（endif まで）を実行します。条件式が実行時に決まる値を含む場合は、真・偽の両方の道筋をたどります。",
+   "returns": "条件に応じて処理が分かれます。",
+   "caution": "波括弧や行末のコロンは使いません。終わりは endif で示します。",
+   "example": "整数型: age ← 2\n整数型: fee ← 0\nif (age が 3 以下)\n  fee ← 100\nendif",
+   "source": "https://www.ipa.go.jp/shiken/syllabus/doe3um0000002djj-att/shiken_yougo_ver5_1.pdf"
+  },
+  "sha256": "778d5d1f04fb59c8589da449b54ac4edc235fe4f62e84e227afc3538e9896662",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "pseudo",
+  "name": "elseif",
+  "supported": true,
+  "fields": {
+   "description": "if の条件が成り立たなかったときに、次の条件を順に試します。いくつでも並べられます。",
+   "returns": "最初に真になった条件の処理だけが実行されます。",
+   "caution": "",
+   "example": "整数型: age ← 5\n整数型: fee ← 0\nif (age が 3 以下)\n  fee ← 100\nelseif (age が 6 以下)\n  fee ← 300\nelse\n  fee ← 500\nendif",
+   "source": "https://www.ipa.go.jp/shiken/syllabus/doe3um0000002djj-att/shiken_yougo_ver5_1.pdf"
+  },
+  "sha256": "4290672c5ec5b81bd2ea5fc6e9f23d94e5da926ba85e07cba3b521d1aba668b4",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "pseudo",
+  "name": "else",
+  "supported": true,
+  "fields": {
+   "description": "if と elseif のどの条件も成り立たなかったときに実行する処理を示します。",
+   "returns": "全ての条件が偽のときの処理が実行されます。",
+   "caution": "",
+   "example": "整数型: age ← 20\n整数型: fee ← 0\nif (age が 3 以下)\n  fee ← 100\nelse\n  fee ← 500\nendif",
+   "source": "https://www.ipa.go.jp/shiken/syllabus/doe3um0000002djj-att/shiken_yougo_ver5_1.pdf"
+  },
+  "sha256": "b316fb36e314995a414a2fa852bd00ece4937303b3af38e1114a68cf93069412",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "pseudo",
+  "name": "endif",
+  "supported": true,
+  "fields": {
+   "description": "if で始めた条件分岐の終わりを示します。",
+   "returns": "分岐がここで合流します。",
+   "caution": "",
+   "example": "整数型: x ← 1\nif (x = 1)\n  x ← 2\nendif",
+   "source": "https://www.ipa.go.jp/shiken/syllabus/doe3um0000002djj-att/shiken_yougo_ver5_1.pdf"
+  },
+  "sha256": "f76bcd5f5ce3c155a54a7b69562ac88a66ce5482812f809a3afb1016cadb0e3b",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "pseudo",
+  "name": "while",
+  "supported": true,
+  "fields": {
+   "description": "条件式が真の間、endwhile までの処理を繰り返します。条件は繰り返しの前に判定するので、最初から偽なら1回も実行されません。",
+   "returns": "条件が偽になるまで繰り返します。",
+   "caution": "",
+   "example": "整数型: i ← 1\n整数型: total ← 0\nwhile (i ≦ 3)\n  total ← total + i\n  i ← i + 1\nendwhile",
+   "source": "https://www.ipa.go.jp/shiken/syllabus/doe3um0000002djj-att/shiken_yougo_ver5_1.pdf"
+  },
+  "sha256": "30c6b2779132f0f54158c45846df7a3632d590c5d635eaaced68768ec03424c2",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "pseudo",
+  "name": "endwhile",
+  "supported": true,
+  "fields": {
+   "description": "while で始めた繰返しの終わりを示します。後判定の do の終わりには付けません。",
+   "returns": "繰返しがここで閉じます。",
+   "caution": "",
+   "example": "整数型: i ← 1\nwhile (i ≦ 2)\n  i ← i + 1\nendwhile",
+   "source": "https://www.ipa.go.jp/shiken/syllabus/doe3um0000002djj-att/shiken_yougo_ver5_1.pdf"
+  },
+  "sha256": "82335200f3adf5ba1ff5ba379c89ec53f115e13e27915f8d2f18ba5835e2d821",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "pseudo",
+  "name": "do",
+  "supported": true,
+  "fields": {
+   "description": "処理を1回実行してから条件を判定する、後判定の繰返しです。終わりの while には endwhile を付けません。条件が真の間繰り返します。",
+   "returns": "少なくとも1回は処理が実行されます。",
+   "caution": "",
+   "example": "整数型: i ← 1\ndo\n  i ← i + 1\nwhile (i ≦ 3)",
+   "source": "https://www.ipa.go.jp/shiken/syllabus/doe3um0000002djj-att/shiken_yougo_ver5_1.pdf"
+  },
+  "sha256": "6c48df0cae2f6e170a9b7c50559486ed2d4c15031ccdbbb66a8f46fe328000b9",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "pseudo",
+  "name": "for",
+  "supported": true,
+  "fields": {
+   "description": "括弧の中の制御記述に従って繰り返します。数える繰返しと、配列の要素を順に代入する繰返しの2つの形があります。",
+   "returns": "制御記述のとおりに繰り返します。",
+   "caution": "制御記述自体の文法は記述形式では定義されておらず、問題文の書き方に従います。本アプリで対応する形は「ずつ増やす」と「要素を順に代入する」の項目を見てください。",
+   "example": "整数型: total ← 0\nfor (i を 1 から 3 まで 1 ずつ増やす)\n  total ← total + i\nendfor",
+   "source": "https://www.ipa.go.jp/shiken/syllabus/doe3um0000002djj-att/shiken_yougo_ver5_1.pdf"
+  },
+  "sha256": "37565d786be28ccd3906ca34dbd38c06da4432a5496a6a5a15cdeea3dd2c8d48",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "pseudo",
+  "name": "endfor",
+  "supported": true,
+  "fields": {
+   "description": "for で始めた繰返しの終わりを示します。",
+   "returns": "繰返しがここで閉じます。",
+   "caution": "",
+   "example": "for (i を 1 から 2 まで 1 ずつ増やす)\nendfor",
+   "source": "https://www.ipa.go.jp/shiken/syllabus/doe3um0000002djj-att/shiken_yougo_ver5_1.pdf"
+  },
+  "sha256": "925295bcb4f7f60b3e17a16f277df5b17f25360cfe9eb5f8e056e1ebab4a77fe",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "pseudo",
+  "name": "ずつ増やす",
+  "supported": true,
+  "fields": {
+   "description": "for の制御記述の基本形です。制御変数を初期値から始め、終値を超えない範囲で増分ずつ増やしながら繰り返します。「初期値から始めて終値を超えない範囲で増分ずつ増やす」という書き方も同じ意味です。",
+   "returns": "制御変数が終値を超えたら繰返しを終えます。",
+   "caution": "「ずつ減らす」は、確認した試験問題（サンプル問題・令和6年度・令和7年度）の範囲では使われておらず、本アプリでは未対応です。",
+   "example": "整数型: total ← 0\nfor (i を 1 から 10 まで 3 ずつ増やす)\n  total ← total + i\nendfor",
+   "source": "https://www.ipa.go.jp/shiken/mondai-kaiotu/sg_fe/koukai/tbl5kb0000005r9r-att/2025r07_fe_kamoku_b_qs.pdf"
+  },
+  "sha256": "107c1dcfe73c9fa796a0aff5fe97586659f1b443d8d04636d187f8152e1ba762",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "pseudo",
+  "name": "要素を順に代入する",
+  "supported": true,
+  "fields": {
+   "description": "for の制御記述のもう1つの形です。配列の要素を先頭から順に1つずつ変数へ代入しながら繰り返します（for-each）。",
+   "returns": "要素を全て代入し終えたら繰返しを終えます。",
+   "caution": "",
+   "example": "整数型の配列: a ← {5, 7, 9}\n整数型: total ← 0\nfor (xにaの要素を順に代入する)\n  total ← total + x\nendfor",
+   "source": "https://www.ipa.go.jp/shiken/mondai-kaiotu/sg_fe/koukai/eid2eo0000007g1d-att/2024r06_fe_kamoku_b_qs.pdf"
+  },
+  "sha256": "70f7589797dd06bbb0093eb54fef42bd56f0d0b87639e29a323ab151ba6524d9",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "pseudo",
+  "name": "繰返し処理を終了する",
+  "supported": true,
+  "fields": {
+   "description": "今いる繰返しを途中で抜けます。「○○の行から始まる繰返し処理を終了する」と書くと、行末注釈のラベルが付いた外側の繰返しを抜けられます。",
+   "returns": "繰返しの直後へ処理が移ります。",
+   "caution": "他の言語の break にあたる文です。",
+   "example": "整数型: i ← 0\nwhile (i < 10)  // α\n  i ← i + 1\n  if (i = 3)\n    αの行から始まる繰返し処理を終了する\n  endif\nendwhile",
+   "source": "https://www.ipa.go.jp/shiken/syllabus/ps6vr7000000oett-att/fe_kamoku_b_sample.pdf"
+  },
+  "sha256": "0a7509cd433ae20a435c6922ff6231e29111e5b63f6b3a7947b3ce9b6dd8b97e",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "pseudo",
+  "name": "配列リテラル",
+  "supported": true,
+  "fields": {
+   "description": "配列の内容を { } で表します。二次元配列では、内側の { } が1行分を表します。空の配列 {} も書けます。",
+   "returns": "その内容を持つ配列。",
+   "caution": "",
+   "example": "整数型の配列: a ← {1, 2, 3}\n整数型の二次元配列: m ← {{1, 2}, {3, 4}}",
+   "source": "https://www.ipa.go.jp/shiken/syllabus/doe3um0000002djj-att/shiken_yougo_ver5_1.pdf"
+  },
+  "sha256": "eb886167095ffb1d7c83d435a26fc6db261a86f750c69dff0f4bc7e1e58fedc0",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "pseudo",
+  "name": "添字アクセス",
+  "supported": true,
+  "fields": {
+   "description": "配列の要素を要素番号で参照・代入します。要素番号は1から始まります。二次元配列は [行, 列] でも [行][列] でも参照できます。",
+   "returns": "指定した位置の要素の値。",
+   "caution": "範囲外の要素番号を指定するとエラーになります。",
+   "example": "整数型の配列: a ← {10, 20, 30}\n整数型: v ← a[2]\na[3] ← 99",
+   "source": "https://www.ipa.go.jp/shiken/syllabus/doe3um0000002djj-att/shiken_yougo_ver5_1.pdf"
+  },
+  "sha256": "1022895661ca510ddf22fa31f2935682478550c969fb78d213c169f8622ae1b8",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "pseudo",
+  "name": "要素数",
+  "supported": true,
+  "fields": {
+   "description": "配列に入っている要素の数を返します。二次元配列では行数と同じ意味です。同じ形で「要素の和」と書くと、全要素の合計（二次元配列では全要素の総和）を返します。「行番号（式）の要素の和」「列番号（式）の要素の和」は、指定した行・列だけの合計です。",
+   "returns": "要素の数（整数型）、または要素の合計（数値）。",
+   "caution": "",
+   "example": "整数型の配列: a ← {1, 2, 3}\n整数型: n ← aの要素数\n整数型: s ← aの要素の和",
+   "source": "https://www.ipa.go.jp/shiken/syllabus/ps6vr7000000oett-att/fe_kamoku_b_sample.pdf"
+  },
+  "sha256": "b84a177d5477d8386f185f07d9a957af3761120ae77013fa8109deaa89bad763",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "pseudo",
+  "name": "行数",
+  "supported": true,
+  "fields": {
+   "description": "二次元配列の行の数を返します。",
+   "returns": "行の数（整数型）。",
+   "caution": "",
+   "example": "整数型の二次元配列: m ← {{1, 2}, {3, 4}}\n整数型: r ← mの行数",
+   "source": "https://www.ipa.go.jp/shiken/syllabus/ps6vr7000000oett-att/fe_kamoku_b_sample.pdf"
+  },
+  "sha256": "48d1eaf6ce2921d31f7bee57a77064c7ac196e9e3f77ba7990662a85d77d1fac",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "pseudo",
+  "name": "列数",
+  "supported": true,
+  "fields": {
+   "description": "二次元配列の列の数（1行に含まれる要素の数）を返します。",
+   "returns": "列の数（整数型）。",
+   "caution": "",
+   "example": "整数型の二次元配列: m ← {{1, 2}, {3, 4}}\n整数型: c ← mの列数",
+   "source": "https://www.ipa.go.jp/shiken/syllabus/ps6vr7000000oett-att/fe_kamoku_b_sample.pdf"
+  },
+  "sha256": "c01ea6d298de17437b3d8df6c71ece57045d5f3f924c6c2c3d195b3e66118b7d",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "pseudo",
+  "name": "文字数",
+  "supported": true,
+  "fields": {
+   "description": "文字列に含まれる文字の数を返します。",
+   "returns": "文字の数（整数型）。",
+   "caution": "",
+   "example": "文字列型: s ← \"abc\"\n整数型: n ← sの文字数",
+   "source": "https://www.ipa.go.jp/shiken/syllabus/ps6vr7000000oett-att/fe_kamoku_b_sample.pdf"
+  },
+  "sha256": "6028b33dfcc9e9fe0e6ab7eeb63aadf10a1e7d5432d27440161dadff1a3bd5fc",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "pseudo",
+  "name": "文字目の文字",
+  "supported": true,
+  "fields": {
+   "description": "文字列の中の、指定した位置（1から数える）の文字を取り出します。",
+   "returns": "その位置の文字（文字型）。",
+   "caution": "文字列に添字 [ ] を付ける書き方は、確認した範囲では使われていません。",
+   "example": "文字列型: s ← \"abc\"\n文字型: c ← s の 2文字目の文字",
+   "source": "https://www.ipa.go.jp/shiken/syllabus/ps6vr7000000oett-att/fe_kamoku_b_sample.pdf"
+  },
+  "sha256": "a23254e2d2e9017a597c2faeab944dae5da80fe992c820fbba754f94057ec872",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "pseudo",
+  "name": "末尾に追加する",
+  "supported": true,
+  "fields": {
+   "description": "配列の末尾に値を1つ追加し、要素数を1つ増やします。リストへの追加を表す文です。",
+   "returns": "配列が1要素長くなります。",
+   "caution": "",
+   "example": "整数型の配列: a ← {1, 2}\naの末尾 に 3の値 を追加する",
+   "source": "https://www.ipa.go.jp/shiken/syllabus/ps6vr7000000oett-att/fe_kamoku_b_sample.pdf"
+  },
+  "sha256": "3eb0b0bee6d3c6add94e9d3ac84afd9ee7d82ae6f0161d77b5bd1ed76f512a68",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "pseudo",
+  "name": "サイズ指定生成",
+  "supported": true,
+  "fields": {
+   "description": "同じ値で埋めた配列を、個数を指定して生成します。二次元では「{行数行 列数列の 値}」の形で書きます。",
+   "returns": "指定した大きさの配列。",
+   "caution": "問題文の中で大きさを表すために使われる書き方です。このアプリでは生成できる要素数に上限（合計10,000個）があり、超えると理由を表示して止まります。",
+   "example": "整数型の配列: a ← {3個の 0}\n整数型の二次元配列: m ← {2行2列の 未定義の値}",
+   "source": "https://www.ipa.go.jp/shiken/syllabus/ps6vr7000000oett-att/fe_kamoku_b_sample.pdf"
+  },
+  "sha256": "c9a5077707d04f73199540f6f8dd2f88354b4982894bdaea7349d1f5327dc310",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "pseudo",
+  "name": "日本語の条件句",
+  "supported": true,
+  "fields": {
+   "description": "条件を日本語で書く形です。「が 未定義である／未定義でない」「が 式 と等しい／でない」「が 式 以上／以下／より大きい／より小さい」が使えます。記号の関係演算子と同じ意味です。",
+   "returns": "成り立てば true、成り立たなければ false。",
+   "caution": "本アプリで対応する句は、試験問題の実例で確認した形に限ります。",
+   "example": "整数型: age ← 5\n論理型: b ← age が 3 以上",
+   "source": "https://www.ipa.go.jp/shiken/syllabus/ps6vr7000000oett-att/fe_kamoku_b_sample.pdf"
+  },
+  "sha256": "ff7cf8c8d535373a1f5a102f0ad3652be9d57b3253f51d241059e1abf39da6ac",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "pseudo",
+  "name": "値を増やす",
+  "supported": true,
+  "fields": {
+   "description": "変数・配列の要素・メンバ変数の値を、指定した数だけ増やします。",
+   "returns": "対象の値がその分だけ大きくなります。",
+   "caution": "「の値を〜減らす」は、確認した試験問題の範囲では見つからず、本アプリでは未対応です。",
+   "example": "整数型: count ← 0\ncountの値を1増やす",
+   "source": "https://www.ipa.go.jp/shiken/syllabus/ps6vr7000000oett-att/fe_kamoku_b_sample.pdf"
+  },
+  "sha256": "381ad2505ec80cc3a5b02e6efa15488ec89a0fa5b9c191cec6fe207c905804b7",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "pseudo",
+  "name": "出力する",
+  "supported": true,
+  "fields": {
+   "description": "2つの式の値を、カンマで区切ってその順に出力します。試験問題で値の出力を表す文です。",
+   "returns": "出力欄に「値1, 値2」の形で記録されます。",
+   "caution": "擬似言語の記述形式自体には入出力の書き方は定められておらず、問題文で使われる文として対応しています。",
+   "example": "整数型: a ← 1\n整数型: b ← 2\naの値とbの値をこの順にコンマ区切りで出力する",
+   "source": "https://www.ipa.go.jp/shiken/mondai-kaiotu/sg_fe/koukai/eid2eo0000007g1d-att/2024r06_fe_kamoku_b_qs.pdf"
+  },
+  "sha256": "33af690837ac8856725532063aa7be68b1485e4b647876b3ee6b14338df7210b",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
  }
 ]
