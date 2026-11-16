@@ -1,4 +1,18 @@
-# Codex R7 独立監査 — ee01f07（節目11・未完了）
+# Codex R7 独立監査 — ee01f07（節目12・未完了）
+
+対象は引き続き **ee01f07402b404c7b9dbcd83935b4be3bc4de187、全15種類・104テンプレート・978リファレンス・111用語**。配信日：2026-11-16 JST。Muse側の指摘一覧・個票を見ず、固定対象の実装・公式資料・公式ランタイムから独立に確認した。
+
+節目12の追加は **11件（P2：9、P3：2）**。累計 **231件（P1：0、P2：209、P3：22）**。Museとの重複を除いた件数ではない。既報の追加再現、同じ原因の入力差、明示されたモデル差、公式資料・実装の不一致による保留を重複計上していない。[検証範囲](#節目12の検証範囲と証拠)、[追加指摘](#節目12の追加指摘)、[残作業](#節目12の残作業)を参照。
+
+**使った書き込みコール数：2件（この節目）。累計33件。** Windows CI用の監査専用ブランチへのgit push 1回と、報告書だけをmainへまとめて配信するgit push 1回。過去の節目は5、4、2、2、1、1、1、6、4、4、1件。従来と同じくGitHubへ書き込むgit pushを数え、ローカルの検証コード・データ作成、読取り、CI内の保存を含めない。製品コード・教材・既存テスト・DEVELOPMENT.mdは変更せず、監査ブランチをmainへマージしない。
+
+配信準備時のmainは `32a0c99593d09ca3420bef6be010bb1058954203`。既存変更を保持し、報告書だけを配信する。対象製品はee01f07に固定し、その後のmainの修正残存や追加種類を監査済みとする意味ではない。
+
+**観点1〜8は未完了。** 今回はPAD／UI.Vision全12教材・37参照例、全Loop入力位置、変数展開・名前・状態・短絡・型比較へ検証を進めた。Windowsで359ソース、公式JS-Interpreterで178式を確認し、独立12条件の重いケースも測定した。全15種類・104教材・978項目・111用語・全ビューの未了分を維持する。実製品セッションと公式SDK／ソース・仕様照合を混同しない。モデル／推論設定をツールから変更・検証できない制約も継続する。サブエージェント・リセット権は使っていない。
+
+## 節目11までの記録
+
+以下は前回報告を保持した履歴。件数・書き込み回数・未実施の記述は当時の値であり、今回の状況は末尾の節目12で更新する。
 
 対象は引き続き **ee01f07402b404c7b9dbcd83935b4be3bc4de187、全15種類・104テンプレート・978リファレンス・111用語**。配信日：2026-11-16 JST。Muse側の指摘一覧・個票を見ず、固定対象の実装・公式資料・公式ランタイムから独立に確認した。
 
@@ -4596,6 +4610,310 @@ Set(AuditResult,99);If(true)
 | 6 全関数境界 | Power Fx143式＋追試22、全26関数の宣言引数境界43形、追加引数10形・大小文字10形、CF21形 | 全関数の全位置・全型・空／null・巨大値・過不足・ゼロ除算・入れ子・条件・連鎖・パイプライン。Power Fx表の型／スコープ、実Canvasでの環境差、全15種類の残る境界 |
 | 7 全104教材・全停止 | Power Apps／CF全12教材の固有／標準モデル、CFハンドラ2本をCPython比較。誤原因と偽成功を追加再現 | 残る教材の未了分、今回教材の任意変更モデル・全未知入力、全エンジンの全停止理由の一対一再現、実製品UI |
 | 8 文面・a11y・劣化・性能 | 追加14ソース＋12教材を画面確認、12用語定義再読、Linux211ソースの時間 | 全文面・aria・ラベル・全フォーカス・各表示幅、実容量枯渇と保存救出、キャッシュ世代、全エンジンの最重入力探索と実Windows UI描画 |
+
+VBA・ImageJ・CloudFormation・PAD・AutoHotkey・UI.Vision・Power Apps・Python・R・C・C++・C#・JavaScript・cmd・PowerShellの全種類に未了分を維持する。VBAのRound／IsNumeric／Unicode casing等と実Excelによる切分け、Rのmedian／seq／rep／read.csv・名前・属性・精度、C系全オーバーロード・定数式・昇格・型・ポインタ／配列、C# TryParse out修飾子／型、保存・状態の残る交差も落とさない。
+
+実Excel／Canvas／PAD／AWS／UI.Vision製品セッション、実スクリーンリーダー、Safari／Firefox／iOS実機、ImageJ GUI全経路、実Windowsの手動UIは接続・環境がなく未実施。Windows CIで可能なコード実行を不可能とせず、今回得た有限集合の値・最大時間を全入力の結論に一般化しない。
+
+使用量・回数制限、リセット時刻の通知は受けていない。リセット権・サブエージェントは使っていない。モデル／推論設定をこの会話のツールで変更・検証できない制約を維持し、確認したと偽らない。これは継続中の節目報告であり、全範囲完了や欠陥収束の宣言ではない。
+
+
+## 節目12の検証範囲と証拠
+
+実施日：2026-11-16 JST。製品対象はee01f07、15種類・104教材・978参照・111用語のまま。今回はPower Automate DesktopとUI.Visionの未了境界を進めた。Museの指摘一覧・個票は開いていない。配信先mainの更新は取り込むが、後続の製品修正の有無を再監査したという意味ではない。
+
+### 2種類の全教材・全参照と、値・状態の検証
+
+| 集合 | 実施範囲 |
+|---|---|
+| 初期174ソース | PAD全6教材・15参照例、UI.Vision全6教材・22参照例を含む。UIの状態・エラー継続・名前空間・Number／String・times、PADのLoop全3入力位置・For each・ファイル往復・名前・プロパティ・出力先欠落 |
+| 追試52ソース | PADの展開8形、空／1／2件リスト3形、空／1／2文字×5プロパティ15形、予約語6形。UIの5文字列×既定／true／falseの15形、裸の名前3形、引用の2形 |
+| 論理演算131ソース | &&／|| ×左右8種×8種の全128組と、後続比較2形・正常な右評価1形。公式JS-Interpreterと型・値で比較 |
+| PAD比較384ソース | 数値3、文字列2、真偽2、空値1の8種×8種×6演算子。=／<>は明示未対応、順序比較の型違いが既知の真偽値へなる箇所を確認 |
+| 重い分岐2ソース | 各種類で独立の未確定入力を12個作り、順次2択に分岐。全組合せ4096に対し、パス2000・探索時間等の上限を明示することを確認 |
+
+174＋52＋131＋384＋2＝**743ソースの検証集合**（重複形を含む）。このうち比較384はLinux、残り359はWindows CIでも実行した。全言語の全関数境界の完了を意味しない。型・引数の全位置や全モデル、任意の複雑な式・ブロック形を今回の値集合で代替しない。
+
+UI.Visionの一次ソースは公式[A9T9/RPA 17b6302f1617b838efe2b26d3ef19c2face81350](https://github.com/A9T9/RPA/tree/17b6302f1617b838efe2b26d3ef19c2face81350)。vendored JS-Interpreterは公式repo記載の上流45d00b0c86e48cca1bb3af0f711bc4c0d626c359。**47式＋131式＝178式**をこの実Interpreterで実行し、SDKの結果として回収した。条件判定とSandboxのコマンド本体は公式evaluateScriptの同じInterpreterを使う。拡張・player全体を動かしたとはしない。文字エスケープは公式関数を型注釈だけ外して抽出実行した。!statusOK・!errorIgnoreの統合動作は公式ソースの制御経路との照合であり、実ブラウザ拡張のログを作っていない。
+
+PADは実製品ランタイムがないため、Microsoft Learnの[変数](https://learn.microsoft.com/en-us/power-automate/desktop-flows/actions-reference/variables)、[ループ](https://learn.microsoft.com/en-us/power-automate/desktop-flows/actions-reference/loops)、[条件](https://learn.microsoft.com/en-us/power-automate/desktop-flows/actions-reference/conditionals)、[表示](https://learn.microsoft.com/en-us/power-automate/desktop-flows/actions-reference/display)、[ファイル](https://learn.microsoft.com/en-us/power-automate/desktop-flows/actions-reference/file)、[メール](https://learn.microsoft.com/en-us/power-automate/desktop-flows/actions-reference/email)、%式・型プロパティ・予約語と照合した。学習JSONにSMTP設定がないことは、明示されたモデル内送信という範囲に沿っており、実送信できないことを欠陥に数えない。
+
+### 参照・用語・教材の確認済み領域
+
+- PADの15アクション名は全て参照に対応する。UIの17基本コマンド・Number／String・!times／!statusOK／!errorIgnoreの計22項目を実装名と突き合わせた。既報R7-122のendIf／endWhileの漏れは残る。forEachは明示未対応として停止する経路なので「実装済みなのに漏れた名前」へ数えない。今回新たに見たPADのlength語彙はR7-228へ記載。これらを除く、この有限のアクション／関数名集合の追加漏れは**確認済み・なし**。全演算子・全プロパティ・全内部変数の完全性は未了。
+- 37参照例は全てsimulateが結果を返し、例自体の停止は0件。これは全記述の互換性合格を意味しない。!statusOKの説明と入力ダイアログの範囲を新規指摘へ、assertTextの完全一致説明は既報R7-120へ保持する。Number／Stringの省略・追加引数、引用の型、裸の名前、短絡値を参照例の外側まで拡張した。
+- PAD6教材は合計3、未知入力の2分岐とモデルファイル／送信メール、ABC追記、入力文面、合計15、条件選択34の結果を確認。UI6教材は完了、カウンタ3、遠隔文字列の2分岐、挨拶、確認者、最後の入力変更を確認。タイトル・introが明示する**既定モデルの出力・データ**に限り、新規不一致は**確認済み・なし**。下記の改行のモデル差を実PADの既定動作と同一視しない。
+- UIの未発見storeText／storeValueが#LNFを保存すること自体は公式ソースと一致し、この点は**確認済み・なし**。同時に誤った成功状態を表示することはR7-221に含める。見つかった入力要素のstoreTextを空文字にするモデルの既定例、storeValueの値取得も確認。実DOM探索・タイムアウト・全タグについての合格ではない。
+- PADの空／1件／2件For eachは0／1／2回で、通常のLoopの終了値包含、Exit loopの合計15、Loop conditionでの更新、If／Else if／Elseの既定例の選択は正しかった。この指定値での制御は**確認済み・なし**。文字列、null、数値、辞書をFor eachへ渡す4異常例は未対応と表示して停止し、架空の行を作らなかった。
+- 2種類の6用語定義を再読した。今回の定義文の意味・誤字の新規指摘は**確認済み・なし**。教材語の不足は既報R7-56を維持する。全111語を再照合したとの意味ではない。
+
+### 既報の補強・保留・モデル差
+
+**既報の補強**：R7-46（PADのtarget欠落）は入力／読取に加えFor eachでもundefined名の変数を作った。R7-60の引用文字列の数値化、R7-61のString()→"null"、R7-125の使わない追加引数の未定義名を無視する問題は、今回公式Interpreterでも同じ差を確認した。R7-124の%%、R7-121／123の名前の大小文字、R7-126の内部変数書込み、R7-122の旧end名の漏れも新規へ数え直していない。
+
+**改行のモデル差・保留**：PADのWrite text to fileは実製品のAppend new lineの既定がTrueだが、本モデルは入力値をそのままつなぐ。Aを書いてBを追記・読取するとアプリAB。教材pa-select-reportも空文字で初期化後に3と4を追記して34となる。教材は明示的に「モデル内の文字列34」と説明し、独自JSONには改行欄がないため、実PADの既定フローへそのまま移せるという不具合には今回数えない。実製品では改行を付けない設定との対応が必要で、製品既定値とモデルの差を参照へ明記すべきかは残す。実PADのファイルを測ったとはしない。
+
+**UIのtimes等の境界**：公式実装のtimesはparseIntを使い、モデルは非負整数だけを許す。小数や数字に文字が続く形の差を見たが、公式文書が要求する回数の書き方・モデルの部分対応と区別し、新規互換性欠陥へ直結させない。負数や空欄、null、真偽も試したが、通常の0／1回の挙動と同じ保証へ一般化しない。
+
+**公式資料内の保留**：!StringEscapeの\rは文書と抽出した現在の公式関数で一致しない。R7-224は両方が対応を示す\n／\tを根拠にした。単一行inputの改行除去とも混同せず、主再現はtextareaにして確認。Power Fx ForAllのBlank除外、cmd setlocalの資料と実測の差は今回解決したとはせず、前節の保留を維持する。
+
+### 全ビュー・文面・アクセシビリティの確認範囲
+
+Chromium156／Playwrightで新規・補強の15ソースと全12教材を画面実行。全37参照項目を側面と専用ビューで開き、全フィールドの表示テキストが一致した。6用語も側面と専用ビューで一致。このビュー間一致は**確認済み・なし**で、誤った同じ説明が両方にあるケースを意味論合格へ変えていない。
+
+2種類×4ビュー×375／1440pxの16表示を調べ、横方向のページはみ出し0、表示中input／select／textareaでlabelもaria-labelもaria-labelledbyもないもの0。未処理pageerrorは0。この静的ラベル対応・表示範囲は**確認済み・なし**。スクリーンリーダーでの読み上げ、全フォーカス遷移、アクション追加削除とエラー後の移動、全幅・全ズームの試験は未完了。保存破損・容量枯渇・下書き競合は今回追加試験しておらず、以前の結果と未了分を維持する。
+
+### Windows CIの性能実測と上限表示
+
+[Windows run 43823201968](https://github.com/sylpica/programming-practice/actions/runs/43823201968)、監査専用ブランチa63996dae9b9c8a0a086e3de27c4403ab507d82f。Windows **10.0.26100**、Node **22.23.4**。製品ソースはee01f07を保持し、監査用のJSONと計測スクリプトだけを追加。全359ソースを1プロセスで順次実行。重い分岐2例を除く357ソースはLinuxとの出力・変数・モデル・停止内容の差が0件。
+
+| 種類 | ソース数 | 合計simulate時間 | 集合内最長 |
+|---|---:|---:|---:|
+| Power Automate | 108 | 1285.5227ms | 1251.4412ms（独立12条件） |
+| UI.Vision | 251 | 1371.9160ms | 1314.8638ms（独立12条件） |
+
+両方の最長ケースは2000パス、truncated=true、「パス数の上限」「探索回数・時間の上限」、各停止パスに「探索上限で説明を停止しました」。4096通りを全て列挙したとの表示ではなく、上限を明示した。この重い入力での上限表示は**確認済み・なし**。simulateの前後を測定し、モデル複製・終了後の結果組立てを含むため、探索用1200msと同じ時計範囲ではない。実PAD／UI拡張、GUI描画、OSプロセス起動、GitHubジョブ全体の時間は含まない。全入力空間の最重ケースを確定したとはしない。
+
+比較384式と、改行を保持できるtextareaへ明示変更した画面の追試はLinuxで行った。これらをWindowsで実PAD操作したとの記述にしない。実Excel／Canvas／PAD／AWS／UI.Vision製品セッション、実スクリーンリーダー、Safari／Firefox／iOS実機、ImageJ GUI全経路、実Windowsの手動UIは接続・環境がなく未実施。一方、Windows CIで可能なNodeの測定は今回実施した。
+
+ローカル証拠：`/workspace/work/r7l/` のcases.json、catalog.json、results.json、follow-results.json、native-results.json、logical-results.json、pad-compare-results.json、official-components.json、windows-app.json、browser-results.jsonと各スクリプト。CIの成果物は上記runのcodex-r7-native-evidence。これらの監査コードをmainの製品へマージしない。報告書に各再現と期待値・根拠を記し、ローカル証拠だけへ説明を追い出していない。
+
+## 節目12の追加指摘
+
+共通再現：固定ee01f07で指定の種類を選び、自動実行をオフにし、標準モデルでコードを置き換えて実行する。JSONは本アプリの入力形式。UI.Visionの期待値は公式資料・公式ソースと、そのソースが利用する実JS-Interpreterで確認した。実拡張・実PADセッションで得た出力とは呼ばない。
+
+### R7-221（P2）!statusOKを成功のたびにtrueへ戻し、過去の失敗と利用者のfalse設定を消す
+
+対象：UI.Vision。位置：`js/types/uivision/index.js action` の成功後の無条件代入、同種類reference-details.jsの!statusOK。
+
+再現：
+
+```json
+{"Commands":[
+ {"Command":"store","Target":"true","Value":"!errorIgnore"},
+ {"Command":"click","Target":"id=missing"},
+ {"Command":"store","Target":"ok","Value":"x"},
+ {"Command":"echo","Target":"${!statusOK}"}
+]}
+```
+
+実際：echoはtrue。失敗したclickの後のstoreが失敗履歴を消す。
+
+期待・一次根拠：!statusOKはマクロ実行の状態であり、一度エラーでfalseになると、後続が成功してもfalseを維持する。利用者が明示的にtrueをstoreすればリセットできる。[公式内部変数の説明](https://ui.vision/rpa/docs/#internal-variables)、[公式players.tsxの状態更新](https://github.com/A9T9/RPA/blob/17b6302f1617b838efe2b26d3ef19c2face81350/src/modules/players.tsx#L499)。本アプリの「直前のコマンドが成功したか」という参照説明も!LastCommandOKと混同している。
+
+追加：`store | false | !statusOK` の直後のechoもアプリtrueで、手動設定まで消える。また未登録ロケーターのstoreText／storeValueは#LNFを正しく入れるが、!statusOKはtrueのまま。公式の未発見処理は#LNFとerrorログを返し、上位でfalseを保持する。[公式storeXXXのエラー処理](https://github.com/A9T9/RPA/blob/17b6302f1617b838efe2b26d3ef19c2face81350/src/ext/popup/run_command.ts#L563)。これらは同じ状態変数の契約不一致として1件にまとめる。
+
+### R7-222（P2）変数展開で発生したエラーだけ!errorIgnoreを迂回してマクロを停止させる
+
+対象：UI.Vision。位置：同ファイルaction冒頭のtarget／value展開がtryの外側にある。
+
+再現：
+
+```json
+{"Commands":[
+ {"Command":"store","Target":"true","Value":"!errorIgnore"},
+ {"Command":"echo","Target":"${Missing}"},
+ {"Command":"echo","Target":"AFTER"}
+]}
+```
+
+実際：「変数がありません：Missing」で停止し、AFTERは出ない。!errorIgnoreは実装が要求する正確な大小文字・文字列trueで設定しているため、既報R7-121の名前の大小文字差が原因ではない。
+
+期待・一次根拠：この設定はコマンドのエラー後も継続するためのもの。公式のrun_command.tsは変数展開を含めてPromise内で処理し、players.tsxの外側のcatchが!ERRORIGNOREを適用する。展開段階の失敗だけマクロを止めない。[公式エラー継続仕様](https://ui.vision/rpa/docs/#internal-variables)、[公式変数展開](https://github.com/A9T9/RPA/blob/17b6302f1617b838efe2b26d3ef19c2face81350/src/modules/run_command.ts#L230)、[公式catch](https://github.com/A9T9/RPA/blob/17b6302f1617b838efe2b26d3ef19c2face81350/src/modules/players.tsx#L336)。
+
+対照として、同じ設定でモデルにない要素をclickした後はアプリも継続する。存在しない変数を正常値にする要求ではなく、エラーを記録したうえで次のコマンドへ進む契約の問題。ifの条件展開エラーでも停止することを確認したが、失敗した制御ブロックの具体的なジャンプ先は実拡張で未確認であり、本指摘の期待出力は上のecho列に限定する。
+
+### R7-223（P2）マクロ変数をSandboxのローカル変数として読み、存在しない束縛から結果を作る
+
+対象：UI.Vision。位置：同ファイルexecuteScript_SandboxからuiCondition／共有readへ渡す変数環境。
+
+再現：
+
+```json
+{"Commands":[
+ {"Command":"store","Target":"7","Value":"x"},
+ {"Command":"executeScript_Sandbox","Target":"return x + 1;","Value":"Result"},
+ {"Command":"echo","Target":"${Result}"}
+]}
+```
+
+実際：アプリは8。Sandbox内で宣言していないxを、storeしたマクロ変数から直接読む。
+
+期待・一次根拠：マクロ変数をスクリプトへ渡すには${x}等の展開を使う。公式実装は変数展開後のコードを新しいInterpreterへ渡し、マクロ変数一覧をJSのグローバル環境として注入しない。この例には展開記法もJS内の宣言もないため、公式vendored JS-Interpreterは `ReferenceError: x is not defined`。[公式executeScriptの変数使用例](https://ui.vision/rpa/docs/selenium-ide/executescript)、[公式evaluateScript](https://github.com/A9T9/RPA/blob/17b6302f1617b838efe2b26d3ef19c2face81350/src/common/eval.js#L4)。
+
+`String(x)`／`x == 7`もアプリは7／trueを返す一方、同InterpreterではReferenceError。`return String(${x});` の明示的展開は対照として両者7。既報R7-60の「引用した文字列が数値になる」とは別で、引用の有無に関係なく本来ない名前の束縛が混入している。
+
+同じ識別子環境の反対側の不一致として、`return String(undefined);`／`return Number(undefined);` はアプリが「未定義の名前：undefined」で停止し、公式Interpreterは文字列"undefined"／NaN。標準JSのundefinedを扱えないなら未対応と示し、存在しない名前を利用者が書いたとは診断しない。[ECMAScriptのundefinedプロパティ](https://tc39.es/ecma262/multipage/global-object.html#sec-undefined)。環境の過剰なマクロ名束縛と、必要な標準名の不足をここへまとめ、追加計数しない。
+
+### R7-224（P2）typeが既定の文字エスケープを反映せず、改行・タブを別の入力文字列にする
+
+対象：UI.Vision。位置：同ファイルtype、共有interpolate。!StringEscapeも単に変数へ保存するだけで効果がない。
+
+再現：モデルのpages内、id=nameのtagをtextareaへ変更する（改行を保持できる入力要素を明示）。ほかは標準のまま、次を実行する。
+
+```json
+{"Commands":[
+ {"Command":"type","Target":"id=name","Value":"a\\nb"},
+ {"Command":"storeValue","Target":"id=name","Value":"Result"},
+ {"Command":"echo","Target":"${Result}"}
+]}
+```
+
+実際：モデルの入力値はa、バックスラッシュ、n、bの4文字。改行にならない。
+
+期待・一次根拠：既定の!StringEscape=trueではtypeの `\n`／`\t` は実際の改行／タブになる。上のJSONを読み取った後の文字列はエスケープ処理前の4文字であり、製品側が改行へ置き換える段階が必要。[公式!StringEscape](https://ui.vision/rpa/docs/#internal-variables)、[公式replaceEscapedChar](https://github.com/A9T9/RPA/blob/17b6302f1617b838efe2b26d3ef19c2face81350/src/modules/helper.ts#L57)。
+
+公式関数を抽出し、型注釈を外しただけで実行すると、trueではコードポイント[97,10,98]、falseでは[97,92,110,98]。アプリは既定／明示true／明示falseのすべて後者。タブも同様。単一行inputの改行除去とは混同しない。実際のLFをJSONの `\n` として最初から渡す対照ではアプリもLFを保持した。公式文書と現在の公式関数で食い違う `\r` は今回の欠陥の根拠に使わない。エスケープを部分対応にするなら、未対応を示して別の入力値として成功させない。
+
+### R7-225（P2）%式の区切りを取り違え、複数変数の表示を構文エラー、埋込み計算を未展開の文字列にする
+
+対象：Power Automate。位置：`js/types/powerautomate/index.js resolve` の全体一致判定と、`js/core/actions.js interpolate` の単純名だけの置換。
+
+再現：
+
+```json
+{"actions":[
+ {"action":"Set variable","target":"A","value":"Hello"},
+ {"action":"Set variable","target":"B","value":"world"},
+ {"action":"Display message","value":"%A% %B%"}
+]}
+```
+
+実際：「式を解釈できません：%」で停止する。最初の%から最後の%までを単一の式として読むため、正しい2つの変数展開を壊す。
+
+期待・一次根拠：それぞれの%式を評価してHello worldと表示する。先頭と末尾に文字を付けた `prefix %A% %B% suffix` はアプリでも正常になるため、前後の装飾文字の有無だけで同じ用法を拒否しない。[Microsoft Learn 変数と%記法](https://learn.microsoft.com/en-us/power-automate/desktop-flows/variable-manipulation)。
+
+別形：N=1のとき `total=%N + 1%` はアプリがそのままの文字列を出し、%内の計算を実行しない。単独の `%N + 1%` は2になる。期待はtotal=2、または埋込み式を未対応として明示停止。`%A%-%B%` も構文エラー。%%をリテラル%にする既報R7-124とは異なり、今回の主再現にはエスケープがない。
+
+### R7-226（P2）Loopの非数値の境界を0へ変換し、nullの増分を既定値1として実行する
+
+対象：Power Automate。位置：同ファイルaction-loop、Number(resolve(...))とitem.step ?? 1。
+
+再現：
+
+```json
+{"actions":[
+ {"action":"Loop","target":"I","from":null,"to":2,"step":1},
+ {"action":"Display message","value":"%I%"},
+ {"action":"End"}
+]}
+```
+
+実際：0、1、2を表示して成功する。fromを空配列[]にしても同じ。数値でない開始値をJSのNumber変換で0へ決めている。
+
+期待・一次根拠：開始・終了・増分は数値の必須入力。空値や配列を正常な0として数えず、型不整合またはこのモデルの未対応として止める。[Microsoft Learn Loopの入力型](https://learn.microsoft.com/en-us/power-automate/desktop-flows/actions-reference/loops#loop)、[空値を受け取れないパラメーターの規則](https://learn.microsoft.com/en-us/power-automate/desktop-flows/variable-manipulation#using-blank-values)。実PADの具体的なエラー文は未実測。
+
+`from:1,to:2,step:null` はアプリ1、2。stepを省略したモデル既定1と、明示したnullを区別していない。9種の値をfrom／to／stepの各位置へ入れた27形で確認し、通常の0／1／−1の境界と非数値を分離した。0の増分やオブジェクト{}を停止する経路は対照として維持する。
+
+### R7-227（P2）PADの予約語を通常の変数名として設定でき、実フローに存在しない変数を作る
+
+対象：Power Automate。位置：同ファイルSet variableのtarget検査。
+
+再現：
+
+```json
+{"actions":[
+ {"action":"Set variable","target":"If","value":7},
+ {"action":"Display message","value":"AFTER"}
+]}
+```
+
+実際：変数If=7を作り、AFTERへ進む。
+
+期待・一次根拠：IF、TRUE、FALSE、LOOPなどはPADエンジンの予約語であり、大小文字を問わず変数名に使えない。名前を名指して停止する。[Microsoft Learn予約語](https://learn.microsoft.com/en-us/power-automate/desktop-flows/reserved-keywords)、[Set variableの名前の制約](https://learn.microsoft.com/en-us/power-automate/desktop-flows/actions-reference/variables)。
+
+If／IF、True／true、FALSE、Loopの6形すべてをアプリが受理。空文字・空白だけ・nullのtargetは正しく必須エラーになる対照。既報R7-46のターゲット欠落ではなく、明示した名前の妥当性の検査漏れ。数値名や空白入り名も受理したが、本指摘の一次根拠は公式が明示する予約語へ限定する。
+
+### R7-228（P3）Count／Length等の正しいPADプロパティを「ありません」と案内する
+
+対象：Power Automate。位置：同ファイルから共有readのmember処理をそのまま使用する箇所。参照15項目と除外宣言。
+
+再現：
+
+```json
+{"actions":[
+ {"action":"Set variable","target":"Items","value":[1,2]},
+ {"action":"Display message","value":"%Items.Count%"}
+]}
+```
+
+実際：「プロパティがありません：Count」と停止する。Items.lengthへ書き換えると2を返す。
+
+期待・一次根拠：PADリストの件数はCount。文字列長はLengthで、空判定はisEmpty。未対応なら「このモデルでは未対応」と示し、対象言語に存在しないプロパティと案内しない。[Microsoft Learn型のプロパティ](https://learn.microsoft.com/en-us/power-automate/desktop-flows/datatype-properties)。
+
+空／1件／2件のリストでCount、空／1文字／2文字の文字列でLength、isEmpty、Trimmed、ToUpper、ToLowerを追試し、すべて不存在扱い。Text.lengthだけは正常値を返す。実装が受理するlengthは15項目の全フィールドにもDEVELOPMENT.mdの対応・除外にもなく、一般のメンバー式を実装していることと、PADの語彙の対応説明が一致しない。全プロパティの完全実装を要求せず、誤った原因と説明欠落をP3として扱う。リストには公式資料でisEmptyを確認できないため、先行プローブのItems.IsEmptyを有効例として数えない。
+
+### R7-229（P3）入力ダイアログの参照がボタン出力も扱うと説明するが、モデルの対象範囲を区別しない
+
+対象：Power Automate。位置：reference-details.jsのDisplay input dialogと、同アクションの実装。
+
+再現：側面または専用リファレンスでDisplay input dialogを開く。説明は「入力ダイアログで得る文字列と押されたボタンを扱います」、戻り値は「UserInputとButtonPressed。本モデルの入力は未確定」。例を実行した後、%ButtonPressed%を表示するアクションを続ける。
+
+```json
+{"actions":[
+ {"action":"Display input dialog","target":"Answer","value":"prompt"},
+ {"action":"Display message","value":"%ButtonPressed%"}
+]}
+```
+
+実際：モデルはAnswerへ未確定値を入れるだけで、ButtonPressedは未定義名として停止する。ボタン値を保存する欄もない。
+
+期待・一次根拠：実PADがUserInputとButtonPressedを返すという説明自体は正しい。しかし参照で「本モデルでは入力値だけを扱い、ボタン出力は未対応」と区別し、利用者が参照どおりの機能を試して未定義変数へ誘導されないようにする。[Microsoft Learn Display input dialogの出力](https://learn.microsoft.com/en-us/power-automate/desktop-flows/actions-reference/display#displayinputdialog)。
+
+同じ参照のDisplay messageは「ButtonPressed（本モデルはメッセージの出力のみ）」と区別できている。ボタンの値や利用者の選択を推測して追加する要求ではなく、ネイティブ出力と学習モデルの対応範囲の説明の問題。両リファレンスビューで同じ文面であることを確認した。
+
+### R7-230（P2）Sandboxの&&／||が短絡したときだけ値を真偽値へ変え、次の比較を逆にする
+
+対象：UI.Vision。位置：`js/core/script.js read` のbinary短絡分岐と、この種類のlogicalOperands設定。
+
+再現：
+
+```json
+{"Commands":[
+ {"Command":"executeScript_Sandbox","Target":"return (1 || 7) === 1;","Value":"Result"},
+ {"Command":"echo","Target":"${Result}"}
+]}
+```
+
+実際：false。1 || 7をtrueへ変えてから、true === 1を比較する。
+
+期待・一次根拠：JavaScriptの論理演算は選ばれたオペランドの値を返す。期待はtrue。公式リポジトリの実JS-Interpreterでもtrue。[ECMAScript論理演算](https://tc39.es/ecma262/multipage/ecmascript-language-expressions.html#sec-binary-logical-operators)、[UI.VisionのES5 Sandbox宣言](https://ui.vision/rpa/docs/selenium-ide/executescript)。
+
+0、1、−1、空文字、"x"、null、空配列、空オブジェクトを左右に置き、2演算子×8×8の128組を公式Interpreterと型・値で比較。&&で24組、||で40組の差。左で短絡する場合にだけfalse／trueへ固定することと対応する。`("x" || "fallback") === "x"` もアプリfalse／Interpreter true。右を評価する `1 && "yes"` は両者"yes"という対照。64組の入力差を64欠陥には数えない。
+
+### R7-231（P2）PADの順序比較が型違いをJSの暗黙変換で正常な真偽値にする
+
+対象：Power Automate。位置：同ファイルsemantics.binaryと共有baseBinaryの比較。
+
+再現：
+
+```json
+{"actions":[
+ {"action":"Set variable","target":"Result","value":"%1 >= \"1\"%"},
+ {"action":"Display message","value":"%Result%"}
+]}
+```
+
+実際：trueを出して成功。数値1と、引用で明示した文字列"1"をJSの>=で比較する。
+
+期待・一次根拠：通常PADの%式では引用された値は文字列で、比較は同じ型の値に限られる。型違いまたは未対応として停止し、正常な分岐条件を作らない。[Microsoft Learn引用値・比較の型規則](https://learn.microsoft.com/en-us/power-automate/desktop-flows/variable-manipulation#comparisons)。実PADのエラー文は未実測。
+
+追加：`%1 > ""%` もtrue。数値・文字列・真偽・空値の8値×8値×6演算子、384式をLinuxで確認。=／<>の128式は未対応として停止し、この停止自体を欠陥に数えない。残る<／<=／>／>=の256式は全て既知の真偽値を返し、異なる型の組も通す。新規指摘の根拠は数値と引用文字列の組へ限定し、全組の実PAD互換性を実測したとはしない。既報R7-123の変数名の大小文字とは無関係で、主再現は変数読み出しも使わない。
+
+## 節目12の残作業
+
+**観点1〜8は未完了。** 固定ee01f07の全15種類・104教材・978参照項目・111用語・全ビューを維持する。今回の2種類の12教材・37参照例・743ソースの検証集合を、全種類の全関数・全入力・全画面の完了へ読み替えない。
+
+| 観点 | 今回の進捗 | 残作業 |
+|---|---|---|
+| 1 一次情報 | PADの公式型・%記法・予約語・15アクション、UI公式状態処理・Sandbox・エスケープ、実JS-Interpreter178式 | 全15種類の残る関数・構文・型・書式。実PAD／拡張での境界、公式資料内の相違、ForAll Blankとsetlocalの保留 |
+| 2 宣言 | PADの数値必須・比較型とモデル、未対応ボタン出力、UIの未対応JSと架空の束縛を区別 | DEVELOPMENT.md全宣言の双方向表。全型・値域・名前・未確定入力と外部依存の境界で正直に止まるか |
+| 3 状態・分岐・表示 | エラー状態の持続・継続、名前空間・短絡の結果値、%式区切り、予約語、上限表示 | 全エンジンの未確認パス制約、保存・移行・複数タブ・テンプレート切替の全状態、参照・配列・例外・未知値の残る交差 |
+| 4 cmd／PS | 前回までの実Windows教材・参照・連結echo等の証拠を維持。今回は追加シェル実測なし | 残る全引数位置・展開・修飾・変数・ラベル・パイプライン・関数スコープ・入れ子・エラー・表示 |
+| 5 参照・用語 | PAD15／UI22の全例実行、名前対応と説明、全37項目・6用語の両ビュー文面一致 | 978項目全説明・書式・期待値・注意、全実装名／属性／変数／別名と参照・除外宣言、111用語の一次逐文・教材語・全ビュー間矛盾 |
+| 6 全関数境界 | Number／Stringの型・空／省略／過剰／入れ子、論理128組、PAD全Loop入力位置・比較384組など、Windows359ソース | 全関数・コマンドの全位置・全型・巨大値・過不足・ゼロ除算・入れ子・条件・連鎖・パイプライン。PAD／UIの未確認フィールド・全要素種・エラー制御、全15種類の残る境界 |
+| 7 全104教材・全停止 | PAD／UI全12教材の固有／標準モデル、状態・誤原因・型不整合の再現 | 残る教材の未了分、今回教材の任意変更モデル・全未知入力、全エンジンの全停止理由の一対一再現、実製品UI。改行モデル差の説明判断 |
+| 8 文面・a11y・劣化・性能 | 15ソース＋12教材画面実行、37参照・6定義の両表示、16表示幅・ビュー、ラベル、Windows重分岐の実測 | 全文面・aria・全フォーカス・全幅／ズーム、実容量枯渇と保存救出、キャッシュ世代、全エンジンの最重入力探索と実Windows UI描画 |
 
 VBA・ImageJ・CloudFormation・PAD・AutoHotkey・UI.Vision・Power Apps・Python・R・C・C++・C#・JavaScript・cmd・PowerShellの全種類に未了分を維持する。VBAのRound／IsNumeric／Unicode casing等と実Excelによる切分け、Rのmedian／seq／rep／read.csv・名前・属性・精度、C系全オーバーロード・定数式・昇格・型・ポインタ／配列、C# TryParse out修飾子／型、保存・状態の残る交差も落とさない。
 
