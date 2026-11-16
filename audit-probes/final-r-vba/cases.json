@@ -1,0 +1,5910 @@
+[
+  {
+    "name": "optional:mean:trim:NULL",
+    "code": "a <- mean(c(1,100,2),trim=NULL)"
+  },
+  {
+    "name": "optional:mean:trim:0",
+    "code": "a <- mean(c(1,100,2),trim=0)"
+  },
+  {
+    "name": "optional:mean:trim:1",
+    "code": "a <- mean(c(1,100,2),trim=1)"
+  },
+  {
+    "name": "optional:mean:trim:-1",
+    "code": "a <- mean(c(1,100,2),trim=-1)"
+  },
+  {
+    "name": "optional:mean:trim:0.5",
+    "code": "a <- mean(c(1,100,2),trim=0.5)"
+  },
+  {
+    "name": "optional:mean:trim:1.5",
+    "code": "a <- mean(c(1,100,2),trim=1.5)"
+  },
+  {
+    "name": "optional:mean:trim:TRUE",
+    "code": "a <- mean(c(1,100,2),trim=TRUE)"
+  },
+  {
+    "name": "optional:mean:trim:FALSE",
+    "code": "a <- mean(c(1,100,2),trim=FALSE)"
+  },
+  {
+    "name": "optional:mean:trim:NA",
+    "code": "a <- mean(c(1,100,2),trim=NA)"
+  },
+  {
+    "name": "optional:mean:trim:NaN",
+    "code": "a <- mean(c(1,100,2),trim=NaN)"
+  },
+  {
+    "name": "optional:mean:trim:Inf",
+    "code": "a <- mean(c(1,100,2),trim=Inf)"
+  },
+  {
+    "name": "optional:mean:trim:-Inf",
+    "code": "a <- mean(c(1,100,2),trim=-Inf)"
+  },
+  {
+    "name": "optional:mean:trim:\"\"",
+    "code": "a <- mean(c(1,100,2),trim=\"\")"
+  },
+  {
+    "name": "optional:mean:trim:\"1\"",
+    "code": "a <- mean(c(1,100,2),trim=\"1\")"
+  },
+  {
+    "name": "optional:mean:trim:\"x\"",
+    "code": "a <- mean(c(1,100,2),trim=\"x\")"
+  },
+  {
+    "name": "optional:mean:trim:c()",
+    "code": "a <- mean(c(1,100,2),trim=c())"
+  },
+  {
+    "name": "optional:mean:trim:c(1,2)",
+    "code": "a <- mean(c(1,100,2),trim=c(1,2))"
+  },
+  {
+    "name": "optional:mean:trim:c(1,NA)",
+    "code": "a <- mean(c(1,100,2),trim=c(1,NA))"
+  },
+  {
+    "name": "optional:mean:trim:c(TRUE,FALSE)",
+    "code": "a <- mean(c(1,100,2),trim=c(TRUE,FALSE))"
+  },
+  {
+    "name": "optional:mean:trim:c(a=TRUE)",
+    "code": "a <- mean(c(1,100,2),trim=c(a=TRUE))"
+  },
+  {
+    "name": "optional:mean:trim:data.frame(x=1:2)",
+    "code": "a <- mean(c(1,100,2),trim=data.frame(x=1:2))"
+  },
+  {
+    "name": "optional:mean:na.rm:NULL",
+    "code": "a <- mean(c(1,100,2),na.rm=NULL)"
+  },
+  {
+    "name": "optional:mean:na.rm:0",
+    "code": "a <- mean(c(1,100,2),na.rm=0)"
+  },
+  {
+    "name": "optional:mean:na.rm:1",
+    "code": "a <- mean(c(1,100,2),na.rm=1)"
+  },
+  {
+    "name": "optional:mean:na.rm:-1",
+    "code": "a <- mean(c(1,100,2),na.rm=-1)"
+  },
+  {
+    "name": "optional:mean:na.rm:0.5",
+    "code": "a <- mean(c(1,100,2),na.rm=0.5)"
+  },
+  {
+    "name": "optional:mean:na.rm:1.5",
+    "code": "a <- mean(c(1,100,2),na.rm=1.5)"
+  },
+  {
+    "name": "optional:mean:na.rm:TRUE",
+    "code": "a <- mean(c(1,100,2),na.rm=TRUE)"
+  },
+  {
+    "name": "optional:mean:na.rm:FALSE",
+    "code": "a <- mean(c(1,100,2),na.rm=FALSE)"
+  },
+  {
+    "name": "optional:mean:na.rm:NA",
+    "code": "a <- mean(c(1,100,2),na.rm=NA)"
+  },
+  {
+    "name": "optional:mean:na.rm:NaN",
+    "code": "a <- mean(c(1,100,2),na.rm=NaN)"
+  },
+  {
+    "name": "optional:mean:na.rm:Inf",
+    "code": "a <- mean(c(1,100,2),na.rm=Inf)"
+  },
+  {
+    "name": "optional:mean:na.rm:-Inf",
+    "code": "a <- mean(c(1,100,2),na.rm=-Inf)"
+  },
+  {
+    "name": "optional:mean:na.rm:\"\"",
+    "code": "a <- mean(c(1,100,2),na.rm=\"\")"
+  },
+  {
+    "name": "optional:mean:na.rm:\"1\"",
+    "code": "a <- mean(c(1,100,2),na.rm=\"1\")"
+  },
+  {
+    "name": "optional:mean:na.rm:\"x\"",
+    "code": "a <- mean(c(1,100,2),na.rm=\"x\")"
+  },
+  {
+    "name": "optional:mean:na.rm:c()",
+    "code": "a <- mean(c(1,100,2),na.rm=c())"
+  },
+  {
+    "name": "optional:mean:na.rm:c(1,2)",
+    "code": "a <- mean(c(1,100,2),na.rm=c(1,2))"
+  },
+  {
+    "name": "optional:mean:na.rm:c(1,NA)",
+    "code": "a <- mean(c(1,100,2),na.rm=c(1,NA))"
+  },
+  {
+    "name": "optional:mean:na.rm:c(TRUE,FALSE)",
+    "code": "a <- mean(c(1,100,2),na.rm=c(TRUE,FALSE))"
+  },
+  {
+    "name": "optional:mean:na.rm:c(a=TRUE)",
+    "code": "a <- mean(c(1,100,2),na.rm=c(a=TRUE))"
+  },
+  {
+    "name": "optional:mean:na.rm:data.frame(x=1:2)",
+    "code": "a <- mean(c(1,100,2),na.rm=data.frame(x=1:2))"
+  },
+  {
+    "name": "optional:sum:na.rm:NULL",
+    "code": "a <- sum(c(1,NA),na.rm=NULL)"
+  },
+  {
+    "name": "optional:sum:na.rm:0",
+    "code": "a <- sum(c(1,NA),na.rm=0)"
+  },
+  {
+    "name": "optional:sum:na.rm:1",
+    "code": "a <- sum(c(1,NA),na.rm=1)"
+  },
+  {
+    "name": "optional:sum:na.rm:-1",
+    "code": "a <- sum(c(1,NA),na.rm=-1)"
+  },
+  {
+    "name": "optional:sum:na.rm:0.5",
+    "code": "a <- sum(c(1,NA),na.rm=0.5)"
+  },
+  {
+    "name": "optional:sum:na.rm:1.5",
+    "code": "a <- sum(c(1,NA),na.rm=1.5)"
+  },
+  {
+    "name": "optional:sum:na.rm:TRUE",
+    "code": "a <- sum(c(1,NA),na.rm=TRUE)"
+  },
+  {
+    "name": "optional:sum:na.rm:FALSE",
+    "code": "a <- sum(c(1,NA),na.rm=FALSE)"
+  },
+  {
+    "name": "optional:sum:na.rm:NA",
+    "code": "a <- sum(c(1,NA),na.rm=NA)"
+  },
+  {
+    "name": "optional:sum:na.rm:NaN",
+    "code": "a <- sum(c(1,NA),na.rm=NaN)"
+  },
+  {
+    "name": "optional:sum:na.rm:Inf",
+    "code": "a <- sum(c(1,NA),na.rm=Inf)"
+  },
+  {
+    "name": "optional:sum:na.rm:-Inf",
+    "code": "a <- sum(c(1,NA),na.rm=-Inf)"
+  },
+  {
+    "name": "optional:sum:na.rm:\"\"",
+    "code": "a <- sum(c(1,NA),na.rm=\"\")"
+  },
+  {
+    "name": "optional:sum:na.rm:\"1\"",
+    "code": "a <- sum(c(1,NA),na.rm=\"1\")"
+  },
+  {
+    "name": "optional:sum:na.rm:\"x\"",
+    "code": "a <- sum(c(1,NA),na.rm=\"x\")"
+  },
+  {
+    "name": "optional:sum:na.rm:c()",
+    "code": "a <- sum(c(1,NA),na.rm=c())"
+  },
+  {
+    "name": "optional:sum:na.rm:c(1,2)",
+    "code": "a <- sum(c(1,NA),na.rm=c(1,2))"
+  },
+  {
+    "name": "optional:sum:na.rm:c(1,NA)",
+    "code": "a <- sum(c(1,NA),na.rm=c(1,NA))"
+  },
+  {
+    "name": "optional:sum:na.rm:c(TRUE,FALSE)",
+    "code": "a <- sum(c(1,NA),na.rm=c(TRUE,FALSE))"
+  },
+  {
+    "name": "optional:sum:na.rm:c(a=TRUE)",
+    "code": "a <- sum(c(1,NA),na.rm=c(a=TRUE))"
+  },
+  {
+    "name": "optional:sum:na.rm:data.frame(x=1:2)",
+    "code": "a <- sum(c(1,NA),na.rm=data.frame(x=1:2))"
+  },
+  {
+    "name": "optional:median:na.rm:NULL",
+    "code": "a <- median(c(1,NA),na.rm=NULL)"
+  },
+  {
+    "name": "optional:median:na.rm:0",
+    "code": "a <- median(c(1,NA),na.rm=0)"
+  },
+  {
+    "name": "optional:median:na.rm:1",
+    "code": "a <- median(c(1,NA),na.rm=1)"
+  },
+  {
+    "name": "optional:median:na.rm:-1",
+    "code": "a <- median(c(1,NA),na.rm=-1)"
+  },
+  {
+    "name": "optional:median:na.rm:0.5",
+    "code": "a <- median(c(1,NA),na.rm=0.5)"
+  },
+  {
+    "name": "optional:median:na.rm:1.5",
+    "code": "a <- median(c(1,NA),na.rm=1.5)"
+  },
+  {
+    "name": "optional:median:na.rm:TRUE",
+    "code": "a <- median(c(1,NA),na.rm=TRUE)"
+  },
+  {
+    "name": "optional:median:na.rm:FALSE",
+    "code": "a <- median(c(1,NA),na.rm=FALSE)"
+  },
+  {
+    "name": "optional:median:na.rm:NA",
+    "code": "a <- median(c(1,NA),na.rm=NA)"
+  },
+  {
+    "name": "optional:median:na.rm:NaN",
+    "code": "a <- median(c(1,NA),na.rm=NaN)"
+  },
+  {
+    "name": "optional:median:na.rm:Inf",
+    "code": "a <- median(c(1,NA),na.rm=Inf)"
+  },
+  {
+    "name": "optional:median:na.rm:-Inf",
+    "code": "a <- median(c(1,NA),na.rm=-Inf)"
+  },
+  {
+    "name": "optional:median:na.rm:\"\"",
+    "code": "a <- median(c(1,NA),na.rm=\"\")"
+  },
+  {
+    "name": "optional:median:na.rm:\"1\"",
+    "code": "a <- median(c(1,NA),na.rm=\"1\")"
+  },
+  {
+    "name": "optional:median:na.rm:\"x\"",
+    "code": "a <- median(c(1,NA),na.rm=\"x\")"
+  },
+  {
+    "name": "optional:median:na.rm:c()",
+    "code": "a <- median(c(1,NA),na.rm=c())"
+  },
+  {
+    "name": "optional:median:na.rm:c(1,2)",
+    "code": "a <- median(c(1,NA),na.rm=c(1,2))"
+  },
+  {
+    "name": "optional:median:na.rm:c(1,NA)",
+    "code": "a <- median(c(1,NA),na.rm=c(1,NA))"
+  },
+  {
+    "name": "optional:median:na.rm:c(TRUE,FALSE)",
+    "code": "a <- median(c(1,NA),na.rm=c(TRUE,FALSE))"
+  },
+  {
+    "name": "optional:median:na.rm:c(a=TRUE)",
+    "code": "a <- median(c(1,NA),na.rm=c(a=TRUE))"
+  },
+  {
+    "name": "optional:median:na.rm:data.frame(x=1:2)",
+    "code": "a <- median(c(1,NA),na.rm=data.frame(x=1:2))"
+  },
+  {
+    "name": "optional:sd:na.rm:NULL",
+    "code": "a <- sd(c(1,NA),na.rm=NULL)"
+  },
+  {
+    "name": "optional:sd:na.rm:0",
+    "code": "a <- sd(c(1,NA),na.rm=0)"
+  },
+  {
+    "name": "optional:sd:na.rm:1",
+    "code": "a <- sd(c(1,NA),na.rm=1)"
+  },
+  {
+    "name": "optional:sd:na.rm:-1",
+    "code": "a <- sd(c(1,NA),na.rm=-1)"
+  },
+  {
+    "name": "optional:sd:na.rm:0.5",
+    "code": "a <- sd(c(1,NA),na.rm=0.5)"
+  },
+  {
+    "name": "optional:sd:na.rm:1.5",
+    "code": "a <- sd(c(1,NA),na.rm=1.5)"
+  },
+  {
+    "name": "optional:sd:na.rm:TRUE",
+    "code": "a <- sd(c(1,NA),na.rm=TRUE)"
+  },
+  {
+    "name": "optional:sd:na.rm:FALSE",
+    "code": "a <- sd(c(1,NA),na.rm=FALSE)"
+  },
+  {
+    "name": "optional:sd:na.rm:NA",
+    "code": "a <- sd(c(1,NA),na.rm=NA)"
+  },
+  {
+    "name": "optional:sd:na.rm:NaN",
+    "code": "a <- sd(c(1,NA),na.rm=NaN)"
+  },
+  {
+    "name": "optional:sd:na.rm:Inf",
+    "code": "a <- sd(c(1,NA),na.rm=Inf)"
+  },
+  {
+    "name": "optional:sd:na.rm:-Inf",
+    "code": "a <- sd(c(1,NA),na.rm=-Inf)"
+  },
+  {
+    "name": "optional:sd:na.rm:\"\"",
+    "code": "a <- sd(c(1,NA),na.rm=\"\")"
+  },
+  {
+    "name": "optional:sd:na.rm:\"1\"",
+    "code": "a <- sd(c(1,NA),na.rm=\"1\")"
+  },
+  {
+    "name": "optional:sd:na.rm:\"x\"",
+    "code": "a <- sd(c(1,NA),na.rm=\"x\")"
+  },
+  {
+    "name": "optional:sd:na.rm:c()",
+    "code": "a <- sd(c(1,NA),na.rm=c())"
+  },
+  {
+    "name": "optional:sd:na.rm:c(1,2)",
+    "code": "a <- sd(c(1,NA),na.rm=c(1,2))"
+  },
+  {
+    "name": "optional:sd:na.rm:c(1,NA)",
+    "code": "a <- sd(c(1,NA),na.rm=c(1,NA))"
+  },
+  {
+    "name": "optional:sd:na.rm:c(TRUE,FALSE)",
+    "code": "a <- sd(c(1,NA),na.rm=c(TRUE,FALSE))"
+  },
+  {
+    "name": "optional:sd:na.rm:c(a=TRUE)",
+    "code": "a <- sd(c(1,NA),na.rm=c(a=TRUE))"
+  },
+  {
+    "name": "optional:sd:na.rm:data.frame(x=1:2)",
+    "code": "a <- sd(c(1,NA),na.rm=data.frame(x=1:2))"
+  },
+  {
+    "name": "optional:c:recursive:NULL",
+    "code": "a <- c(c(a=1,b=2),recursive=NULL)"
+  },
+  {
+    "name": "optional:c:recursive:0",
+    "code": "a <- c(c(a=1,b=2),recursive=0)"
+  },
+  {
+    "name": "optional:c:recursive:1",
+    "code": "a <- c(c(a=1,b=2),recursive=1)"
+  },
+  {
+    "name": "optional:c:recursive:-1",
+    "code": "a <- c(c(a=1,b=2),recursive=-1)"
+  },
+  {
+    "name": "optional:c:recursive:0.5",
+    "code": "a <- c(c(a=1,b=2),recursive=0.5)"
+  },
+  {
+    "name": "optional:c:recursive:1.5",
+    "code": "a <- c(c(a=1,b=2),recursive=1.5)"
+  },
+  {
+    "name": "optional:c:recursive:TRUE",
+    "code": "a <- c(c(a=1,b=2),recursive=TRUE)"
+  },
+  {
+    "name": "optional:c:recursive:FALSE",
+    "code": "a <- c(c(a=1,b=2),recursive=FALSE)"
+  },
+  {
+    "name": "optional:c:recursive:NA",
+    "code": "a <- c(c(a=1,b=2),recursive=NA)"
+  },
+  {
+    "name": "optional:c:recursive:NaN",
+    "code": "a <- c(c(a=1,b=2),recursive=NaN)"
+  },
+  {
+    "name": "optional:c:recursive:Inf",
+    "code": "a <- c(c(a=1,b=2),recursive=Inf)"
+  },
+  {
+    "name": "optional:c:recursive:-Inf",
+    "code": "a <- c(c(a=1,b=2),recursive=-Inf)"
+  },
+  {
+    "name": "optional:c:recursive:\"\"",
+    "code": "a <- c(c(a=1,b=2),recursive=\"\")"
+  },
+  {
+    "name": "optional:c:recursive:\"1\"",
+    "code": "a <- c(c(a=1,b=2),recursive=\"1\")"
+  },
+  {
+    "name": "optional:c:recursive:\"x\"",
+    "code": "a <- c(c(a=1,b=2),recursive=\"x\")"
+  },
+  {
+    "name": "optional:c:recursive:c()",
+    "code": "a <- c(c(a=1,b=2),recursive=c())"
+  },
+  {
+    "name": "optional:c:recursive:c(1,2)",
+    "code": "a <- c(c(a=1,b=2),recursive=c(1,2))"
+  },
+  {
+    "name": "optional:c:recursive:c(1,NA)",
+    "code": "a <- c(c(a=1,b=2),recursive=c(1,NA))"
+  },
+  {
+    "name": "optional:c:recursive:c(TRUE,FALSE)",
+    "code": "a <- c(c(a=1,b=2),recursive=c(TRUE,FALSE))"
+  },
+  {
+    "name": "optional:c:recursive:c(a=TRUE)",
+    "code": "a <- c(c(a=1,b=2),recursive=c(a=TRUE))"
+  },
+  {
+    "name": "optional:c:recursive:data.frame(x=1:2)",
+    "code": "a <- c(c(a=1,b=2),recursive=data.frame(x=1:2))"
+  },
+  {
+    "name": "optional:c:use.names:NULL",
+    "code": "a <- c(c(a=1,b=2),use.names=NULL)"
+  },
+  {
+    "name": "optional:c:use.names:0",
+    "code": "a <- c(c(a=1,b=2),use.names=0)"
+  },
+  {
+    "name": "optional:c:use.names:1",
+    "code": "a <- c(c(a=1,b=2),use.names=1)"
+  },
+  {
+    "name": "optional:c:use.names:-1",
+    "code": "a <- c(c(a=1,b=2),use.names=-1)"
+  },
+  {
+    "name": "optional:c:use.names:0.5",
+    "code": "a <- c(c(a=1,b=2),use.names=0.5)"
+  },
+  {
+    "name": "optional:c:use.names:1.5",
+    "code": "a <- c(c(a=1,b=2),use.names=1.5)"
+  },
+  {
+    "name": "optional:c:use.names:TRUE",
+    "code": "a <- c(c(a=1,b=2),use.names=TRUE)"
+  },
+  {
+    "name": "optional:c:use.names:FALSE",
+    "code": "a <- c(c(a=1,b=2),use.names=FALSE)"
+  },
+  {
+    "name": "optional:c:use.names:NA",
+    "code": "a <- c(c(a=1,b=2),use.names=NA)"
+  },
+  {
+    "name": "optional:c:use.names:NaN",
+    "code": "a <- c(c(a=1,b=2),use.names=NaN)"
+  },
+  {
+    "name": "optional:c:use.names:Inf",
+    "code": "a <- c(c(a=1,b=2),use.names=Inf)"
+  },
+  {
+    "name": "optional:c:use.names:-Inf",
+    "code": "a <- c(c(a=1,b=2),use.names=-Inf)"
+  },
+  {
+    "name": "optional:c:use.names:\"\"",
+    "code": "a <- c(c(a=1,b=2),use.names=\"\")"
+  },
+  {
+    "name": "optional:c:use.names:\"1\"",
+    "code": "a <- c(c(a=1,b=2),use.names=\"1\")"
+  },
+  {
+    "name": "optional:c:use.names:\"x\"",
+    "code": "a <- c(c(a=1,b=2),use.names=\"x\")"
+  },
+  {
+    "name": "optional:c:use.names:c()",
+    "code": "a <- c(c(a=1,b=2),use.names=c())"
+  },
+  {
+    "name": "optional:c:use.names:c(1,2)",
+    "code": "a <- c(c(a=1,b=2),use.names=c(1,2))"
+  },
+  {
+    "name": "optional:c:use.names:c(1,NA)",
+    "code": "a <- c(c(a=1,b=2),use.names=c(1,NA))"
+  },
+  {
+    "name": "optional:c:use.names:c(TRUE,FALSE)",
+    "code": "a <- c(c(a=1,b=2),use.names=c(TRUE,FALSE))"
+  },
+  {
+    "name": "optional:c:use.names:c(a=TRUE)",
+    "code": "a <- c(c(a=1,b=2),use.names=c(a=TRUE))"
+  },
+  {
+    "name": "optional:c:use.names:data.frame(x=1:2)",
+    "code": "a <- c(c(a=1,b=2),use.names=data.frame(x=1:2))"
+  },
+  {
+    "name": "optional:rep:times:NULL",
+    "code": "a <- rep(c(a=1,b=2),times=NULL)"
+  },
+  {
+    "name": "optional:rep:times:0",
+    "code": "a <- rep(c(a=1,b=2),times=0)"
+  },
+  {
+    "name": "optional:rep:times:1",
+    "code": "a <- rep(c(a=1,b=2),times=1)"
+  },
+  {
+    "name": "optional:rep:times:-1",
+    "code": "a <- rep(c(a=1,b=2),times=-1)"
+  },
+  {
+    "name": "optional:rep:times:0.5",
+    "code": "a <- rep(c(a=1,b=2),times=0.5)"
+  },
+  {
+    "name": "optional:rep:times:1.5",
+    "code": "a <- rep(c(a=1,b=2),times=1.5)"
+  },
+  {
+    "name": "optional:rep:times:TRUE",
+    "code": "a <- rep(c(a=1,b=2),times=TRUE)"
+  },
+  {
+    "name": "optional:rep:times:FALSE",
+    "code": "a <- rep(c(a=1,b=2),times=FALSE)"
+  },
+  {
+    "name": "optional:rep:times:NA",
+    "code": "a <- rep(c(a=1,b=2),times=NA)"
+  },
+  {
+    "name": "optional:rep:times:NaN",
+    "code": "a <- rep(c(a=1,b=2),times=NaN)"
+  },
+  {
+    "name": "optional:rep:times:Inf",
+    "code": "a <- rep(c(a=1,b=2),times=Inf)"
+  },
+  {
+    "name": "optional:rep:times:-Inf",
+    "code": "a <- rep(c(a=1,b=2),times=-Inf)"
+  },
+  {
+    "name": "optional:rep:times:\"\"",
+    "code": "a <- rep(c(a=1,b=2),times=\"\")"
+  },
+  {
+    "name": "optional:rep:times:\"1\"",
+    "code": "a <- rep(c(a=1,b=2),times=\"1\")"
+  },
+  {
+    "name": "optional:rep:times:\"x\"",
+    "code": "a <- rep(c(a=1,b=2),times=\"x\")"
+  },
+  {
+    "name": "optional:rep:times:c()",
+    "code": "a <- rep(c(a=1,b=2),times=c())"
+  },
+  {
+    "name": "optional:rep:times:c(1,2)",
+    "code": "a <- rep(c(a=1,b=2),times=c(1,2))"
+  },
+  {
+    "name": "optional:rep:times:c(1,NA)",
+    "code": "a <- rep(c(a=1,b=2),times=c(1,NA))"
+  },
+  {
+    "name": "optional:rep:times:c(TRUE,FALSE)",
+    "code": "a <- rep(c(a=1,b=2),times=c(TRUE,FALSE))"
+  },
+  {
+    "name": "optional:rep:times:c(a=TRUE)",
+    "code": "a <- rep(c(a=1,b=2),times=c(a=TRUE))"
+  },
+  {
+    "name": "optional:rep:times:data.frame(x=1:2)",
+    "code": "a <- rep(c(a=1,b=2),times=data.frame(x=1:2))"
+  },
+  {
+    "name": "optional:rep:each:NULL",
+    "code": "a <- rep(c(a=1,b=2),each=NULL)"
+  },
+  {
+    "name": "optional:rep:each:0",
+    "code": "a <- rep(c(a=1,b=2),each=0)"
+  },
+  {
+    "name": "optional:rep:each:1",
+    "code": "a <- rep(c(a=1,b=2),each=1)"
+  },
+  {
+    "name": "optional:rep:each:-1",
+    "code": "a <- rep(c(a=1,b=2),each=-1)"
+  },
+  {
+    "name": "optional:rep:each:0.5",
+    "code": "a <- rep(c(a=1,b=2),each=0.5)"
+  },
+  {
+    "name": "optional:rep:each:1.5",
+    "code": "a <- rep(c(a=1,b=2),each=1.5)"
+  },
+  {
+    "name": "optional:rep:each:TRUE",
+    "code": "a <- rep(c(a=1,b=2),each=TRUE)"
+  },
+  {
+    "name": "optional:rep:each:FALSE",
+    "code": "a <- rep(c(a=1,b=2),each=FALSE)"
+  },
+  {
+    "name": "optional:rep:each:NA",
+    "code": "a <- rep(c(a=1,b=2),each=NA)"
+  },
+  {
+    "name": "optional:rep:each:NaN",
+    "code": "a <- rep(c(a=1,b=2),each=NaN)"
+  },
+  {
+    "name": "optional:rep:each:Inf",
+    "code": "a <- rep(c(a=1,b=2),each=Inf)"
+  },
+  {
+    "name": "optional:rep:each:-Inf",
+    "code": "a <- rep(c(a=1,b=2),each=-Inf)"
+  },
+  {
+    "name": "optional:rep:each:\"\"",
+    "code": "a <- rep(c(a=1,b=2),each=\"\")"
+  },
+  {
+    "name": "optional:rep:each:\"1\"",
+    "code": "a <- rep(c(a=1,b=2),each=\"1\")"
+  },
+  {
+    "name": "optional:rep:each:\"x\"",
+    "code": "a <- rep(c(a=1,b=2),each=\"x\")"
+  },
+  {
+    "name": "optional:rep:each:c()",
+    "code": "a <- rep(c(a=1,b=2),each=c())"
+  },
+  {
+    "name": "optional:rep:each:c(1,2)",
+    "code": "a <- rep(c(a=1,b=2),each=c(1,2))"
+  },
+  {
+    "name": "optional:rep:each:c(1,NA)",
+    "code": "a <- rep(c(a=1,b=2),each=c(1,NA))"
+  },
+  {
+    "name": "optional:rep:each:c(TRUE,FALSE)",
+    "code": "a <- rep(c(a=1,b=2),each=c(TRUE,FALSE))"
+  },
+  {
+    "name": "optional:rep:each:c(a=TRUE)",
+    "code": "a <- rep(c(a=1,b=2),each=c(a=TRUE))"
+  },
+  {
+    "name": "optional:rep:each:data.frame(x=1:2)",
+    "code": "a <- rep(c(a=1,b=2),each=data.frame(x=1:2))"
+  },
+  {
+    "name": "optional:rep:length.out:NULL",
+    "code": "a <- rep(c(a=1,b=2),length.out=NULL)"
+  },
+  {
+    "name": "optional:rep:length.out:0",
+    "code": "a <- rep(c(a=1,b=2),length.out=0)"
+  },
+  {
+    "name": "optional:rep:length.out:1",
+    "code": "a <- rep(c(a=1,b=2),length.out=1)"
+  },
+  {
+    "name": "optional:rep:length.out:-1",
+    "code": "a <- rep(c(a=1,b=2),length.out=-1)"
+  },
+  {
+    "name": "optional:rep:length.out:0.5",
+    "code": "a <- rep(c(a=1,b=2),length.out=0.5)"
+  },
+  {
+    "name": "optional:rep:length.out:1.5",
+    "code": "a <- rep(c(a=1,b=2),length.out=1.5)"
+  },
+  {
+    "name": "optional:rep:length.out:TRUE",
+    "code": "a <- rep(c(a=1,b=2),length.out=TRUE)"
+  },
+  {
+    "name": "optional:rep:length.out:FALSE",
+    "code": "a <- rep(c(a=1,b=2),length.out=FALSE)"
+  },
+  {
+    "name": "optional:rep:length.out:NA",
+    "code": "a <- rep(c(a=1,b=2),length.out=NA)"
+  },
+  {
+    "name": "optional:rep:length.out:NaN",
+    "code": "a <- rep(c(a=1,b=2),length.out=NaN)"
+  },
+  {
+    "name": "optional:rep:length.out:Inf",
+    "code": "a <- rep(c(a=1,b=2),length.out=Inf)"
+  },
+  {
+    "name": "optional:rep:length.out:-Inf",
+    "code": "a <- rep(c(a=1,b=2),length.out=-Inf)"
+  },
+  {
+    "name": "optional:rep:length.out:\"\"",
+    "code": "a <- rep(c(a=1,b=2),length.out=\"\")"
+  },
+  {
+    "name": "optional:rep:length.out:\"1\"",
+    "code": "a <- rep(c(a=1,b=2),length.out=\"1\")"
+  },
+  {
+    "name": "optional:rep:length.out:\"x\"",
+    "code": "a <- rep(c(a=1,b=2),length.out=\"x\")"
+  },
+  {
+    "name": "optional:rep:length.out:c()",
+    "code": "a <- rep(c(a=1,b=2),length.out=c())"
+  },
+  {
+    "name": "optional:rep:length.out:c(1,2)",
+    "code": "a <- rep(c(a=1,b=2),length.out=c(1,2))"
+  },
+  {
+    "name": "optional:rep:length.out:c(1,NA)",
+    "code": "a <- rep(c(a=1,b=2),length.out=c(1,NA))"
+  },
+  {
+    "name": "optional:rep:length.out:c(TRUE,FALSE)",
+    "code": "a <- rep(c(a=1,b=2),length.out=c(TRUE,FALSE))"
+  },
+  {
+    "name": "optional:rep:length.out:c(a=TRUE)",
+    "code": "a <- rep(c(a=1,b=2),length.out=c(a=TRUE))"
+  },
+  {
+    "name": "optional:rep:length.out:data.frame(x=1:2)",
+    "code": "a <- rep(c(a=1,b=2),length.out=data.frame(x=1:2))"
+  },
+  {
+    "name": "optional:print:digits:NULL",
+    "code": "a <- print(c(a=1,b=2),digits=NULL)"
+  },
+  {
+    "name": "optional:print:digits:0",
+    "code": "a <- print(c(a=1,b=2),digits=0)"
+  },
+  {
+    "name": "optional:print:digits:1",
+    "code": "a <- print(c(a=1,b=2),digits=1)"
+  },
+  {
+    "name": "optional:print:digits:-1",
+    "code": "a <- print(c(a=1,b=2),digits=-1)"
+  },
+  {
+    "name": "optional:print:digits:0.5",
+    "code": "a <- print(c(a=1,b=2),digits=0.5)"
+  },
+  {
+    "name": "optional:print:digits:1.5",
+    "code": "a <- print(c(a=1,b=2),digits=1.5)"
+  },
+  {
+    "name": "optional:print:digits:TRUE",
+    "code": "a <- print(c(a=1,b=2),digits=TRUE)"
+  },
+  {
+    "name": "optional:print:digits:FALSE",
+    "code": "a <- print(c(a=1,b=2),digits=FALSE)"
+  },
+  {
+    "name": "optional:print:digits:NA",
+    "code": "a <- print(c(a=1,b=2),digits=NA)"
+  },
+  {
+    "name": "optional:print:digits:NaN",
+    "code": "a <- print(c(a=1,b=2),digits=NaN)"
+  },
+  {
+    "name": "optional:print:digits:Inf",
+    "code": "a <- print(c(a=1,b=2),digits=Inf)"
+  },
+  {
+    "name": "optional:print:digits:-Inf",
+    "code": "a <- print(c(a=1,b=2),digits=-Inf)"
+  },
+  {
+    "name": "optional:print:digits:\"\"",
+    "code": "a <- print(c(a=1,b=2),digits=\"\")"
+  },
+  {
+    "name": "optional:print:digits:\"1\"",
+    "code": "a <- print(c(a=1,b=2),digits=\"1\")"
+  },
+  {
+    "name": "optional:print:digits:\"x\"",
+    "code": "a <- print(c(a=1,b=2),digits=\"x\")"
+  },
+  {
+    "name": "optional:print:digits:c()",
+    "code": "a <- print(c(a=1,b=2),digits=c())"
+  },
+  {
+    "name": "optional:print:digits:c(1,2)",
+    "code": "a <- print(c(a=1,b=2),digits=c(1,2))"
+  },
+  {
+    "name": "optional:print:digits:c(1,NA)",
+    "code": "a <- print(c(a=1,b=2),digits=c(1,NA))"
+  },
+  {
+    "name": "optional:print:digits:c(TRUE,FALSE)",
+    "code": "a <- print(c(a=1,b=2),digits=c(TRUE,FALSE))"
+  },
+  {
+    "name": "optional:print:digits:c(a=TRUE)",
+    "code": "a <- print(c(a=1,b=2),digits=c(a=TRUE))"
+  },
+  {
+    "name": "optional:print:digits:data.frame(x=1:2)",
+    "code": "a <- print(c(a=1,b=2),digits=data.frame(x=1:2))"
+  },
+  {
+    "name": "optional:print:quote:NULL",
+    "code": "a <- print(c(a=1,b=2),quote=NULL)"
+  },
+  {
+    "name": "optional:print:quote:0",
+    "code": "a <- print(c(a=1,b=2),quote=0)"
+  },
+  {
+    "name": "optional:print:quote:1",
+    "code": "a <- print(c(a=1,b=2),quote=1)"
+  },
+  {
+    "name": "optional:print:quote:-1",
+    "code": "a <- print(c(a=1,b=2),quote=-1)"
+  },
+  {
+    "name": "optional:print:quote:0.5",
+    "code": "a <- print(c(a=1,b=2),quote=0.5)"
+  },
+  {
+    "name": "optional:print:quote:1.5",
+    "code": "a <- print(c(a=1,b=2),quote=1.5)"
+  },
+  {
+    "name": "optional:print:quote:TRUE",
+    "code": "a <- print(c(a=1,b=2),quote=TRUE)"
+  },
+  {
+    "name": "optional:print:quote:FALSE",
+    "code": "a <- print(c(a=1,b=2),quote=FALSE)"
+  },
+  {
+    "name": "optional:print:quote:NA",
+    "code": "a <- print(c(a=1,b=2),quote=NA)"
+  },
+  {
+    "name": "optional:print:quote:NaN",
+    "code": "a <- print(c(a=1,b=2),quote=NaN)"
+  },
+  {
+    "name": "optional:print:quote:Inf",
+    "code": "a <- print(c(a=1,b=2),quote=Inf)"
+  },
+  {
+    "name": "optional:print:quote:-Inf",
+    "code": "a <- print(c(a=1,b=2),quote=-Inf)"
+  },
+  {
+    "name": "optional:print:quote:\"\"",
+    "code": "a <- print(c(a=1,b=2),quote=\"\")"
+  },
+  {
+    "name": "optional:print:quote:\"1\"",
+    "code": "a <- print(c(a=1,b=2),quote=\"1\")"
+  },
+  {
+    "name": "optional:print:quote:\"x\"",
+    "code": "a <- print(c(a=1,b=2),quote=\"x\")"
+  },
+  {
+    "name": "optional:print:quote:c()",
+    "code": "a <- print(c(a=1,b=2),quote=c())"
+  },
+  {
+    "name": "optional:print:quote:c(1,2)",
+    "code": "a <- print(c(a=1,b=2),quote=c(1,2))"
+  },
+  {
+    "name": "optional:print:quote:c(1,NA)",
+    "code": "a <- print(c(a=1,b=2),quote=c(1,NA))"
+  },
+  {
+    "name": "optional:print:quote:c(TRUE,FALSE)",
+    "code": "a <- print(c(a=1,b=2),quote=c(TRUE,FALSE))"
+  },
+  {
+    "name": "optional:print:quote:c(a=TRUE)",
+    "code": "a <- print(c(a=1,b=2),quote=c(a=TRUE))"
+  },
+  {
+    "name": "optional:print:quote:data.frame(x=1:2)",
+    "code": "a <- print(c(a=1,b=2),quote=data.frame(x=1:2))"
+  },
+  {
+    "name": "optional:print:na.print:NULL",
+    "code": "a <- print(c(a=1,b=2),na.print=NULL)"
+  },
+  {
+    "name": "optional:print:na.print:0",
+    "code": "a <- print(c(a=1,b=2),na.print=0)"
+  },
+  {
+    "name": "optional:print:na.print:1",
+    "code": "a <- print(c(a=1,b=2),na.print=1)"
+  },
+  {
+    "name": "optional:print:na.print:-1",
+    "code": "a <- print(c(a=1,b=2),na.print=-1)"
+  },
+  {
+    "name": "optional:print:na.print:0.5",
+    "code": "a <- print(c(a=1,b=2),na.print=0.5)"
+  },
+  {
+    "name": "optional:print:na.print:1.5",
+    "code": "a <- print(c(a=1,b=2),na.print=1.5)"
+  },
+  {
+    "name": "optional:print:na.print:TRUE",
+    "code": "a <- print(c(a=1,b=2),na.print=TRUE)"
+  },
+  {
+    "name": "optional:print:na.print:FALSE",
+    "code": "a <- print(c(a=1,b=2),na.print=FALSE)"
+  },
+  {
+    "name": "optional:print:na.print:NA",
+    "code": "a <- print(c(a=1,b=2),na.print=NA)"
+  },
+  {
+    "name": "optional:print:na.print:NaN",
+    "code": "a <- print(c(a=1,b=2),na.print=NaN)"
+  },
+  {
+    "name": "optional:print:na.print:Inf",
+    "code": "a <- print(c(a=1,b=2),na.print=Inf)"
+  },
+  {
+    "name": "optional:print:na.print:-Inf",
+    "code": "a <- print(c(a=1,b=2),na.print=-Inf)"
+  },
+  {
+    "name": "optional:print:na.print:\"\"",
+    "code": "a <- print(c(a=1,b=2),na.print=\"\")"
+  },
+  {
+    "name": "optional:print:na.print:\"1\"",
+    "code": "a <- print(c(a=1,b=2),na.print=\"1\")"
+  },
+  {
+    "name": "optional:print:na.print:\"x\"",
+    "code": "a <- print(c(a=1,b=2),na.print=\"x\")"
+  },
+  {
+    "name": "optional:print:na.print:c()",
+    "code": "a <- print(c(a=1,b=2),na.print=c())"
+  },
+  {
+    "name": "optional:print:na.print:c(1,2)",
+    "code": "a <- print(c(a=1,b=2),na.print=c(1,2))"
+  },
+  {
+    "name": "optional:print:na.print:c(1,NA)",
+    "code": "a <- print(c(a=1,b=2),na.print=c(1,NA))"
+  },
+  {
+    "name": "optional:print:na.print:c(TRUE,FALSE)",
+    "code": "a <- print(c(a=1,b=2),na.print=c(TRUE,FALSE))"
+  },
+  {
+    "name": "optional:print:na.print:c(a=TRUE)",
+    "code": "a <- print(c(a=1,b=2),na.print=c(a=TRUE))"
+  },
+  {
+    "name": "optional:print:na.print:data.frame(x=1:2)",
+    "code": "a <- print(c(a=1,b=2),na.print=data.frame(x=1:2))"
+  },
+  {
+    "name": "optional:print:right:NULL",
+    "code": "a <- print(c(a=1,b=2),right=NULL)"
+  },
+  {
+    "name": "optional:print:right:0",
+    "code": "a <- print(c(a=1,b=2),right=0)"
+  },
+  {
+    "name": "optional:print:right:1",
+    "code": "a <- print(c(a=1,b=2),right=1)"
+  },
+  {
+    "name": "optional:print:right:-1",
+    "code": "a <- print(c(a=1,b=2),right=-1)"
+  },
+  {
+    "name": "optional:print:right:0.5",
+    "code": "a <- print(c(a=1,b=2),right=0.5)"
+  },
+  {
+    "name": "optional:print:right:1.5",
+    "code": "a <- print(c(a=1,b=2),right=1.5)"
+  },
+  {
+    "name": "optional:print:right:TRUE",
+    "code": "a <- print(c(a=1,b=2),right=TRUE)"
+  },
+  {
+    "name": "optional:print:right:FALSE",
+    "code": "a <- print(c(a=1,b=2),right=FALSE)"
+  },
+  {
+    "name": "optional:print:right:NA",
+    "code": "a <- print(c(a=1,b=2),right=NA)"
+  },
+  {
+    "name": "optional:print:right:NaN",
+    "code": "a <- print(c(a=1,b=2),right=NaN)"
+  },
+  {
+    "name": "optional:print:right:Inf",
+    "code": "a <- print(c(a=1,b=2),right=Inf)"
+  },
+  {
+    "name": "optional:print:right:-Inf",
+    "code": "a <- print(c(a=1,b=2),right=-Inf)"
+  },
+  {
+    "name": "optional:print:right:\"\"",
+    "code": "a <- print(c(a=1,b=2),right=\"\")"
+  },
+  {
+    "name": "optional:print:right:\"1\"",
+    "code": "a <- print(c(a=1,b=2),right=\"1\")"
+  },
+  {
+    "name": "optional:print:right:\"x\"",
+    "code": "a <- print(c(a=1,b=2),right=\"x\")"
+  },
+  {
+    "name": "optional:print:right:c()",
+    "code": "a <- print(c(a=1,b=2),right=c())"
+  },
+  {
+    "name": "optional:print:right:c(1,2)",
+    "code": "a <- print(c(a=1,b=2),right=c(1,2))"
+  },
+  {
+    "name": "optional:print:right:c(1,NA)",
+    "code": "a <- print(c(a=1,b=2),right=c(1,NA))"
+  },
+  {
+    "name": "optional:print:right:c(TRUE,FALSE)",
+    "code": "a <- print(c(a=1,b=2),right=c(TRUE,FALSE))"
+  },
+  {
+    "name": "optional:print:right:c(a=TRUE)",
+    "code": "a <- print(c(a=1,b=2),right=c(a=TRUE))"
+  },
+  {
+    "name": "optional:print:right:data.frame(x=1:2)",
+    "code": "a <- print(c(a=1,b=2),right=data.frame(x=1:2))"
+  },
+  {
+    "name": "optional:print:max:NULL",
+    "code": "a <- print(c(a=1,b=2),max=NULL)"
+  },
+  {
+    "name": "optional:print:max:0",
+    "code": "a <- print(c(a=1,b=2),max=0)"
+  },
+  {
+    "name": "optional:print:max:1",
+    "code": "a <- print(c(a=1,b=2),max=1)"
+  },
+  {
+    "name": "optional:print:max:-1",
+    "code": "a <- print(c(a=1,b=2),max=-1)"
+  },
+  {
+    "name": "optional:print:max:0.5",
+    "code": "a <- print(c(a=1,b=2),max=0.5)"
+  },
+  {
+    "name": "optional:print:max:1.5",
+    "code": "a <- print(c(a=1,b=2),max=1.5)"
+  },
+  {
+    "name": "optional:print:max:TRUE",
+    "code": "a <- print(c(a=1,b=2),max=TRUE)"
+  },
+  {
+    "name": "optional:print:max:FALSE",
+    "code": "a <- print(c(a=1,b=2),max=FALSE)"
+  },
+  {
+    "name": "optional:print:max:NA",
+    "code": "a <- print(c(a=1,b=2),max=NA)"
+  },
+  {
+    "name": "optional:print:max:NaN",
+    "code": "a <- print(c(a=1,b=2),max=NaN)"
+  },
+  {
+    "name": "optional:print:max:Inf",
+    "code": "a <- print(c(a=1,b=2),max=Inf)"
+  },
+  {
+    "name": "optional:print:max:-Inf",
+    "code": "a <- print(c(a=1,b=2),max=-Inf)"
+  },
+  {
+    "name": "optional:print:max:\"\"",
+    "code": "a <- print(c(a=1,b=2),max=\"\")"
+  },
+  {
+    "name": "optional:print:max:\"1\"",
+    "code": "a <- print(c(a=1,b=2),max=\"1\")"
+  },
+  {
+    "name": "optional:print:max:\"x\"",
+    "code": "a <- print(c(a=1,b=2),max=\"x\")"
+  },
+  {
+    "name": "optional:print:max:c()",
+    "code": "a <- print(c(a=1,b=2),max=c())"
+  },
+  {
+    "name": "optional:print:max:c(1,2)",
+    "code": "a <- print(c(a=1,b=2),max=c(1,2))"
+  },
+  {
+    "name": "optional:print:max:c(1,NA)",
+    "code": "a <- print(c(a=1,b=2),max=c(1,NA))"
+  },
+  {
+    "name": "optional:print:max:c(TRUE,FALSE)",
+    "code": "a <- print(c(a=1,b=2),max=c(TRUE,FALSE))"
+  },
+  {
+    "name": "optional:print:max:c(a=TRUE)",
+    "code": "a <- print(c(a=1,b=2),max=c(a=TRUE))"
+  },
+  {
+    "name": "optional:print:max:data.frame(x=1:2)",
+    "code": "a <- print(c(a=1,b=2),max=data.frame(x=1:2))"
+  },
+  {
+    "name": "optional:print:width:NULL",
+    "code": "a <- print(c(a=1,b=2),width=NULL)"
+  },
+  {
+    "name": "optional:print:width:0",
+    "code": "a <- print(c(a=1,b=2),width=0)"
+  },
+  {
+    "name": "optional:print:width:1",
+    "code": "a <- print(c(a=1,b=2),width=1)"
+  },
+  {
+    "name": "optional:print:width:-1",
+    "code": "a <- print(c(a=1,b=2),width=-1)"
+  },
+  {
+    "name": "optional:print:width:0.5",
+    "code": "a <- print(c(a=1,b=2),width=0.5)"
+  },
+  {
+    "name": "optional:print:width:1.5",
+    "code": "a <- print(c(a=1,b=2),width=1.5)"
+  },
+  {
+    "name": "optional:print:width:TRUE",
+    "code": "a <- print(c(a=1,b=2),width=TRUE)"
+  },
+  {
+    "name": "optional:print:width:FALSE",
+    "code": "a <- print(c(a=1,b=2),width=FALSE)"
+  },
+  {
+    "name": "optional:print:width:NA",
+    "code": "a <- print(c(a=1,b=2),width=NA)"
+  },
+  {
+    "name": "optional:print:width:NaN",
+    "code": "a <- print(c(a=1,b=2),width=NaN)"
+  },
+  {
+    "name": "optional:print:width:Inf",
+    "code": "a <- print(c(a=1,b=2),width=Inf)"
+  },
+  {
+    "name": "optional:print:width:-Inf",
+    "code": "a <- print(c(a=1,b=2),width=-Inf)"
+  },
+  {
+    "name": "optional:print:width:\"\"",
+    "code": "a <- print(c(a=1,b=2),width=\"\")"
+  },
+  {
+    "name": "optional:print:width:\"1\"",
+    "code": "a <- print(c(a=1,b=2),width=\"1\")"
+  },
+  {
+    "name": "optional:print:width:\"x\"",
+    "code": "a <- print(c(a=1,b=2),width=\"x\")"
+  },
+  {
+    "name": "optional:print:width:c()",
+    "code": "a <- print(c(a=1,b=2),width=c())"
+  },
+  {
+    "name": "optional:print:width:c(1,2)",
+    "code": "a <- print(c(a=1,b=2),width=c(1,2))"
+  },
+  {
+    "name": "optional:print:width:c(1,NA)",
+    "code": "a <- print(c(a=1,b=2),width=c(1,NA))"
+  },
+  {
+    "name": "optional:print:width:c(TRUE,FALSE)",
+    "code": "a <- print(c(a=1,b=2),width=c(TRUE,FALSE))"
+  },
+  {
+    "name": "optional:print:width:c(a=TRUE)",
+    "code": "a <- print(c(a=1,b=2),width=c(a=TRUE))"
+  },
+  {
+    "name": "optional:print:width:data.frame(x=1:2)",
+    "code": "a <- print(c(a=1,b=2),width=data.frame(x=1:2))"
+  },
+  {
+    "name": "optional:cat:sep:NULL",
+    "code": "a <- cat(c(1,2),sep=NULL)"
+  },
+  {
+    "name": "optional:cat:sep:0",
+    "code": "a <- cat(c(1,2),sep=0)"
+  },
+  {
+    "name": "optional:cat:sep:1",
+    "code": "a <- cat(c(1,2),sep=1)"
+  },
+  {
+    "name": "optional:cat:sep:-1",
+    "code": "a <- cat(c(1,2),sep=-1)"
+  },
+  {
+    "name": "optional:cat:sep:0.5",
+    "code": "a <- cat(c(1,2),sep=0.5)"
+  },
+  {
+    "name": "optional:cat:sep:1.5",
+    "code": "a <- cat(c(1,2),sep=1.5)"
+  },
+  {
+    "name": "optional:cat:sep:TRUE",
+    "code": "a <- cat(c(1,2),sep=TRUE)"
+  },
+  {
+    "name": "optional:cat:sep:FALSE",
+    "code": "a <- cat(c(1,2),sep=FALSE)"
+  },
+  {
+    "name": "optional:cat:sep:NA",
+    "code": "a <- cat(c(1,2),sep=NA)"
+  },
+  {
+    "name": "optional:cat:sep:NaN",
+    "code": "a <- cat(c(1,2),sep=NaN)"
+  },
+  {
+    "name": "optional:cat:sep:Inf",
+    "code": "a <- cat(c(1,2),sep=Inf)"
+  },
+  {
+    "name": "optional:cat:sep:-Inf",
+    "code": "a <- cat(c(1,2),sep=-Inf)"
+  },
+  {
+    "name": "optional:cat:sep:\"\"",
+    "code": "a <- cat(c(1,2),sep=\"\")"
+  },
+  {
+    "name": "optional:cat:sep:\"1\"",
+    "code": "a <- cat(c(1,2),sep=\"1\")"
+  },
+  {
+    "name": "optional:cat:sep:\"x\"",
+    "code": "a <- cat(c(1,2),sep=\"x\")"
+  },
+  {
+    "name": "optional:cat:sep:c()",
+    "code": "a <- cat(c(1,2),sep=c())"
+  },
+  {
+    "name": "optional:cat:sep:c(1,2)",
+    "code": "a <- cat(c(1,2),sep=c(1,2))"
+  },
+  {
+    "name": "optional:cat:sep:c(1,NA)",
+    "code": "a <- cat(c(1,2),sep=c(1,NA))"
+  },
+  {
+    "name": "optional:cat:sep:c(TRUE,FALSE)",
+    "code": "a <- cat(c(1,2),sep=c(TRUE,FALSE))"
+  },
+  {
+    "name": "optional:cat:sep:c(a=TRUE)",
+    "code": "a <- cat(c(1,2),sep=c(a=TRUE))"
+  },
+  {
+    "name": "optional:cat:sep:data.frame(x=1:2)",
+    "code": "a <- cat(c(1,2),sep=data.frame(x=1:2))"
+  },
+  {
+    "name": "optional:cat:fill:NULL",
+    "code": "a <- cat(c(1,2),fill=NULL)"
+  },
+  {
+    "name": "optional:cat:fill:0",
+    "code": "a <- cat(c(1,2),fill=0)"
+  },
+  {
+    "name": "optional:cat:fill:1",
+    "code": "a <- cat(c(1,2),fill=1)"
+  },
+  {
+    "name": "optional:cat:fill:-1",
+    "code": "a <- cat(c(1,2),fill=-1)"
+  },
+  {
+    "name": "optional:cat:fill:0.5",
+    "code": "a <- cat(c(1,2),fill=0.5)"
+  },
+  {
+    "name": "optional:cat:fill:1.5",
+    "code": "a <- cat(c(1,2),fill=1.5)"
+  },
+  {
+    "name": "optional:cat:fill:TRUE",
+    "code": "a <- cat(c(1,2),fill=TRUE)"
+  },
+  {
+    "name": "optional:cat:fill:FALSE",
+    "code": "a <- cat(c(1,2),fill=FALSE)"
+  },
+  {
+    "name": "optional:cat:fill:NA",
+    "code": "a <- cat(c(1,2),fill=NA)"
+  },
+  {
+    "name": "optional:cat:fill:NaN",
+    "code": "a <- cat(c(1,2),fill=NaN)"
+  },
+  {
+    "name": "optional:cat:fill:Inf",
+    "code": "a <- cat(c(1,2),fill=Inf)"
+  },
+  {
+    "name": "optional:cat:fill:-Inf",
+    "code": "a <- cat(c(1,2),fill=-Inf)"
+  },
+  {
+    "name": "optional:cat:fill:\"\"",
+    "code": "a <- cat(c(1,2),fill=\"\")"
+  },
+  {
+    "name": "optional:cat:fill:\"1\"",
+    "code": "a <- cat(c(1,2),fill=\"1\")"
+  },
+  {
+    "name": "optional:cat:fill:\"x\"",
+    "code": "a <- cat(c(1,2),fill=\"x\")"
+  },
+  {
+    "name": "optional:cat:fill:c()",
+    "code": "a <- cat(c(1,2),fill=c())"
+  },
+  {
+    "name": "optional:cat:fill:c(1,2)",
+    "code": "a <- cat(c(1,2),fill=c(1,2))"
+  },
+  {
+    "name": "optional:cat:fill:c(1,NA)",
+    "code": "a <- cat(c(1,2),fill=c(1,NA))"
+  },
+  {
+    "name": "optional:cat:fill:c(TRUE,FALSE)",
+    "code": "a <- cat(c(1,2),fill=c(TRUE,FALSE))"
+  },
+  {
+    "name": "optional:cat:fill:c(a=TRUE)",
+    "code": "a <- cat(c(1,2),fill=c(a=TRUE))"
+  },
+  {
+    "name": "optional:cat:fill:data.frame(x=1:2)",
+    "code": "a <- cat(c(1,2),fill=data.frame(x=1:2))"
+  },
+  {
+    "name": "optional:cat:labels:NULL",
+    "code": "a <- cat(c(1,2),labels=NULL)"
+  },
+  {
+    "name": "optional:cat:labels:0",
+    "code": "a <- cat(c(1,2),labels=0)"
+  },
+  {
+    "name": "optional:cat:labels:1",
+    "code": "a <- cat(c(1,2),labels=1)"
+  },
+  {
+    "name": "optional:cat:labels:-1",
+    "code": "a <- cat(c(1,2),labels=-1)"
+  },
+  {
+    "name": "optional:cat:labels:0.5",
+    "code": "a <- cat(c(1,2),labels=0.5)"
+  },
+  {
+    "name": "optional:cat:labels:1.5",
+    "code": "a <- cat(c(1,2),labels=1.5)"
+  },
+  {
+    "name": "optional:cat:labels:TRUE",
+    "code": "a <- cat(c(1,2),labels=TRUE)"
+  },
+  {
+    "name": "optional:cat:labels:FALSE",
+    "code": "a <- cat(c(1,2),labels=FALSE)"
+  },
+  {
+    "name": "optional:cat:labels:NA",
+    "code": "a <- cat(c(1,2),labels=NA)"
+  },
+  {
+    "name": "optional:cat:labels:NaN",
+    "code": "a <- cat(c(1,2),labels=NaN)"
+  },
+  {
+    "name": "optional:cat:labels:Inf",
+    "code": "a <- cat(c(1,2),labels=Inf)"
+  },
+  {
+    "name": "optional:cat:labels:-Inf",
+    "code": "a <- cat(c(1,2),labels=-Inf)"
+  },
+  {
+    "name": "optional:cat:labels:\"\"",
+    "code": "a <- cat(c(1,2),labels=\"\")"
+  },
+  {
+    "name": "optional:cat:labels:\"1\"",
+    "code": "a <- cat(c(1,2),labels=\"1\")"
+  },
+  {
+    "name": "optional:cat:labels:\"x\"",
+    "code": "a <- cat(c(1,2),labels=\"x\")"
+  },
+  {
+    "name": "optional:cat:labels:c()",
+    "code": "a <- cat(c(1,2),labels=c())"
+  },
+  {
+    "name": "optional:cat:labels:c(1,2)",
+    "code": "a <- cat(c(1,2),labels=c(1,2))"
+  },
+  {
+    "name": "optional:cat:labels:c(1,NA)",
+    "code": "a <- cat(c(1,2),labels=c(1,NA))"
+  },
+  {
+    "name": "optional:cat:labels:c(TRUE,FALSE)",
+    "code": "a <- cat(c(1,2),labels=c(TRUE,FALSE))"
+  },
+  {
+    "name": "optional:cat:labels:c(a=TRUE)",
+    "code": "a <- cat(c(1,2),labels=c(a=TRUE))"
+  },
+  {
+    "name": "optional:cat:labels:data.frame(x=1:2)",
+    "code": "a <- cat(c(1,2),labels=data.frame(x=1:2))"
+  },
+  {
+    "name": "optional:cat:append:NULL",
+    "code": "a <- cat(c(1,2),append=NULL)"
+  },
+  {
+    "name": "optional:cat:append:0",
+    "code": "a <- cat(c(1,2),append=0)"
+  },
+  {
+    "name": "optional:cat:append:1",
+    "code": "a <- cat(c(1,2),append=1)"
+  },
+  {
+    "name": "optional:cat:append:-1",
+    "code": "a <- cat(c(1,2),append=-1)"
+  },
+  {
+    "name": "optional:cat:append:0.5",
+    "code": "a <- cat(c(1,2),append=0.5)"
+  },
+  {
+    "name": "optional:cat:append:1.5",
+    "code": "a <- cat(c(1,2),append=1.5)"
+  },
+  {
+    "name": "optional:cat:append:TRUE",
+    "code": "a <- cat(c(1,2),append=TRUE)"
+  },
+  {
+    "name": "optional:cat:append:FALSE",
+    "code": "a <- cat(c(1,2),append=FALSE)"
+  },
+  {
+    "name": "optional:cat:append:NA",
+    "code": "a <- cat(c(1,2),append=NA)"
+  },
+  {
+    "name": "optional:cat:append:NaN",
+    "code": "a <- cat(c(1,2),append=NaN)"
+  },
+  {
+    "name": "optional:cat:append:Inf",
+    "code": "a <- cat(c(1,2),append=Inf)"
+  },
+  {
+    "name": "optional:cat:append:-Inf",
+    "code": "a <- cat(c(1,2),append=-Inf)"
+  },
+  {
+    "name": "optional:cat:append:\"\"",
+    "code": "a <- cat(c(1,2),append=\"\")"
+  },
+  {
+    "name": "optional:cat:append:\"1\"",
+    "code": "a <- cat(c(1,2),append=\"1\")"
+  },
+  {
+    "name": "optional:cat:append:\"x\"",
+    "code": "a <- cat(c(1,2),append=\"x\")"
+  },
+  {
+    "name": "optional:cat:append:c()",
+    "code": "a <- cat(c(1,2),append=c())"
+  },
+  {
+    "name": "optional:cat:append:c(1,2)",
+    "code": "a <- cat(c(1,2),append=c(1,2))"
+  },
+  {
+    "name": "optional:cat:append:c(1,NA)",
+    "code": "a <- cat(c(1,2),append=c(1,NA))"
+  },
+  {
+    "name": "optional:cat:append:c(TRUE,FALSE)",
+    "code": "a <- cat(c(1,2),append=c(TRUE,FALSE))"
+  },
+  {
+    "name": "optional:cat:append:c(a=TRUE)",
+    "code": "a <- cat(c(1,2),append=c(a=TRUE))"
+  },
+  {
+    "name": "optional:cat:append:data.frame(x=1:2)",
+    "code": "a <- cat(c(1,2),append=data.frame(x=1:2))"
+  },
+  {
+    "name": "optional:read.csv:nrows:NULL",
+    "code": "a <- read.csv(\"model.csv\",nrows=NULL)"
+  },
+  {
+    "name": "optional:read.csv:nrows:0",
+    "code": "a <- read.csv(\"model.csv\",nrows=0)"
+  },
+  {
+    "name": "optional:read.csv:nrows:1",
+    "code": "a <- read.csv(\"model.csv\",nrows=1)"
+  },
+  {
+    "name": "optional:read.csv:nrows:-1",
+    "code": "a <- read.csv(\"model.csv\",nrows=-1)"
+  },
+  {
+    "name": "optional:read.csv:nrows:0.5",
+    "code": "a <- read.csv(\"model.csv\",nrows=0.5)"
+  },
+  {
+    "name": "optional:read.csv:nrows:1.5",
+    "code": "a <- read.csv(\"model.csv\",nrows=1.5)"
+  },
+  {
+    "name": "optional:read.csv:nrows:TRUE",
+    "code": "a <- read.csv(\"model.csv\",nrows=TRUE)"
+  },
+  {
+    "name": "optional:read.csv:nrows:FALSE",
+    "code": "a <- read.csv(\"model.csv\",nrows=FALSE)"
+  },
+  {
+    "name": "optional:read.csv:nrows:NA",
+    "code": "a <- read.csv(\"model.csv\",nrows=NA)"
+  },
+  {
+    "name": "optional:read.csv:nrows:NaN",
+    "code": "a <- read.csv(\"model.csv\",nrows=NaN)"
+  },
+  {
+    "name": "optional:read.csv:nrows:Inf",
+    "code": "a <- read.csv(\"model.csv\",nrows=Inf)"
+  },
+  {
+    "name": "optional:read.csv:nrows:-Inf",
+    "code": "a <- read.csv(\"model.csv\",nrows=-Inf)"
+  },
+  {
+    "name": "optional:read.csv:nrows:\"\"",
+    "code": "a <- read.csv(\"model.csv\",nrows=\"\")"
+  },
+  {
+    "name": "optional:read.csv:nrows:\"1\"",
+    "code": "a <- read.csv(\"model.csv\",nrows=\"1\")"
+  },
+  {
+    "name": "optional:read.csv:nrows:\"x\"",
+    "code": "a <- read.csv(\"model.csv\",nrows=\"x\")"
+  },
+  {
+    "name": "optional:read.csv:nrows:c()",
+    "code": "a <- read.csv(\"model.csv\",nrows=c())"
+  },
+  {
+    "name": "optional:read.csv:nrows:c(1,2)",
+    "code": "a <- read.csv(\"model.csv\",nrows=c(1,2))"
+  },
+  {
+    "name": "optional:read.csv:nrows:c(1,NA)",
+    "code": "a <- read.csv(\"model.csv\",nrows=c(1,NA))"
+  },
+  {
+    "name": "optional:read.csv:nrows:c(TRUE,FALSE)",
+    "code": "a <- read.csv(\"model.csv\",nrows=c(TRUE,FALSE))"
+  },
+  {
+    "name": "optional:read.csv:nrows:c(a=TRUE)",
+    "code": "a <- read.csv(\"model.csv\",nrows=c(a=TRUE))"
+  },
+  {
+    "name": "optional:read.csv:nrows:data.frame(x=1:2)",
+    "code": "a <- read.csv(\"model.csv\",nrows=data.frame(x=1:2))"
+  },
+  {
+    "name": "optional:read.csv:header:NULL",
+    "code": "a <- read.csv(\"model.csv\",header=NULL)"
+  },
+  {
+    "name": "optional:read.csv:header:0",
+    "code": "a <- read.csv(\"model.csv\",header=0)"
+  },
+  {
+    "name": "optional:read.csv:header:1",
+    "code": "a <- read.csv(\"model.csv\",header=1)"
+  },
+  {
+    "name": "optional:read.csv:header:-1",
+    "code": "a <- read.csv(\"model.csv\",header=-1)"
+  },
+  {
+    "name": "optional:read.csv:header:0.5",
+    "code": "a <- read.csv(\"model.csv\",header=0.5)"
+  },
+  {
+    "name": "optional:read.csv:header:1.5",
+    "code": "a <- read.csv(\"model.csv\",header=1.5)"
+  },
+  {
+    "name": "optional:read.csv:header:TRUE",
+    "code": "a <- read.csv(\"model.csv\",header=TRUE)"
+  },
+  {
+    "name": "optional:read.csv:header:FALSE",
+    "code": "a <- read.csv(\"model.csv\",header=FALSE)"
+  },
+  {
+    "name": "optional:read.csv:header:NA",
+    "code": "a <- read.csv(\"model.csv\",header=NA)"
+  },
+  {
+    "name": "optional:read.csv:header:NaN",
+    "code": "a <- read.csv(\"model.csv\",header=NaN)"
+  },
+  {
+    "name": "optional:read.csv:header:Inf",
+    "code": "a <- read.csv(\"model.csv\",header=Inf)"
+  },
+  {
+    "name": "optional:read.csv:header:-Inf",
+    "code": "a <- read.csv(\"model.csv\",header=-Inf)"
+  },
+  {
+    "name": "optional:read.csv:header:\"\"",
+    "code": "a <- read.csv(\"model.csv\",header=\"\")"
+  },
+  {
+    "name": "optional:read.csv:header:\"1\"",
+    "code": "a <- read.csv(\"model.csv\",header=\"1\")"
+  },
+  {
+    "name": "optional:read.csv:header:\"x\"",
+    "code": "a <- read.csv(\"model.csv\",header=\"x\")"
+  },
+  {
+    "name": "optional:read.csv:header:c()",
+    "code": "a <- read.csv(\"model.csv\",header=c())"
+  },
+  {
+    "name": "optional:read.csv:header:c(1,2)",
+    "code": "a <- read.csv(\"model.csv\",header=c(1,2))"
+  },
+  {
+    "name": "optional:read.csv:header:c(1,NA)",
+    "code": "a <- read.csv(\"model.csv\",header=c(1,NA))"
+  },
+  {
+    "name": "optional:read.csv:header:c(TRUE,FALSE)",
+    "code": "a <- read.csv(\"model.csv\",header=c(TRUE,FALSE))"
+  },
+  {
+    "name": "optional:read.csv:header:c(a=TRUE)",
+    "code": "a <- read.csv(\"model.csv\",header=c(a=TRUE))"
+  },
+  {
+    "name": "optional:read.csv:header:data.frame(x=1:2)",
+    "code": "a <- read.csv(\"model.csv\",header=data.frame(x=1:2))"
+  },
+  {
+    "name": "optional:read.csv:skip:NULL",
+    "code": "a <- read.csv(\"model.csv\",skip=NULL)"
+  },
+  {
+    "name": "optional:read.csv:skip:0",
+    "code": "a <- read.csv(\"model.csv\",skip=0)"
+  },
+  {
+    "name": "optional:read.csv:skip:1",
+    "code": "a <- read.csv(\"model.csv\",skip=1)"
+  },
+  {
+    "name": "optional:read.csv:skip:-1",
+    "code": "a <- read.csv(\"model.csv\",skip=-1)"
+  },
+  {
+    "name": "optional:read.csv:skip:0.5",
+    "code": "a <- read.csv(\"model.csv\",skip=0.5)"
+  },
+  {
+    "name": "optional:read.csv:skip:1.5",
+    "code": "a <- read.csv(\"model.csv\",skip=1.5)"
+  },
+  {
+    "name": "optional:read.csv:skip:TRUE",
+    "code": "a <- read.csv(\"model.csv\",skip=TRUE)"
+  },
+  {
+    "name": "optional:read.csv:skip:FALSE",
+    "code": "a <- read.csv(\"model.csv\",skip=FALSE)"
+  },
+  {
+    "name": "optional:read.csv:skip:NA",
+    "code": "a <- read.csv(\"model.csv\",skip=NA)"
+  },
+  {
+    "name": "optional:read.csv:skip:NaN",
+    "code": "a <- read.csv(\"model.csv\",skip=NaN)"
+  },
+  {
+    "name": "optional:read.csv:skip:Inf",
+    "code": "a <- read.csv(\"model.csv\",skip=Inf)"
+  },
+  {
+    "name": "optional:read.csv:skip:-Inf",
+    "code": "a <- read.csv(\"model.csv\",skip=-Inf)"
+  },
+  {
+    "name": "optional:read.csv:skip:\"\"",
+    "code": "a <- read.csv(\"model.csv\",skip=\"\")"
+  },
+  {
+    "name": "optional:read.csv:skip:\"1\"",
+    "code": "a <- read.csv(\"model.csv\",skip=\"1\")"
+  },
+  {
+    "name": "optional:read.csv:skip:\"x\"",
+    "code": "a <- read.csv(\"model.csv\",skip=\"x\")"
+  },
+  {
+    "name": "optional:read.csv:skip:c()",
+    "code": "a <- read.csv(\"model.csv\",skip=c())"
+  },
+  {
+    "name": "optional:read.csv:skip:c(1,2)",
+    "code": "a <- read.csv(\"model.csv\",skip=c(1,2))"
+  },
+  {
+    "name": "optional:read.csv:skip:c(1,NA)",
+    "code": "a <- read.csv(\"model.csv\",skip=c(1,NA))"
+  },
+  {
+    "name": "optional:read.csv:skip:c(TRUE,FALSE)",
+    "code": "a <- read.csv(\"model.csv\",skip=c(TRUE,FALSE))"
+  },
+  {
+    "name": "optional:read.csv:skip:c(a=TRUE)",
+    "code": "a <- read.csv(\"model.csv\",skip=c(a=TRUE))"
+  },
+  {
+    "name": "optional:read.csv:skip:data.frame(x=1:2)",
+    "code": "a <- read.csv(\"model.csv\",skip=data.frame(x=1:2))"
+  },
+  {
+    "name": "optional:read.csv:colClasses:NULL",
+    "code": "a <- read.csv(\"model.csv\",colClasses=NULL)"
+  },
+  {
+    "name": "optional:read.csv:colClasses:0",
+    "code": "a <- read.csv(\"model.csv\",colClasses=0)"
+  },
+  {
+    "name": "optional:read.csv:colClasses:1",
+    "code": "a <- read.csv(\"model.csv\",colClasses=1)"
+  },
+  {
+    "name": "optional:read.csv:colClasses:-1",
+    "code": "a <- read.csv(\"model.csv\",colClasses=-1)"
+  },
+  {
+    "name": "optional:read.csv:colClasses:0.5",
+    "code": "a <- read.csv(\"model.csv\",colClasses=0.5)"
+  },
+  {
+    "name": "optional:read.csv:colClasses:1.5",
+    "code": "a <- read.csv(\"model.csv\",colClasses=1.5)"
+  },
+  {
+    "name": "optional:read.csv:colClasses:TRUE",
+    "code": "a <- read.csv(\"model.csv\",colClasses=TRUE)"
+  },
+  {
+    "name": "optional:read.csv:colClasses:FALSE",
+    "code": "a <- read.csv(\"model.csv\",colClasses=FALSE)"
+  },
+  {
+    "name": "optional:read.csv:colClasses:NA",
+    "code": "a <- read.csv(\"model.csv\",colClasses=NA)"
+  },
+  {
+    "name": "optional:read.csv:colClasses:NaN",
+    "code": "a <- read.csv(\"model.csv\",colClasses=NaN)"
+  },
+  {
+    "name": "optional:read.csv:colClasses:Inf",
+    "code": "a <- read.csv(\"model.csv\",colClasses=Inf)"
+  },
+  {
+    "name": "optional:read.csv:colClasses:-Inf",
+    "code": "a <- read.csv(\"model.csv\",colClasses=-Inf)"
+  },
+  {
+    "name": "optional:read.csv:colClasses:\"\"",
+    "code": "a <- read.csv(\"model.csv\",colClasses=\"\")"
+  },
+  {
+    "name": "optional:read.csv:colClasses:\"1\"",
+    "code": "a <- read.csv(\"model.csv\",colClasses=\"1\")"
+  },
+  {
+    "name": "optional:read.csv:colClasses:\"x\"",
+    "code": "a <- read.csv(\"model.csv\",colClasses=\"x\")"
+  },
+  {
+    "name": "optional:read.csv:colClasses:c()",
+    "code": "a <- read.csv(\"model.csv\",colClasses=c())"
+  },
+  {
+    "name": "optional:read.csv:colClasses:c(1,2)",
+    "code": "a <- read.csv(\"model.csv\",colClasses=c(1,2))"
+  },
+  {
+    "name": "optional:read.csv:colClasses:c(1,NA)",
+    "code": "a <- read.csv(\"model.csv\",colClasses=c(1,NA))"
+  },
+  {
+    "name": "optional:read.csv:colClasses:c(TRUE,FALSE)",
+    "code": "a <- read.csv(\"model.csv\",colClasses=c(TRUE,FALSE))"
+  },
+  {
+    "name": "optional:read.csv:colClasses:c(a=TRUE)",
+    "code": "a <- read.csv(\"model.csv\",colClasses=c(a=TRUE))"
+  },
+  {
+    "name": "optional:read.csv:colClasses:data.frame(x=1:2)",
+    "code": "a <- read.csv(\"model.csv\",colClasses=data.frame(x=1:2))"
+  },
+  {
+    "name": "optional:read.csv:na.strings:NULL",
+    "code": "a <- read.csv(\"model.csv\",na.strings=NULL)"
+  },
+  {
+    "name": "optional:read.csv:na.strings:0",
+    "code": "a <- read.csv(\"model.csv\",na.strings=0)"
+  },
+  {
+    "name": "optional:read.csv:na.strings:1",
+    "code": "a <- read.csv(\"model.csv\",na.strings=1)"
+  },
+  {
+    "name": "optional:read.csv:na.strings:-1",
+    "code": "a <- read.csv(\"model.csv\",na.strings=-1)"
+  },
+  {
+    "name": "optional:read.csv:na.strings:0.5",
+    "code": "a <- read.csv(\"model.csv\",na.strings=0.5)"
+  },
+  {
+    "name": "optional:read.csv:na.strings:1.5",
+    "code": "a <- read.csv(\"model.csv\",na.strings=1.5)"
+  },
+  {
+    "name": "optional:read.csv:na.strings:TRUE",
+    "code": "a <- read.csv(\"model.csv\",na.strings=TRUE)"
+  },
+  {
+    "name": "optional:read.csv:na.strings:FALSE",
+    "code": "a <- read.csv(\"model.csv\",na.strings=FALSE)"
+  },
+  {
+    "name": "optional:read.csv:na.strings:NA",
+    "code": "a <- read.csv(\"model.csv\",na.strings=NA)"
+  },
+  {
+    "name": "optional:read.csv:na.strings:NaN",
+    "code": "a <- read.csv(\"model.csv\",na.strings=NaN)"
+  },
+  {
+    "name": "optional:read.csv:na.strings:Inf",
+    "code": "a <- read.csv(\"model.csv\",na.strings=Inf)"
+  },
+  {
+    "name": "optional:read.csv:na.strings:-Inf",
+    "code": "a <- read.csv(\"model.csv\",na.strings=-Inf)"
+  },
+  {
+    "name": "optional:read.csv:na.strings:\"\"",
+    "code": "a <- read.csv(\"model.csv\",na.strings=\"\")"
+  },
+  {
+    "name": "optional:read.csv:na.strings:\"1\"",
+    "code": "a <- read.csv(\"model.csv\",na.strings=\"1\")"
+  },
+  {
+    "name": "optional:read.csv:na.strings:\"x\"",
+    "code": "a <- read.csv(\"model.csv\",na.strings=\"x\")"
+  },
+  {
+    "name": "optional:read.csv:na.strings:c()",
+    "code": "a <- read.csv(\"model.csv\",na.strings=c())"
+  },
+  {
+    "name": "optional:read.csv:na.strings:c(1,2)",
+    "code": "a <- read.csv(\"model.csv\",na.strings=c(1,2))"
+  },
+  {
+    "name": "optional:read.csv:na.strings:c(1,NA)",
+    "code": "a <- read.csv(\"model.csv\",na.strings=c(1,NA))"
+  },
+  {
+    "name": "optional:read.csv:na.strings:c(TRUE,FALSE)",
+    "code": "a <- read.csv(\"model.csv\",na.strings=c(TRUE,FALSE))"
+  },
+  {
+    "name": "optional:read.csv:na.strings:c(a=TRUE)",
+    "code": "a <- read.csv(\"model.csv\",na.strings=c(a=TRUE))"
+  },
+  {
+    "name": "optional:read.csv:na.strings:data.frame(x=1:2)",
+    "code": "a <- read.csv(\"model.csv\",na.strings=data.frame(x=1:2))"
+  },
+  {
+    "name": "optional:read.csv:check.names:NULL",
+    "code": "a <- read.csv(\"model.csv\",check.names=NULL)"
+  },
+  {
+    "name": "optional:read.csv:check.names:0",
+    "code": "a <- read.csv(\"model.csv\",check.names=0)"
+  },
+  {
+    "name": "optional:read.csv:check.names:1",
+    "code": "a <- read.csv(\"model.csv\",check.names=1)"
+  },
+  {
+    "name": "optional:read.csv:check.names:-1",
+    "code": "a <- read.csv(\"model.csv\",check.names=-1)"
+  },
+  {
+    "name": "optional:read.csv:check.names:0.5",
+    "code": "a <- read.csv(\"model.csv\",check.names=0.5)"
+  },
+  {
+    "name": "optional:read.csv:check.names:1.5",
+    "code": "a <- read.csv(\"model.csv\",check.names=1.5)"
+  },
+  {
+    "name": "optional:read.csv:check.names:TRUE",
+    "code": "a <- read.csv(\"model.csv\",check.names=TRUE)"
+  },
+  {
+    "name": "optional:read.csv:check.names:FALSE",
+    "code": "a <- read.csv(\"model.csv\",check.names=FALSE)"
+  },
+  {
+    "name": "optional:read.csv:check.names:NA",
+    "code": "a <- read.csv(\"model.csv\",check.names=NA)"
+  },
+  {
+    "name": "optional:read.csv:check.names:NaN",
+    "code": "a <- read.csv(\"model.csv\",check.names=NaN)"
+  },
+  {
+    "name": "optional:read.csv:check.names:Inf",
+    "code": "a <- read.csv(\"model.csv\",check.names=Inf)"
+  },
+  {
+    "name": "optional:read.csv:check.names:-Inf",
+    "code": "a <- read.csv(\"model.csv\",check.names=-Inf)"
+  },
+  {
+    "name": "optional:read.csv:check.names:\"\"",
+    "code": "a <- read.csv(\"model.csv\",check.names=\"\")"
+  },
+  {
+    "name": "optional:read.csv:check.names:\"1\"",
+    "code": "a <- read.csv(\"model.csv\",check.names=\"1\")"
+  },
+  {
+    "name": "optional:read.csv:check.names:\"x\"",
+    "code": "a <- read.csv(\"model.csv\",check.names=\"x\")"
+  },
+  {
+    "name": "optional:read.csv:check.names:c()",
+    "code": "a <- read.csv(\"model.csv\",check.names=c())"
+  },
+  {
+    "name": "optional:read.csv:check.names:c(1,2)",
+    "code": "a <- read.csv(\"model.csv\",check.names=c(1,2))"
+  },
+  {
+    "name": "optional:read.csv:check.names:c(1,NA)",
+    "code": "a <- read.csv(\"model.csv\",check.names=c(1,NA))"
+  },
+  {
+    "name": "optional:read.csv:check.names:c(TRUE,FALSE)",
+    "code": "a <- read.csv(\"model.csv\",check.names=c(TRUE,FALSE))"
+  },
+  {
+    "name": "optional:read.csv:check.names:c(a=TRUE)",
+    "code": "a <- read.csv(\"model.csv\",check.names=c(a=TRUE))"
+  },
+  {
+    "name": "optional:read.csv:check.names:data.frame(x=1:2)",
+    "code": "a <- read.csv(\"model.csv\",check.names=data.frame(x=1:2))"
+  },
+  {
+    "name": "optional:seq:from:NULL",
+    "code": "a <- seq(from=NULL,to=3)"
+  },
+  {
+    "name": "optional:seq:from:0",
+    "code": "a <- seq(from=0,to=3)"
+  },
+  {
+    "name": "optional:seq:from:1",
+    "code": "a <- seq(from=1,to=3)"
+  },
+  {
+    "name": "optional:seq:from:-1",
+    "code": "a <- seq(from=-1,to=3)"
+  },
+  {
+    "name": "optional:seq:from:0.5",
+    "code": "a <- seq(from=0.5,to=3)"
+  },
+  {
+    "name": "optional:seq:from:1.5",
+    "code": "a <- seq(from=1.5,to=3)"
+  },
+  {
+    "name": "optional:seq:from:TRUE",
+    "code": "a <- seq(from=TRUE,to=3)"
+  },
+  {
+    "name": "optional:seq:from:FALSE",
+    "code": "a <- seq(from=FALSE,to=3)"
+  },
+  {
+    "name": "optional:seq:from:NA",
+    "code": "a <- seq(from=NA,to=3)"
+  },
+  {
+    "name": "optional:seq:from:NaN",
+    "code": "a <- seq(from=NaN,to=3)"
+  },
+  {
+    "name": "optional:seq:from:Inf",
+    "code": "a <- seq(from=Inf,to=3)"
+  },
+  {
+    "name": "optional:seq:from:-Inf",
+    "code": "a <- seq(from=-Inf,to=3)"
+  },
+  {
+    "name": "optional:seq:from:\"\"",
+    "code": "a <- seq(from=\"\",to=3)"
+  },
+  {
+    "name": "optional:seq:from:\"1\"",
+    "code": "a <- seq(from=\"1\",to=3)"
+  },
+  {
+    "name": "optional:seq:from:\"x\"",
+    "code": "a <- seq(from=\"x\",to=3)"
+  },
+  {
+    "name": "optional:seq:from:c()",
+    "code": "a <- seq(from=c(),to=3)"
+  },
+  {
+    "name": "optional:seq:from:c(1,2)",
+    "code": "a <- seq(from=c(1,2),to=3)"
+  },
+  {
+    "name": "optional:seq:from:c(1,NA)",
+    "code": "a <- seq(from=c(1,NA),to=3)"
+  },
+  {
+    "name": "optional:seq:from:c(TRUE,FALSE)",
+    "code": "a <- seq(from=c(TRUE,FALSE),to=3)"
+  },
+  {
+    "name": "optional:seq:from:c(a=TRUE)",
+    "code": "a <- seq(from=c(a=TRUE),to=3)"
+  },
+  {
+    "name": "optional:seq:from:data.frame(x=1:2)",
+    "code": "a <- seq(from=data.frame(x=1:2),to=3)"
+  },
+  {
+    "name": "optional:seq:to:NULL",
+    "code": "a <- seq(from=1,to=NULL)"
+  },
+  {
+    "name": "optional:seq:to:0",
+    "code": "a <- seq(from=1,to=0)"
+  },
+  {
+    "name": "optional:seq:to:1",
+    "code": "a <- seq(from=1,to=1)"
+  },
+  {
+    "name": "optional:seq:to:-1",
+    "code": "a <- seq(from=1,to=-1)"
+  },
+  {
+    "name": "optional:seq:to:0.5",
+    "code": "a <- seq(from=1,to=0.5)"
+  },
+  {
+    "name": "optional:seq:to:1.5",
+    "code": "a <- seq(from=1,to=1.5)"
+  },
+  {
+    "name": "optional:seq:to:TRUE",
+    "code": "a <- seq(from=1,to=TRUE)"
+  },
+  {
+    "name": "optional:seq:to:FALSE",
+    "code": "a <- seq(from=1,to=FALSE)"
+  },
+  {
+    "name": "optional:seq:to:NA",
+    "code": "a <- seq(from=1,to=NA)"
+  },
+  {
+    "name": "optional:seq:to:NaN",
+    "code": "a <- seq(from=1,to=NaN)"
+  },
+  {
+    "name": "optional:seq:to:Inf",
+    "code": "a <- seq(from=1,to=Inf)"
+  },
+  {
+    "name": "optional:seq:to:-Inf",
+    "code": "a <- seq(from=1,to=-Inf)"
+  },
+  {
+    "name": "optional:seq:to:\"\"",
+    "code": "a <- seq(from=1,to=\"\")"
+  },
+  {
+    "name": "optional:seq:to:\"1\"",
+    "code": "a <- seq(from=1,to=\"1\")"
+  },
+  {
+    "name": "optional:seq:to:\"x\"",
+    "code": "a <- seq(from=1,to=\"x\")"
+  },
+  {
+    "name": "optional:seq:to:c()",
+    "code": "a <- seq(from=1,to=c())"
+  },
+  {
+    "name": "optional:seq:to:c(1,2)",
+    "code": "a <- seq(from=1,to=c(1,2))"
+  },
+  {
+    "name": "optional:seq:to:c(1,NA)",
+    "code": "a <- seq(from=1,to=c(1,NA))"
+  },
+  {
+    "name": "optional:seq:to:c(TRUE,FALSE)",
+    "code": "a <- seq(from=1,to=c(TRUE,FALSE))"
+  },
+  {
+    "name": "optional:seq:to:c(a=TRUE)",
+    "code": "a <- seq(from=1,to=c(a=TRUE))"
+  },
+  {
+    "name": "optional:seq:to:data.frame(x=1:2)",
+    "code": "a <- seq(from=1,to=data.frame(x=1:2))"
+  },
+  {
+    "name": "optional:seq:by:NULL",
+    "code": "a <- seq(from=1,to=3,by=NULL)"
+  },
+  {
+    "name": "optional:seq:by:0",
+    "code": "a <- seq(from=1,to=3,by=0)"
+  },
+  {
+    "name": "optional:seq:by:1",
+    "code": "a <- seq(from=1,to=3,by=1)"
+  },
+  {
+    "name": "optional:seq:by:-1",
+    "code": "a <- seq(from=1,to=3,by=-1)"
+  },
+  {
+    "name": "optional:seq:by:0.5",
+    "code": "a <- seq(from=1,to=3,by=0.5)"
+  },
+  {
+    "name": "optional:seq:by:1.5",
+    "code": "a <- seq(from=1,to=3,by=1.5)"
+  },
+  {
+    "name": "optional:seq:by:TRUE",
+    "code": "a <- seq(from=1,to=3,by=TRUE)"
+  },
+  {
+    "name": "optional:seq:by:FALSE",
+    "code": "a <- seq(from=1,to=3,by=FALSE)"
+  },
+  {
+    "name": "optional:seq:by:NA",
+    "code": "a <- seq(from=1,to=3,by=NA)"
+  },
+  {
+    "name": "optional:seq:by:NaN",
+    "code": "a <- seq(from=1,to=3,by=NaN)"
+  },
+  {
+    "name": "optional:seq:by:Inf",
+    "code": "a <- seq(from=1,to=3,by=Inf)"
+  },
+  {
+    "name": "optional:seq:by:-Inf",
+    "code": "a <- seq(from=1,to=3,by=-Inf)"
+  },
+  {
+    "name": "optional:seq:by:\"\"",
+    "code": "a <- seq(from=1,to=3,by=\"\")"
+  },
+  {
+    "name": "optional:seq:by:\"1\"",
+    "code": "a <- seq(from=1,to=3,by=\"1\")"
+  },
+  {
+    "name": "optional:seq:by:\"x\"",
+    "code": "a <- seq(from=1,to=3,by=\"x\")"
+  },
+  {
+    "name": "optional:seq:by:c()",
+    "code": "a <- seq(from=1,to=3,by=c())"
+  },
+  {
+    "name": "optional:seq:by:c(1,2)",
+    "code": "a <- seq(from=1,to=3,by=c(1,2))"
+  },
+  {
+    "name": "optional:seq:by:c(1,NA)",
+    "code": "a <- seq(from=1,to=3,by=c(1,NA))"
+  },
+  {
+    "name": "optional:seq:by:c(TRUE,FALSE)",
+    "code": "a <- seq(from=1,to=3,by=c(TRUE,FALSE))"
+  },
+  {
+    "name": "optional:seq:by:c(a=TRUE)",
+    "code": "a <- seq(from=1,to=3,by=c(a=TRUE))"
+  },
+  {
+    "name": "optional:seq:by:data.frame(x=1:2)",
+    "code": "a <- seq(from=1,to=3,by=data.frame(x=1:2))"
+  },
+  {
+    "name": "optional:seq:length.out:NULL",
+    "code": "a <- seq(from=1,to=3,length.out=NULL)"
+  },
+  {
+    "name": "optional:seq:length.out:0",
+    "code": "a <- seq(from=1,to=3,length.out=0)"
+  },
+  {
+    "name": "optional:seq:length.out:1",
+    "code": "a <- seq(from=1,to=3,length.out=1)"
+  },
+  {
+    "name": "optional:seq:length.out:-1",
+    "code": "a <- seq(from=1,to=3,length.out=-1)"
+  },
+  {
+    "name": "optional:seq:length.out:0.5",
+    "code": "a <- seq(from=1,to=3,length.out=0.5)"
+  },
+  {
+    "name": "optional:seq:length.out:1.5",
+    "code": "a <- seq(from=1,to=3,length.out=1.5)"
+  },
+  {
+    "name": "optional:seq:length.out:TRUE",
+    "code": "a <- seq(from=1,to=3,length.out=TRUE)"
+  },
+  {
+    "name": "optional:seq:length.out:FALSE",
+    "code": "a <- seq(from=1,to=3,length.out=FALSE)"
+  },
+  {
+    "name": "optional:seq:length.out:NA",
+    "code": "a <- seq(from=1,to=3,length.out=NA)"
+  },
+  {
+    "name": "optional:seq:length.out:NaN",
+    "code": "a <- seq(from=1,to=3,length.out=NaN)"
+  },
+  {
+    "name": "optional:seq:length.out:Inf",
+    "code": "a <- seq(from=1,to=3,length.out=Inf)"
+  },
+  {
+    "name": "optional:seq:length.out:-Inf",
+    "code": "a <- seq(from=1,to=3,length.out=-Inf)"
+  },
+  {
+    "name": "optional:seq:length.out:\"\"",
+    "code": "a <- seq(from=1,to=3,length.out=\"\")"
+  },
+  {
+    "name": "optional:seq:length.out:\"1\"",
+    "code": "a <- seq(from=1,to=3,length.out=\"1\")"
+  },
+  {
+    "name": "optional:seq:length.out:\"x\"",
+    "code": "a <- seq(from=1,to=3,length.out=\"x\")"
+  },
+  {
+    "name": "optional:seq:length.out:c()",
+    "code": "a <- seq(from=1,to=3,length.out=c())"
+  },
+  {
+    "name": "optional:seq:length.out:c(1,2)",
+    "code": "a <- seq(from=1,to=3,length.out=c(1,2))"
+  },
+  {
+    "name": "optional:seq:length.out:c(1,NA)",
+    "code": "a <- seq(from=1,to=3,length.out=c(1,NA))"
+  },
+  {
+    "name": "optional:seq:length.out:c(TRUE,FALSE)",
+    "code": "a <- seq(from=1,to=3,length.out=c(TRUE,FALSE))"
+  },
+  {
+    "name": "optional:seq:length.out:c(a=TRUE)",
+    "code": "a <- seq(from=1,to=3,length.out=c(a=TRUE))"
+  },
+  {
+    "name": "optional:seq:length.out:data.frame(x=1:2)",
+    "code": "a <- seq(from=1,to=3,length.out=data.frame(x=1:2))"
+  },
+  {
+    "name": "optional:seq:along.with:NULL",
+    "code": "a <- seq(from=1,to=3,along.with=NULL)"
+  },
+  {
+    "name": "optional:seq:along.with:0",
+    "code": "a <- seq(from=1,to=3,along.with=0)"
+  },
+  {
+    "name": "optional:seq:along.with:1",
+    "code": "a <- seq(from=1,to=3,along.with=1)"
+  },
+  {
+    "name": "optional:seq:along.with:-1",
+    "code": "a <- seq(from=1,to=3,along.with=-1)"
+  },
+  {
+    "name": "optional:seq:along.with:0.5",
+    "code": "a <- seq(from=1,to=3,along.with=0.5)"
+  },
+  {
+    "name": "optional:seq:along.with:1.5",
+    "code": "a <- seq(from=1,to=3,along.with=1.5)"
+  },
+  {
+    "name": "optional:seq:along.with:TRUE",
+    "code": "a <- seq(from=1,to=3,along.with=TRUE)"
+  },
+  {
+    "name": "optional:seq:along.with:FALSE",
+    "code": "a <- seq(from=1,to=3,along.with=FALSE)"
+  },
+  {
+    "name": "optional:seq:along.with:NA",
+    "code": "a <- seq(from=1,to=3,along.with=NA)"
+  },
+  {
+    "name": "optional:seq:along.with:NaN",
+    "code": "a <- seq(from=1,to=3,along.with=NaN)"
+  },
+  {
+    "name": "optional:seq:along.with:Inf",
+    "code": "a <- seq(from=1,to=3,along.with=Inf)"
+  },
+  {
+    "name": "optional:seq:along.with:-Inf",
+    "code": "a <- seq(from=1,to=3,along.with=-Inf)"
+  },
+  {
+    "name": "optional:seq:along.with:\"\"",
+    "code": "a <- seq(from=1,to=3,along.with=\"\")"
+  },
+  {
+    "name": "optional:seq:along.with:\"1\"",
+    "code": "a <- seq(from=1,to=3,along.with=\"1\")"
+  },
+  {
+    "name": "optional:seq:along.with:\"x\"",
+    "code": "a <- seq(from=1,to=3,along.with=\"x\")"
+  },
+  {
+    "name": "optional:seq:along.with:c()",
+    "code": "a <- seq(from=1,to=3,along.with=c())"
+  },
+  {
+    "name": "optional:seq:along.with:c(1,2)",
+    "code": "a <- seq(from=1,to=3,along.with=c(1,2))"
+  },
+  {
+    "name": "optional:seq:along.with:c(1,NA)",
+    "code": "a <- seq(from=1,to=3,along.with=c(1,NA))"
+  },
+  {
+    "name": "optional:seq:along.with:c(TRUE,FALSE)",
+    "code": "a <- seq(from=1,to=3,along.with=c(TRUE,FALSE))"
+  },
+  {
+    "name": "optional:seq:along.with:c(a=TRUE)",
+    "code": "a <- seq(from=1,to=3,along.with=c(a=TRUE))"
+  },
+  {
+    "name": "optional:seq:along.with:data.frame(x=1:2)",
+    "code": "a <- seq(from=1,to=3,along.with=data.frame(x=1:2))"
+  },
+  {
+    "name": "binding:length(x=c(1,2))",
+    "code": "a <- length(x=c(1,2))"
+  },
+  {
+    "name": "binding:length(x=c(1,2),x=c(1,2))",
+    "code": "a <- length(x=c(1,2),x=c(1,2))"
+  },
+  {
+    "name": "binding:length(c(1,2),unusedR7=1)",
+    "code": "a <- length(c(1,2),unusedR7=1)"
+  },
+  {
+    "name": "binding:length(x=c(1,2))",
+    "code": "a <- length(x=c(1,2))"
+  },
+  {
+    "name": "binding:names(x=c(1,2))",
+    "code": "a <- names(x=c(1,2))"
+  },
+  {
+    "name": "binding:names(x=c(1,2),x=c(1,2))",
+    "code": "a <- names(x=c(1,2),x=c(1,2))"
+  },
+  {
+    "name": "binding:names(c(1,2),unusedR7=1)",
+    "code": "a <- names(c(1,2),unusedR7=1)"
+  },
+  {
+    "name": "binding:names(x=c(1,2))",
+    "code": "a <- names(x=c(1,2))"
+  },
+  {
+    "name": "binding:is.na(x=c(1,2))",
+    "code": "a <- is.na(x=c(1,2))"
+  },
+  {
+    "name": "binding:is.na(x=c(1,2),x=c(1,2))",
+    "code": "a <- is.na(x=c(1,2),x=c(1,2))"
+  },
+  {
+    "name": "binding:is.na(c(1,2),unusedR7=1)",
+    "code": "a <- is.na(c(1,2),unusedR7=1)"
+  },
+  {
+    "name": "binding:is.na(x=c(1,2))",
+    "code": "a <- is.na(x=c(1,2))"
+  },
+  {
+    "name": "binding:as.numeric(x=c(1,2))",
+    "code": "a <- as.numeric(x=c(1,2))"
+  },
+  {
+    "name": "binding:as.numeric(x=c(1,2),x=c(1,2))",
+    "code": "a <- as.numeric(x=c(1,2),x=c(1,2))"
+  },
+  {
+    "name": "binding:as.numeric(c(1,2),unusedR7=1)",
+    "code": "a <- as.numeric(c(1,2),unusedR7=1)"
+  },
+  {
+    "name": "binding:as.numeric(x=c(1,2))",
+    "code": "a <- as.numeric(x=c(1,2))"
+  },
+  {
+    "name": "binding:as.character(x=c(1,2))",
+    "code": "a <- as.character(x=c(1,2))"
+  },
+  {
+    "name": "binding:as.character(x=c(1,2),x=c(1,2))",
+    "code": "a <- as.character(x=c(1,2),x=c(1,2))"
+  },
+  {
+    "name": "binding:as.character(c(1,2),unusedR7=1)",
+    "code": "a <- as.character(c(1,2),unusedR7=1)"
+  },
+  {
+    "name": "binding:as.character(x=c(1,2))",
+    "code": "a <- as.character(x=c(1,2))"
+  },
+  {
+    "name": "binding:mean(x=c(1,2))",
+    "code": "a <- mean(x=c(1,2))"
+  },
+  {
+    "name": "binding:mean(x=c(1,2),x=c(1,2))",
+    "code": "a <- mean(x=c(1,2),x=c(1,2))"
+  },
+  {
+    "name": "binding:mean(c(1,2),unusedR7=1)",
+    "code": "a <- mean(c(1,2),unusedR7=1)"
+  },
+  {
+    "name": "binding:mean(x=c(1,2))",
+    "code": "a <- mean(x=c(1,2))"
+  },
+  {
+    "name": "binding:median(x=c(1,2))",
+    "code": "a <- median(x=c(1,2))"
+  },
+  {
+    "name": "binding:median(x=c(1,2),x=c(1,2))",
+    "code": "a <- median(x=c(1,2),x=c(1,2))"
+  },
+  {
+    "name": "binding:median(c(1,2),unusedR7=1)",
+    "code": "a <- median(c(1,2),unusedR7=1)"
+  },
+  {
+    "name": "binding:median(x=c(1,2))",
+    "code": "a <- median(x=c(1,2))"
+  },
+  {
+    "name": "binding:sd(x=c(1,2))",
+    "code": "a <- sd(x=c(1,2))"
+  },
+  {
+    "name": "binding:sd(x=c(1,2),x=c(1,2))",
+    "code": "a <- sd(x=c(1,2),x=c(1,2))"
+  },
+  {
+    "name": "binding:sd(c(1,2),unusedR7=1)",
+    "code": "a <- sd(c(1,2),unusedR7=1)"
+  },
+  {
+    "name": "binding:sd(x=c(1,2))",
+    "code": "a <- sd(x=c(1,2))"
+  },
+  {
+    "name": "binding:seq(from=c(1,2))",
+    "code": "a <- seq(from=c(1,2))"
+  },
+  {
+    "name": "binding:seq(from=c(1,2),from=c(1,2))",
+    "code": "a <- seq(from=c(1,2),from=c(1,2))"
+  },
+  {
+    "name": "binding:seq(c(1,2),unusedR7=1)",
+    "code": "a <- seq(c(1,2),unusedR7=1)"
+  },
+  {
+    "name": "binding:seq(f=c(1,2))",
+    "code": "a <- seq(f=c(1,2))"
+  },
+  {
+    "name": "binding:seq_len(length.out=c(1,2))",
+    "code": "a <- seq_len(length.out=c(1,2))"
+  },
+  {
+    "name": "binding:seq_len(length.out=c(1,2),length.out=c(1,2))",
+    "code": "a <- seq_len(length.out=c(1,2),length.out=c(1,2))"
+  },
+  {
+    "name": "binding:seq_len(c(1,2),unusedR7=1)",
+    "code": "a <- seq_len(c(1,2),unusedR7=1)"
+  },
+  {
+    "name": "binding:seq_len(l=c(1,2))",
+    "code": "a <- seq_len(l=c(1,2))"
+  },
+  {
+    "name": "binding:rep(x=c(1,2))",
+    "code": "a <- rep(x=c(1,2))"
+  },
+  {
+    "name": "binding:rep(x=c(1,2),x=c(1,2))",
+    "code": "a <- rep(x=c(1,2),x=c(1,2))"
+  },
+  {
+    "name": "binding:rep(c(1,2),unusedR7=1)",
+    "code": "a <- rep(c(1,2),unusedR7=1)"
+  },
+  {
+    "name": "binding:rep(x=c(1,2))",
+    "code": "a <- rep(x=c(1,2))"
+  },
+  {
+    "name": "binding:read.csv(file=\"model.csv\")",
+    "code": "a <- read.csv(file=\"model.csv\")"
+  },
+  {
+    "name": "binding:read.csv(file=\"model.csv\",file=\"model.csv\")",
+    "code": "a <- read.csv(file=\"model.csv\",file=\"model.csv\")"
+  },
+  {
+    "name": "binding:read.csv(\"model.csv\",unusedR7=1)",
+    "code": "a <- read.csv(\"model.csv\",unusedR7=1)"
+  },
+  {
+    "name": "binding:read.csv(f=\"model.csv\")",
+    "code": "a <- read.csv(f=\"model.csv\")"
+  },
+  {
+    "name": "binding:rnorm(n=c(1,2))",
+    "code": "a <- rnorm(n=c(1,2))"
+  },
+  {
+    "name": "binding:rnorm(n=c(1,2),n=c(1,2))",
+    "code": "a <- rnorm(n=c(1,2),n=c(1,2))"
+  },
+  {
+    "name": "binding:rnorm(c(1,2),unusedR7=1)",
+    "code": "a <- rnorm(c(1,2),unusedR7=1)"
+  },
+  {
+    "name": "binding:rnorm(n=c(1,2))",
+    "code": "a <- rnorm(n=c(1,2))"
+  },
+  {
+    "name": "binding:runif(n=c(1,2))",
+    "code": "a <- runif(n=c(1,2))"
+  },
+  {
+    "name": "binding:runif(n=c(1,2),n=c(1,2))",
+    "code": "a <- runif(n=c(1,2),n=c(1,2))"
+  },
+  {
+    "name": "binding:runif(c(1,2),unusedR7=1)",
+    "code": "a <- runif(c(1,2),unusedR7=1)"
+  },
+  {
+    "name": "binding:runif(n=c(1,2))",
+    "code": "a <- runif(n=c(1,2))"
+  },
+  {
+    "name": "binding:sample(x=c(1,2))",
+    "code": "a <- sample(x=c(1,2))"
+  },
+  {
+    "name": "binding:sample(x=c(1,2),x=c(1,2))",
+    "code": "a <- sample(x=c(1,2),x=c(1,2))"
+  },
+  {
+    "name": "binding:sample(c(1,2),unusedR7=1)",
+    "code": "a <- sample(c(1,2),unusedR7=1)"
+  },
+  {
+    "name": "binding:sample(x=c(1,2))",
+    "code": "a <- sample(x=c(1,2))"
+  },
+  {
+    "name": "binary:+:NULL:0",
+    "code": "a <- NULL + 0"
+  },
+  {
+    "name": "binary:+:NULL:1",
+    "code": "a <- NULL + 1"
+  },
+  {
+    "name": "binary:+:NULL:NA",
+    "code": "a <- NULL + NA"
+  },
+  {
+    "name": "binary:+:NULL:\"1\"",
+    "code": "a <- NULL + \"1\""
+  },
+  {
+    "name": "binary:+:0:0",
+    "code": "a <- 0 + 0"
+  },
+  {
+    "name": "binary:+:0:1",
+    "code": "a <- 0 + 1"
+  },
+  {
+    "name": "binary:+:0:NA",
+    "code": "a <- 0 + NA"
+  },
+  {
+    "name": "binary:+:0:\"1\"",
+    "code": "a <- 0 + \"1\""
+  },
+  {
+    "name": "binary:+:1:0",
+    "code": "a <- 1 + 0"
+  },
+  {
+    "name": "binary:+:1:1",
+    "code": "a <- 1 + 1"
+  },
+  {
+    "name": "binary:+:1:NA",
+    "code": "a <- 1 + NA"
+  },
+  {
+    "name": "binary:+:1:\"1\"",
+    "code": "a <- 1 + \"1\""
+  },
+  {
+    "name": "binary:+:-1:0",
+    "code": "a <- -1 + 0"
+  },
+  {
+    "name": "binary:+:-1:1",
+    "code": "a <- -1 + 1"
+  },
+  {
+    "name": "binary:+:-1:NA",
+    "code": "a <- -1 + NA"
+  },
+  {
+    "name": "binary:+:-1:\"1\"",
+    "code": "a <- -1 + \"1\""
+  },
+  {
+    "name": "binary:+:TRUE:0",
+    "code": "a <- TRUE + 0"
+  },
+  {
+    "name": "binary:+:TRUE:1",
+    "code": "a <- TRUE + 1"
+  },
+  {
+    "name": "binary:+:TRUE:NA",
+    "code": "a <- TRUE + NA"
+  },
+  {
+    "name": "binary:+:TRUE:\"1\"",
+    "code": "a <- TRUE + \"1\""
+  },
+  {
+    "name": "binary:+:FALSE:0",
+    "code": "a <- FALSE + 0"
+  },
+  {
+    "name": "binary:+:FALSE:1",
+    "code": "a <- FALSE + 1"
+  },
+  {
+    "name": "binary:+:FALSE:NA",
+    "code": "a <- FALSE + NA"
+  },
+  {
+    "name": "binary:+:FALSE:\"1\"",
+    "code": "a <- FALSE + \"1\""
+  },
+  {
+    "name": "binary:+:NA:0",
+    "code": "a <- NA + 0"
+  },
+  {
+    "name": "binary:+:NA:1",
+    "code": "a <- NA + 1"
+  },
+  {
+    "name": "binary:+:NA:NA",
+    "code": "a <- NA + NA"
+  },
+  {
+    "name": "binary:+:NA:\"1\"",
+    "code": "a <- NA + \"1\""
+  },
+  {
+    "name": "binary:+:NaN:0",
+    "code": "a <- NaN + 0"
+  },
+  {
+    "name": "binary:+:NaN:1",
+    "code": "a <- NaN + 1"
+  },
+  {
+    "name": "binary:+:NaN:NA",
+    "code": "a <- NaN + NA"
+  },
+  {
+    "name": "binary:+:NaN:\"1\"",
+    "code": "a <- NaN + \"1\""
+  },
+  {
+    "name": "binary:+:Inf:0",
+    "code": "a <- Inf + 0"
+  },
+  {
+    "name": "binary:+:Inf:1",
+    "code": "a <- Inf + 1"
+  },
+  {
+    "name": "binary:+:Inf:NA",
+    "code": "a <- Inf + NA"
+  },
+  {
+    "name": "binary:+:Inf:\"1\"",
+    "code": "a <- Inf + \"1\""
+  },
+  {
+    "name": "binary:+:\"\":0",
+    "code": "a <- \"\" + 0"
+  },
+  {
+    "name": "binary:+:\"\":1",
+    "code": "a <- \"\" + 1"
+  },
+  {
+    "name": "binary:+:\"\":NA",
+    "code": "a <- \"\" + NA"
+  },
+  {
+    "name": "binary:+:\"\":\"1\"",
+    "code": "a <- \"\" + \"1\""
+  },
+  {
+    "name": "binary:+:\"1\":0",
+    "code": "a <- \"1\" + 0"
+  },
+  {
+    "name": "binary:+:\"1\":1",
+    "code": "a <- \"1\" + 1"
+  },
+  {
+    "name": "binary:+:\"1\":NA",
+    "code": "a <- \"1\" + NA"
+  },
+  {
+    "name": "binary:+:\"1\":\"1\"",
+    "code": "a <- \"1\" + \"1\""
+  },
+  {
+    "name": "binary:-:NULL:0",
+    "code": "a <- NULL - 0"
+  },
+  {
+    "name": "binary:-:NULL:1",
+    "code": "a <- NULL - 1"
+  },
+  {
+    "name": "binary:-:NULL:NA",
+    "code": "a <- NULL - NA"
+  },
+  {
+    "name": "binary:-:NULL:\"1\"",
+    "code": "a <- NULL - \"1\""
+  },
+  {
+    "name": "binary:-:0:0",
+    "code": "a <- 0 - 0"
+  },
+  {
+    "name": "binary:-:0:1",
+    "code": "a <- 0 - 1"
+  },
+  {
+    "name": "binary:-:0:NA",
+    "code": "a <- 0 - NA"
+  },
+  {
+    "name": "binary:-:0:\"1\"",
+    "code": "a <- 0 - \"1\""
+  },
+  {
+    "name": "binary:-:1:0",
+    "code": "a <- 1 - 0"
+  },
+  {
+    "name": "binary:-:1:1",
+    "code": "a <- 1 - 1"
+  },
+  {
+    "name": "binary:-:1:NA",
+    "code": "a <- 1 - NA"
+  },
+  {
+    "name": "binary:-:1:\"1\"",
+    "code": "a <- 1 - \"1\""
+  },
+  {
+    "name": "binary:-:-1:0",
+    "code": "a <- -1 - 0"
+  },
+  {
+    "name": "binary:-:-1:1",
+    "code": "a <- -1 - 1"
+  },
+  {
+    "name": "binary:-:-1:NA",
+    "code": "a <- -1 - NA"
+  },
+  {
+    "name": "binary:-:-1:\"1\"",
+    "code": "a <- -1 - \"1\""
+  },
+  {
+    "name": "binary:-:TRUE:0",
+    "code": "a <- TRUE - 0"
+  },
+  {
+    "name": "binary:-:TRUE:1",
+    "code": "a <- TRUE - 1"
+  },
+  {
+    "name": "binary:-:TRUE:NA",
+    "code": "a <- TRUE - NA"
+  },
+  {
+    "name": "binary:-:TRUE:\"1\"",
+    "code": "a <- TRUE - \"1\""
+  },
+  {
+    "name": "binary:-:FALSE:0",
+    "code": "a <- FALSE - 0"
+  },
+  {
+    "name": "binary:-:FALSE:1",
+    "code": "a <- FALSE - 1"
+  },
+  {
+    "name": "binary:-:FALSE:NA",
+    "code": "a <- FALSE - NA"
+  },
+  {
+    "name": "binary:-:FALSE:\"1\"",
+    "code": "a <- FALSE - \"1\""
+  },
+  {
+    "name": "binary:-:NA:0",
+    "code": "a <- NA - 0"
+  },
+  {
+    "name": "binary:-:NA:1",
+    "code": "a <- NA - 1"
+  },
+  {
+    "name": "binary:-:NA:NA",
+    "code": "a <- NA - NA"
+  },
+  {
+    "name": "binary:-:NA:\"1\"",
+    "code": "a <- NA - \"1\""
+  },
+  {
+    "name": "binary:-:NaN:0",
+    "code": "a <- NaN - 0"
+  },
+  {
+    "name": "binary:-:NaN:1",
+    "code": "a <- NaN - 1"
+  },
+  {
+    "name": "binary:-:NaN:NA",
+    "code": "a <- NaN - NA"
+  },
+  {
+    "name": "binary:-:NaN:\"1\"",
+    "code": "a <- NaN - \"1\""
+  },
+  {
+    "name": "binary:-:Inf:0",
+    "code": "a <- Inf - 0"
+  },
+  {
+    "name": "binary:-:Inf:1",
+    "code": "a <- Inf - 1"
+  },
+  {
+    "name": "binary:-:Inf:NA",
+    "code": "a <- Inf - NA"
+  },
+  {
+    "name": "binary:-:Inf:\"1\"",
+    "code": "a <- Inf - \"1\""
+  },
+  {
+    "name": "binary:-:\"\":0",
+    "code": "a <- \"\" - 0"
+  },
+  {
+    "name": "binary:-:\"\":1",
+    "code": "a <- \"\" - 1"
+  },
+  {
+    "name": "binary:-:\"\":NA",
+    "code": "a <- \"\" - NA"
+  },
+  {
+    "name": "binary:-:\"\":\"1\"",
+    "code": "a <- \"\" - \"1\""
+  },
+  {
+    "name": "binary:-:\"1\":0",
+    "code": "a <- \"1\" - 0"
+  },
+  {
+    "name": "binary:-:\"1\":1",
+    "code": "a <- \"1\" - 1"
+  },
+  {
+    "name": "binary:-:\"1\":NA",
+    "code": "a <- \"1\" - NA"
+  },
+  {
+    "name": "binary:-:\"1\":\"1\"",
+    "code": "a <- \"1\" - \"1\""
+  },
+  {
+    "name": "binary:*:NULL:0",
+    "code": "a <- NULL * 0"
+  },
+  {
+    "name": "binary:*:NULL:1",
+    "code": "a <- NULL * 1"
+  },
+  {
+    "name": "binary:*:NULL:NA",
+    "code": "a <- NULL * NA"
+  },
+  {
+    "name": "binary:*:NULL:\"1\"",
+    "code": "a <- NULL * \"1\""
+  },
+  {
+    "name": "binary:*:0:0",
+    "code": "a <- 0 * 0"
+  },
+  {
+    "name": "binary:*:0:1",
+    "code": "a <- 0 * 1"
+  },
+  {
+    "name": "binary:*:0:NA",
+    "code": "a <- 0 * NA"
+  },
+  {
+    "name": "binary:*:0:\"1\"",
+    "code": "a <- 0 * \"1\""
+  },
+  {
+    "name": "binary:*:1:0",
+    "code": "a <- 1 * 0"
+  },
+  {
+    "name": "binary:*:1:1",
+    "code": "a <- 1 * 1"
+  },
+  {
+    "name": "binary:*:1:NA",
+    "code": "a <- 1 * NA"
+  },
+  {
+    "name": "binary:*:1:\"1\"",
+    "code": "a <- 1 * \"1\""
+  },
+  {
+    "name": "binary:*:-1:0",
+    "code": "a <- -1 * 0"
+  },
+  {
+    "name": "binary:*:-1:1",
+    "code": "a <- -1 * 1"
+  },
+  {
+    "name": "binary:*:-1:NA",
+    "code": "a <- -1 * NA"
+  },
+  {
+    "name": "binary:*:-1:\"1\"",
+    "code": "a <- -1 * \"1\""
+  },
+  {
+    "name": "binary:*:TRUE:0",
+    "code": "a <- TRUE * 0"
+  },
+  {
+    "name": "binary:*:TRUE:1",
+    "code": "a <- TRUE * 1"
+  },
+  {
+    "name": "binary:*:TRUE:NA",
+    "code": "a <- TRUE * NA"
+  },
+  {
+    "name": "binary:*:TRUE:\"1\"",
+    "code": "a <- TRUE * \"1\""
+  },
+  {
+    "name": "binary:*:FALSE:0",
+    "code": "a <- FALSE * 0"
+  },
+  {
+    "name": "binary:*:FALSE:1",
+    "code": "a <- FALSE * 1"
+  },
+  {
+    "name": "binary:*:FALSE:NA",
+    "code": "a <- FALSE * NA"
+  },
+  {
+    "name": "binary:*:FALSE:\"1\"",
+    "code": "a <- FALSE * \"1\""
+  },
+  {
+    "name": "binary:*:NA:0",
+    "code": "a <- NA * 0"
+  },
+  {
+    "name": "binary:*:NA:1",
+    "code": "a <- NA * 1"
+  },
+  {
+    "name": "binary:*:NA:NA",
+    "code": "a <- NA * NA"
+  },
+  {
+    "name": "binary:*:NA:\"1\"",
+    "code": "a <- NA * \"1\""
+  },
+  {
+    "name": "binary:*:NaN:0",
+    "code": "a <- NaN * 0"
+  },
+  {
+    "name": "binary:*:NaN:1",
+    "code": "a <- NaN * 1"
+  },
+  {
+    "name": "binary:*:NaN:NA",
+    "code": "a <- NaN * NA"
+  },
+  {
+    "name": "binary:*:NaN:\"1\"",
+    "code": "a <- NaN * \"1\""
+  },
+  {
+    "name": "binary:*:Inf:0",
+    "code": "a <- Inf * 0"
+  },
+  {
+    "name": "binary:*:Inf:1",
+    "code": "a <- Inf * 1"
+  },
+  {
+    "name": "binary:*:Inf:NA",
+    "code": "a <- Inf * NA"
+  },
+  {
+    "name": "binary:*:Inf:\"1\"",
+    "code": "a <- Inf * \"1\""
+  },
+  {
+    "name": "binary:*:\"\":0",
+    "code": "a <- \"\" * 0"
+  },
+  {
+    "name": "binary:*:\"\":1",
+    "code": "a <- \"\" * 1"
+  },
+  {
+    "name": "binary:*:\"\":NA",
+    "code": "a <- \"\" * NA"
+  },
+  {
+    "name": "binary:*:\"\":\"1\"",
+    "code": "a <- \"\" * \"1\""
+  },
+  {
+    "name": "binary:*:\"1\":0",
+    "code": "a <- \"1\" * 0"
+  },
+  {
+    "name": "binary:*:\"1\":1",
+    "code": "a <- \"1\" * 1"
+  },
+  {
+    "name": "binary:*:\"1\":NA",
+    "code": "a <- \"1\" * NA"
+  },
+  {
+    "name": "binary:*:\"1\":\"1\"",
+    "code": "a <- \"1\" * \"1\""
+  },
+  {
+    "name": "binary:/:NULL:0",
+    "code": "a <- NULL / 0"
+  },
+  {
+    "name": "binary:/:NULL:1",
+    "code": "a <- NULL / 1"
+  },
+  {
+    "name": "binary:/:NULL:NA",
+    "code": "a <- NULL / NA"
+  },
+  {
+    "name": "binary:/:NULL:\"1\"",
+    "code": "a <- NULL / \"1\""
+  },
+  {
+    "name": "binary:/:0:0",
+    "code": "a <- 0 / 0"
+  },
+  {
+    "name": "binary:/:0:1",
+    "code": "a <- 0 / 1"
+  },
+  {
+    "name": "binary:/:0:NA",
+    "code": "a <- 0 / NA"
+  },
+  {
+    "name": "binary:/:0:\"1\"",
+    "code": "a <- 0 / \"1\""
+  },
+  {
+    "name": "binary:/:1:0",
+    "code": "a <- 1 / 0"
+  },
+  {
+    "name": "binary:/:1:1",
+    "code": "a <- 1 / 1"
+  },
+  {
+    "name": "binary:/:1:NA",
+    "code": "a <- 1 / NA"
+  },
+  {
+    "name": "binary:/:1:\"1\"",
+    "code": "a <- 1 / \"1\""
+  },
+  {
+    "name": "binary:/:-1:0",
+    "code": "a <- -1 / 0"
+  },
+  {
+    "name": "binary:/:-1:1",
+    "code": "a <- -1 / 1"
+  },
+  {
+    "name": "binary:/:-1:NA",
+    "code": "a <- -1 / NA"
+  },
+  {
+    "name": "binary:/:-1:\"1\"",
+    "code": "a <- -1 / \"1\""
+  },
+  {
+    "name": "binary:/:TRUE:0",
+    "code": "a <- TRUE / 0"
+  },
+  {
+    "name": "binary:/:TRUE:1",
+    "code": "a <- TRUE / 1"
+  },
+  {
+    "name": "binary:/:TRUE:NA",
+    "code": "a <- TRUE / NA"
+  },
+  {
+    "name": "binary:/:TRUE:\"1\"",
+    "code": "a <- TRUE / \"1\""
+  },
+  {
+    "name": "binary:/:FALSE:0",
+    "code": "a <- FALSE / 0"
+  },
+  {
+    "name": "binary:/:FALSE:1",
+    "code": "a <- FALSE / 1"
+  },
+  {
+    "name": "binary:/:FALSE:NA",
+    "code": "a <- FALSE / NA"
+  },
+  {
+    "name": "binary:/:FALSE:\"1\"",
+    "code": "a <- FALSE / \"1\""
+  },
+  {
+    "name": "binary:/:NA:0",
+    "code": "a <- NA / 0"
+  },
+  {
+    "name": "binary:/:NA:1",
+    "code": "a <- NA / 1"
+  },
+  {
+    "name": "binary:/:NA:NA",
+    "code": "a <- NA / NA"
+  },
+  {
+    "name": "binary:/:NA:\"1\"",
+    "code": "a <- NA / \"1\""
+  },
+  {
+    "name": "binary:/:NaN:0",
+    "code": "a <- NaN / 0"
+  },
+  {
+    "name": "binary:/:NaN:1",
+    "code": "a <- NaN / 1"
+  },
+  {
+    "name": "binary:/:NaN:NA",
+    "code": "a <- NaN / NA"
+  },
+  {
+    "name": "binary:/:NaN:\"1\"",
+    "code": "a <- NaN / \"1\""
+  },
+  {
+    "name": "binary:/:Inf:0",
+    "code": "a <- Inf / 0"
+  },
+  {
+    "name": "binary:/:Inf:1",
+    "code": "a <- Inf / 1"
+  },
+  {
+    "name": "binary:/:Inf:NA",
+    "code": "a <- Inf / NA"
+  },
+  {
+    "name": "binary:/:Inf:\"1\"",
+    "code": "a <- Inf / \"1\""
+  },
+  {
+    "name": "binary:/:\"\":0",
+    "code": "a <- \"\" / 0"
+  },
+  {
+    "name": "binary:/:\"\":1",
+    "code": "a <- \"\" / 1"
+  },
+  {
+    "name": "binary:/:\"\":NA",
+    "code": "a <- \"\" / NA"
+  },
+  {
+    "name": "binary:/:\"\":\"1\"",
+    "code": "a <- \"\" / \"1\""
+  },
+  {
+    "name": "binary:/:\"1\":0",
+    "code": "a <- \"1\" / 0"
+  },
+  {
+    "name": "binary:/:\"1\":1",
+    "code": "a <- \"1\" / 1"
+  },
+  {
+    "name": "binary:/:\"1\":NA",
+    "code": "a <- \"1\" / NA"
+  },
+  {
+    "name": "binary:/:\"1\":\"1\"",
+    "code": "a <- \"1\" / \"1\""
+  },
+  {
+    "name": "binary:^:NULL:0",
+    "code": "a <- NULL ^ 0"
+  },
+  {
+    "name": "binary:^:NULL:1",
+    "code": "a <- NULL ^ 1"
+  },
+  {
+    "name": "binary:^:NULL:NA",
+    "code": "a <- NULL ^ NA"
+  },
+  {
+    "name": "binary:^:NULL:\"1\"",
+    "code": "a <- NULL ^ \"1\""
+  },
+  {
+    "name": "binary:^:0:0",
+    "code": "a <- 0 ^ 0"
+  },
+  {
+    "name": "binary:^:0:1",
+    "code": "a <- 0 ^ 1"
+  },
+  {
+    "name": "binary:^:0:NA",
+    "code": "a <- 0 ^ NA"
+  },
+  {
+    "name": "binary:^:0:\"1\"",
+    "code": "a <- 0 ^ \"1\""
+  },
+  {
+    "name": "binary:^:1:0",
+    "code": "a <- 1 ^ 0"
+  },
+  {
+    "name": "binary:^:1:1",
+    "code": "a <- 1 ^ 1"
+  },
+  {
+    "name": "binary:^:1:NA",
+    "code": "a <- 1 ^ NA"
+  },
+  {
+    "name": "binary:^:1:\"1\"",
+    "code": "a <- 1 ^ \"1\""
+  },
+  {
+    "name": "binary:^:-1:0",
+    "code": "a <- -1 ^ 0"
+  },
+  {
+    "name": "binary:^:-1:1",
+    "code": "a <- -1 ^ 1"
+  },
+  {
+    "name": "binary:^:-1:NA",
+    "code": "a <- -1 ^ NA"
+  },
+  {
+    "name": "binary:^:-1:\"1\"",
+    "code": "a <- -1 ^ \"1\""
+  },
+  {
+    "name": "binary:^:TRUE:0",
+    "code": "a <- TRUE ^ 0"
+  },
+  {
+    "name": "binary:^:TRUE:1",
+    "code": "a <- TRUE ^ 1"
+  },
+  {
+    "name": "binary:^:TRUE:NA",
+    "code": "a <- TRUE ^ NA"
+  },
+  {
+    "name": "binary:^:TRUE:\"1\"",
+    "code": "a <- TRUE ^ \"1\""
+  },
+  {
+    "name": "binary:^:FALSE:0",
+    "code": "a <- FALSE ^ 0"
+  },
+  {
+    "name": "binary:^:FALSE:1",
+    "code": "a <- FALSE ^ 1"
+  },
+  {
+    "name": "binary:^:FALSE:NA",
+    "code": "a <- FALSE ^ NA"
+  },
+  {
+    "name": "binary:^:FALSE:\"1\"",
+    "code": "a <- FALSE ^ \"1\""
+  },
+  {
+    "name": "binary:^:NA:0",
+    "code": "a <- NA ^ 0"
+  },
+  {
+    "name": "binary:^:NA:1",
+    "code": "a <- NA ^ 1"
+  },
+  {
+    "name": "binary:^:NA:NA",
+    "code": "a <- NA ^ NA"
+  },
+  {
+    "name": "binary:^:NA:\"1\"",
+    "code": "a <- NA ^ \"1\""
+  },
+  {
+    "name": "binary:^:NaN:0",
+    "code": "a <- NaN ^ 0"
+  },
+  {
+    "name": "binary:^:NaN:1",
+    "code": "a <- NaN ^ 1"
+  },
+  {
+    "name": "binary:^:NaN:NA",
+    "code": "a <- NaN ^ NA"
+  },
+  {
+    "name": "binary:^:NaN:\"1\"",
+    "code": "a <- NaN ^ \"1\""
+  },
+  {
+    "name": "binary:^:Inf:0",
+    "code": "a <- Inf ^ 0"
+  },
+  {
+    "name": "binary:^:Inf:1",
+    "code": "a <- Inf ^ 1"
+  },
+  {
+    "name": "binary:^:Inf:NA",
+    "code": "a <- Inf ^ NA"
+  },
+  {
+    "name": "binary:^:Inf:\"1\"",
+    "code": "a <- Inf ^ \"1\""
+  },
+  {
+    "name": "binary:^:\"\":0",
+    "code": "a <- \"\" ^ 0"
+  },
+  {
+    "name": "binary:^:\"\":1",
+    "code": "a <- \"\" ^ 1"
+  },
+  {
+    "name": "binary:^:\"\":NA",
+    "code": "a <- \"\" ^ NA"
+  },
+  {
+    "name": "binary:^:\"\":\"1\"",
+    "code": "a <- \"\" ^ \"1\""
+  },
+  {
+    "name": "binary:^:\"1\":0",
+    "code": "a <- \"1\" ^ 0"
+  },
+  {
+    "name": "binary:^:\"1\":1",
+    "code": "a <- \"1\" ^ 1"
+  },
+  {
+    "name": "binary:^:\"1\":NA",
+    "code": "a <- \"1\" ^ NA"
+  },
+  {
+    "name": "binary:^:\"1\":\"1\"",
+    "code": "a <- \"1\" ^ \"1\""
+  },
+  {
+    "name": "binary:%%:NULL:0",
+    "code": "a <- NULL %% 0"
+  },
+  {
+    "name": "binary:%%:NULL:1",
+    "code": "a <- NULL %% 1"
+  },
+  {
+    "name": "binary:%%:NULL:NA",
+    "code": "a <- NULL %% NA"
+  },
+  {
+    "name": "binary:%%:NULL:\"1\"",
+    "code": "a <- NULL %% \"1\""
+  },
+  {
+    "name": "binary:%%:0:0",
+    "code": "a <- 0 %% 0"
+  },
+  {
+    "name": "binary:%%:0:1",
+    "code": "a <- 0 %% 1"
+  },
+  {
+    "name": "binary:%%:0:NA",
+    "code": "a <- 0 %% NA"
+  },
+  {
+    "name": "binary:%%:0:\"1\"",
+    "code": "a <- 0 %% \"1\""
+  },
+  {
+    "name": "binary:%%:1:0",
+    "code": "a <- 1 %% 0"
+  },
+  {
+    "name": "binary:%%:1:1",
+    "code": "a <- 1 %% 1"
+  },
+  {
+    "name": "binary:%%:1:NA",
+    "code": "a <- 1 %% NA"
+  },
+  {
+    "name": "binary:%%:1:\"1\"",
+    "code": "a <- 1 %% \"1\""
+  },
+  {
+    "name": "binary:%%:-1:0",
+    "code": "a <- -1 %% 0"
+  },
+  {
+    "name": "binary:%%:-1:1",
+    "code": "a <- -1 %% 1"
+  },
+  {
+    "name": "binary:%%:-1:NA",
+    "code": "a <- -1 %% NA"
+  },
+  {
+    "name": "binary:%%:-1:\"1\"",
+    "code": "a <- -1 %% \"1\""
+  },
+  {
+    "name": "binary:%%:TRUE:0",
+    "code": "a <- TRUE %% 0"
+  },
+  {
+    "name": "binary:%%:TRUE:1",
+    "code": "a <- TRUE %% 1"
+  },
+  {
+    "name": "binary:%%:TRUE:NA",
+    "code": "a <- TRUE %% NA"
+  },
+  {
+    "name": "binary:%%:TRUE:\"1\"",
+    "code": "a <- TRUE %% \"1\""
+  },
+  {
+    "name": "binary:%%:FALSE:0",
+    "code": "a <- FALSE %% 0"
+  },
+  {
+    "name": "binary:%%:FALSE:1",
+    "code": "a <- FALSE %% 1"
+  },
+  {
+    "name": "binary:%%:FALSE:NA",
+    "code": "a <- FALSE %% NA"
+  },
+  {
+    "name": "binary:%%:FALSE:\"1\"",
+    "code": "a <- FALSE %% \"1\""
+  },
+  {
+    "name": "binary:%%:NA:0",
+    "code": "a <- NA %% 0"
+  },
+  {
+    "name": "binary:%%:NA:1",
+    "code": "a <- NA %% 1"
+  },
+  {
+    "name": "binary:%%:NA:NA",
+    "code": "a <- NA %% NA"
+  },
+  {
+    "name": "binary:%%:NA:\"1\"",
+    "code": "a <- NA %% \"1\""
+  },
+  {
+    "name": "binary:%%:NaN:0",
+    "code": "a <- NaN %% 0"
+  },
+  {
+    "name": "binary:%%:NaN:1",
+    "code": "a <- NaN %% 1"
+  },
+  {
+    "name": "binary:%%:NaN:NA",
+    "code": "a <- NaN %% NA"
+  },
+  {
+    "name": "binary:%%:NaN:\"1\"",
+    "code": "a <- NaN %% \"1\""
+  },
+  {
+    "name": "binary:%%:Inf:0",
+    "code": "a <- Inf %% 0"
+  },
+  {
+    "name": "binary:%%:Inf:1",
+    "code": "a <- Inf %% 1"
+  },
+  {
+    "name": "binary:%%:Inf:NA",
+    "code": "a <- Inf %% NA"
+  },
+  {
+    "name": "binary:%%:Inf:\"1\"",
+    "code": "a <- Inf %% \"1\""
+  },
+  {
+    "name": "binary:%%:\"\":0",
+    "code": "a <- \"\" %% 0"
+  },
+  {
+    "name": "binary:%%:\"\":1",
+    "code": "a <- \"\" %% 1"
+  },
+  {
+    "name": "binary:%%:\"\":NA",
+    "code": "a <- \"\" %% NA"
+  },
+  {
+    "name": "binary:%%:\"\":\"1\"",
+    "code": "a <- \"\" %% \"1\""
+  },
+  {
+    "name": "binary:%%:\"1\":0",
+    "code": "a <- \"1\" %% 0"
+  },
+  {
+    "name": "binary:%%:\"1\":1",
+    "code": "a <- \"1\" %% 1"
+  },
+  {
+    "name": "binary:%%:\"1\":NA",
+    "code": "a <- \"1\" %% NA"
+  },
+  {
+    "name": "binary:%%:\"1\":\"1\"",
+    "code": "a <- \"1\" %% \"1\""
+  },
+  {
+    "name": "binary:%/%:NULL:0",
+    "code": "a <- NULL %/% 0"
+  },
+  {
+    "name": "binary:%/%:NULL:1",
+    "code": "a <- NULL %/% 1"
+  },
+  {
+    "name": "binary:%/%:NULL:NA",
+    "code": "a <- NULL %/% NA"
+  },
+  {
+    "name": "binary:%/%:NULL:\"1\"",
+    "code": "a <- NULL %/% \"1\""
+  },
+  {
+    "name": "binary:%/%:0:0",
+    "code": "a <- 0 %/% 0"
+  },
+  {
+    "name": "binary:%/%:0:1",
+    "code": "a <- 0 %/% 1"
+  },
+  {
+    "name": "binary:%/%:0:NA",
+    "code": "a <- 0 %/% NA"
+  },
+  {
+    "name": "binary:%/%:0:\"1\"",
+    "code": "a <- 0 %/% \"1\""
+  },
+  {
+    "name": "binary:%/%:1:0",
+    "code": "a <- 1 %/% 0"
+  },
+  {
+    "name": "binary:%/%:1:1",
+    "code": "a <- 1 %/% 1"
+  },
+  {
+    "name": "binary:%/%:1:NA",
+    "code": "a <- 1 %/% NA"
+  },
+  {
+    "name": "binary:%/%:1:\"1\"",
+    "code": "a <- 1 %/% \"1\""
+  },
+  {
+    "name": "binary:%/%:-1:0",
+    "code": "a <- -1 %/% 0"
+  },
+  {
+    "name": "binary:%/%:-1:1",
+    "code": "a <- -1 %/% 1"
+  },
+  {
+    "name": "binary:%/%:-1:NA",
+    "code": "a <- -1 %/% NA"
+  },
+  {
+    "name": "binary:%/%:-1:\"1\"",
+    "code": "a <- -1 %/% \"1\""
+  },
+  {
+    "name": "binary:%/%:TRUE:0",
+    "code": "a <- TRUE %/% 0"
+  },
+  {
+    "name": "binary:%/%:TRUE:1",
+    "code": "a <- TRUE %/% 1"
+  },
+  {
+    "name": "binary:%/%:TRUE:NA",
+    "code": "a <- TRUE %/% NA"
+  },
+  {
+    "name": "binary:%/%:TRUE:\"1\"",
+    "code": "a <- TRUE %/% \"1\""
+  },
+  {
+    "name": "binary:%/%:FALSE:0",
+    "code": "a <- FALSE %/% 0"
+  },
+  {
+    "name": "binary:%/%:FALSE:1",
+    "code": "a <- FALSE %/% 1"
+  },
+  {
+    "name": "binary:%/%:FALSE:NA",
+    "code": "a <- FALSE %/% NA"
+  },
+  {
+    "name": "binary:%/%:FALSE:\"1\"",
+    "code": "a <- FALSE %/% \"1\""
+  },
+  {
+    "name": "binary:%/%:NA:0",
+    "code": "a <- NA %/% 0"
+  },
+  {
+    "name": "binary:%/%:NA:1",
+    "code": "a <- NA %/% 1"
+  },
+  {
+    "name": "binary:%/%:NA:NA",
+    "code": "a <- NA %/% NA"
+  },
+  {
+    "name": "binary:%/%:NA:\"1\"",
+    "code": "a <- NA %/% \"1\""
+  },
+  {
+    "name": "binary:%/%:NaN:0",
+    "code": "a <- NaN %/% 0"
+  },
+  {
+    "name": "binary:%/%:NaN:1",
+    "code": "a <- NaN %/% 1"
+  },
+  {
+    "name": "binary:%/%:NaN:NA",
+    "code": "a <- NaN %/% NA"
+  },
+  {
+    "name": "binary:%/%:NaN:\"1\"",
+    "code": "a <- NaN %/% \"1\""
+  },
+  {
+    "name": "binary:%/%:Inf:0",
+    "code": "a <- Inf %/% 0"
+  },
+  {
+    "name": "binary:%/%:Inf:1",
+    "code": "a <- Inf %/% 1"
+  },
+  {
+    "name": "binary:%/%:Inf:NA",
+    "code": "a <- Inf %/% NA"
+  },
+  {
+    "name": "binary:%/%:Inf:\"1\"",
+    "code": "a <- Inf %/% \"1\""
+  },
+  {
+    "name": "binary:%/%:\"\":0",
+    "code": "a <- \"\" %/% 0"
+  },
+  {
+    "name": "binary:%/%:\"\":1",
+    "code": "a <- \"\" %/% 1"
+  },
+  {
+    "name": "binary:%/%:\"\":NA",
+    "code": "a <- \"\" %/% NA"
+  },
+  {
+    "name": "binary:%/%:\"\":\"1\"",
+    "code": "a <- \"\" %/% \"1\""
+  },
+  {
+    "name": "binary:%/%:\"1\":0",
+    "code": "a <- \"1\" %/% 0"
+  },
+  {
+    "name": "binary:%/%:\"1\":1",
+    "code": "a <- \"1\" %/% 1"
+  },
+  {
+    "name": "binary:%/%:\"1\":NA",
+    "code": "a <- \"1\" %/% NA"
+  },
+  {
+    "name": "binary:%/%:\"1\":\"1\"",
+    "code": "a <- \"1\" %/% \"1\""
+  },
+  {
+    "name": "binary:==:NULL:0",
+    "code": "a <- NULL == 0"
+  },
+  {
+    "name": "binary:==:NULL:1",
+    "code": "a <- NULL == 1"
+  },
+  {
+    "name": "binary:==:NULL:NA",
+    "code": "a <- NULL == NA"
+  },
+  {
+    "name": "binary:==:NULL:\"1\"",
+    "code": "a <- NULL == \"1\""
+  },
+  {
+    "name": "binary:==:0:0",
+    "code": "a <- 0 == 0"
+  },
+  {
+    "name": "binary:==:0:1",
+    "code": "a <- 0 == 1"
+  },
+  {
+    "name": "binary:==:0:NA",
+    "code": "a <- 0 == NA"
+  },
+  {
+    "name": "binary:==:0:\"1\"",
+    "code": "a <- 0 == \"1\""
+  },
+  {
+    "name": "binary:==:1:0",
+    "code": "a <- 1 == 0"
+  },
+  {
+    "name": "binary:==:1:1",
+    "code": "a <- 1 == 1"
+  },
+  {
+    "name": "binary:==:1:NA",
+    "code": "a <- 1 == NA"
+  },
+  {
+    "name": "binary:==:1:\"1\"",
+    "code": "a <- 1 == \"1\""
+  },
+  {
+    "name": "binary:==:-1:0",
+    "code": "a <- -1 == 0"
+  },
+  {
+    "name": "binary:==:-1:1",
+    "code": "a <- -1 == 1"
+  },
+  {
+    "name": "binary:==:-1:NA",
+    "code": "a <- -1 == NA"
+  },
+  {
+    "name": "binary:==:-1:\"1\"",
+    "code": "a <- -1 == \"1\""
+  },
+  {
+    "name": "binary:==:TRUE:0",
+    "code": "a <- TRUE == 0"
+  },
+  {
+    "name": "binary:==:TRUE:1",
+    "code": "a <- TRUE == 1"
+  },
+  {
+    "name": "binary:==:TRUE:NA",
+    "code": "a <- TRUE == NA"
+  },
+  {
+    "name": "binary:==:TRUE:\"1\"",
+    "code": "a <- TRUE == \"1\""
+  },
+  {
+    "name": "binary:==:FALSE:0",
+    "code": "a <- FALSE == 0"
+  },
+  {
+    "name": "binary:==:FALSE:1",
+    "code": "a <- FALSE == 1"
+  },
+  {
+    "name": "binary:==:FALSE:NA",
+    "code": "a <- FALSE == NA"
+  },
+  {
+    "name": "binary:==:FALSE:\"1\"",
+    "code": "a <- FALSE == \"1\""
+  },
+  {
+    "name": "binary:==:NA:0",
+    "code": "a <- NA == 0"
+  },
+  {
+    "name": "binary:==:NA:1",
+    "code": "a <- NA == 1"
+  },
+  {
+    "name": "binary:==:NA:NA",
+    "code": "a <- NA == NA"
+  },
+  {
+    "name": "binary:==:NA:\"1\"",
+    "code": "a <- NA == \"1\""
+  },
+  {
+    "name": "binary:==:NaN:0",
+    "code": "a <- NaN == 0"
+  },
+  {
+    "name": "binary:==:NaN:1",
+    "code": "a <- NaN == 1"
+  },
+  {
+    "name": "binary:==:NaN:NA",
+    "code": "a <- NaN == NA"
+  },
+  {
+    "name": "binary:==:NaN:\"1\"",
+    "code": "a <- NaN == \"1\""
+  },
+  {
+    "name": "binary:==:Inf:0",
+    "code": "a <- Inf == 0"
+  },
+  {
+    "name": "binary:==:Inf:1",
+    "code": "a <- Inf == 1"
+  },
+  {
+    "name": "binary:==:Inf:NA",
+    "code": "a <- Inf == NA"
+  },
+  {
+    "name": "binary:==:Inf:\"1\"",
+    "code": "a <- Inf == \"1\""
+  },
+  {
+    "name": "binary:==:\"\":0",
+    "code": "a <- \"\" == 0"
+  },
+  {
+    "name": "binary:==:\"\":1",
+    "code": "a <- \"\" == 1"
+  },
+  {
+    "name": "binary:==:\"\":NA",
+    "code": "a <- \"\" == NA"
+  },
+  {
+    "name": "binary:==:\"\":\"1\"",
+    "code": "a <- \"\" == \"1\""
+  },
+  {
+    "name": "binary:==:\"1\":0",
+    "code": "a <- \"1\" == 0"
+  },
+  {
+    "name": "binary:==:\"1\":1",
+    "code": "a <- \"1\" == 1"
+  },
+  {
+    "name": "binary:==:\"1\":NA",
+    "code": "a <- \"1\" == NA"
+  },
+  {
+    "name": "binary:==:\"1\":\"1\"",
+    "code": "a <- \"1\" == \"1\""
+  },
+  {
+    "name": "binary:!=:NULL:0",
+    "code": "a <- NULL != 0"
+  },
+  {
+    "name": "binary:!=:NULL:1",
+    "code": "a <- NULL != 1"
+  },
+  {
+    "name": "binary:!=:NULL:NA",
+    "code": "a <- NULL != NA"
+  },
+  {
+    "name": "binary:!=:NULL:\"1\"",
+    "code": "a <- NULL != \"1\""
+  },
+  {
+    "name": "binary:!=:0:0",
+    "code": "a <- 0 != 0"
+  },
+  {
+    "name": "binary:!=:0:1",
+    "code": "a <- 0 != 1"
+  },
+  {
+    "name": "binary:!=:0:NA",
+    "code": "a <- 0 != NA"
+  },
+  {
+    "name": "binary:!=:0:\"1\"",
+    "code": "a <- 0 != \"1\""
+  },
+  {
+    "name": "binary:!=:1:0",
+    "code": "a <- 1 != 0"
+  },
+  {
+    "name": "binary:!=:1:1",
+    "code": "a <- 1 != 1"
+  },
+  {
+    "name": "binary:!=:1:NA",
+    "code": "a <- 1 != NA"
+  },
+  {
+    "name": "binary:!=:1:\"1\"",
+    "code": "a <- 1 != \"1\""
+  },
+  {
+    "name": "binary:!=:-1:0",
+    "code": "a <- -1 != 0"
+  },
+  {
+    "name": "binary:!=:-1:1",
+    "code": "a <- -1 != 1"
+  },
+  {
+    "name": "binary:!=:-1:NA",
+    "code": "a <- -1 != NA"
+  },
+  {
+    "name": "binary:!=:-1:\"1\"",
+    "code": "a <- -1 != \"1\""
+  },
+  {
+    "name": "binary:!=:TRUE:0",
+    "code": "a <- TRUE != 0"
+  },
+  {
+    "name": "binary:!=:TRUE:1",
+    "code": "a <- TRUE != 1"
+  },
+  {
+    "name": "binary:!=:TRUE:NA",
+    "code": "a <- TRUE != NA"
+  },
+  {
+    "name": "binary:!=:TRUE:\"1\"",
+    "code": "a <- TRUE != \"1\""
+  },
+  {
+    "name": "binary:!=:FALSE:0",
+    "code": "a <- FALSE != 0"
+  },
+  {
+    "name": "binary:!=:FALSE:1",
+    "code": "a <- FALSE != 1"
+  },
+  {
+    "name": "binary:!=:FALSE:NA",
+    "code": "a <- FALSE != NA"
+  },
+  {
+    "name": "binary:!=:FALSE:\"1\"",
+    "code": "a <- FALSE != \"1\""
+  },
+  {
+    "name": "binary:!=:NA:0",
+    "code": "a <- NA != 0"
+  },
+  {
+    "name": "binary:!=:NA:1",
+    "code": "a <- NA != 1"
+  },
+  {
+    "name": "binary:!=:NA:NA",
+    "code": "a <- NA != NA"
+  },
+  {
+    "name": "binary:!=:NA:\"1\"",
+    "code": "a <- NA != \"1\""
+  },
+  {
+    "name": "binary:!=:NaN:0",
+    "code": "a <- NaN != 0"
+  },
+  {
+    "name": "binary:!=:NaN:1",
+    "code": "a <- NaN != 1"
+  },
+  {
+    "name": "binary:!=:NaN:NA",
+    "code": "a <- NaN != NA"
+  },
+  {
+    "name": "binary:!=:NaN:\"1\"",
+    "code": "a <- NaN != \"1\""
+  },
+  {
+    "name": "binary:!=:Inf:0",
+    "code": "a <- Inf != 0"
+  },
+  {
+    "name": "binary:!=:Inf:1",
+    "code": "a <- Inf != 1"
+  },
+  {
+    "name": "binary:!=:Inf:NA",
+    "code": "a <- Inf != NA"
+  },
+  {
+    "name": "binary:!=:Inf:\"1\"",
+    "code": "a <- Inf != \"1\""
+  },
+  {
+    "name": "binary:!=:\"\":0",
+    "code": "a <- \"\" != 0"
+  },
+  {
+    "name": "binary:!=:\"\":1",
+    "code": "a <- \"\" != 1"
+  },
+  {
+    "name": "binary:!=:\"\":NA",
+    "code": "a <- \"\" != NA"
+  },
+  {
+    "name": "binary:!=:\"\":\"1\"",
+    "code": "a <- \"\" != \"1\""
+  },
+  {
+    "name": "binary:!=:\"1\":0",
+    "code": "a <- \"1\" != 0"
+  },
+  {
+    "name": "binary:!=:\"1\":1",
+    "code": "a <- \"1\" != 1"
+  },
+  {
+    "name": "binary:!=:\"1\":NA",
+    "code": "a <- \"1\" != NA"
+  },
+  {
+    "name": "binary:!=:\"1\":\"1\"",
+    "code": "a <- \"1\" != \"1\""
+  },
+  {
+    "name": "binary:<:NULL:0",
+    "code": "a <- NULL < 0"
+  },
+  {
+    "name": "binary:<:NULL:1",
+    "code": "a <- NULL < 1"
+  },
+  {
+    "name": "binary:<:NULL:NA",
+    "code": "a <- NULL < NA"
+  },
+  {
+    "name": "binary:<:NULL:\"1\"",
+    "code": "a <- NULL < \"1\""
+  },
+  {
+    "name": "binary:<:0:0",
+    "code": "a <- 0 < 0"
+  },
+  {
+    "name": "binary:<:0:1",
+    "code": "a <- 0 < 1"
+  },
+  {
+    "name": "binary:<:0:NA",
+    "code": "a <- 0 < NA"
+  },
+  {
+    "name": "binary:<:0:\"1\"",
+    "code": "a <- 0 < \"1\""
+  },
+  {
+    "name": "binary:<:1:0",
+    "code": "a <- 1 < 0"
+  },
+  {
+    "name": "binary:<:1:1",
+    "code": "a <- 1 < 1"
+  },
+  {
+    "name": "binary:<:1:NA",
+    "code": "a <- 1 < NA"
+  },
+  {
+    "name": "binary:<:1:\"1\"",
+    "code": "a <- 1 < \"1\""
+  },
+  {
+    "name": "binary:<:-1:0",
+    "code": "a <- -1 < 0"
+  },
+  {
+    "name": "binary:<:-1:1",
+    "code": "a <- -1 < 1"
+  },
+  {
+    "name": "binary:<:-1:NA",
+    "code": "a <- -1 < NA"
+  },
+  {
+    "name": "binary:<:-1:\"1\"",
+    "code": "a <- -1 < \"1\""
+  },
+  {
+    "name": "binary:<:TRUE:0",
+    "code": "a <- TRUE < 0"
+  },
+  {
+    "name": "binary:<:TRUE:1",
+    "code": "a <- TRUE < 1"
+  },
+  {
+    "name": "binary:<:TRUE:NA",
+    "code": "a <- TRUE < NA"
+  },
+  {
+    "name": "binary:<:TRUE:\"1\"",
+    "code": "a <- TRUE < \"1\""
+  },
+  {
+    "name": "binary:<:FALSE:0",
+    "code": "a <- FALSE < 0"
+  },
+  {
+    "name": "binary:<:FALSE:1",
+    "code": "a <- FALSE < 1"
+  },
+  {
+    "name": "binary:<:FALSE:NA",
+    "code": "a <- FALSE < NA"
+  },
+  {
+    "name": "binary:<:FALSE:\"1\"",
+    "code": "a <- FALSE < \"1\""
+  },
+  {
+    "name": "binary:<:NA:0",
+    "code": "a <- NA < 0"
+  },
+  {
+    "name": "binary:<:NA:1",
+    "code": "a <- NA < 1"
+  },
+  {
+    "name": "binary:<:NA:NA",
+    "code": "a <- NA < NA"
+  },
+  {
+    "name": "binary:<:NA:\"1\"",
+    "code": "a <- NA < \"1\""
+  },
+  {
+    "name": "binary:<:NaN:0",
+    "code": "a <- NaN < 0"
+  },
+  {
+    "name": "binary:<:NaN:1",
+    "code": "a <- NaN < 1"
+  },
+  {
+    "name": "binary:<:NaN:NA",
+    "code": "a <- NaN < NA"
+  },
+  {
+    "name": "binary:<:NaN:\"1\"",
+    "code": "a <- NaN < \"1\""
+  },
+  {
+    "name": "binary:<:Inf:0",
+    "code": "a <- Inf < 0"
+  },
+  {
+    "name": "binary:<:Inf:1",
+    "code": "a <- Inf < 1"
+  },
+  {
+    "name": "binary:<:Inf:NA",
+    "code": "a <- Inf < NA"
+  },
+  {
+    "name": "binary:<:Inf:\"1\"",
+    "code": "a <- Inf < \"1\""
+  },
+  {
+    "name": "binary:<:\"\":0",
+    "code": "a <- \"\" < 0"
+  },
+  {
+    "name": "binary:<:\"\":1",
+    "code": "a <- \"\" < 1"
+  },
+  {
+    "name": "binary:<:\"\":NA",
+    "code": "a <- \"\" < NA"
+  },
+  {
+    "name": "binary:<:\"\":\"1\"",
+    "code": "a <- \"\" < \"1\""
+  },
+  {
+    "name": "binary:<:\"1\":0",
+    "code": "a <- \"1\" < 0"
+  },
+  {
+    "name": "binary:<:\"1\":1",
+    "code": "a <- \"1\" < 1"
+  },
+  {
+    "name": "binary:<:\"1\":NA",
+    "code": "a <- \"1\" < NA"
+  },
+  {
+    "name": "binary:<:\"1\":\"1\"",
+    "code": "a <- \"1\" < \"1\""
+  },
+  {
+    "name": "binary:<=:NULL:0",
+    "code": "a <- NULL <= 0"
+  },
+  {
+    "name": "binary:<=:NULL:1",
+    "code": "a <- NULL <= 1"
+  },
+  {
+    "name": "binary:<=:NULL:NA",
+    "code": "a <- NULL <= NA"
+  },
+  {
+    "name": "binary:<=:NULL:\"1\"",
+    "code": "a <- NULL <= \"1\""
+  },
+  {
+    "name": "binary:<=:0:0",
+    "code": "a <- 0 <= 0"
+  },
+  {
+    "name": "binary:<=:0:1",
+    "code": "a <- 0 <= 1"
+  },
+  {
+    "name": "binary:<=:0:NA",
+    "code": "a <- 0 <= NA"
+  },
+  {
+    "name": "binary:<=:0:\"1\"",
+    "code": "a <- 0 <= \"1\""
+  },
+  {
+    "name": "binary:<=:1:0",
+    "code": "a <- 1 <= 0"
+  },
+  {
+    "name": "binary:<=:1:1",
+    "code": "a <- 1 <= 1"
+  },
+  {
+    "name": "binary:<=:1:NA",
+    "code": "a <- 1 <= NA"
+  },
+  {
+    "name": "binary:<=:1:\"1\"",
+    "code": "a <- 1 <= \"1\""
+  },
+  {
+    "name": "binary:<=:-1:0",
+    "code": "a <- -1 <= 0"
+  },
+  {
+    "name": "binary:<=:-1:1",
+    "code": "a <- -1 <= 1"
+  },
+  {
+    "name": "binary:<=:-1:NA",
+    "code": "a <- -1 <= NA"
+  },
+  {
+    "name": "binary:<=:-1:\"1\"",
+    "code": "a <- -1 <= \"1\""
+  },
+  {
+    "name": "binary:<=:TRUE:0",
+    "code": "a <- TRUE <= 0"
+  },
+  {
+    "name": "binary:<=:TRUE:1",
+    "code": "a <- TRUE <= 1"
+  },
+  {
+    "name": "binary:<=:TRUE:NA",
+    "code": "a <- TRUE <= NA"
+  },
+  {
+    "name": "binary:<=:TRUE:\"1\"",
+    "code": "a <- TRUE <= \"1\""
+  },
+  {
+    "name": "binary:<=:FALSE:0",
+    "code": "a <- FALSE <= 0"
+  },
+  {
+    "name": "binary:<=:FALSE:1",
+    "code": "a <- FALSE <= 1"
+  },
+  {
+    "name": "binary:<=:FALSE:NA",
+    "code": "a <- FALSE <= NA"
+  },
+  {
+    "name": "binary:<=:FALSE:\"1\"",
+    "code": "a <- FALSE <= \"1\""
+  },
+  {
+    "name": "binary:<=:NA:0",
+    "code": "a <- NA <= 0"
+  },
+  {
+    "name": "binary:<=:NA:1",
+    "code": "a <- NA <= 1"
+  },
+  {
+    "name": "binary:<=:NA:NA",
+    "code": "a <- NA <= NA"
+  },
+  {
+    "name": "binary:<=:NA:\"1\"",
+    "code": "a <- NA <= \"1\""
+  },
+  {
+    "name": "binary:<=:NaN:0",
+    "code": "a <- NaN <= 0"
+  },
+  {
+    "name": "binary:<=:NaN:1",
+    "code": "a <- NaN <= 1"
+  },
+  {
+    "name": "binary:<=:NaN:NA",
+    "code": "a <- NaN <= NA"
+  },
+  {
+    "name": "binary:<=:NaN:\"1\"",
+    "code": "a <- NaN <= \"1\""
+  },
+  {
+    "name": "binary:<=:Inf:0",
+    "code": "a <- Inf <= 0"
+  },
+  {
+    "name": "binary:<=:Inf:1",
+    "code": "a <- Inf <= 1"
+  },
+  {
+    "name": "binary:<=:Inf:NA",
+    "code": "a <- Inf <= NA"
+  },
+  {
+    "name": "binary:<=:Inf:\"1\"",
+    "code": "a <- Inf <= \"1\""
+  },
+  {
+    "name": "binary:<=:\"\":0",
+    "code": "a <- \"\" <= 0"
+  },
+  {
+    "name": "binary:<=:\"\":1",
+    "code": "a <- \"\" <= 1"
+  },
+  {
+    "name": "binary:<=:\"\":NA",
+    "code": "a <- \"\" <= NA"
+  },
+  {
+    "name": "binary:<=:\"\":\"1\"",
+    "code": "a <- \"\" <= \"1\""
+  },
+  {
+    "name": "binary:<=:\"1\":0",
+    "code": "a <- \"1\" <= 0"
+  },
+  {
+    "name": "binary:<=:\"1\":1",
+    "code": "a <- \"1\" <= 1"
+  },
+  {
+    "name": "binary:<=:\"1\":NA",
+    "code": "a <- \"1\" <= NA"
+  },
+  {
+    "name": "binary:<=:\"1\":\"1\"",
+    "code": "a <- \"1\" <= \"1\""
+  },
+  {
+    "name": "binary:>:NULL:0",
+    "code": "a <- NULL > 0"
+  },
+  {
+    "name": "binary:>:NULL:1",
+    "code": "a <- NULL > 1"
+  },
+  {
+    "name": "binary:>:NULL:NA",
+    "code": "a <- NULL > NA"
+  },
+  {
+    "name": "binary:>:NULL:\"1\"",
+    "code": "a <- NULL > \"1\""
+  },
+  {
+    "name": "binary:>:0:0",
+    "code": "a <- 0 > 0"
+  },
+  {
+    "name": "binary:>:0:1",
+    "code": "a <- 0 > 1"
+  },
+  {
+    "name": "binary:>:0:NA",
+    "code": "a <- 0 > NA"
+  },
+  {
+    "name": "binary:>:0:\"1\"",
+    "code": "a <- 0 > \"1\""
+  },
+  {
+    "name": "binary:>:1:0",
+    "code": "a <- 1 > 0"
+  },
+  {
+    "name": "binary:>:1:1",
+    "code": "a <- 1 > 1"
+  },
+  {
+    "name": "binary:>:1:NA",
+    "code": "a <- 1 > NA"
+  },
+  {
+    "name": "binary:>:1:\"1\"",
+    "code": "a <- 1 > \"1\""
+  },
+  {
+    "name": "binary:>:-1:0",
+    "code": "a <- -1 > 0"
+  },
+  {
+    "name": "binary:>:-1:1",
+    "code": "a <- -1 > 1"
+  },
+  {
+    "name": "binary:>:-1:NA",
+    "code": "a <- -1 > NA"
+  },
+  {
+    "name": "binary:>:-1:\"1\"",
+    "code": "a <- -1 > \"1\""
+  },
+  {
+    "name": "binary:>:TRUE:0",
+    "code": "a <- TRUE > 0"
+  },
+  {
+    "name": "binary:>:TRUE:1",
+    "code": "a <- TRUE > 1"
+  },
+  {
+    "name": "binary:>:TRUE:NA",
+    "code": "a <- TRUE > NA"
+  },
+  {
+    "name": "binary:>:TRUE:\"1\"",
+    "code": "a <- TRUE > \"1\""
+  },
+  {
+    "name": "binary:>:FALSE:0",
+    "code": "a <- FALSE > 0"
+  },
+  {
+    "name": "binary:>:FALSE:1",
+    "code": "a <- FALSE > 1"
+  },
+  {
+    "name": "binary:>:FALSE:NA",
+    "code": "a <- FALSE > NA"
+  },
+  {
+    "name": "binary:>:FALSE:\"1\"",
+    "code": "a <- FALSE > \"1\""
+  },
+  {
+    "name": "binary:>:NA:0",
+    "code": "a <- NA > 0"
+  },
+  {
+    "name": "binary:>:NA:1",
+    "code": "a <- NA > 1"
+  },
+  {
+    "name": "binary:>:NA:NA",
+    "code": "a <- NA > NA"
+  },
+  {
+    "name": "binary:>:NA:\"1\"",
+    "code": "a <- NA > \"1\""
+  },
+  {
+    "name": "binary:>:NaN:0",
+    "code": "a <- NaN > 0"
+  },
+  {
+    "name": "binary:>:NaN:1",
+    "code": "a <- NaN > 1"
+  },
+  {
+    "name": "binary:>:NaN:NA",
+    "code": "a <- NaN > NA"
+  },
+  {
+    "name": "binary:>:NaN:\"1\"",
+    "code": "a <- NaN > \"1\""
+  },
+  {
+    "name": "binary:>:Inf:0",
+    "code": "a <- Inf > 0"
+  },
+  {
+    "name": "binary:>:Inf:1",
+    "code": "a <- Inf > 1"
+  },
+  {
+    "name": "binary:>:Inf:NA",
+    "code": "a <- Inf > NA"
+  },
+  {
+    "name": "binary:>:Inf:\"1\"",
+    "code": "a <- Inf > \"1\""
+  },
+  {
+    "name": "binary:>:\"\":0",
+    "code": "a <- \"\" > 0"
+  },
+  {
+    "name": "binary:>:\"\":1",
+    "code": "a <- \"\" > 1"
+  },
+  {
+    "name": "binary:>:\"\":NA",
+    "code": "a <- \"\" > NA"
+  },
+  {
+    "name": "binary:>:\"\":\"1\"",
+    "code": "a <- \"\" > \"1\""
+  },
+  {
+    "name": "binary:>:\"1\":0",
+    "code": "a <- \"1\" > 0"
+  },
+  {
+    "name": "binary:>:\"1\":1",
+    "code": "a <- \"1\" > 1"
+  },
+  {
+    "name": "binary:>:\"1\":NA",
+    "code": "a <- \"1\" > NA"
+  },
+  {
+    "name": "binary:>:\"1\":\"1\"",
+    "code": "a <- \"1\" > \"1\""
+  },
+  {
+    "name": "binary:>=:NULL:0",
+    "code": "a <- NULL >= 0"
+  },
+  {
+    "name": "binary:>=:NULL:1",
+    "code": "a <- NULL >= 1"
+  },
+  {
+    "name": "binary:>=:NULL:NA",
+    "code": "a <- NULL >= NA"
+  },
+  {
+    "name": "binary:>=:NULL:\"1\"",
+    "code": "a <- NULL >= \"1\""
+  },
+  {
+    "name": "binary:>=:0:0",
+    "code": "a <- 0 >= 0"
+  },
+  {
+    "name": "binary:>=:0:1",
+    "code": "a <- 0 >= 1"
+  },
+  {
+    "name": "binary:>=:0:NA",
+    "code": "a <- 0 >= NA"
+  },
+  {
+    "name": "binary:>=:0:\"1\"",
+    "code": "a <- 0 >= \"1\""
+  },
+  {
+    "name": "binary:>=:1:0",
+    "code": "a <- 1 >= 0"
+  },
+  {
+    "name": "binary:>=:1:1",
+    "code": "a <- 1 >= 1"
+  },
+  {
+    "name": "binary:>=:1:NA",
+    "code": "a <- 1 >= NA"
+  },
+  {
+    "name": "binary:>=:1:\"1\"",
+    "code": "a <- 1 >= \"1\""
+  },
+  {
+    "name": "binary:>=:-1:0",
+    "code": "a <- -1 >= 0"
+  },
+  {
+    "name": "binary:>=:-1:1",
+    "code": "a <- -1 >= 1"
+  },
+  {
+    "name": "binary:>=:-1:NA",
+    "code": "a <- -1 >= NA"
+  },
+  {
+    "name": "binary:>=:-1:\"1\"",
+    "code": "a <- -1 >= \"1\""
+  },
+  {
+    "name": "binary:>=:TRUE:0",
+    "code": "a <- TRUE >= 0"
+  },
+  {
+    "name": "binary:>=:TRUE:1",
+    "code": "a <- TRUE >= 1"
+  },
+  {
+    "name": "binary:>=:TRUE:NA",
+    "code": "a <- TRUE >= NA"
+  },
+  {
+    "name": "binary:>=:TRUE:\"1\"",
+    "code": "a <- TRUE >= \"1\""
+  },
+  {
+    "name": "binary:>=:FALSE:0",
+    "code": "a <- FALSE >= 0"
+  },
+  {
+    "name": "binary:>=:FALSE:1",
+    "code": "a <- FALSE >= 1"
+  },
+  {
+    "name": "binary:>=:FALSE:NA",
+    "code": "a <- FALSE >= NA"
+  },
+  {
+    "name": "binary:>=:FALSE:\"1\"",
+    "code": "a <- FALSE >= \"1\""
+  },
+  {
+    "name": "binary:>=:NA:0",
+    "code": "a <- NA >= 0"
+  },
+  {
+    "name": "binary:>=:NA:1",
+    "code": "a <- NA >= 1"
+  },
+  {
+    "name": "binary:>=:NA:NA",
+    "code": "a <- NA >= NA"
+  },
+  {
+    "name": "binary:>=:NA:\"1\"",
+    "code": "a <- NA >= \"1\""
+  },
+  {
+    "name": "binary:>=:NaN:0",
+    "code": "a <- NaN >= 0"
+  },
+  {
+    "name": "binary:>=:NaN:1",
+    "code": "a <- NaN >= 1"
+  },
+  {
+    "name": "binary:>=:NaN:NA",
+    "code": "a <- NaN >= NA"
+  },
+  {
+    "name": "binary:>=:NaN:\"1\"",
+    "code": "a <- NaN >= \"1\""
+  },
+  {
+    "name": "binary:>=:Inf:0",
+    "code": "a <- Inf >= 0"
+  },
+  {
+    "name": "binary:>=:Inf:1",
+    "code": "a <- Inf >= 1"
+  },
+  {
+    "name": "binary:>=:Inf:NA",
+    "code": "a <- Inf >= NA"
+  },
+  {
+    "name": "binary:>=:Inf:\"1\"",
+    "code": "a <- Inf >= \"1\""
+  },
+  {
+    "name": "binary:>=:\"\":0",
+    "code": "a <- \"\" >= 0"
+  },
+  {
+    "name": "binary:>=:\"\":1",
+    "code": "a <- \"\" >= 1"
+  },
+  {
+    "name": "binary:>=:\"\":NA",
+    "code": "a <- \"\" >= NA"
+  },
+  {
+    "name": "binary:>=:\"\":\"1\"",
+    "code": "a <- \"\" >= \"1\""
+  },
+  {
+    "name": "binary:>=:\"1\":0",
+    "code": "a <- \"1\" >= 0"
+  },
+  {
+    "name": "binary:>=:\"1\":1",
+    "code": "a <- \"1\" >= 1"
+  },
+  {
+    "name": "binary:>=:\"1\":NA",
+    "code": "a <- \"1\" >= NA"
+  },
+  {
+    "name": "binary:>=:\"1\":\"1\"",
+    "code": "a <- \"1\" >= \"1\""
+  },
+  {
+    "name": "binary:&:NULL:0",
+    "code": "a <- NULL & 0"
+  },
+  {
+    "name": "binary:&:NULL:1",
+    "code": "a <- NULL & 1"
+  },
+  {
+    "name": "binary:&:NULL:NA",
+    "code": "a <- NULL & NA"
+  },
+  {
+    "name": "binary:&:NULL:\"1\"",
+    "code": "a <- NULL & \"1\""
+  },
+  {
+    "name": "binary:&:0:0",
+    "code": "a <- 0 & 0"
+  },
+  {
+    "name": "binary:&:0:1",
+    "code": "a <- 0 & 1"
+  },
+  {
+    "name": "binary:&:0:NA",
+    "code": "a <- 0 & NA"
+  },
+  {
+    "name": "binary:&:0:\"1\"",
+    "code": "a <- 0 & \"1\""
+  },
+  {
+    "name": "binary:&:1:0",
+    "code": "a <- 1 & 0"
+  },
+  {
+    "name": "binary:&:1:1",
+    "code": "a <- 1 & 1"
+  },
+  {
+    "name": "binary:&:1:NA",
+    "code": "a <- 1 & NA"
+  },
+  {
+    "name": "binary:&:1:\"1\"",
+    "code": "a <- 1 & \"1\""
+  },
+  {
+    "name": "binary:&:-1:0",
+    "code": "a <- -1 & 0"
+  },
+  {
+    "name": "binary:&:-1:1",
+    "code": "a <- -1 & 1"
+  },
+  {
+    "name": "binary:&:-1:NA",
+    "code": "a <- -1 & NA"
+  },
+  {
+    "name": "binary:&:-1:\"1\"",
+    "code": "a <- -1 & \"1\""
+  },
+  {
+    "name": "binary:&:TRUE:0",
+    "code": "a <- TRUE & 0"
+  },
+  {
+    "name": "binary:&:TRUE:1",
+    "code": "a <- TRUE & 1"
+  },
+  {
+    "name": "binary:&:TRUE:NA",
+    "code": "a <- TRUE & NA"
+  },
+  {
+    "name": "binary:&:TRUE:\"1\"",
+    "code": "a <- TRUE & \"1\""
+  },
+  {
+    "name": "binary:&:FALSE:0",
+    "code": "a <- FALSE & 0"
+  },
+  {
+    "name": "binary:&:FALSE:1",
+    "code": "a <- FALSE & 1"
+  },
+  {
+    "name": "binary:&:FALSE:NA",
+    "code": "a <- FALSE & NA"
+  },
+  {
+    "name": "binary:&:FALSE:\"1\"",
+    "code": "a <- FALSE & \"1\""
+  },
+  {
+    "name": "binary:&:NA:0",
+    "code": "a <- NA & 0"
+  },
+  {
+    "name": "binary:&:NA:1",
+    "code": "a <- NA & 1"
+  },
+  {
+    "name": "binary:&:NA:NA",
+    "code": "a <- NA & NA"
+  },
+  {
+    "name": "binary:&:NA:\"1\"",
+    "code": "a <- NA & \"1\""
+  },
+  {
+    "name": "binary:&:NaN:0",
+    "code": "a <- NaN & 0"
+  },
+  {
+    "name": "binary:&:NaN:1",
+    "code": "a <- NaN & 1"
+  },
+  {
+    "name": "binary:&:NaN:NA",
+    "code": "a <- NaN & NA"
+  },
+  {
+    "name": "binary:&:NaN:\"1\"",
+    "code": "a <- NaN & \"1\""
+  },
+  {
+    "name": "binary:&:Inf:0",
+    "code": "a <- Inf & 0"
+  },
+  {
+    "name": "binary:&:Inf:1",
+    "code": "a <- Inf & 1"
+  },
+  {
+    "name": "binary:&:Inf:NA",
+    "code": "a <- Inf & NA"
+  },
+  {
+    "name": "binary:&:Inf:\"1\"",
+    "code": "a <- Inf & \"1\""
+  },
+  {
+    "name": "binary:&:\"\":0",
+    "code": "a <- \"\" & 0"
+  },
+  {
+    "name": "binary:&:\"\":1",
+    "code": "a <- \"\" & 1"
+  },
+  {
+    "name": "binary:&:\"\":NA",
+    "code": "a <- \"\" & NA"
+  },
+  {
+    "name": "binary:&:\"\":\"1\"",
+    "code": "a <- \"\" & \"1\""
+  },
+  {
+    "name": "binary:&:\"1\":0",
+    "code": "a <- \"1\" & 0"
+  },
+  {
+    "name": "binary:&:\"1\":1",
+    "code": "a <- \"1\" & 1"
+  },
+  {
+    "name": "binary:&:\"1\":NA",
+    "code": "a <- \"1\" & NA"
+  },
+  {
+    "name": "binary:&:\"1\":\"1\"",
+    "code": "a <- \"1\" & \"1\""
+  },
+  {
+    "name": "binary:|:NULL:0",
+    "code": "a <- NULL | 0"
+  },
+  {
+    "name": "binary:|:NULL:1",
+    "code": "a <- NULL | 1"
+  },
+  {
+    "name": "binary:|:NULL:NA",
+    "code": "a <- NULL | NA"
+  },
+  {
+    "name": "binary:|:NULL:\"1\"",
+    "code": "a <- NULL | \"1\""
+  },
+  {
+    "name": "binary:|:0:0",
+    "code": "a <- 0 | 0"
+  },
+  {
+    "name": "binary:|:0:1",
+    "code": "a <- 0 | 1"
+  },
+  {
+    "name": "binary:|:0:NA",
+    "code": "a <- 0 | NA"
+  },
+  {
+    "name": "binary:|:0:\"1\"",
+    "code": "a <- 0 | \"1\""
+  },
+  {
+    "name": "binary:|:1:0",
+    "code": "a <- 1 | 0"
+  },
+  {
+    "name": "binary:|:1:1",
+    "code": "a <- 1 | 1"
+  },
+  {
+    "name": "binary:|:1:NA",
+    "code": "a <- 1 | NA"
+  },
+  {
+    "name": "binary:|:1:\"1\"",
+    "code": "a <- 1 | \"1\""
+  },
+  {
+    "name": "binary:|:-1:0",
+    "code": "a <- -1 | 0"
+  },
+  {
+    "name": "binary:|:-1:1",
+    "code": "a <- -1 | 1"
+  },
+  {
+    "name": "binary:|:-1:NA",
+    "code": "a <- -1 | NA"
+  },
+  {
+    "name": "binary:|:-1:\"1\"",
+    "code": "a <- -1 | \"1\""
+  },
+  {
+    "name": "binary:|:TRUE:0",
+    "code": "a <- TRUE | 0"
+  },
+  {
+    "name": "binary:|:TRUE:1",
+    "code": "a <- TRUE | 1"
+  },
+  {
+    "name": "binary:|:TRUE:NA",
+    "code": "a <- TRUE | NA"
+  },
+  {
+    "name": "binary:|:TRUE:\"1\"",
+    "code": "a <- TRUE | \"1\""
+  },
+  {
+    "name": "binary:|:FALSE:0",
+    "code": "a <- FALSE | 0"
+  },
+  {
+    "name": "binary:|:FALSE:1",
+    "code": "a <- FALSE | 1"
+  },
+  {
+    "name": "binary:|:FALSE:NA",
+    "code": "a <- FALSE | NA"
+  },
+  {
+    "name": "binary:|:FALSE:\"1\"",
+    "code": "a <- FALSE | \"1\""
+  },
+  {
+    "name": "binary:|:NA:0",
+    "code": "a <- NA | 0"
+  },
+  {
+    "name": "binary:|:NA:1",
+    "code": "a <- NA | 1"
+  },
+  {
+    "name": "binary:|:NA:NA",
+    "code": "a <- NA | NA"
+  },
+  {
+    "name": "binary:|:NA:\"1\"",
+    "code": "a <- NA | \"1\""
+  },
+  {
+    "name": "binary:|:NaN:0",
+    "code": "a <- NaN | 0"
+  },
+  {
+    "name": "binary:|:NaN:1",
+    "code": "a <- NaN | 1"
+  },
+  {
+    "name": "binary:|:NaN:NA",
+    "code": "a <- NaN | NA"
+  },
+  {
+    "name": "binary:|:NaN:\"1\"",
+    "code": "a <- NaN | \"1\""
+  },
+  {
+    "name": "binary:|:Inf:0",
+    "code": "a <- Inf | 0"
+  },
+  {
+    "name": "binary:|:Inf:1",
+    "code": "a <- Inf | 1"
+  },
+  {
+    "name": "binary:|:Inf:NA",
+    "code": "a <- Inf | NA"
+  },
+  {
+    "name": "binary:|:Inf:\"1\"",
+    "code": "a <- Inf | \"1\""
+  },
+  {
+    "name": "binary:|:\"\":0",
+    "code": "a <- \"\" | 0"
+  },
+  {
+    "name": "binary:|:\"\":1",
+    "code": "a <- \"\" | 1"
+  },
+  {
+    "name": "binary:|:\"\":NA",
+    "code": "a <- \"\" | NA"
+  },
+  {
+    "name": "binary:|:\"\":\"1\"",
+    "code": "a <- \"\" | \"1\""
+  },
+  {
+    "name": "binary:|:\"1\":0",
+    "code": "a <- \"1\" | 0"
+  },
+  {
+    "name": "binary:|:\"1\":1",
+    "code": "a <- \"1\" | 1"
+  },
+  {
+    "name": "binary:|:\"1\":NA",
+    "code": "a <- \"1\" | NA"
+  },
+  {
+    "name": "binary:|:\"1\":\"1\"",
+    "code": "a <- \"1\" | \"1\""
+  },
+  {
+    "name": "binary:&&:NULL:0",
+    "code": "a <- NULL && 0"
+  },
+  {
+    "name": "binary:&&:NULL:1",
+    "code": "a <- NULL && 1"
+  },
+  {
+    "name": "binary:&&:NULL:NA",
+    "code": "a <- NULL && NA"
+  },
+  {
+    "name": "binary:&&:NULL:\"1\"",
+    "code": "a <- NULL && \"1\""
+  },
+  {
+    "name": "binary:&&:0:0",
+    "code": "a <- 0 && 0"
+  },
+  {
+    "name": "binary:&&:0:1",
+    "code": "a <- 0 && 1"
+  },
+  {
+    "name": "binary:&&:0:NA",
+    "code": "a <- 0 && NA"
+  },
+  {
+    "name": "binary:&&:0:\"1\"",
+    "code": "a <- 0 && \"1\""
+  },
+  {
+    "name": "binary:&&:1:0",
+    "code": "a <- 1 && 0"
+  },
+  {
+    "name": "binary:&&:1:1",
+    "code": "a <- 1 && 1"
+  },
+  {
+    "name": "binary:&&:1:NA",
+    "code": "a <- 1 && NA"
+  },
+  {
+    "name": "binary:&&:1:\"1\"",
+    "code": "a <- 1 && \"1\""
+  },
+  {
+    "name": "binary:&&:-1:0",
+    "code": "a <- -1 && 0"
+  },
+  {
+    "name": "binary:&&:-1:1",
+    "code": "a <- -1 && 1"
+  },
+  {
+    "name": "binary:&&:-1:NA",
+    "code": "a <- -1 && NA"
+  },
+  {
+    "name": "binary:&&:-1:\"1\"",
+    "code": "a <- -1 && \"1\""
+  },
+  {
+    "name": "binary:&&:TRUE:0",
+    "code": "a <- TRUE && 0"
+  },
+  {
+    "name": "binary:&&:TRUE:1",
+    "code": "a <- TRUE && 1"
+  },
+  {
+    "name": "binary:&&:TRUE:NA",
+    "code": "a <- TRUE && NA"
+  },
+  {
+    "name": "binary:&&:TRUE:\"1\"",
+    "code": "a <- TRUE && \"1\""
+  },
+  {
+    "name": "binary:&&:FALSE:0",
+    "code": "a <- FALSE && 0"
+  },
+  {
+    "name": "binary:&&:FALSE:1",
+    "code": "a <- FALSE && 1"
+  },
+  {
+    "name": "binary:&&:FALSE:NA",
+    "code": "a <- FALSE && NA"
+  },
+  {
+    "name": "binary:&&:FALSE:\"1\"",
+    "code": "a <- FALSE && \"1\""
+  },
+  {
+    "name": "binary:&&:NA:0",
+    "code": "a <- NA && 0"
+  },
+  {
+    "name": "binary:&&:NA:1",
+    "code": "a <- NA && 1"
+  },
+  {
+    "name": "binary:&&:NA:NA",
+    "code": "a <- NA && NA"
+  },
+  {
+    "name": "binary:&&:NA:\"1\"",
+    "code": "a <- NA && \"1\""
+  },
+  {
+    "name": "binary:&&:NaN:0",
+    "code": "a <- NaN && 0"
+  },
+  {
+    "name": "binary:&&:NaN:1",
+    "code": "a <- NaN && 1"
+  },
+  {
+    "name": "binary:&&:NaN:NA",
+    "code": "a <- NaN && NA"
+  },
+  {
+    "name": "binary:&&:NaN:\"1\"",
+    "code": "a <- NaN && \"1\""
+  },
+  {
+    "name": "binary:&&:Inf:0",
+    "code": "a <- Inf && 0"
+  },
+  {
+    "name": "binary:&&:Inf:1",
+    "code": "a <- Inf && 1"
+  },
+  {
+    "name": "binary:&&:Inf:NA",
+    "code": "a <- Inf && NA"
+  },
+  {
+    "name": "binary:&&:Inf:\"1\"",
+    "code": "a <- Inf && \"1\""
+  },
+  {
+    "name": "binary:&&:\"\":0",
+    "code": "a <- \"\" && 0"
+  },
+  {
+    "name": "binary:&&:\"\":1",
+    "code": "a <- \"\" && 1"
+  },
+  {
+    "name": "binary:&&:\"\":NA",
+    "code": "a <- \"\" && NA"
+  },
+  {
+    "name": "binary:&&:\"\":\"1\"",
+    "code": "a <- \"\" && \"1\""
+  },
+  {
+    "name": "binary:&&:\"1\":0",
+    "code": "a <- \"1\" && 0"
+  },
+  {
+    "name": "binary:&&:\"1\":1",
+    "code": "a <- \"1\" && 1"
+  },
+  {
+    "name": "binary:&&:\"1\":NA",
+    "code": "a <- \"1\" && NA"
+  },
+  {
+    "name": "binary:&&:\"1\":\"1\"",
+    "code": "a <- \"1\" && \"1\""
+  },
+  {
+    "name": "binary:||:NULL:0",
+    "code": "a <- NULL || 0"
+  },
+  {
+    "name": "binary:||:NULL:1",
+    "code": "a <- NULL || 1"
+  },
+  {
+    "name": "binary:||:NULL:NA",
+    "code": "a <- NULL || NA"
+  },
+  {
+    "name": "binary:||:NULL:\"1\"",
+    "code": "a <- NULL || \"1\""
+  },
+  {
+    "name": "binary:||:0:0",
+    "code": "a <- 0 || 0"
+  },
+  {
+    "name": "binary:||:0:1",
+    "code": "a <- 0 || 1"
+  },
+  {
+    "name": "binary:||:0:NA",
+    "code": "a <- 0 || NA"
+  },
+  {
+    "name": "binary:||:0:\"1\"",
+    "code": "a <- 0 || \"1\""
+  },
+  {
+    "name": "binary:||:1:0",
+    "code": "a <- 1 || 0"
+  },
+  {
+    "name": "binary:||:1:1",
+    "code": "a <- 1 || 1"
+  },
+  {
+    "name": "binary:||:1:NA",
+    "code": "a <- 1 || NA"
+  },
+  {
+    "name": "binary:||:1:\"1\"",
+    "code": "a <- 1 || \"1\""
+  },
+  {
+    "name": "binary:||:-1:0",
+    "code": "a <- -1 || 0"
+  },
+  {
+    "name": "binary:||:-1:1",
+    "code": "a <- -1 || 1"
+  },
+  {
+    "name": "binary:||:-1:NA",
+    "code": "a <- -1 || NA"
+  },
+  {
+    "name": "binary:||:-1:\"1\"",
+    "code": "a <- -1 || \"1\""
+  },
+  {
+    "name": "binary:||:TRUE:0",
+    "code": "a <- TRUE || 0"
+  },
+  {
+    "name": "binary:||:TRUE:1",
+    "code": "a <- TRUE || 1"
+  },
+  {
+    "name": "binary:||:TRUE:NA",
+    "code": "a <- TRUE || NA"
+  },
+  {
+    "name": "binary:||:TRUE:\"1\"",
+    "code": "a <- TRUE || \"1\""
+  },
+  {
+    "name": "binary:||:FALSE:0",
+    "code": "a <- FALSE || 0"
+  },
+  {
+    "name": "binary:||:FALSE:1",
+    "code": "a <- FALSE || 1"
+  },
+  {
+    "name": "binary:||:FALSE:NA",
+    "code": "a <- FALSE || NA"
+  },
+  {
+    "name": "binary:||:FALSE:\"1\"",
+    "code": "a <- FALSE || \"1\""
+  },
+  {
+    "name": "binary:||:NA:0",
+    "code": "a <- NA || 0"
+  },
+  {
+    "name": "binary:||:NA:1",
+    "code": "a <- NA || 1"
+  },
+  {
+    "name": "binary:||:NA:NA",
+    "code": "a <- NA || NA"
+  },
+  {
+    "name": "binary:||:NA:\"1\"",
+    "code": "a <- NA || \"1\""
+  },
+  {
+    "name": "binary:||:NaN:0",
+    "code": "a <- NaN || 0"
+  },
+  {
+    "name": "binary:||:NaN:1",
+    "code": "a <- NaN || 1"
+  },
+  {
+    "name": "binary:||:NaN:NA",
+    "code": "a <- NaN || NA"
+  },
+  {
+    "name": "binary:||:NaN:\"1\"",
+    "code": "a <- NaN || \"1\""
+  },
+  {
+    "name": "binary:||:Inf:0",
+    "code": "a <- Inf || 0"
+  },
+  {
+    "name": "binary:||:Inf:1",
+    "code": "a <- Inf || 1"
+  },
+  {
+    "name": "binary:||:Inf:NA",
+    "code": "a <- Inf || NA"
+  },
+  {
+    "name": "binary:||:Inf:\"1\"",
+    "code": "a <- Inf || \"1\""
+  },
+  {
+    "name": "binary:||:\"\":0",
+    "code": "a <- \"\" || 0"
+  },
+  {
+    "name": "binary:||:\"\":1",
+    "code": "a <- \"\" || 1"
+  },
+  {
+    "name": "binary:||:\"\":NA",
+    "code": "a <- \"\" || NA"
+  },
+  {
+    "name": "binary:||:\"\":\"1\"",
+    "code": "a <- \"\" || \"1\""
+  },
+  {
+    "name": "binary:||:\"1\":0",
+    "code": "a <- \"1\" || 0"
+  },
+  {
+    "name": "binary:||:\"1\":1",
+    "code": "a <- \"1\" || 1"
+  },
+  {
+    "name": "binary:||:\"1\":NA",
+    "code": "a <- \"1\" || NA"
+  },
+  {
+    "name": "binary:||:\"1\":\"1\"",
+    "code": "a <- \"1\" || \"1\""
+  },
+  {
+    "name": "control:break\na <- 1",
+    "code": "break\na <- 1"
+  },
+  {
+    "name": "control:next\na <- 1",
+    "code": "next\na <- 1"
+  },
+  {
+    "name": "control:if (FALSE) { break }\na <- 1",
+    "code": "if (FALSE) { break }\na <- 1"
+  },
+  {
+    "name": "control:for(i in 1:3){if(i==2){next};print(i)}\na <- i",
+    "code": "for(i in 1:3){if(i==2){next};print(i)}\na <- i"
+  },
+  {
+    "name": "control:for(i in 1:3){if(i==2){break};print(i)}\na <- i",
+    "code": "for(i in 1:3){if(i==2){break};print(i)}\na <- i"
+  },
+  {
+    "name": "control:a <- 0\nrepeat {a <- a+1; if(a==2){break}}",
+    "code": "a <- 0\nrepeat {a <- a+1; if(a==2){break}}"
+  },
+  {
+    "name": "control:TRUE <- 1\na <- TRUE",
+    "code": "TRUE <- 1\na <- TRUE"
+  },
+  {
+    "name": "control:NA <- 1\na <- NA",
+    "code": "NA <- 1\na <- NA"
+  },
+  {
+    "name": "control:a <- 1\nif(a>0){a <- 2}else{a <- 3}",
+    "code": "a <- 1\nif(a>0){a <- 2}else{a <- 3}"
+  },
+  {
+    "name": "confirm:mean(c(1,100,2),trim=TRUE)",
+    "code": "a <- mean(c(1,100,2),trim=TRUE)"
+  },
+  {
+    "name": "confirm:print(\"abc\",quote=FALSE)",
+    "code": "a <- print(\"abc\",quote=FALSE)"
+  },
+  {
+    "name": "confirm:print(1.23456789,digits=2)",
+    "code": "a <- print(1.23456789,digits=2)"
+  },
+  {
+    "name": "confirm:seq(from=NULL,to=3)",
+    "code": "a <- seq(from=NULL,to=3)"
+  },
+  {
+    "name": "confirm:seq(from=1,to=NULL)",
+    "code": "a <- seq(from=1,to=NULL)"
+  },
+  {
+    "name": "confirm:seq(from=1,to=3,by=NULL)",
+    "code": "a <- seq(from=1,to=3,by=NULL)"
+  },
+  {
+    "name": "confirm:rep(1:2,times=c(TRUE,FALSE))",
+    "code": "a <- rep(1:2,times=c(TRUE,FALSE))"
+  },
+  {
+    "name": "confirm:rep(1:2,times=-1,length.out=3)",
+    "code": "a <- rep(1:2,times=-1,length.out=3)"
+  },
+  {
+    "name": "confirm:seq(1,2,along.with=c(1,2),length.out=5)",
+    "code": "a <- seq(1,2,along.with=c(1,2),length.out=5)"
+  }
+]

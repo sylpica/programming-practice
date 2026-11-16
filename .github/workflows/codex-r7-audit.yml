@@ -20,10 +20,14 @@ jobs:
         with:
           r-version: '4.2.2'
           use-public-rspm: false
-      - name: Check R reserved constants and mutable aliases
-        run: python audit-probes/step13-extra/run.py
+      - name: Final R boundary optional binding operator matrix
+        run: python audit-probes/final-r-vba/run.py
+      - name: VBA auxiliary Windows VBScript matrix (not Excel)
+        run: python audit-probes/final-r-vba/native-vb.py
+      - name: VBA fixed application Windows timing and results
+        run: node audit-probes/final-r-vba/vba-app.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: codex-r7-native-evidence
-          path: audit-probes/step13-extra/results*
+          name: codex-r7-final-r-vba
+          path: audit-probes/final-r-vba/results*
