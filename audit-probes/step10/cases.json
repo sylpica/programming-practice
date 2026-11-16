@@ -1,0 +1,4439 @@
+[
+  {
+    "id": 0,
+    "kind": "cmd",
+    "name": "template:cmd-hello",
+    "code": "@echo off\nset \"NAME=Alice\"\necho Hello %NAME%\necho.",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "学習メモ\r\n",
+          "length": 14
+        },
+        {
+          "path": "C:\\Practice\\data.csv",
+          "type": "file",
+          "content": "Name,Score\r\nAlice,80\r\n",
+          "length": 22
+        },
+        {
+          "path": "C:\\Practice\\readme.txt",
+          "type": "file",
+          "content": "Practice\r\n",
+          "length": 10
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        }
+      ],
+      "args": [],
+      "errorlevel": 0,
+      "inputs": {}
+    },
+    "stdin": "",
+    "interactive": false
+  },
+  {
+    "id": 1,
+    "kind": "cmd",
+    "name": "template:cmd-calculate",
+    "code": "@echo off\nset /a \"TOTAL=2+3*4\"\necho %TOTAL%",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "学習メモ\r\n",
+          "length": 14
+        },
+        {
+          "path": "C:\\Practice\\data.csv",
+          "type": "file",
+          "content": "Name,Score\r\nAlice,80\r\n",
+          "length": 22
+        },
+        {
+          "path": "C:\\Practice\\readme.txt",
+          "type": "file",
+          "content": "Practice\r\n",
+          "length": 10
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        }
+      ],
+      "args": [],
+      "errorlevel": 0,
+      "inputs": {}
+    },
+    "stdin": "",
+    "interactive": false
+  },
+  {
+    "id": 2,
+    "kind": "cmd",
+    "name": "template:cmd-delayed",
+    "code": "@echo off\nsetlocal EnableDelayedExpansion\nset COUNT=0\nfor /L %%i in (1,1,3) do (\n set /a \"COUNT=COUNT+1\"\n echo %COUNT% !COUNT!\n)\nendlocal",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "学習メモ\r\n",
+          "length": 14
+        },
+        {
+          "path": "C:\\Practice\\data.csv",
+          "type": "file",
+          "content": "Name,Score\r\nAlice,80\r\n",
+          "length": 22
+        },
+        {
+          "path": "C:\\Practice\\readme.txt",
+          "type": "file",
+          "content": "Practice\r\n",
+          "length": 10
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        }
+      ],
+      "args": [],
+      "errorlevel": 0,
+      "inputs": {}
+    },
+    "stdin": "",
+    "interactive": false
+  },
+  {
+    "id": 3,
+    "kind": "cmd",
+    "name": "template:cmd-files",
+    "code": "@echo off\nfor %%f in (*.txt) do (\n echo %%f\n)\nif exist notes.txt (\n type notes.txt\n)",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "学習メモ\r\n",
+          "length": 14
+        },
+        {
+          "path": "C:\\Practice\\data.csv",
+          "type": "file",
+          "content": "Name,Score\r\nAlice,80\r\n",
+          "length": 22
+        },
+        {
+          "path": "C:\\Practice\\readme.txt",
+          "type": "file",
+          "content": "Practice\r\n",
+          "length": 10
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        }
+      ],
+      "args": [],
+      "errorlevel": 0,
+      "inputs": {}
+    },
+    "stdin": "",
+    "interactive": false
+  },
+  {
+    "id": 4,
+    "kind": "cmd",
+    "name": "template:cmd-subroutine",
+    "code": "@echo off\ncall :show \"Alice Smith\"\necho returned\ngoto :eof\n:show\necho Hello %~1\nexit /b 0",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "学習メモ\r\n",
+          "length": 14
+        },
+        {
+          "path": "C:\\Practice\\data.csv",
+          "type": "file",
+          "content": "Name,Score\r\nAlice,80\r\n",
+          "length": 22
+        },
+        {
+          "path": "C:\\Practice\\readme.txt",
+          "type": "file",
+          "content": "Practice\r\n",
+          "length": 10
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        }
+      ],
+      "args": [],
+      "errorlevel": 0,
+      "inputs": {}
+    },
+    "stdin": "",
+    "interactive": false
+  },
+  {
+    "id": 5,
+    "kind": "cmd",
+    "name": "template:cmd-input",
+    "code": "@echo off\nset /p \"ANSWER=Continue? \"\nif \"%ANSWER%\"==\"yes\" (\n echo accepted\n) else (\n echo other input\n)",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "学習メモ\r\n",
+          "length": 14
+        },
+        {
+          "path": "C:\\Practice\\data.csv",
+          "type": "file",
+          "content": "Name,Score\r\nAlice,80\r\n",
+          "length": 22
+        },
+        {
+          "path": "C:\\Practice\\readme.txt",
+          "type": "file",
+          "content": "Practice\r\n",
+          "length": 10
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        }
+      ],
+      "args": [],
+      "errorlevel": 0,
+      "inputs": {
+        "ANSWER": "yes"
+      }
+    },
+    "stdin": "yes\n",
+    "interactive": true
+  },
+  {
+    "id": 6,
+    "kind": "cmd",
+    "name": "template:cmd-input",
+    "code": "@echo off\nset /p \"ANSWER=Continue? \"\nif \"%ANSWER%\"==\"yes\" (\n echo accepted\n) else (\n echo other input\n)",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "学習メモ\r\n",
+          "length": 14
+        },
+        {
+          "path": "C:\\Practice\\data.csv",
+          "type": "file",
+          "content": "Name,Score\r\nAlice,80\r\n",
+          "length": 22
+        },
+        {
+          "path": "C:\\Practice\\readme.txt",
+          "type": "file",
+          "content": "Practice\r\n",
+          "length": 10
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        }
+      ],
+      "args": [],
+      "errorlevel": 0,
+      "inputs": {
+        "ANSWER": "no"
+      }
+    },
+    "stdin": "no\n",
+    "interactive": true
+  },
+  {
+    "id": 7,
+    "kind": "cmd",
+    "name": "template:cmd-write",
+    "code": "@echo off\nmd output\necho first>output\\result.txt\necho second>>output\\result.txt\nmove output\\result.txt output\\moved.txt\ntype output\\moved.txt",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "学習メモ\r\n",
+          "length": 14
+        },
+        {
+          "path": "C:\\Practice\\data.csv",
+          "type": "file",
+          "content": "Name,Score\r\nAlice,80\r\n",
+          "length": 22
+        },
+        {
+          "path": "C:\\Practice\\readme.txt",
+          "type": "file",
+          "content": "Practice\r\n",
+          "length": 10
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        }
+      ],
+      "args": [],
+      "errorlevel": 0,
+      "inputs": {}
+    },
+    "stdin": "",
+    "interactive": false
+  },
+  {
+    "id": 8,
+    "kind": "cmd",
+    "name": "template:cmd-pipe",
+    "code": "@echo off\ntype notes.txt|find \"学習\"\nif errorlevel 1 (\n echo not found\n) else (\n echo found\n)",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "学習メモ\r\n",
+          "length": 14
+        },
+        {
+          "path": "C:\\Practice\\data.csv",
+          "type": "file",
+          "content": "Name,Score\r\nAlice,80\r\n",
+          "length": 22
+        },
+        {
+          "path": "C:\\Practice\\readme.txt",
+          "type": "file",
+          "content": "Practice\r\n",
+          "length": 10
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        }
+      ],
+      "args": [],
+      "errorlevel": 0,
+      "inputs": {}
+    },
+    "stdin": "",
+    "interactive": false
+  },
+  {
+    "id": 9,
+    "kind": "cmd",
+    "name": "reference:echo",
+    "code": "@echo off\necho Hello\necho.",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "学習メモ\r\n",
+          "length": 14
+        },
+        {
+          "path": "C:\\Practice\\data.csv",
+          "type": "file",
+          "content": "Name,Score\r\nAlice,80\r\n",
+          "length": 22
+        },
+        {
+          "path": "C:\\Practice\\readme.txt",
+          "type": "file",
+          "content": "Practice\r\n",
+          "length": 10
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        }
+      ],
+      "args": [],
+      "errorlevel": 0,
+      "inputs": {}
+    },
+    "stdin": "",
+    "interactive": false
+  },
+  {
+    "id": 10,
+    "kind": "cmd",
+    "name": "reference:set",
+    "code": "set \"NAME=Alice\"\necho %NAME%",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "学習メモ\r\n",
+          "length": 14
+        },
+        {
+          "path": "C:\\Practice\\data.csv",
+          "type": "file",
+          "content": "Name,Score\r\nAlice,80\r\n",
+          "length": 22
+        },
+        {
+          "path": "C:\\Practice\\readme.txt",
+          "type": "file",
+          "content": "Practice\r\n",
+          "length": 10
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        }
+      ],
+      "args": [],
+      "errorlevel": 0,
+      "inputs": {}
+    },
+    "stdin": "",
+    "interactive": false
+  },
+  {
+    "id": 11,
+    "kind": "cmd",
+    "name": "reference:set /a",
+    "code": "set /a \"N=2+3*4\"\necho %N%",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "学習メモ\r\n",
+          "length": 14
+        },
+        {
+          "path": "C:\\Practice\\data.csv",
+          "type": "file",
+          "content": "Name,Score\r\nAlice,80\r\n",
+          "length": 22
+        },
+        {
+          "path": "C:\\Practice\\readme.txt",
+          "type": "file",
+          "content": "Practice\r\n",
+          "length": 10
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        }
+      ],
+      "args": [],
+      "errorlevel": 0,
+      "inputs": {}
+    },
+    "stdin": "",
+    "interactive": false
+  },
+  {
+    "id": 12,
+    "kind": "cmd",
+    "name": "reference:set /p",
+    "code": "set /p \"ANSWER=Continue? \"\necho %ANSWER%",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "学習メモ\r\n",
+          "length": 14
+        },
+        {
+          "path": "C:\\Practice\\data.csv",
+          "type": "file",
+          "content": "Name,Score\r\nAlice,80\r\n",
+          "length": 22
+        },
+        {
+          "path": "C:\\Practice\\readme.txt",
+          "type": "file",
+          "content": "Practice\r\n",
+          "length": 10
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        }
+      ],
+      "args": [],
+      "errorlevel": 0,
+      "inputs": {
+        "ANSWER": "Alice"
+      }
+    },
+    "stdin": "Alice\n",
+    "interactive": false
+  },
+  {
+    "id": 13,
+    "kind": "cmd",
+    "name": "reference:動的変数",
+    "code": "echo %ERRORLEVEL%\necho %CD%",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "学習メモ\r\n",
+          "length": 14
+        },
+        {
+          "path": "C:\\Practice\\data.csv",
+          "type": "file",
+          "content": "Name,Score\r\nAlice,80\r\n",
+          "length": 22
+        },
+        {
+          "path": "C:\\Practice\\readme.txt",
+          "type": "file",
+          "content": "Practice\r\n",
+          "length": 10
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        }
+      ],
+      "args": [],
+      "errorlevel": 0,
+      "inputs": {}
+    },
+    "stdin": "",
+    "interactive": false
+  },
+  {
+    "id": 14,
+    "kind": "cmd",
+    "name": "reference:変数展開",
+    "code": "set NAME=Alice\necho %NAME%",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "学習メモ\r\n",
+          "length": 14
+        },
+        {
+          "path": "C:\\Practice\\data.csv",
+          "type": "file",
+          "content": "Name,Score\r\nAlice,80\r\n",
+          "length": 22
+        },
+        {
+          "path": "C:\\Practice\\readme.txt",
+          "type": "file",
+          "content": "Practice\r\n",
+          "length": 10
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        }
+      ],
+      "args": [],
+      "errorlevel": 0,
+      "inputs": {}
+    },
+    "stdin": "",
+    "interactive": false
+  },
+  {
+    "id": 15,
+    "kind": "cmd",
+    "name": "reference:setlocal",
+    "code": "setlocal EnableDelayedExpansion\nset X=1\necho !X!\nendlocal",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "学習メモ\r\n",
+          "length": 14
+        },
+        {
+          "path": "C:\\Practice\\data.csv",
+          "type": "file",
+          "content": "Name,Score\r\nAlice,80\r\n",
+          "length": 22
+        },
+        {
+          "path": "C:\\Practice\\readme.txt",
+          "type": "file",
+          "content": "Practice\r\n",
+          "length": 10
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        }
+      ],
+      "args": [],
+      "errorlevel": 0,
+      "inputs": {}
+    },
+    "stdin": "",
+    "interactive": false
+  },
+  {
+    "id": 16,
+    "kind": "cmd",
+    "name": "reference:endlocal",
+    "code": "set X=outer\nsetlocal\nset X=inner\nendlocal\necho %X%",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "学習メモ\r\n",
+          "length": 14
+        },
+        {
+          "path": "C:\\Practice\\data.csv",
+          "type": "file",
+          "content": "Name,Score\r\nAlice,80\r\n",
+          "length": 22
+        },
+        {
+          "path": "C:\\Practice\\readme.txt",
+          "type": "file",
+          "content": "Practice\r\n",
+          "length": 10
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        }
+      ],
+      "args": [],
+      "errorlevel": 0,
+      "inputs": {}
+    },
+    "stdin": "",
+    "interactive": false
+  },
+  {
+    "id": 17,
+    "kind": "cmd",
+    "name": "reference:if",
+    "code": "if exist notes.txt (\n echo found\n) else (\n echo missing\n)",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "学習メモ\r\n",
+          "length": 14
+        },
+        {
+          "path": "C:\\Practice\\data.csv",
+          "type": "file",
+          "content": "Name,Score\r\nAlice,80\r\n",
+          "length": 22
+        },
+        {
+          "path": "C:\\Practice\\readme.txt",
+          "type": "file",
+          "content": "Practice\r\n",
+          "length": 10
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        }
+      ],
+      "args": [],
+      "errorlevel": 0,
+      "inputs": {}
+    },
+    "stdin": "",
+    "interactive": false
+  },
+  {
+    "id": 18,
+    "kind": "cmd",
+    "name": "reference:for",
+    "code": "for /L %%i in (1,1,3) do echo %%i",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "学習メモ\r\n",
+          "length": 14
+        },
+        {
+          "path": "C:\\Practice\\data.csv",
+          "type": "file",
+          "content": "Name,Score\r\nAlice,80\r\n",
+          "length": 22
+        },
+        {
+          "path": "C:\\Practice\\readme.txt",
+          "type": "file",
+          "content": "Practice\r\n",
+          "length": 10
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        }
+      ],
+      "args": [],
+      "errorlevel": 0,
+      "inputs": {}
+    },
+    "stdin": "",
+    "interactive": false
+  },
+  {
+    "id": 19,
+    "kind": "cmd",
+    "name": "reference:goto",
+    "code": "goto done\necho skipped\n:done\necho done",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "学習メモ\r\n",
+          "length": 14
+        },
+        {
+          "path": "C:\\Practice\\data.csv",
+          "type": "file",
+          "content": "Name,Score\r\nAlice,80\r\n",
+          "length": 22
+        },
+        {
+          "path": "C:\\Practice\\readme.txt",
+          "type": "file",
+          "content": "Practice\r\n",
+          "length": 10
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        }
+      ],
+      "args": [],
+      "errorlevel": 0,
+      "inputs": {}
+    },
+    "stdin": "",
+    "interactive": false
+  },
+  {
+    "id": 20,
+    "kind": "cmd",
+    "name": "reference:call",
+    "code": "call :show \"Alice\"\ngoto :eof\n:show\necho %~1\nexit /b",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "学習メモ\r\n",
+          "length": 14
+        },
+        {
+          "path": "C:\\Practice\\data.csv",
+          "type": "file",
+          "content": "Name,Score\r\nAlice,80\r\n",
+          "length": 22
+        },
+        {
+          "path": "C:\\Practice\\readme.txt",
+          "type": "file",
+          "content": "Practice\r\n",
+          "length": 10
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        }
+      ],
+      "args": [],
+      "errorlevel": 0,
+      "inputs": {}
+    },
+    "stdin": "",
+    "interactive": false
+  },
+  {
+    "id": 21,
+    "kind": "cmd",
+    "name": "reference:exit",
+    "code": "exit /b 3",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "学習メモ\r\n",
+          "length": 14
+        },
+        {
+          "path": "C:\\Practice\\data.csv",
+          "type": "file",
+          "content": "Name,Score\r\nAlice,80\r\n",
+          "length": 22
+        },
+        {
+          "path": "C:\\Practice\\readme.txt",
+          "type": "file",
+          "content": "Practice\r\n",
+          "length": 10
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        }
+      ],
+      "args": [],
+      "errorlevel": 0,
+      "inputs": {}
+    },
+    "stdin": "",
+    "interactive": false
+  },
+  {
+    "id": 22,
+    "kind": "cmd",
+    "name": "reference:rem",
+    "code": "rem 学習メモ\necho done",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "学習メモ\r\n",
+          "length": 14
+        },
+        {
+          "path": "C:\\Practice\\data.csv",
+          "type": "file",
+          "content": "Name,Score\r\nAlice,80\r\n",
+          "length": 22
+        },
+        {
+          "path": "C:\\Practice\\readme.txt",
+          "type": "file",
+          "content": "Practice\r\n",
+          "length": 10
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        }
+      ],
+      "args": [],
+      "errorlevel": 0,
+      "inputs": {}
+    },
+    "stdin": "",
+    "interactive": false
+  },
+  {
+    "id": 23,
+    "kind": "cmd",
+    "name": "reference:pause",
+    "code": "pause\necho resumed",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "学習メモ\r\n",
+          "length": 14
+        },
+        {
+          "path": "C:\\Practice\\data.csv",
+          "type": "file",
+          "content": "Name,Score\r\nAlice,80\r\n",
+          "length": 22
+        },
+        {
+          "path": "C:\\Practice\\readme.txt",
+          "type": "file",
+          "content": "Practice\r\n",
+          "length": 10
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        }
+      ],
+      "args": [],
+      "errorlevel": 0,
+      "inputs": {}
+    },
+    "stdin": "\n",
+    "interactive": false
+  },
+  {
+    "id": 24,
+    "kind": "cmd",
+    "name": "reference:cd",
+    "code": "cd logs\ncd",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "学習メモ\r\n",
+          "length": 14
+        },
+        {
+          "path": "C:\\Practice\\data.csv",
+          "type": "file",
+          "content": "Name,Score\r\nAlice,80\r\n",
+          "length": 22
+        },
+        {
+          "path": "C:\\Practice\\readme.txt",
+          "type": "file",
+          "content": "Practice\r\n",
+          "length": 10
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        }
+      ],
+      "args": [],
+      "errorlevel": 0,
+      "inputs": {}
+    },
+    "stdin": "",
+    "interactive": false
+  },
+  {
+    "id": 25,
+    "kind": "cmd",
+    "name": "reference:dir",
+    "code": "dir /b *.txt",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "学習メモ\r\n",
+          "length": 14
+        },
+        {
+          "path": "C:\\Practice\\data.csv",
+          "type": "file",
+          "content": "Name,Score\r\nAlice,80\r\n",
+          "length": 22
+        },
+        {
+          "path": "C:\\Practice\\readme.txt",
+          "type": "file",
+          "content": "Practice\r\n",
+          "length": 10
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        }
+      ],
+      "args": [],
+      "errorlevel": 0,
+      "inputs": {}
+    },
+    "stdin": "",
+    "interactive": false
+  },
+  {
+    "id": 26,
+    "kind": "cmd",
+    "name": "reference:type",
+    "code": "type notes.txt",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "学習メモ\r\n",
+          "length": 14
+        },
+        {
+          "path": "C:\\Practice\\data.csv",
+          "type": "file",
+          "content": "Name,Score\r\nAlice,80\r\n",
+          "length": 22
+        },
+        {
+          "path": "C:\\Practice\\readme.txt",
+          "type": "file",
+          "content": "Practice\r\n",
+          "length": 10
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        }
+      ],
+      "args": [],
+      "errorlevel": 0,
+      "inputs": {}
+    },
+    "stdin": "",
+    "interactive": false
+  },
+  {
+    "id": 27,
+    "kind": "cmd",
+    "name": "reference:md",
+    "code": "md extra",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "学習メモ\r\n",
+          "length": 14
+        },
+        {
+          "path": "C:\\Practice\\data.csv",
+          "type": "file",
+          "content": "Name,Score\r\nAlice,80\r\n",
+          "length": 22
+        },
+        {
+          "path": "C:\\Practice\\readme.txt",
+          "type": "file",
+          "content": "Practice\r\n",
+          "length": 10
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        }
+      ],
+      "args": [],
+      "errorlevel": 0,
+      "inputs": {}
+    },
+    "stdin": "",
+    "interactive": false
+  },
+  {
+    "id": 28,
+    "kind": "cmd",
+    "name": "reference:rd",
+    "code": "md extra\nrd extra",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "学習メモ\r\n",
+          "length": 14
+        },
+        {
+          "path": "C:\\Practice\\data.csv",
+          "type": "file",
+          "content": "Name,Score\r\nAlice,80\r\n",
+          "length": 22
+        },
+        {
+          "path": "C:\\Practice\\readme.txt",
+          "type": "file",
+          "content": "Practice\r\n",
+          "length": 10
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        }
+      ],
+      "args": [],
+      "errorlevel": 0,
+      "inputs": {}
+    },
+    "stdin": "",
+    "interactive": false
+  },
+  {
+    "id": 29,
+    "kind": "cmd",
+    "name": "reference:del",
+    "code": "copy notes.txt temp.txt\ndel temp.txt",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "学習メモ\r\n",
+          "length": 14
+        },
+        {
+          "path": "C:\\Practice\\data.csv",
+          "type": "file",
+          "content": "Name,Score\r\nAlice,80\r\n",
+          "length": 22
+        },
+        {
+          "path": "C:\\Practice\\readme.txt",
+          "type": "file",
+          "content": "Practice\r\n",
+          "length": 10
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        }
+      ],
+      "args": [],
+      "errorlevel": 0,
+      "inputs": {}
+    },
+    "stdin": "",
+    "interactive": false
+  },
+  {
+    "id": 30,
+    "kind": "cmd",
+    "name": "reference:ren",
+    "code": "copy notes.txt temp.txt\nren temp.txt renamed.txt",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "学習メモ\r\n",
+          "length": 14
+        },
+        {
+          "path": "C:\\Practice\\data.csv",
+          "type": "file",
+          "content": "Name,Score\r\nAlice,80\r\n",
+          "length": 22
+        },
+        {
+          "path": "C:\\Practice\\readme.txt",
+          "type": "file",
+          "content": "Practice\r\n",
+          "length": 10
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        }
+      ],
+      "args": [],
+      "errorlevel": 0,
+      "inputs": {}
+    },
+    "stdin": "",
+    "interactive": false
+  },
+  {
+    "id": 31,
+    "kind": "cmd",
+    "name": "reference:copy",
+    "code": "copy notes.txt copied.txt",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "学習メモ\r\n",
+          "length": 14
+        },
+        {
+          "path": "C:\\Practice\\data.csv",
+          "type": "file",
+          "content": "Name,Score\r\nAlice,80\r\n",
+          "length": 22
+        },
+        {
+          "path": "C:\\Practice\\readme.txt",
+          "type": "file",
+          "content": "Practice\r\n",
+          "length": 10
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        }
+      ],
+      "args": [],
+      "errorlevel": 0,
+      "inputs": {}
+    },
+    "stdin": "",
+    "interactive": false
+  },
+  {
+    "id": 32,
+    "kind": "cmd",
+    "name": "reference:move",
+    "code": "copy notes.txt temp.txt\nmove temp.txt moved.txt",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "学習メモ\r\n",
+          "length": 14
+        },
+        {
+          "path": "C:\\Practice\\data.csv",
+          "type": "file",
+          "content": "Name,Score\r\nAlice,80\r\n",
+          "length": 22
+        },
+        {
+          "path": "C:\\Practice\\readme.txt",
+          "type": "file",
+          "content": "Practice\r\n",
+          "length": 10
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        }
+      ],
+      "args": [],
+      "errorlevel": 0,
+      "inputs": {}
+    },
+    "stdin": "",
+    "interactive": false
+  },
+  {
+    "id": 33,
+    "kind": "cmd",
+    "name": "reference:cls",
+    "code": "echo old\ncls\necho new",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "学習メモ\r\n",
+          "length": 14
+        },
+        {
+          "path": "C:\\Practice\\data.csv",
+          "type": "file",
+          "content": "Name,Score\r\nAlice,80\r\n",
+          "length": 22
+        },
+        {
+          "path": "C:\\Practice\\readme.txt",
+          "type": "file",
+          "content": "Practice\r\n",
+          "length": 10
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        }
+      ],
+      "args": [],
+      "errorlevel": 0,
+      "inputs": {}
+    },
+    "stdin": "",
+    "interactive": false
+  },
+  {
+    "id": 34,
+    "kind": "cmd",
+    "name": "reference:find",
+    "code": "echo apple|find \"app\"",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "学習メモ\r\n",
+          "length": 14
+        },
+        {
+          "path": "C:\\Practice\\data.csv",
+          "type": "file",
+          "content": "Name,Score\r\nAlice,80\r\n",
+          "length": 22
+        },
+        {
+          "path": "C:\\Practice\\readme.txt",
+          "type": "file",
+          "content": "Practice\r\n",
+          "length": 10
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        }
+      ],
+      "args": [],
+      "errorlevel": 0,
+      "inputs": {}
+    },
+    "stdin": "",
+    "interactive": false
+  },
+  {
+    "id": 35,
+    "kind": "cmd",
+    "name": "reference:リダイレクト",
+    "code": "echo first>out.txt\necho second>>out.txt\ntype out.txt",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "学習メモ\r\n",
+          "length": 14
+        },
+        {
+          "path": "C:\\Practice\\data.csv",
+          "type": "file",
+          "content": "Name,Score\r\nAlice,80\r\n",
+          "length": 22
+        },
+        {
+          "path": "C:\\Practice\\readme.txt",
+          "type": "file",
+          "content": "Practice\r\n",
+          "length": 10
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        }
+      ],
+      "args": [],
+      "errorlevel": 0,
+      "inputs": {}
+    },
+    "stdin": "",
+    "interactive": false
+  },
+  {
+    "id": 36,
+    "kind": "cmd",
+    "name": "reference:パイプ",
+    "code": "echo apple|find \"app\"",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "学習メモ\r\n",
+          "length": 14
+        },
+        {
+          "path": "C:\\Practice\\data.csv",
+          "type": "file",
+          "content": "Name,Score\r\nAlice,80\r\n",
+          "length": 22
+        },
+        {
+          "path": "C:\\Practice\\readme.txt",
+          "type": "file",
+          "content": "Practice\r\n",
+          "length": 10
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        }
+      ],
+      "args": [],
+      "errorlevel": 0,
+      "inputs": {}
+    },
+    "stdin": "",
+    "interactive": false
+  },
+  {
+    "id": 37,
+    "kind": "powershell",
+    "name": "template:ps-hello",
+    "code": "$name=\"Alice\"\nWrite-Host \"画面: $name\"\nWrite-Output \"Hello $name\"",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "学習メモ\r\n",
+          "length": 14
+        },
+        {
+          "path": "C:\\Practice\\data.csv",
+          "type": "file",
+          "content": "Name,Score\r\nAlice,80\r\n",
+          "length": 22
+        },
+        {
+          "path": "C:\\Practice\\readme.txt",
+          "type": "file",
+          "content": "Practice\r\n",
+          "length": 10
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        }
+      ],
+      "inputs": {},
+      "lastExitCode": null
+    },
+    "stdin": "",
+    "interactive": false
+  },
+  {
+    "id": 38,
+    "kind": "powershell",
+    "name": "template:ps-values",
+    "code": "$record=@{Name=\"Alice\"; Score=80}\n$numbers=@(2,4,6)\n$record[\"Name\"]\n$numbers[1]\n$numbers.Count",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "学習メモ\r\n",
+          "length": 14
+        },
+        {
+          "path": "C:\\Practice\\data.csv",
+          "type": "file",
+          "content": "Name,Score\r\nAlice,80\r\n",
+          "length": 22
+        },
+        {
+          "path": "C:\\Practice\\readme.txt",
+          "type": "file",
+          "content": "Practice\r\n",
+          "length": 10
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        }
+      ],
+      "inputs": {},
+      "lastExitCode": null
+    },
+    "stdin": "",
+    "interactive": false
+  },
+  {
+    "id": 39,
+    "kind": "powershell",
+    "name": "template:ps-files",
+    "code": "Get-ChildItem -File | Where-Object { $_.Extension -eq \".txt\" } | Sort-Object Name | Select-Object Name,Length",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "学習メモ\r\n",
+          "length": 14
+        },
+        {
+          "path": "C:\\Practice\\data.csv",
+          "type": "file",
+          "content": "Name,Score\r\nAlice,80\r\n",
+          "length": 22
+        },
+        {
+          "path": "C:\\Practice\\readme.txt",
+          "type": "file",
+          "content": "Practice\r\n",
+          "length": 10
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        }
+      ],
+      "inputs": {},
+      "lastExitCode": null
+    },
+    "stdin": "",
+    "interactive": false
+  },
+  {
+    "id": 40,
+    "kind": "powershell",
+    "name": "template:ps-total",
+    "code": "$values=@()\nfor ($i=1; $i -le 4; $i++) { $values += $i * 2 }\n$values | Measure-Object -Sum",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "学習メモ\r\n",
+          "length": 14
+        },
+        {
+          "path": "C:\\Practice\\data.csv",
+          "type": "file",
+          "content": "Name,Score\r\nAlice,80\r\n",
+          "length": 22
+        },
+        {
+          "path": "C:\\Practice\\readme.txt",
+          "type": "file",
+          "content": "Practice\r\n",
+          "length": 10
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        }
+      ],
+      "inputs": {},
+      "lastExitCode": null
+    },
+    "stdin": "",
+    "interactive": false
+  },
+  {
+    "id": 41,
+    "kind": "powershell",
+    "name": "template:ps-function",
+    "code": "function Double {\n param($values)\n foreach ($v in $values) { $v * 2 }\n}\n$result=Double @(1,2,3)\n$result",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "学習メモ\r\n",
+          "length": 14
+        },
+        {
+          "path": "C:\\Practice\\data.csv",
+          "type": "file",
+          "content": "Name,Score\r\nAlice,80\r\n",
+          "length": 22
+        },
+        {
+          "path": "C:\\Practice\\readme.txt",
+          "type": "file",
+          "content": "Practice\r\n",
+          "length": 10
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        }
+      ],
+      "inputs": {},
+      "lastExitCode": null
+    },
+    "stdin": "",
+    "interactive": false
+  },
+  {
+    "id": 42,
+    "kind": "powershell",
+    "name": "template:ps-input",
+    "code": "$answer=Read-Host \"Answer\"\nif ($answer -eq \"yes\") {\n Write-Output \"accepted\"\n} else {\n Write-Output \"other input\"\n}",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "学習メモ\r\n",
+          "length": 14
+        },
+        {
+          "path": "C:\\Practice\\data.csv",
+          "type": "file",
+          "content": "Name,Score\r\nAlice,80\r\n",
+          "length": 22
+        },
+        {
+          "path": "C:\\Practice\\readme.txt",
+          "type": "file",
+          "content": "Practice\r\n",
+          "length": 10
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        }
+      ],
+      "inputs": {
+        "Answer": "yes"
+      },
+      "lastExitCode": null
+    },
+    "stdin": "yes\n",
+    "interactive": true
+  },
+  {
+    "id": 43,
+    "kind": "powershell",
+    "name": "template:ps-input",
+    "code": "$answer=Read-Host \"Answer\"\nif ($answer -eq \"yes\") {\n Write-Output \"accepted\"\n} else {\n Write-Output \"other input\"\n}",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "学習メモ\r\n",
+          "length": 14
+        },
+        {
+          "path": "C:\\Practice\\data.csv",
+          "type": "file",
+          "content": "Name,Score\r\nAlice,80\r\n",
+          "length": 22
+        },
+        {
+          "path": "C:\\Practice\\readme.txt",
+          "type": "file",
+          "content": "Practice\r\n",
+          "length": 10
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        }
+      ],
+      "inputs": {
+        "Answer": "no"
+      },
+      "lastExitCode": null
+    },
+    "stdin": "no\n",
+    "interactive": true
+  },
+  {
+    "id": 44,
+    "kind": "powershell",
+    "name": "template:ps-transform",
+    "code": "$rows=@(\n [pscustomobject]@{Name=\"A\"; N=2}\n [pscustomobject]@{Name=\"B\"; N=4}\n)\n$rows | ForEach-Object { [pscustomobject]@{Name=$_.Name; N=$_.N*3} }",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "学習メモ\r\n",
+          "length": 14
+        },
+        {
+          "path": "C:\\Practice\\data.csv",
+          "type": "file",
+          "content": "Name,Score\r\nAlice,80\r\n",
+          "length": 22
+        },
+        {
+          "path": "C:\\Practice\\readme.txt",
+          "type": "file",
+          "content": "Practice\r\n",
+          "length": 10
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        }
+      ],
+      "inputs": {},
+      "lastExitCode": null
+    },
+    "stdin": "",
+    "interactive": false
+  },
+  {
+    "id": 45,
+    "kind": "powershell",
+    "name": "template:ps-file-write",
+    "code": "New-Item -Path output -ItemType Directory\nSet-Content output\\result.txt \"first\"\nAdd-Content output\\result.txt \"second\"\nMove-Item output\\result.txt output\\moved.txt\nGet-Content output\\moved.txt",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "学習メモ\r\n",
+          "length": 14
+        },
+        {
+          "path": "C:\\Practice\\data.csv",
+          "type": "file",
+          "content": "Name,Score\r\nAlice,80\r\n",
+          "length": 22
+        },
+        {
+          "path": "C:\\Practice\\readme.txt",
+          "type": "file",
+          "content": "Practice\r\n",
+          "length": 10
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        }
+      ],
+      "inputs": {},
+      "lastExitCode": null
+    },
+    "stdin": "",
+    "interactive": false
+  },
+  {
+    "id": 46,
+    "kind": "powershell",
+    "name": "reference:Write-Output",
+    "code": "Write-Output 1,2,3",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "学習メモ\r\n",
+          "length": 14
+        },
+        {
+          "path": "C:\\Practice\\data.csv",
+          "type": "file",
+          "content": "Name,Score\r\nAlice,80\r\n",
+          "length": 22
+        },
+        {
+          "path": "C:\\Practice\\readme.txt",
+          "type": "file",
+          "content": "Practice\r\n",
+          "length": 10
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        }
+      ],
+      "inputs": {},
+      "lastExitCode": null
+    },
+    "stdin": "",
+    "interactive": false
+  },
+  {
+    "id": 47,
+    "kind": "powershell",
+    "name": "reference:Write-Host",
+    "code": "Write-Host \"画面のみ\"\nWrite-Output \"パイプライン\"",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "学習メモ\r\n",
+          "length": 14
+        },
+        {
+          "path": "C:\\Practice\\data.csv",
+          "type": "file",
+          "content": "Name,Score\r\nAlice,80\r\n",
+          "length": 22
+        },
+        {
+          "path": "C:\\Practice\\readme.txt",
+          "type": "file",
+          "content": "Practice\r\n",
+          "length": 10
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        }
+      ],
+      "inputs": {},
+      "lastExitCode": null
+    },
+    "stdin": "",
+    "interactive": false
+  },
+  {
+    "id": 48,
+    "kind": "powershell",
+    "name": "reference:Read-Host",
+    "code": "$name=Read-Host \"Name\"\nWrite-Output $name",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "学習メモ\r\n",
+          "length": 14
+        },
+        {
+          "path": "C:\\Practice\\data.csv",
+          "type": "file",
+          "content": "Name,Score\r\nAlice,80\r\n",
+          "length": 22
+        },
+        {
+          "path": "C:\\Practice\\readme.txt",
+          "type": "file",
+          "content": "Practice\r\n",
+          "length": 10
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        }
+      ],
+      "inputs": {
+        "Name": "Alice"
+      },
+      "lastExitCode": null
+    },
+    "stdin": "Alice\n",
+    "interactive": true
+  },
+  {
+    "id": 49,
+    "kind": "powershell",
+    "name": "reference:Get-ChildItem",
+    "code": "Get-ChildItem -Filter \"*.txt\"",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "学習メモ\r\n",
+          "length": 14
+        },
+        {
+          "path": "C:\\Practice\\data.csv",
+          "type": "file",
+          "content": "Name,Score\r\nAlice,80\r\n",
+          "length": 22
+        },
+        {
+          "path": "C:\\Practice\\readme.txt",
+          "type": "file",
+          "content": "Practice\r\n",
+          "length": 10
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        }
+      ],
+      "inputs": {},
+      "lastExitCode": null
+    },
+    "stdin": "",
+    "interactive": false
+  },
+  {
+    "id": 50,
+    "kind": "powershell",
+    "name": "reference:Where-Object",
+    "code": "1..5 | Where-Object { $_ -gt 2 }",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "学習メモ\r\n",
+          "length": 14
+        },
+        {
+          "path": "C:\\Practice\\data.csv",
+          "type": "file",
+          "content": "Name,Score\r\nAlice,80\r\n",
+          "length": 22
+        },
+        {
+          "path": "C:\\Practice\\readme.txt",
+          "type": "file",
+          "content": "Practice\r\n",
+          "length": 10
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        }
+      ],
+      "inputs": {},
+      "lastExitCode": null
+    },
+    "stdin": "",
+    "interactive": false
+  },
+  {
+    "id": 51,
+    "kind": "powershell",
+    "name": "reference:ForEach-Object",
+    "code": "1..3 | ForEach-Object { $_ * 2 }",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "学習メモ\r\n",
+          "length": 14
+        },
+        {
+          "path": "C:\\Practice\\data.csv",
+          "type": "file",
+          "content": "Name,Score\r\nAlice,80\r\n",
+          "length": 22
+        },
+        {
+          "path": "C:\\Practice\\readme.txt",
+          "type": "file",
+          "content": "Practice\r\n",
+          "length": 10
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        }
+      ],
+      "inputs": {},
+      "lastExitCode": null
+    },
+    "stdin": "",
+    "interactive": false
+  },
+  {
+    "id": 52,
+    "kind": "powershell",
+    "name": "reference:Select-Object",
+    "code": "Get-ChildItem | Select-Object Name,FullName -First 2",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "学習メモ\r\n",
+          "length": 14
+        },
+        {
+          "path": "C:\\Practice\\data.csv",
+          "type": "file",
+          "content": "Name,Score\r\nAlice,80\r\n",
+          "length": 22
+        },
+        {
+          "path": "C:\\Practice\\readme.txt",
+          "type": "file",
+          "content": "Practice\r\n",
+          "length": 10
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        }
+      ],
+      "inputs": {},
+      "lastExitCode": null
+    },
+    "stdin": "",
+    "interactive": false
+  },
+  {
+    "id": 53,
+    "kind": "powershell",
+    "name": "reference:Sort-Object",
+    "code": "@(3,1,2) | Sort-Object",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "学習メモ\r\n",
+          "length": 14
+        },
+        {
+          "path": "C:\\Practice\\data.csv",
+          "type": "file",
+          "content": "Name,Score\r\nAlice,80\r\n",
+          "length": 22
+        },
+        {
+          "path": "C:\\Practice\\readme.txt",
+          "type": "file",
+          "content": "Practice\r\n",
+          "length": 10
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        }
+      ],
+      "inputs": {},
+      "lastExitCode": null
+    },
+    "stdin": "",
+    "interactive": false
+  },
+  {
+    "id": 54,
+    "kind": "powershell",
+    "name": "reference:Measure-Object",
+    "code": "1..3 | Measure-Object -Sum",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "学習メモ\r\n",
+          "length": 14
+        },
+        {
+          "path": "C:\\Practice\\data.csv",
+          "type": "file",
+          "content": "Name,Score\r\nAlice,80\r\n",
+          "length": 22
+        },
+        {
+          "path": "C:\\Practice\\readme.txt",
+          "type": "file",
+          "content": "Practice\r\n",
+          "length": 10
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        }
+      ],
+      "inputs": {},
+      "lastExitCode": null
+    },
+    "stdin": "",
+    "interactive": false
+  },
+  {
+    "id": 55,
+    "kind": "powershell",
+    "name": "reference:Set-Location",
+    "code": "Set-Location logs\nGet-Location",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "学習メモ\r\n",
+          "length": 14
+        },
+        {
+          "path": "C:\\Practice\\data.csv",
+          "type": "file",
+          "content": "Name,Score\r\nAlice,80\r\n",
+          "length": 22
+        },
+        {
+          "path": "C:\\Practice\\readme.txt",
+          "type": "file",
+          "content": "Practice\r\n",
+          "length": 10
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        }
+      ],
+      "inputs": {},
+      "lastExitCode": null
+    },
+    "stdin": "",
+    "interactive": false
+  },
+  {
+    "id": 56,
+    "kind": "powershell",
+    "name": "reference:Get-Location",
+    "code": "Get-Location",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "学習メモ\r\n",
+          "length": 14
+        },
+        {
+          "path": "C:\\Practice\\data.csv",
+          "type": "file",
+          "content": "Name,Score\r\nAlice,80\r\n",
+          "length": 22
+        },
+        {
+          "path": "C:\\Practice\\readme.txt",
+          "type": "file",
+          "content": "Practice\r\n",
+          "length": 10
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        }
+      ],
+      "inputs": {},
+      "lastExitCode": null
+    },
+    "stdin": "",
+    "interactive": false
+  },
+  {
+    "id": 57,
+    "kind": "powershell",
+    "name": "reference:Get-Content",
+    "code": "Get-Content notes.txt",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "学習メモ\r\n",
+          "length": 14
+        },
+        {
+          "path": "C:\\Practice\\data.csv",
+          "type": "file",
+          "content": "Name,Score\r\nAlice,80\r\n",
+          "length": 22
+        },
+        {
+          "path": "C:\\Practice\\readme.txt",
+          "type": "file",
+          "content": "Practice\r\n",
+          "length": 10
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        }
+      ],
+      "inputs": {},
+      "lastExitCode": null
+    },
+    "stdin": "",
+    "interactive": false
+  },
+  {
+    "id": 58,
+    "kind": "powershell",
+    "name": "reference:Set-Content",
+    "code": "Set-Content out.txt -Value \"Hello\"\nGet-Content out.txt",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "学習メモ\r\n",
+          "length": 14
+        },
+        {
+          "path": "C:\\Practice\\data.csv",
+          "type": "file",
+          "content": "Name,Score\r\nAlice,80\r\n",
+          "length": 22
+        },
+        {
+          "path": "C:\\Practice\\readme.txt",
+          "type": "file",
+          "content": "Practice\r\n",
+          "length": 10
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        }
+      ],
+      "inputs": {},
+      "lastExitCode": null
+    },
+    "stdin": "",
+    "interactive": false
+  },
+  {
+    "id": 59,
+    "kind": "powershell",
+    "name": "reference:Add-Content",
+    "code": "Set-Content out.txt \"A\"\nAdd-Content out.txt \"B\"\nGet-Content out.txt",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "学習メモ\r\n",
+          "length": 14
+        },
+        {
+          "path": "C:\\Practice\\data.csv",
+          "type": "file",
+          "content": "Name,Score\r\nAlice,80\r\n",
+          "length": 22
+        },
+        {
+          "path": "C:\\Practice\\readme.txt",
+          "type": "file",
+          "content": "Practice\r\n",
+          "length": 10
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        }
+      ],
+      "inputs": {},
+      "lastExitCode": null
+    },
+    "stdin": "",
+    "interactive": false
+  },
+  {
+    "id": 60,
+    "kind": "powershell",
+    "name": "reference:New-Item",
+    "code": "New-Item -Path extra -ItemType Directory",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "学習メモ\r\n",
+          "length": 14
+        },
+        {
+          "path": "C:\\Practice\\data.csv",
+          "type": "file",
+          "content": "Name,Score\r\nAlice,80\r\n",
+          "length": 22
+        },
+        {
+          "path": "C:\\Practice\\readme.txt",
+          "type": "file",
+          "content": "Practice\r\n",
+          "length": 10
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        }
+      ],
+      "inputs": {},
+      "lastExitCode": null
+    },
+    "stdin": "",
+    "interactive": false
+  },
+  {
+    "id": 61,
+    "kind": "powershell",
+    "name": "reference:Remove-Item",
+    "code": "New-Item temp.txt -ItemType File\nRemove-Item temp.txt",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "学習メモ\r\n",
+          "length": 14
+        },
+        {
+          "path": "C:\\Practice\\data.csv",
+          "type": "file",
+          "content": "Name,Score\r\nAlice,80\r\n",
+          "length": 22
+        },
+        {
+          "path": "C:\\Practice\\readme.txt",
+          "type": "file",
+          "content": "Practice\r\n",
+          "length": 10
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        }
+      ],
+      "inputs": {},
+      "lastExitCode": null
+    },
+    "stdin": "",
+    "interactive": false
+  },
+  {
+    "id": 62,
+    "kind": "powershell",
+    "name": "reference:Rename-Item",
+    "code": "Copy-Item notes.txt copy.txt\nRename-Item copy.txt renamed.txt",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "学習メモ\r\n",
+          "length": 14
+        },
+        {
+          "path": "C:\\Practice\\data.csv",
+          "type": "file",
+          "content": "Name,Score\r\nAlice,80\r\n",
+          "length": 22
+        },
+        {
+          "path": "C:\\Practice\\readme.txt",
+          "type": "file",
+          "content": "Practice\r\n",
+          "length": 10
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        }
+      ],
+      "inputs": {},
+      "lastExitCode": null
+    },
+    "stdin": "",
+    "interactive": false
+  },
+  {
+    "id": 63,
+    "kind": "powershell",
+    "name": "reference:Copy-Item",
+    "code": "Copy-Item notes.txt copied.txt",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "学習メモ\r\n",
+          "length": 14
+        },
+        {
+          "path": "C:\\Practice\\data.csv",
+          "type": "file",
+          "content": "Name,Score\r\nAlice,80\r\n",
+          "length": 22
+        },
+        {
+          "path": "C:\\Practice\\readme.txt",
+          "type": "file",
+          "content": "Practice\r\n",
+          "length": 10
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        }
+      ],
+      "inputs": {},
+      "lastExitCode": null
+    },
+    "stdin": "",
+    "interactive": false
+  },
+  {
+    "id": 64,
+    "kind": "powershell",
+    "name": "reference:Move-Item",
+    "code": "Copy-Item notes.txt copied.txt\nMove-Item copied.txt moved.txt",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "学習メモ\r\n",
+          "length": 14
+        },
+        {
+          "path": "C:\\Practice\\data.csv",
+          "type": "file",
+          "content": "Name,Score\r\nAlice,80\r\n",
+          "length": 22
+        },
+        {
+          "path": "C:\\Practice\\readme.txt",
+          "type": "file",
+          "content": "Practice\r\n",
+          "length": 10
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        }
+      ],
+      "inputs": {},
+      "lastExitCode": null
+    },
+    "stdin": "",
+    "interactive": false
+  },
+  {
+    "id": 65,
+    "kind": "powershell",
+    "name": "reference:Test-Path",
+    "code": "Test-Path notes.txt",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "学習メモ\r\n",
+          "length": 14
+        },
+        {
+          "path": "C:\\Practice\\data.csv",
+          "type": "file",
+          "content": "Name,Score\r\nAlice,80\r\n",
+          "length": 22
+        },
+        {
+          "path": "C:\\Practice\\readme.txt",
+          "type": "file",
+          "content": "Practice\r\n",
+          "length": 10
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        }
+      ],
+      "inputs": {},
+      "lastExitCode": null
+    },
+    "stdin": "",
+    "interactive": false
+  },
+  {
+    "id": 66,
+    "kind": "powershell",
+    "name": "reference:if",
+    "code": "if (2 -gt 1) { \"yes\" } else { \"no\" }",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "学習メモ\r\n",
+          "length": 14
+        },
+        {
+          "path": "C:\\Practice\\data.csv",
+          "type": "file",
+          "content": "Name,Score\r\nAlice,80\r\n",
+          "length": 22
+        },
+        {
+          "path": "C:\\Practice\\readme.txt",
+          "type": "file",
+          "content": "Practice\r\n",
+          "length": 10
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        }
+      ],
+      "inputs": {},
+      "lastExitCode": null
+    },
+    "stdin": "",
+    "interactive": false
+  },
+  {
+    "id": 67,
+    "kind": "powershell",
+    "name": "reference:foreach",
+    "code": "foreach ($n in 1..3) { $n * 2 }",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "学習メモ\r\n",
+          "length": 14
+        },
+        {
+          "path": "C:\\Practice\\data.csv",
+          "type": "file",
+          "content": "Name,Score\r\nAlice,80\r\n",
+          "length": 22
+        },
+        {
+          "path": "C:\\Practice\\readme.txt",
+          "type": "file",
+          "content": "Practice\r\n",
+          "length": 10
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        }
+      ],
+      "inputs": {},
+      "lastExitCode": null
+    },
+    "stdin": "",
+    "interactive": false
+  },
+  {
+    "id": 68,
+    "kind": "powershell",
+    "name": "reference:for",
+    "code": "for ($i=0; $i -lt 3; $i++) { $i }",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "学習メモ\r\n",
+          "length": 14
+        },
+        {
+          "path": "C:\\Practice\\data.csv",
+          "type": "file",
+          "content": "Name,Score\r\nAlice,80\r\n",
+          "length": 22
+        },
+        {
+          "path": "C:\\Practice\\readme.txt",
+          "type": "file",
+          "content": "Practice\r\n",
+          "length": 10
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        }
+      ],
+      "inputs": {},
+      "lastExitCode": null
+    },
+    "stdin": "",
+    "interactive": false
+  },
+  {
+    "id": 69,
+    "kind": "powershell",
+    "name": "reference:while",
+    "code": "$i=0\nwhile ($i -lt 3) { $i; $i++ }",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "学習メモ\r\n",
+          "length": 14
+        },
+        {
+          "path": "C:\\Practice\\data.csv",
+          "type": "file",
+          "content": "Name,Score\r\nAlice,80\r\n",
+          "length": 22
+        },
+        {
+          "path": "C:\\Practice\\readme.txt",
+          "type": "file",
+          "content": "Practice\r\n",
+          "length": 10
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        }
+      ],
+      "inputs": {},
+      "lastExitCode": null
+    },
+    "stdin": "",
+    "interactive": false
+  },
+  {
+    "id": 70,
+    "kind": "powershell",
+    "name": "reference:do-while",
+    "code": "$i=0\ndo { $i++; $i } while ($i -lt 2)",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "学習メモ\r\n",
+          "length": 14
+        },
+        {
+          "path": "C:\\Practice\\data.csv",
+          "type": "file",
+          "content": "Name,Score\r\nAlice,80\r\n",
+          "length": 22
+        },
+        {
+          "path": "C:\\Practice\\readme.txt",
+          "type": "file",
+          "content": "Practice\r\n",
+          "length": 10
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        }
+      ],
+      "inputs": {},
+      "lastExitCode": null
+    },
+    "stdin": "",
+    "interactive": false
+  },
+  {
+    "id": 71,
+    "kind": "powershell",
+    "name": "reference:switch",
+    "code": "switch (2) { 1 { \"one\" } 2 { \"two\" } default { \"other\" } }",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "学習メモ\r\n",
+          "length": 14
+        },
+        {
+          "path": "C:\\Practice\\data.csv",
+          "type": "file",
+          "content": "Name,Score\r\nAlice,80\r\n",
+          "length": 22
+        },
+        {
+          "path": "C:\\Practice\\readme.txt",
+          "type": "file",
+          "content": "Practice\r\n",
+          "length": 10
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        }
+      ],
+      "inputs": {},
+      "lastExitCode": null
+    },
+    "stdin": "",
+    "interactive": false
+  },
+  {
+    "id": 72,
+    "kind": "powershell",
+    "name": "reference:break",
+    "code": "foreach ($n in 1..5) { if ($n -gt 2) { break }; $n }",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "学習メモ\r\n",
+          "length": 14
+        },
+        {
+          "path": "C:\\Practice\\data.csv",
+          "type": "file",
+          "content": "Name,Score\r\nAlice,80\r\n",
+          "length": 22
+        },
+        {
+          "path": "C:\\Practice\\readme.txt",
+          "type": "file",
+          "content": "Practice\r\n",
+          "length": 10
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        }
+      ],
+      "inputs": {},
+      "lastExitCode": null
+    },
+    "stdin": "",
+    "interactive": false
+  },
+  {
+    "id": 73,
+    "kind": "powershell",
+    "name": "reference:continue",
+    "code": "foreach ($n in 1..3) { if ($n -eq 2) { continue }; $n }",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "学習メモ\r\n",
+          "length": 14
+        },
+        {
+          "path": "C:\\Practice\\data.csv",
+          "type": "file",
+          "content": "Name,Score\r\nAlice,80\r\n",
+          "length": 22
+        },
+        {
+          "path": "C:\\Practice\\readme.txt",
+          "type": "file",
+          "content": "Practice\r\n",
+          "length": 10
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        }
+      ],
+      "inputs": {},
+      "lastExitCode": null
+    },
+    "stdin": "",
+    "interactive": false
+  },
+  {
+    "id": 74,
+    "kind": "powershell",
+    "name": "reference:function",
+    "code": "function Add { param($a,$b) $a+$b }\nAdd 2 3",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "学習メモ\r\n",
+          "length": 14
+        },
+        {
+          "path": "C:\\Practice\\data.csv",
+          "type": "file",
+          "content": "Name,Score\r\nAlice,80\r\n",
+          "length": 22
+        },
+        {
+          "path": "C:\\Practice\\readme.txt",
+          "type": "file",
+          "content": "Practice\r\n",
+          "length": 10
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        }
+      ],
+      "inputs": {},
+      "lastExitCode": null
+    },
+    "stdin": "",
+    "interactive": false
+  },
+  {
+    "id": 75,
+    "kind": "powershell",
+    "name": "reference:param",
+    "code": "function Say { param($name) \"Hello $name\" }\nSay Alice",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "学習メモ\r\n",
+          "length": 14
+        },
+        {
+          "path": "C:\\Practice\\data.csv",
+          "type": "file",
+          "content": "Name,Score\r\nAlice,80\r\n",
+          "length": 22
+        },
+        {
+          "path": "C:\\Practice\\readme.txt",
+          "type": "file",
+          "content": "Practice\r\n",
+          "length": 10
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        }
+      ],
+      "inputs": {},
+      "lastExitCode": null
+    },
+    "stdin": "",
+    "interactive": false
+  },
+  {
+    "id": 76,
+    "kind": "powershell",
+    "name": "reference:return",
+    "code": "function Values { 1; return 2; 3 }\nValues",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "学習メモ\r\n",
+          "length": 14
+        },
+        {
+          "path": "C:\\Practice\\data.csv",
+          "type": "file",
+          "content": "Name,Score\r\nAlice,80\r\n",
+          "length": 22
+        },
+        {
+          "path": "C:\\Practice\\readme.txt",
+          "type": "file",
+          "content": "Practice\r\n",
+          "length": 10
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        }
+      ],
+      "inputs": {},
+      "lastExitCode": null
+    },
+    "stdin": "",
+    "interactive": false
+  },
+  {
+    "id": 77,
+    "kind": "powershell",
+    "name": "reference:変数",
+    "code": "$Name=\"Alice\"\n$name",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "学習メモ\r\n",
+          "length": 14
+        },
+        {
+          "path": "C:\\Practice\\data.csv",
+          "type": "file",
+          "content": "Name,Score\r\nAlice,80\r\n",
+          "length": 22
+        },
+        {
+          "path": "C:\\Practice\\readme.txt",
+          "type": "file",
+          "content": "Practice\r\n",
+          "length": 10
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        }
+      ],
+      "inputs": {},
+      "lastExitCode": null
+    },
+    "stdin": "",
+    "interactive": false
+  },
+  {
+    "id": 78,
+    "kind": "powershell",
+    "name": "reference:文字列",
+    "code": "$x=3\n\"value=$x; next=$($x+1)\"\n'$x'",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "学習メモ\r\n",
+          "length": 14
+        },
+        {
+          "path": "C:\\Practice\\data.csv",
+          "type": "file",
+          "content": "Name,Score\r\nAlice,80\r\n",
+          "length": 22
+        },
+        {
+          "path": "C:\\Practice\\readme.txt",
+          "type": "file",
+          "content": "Practice\r\n",
+          "length": 10
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        }
+      ],
+      "inputs": {},
+      "lastExitCode": null
+    },
+    "stdin": "",
+    "interactive": false
+  },
+  {
+    "id": 79,
+    "kind": "powershell",
+    "name": "reference:配列",
+    "code": "$a=@(2,4,6)\n$a[1]\n$a.Count",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "学習メモ\r\n",
+          "length": 14
+        },
+        {
+          "path": "C:\\Practice\\data.csv",
+          "type": "file",
+          "content": "Name,Score\r\nAlice,80\r\n",
+          "length": 22
+        },
+        {
+          "path": "C:\\Practice\\readme.txt",
+          "type": "file",
+          "content": "Practice\r\n",
+          "length": 10
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        }
+      ],
+      "inputs": {},
+      "lastExitCode": null
+    },
+    "stdin": "",
+    "interactive": false
+  },
+  {
+    "id": 80,
+    "kind": "powershell",
+    "name": "reference:ハッシュテーブル",
+    "code": "$h=@{Name=\"Alice\"; Score=80}\n$h[\"Name\"]",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "学習メモ\r\n",
+          "length": 14
+        },
+        {
+          "path": "C:\\Practice\\data.csv",
+          "type": "file",
+          "content": "Name,Score\r\nAlice,80\r\n",
+          "length": 22
+        },
+        {
+          "path": "C:\\Practice\\readme.txt",
+          "type": "file",
+          "content": "Practice\r\n",
+          "length": 10
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        }
+      ],
+      "inputs": {},
+      "lastExitCode": null
+    },
+    "stdin": "",
+    "interactive": false
+  },
+  {
+    "id": 81,
+    "kind": "powershell",
+    "name": "reference:比較演算子",
+    "code": "\"Hello\" -eq \"hello\"\n\"abc.txt\" -like \"*.txt\"\n\"abc123\" -match \"[0-9]+\"",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "学習メモ\r\n",
+          "length": 14
+        },
+        {
+          "path": "C:\\Practice\\data.csv",
+          "type": "file",
+          "content": "Name,Score\r\nAlice,80\r\n",
+          "length": 22
+        },
+        {
+          "path": "C:\\Practice\\readme.txt",
+          "type": "file",
+          "content": "Practice\r\n",
+          "length": 10
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        }
+      ],
+      "inputs": {},
+      "lastExitCode": null
+    },
+    "stdin": "",
+    "interactive": false
+  },
+  {
+    "id": 82,
+    "kind": "powershell",
+    "name": "reference:パイプライン",
+    "code": "1..3 | ForEach-Object { $_ * 2 }",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "学習メモ\r\n",
+          "length": 14
+        },
+        {
+          "path": "C:\\Practice\\data.csv",
+          "type": "file",
+          "content": "Name,Score\r\nAlice,80\r\n",
+          "length": 22
+        },
+        {
+          "path": "C:\\Practice\\readme.txt",
+          "type": "file",
+          "content": "Practice\r\n",
+          "length": 10
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        }
+      ],
+      "inputs": {},
+      "lastExitCode": null
+    },
+    "stdin": "",
+    "interactive": false
+  },
+  {
+    "id": 83,
+    "kind": "powershell",
+    "name": "reference:$_",
+    "code": "1..3 | ForEach-Object { $_ * 2 }",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "学習メモ\r\n",
+          "length": 14
+        },
+        {
+          "path": "C:\\Practice\\data.csv",
+          "type": "file",
+          "content": "Name,Score\r\nAlice,80\r\n",
+          "length": 22
+        },
+        {
+          "path": "C:\\Practice\\readme.txt",
+          "type": "file",
+          "content": "Practice\r\n",
+          "length": 10
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        }
+      ],
+      "inputs": {},
+      "lastExitCode": null
+    },
+    "stdin": "",
+    "interactive": false
+  },
+  {
+    "id": 84,
+    "kind": "powershell",
+    "name": "reference:$PSItem",
+    "code": "1..3 | ForEach-Object { $PSItem + 1 }",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "学習メモ\r\n",
+          "length": 14
+        },
+        {
+          "path": "C:\\Practice\\data.csv",
+          "type": "file",
+          "content": "Name,Score\r\nAlice,80\r\n",
+          "length": 22
+        },
+        {
+          "path": "C:\\Practice\\readme.txt",
+          "type": "file",
+          "content": "Practice\r\n",
+          "length": 10
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        }
+      ],
+      "inputs": {},
+      "lastExitCode": null
+    },
+    "stdin": "",
+    "interactive": false
+  },
+  {
+    "id": 85,
+    "kind": "powershell",
+    "name": "reference:$?",
+    "code": "Write-Output \"done\"\n$?",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "学習メモ\r\n",
+          "length": 14
+        },
+        {
+          "path": "C:\\Practice\\data.csv",
+          "type": "file",
+          "content": "Name,Score\r\nAlice,80\r\n",
+          "length": 22
+        },
+        {
+          "path": "C:\\Practice\\readme.txt",
+          "type": "file",
+          "content": "Practice\r\n",
+          "length": 10
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        }
+      ],
+      "inputs": {},
+      "lastExitCode": null
+    },
+    "stdin": "",
+    "interactive": false
+  },
+  {
+    "id": 86,
+    "kind": "powershell",
+    "name": "reference:$LASTEXITCODE",
+    "code": "$LASTEXITCODE",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "学習メモ\r\n",
+          "length": 14
+        },
+        {
+          "path": "C:\\Practice\\data.csv",
+          "type": "file",
+          "content": "Name,Score\r\nAlice,80\r\n",
+          "length": 22
+        },
+        {
+          "path": "C:\\Practice\\readme.txt",
+          "type": "file",
+          "content": "Practice\r\n",
+          "length": 10
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        }
+      ],
+      "inputs": {},
+      "lastExitCode": null
+    },
+    "stdin": "",
+    "interactive": false
+  },
+  {
+    "id": 87,
+    "kind": "powershell",
+    "name": "reference:$args",
+    "code": "function Show { $args[0] }\nShow \"extra\"",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "学習メモ\r\n",
+          "length": 14
+        },
+        {
+          "path": "C:\\Practice\\data.csv",
+          "type": "file",
+          "content": "Name,Score\r\nAlice,80\r\n",
+          "length": 22
+        },
+        {
+          "path": "C:\\Practice\\readme.txt",
+          "type": "file",
+          "content": "Practice\r\n",
+          "length": 10
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        }
+      ],
+      "inputs": {},
+      "lastExitCode": null
+    },
+    "stdin": "",
+    "interactive": false
+  },
+  {
+    "id": 88,
+    "kind": "powershell",
+    "name": "reference:型変換（キャスト）",
+    "code": "[int]\"42\" + 1\n[string]7\n[pscustomobject]@{Name=\"A\"}",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "学習メモ\r\n",
+          "length": 14
+        },
+        {
+          "path": "C:\\Practice\\data.csv",
+          "type": "file",
+          "content": "Name,Score\r\nAlice,80\r\n",
+          "length": 22
+        },
+        {
+          "path": "C:\\Practice\\readme.txt",
+          "type": "file",
+          "content": "Practice\r\n",
+          "length": 10
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        }
+      ],
+      "inputs": {},
+      "lastExitCode": null
+    },
+    "stdin": "",
+    "interactive": false
+  },
+  {
+    "id": 89,
+    "kind": "powershell",
+    "name": "reference:論理演算子",
+    "code": "$true -and $false\n$true -or $false\n-not $true\n!$false",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "学習メモ\r\n",
+          "length": 14
+        },
+        {
+          "path": "C:\\Practice\\data.csv",
+          "type": "file",
+          "content": "Name,Score\r\nAlice,80\r\n",
+          "length": 22
+        },
+        {
+          "path": "C:\\Practice\\readme.txt",
+          "type": "file",
+          "content": "Practice\r\n",
+          "length": 10
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        }
+      ],
+      "inputs": {},
+      "lastExitCode": null
+    },
+    "stdin": "",
+    "interactive": false
+  },
+  {
+    "id": 90,
+    "kind": "powershell",
+    "name": "reference:算術・代入演算子",
+    "code": "$x=10\n$x += 5\n$x\n$x++\n$x",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "学習メモ\r\n",
+          "length": 14
+        },
+        {
+          "path": "C:\\Practice\\data.csv",
+          "type": "file",
+          "content": "Name,Score\r\nAlice,80\r\n",
+          "length": 22
+        },
+        {
+          "path": "C:\\Practice\\readme.txt",
+          "type": "file",
+          "content": "Practice\r\n",
+          "length": 10
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        }
+      ],
+      "inputs": {},
+      "lastExitCode": null
+    },
+    "stdin": "",
+    "interactive": false
+  },
+  {
+    "id": 91,
+    "kind": "cmd",
+    "name": "dynamic:CMDEXTVERSION",
+    "code": "echo [%CMDEXTVERSION%]",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "学習メモ\r\n",
+          "length": 14
+        },
+        {
+          "path": "C:\\Practice\\data.csv",
+          "type": "file",
+          "content": "Name,Score\r\nAlice,80\r\n",
+          "length": 22
+        },
+        {
+          "path": "C:\\Practice\\readme.txt",
+          "type": "file",
+          "content": "Practice\r\n",
+          "length": 10
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        }
+      ],
+      "args": [],
+      "errorlevel": 0,
+      "inputs": {}
+    }
+  },
+  {
+    "id": 92,
+    "kind": "cmd",
+    "name": "dynamic-delayed:CMDEXTVERSION",
+    "code": "setlocal EnableDelayedExpansion\necho [!CMDEXTVERSION!]",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "学習メモ\r\n",
+          "length": 14
+        },
+        {
+          "path": "C:\\Practice\\data.csv",
+          "type": "file",
+          "content": "Name,Score\r\nAlice,80\r\n",
+          "length": 22
+        },
+        {
+          "path": "C:\\Practice\\readme.txt",
+          "type": "file",
+          "content": "Practice\r\n",
+          "length": 10
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        }
+      ],
+      "args": [],
+      "errorlevel": 0,
+      "inputs": {}
+    }
+  },
+  {
+    "id": 93,
+    "kind": "cmd",
+    "name": "dynamic-shadow:CMDEXTVERSION",
+    "code": "set \"CMDEXTVERSION=custom\"\necho [%CMDEXTVERSION%]",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "学習メモ\r\n",
+          "length": 14
+        },
+        {
+          "path": "C:\\Practice\\data.csv",
+          "type": "file",
+          "content": "Name,Score\r\nAlice,80\r\n",
+          "length": 22
+        },
+        {
+          "path": "C:\\Practice\\readme.txt",
+          "type": "file",
+          "content": "Practice\r\n",
+          "length": 10
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        }
+      ],
+      "args": [],
+      "errorlevel": 0,
+      "inputs": {}
+    }
+  },
+  {
+    "id": 94,
+    "kind": "cmd",
+    "name": "dynamic:CMDCMDLINE",
+    "code": "echo [%CMDCMDLINE%]",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "学習メモ\r\n",
+          "length": 14
+        },
+        {
+          "path": "C:\\Practice\\data.csv",
+          "type": "file",
+          "content": "Name,Score\r\nAlice,80\r\n",
+          "length": 22
+        },
+        {
+          "path": "C:\\Practice\\readme.txt",
+          "type": "file",
+          "content": "Practice\r\n",
+          "length": 10
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        }
+      ],
+      "args": [],
+      "errorlevel": 0,
+      "inputs": {}
+    }
+  },
+  {
+    "id": 95,
+    "kind": "cmd",
+    "name": "dynamic-delayed:CMDCMDLINE",
+    "code": "setlocal EnableDelayedExpansion\necho [!CMDCMDLINE!]",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "学習メモ\r\n",
+          "length": 14
+        },
+        {
+          "path": "C:\\Practice\\data.csv",
+          "type": "file",
+          "content": "Name,Score\r\nAlice,80\r\n",
+          "length": 22
+        },
+        {
+          "path": "C:\\Practice\\readme.txt",
+          "type": "file",
+          "content": "Practice\r\n",
+          "length": 10
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        }
+      ],
+      "args": [],
+      "errorlevel": 0,
+      "inputs": {}
+    }
+  },
+  {
+    "id": 96,
+    "kind": "cmd",
+    "name": "dynamic-shadow:CMDCMDLINE",
+    "code": "set \"CMDCMDLINE=custom\"\necho [%CMDCMDLINE%]",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "学習メモ\r\n",
+          "length": 14
+        },
+        {
+          "path": "C:\\Practice\\data.csv",
+          "type": "file",
+          "content": "Name,Score\r\nAlice,80\r\n",
+          "length": 22
+        },
+        {
+          "path": "C:\\Practice\\readme.txt",
+          "type": "file",
+          "content": "Practice\r\n",
+          "length": 10
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        }
+      ],
+      "args": [],
+      "errorlevel": 0,
+      "inputs": {}
+    }
+  },
+  {
+    "id": 97,
+    "kind": "powershell",
+    "name": "automatic-function",
+    "code": "function Pass { $input };1,2,3 | Pass",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "学習メモ\r\n",
+          "length": 14
+        },
+        {
+          "path": "C:\\Practice\\data.csv",
+          "type": "file",
+          "content": "Name,Score\r\nAlice,80\r\n",
+          "length": 22
+        },
+        {
+          "path": "C:\\Practice\\readme.txt",
+          "type": "file",
+          "content": "Practice\r\n",
+          "length": 10
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        }
+      ],
+      "inputs": {},
+      "lastExitCode": null
+    }
+  },
+  {
+    "id": 98,
+    "kind": "powershell",
+    "name": "automatic-function",
+    "code": "function Pass { $input; $input };1,2,3 | Pass",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "学習メモ\r\n",
+          "length": 14
+        },
+        {
+          "path": "C:\\Practice\\data.csv",
+          "type": "file",
+          "content": "Name,Score\r\nAlice,80\r\n",
+          "length": 22
+        },
+        {
+          "path": "C:\\Practice\\readme.txt",
+          "type": "file",
+          "content": "Practice\r\n",
+          "length": 10
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        }
+      ],
+      "inputs": {},
+      "lastExitCode": null
+    }
+  },
+  {
+    "id": 99,
+    "kind": "powershell",
+    "name": "automatic-function",
+    "code": "function Pass { param($x) $input; $x };1,2,3 | Pass 9",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "学習メモ\r\n",
+          "length": 14
+        },
+        {
+          "path": "C:\\Practice\\data.csv",
+          "type": "file",
+          "content": "Name,Score\r\nAlice,80\r\n",
+          "length": 22
+        },
+        {
+          "path": "C:\\Practice\\readme.txt",
+          "type": "file",
+          "content": "Practice\r\n",
+          "length": 10
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        }
+      ],
+      "inputs": {},
+      "lastExitCode": null
+    }
+  },
+  {
+    "id": 100,
+    "kind": "powershell",
+    "name": "automatic-function",
+    "code": "function Check { param($x) $PSBoundParameters.Count }; Check -x 7",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "学習メモ\r\n",
+          "length": 14
+        },
+        {
+          "path": "C:\\Practice\\data.csv",
+          "type": "file",
+          "content": "Name,Score\r\nAlice,80\r\n",
+          "length": 22
+        },
+        {
+          "path": "C:\\Practice\\readme.txt",
+          "type": "file",
+          "content": "Practice\r\n",
+          "length": 10
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        }
+      ],
+      "inputs": {},
+      "lastExitCode": null
+    }
+  },
+  {
+    "id": 101,
+    "kind": "powershell",
+    "name": "automatic-function",
+    "code": "function Check { param($x) $PSBoundParameters.Count }; Check 7",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "学習メモ\r\n",
+          "length": 14
+        },
+        {
+          "path": "C:\\Practice\\data.csv",
+          "type": "file",
+          "content": "Name,Score\r\nAlice,80\r\n",
+          "length": 22
+        },
+        {
+          "path": "C:\\Practice\\readme.txt",
+          "type": "file",
+          "content": "Practice\r\n",
+          "length": 10
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        }
+      ],
+      "inputs": {},
+      "lastExitCode": null
+    }
+  },
+  {
+    "id": 102,
+    "kind": "powershell",
+    "name": "automatic-function",
+    "code": "function Check { $MyInvocation.MyCommand.Name }; Check",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "学習メモ\r\n",
+          "length": 14
+        },
+        {
+          "path": "C:\\Practice\\data.csv",
+          "type": "file",
+          "content": "Name,Score\r\nAlice,80\r\n",
+          "length": 22
+        },
+        {
+          "path": "C:\\Practice\\readme.txt",
+          "type": "file",
+          "content": "Practice\r\n",
+          "length": 10
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        }
+      ],
+      "inputs": {},
+      "lastExitCode": null
+    }
+  },
+  {
+    "id": 103,
+    "kind": "powershell",
+    "name": "automatic-function",
+    "code": "function Check { param($x) $x };1,2,3 | Check",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "学習メモ\r\n",
+          "length": 14
+        },
+        {
+          "path": "C:\\Practice\\data.csv",
+          "type": "file",
+          "content": "Name,Score\r\nAlice,80\r\n",
+          "length": 22
+        },
+        {
+          "path": "C:\\Practice\\readme.txt",
+          "type": "file",
+          "content": "Practice\r\n",
+          "length": 10
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        }
+      ],
+      "inputs": {},
+      "lastExitCode": null
+    }
+  },
+  {
+    "id": 104,
+    "kind": "powershell",
+    "name": "automatic-function",
+    "code": "function Check { $args.Count };1,2,3 | Check",
+    "model": {
+      "variables": {},
+      "cwd": "C:\\Practice",
+      "files": [
+        {
+          "path": "C:\\Practice",
+          "type": "directory"
+        },
+        {
+          "path": "C:\\Practice\\notes.txt",
+          "type": "file",
+          "content": "学習メモ\r\n",
+          "length": 14
+        },
+        {
+          "path": "C:\\Practice\\data.csv",
+          "type": "file",
+          "content": "Name,Score\r\nAlice,80\r\n",
+          "length": 22
+        },
+        {
+          "path": "C:\\Practice\\readme.txt",
+          "type": "file",
+          "content": "Practice\r\n",
+          "length": 10
+        },
+        {
+          "path": "C:\\Practice\\logs",
+          "type": "directory"
+        }
+      ],
+      "inputs": {},
+      "lastExitCode": null
+    }
+  }
+]
