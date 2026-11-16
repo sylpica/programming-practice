@@ -1,4 +1,18 @@
-# Codex R7 独立監査 — ee01f07（節目10・未完了）
+# Codex R7 独立監査 — ee01f07（節目11・未完了）
+
+対象は引き続き **ee01f07402b404c7b9dbcd83935b4be3bc4de187、全15種類・104テンプレート・978リファレンス・111用語**。配信日：2026-11-16 JST。Muse側の指摘一覧・個票を見ず、固定対象の実装・公式資料・公式ランタイムから独立に確認した。
+
+節目11の追加は **7件（P2：5、P3：2）**。累計 **220件（P1：0、P2：200、P3：20）**。Museとの重複を除いた件数ではない。同じ原因の入力違い、既報R7-47／115／182の補強、SDKと文書の食い違い、表現形式だけの比較差は新規へ加算していない。[検証範囲](#節目11の検証範囲と証拠)、[追加指摘](#節目11の追加指摘)、[残作業](#節目11の残作業)を参照。
+
+**使った書き込みコール数：1件（この節目）。累計31件。** 報告書だけをmainへまとめて配信するgit push 1回。過去の節目は5、4、2、2、1、1、1、6、4、4件。従来と同じくGitHubへ書き込むgit pushを数え、ローカルの検証コード・データ作成、読取り、CI内の保存を含めない。今回監査ブランチへのpushはなく、製品コード・教材・既存テスト・DEVELOPMENT.mdは変更していない。
+
+配信準備時のmainは前回報告 `92cb9061148eff4ea7515af9e198d92a6406525e`。対象製品はee01f07に固定し、その後のmainの修正残存や追加種類を監査済みとする意味ではない。
+
+**観点1〜8は未完了。** 今回はPower AppsとCloudFormationの全12教材・199参照例を実行し、Power Fxの列構成・入れ子・比較型・全26関数の宣言引数境界、CFの応答JSON・評価順・誤原因の表示を進めた。全15種類・104教材・978項目・111用語・全ビューの未了分を維持する。実Canvas／AWSでの実測と公式SDK／CPython・仕様照合を混同しない。モデル／推論設定をツールから変更・検証できない制約も継続する。サブエージェント・リセット権は使っていない。
+
+## 節目10までの記録
+
+以下は前回報告を保持した履歴。件数・書き込み回数・未実施の記述は当時の値であり、今回の状況は末尾の節目11で更新する。
 
 対象は引き続き **ee01f07402b404c7b9dbcd83935b4be3bc4de187、全15種類・104テンプレート・978リファレンス・111用語**。配信日：2026-11-16 JST。Muse側の指摘一覧・個票を見ず、固定対象の実装・公式資料・実Windowsから独立に確認した。
 
@@ -4396,6 +4410,192 @@ true／false／null × paramブロック／関数名後のリスト、6形式を
 | 6 全関数境界 | 関数入力8形、動的名6形、宣言10形、標準出力2形。異常な宣言が偽成功するものを確認 | 全関数の全位置・全型・空／null・巨大値・過不足・ゼロ除算・入れ子・条件・連鎖・パイプライン。PS列挙子・省略／型変換・全メタデータ、cmdの残る全展開等 |
 | 7 全104教材・全停止 | cmd／PS全16教材（入力yes/noを含め18実行）、全73参照例を固有／標準modelで実Windows照合。保護名と重複名の正しいエラーを取得 | 残る教材の未了分、16教材の任意変更モデル・全未知入力、全エンジンの全停止理由の一対一再現。Windowsの手動対話UIの見た目は未実施 |
 | 8 文面・a11y・劣化・性能 | 新規代表等8ソースと16教材を画面で実行・解説確認、promptの正確さ、Windows117ソースの時間 | 全文面・aria・ラベル・全フォーカス・各表示幅、実容量枯渇と保存救出、キャッシュ世代、全エンジンの最重入力探索と実Windows UI描画 |
+
+VBA・ImageJ・CloudFormation・PAD・AutoHotkey・UI.Vision・Power Apps・Python・R・C・C++・C#・JavaScript・cmd・PowerShellの全種類に未了分を維持する。VBAのRound／IsNumeric／Unicode casing等と実Excelによる切分け、Rのmedian／seq／rep／read.csv・名前・属性・精度、C系全オーバーロード・定数式・昇格・型・ポインタ／配列、C# TryParse out修飾子／型、保存・状態の残る交差も落とさない。
+
+実Excel／Canvas／PAD／AWS／UI.Vision製品セッション、実スクリーンリーダー、Safari／Firefox／iOS実機、ImageJ GUI全経路、実Windowsの手動UIは接続・環境がなく未実施。Windows CIで可能なコード実行を不可能とせず、今回得た有限集合の値・最大時間を全入力の結論に一般化しない。
+
+使用量・回数制限、リセット時刻の通知は受けていない。リセット権・サブエージェントは使っていない。モデル／推論設定をこの会話のツールで変更・検証できない制約を維持し、確認したと偽らない。これは継続中の節目報告であり、全範囲完了や欠陥収束の宣言ではない。
+
+
+## 節目11の検証範囲と証拠
+
+実施日：2026-11-16 JST。製品スナップショットはee01f07のまま。Muse監査カタログは参照せず、DEVELOPMENT.md、対象実装、Microsoft Learn／AWS公式資料／公式Power Fx SDKから確認した。実装に含まれる修正履歴コメントは製品ソースとして読んだが、そこからMuse側の個票を開いていない。
+
+### Power Apps：式・全関数の引数境界・参照・教材
+
+Microsoft.PowerFx.Interpreter **1.3.1**、.NET **8.0.15**、RecalcEngine.Check／Eval、NumberIsFloat=trueを使用。公式SDKはLinux上の実ランタイムであり、実Canvas、Dataverse、画面イベントの測定ではない。各式に新しいRecalcEngineを作り、事前Checkの失敗と評価値を分けて取得した。アプリでは値を最終状態へ残すため原則 `Set(AuditResult,式)` とし、動作数式の引数不足は直接形式でも実行した。
+
+| 集合 | 範囲・結果 |
+|---|---|
+| 基本143式 | IsBlank／CountRows／Text／Value／Not ×12値＝60、ForAllの7結果形×空／1行／2行＝21、Sumの6結果形×3行数＝18、Filter／LookUpの8条件×2行数×2関数＝32、入れ子・Switch・欠損列等12。0、1、−1、Blank、真偽、空文字／数値文字／非数値文字、空／1行テーブル、レコードを含む |
+| 追試22式 | 列の和集合、入れ子テーブルを次のCountRowsへ渡す式、Sum／Filter／LookUpへの波及、正常な0／1／2行、Switch型、Blankと空テーブルを区別。SDKのToExpression()も回収 |
+| 全26関数の宣言引数境界43形 | 実装の最小個数−1／有限最大個数＋1を、掲載の正式な名前で実行。41形は引数数を示して停止。If／Switchの2形は成功し、R7-220へ。ここでの上限はモデルの宣言であり、実Power Fxの全オーバーロードを否定するものではない |
+| 引数不足等10形 | If()／If(true)、Switch()／Switch(1)／Switch(1,1)、正しい3／4引数、Set直下を追試。SDKでSetを有効化していないため、Setの診断と内側の関数の診断を分離した |
+| 大小文字10形 | 正式名・小文字・大文字を比較。SDKは小文字等を未認識とし、アプリは多くを受理する。Canvasエディタの補正挙動を実測していないため、この差を新規不具合へ数えない |
+| 全28参照例・全6教材 | 固有モデルまたは標準モデルで全件simulate。実装の関数分岐26名には全て参照項目があり、残る2項目はThisRecordとin／exactin。今回の関数名集合の参照漏れは**確認済み・なし**。教材のタイトル・intro・通知・最終データを照合 |
+
+26関数はBlank、IsBlank、Not、And、Or、If、Switch、Set、UpdateContext、Table、Sequence、ForAll、CountRows、Sum、Filter、LookUp、Clear、ClearCollect、Collect、Defaults、Patch、Navigate、Reset、Notify、Text、Value。全名称の引数境界を調べたことと、全関数の全型・全引数位置・全オーバーロードを調べたことを区別する。後者は未完了。
+
+全6教材の既定入力ではCount=3／Status=十分、平方和14、Orders追加とDetailへの遷移、価格360、選択件数2と合計5、平方和30の保存・通知を確認。タイトル／introが主張するこの既定結果に限り**確認済み・なし**。実Canvasとの全状態比較や任意変更モデルまで完了した意味ではない。
+
+### CloudFormation：応答型・スコープ・参照・全6教材
+
+追加の型／検査13形と順序／スコープ／応答8形、計21形を実行。Pythonの関数本体はCPython **3.12.14**でも実行し、返却値8形のJSON化と2つのハンドラ教材の応答を比較した。AWSへデプロイ・接続していないので、AWSが返すエラー文や実change set成功を測定したとはしない。
+
+- 上位TransformのA→B、内側C→外側A→上位B、同位置のFn::Transform配列A→B、兄弟要素からFn::Transform自身を除外する範囲を、各ハンドラがAuditLogを残す形で確認。対象の順序・範囲に新規不一致は**確認済み・なし**。
+- Fn::TransformのParametersに入れた `{"Ref":"P"}` は未評価のまま渡り、上位のカスタムTransformのparamsは空。transformIdは呼出し名。公式AWSの宣言と一致し、対象の5形に新規不一致は**確認済み・なし**。
+- SUCCESSの大文字、明示失敗とerrorMessage、固定requestIdの不一致は正しい応答／停止。返却値のtuple、None、通常辞書はCPythonでJSON化した値と一致。これらの対照に新規不一致は**確認済み・なし**。
+- 全171参照例をsimulate。内訳はCloudFormation固有11項目とPython委譲160項目。open、str.format、random、json、os、datetime、numpy.array、pandas.DataFrameの8例は未対応として停止し、他163例は停止なし。これを163例すべての言語互換性合格とはしない。委譲例のPython全挙動の再照合は未了。固有11項目の名前・書式・説明と、共通ハンドラ例の応答・Transform／Fn::Transformの範囲を公式資料と照合した。
+- 全6教材のタイトル・intro・モデル・結果を確認。上位Metadata Stage=dev、局所PropertiesにStage=test、ハンドラStage=test、無変換、2マクロでLabel=checked、2リソースへReviewed=true／ReviewedCount=2。2つのPythonハンドラ教材の返却値はCPythonと一致。教材が明示する変換・処理件数について新規不一致は**確認済み・なし**。実リソーススキーマ検証は宣言上も未対応であり、Properties内Metadata等のデプロイ可否を合格としない。
+
+一次資料は[マクロの入力・応答・評価順](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/template-macros-author.html)、[Fn::Transform](https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/intrinsic-function-reference-transform.html)、[PythonハンドラのJSON化](https://docs.aws.amazon.com/lambda/latest/dg/python-handler.html)。一般のリソース妥当性を未対応とする宣言と、応答requestId／status／fragmentを検査するとする宣言を分け、前者を実装要求に拡張していない。
+
+### 既報の補強・保留・比較器の限界
+
+- **R7-182補強**：CloudFormationハンドラで `{"Metadata":{"value":{"kind":"unknown","label":"ordinary"}}}` をfragmentとして返すと、値表示が通常の辞書から「実行時に決まる：未確定の値」へ変わる。CPythonでJSON化してもこの辞書は通常データのまま。同じ共通formatValueのタグ衝突として既報へ含め、新規には数えない。
+- **R7-47補強**：CountRowsが型を見ず.lengthを読む問題。`CountRows(Blank())` はSDK0、アプリは `Cannot read properties of null (reading 'length')`。CountRows(Table())は両者0。未対応ならBlankの取扱いを示す必要があり、内部JSのnullプロパティ参照へ誘導する説明は適切でない。CountRowsの型境界という既報へ追記する。
+- **R7-115補強**：`Sum(Sequence(0),Value)` はアプリ0、SDK Blank。同じ空／全Blank集計の原因として追加計数しない。テーブルをスカラーへ変換する既報R7-65、Filter／LookUpの文字列条件R7-48も再現し、新規計数から除いた。
+- **保留**：`CountRows(ForAll(Sequence(2),Blank()))` はアプリ0、SDK2。しかしMicrosoft Learn ForAllはBlank結果の行を除くと説明しており、アプリは文書と一致する。SDKだけを正解として不具合を作らない。実Canvasまたは適用環境差の追加確認が必要。
+- SDKのToObject()は単一列テーブルを配列へ縮約する。例えば `{a:1}` の1列レコードも単に1となるため、モデルのレコード表現との差を欠陥として数えていない。出力先頭に付いたC#コンパイラの警告もJSON本体から分離した。生の比較差分件数を欠陥件数へ読み替えていない。
+
+### 表示・文面・性能と制約
+
+Chromium156／Playwrightで追加再現14ソースと全12教材を画面で実行。停止文、最終状態、通知、教材説明を回収し、未処理pageerrorは0件。Power Apps7定義、CloudFormation5定義の用語を再読し、今回読んだ12定義文の誤字・意味の誤りの追加は**確認済み・なし**。教材語の欠落と全ビューの逐文対応は既報R7-56を維持し、全用語の完全性を合格とはしない。今回aria、全フォーカス、実容量枯渇の追加検証はしていない。
+
+LinuxのNode24.22.1で、全参照例＋全教材のsimulateを同一プロセスで順次測定。Power Apps34ソースは合計 **29.593632ms**、集合内最長 **8.724086ms**（fx-state）。CloudFormation177ソースは合計 **356.035629ms**、集合内最長 **25.308297ms**（cfn-transform）。初回モジュール読込みを含み、ブラウザ描画・AWS・Canvas・プロセス起動は含まない。最重入力探索でもWindows測定でもなく、今回の有限集合の値。前回までのWindows CI実測は履歴に保持する。
+
+ローカル証拠は `/workspace/work/r7k/` のfx-results.json、follow-native.json（ToExpression付き）、arity-results.json、arity-native.json、casing-native.json、catalog.json、cfn-results.json、cfn-follow.json、cfn-cpython.json、template-cpython.json、browser-results.jsonと再現スクリプト。これらを製品コードへ追加していない。報告の再現コードと期待値を本節・各指摘に記載し、ローカルファイルだけへ根拠を追い出していない。
+
+## 節目11の追加指摘
+
+共通再現手順：固定ee01f07を開き、指定の種類を選び、自動実行をオフにしてコードを置き換え、実行する。特記しなければ標準モデル。Power Fxの期待値はMicrosoft.PowerFx.Interpreter 1.3.1、RecalcEngine.Check／Eval、ParserOptions.NumberIsFloat=trueで式の内側を実行した値であり、実Canvasの実測ではない。
+
+### R7-214（P2）異なる列を持つレコードのテーブルで、欠けたセルをBlankにせず未定義名エラーにする
+
+対象：Power Apps。位置：`js/types/powerapps/index.js` のTable、ForAll結果、rowEval。
+
+再現：
+
+```text
+Set(AuditResult, ForAll(Table({a:1},{b:2}), IsBlank(a)))
+```
+
+実際：2行目で「未定義の名前：a」と停止する。Sum／Filter／LookUpにも同じ問題が波及する。
+
+期待・一次根拠：Tableの列は引数の全列の和集合になり、各行にない列はBlankになる。公式SDKの結果式は `Table({Value:false},{Value:true})`。未知の変数aを読んでいるのではない。一般の型推論を未対応としていても、この入力を受理して別の原因で停止させず、範囲外なら列構成の未対応を示す。[Microsoft Learn Table](https://learn.microsoft.com/en-us/power-platform/power-fx/reference/function-table)。
+
+同じTableに対する `Sum(Table({a:1},{b:2}),If(IsBlank(a),10,a))` はSDK 11、`CountRows(Filter(Table({a:1},{b:2}),IsBlank(a)))` は1、`LookUp(Table({a:1},{b:2}),IsBlank(a),b)` は2。アプリはすべてaのNameError。さらに `ForAll(ForAll(Sequence(2),If(Value=1,{a:1},{b:2})),IsBlank(a))` もSDK false／true、アプリNameError。テーブル引数を展開しないR7-63とは別で、ここではレコード引数だけを用いている。既定教材の同じ列を持つレコードは対照として成功する。
+
+### R7-215（P2）ForAllが返す内側のテーブルをValue列に入れず、次の行スコープで失う
+
+対象：Power Apps。位置：同ファイルのcase forall、`typeof v === "object" ? v : {Value:v}`。
+
+再現：
+
+```text
+Set(AuditResult, ForAll(ForAll(Sequence(2),Sequence(2)),CountRows(Value)))
+```
+
+実際：「未定義の名前：Value」で停止する。内側のForAllが返す各テーブルを、レコードと同じものとして裸の配列のまま行にしている。
+
+期待・一次根拠：テーブルは値として別のテーブルに入れられ、外側の各行はValue列に内側のテーブルを持つ。SDKの結果式は `Table({Value:Float(2)},{Value:Float(2)})`。正しい入れ子を処理するか、入れ子テーブルは未対応と説明して止める。[Microsoft Learn テーブル・入れ子のForAll](https://learn.microsoft.com/en-us/power-platform/power-fx/tables)、[ForAllの戻り値](https://learn.microsoft.com/en-us/power-platform/power-fx/reference/function-forall)。
+
+`ForAll(Sequence(1),Value)`／Sequence(2)のスカラー結果は、モデルもSDKもValue列を持つ1行／2行になり、この対照では不一致なし。SDKのToObject()は単一列の名前を省いた配列を返すため、それだけでは列名や入れ子の正否を判定せず、ToExpression()と次の集計まで確認した。
+
+### R7-216（P2）Switchの比較型が異なっても、型エラーを消して既定分岐を確定する
+
+対象：Power Apps。位置：同ファイルのSwitch事前変換、case switch、等値比較。
+
+再現：
+
+```text
+Set(AuditResult, Switch("1",1,"one","default"))
+```
+
+実際：エラーなしでAuditResult="default"になる。`Switch(true,1,"one","default")` も同じ既定値になる。
+
+期待・一次根拠：公式SDKのCheckはそれぞれText／Booleanの比較値が必要だとしてNumberを拒否する。比較できない型を単なる不一致として処理し、実行できる既定分岐を作らない。一般の型推論を実装しなくても、未対応または型不整合として正直に停止できる。[Microsoft Learn If／Switchの一致判定](https://learn.microsoft.com/en-us/power-platform/power-fx/reference/function-if)、[公式Power Fx実装](https://github.com/microsoft/Power-Fx)。
+
+SDKの最初の例の診断は `Invalid argument type (Number). Expecting a Text value instead.`。Booleanの例は同じ位置の期待型がBoolean。文字列を数値へ変換して一致させることを要求する指摘ではない。`Switch(1,1,"one","default")` は両者one、`Switch(Blank(),0,"zero","default")` は両者defaultで確認済み・なし。
+
+### R7-217（P2）JSONにできないマクロ応答を成功として通し、集合を内部タグ、非有限数を文字列として表示する
+
+対象：CloudFormation。位置：`js/types/cloudformation/index.js runHandler` の応答検査とPython値の境界。
+
+再現：標準モデルで次を実行する。requestIdは受け取った値を返す。
+
+```python
+def handler(event, context):
+    return {"requestId":event["requestId"],"status":"success","fragment":{"Metadata":{"value":{1,2}}}}
+```
+
+実際：成功扱いで「変換後」に `"value":{"__set":[{"__num":true,"v":1,"f":false},{"__num":true,"v":2,"f":false}]}` と表示する。利用者が返していない辞書と内部数値タグを変換結果として提示する。
+
+期待・一次根拠：LambdaのPython応答はJSON化可能でなければならず、CloudFormationの変換後fragmentも有効なJSONである必要がある。CPython 3.12.14で同じ関数の戻り値を `json.dumps(response)` に渡すと `TypeError: Object of type set is not JSON serializable`。未対応の境界なら、成功した変換後断片を作らず明示停止する。[AWS Lambda Pythonハンドラ・戻り値](https://docs.aws.amazon.com/lambda/latest/dg/python-handler.html)、[CloudFormationマクロ応答形式](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/template-macros-author.html)。
+
+valueを `float("nan")`／`float("inf")`／`float("-inf")` に変えると、アプリ表示は文字列"NaN"／"Infinity"／"-Infinity"、いずれも停止なし。`json.dumps(response,allow_nan=False)` はValueErrorで、有効JSONというAWSの条件を満たさない。Python既定のallow_nan=Trueと実Lambdaの内部実装を同一視せず、AWS実サービスのエラー文を実測したとはしない。tuple `(1,2)`→JSON配列、None→null、通常辞書→同じ辞書の3対照は一致した。一般のCloudFormationリソーススキーマ検証の要求ではなく、ハンドラの返却値を別の正常JSONへ見せ替える境界の問題。
+
+### R7-218（P3）未登録のマクロ名toStringで、辞書の継承プロパティをハンドラとして解析する
+
+対象：CloudFormation。位置：同ファイルinvoke、`model.macros?.[name]`。
+
+再現：標準モデルにはtoStringを登録せず、次を実行する。
+
+```json
+{"Resources":{"Fn::Transform":{"Name":"toString"},"Bucket":{"Type":"AWS::S3::Bucket"}}}
+```
+
+実際：「SyntaxError：文の終わり方が正しくありません」と停止する。利用者のJSONにも、モデルのAddMetadataハンドラにもこの構文エラーはない。Object.prototype.toStringを文字列へ変換したJavaScript関数の表現がPython解析へ渡される。
+
+期待・一次根拠：モデルにマクロ定義がないことをマクロ名つきで伝える。Nameは呼び出すマクロの識別名であり、JS辞書の継承メソッドではない。[AWS Fn::TransformのName](https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/intrinsic-function-reference-transform.html)、固定対象のDEVELOPMENT.mdの「実AWSは未対応、モデルハンドラ」宣言。`Name:"Absent"` の対照は「未確認：モデルにマクロ定義がありません：Absent」と正しく停止した。実AWSの名前解決を測った指摘ではなく、モデル自身のエラー理由の誤り。
+
+### R7-219（P3）Parametersの型が不正なとき、存在するNameが欠けていると誤案内する
+
+対象：CloudFormation。位置：同ファイルnestedのFn::Transform検査。
+
+再現：
+
+```json
+{"Resources":{"Fn::Transform":{"Name":"AddMetadata","Parameters":[]},"Bucket":{"Type":"AWS::S3::Bucket"}}}
+```
+
+実際：「Fn::Transformの指定にマクロ名（Name）が含まれていません（NameとParametersのオブジェクト、またはその配列で指定してください）」と停止する。
+
+期待・一次根拠：Nameは存在するので、Parametersにキーと値のオブジェクトが必要であることを示す。Nameを追加・修正しても解消しない原因を案内しない。[AWS Fn::Transform Parameters](https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/intrinsic-function-reference-transform.html)。
+
+Parametersを{}に直すと成功し、Nameをそのままにして問題を解消できる。Nameが数値7の対照も同じ「含まれていません」だが、こちらは欠落ではなく名前の型を伝えるべき。応答statusの型を欠落と言う既報R7-67とは異なる入力側の検査箇所。停止すること自体は正しく、案内の原因が誤っているためP3。
+
+### R7-220（P2）動作数式のIf／Switchが引数数検査を迂回し、不完全な呼出しでも成功する
+
+対象：Power Apps。位置：`js/types/powerapps/index.js lowerBehavior` とcallのarity検査。
+
+再現：
+
+```text
+Set(AuditResult,99);If(true)
+```
+
+実際：エラーなしで終了し、AuditResult=99。`Set(AuditResult,99);Switch(1,1)` も成功する。Ifの条件に対応する結果やSwitchの一致結果がないことを無視する。
+
+期待・一次根拠：Ifは少なくとも条件と結果、Switchは比較式・一致値・結果を必要とする。公式SDKでは内側の `If(true)` は `Invalid number of arguments: received 1, expected 2 or more.`、`Switch(1,1)` はreceived 2, expected 3 or more。DEVELOPMENT.mdの「関数の引数個数を検証」という宣言にも一致させる。[Microsoft Learn If／Switch構文](https://learn.microsoft.com/en-us/power-platform/power-fx/reference/function-if)。
+
+追加：`If()`／`Switch(1)` もアプリは成功扱い。`Switch()` は必要個数でなくundefinedのtargetを読む内部エラー。直接の動作数式とSet直下の2形式で確認した。`If(true,7,8)`／`Switch(1,1,7,8)` は両者7の対照。Null伝播を伴わないPower Fx固有の事前変換であり、VBAのR7-35とは別。公式SDKでSet自体を実行したとはせず、Set内側の関数のCheck診断を用いた。
+
+## 節目11の残作業
+
+**観点1〜8は未完了。** 固定ee01f07の全15種類・104教材・978参照項目・111用語・全ビューを維持する。今回の2種類の12教材・199参照例の実行を、全種類の全関数・全入力・全画面の完了へ読み替えない。
+
+| 観点 | 今回の進捗 | 残作業 |
+|---|---|---|
+| 1 一次情報 | AWS公式入力・応答・評価順、Power Fx公式資料とSDK1.3.1の型・入れ子・空値・引数境界 | 全15種類の残る関数・構文・型・書式。SDKと文書が食い違うForAll Blank、setlocalの資料／実Windows差 |
+| 2 宣言 | CFの一般スキーマ未対応と応答検査、Power Apps型推論未対応と引数検査の境界を分類 | DEVELOPMENT.md全宣言の双方向表。全型・値域・名前・未確定入力と外部依存の境界で正直に止まるか |
+| 3 状態・分岐・表示 | 欠損列・入れ子テーブル・Switch型の分岐、マクロのJSON境界と内部タグ、誤った停止理由 | 全エンジンの未確認パス制約、保存・移行・複数タブ・テンプレート切替の全状態、参照・配列・例外・未知値の残る交差 |
+| 4 cmd／PS | 前回の実Windows教材・参照・連結echo等の証拠を維持。今回は追加実測なし | 残る全引数位置・展開・修飾・変数・ラベル・パイプライン・関数スコープ・入れ子・エラー・表示 |
+| 5 参照・用語 | Power Apps全26関数名と28項目、CF固有11項目の仕様、全199例の実行、12用語定義文 | 978項目全説明・書式・期待値・注意、全実装名／属性／変数／別名と参照・除外宣言、111用語の一次逐文・教材語・全ビュー間矛盾。CF委譲160例の言語照合残分 |
+| 6 全関数境界 | Power Fx143式＋追試22、全26関数の宣言引数境界43形、追加引数10形・大小文字10形、CF21形 | 全関数の全位置・全型・空／null・巨大値・過不足・ゼロ除算・入れ子・条件・連鎖・パイプライン。Power Fx表の型／スコープ、実Canvasでの環境差、全15種類の残る境界 |
+| 7 全104教材・全停止 | Power Apps／CF全12教材の固有／標準モデル、CFハンドラ2本をCPython比較。誤原因と偽成功を追加再現 | 残る教材の未了分、今回教材の任意変更モデル・全未知入力、全エンジンの全停止理由の一対一再現、実製品UI |
+| 8 文面・a11y・劣化・性能 | 追加14ソース＋12教材を画面確認、12用語定義再読、Linux211ソースの時間 | 全文面・aria・ラベル・全フォーカス・各表示幅、実容量枯渇と保存救出、キャッシュ世代、全エンジンの最重入力探索と実Windows UI描画 |
 
 VBA・ImageJ・CloudFormation・PAD・AutoHotkey・UI.Vision・Power Apps・Python・R・C・C++・C#・JavaScript・cmd・PowerShellの全種類に未了分を維持する。VBAのRound／IsNumeric／Unicode casing等と実Excelによる切分け、Rのmedian／seq／rep／read.csv・名前・属性・精度、C系全オーバーロード・定数式・昇格・型・ポインタ／配列、C# TryParse out修飾子／型、保存・状態の残る交差も落とさない。
 
