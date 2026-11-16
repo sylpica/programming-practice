@@ -1,4 +1,19 @@
-# Codex R7 独立監査 — ee01f07（節目6・未完了）
+# Codex R7 独立監査 — ee01f07（節目7・未完了）
+
+対象は引き続き **ee01f07402b404c7b9dbcd83935b4be3bc4de187、全15種類・104テンプレート・978リファレンス**。配信日：2026-11-16。Muse側の指摘一覧・個票を参照せず、固定対象の実装・公式資料・実ランタイムから独立に確認した。
+
+節目7の追加は **27件（P2：25、P3：2）**。累計 **178件（P1：0、P2：161、P3：17）**。Museとの重複を除いた件数ではない。同じ原因の複数形状、既報の補強、未判定の差分を新規件数へ加算していない。[節目7の追加指摘](#節目7の追加指摘)と[残作業](#節目7の残作業)を参照。
+
+**使った書き込みコール数：1件（この節目）。累計16件。** 報告書だけをmainへまとめて配信するgit push 1回。過去の節目は5件、4件、2件、2件、1件、1件。GitHubへのgit pushを数え、ローカルの検証コード・データ作成、読取り、CI内の保存は含めない。製品コード・教材・既存テスト・DEVELOPMENT.mdは変更していない。監査用ブランチの追加pushもマージも行っていない。
+
+配信準備時のmainは `e32e5078d650545c0506bafd139243ae6000a9e8`。前回報告以後のmainの既存変更を保持して配信するが、監査はee01f07のまま。新しいmainの追加種類・修正状態の再監査を済ませたとの意味ではない。
+
+**観点1〜8の監査は未完了。** 今回はR・C／C++・C#の引数・型・属性・数値・書式・エラー理由と参照の整合を進めた。全15種類・全104教材・978参照項目・111用語・全ビューの未了対象を維持する。サブエージェント・リセット権は使用していない。依頼モデル／推論設定を会話のツールから変更・検証できない制約も継続し、設定を確認したと偽らない。
+
+## 節目6までの記録
+
+以下は前回内容を保持した履歴。件数・書き込み回数・未実施の記述は当時の値であり、今回の状況は末尾の節目7で更新する。
+
 
 対象は引き続き **ee01f07402b404c7b9dbcd83935b4be3bc4de187、全15種類・104テンプレート・978リファレンス**。配信日：2026-11-16 JST。Muse側の指摘一覧・個票を参照せず、固定対象の実装・公式資料・実ランタイムから独立に確認した。
 
@@ -2996,3 +3011,558 @@ Excel VBA、ImageJ、CloudFormation、PAD、AutoHotkey、UI.Vision、Power Apps�
 実Excel／Canvas／PAD／AWS／UI.Visionの製品セッション、実スクリーンリーダー、Safari／Firefox／iOS実機、ImageJのGUI全経路は環境・接続がなく未実施。Windows CIで追加可能な作業は未実施として残し、不可能と書き換えていない。Linux実測からWindowsの実時間を捏造しない。
 
 使用量・回数制限の通知は受けていない。リセット権は使っておらず、リセット時刻の通知もないので推測しない。この節目は未完了報告であり、全範囲完了や欠陥収束の宣言ではない。
+
+
+## 節目7の検証範囲・一次情報・判定
+
+引き続きee01f07を使用した。実ランタイムはLinux x64の **R 4.2.2、GCC／G++ 14.2.0（C17／C++17）、.NET 8.0.15／SDK 8.0.408**、画面はChromium 156。Nodeは24.22.1。C／C++の実測ABIはモデルの既定と同じint 32ビット、long 64ビットで照合した。実Windowsの追加実行はこの節目では行っていない。
+
+### Rの引数・型・属性・境界
+
+Rの明示callディスパッチは、c／length／is.na／as.numeric／as.character／print／cat／sum／mean／median／sd／data.frame／nrow／ncol／names／seq_len／seq／repの18関数と、別処理のreadline／rnorm／runif／sample／read.csvの5関数。この23名は全て参照項目に対応し、**この関数名集合の項目漏れは確認済み・なし**。FUNCTION_NAMESに載るだけで未対応停止となる名前を、具体的な実装関数として数えていない。変数・演算子・添字・関数の全引数や説明の正確性を、この名前対応だけで合格にしていない。
+
+| 入力集合 | 実施数 | 確認内容 |
+|---|---:|---|
+| 18決定的関数×19値、および重点形式・追加確認 | 479 | NULL、0／1／−1、TRUE／FALSE、NA／NaN、±Inf、空・数値風・非数値文字列、空ベクトル、複数要素、名前付きベクトル、data.frame。名前・出力も採取 |
+| 上記479内のna.rm | 76＋追加2 | sum／mean／median／sd×19形状。厳密TRUE判定、logical変換、長さ検証を比較。全関数が同じ変換ではないことも確認 |
+| 小数刻みseqの終点 | 126 | from 0／1／−1、by ±0.1／±0.2／±0.3、間隔数0／1／2／3／4／5／10の有限集合を全列挙。20組で要素数不足 |
+
+479件のnative値・names・出力とアプリを比較し、代表的な差を再現コードへ整理した。値を比較する段階で長さ1のベクトルとスカラー表現を正規化したが、logicalとnumericの相違は消していない。Rの標準コンソール表記と、宣言されている学習用c(...)表記の違いは欠陥に数えない。小数刻みの126件は十進リテラルをDecimalで組み立て、同じソースを両者へ渡した。数値をテスト作成側で二重に丸めて終点を変えていない。
+
+追加の対象は名前の合成・属性の保持、引数束縛、列の消失／捏造、集計、na.rm、sdの型変換、catの出力先・区切り、seqの終点（R7-152〜159、176）。既報と同じ原因の差は新規件数に入れていない。
+
+- **R7-21の補強**：seq(FALSE)や名前付きfromのみの形式等も確認。1引数の型・長さと数値変換を混同する既報の範囲を維持する。
+- **R7-22の補強**：seqにfrom／to／by／length.outを同時指定した過剰な組合せも、実Rが拒否するのに値を返す。これだけで別の新規件数にしない。
+- **R7-24／25の補強**：sdのNaN／NA、およびas.numericの文字列Inf／NaN／16進浮動小数点も照合。既存の欠損・変換判定の問題として記録し、水増ししない。
+- **R7-83の補強**：data.frameを引数にした変換・集計等も追加で確認。既報の表を単一要素扱いする問題と区別せず、重複計上しない。
+- **R7-85の補強**：seq_lenのNULL／空文字列を0へ変えること、複数要素で先頭を使う実Rとの違いも記録。件数の型・長さ検証の未了は残る。
+
+Rの資料は公式R-manual、R言語定義、必要な標準関数の契約を参照した。R-manualの公開ページはR-develを含む一方、実測は4.2.2である。古い実ランタイムの結果を最新Rの実測に置き換えていない。特にsumの拡張精度は公式にも環境依存の注意があるので、Linuxで得た値を全Windows環境共通と断定しない。
+
+### C／C++の関数・型・表示
+
+型10種（char／signed char／unsigned char／short／unsigned short／int／unsigned int／long／float／double）×単項3演算×2言語のsizeof 60コード、%fの12値×2言語24コード、文字列終端等8コード、stringとcharの比較6演算×左右順12コード、計**104コード**を実コンパイラへ渡した。
+
+88コードがコンパイル可能。残り16はfloat／doubleへの~の4コードと、string対char比較12コードの実コンパイルエラーである。これらを実行成功として扱っていない。アプリのsizeofについては+／−による整数昇格の20形状、%fでは大きな有限値8形状、書式のNUL終端2形状、文字配列の書式の誤停止2形状、存在しないstring対charの比較12形状を確認した。%uの対応宣言と参照の不一致は、正しく動く追加2言語例でも確認した（R7-178）。同じ原因を形状数だけ別欠陥へ増やしていない。
+
+%fの0、−0、1e20、1e-100等、今回大きな値の指数表記化に該当しない入力はnativeの出力・戻り文字数と一致した。この具体的な入力集合は**確認済み・なし**。全丸めモード・全桁数指定・全ロケールの書式保証ではない。sizeofの文字列リテラル内NULは終端も含む配列サイズを数え、今回の2言語では実物と一致した。printfの書式NULの不具合と混同しない。
+
+C／C++の有効な明示関数ハンドラはCのprintf／abs、C++のprintf／abs／getlineで、参照に対応する。新たにNULL／nullptrの参照欠落（R7-174）と、C#へCのabsが漏れる言語ガード欠落（R7-175）を発見した。従って「共通エンジンの全名対応が完全」という合格にはしていない。
+
+### C#の関数・演算子・異常値
+
+主検査は境界59コードと全53参照例・全6教材の計**118コード**。別途Consoleの3コード、null配列13型、C由来absの1コードを検証した。
+
+- 値型7種×比較6演算の全42コードをコンパイルし、38コードが有効。boolの4関係演算が無効。アプリは有効な38コードも拒否した（R7-164）。コンパイラ警告とコンパイル不能を分けた。
+- uncheckedの定数式、checked下のシフト、uint、checked／unchecked式の型、条件式の型、ReadLine引数、最小intと−1の除算・剰余を実測（R7-165〜172）。
+- char[]のWriteLine、型未指定nullのオーバーロード選択、型付きnull配列を照合。null配列13型のnative確認は、独立した13変数を1プログラムにまとめて各Trueを採取したもの。アプリ側は13ソースを独立実行し、全て配列長不足として止まった（R7-173）。13回個別にnativeビルドしたとはしない。
+- C#のchecked／unchecked、int.TryParse／double.TryParse、Console.ReadLine／WriteLineという有効な6ハンドラ名は参照に対応する。Cのabsをここへ含めて正規のC#関数と呼ばず、CS0103と正常出力3の食い違いを別に報告する。
+
+varの推論はアプリが未対応として明示停止し、全関数の境界という依頼条件上も正直な停止なので欠陥にしていない。int.MinValue／−1の除算はアプリも実.NETもOverflowExceptionで止まり、このケースの停止は**確認済み・なし**。ただし%では例外を消すので別指摘。異種枝をConsole.WriteLineの対象型へ変換できる条件式の1例も両方正常であり、「未選択側の型が違えば必ずコンパイルエラー」とはしていない。
+
+一次資料はMicrosoft LearnのC#仕様・演算子・配列、公式dotnet/runtime v8.0.0のConsole実装。初めに参照したchecked資料の旧パスと一部APIページはツールから取得できなかったため、現行のstatements/checked-and-uncheckedと公式Consoleソースへ切り替えた。第三者解説や、取得できていないページを読んだふりで根拠にしていない。C／C++はWG14 N1570とWG21 N4659の該当する規則を用い、実コンパイラの標準モードも記した。
+
+### リファレンス154例・教材24件・画面
+
+| 種類 | 参照例 | 教材 | 結果と限定 |
+|---|---:|---:|---|
+| R | 44 | 6 | 全例を実Rで評価し、nativeエラーなし。read.csvのmodel.csvだけは既定モデルと同じx／y各3値を監査用CSVとして用意。乱数・readlineの値はアプリの確定値のoracleにしていない |
+| C | 26 | 6 | 全例がコンパイル可能。範囲外アクセス教材1件はUBSanで停止する。26参照例の出力はアプリと一致 |
+| C++ | 31 | 6 | 全例がコンパイル可能。範囲外アクセス教材1件はUBSanで停止する。31参照例の出力はアプリと一致 |
+| C# | 53 | 6 | 全参照例がコンパイル・実行可能。3つの64ビット境界定数はアプリが宣言どおり未確定表示。範囲外アクセス教材1件は実.NETもアプリも例外で停止 |
+
+4種類の24教材のタイトル・intro・コードを全て通読し、native結果と対照した。意図的な停止3教材を除く21教材の既定の値・出力は説明の主張に一致。R6教材は最終変数の値を正規化して比較し、logicalとnumericを区別して一致を確認した。**この24教材について、今回新たに確定したタイトル／説明と掲載コードの主張の不一致は確認済み・なし**。対してunchecked参照の注意書きはR7-165、printfの対応書式の注意書きはR7-178で確定した。参照例が動くことを、全154項目の全記述・全境界・全用語の公式照合完了とは扱わない。
+
+範囲外のC／C++教材を実行して出た偶然の値を正解にしていない。今回の教材用nativeは-fsanitize=undefined,boundsと-fno-sanitize-recover=allを付け、UBとしての停止を確認した。C#の例外終了コードを成功へ置き換えていない。C#の53参照例のうちlong.MaxValue／long.MinValue／ulong.MaxValueがnativeの数値とアプリの未確定表示で異なる点は、明示した安全整数範囲の制限なので新規欠陥にしていない。
+
+27指摘の代表コードを言語別に**36通り**でAPI・実物と照合し、Chromiumでも同じ36通りを操作した。pageerror 0。出力、停止理由、使用中チップを採取し、今回のAPIと画面の取り違えは**確認済み・なし**。API自体が返す誤値・誤分類が正しいとの意味ではない。追加したConsole境界コードは、最初にusingを同じ行に置いたためモデルが未対応停止した。改行したソースで実物・APIを再実行してから判定し、この未対応停止をConsole自体の動作の証拠にしていない。
+
+ローカル証跡は`/workspace/work/r7g/`のr-results.json、r-seq-boundary-results.json、r-material-results.json、c-results.json、c-material-results.json、csharp-results.json、csharp-extra-results.json、csharp-null-arrays-results.json、csharp-abs-results.json、representative-native.json、recheck-results.json、browser-results.json等。mainへは本報告書のみを配信し、必要な再現コード・実出力・一次資料を以下へ記す。
+
+## 節目7の追加指摘
+
+
+### R7-152（P2）cが入れ子の名前を誤って合成し、正しい名前添字でNAになる
+
+対象：R。再現：ee01f07で対象種類を選び、既定モデルに次のコードを入力して実行する。Rのコンソール書式とアプリのc(...)表記の違いそのものは欠陥としない。ファイル出力の実物検証は一時作業ディレクトリで行う。
+
+```text
+v <- c(x=c(a=1,b=2))
+print(names(v))
+print(v["x.a"])
+```
+
+実際：実Rの名前はx.a／x.b、名前x.aの値は1。アプリはxa／xbを作り、正しい添字x.aではNA。c(x=c(a=1))も実R x.aに対してアプリx。
+
+期待：入れ子名と外側名をRの規則で組み合わせ、存在する名前での参照を成功させる。
+
+根拠：[公式c](https://stat.ethz.ch/R-manual/R-devel/library/base/html/c.html)、[名前添字](https://stat.ethz.ch/R-manual/R-devel/library/base/html/Extract.html)。実R 4.2.2でnamesと添字の値を照合。実装は長さ1なら内側名を捨て、それ以外はドットなしで連結する。
+
+### R7-153（P2）as.numeric／as.characterと%in%が本来消える名前を残す
+
+対象：R。再現：ee01f07で対象種類を選び、既定モデルに次のコードを入力して実行する。Rのコンソール書式とアプリのc(...)表記の違いそのものは欠陥としない。ファイル出力の実物検証は一時作業ディレクトリで行う。
+
+```text
+print(names(as.numeric(c(a=1))))
+print(names(as.character(c(a=1))))
+print(names(c(a=1) %in% 1))
+```
+
+実際：実Rは3行ともNULL。アプリは3行ともc("a")という名前を返す。名前を持たない結果へ、入力の名前を付けてしまう。
+
+期待：型変換と照合の属性規則を守り、値の変換が正しくても不要なnamesを継承しない。NaNをNAにする既報R7-25とは別の属性の問題。
+
+根拠：[as.double＝as.numericはnamesを含む属性を除去](https://stat.ethz.ch/R-manual/R-devel/library/base/html/double.html)、[as.character](https://stat.ethz.ch/R-manual/R-devel/library/base/html/character.html)、[%in%／match](https://stat.ethz.ch/R-manual/R-devel/library/base/html/match.html)。実R 4.2.2で全3例を照合。
+
+### R7-154（P2）名前付きで先に埋まった仮引数へ位置引数を重ねて別の値を計算する
+
+対象：R。再現：ee01f07で対象種類を選び、既定モデルに次のコードを入力して実行する。Rのコンソール書式とアプリのc(...)表記の違いそのものは欠陥としない。ファイル出力の実物検証は一時作業ディレクトリで行う。
+
+```text
+print(mean(x=c(1,100,2),0.5))
+```
+
+実際：実Rはxを先に束縛し、位置引数0.5をtrimへ渡して2を返す。アプリは0.5をxと誤認して0.5。median(x=c(1,3),TRUE)は2対1、sd(x=c(1,3),TRUE)は約1.4142対NA、rep(x=c(1,2),3)はc(1,2,1,2,1,2)対c(3)。seq(1,from=2)も実R c(2,1)だがアプリはto等が必要と誤停止する。
+
+期待：完全名で一致した仮引数へ名前付き引数を割り当ててから、残った仮引数へ位置引数を順番に割り当てる。sumの名前付きデータを落とす既報R7-79とは、仮引数の束縛を持つ関数での別の問題として分ける。
+
+根拠：[R言語定義のArgument matching](https://cran.r-project.org/doc/manuals/r-release/R-lang.html#Argument-matching)、[mean](https://stat.ethz.ch/R-manual/R-devel/library/base/html/mean.html)、[seq](https://stat.ethz.ch/R-manual/R-devel/library/base/html/seq.html)、[rep](https://stat.ethz.ch/R-manual/R-devel/library/base/html/rep.html)。掲載5形式は実R 4.2.2で再現。
+
+### R7-155（P2）data.frameが重複列を消し、NULLから存在しない列も作る
+
+対象：R。再現：ee01f07で対象種類を選び、既定モデルに次のコードを入力して実行する。Rのコンソール書式とアプリのc(...)表記の違いそのものは欠陥としない。ファイル出力の実物検証は一時作業ディレクトリで行う。
+
+```text
+d <- data.frame(x=1,x=2)
+print(names(d))
+print(d$x)
+print(ncol(data.frame(x=NULL)))
+```
+
+実際：実Rは列x／x.1を保持しd$xは1、最後の列数は0。アプリは先の列を消してx=2だけにし、NULLだけのdata.frameにx列を作って列数1。
+
+期待：重複列は既定の名前調整で両方保持し、NULLだけの引数から列を捏造しない。data.frame(x=NULL,y=1)は今回の実Rでも行数不一致となるため、「NULLなら常に他列と併合できる」とはしていない。既報R7-27の無名列V1、R7-82のオプション列とは別の、明示列名・値の消失と捏造。
+
+根拠：[公式data.frame](https://stat.ethz.ch/R-manual/R-devel/library/base/html/data.frame.html)のcheck.namesと引数のas.data.frame変換。実R 4.2.2で列名・値・列数を確認。実装のObject.fromEntriesが同名キーを上書きする。
+
+### R7-156（P2）集計の途中の加算で有限な平均・標準偏差をInfにし、相殺の合計も失う
+
+対象：R。再現：ee01f07で対象種類を選び、既定モデルに次のコードを入力して実行する。Rのコンソール書式とアプリのc(...)表記の違いそのものは欠陥としない。ファイル出力の実物検証は一時作業ディレクトリで行う。
+
+```text
+print(mean(c(1e308,1e308)))
+print(sd(c(1e308,1e308)))
+print(sum(c(1e16,1,-1e16)))
+```
+
+実際：実R 4.2.2（Linux x64）は順に1e308、0、1。アプリはInf、Inf、0。有限で等しい2値の平均と標準偏差が壊れ、合計を条件に使う場合も分岐が変わる。
+
+期待：中間合計のオーバーフローや相殺を考慮して計算するか、この精度域が未対応と正直に停止する。Infや0を確定値として教えない。sumの拡張精度はプラットフォーム依存を含むため、最後の1を全Rプラットフォーム共通と断定しない。
+
+根拠：[mean](https://stat.ethz.ch/R-manual/R-devel/library/base/html/mean.html)、[sd](https://stat.ethz.ch/R-manual/R-devel/library/stats/html/sd.html)、[sumの拡張精度・精度喪失の注意](https://stat.ethz.ch/R-manual/R-devel/library/base/html/sum.html)。実Rの環境を明示した測定でありWindows Rの実測ではない。
+
+### R7-157（P2）na.rmをTRUE定数だけで判定し、数値・名前付きlogical・不正値を黙ってFALSE扱いする
+
+対象：R。再現：ee01f07で対象種類を選び、既定モデルに次のコードを入力して実行する。Rのコンソール書式とアプリのc(...)表記の違いそのものは欠陥としない。ファイル出力の実物検証は一時作業ディレクトリで行う。
+
+```text
+print(sum(c(1,NA),na.rm=1))
+print(mean(c(1,NA),na.rm=c(a=TRUE)))
+```
+
+実際：両行とも実Rは1、アプリはNA。medianでna.rm=1も1対NA、sd(c(1,2,NA),na.rm=1)は約0.7071対NA。median／sdのna.rm=NAやNULLは実Rで条件エラーになるがアプリはNAを正常値として返す。
+
+期待：各関数のlogical変換・長さ検証を適用する。名前付きの長さ1 TRUEを配列オブジェクトだからFALSEとしない。meanのna.rm=1は実Rでも除去しないので、全関数が同じ変換をすべきとはしていない。
+
+根拠：[sum](https://stat.ethz.ch/R-manual/R-devel/library/base/html/sum.html)、[mean](https://stat.ethz.ch/R-manual/R-devel/library/base/html/mean.html)、[median](https://stat.ethz.ch/R-manual/R-devel/library/stats/html/median.html)、[sd](https://stat.ethz.ch/R-manual/R-devel/library/stats/html/sd.html)。4関数×19形状を実R 4.2.2と比較し、追加2形状も再現。実装は共通してnamed["na.rm"]===trueだけを見る。
+
+### R7-158（P2）sdが数値へ変換できる文字列を不正な型として拒否する
+
+対象：R。再現：ee01f07で対象種類を選び、既定モデルに次のコードを入力して実行する。Rのコンソール書式とアプリのc(...)表記の違いそのものは欠陥としない。ファイル出力の実物検証は一時作業ディレクトリで行う。
+
+```text
+print(sd(c("1","2")))
+```
+
+実際：実Rは約0.7071067812。アプリはinvalid type of argumentで停止する。sd("1")も実Rでは長さ1の標準偏差NAだがアプリは同じ型エラー。
+
+期待：as.doubleで数値に変換できる非factorの入力を受け入れるか、このモデルの制限なら未対応として表示する。実Rでも不正な型だと断定しない。
+
+根拠：[公式sd](https://stat.ethz.ch/R-manual/R-devel/library/stats/html/sd.html)はxをnumericへ変換可能なRオブジェクトとして定義する。実R 4.2.2で確認。
+
+### R7-159（P2）catの出力先・区切り・折返しを無視または誤適用する
+
+対象：R。再現：ee01f07で対象種類を選び、既定モデルに次のコードを入力して実行する。Rのコンソール書式とアプリのc(...)表記の違いそのものは欠陥としない。ファイル出力の実物検証は一時作業ディレクトリで行う。
+
+```text
+cat("abc",file="r7-cat.txt")
+```
+
+実際：実Rは指定ファイルにabcを書き、標準出力は空。アプリは画面へabcを出したとして正常終了する。cat(1:3,sep=c(",",";"))は実R 1,2;3、アプリ1,,;2,,;3。fill=1も折り返さず、sep=NULLや数値の不正指定も実Rのエラーを消す。
+
+期待：実ファイルは対応外なのでfile指定を明示未対応停止するか、宣言したモデル出力先として扱う。画面出力へすり替えない。sepは文字列ベクトルを順に再利用し、未対応のfill等は黙って無視しない。
+
+根拠：[公式cat](https://stat.ethz.ch/R-manual/R-devel/library/base/html/cat.html)のfile／sep／fillと出力規則。実ファイルは監査用ディレクトリにだけ作成し、abcを確認した。製品ファイルへ書いていない。
+
+### R7-160（P2）sizeofが単項演算による整数昇格を無視する
+
+対象：C／C++。再現：ee01f07で対象種類を選び、既定モデルに次のコードを入力して実行する。Rのコンソール書式とアプリのc(...)表記の違いそのものは欠陥としない。ファイル出力の実物検証は一時作業ディレクトリで行う。
+
+```text
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdbool.h>
+int main(){
+char x=1; printf("%d",(int)sizeof(+x));
+return 0;
+}
+```
+
+実際：モデルABIのintは4バイト。実GCC／G++は4、アプリは1。shortへ単項+／−を付けた場合も実物4に対しアプリ2。char／signed char／unsigned char／short／unsigned shortの2演算×2言語で20形状の誤値を確認。
+
+期待：sizeofはオペランドを実行しなくても、昇格後の式の型からサイズを決める。変数の元の型をそのまま使わない。
+
+根拠：[WG14 N1570 §6.3.1.1／6.5.3.3／6.5.3.4](https://www.open-std.org/jtc1/sc22/wg14/www/docs/n1570.pdf)、[WG21 N4659 conv.prom／expr.unary.op](https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2017/n4659.pdf)。同じ32ビットint、64ビットlongのABIで実測。
+
+### R7-161（P2）printfの%fが大きな有限値を指数表記にし、返す文字数も誤る
+
+対象：C／C++。再現：ee01f07で対象種類を選び、既定モデルに次のコードを入力して実行する。Rのコンソール書式とアプリのc(...)表記の違いそのものは欠陥としない。ファイル出力の実物検証は一時作業ディレクトリで行う。
+
+```text
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdbool.h>
+int main(){
+int n=printf("%f",1e21); printf("|%d",n);
+return 0;
+}
+```
+
+実際：実物は1000000000000000000000.000000|29。アプリは1e+21|5。−1e21、1e30、1e100でも%fの固定小数点形式を捨て、戻り値まで短い指数表記の長さに変わる。
+
+期待：%fの既定精度6の固定小数点書式を保つか未対応停止とする。JavaScriptのtoFixedが指数表記へ切り替える値域を、そのままCのprintfへ持ち込まない。
+
+根拠：[WG14 N1570 §7.21.6.1／7.21.6.3](https://www.open-std.org/jtc1/sc22/wg14/www/docs/n1570.pdf)。GCC／G++ 14.2.0で再現。
+
+### R7-162（P2）printfが書式文字列のヌル終端を無視する
+
+対象：C／C++。再現：ee01f07で対象種類を選び、既定モデルに次のコードを入力して実行する。Rのコンソール書式とアプリのc(...)表記の違いそのものは欠陥としない。ファイル出力の実物検証は一時作業ディレクトリで行う。
+
+```text
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdbool.h>
+int main(){
+int n=printf("A\0B%d",7);printf("|%d",n);
+return 0;
+}
+```
+
+実際：実物はA|1。アプリはAに続くNUL、B7まで出力し、戻り値4として|4を続ける（エスケープ表示ではA\u0000B7|4）。
+
+期待：書式の最初のヌルで終端し、後ろの変換指定を読まない。余分な引数7は評価されるが出力へ使われない。既報R7-44の%cの文字コードとは別の文字列終端の誤り。
+
+根拠：[WG14 N1570 §7.1.1のstringと§7.21.6.1／7.21.6.3](https://www.open-std.org/jtc1/sc22/wg14/www/docs/n1570.pdf)。両コンパイラの出力と戻り値を実測。
+
+### R7-163（P2）std::stringとcharの比較を存在する演算子として成功させる
+
+対象：C++。再現：ee01f07で対象種類を選び、既定モデルに次のコードを入力して実行する。Rのコンソール書式とアプリのc(...)表記の違いそのものは欠陥としない。ファイル出力の実物検証は一時作業ディレクトリで行う。
+
+```text
+#include <cstdio>
+#include <cstdlib>
+#include <iostream>
+#include <string>
+using namespace std;
+int main(){
+string s="a";cout << (s == 'a');
+return 0;
+}
+```
+
+実際：実G++はoperator==が適合しないコンパイルエラー。アプリは1。==／!=／<／<=／>／>=と左右順の全12形状で、実物は全てコンパイルエラー、アプリは具体的な真偽値。
+
+期待：std::stringとcharを比較するオーバーロードはないためCompileErrorまたは未対応停止とする。string+charの連結が有効なことを比較演算へ広げない。
+
+根拠：[WG21 N4659 string.nonmembers／string.operator==](https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2017/n4659.pdf)。実装のotherOkがcharを許可し、数値コードを1文字へ変換して比較する。
+
+### R7-164（P2）正しい値型とnullの比較をコンパイル不能と断定する
+
+対象：C#。再現：ee01f07で対象種類を選び、既定モデルに次のコードを入力して実行する。Rのコンソール書式とアプリのc(...)表記の違いそのものは欠陥としない。ファイル出力の実物検証は一時作業ディレクトリで行う。
+
+```text
+using System;
+class Program { static void Main() {
+int x=1; Console.WriteLine(x==null);
+} }
+```
+
+実際：実.NETはFalse（CS0472警告のみ）、アプリはintとnullは比較できないというCompileError。7型×6比較の42形状中、実物でコンパイル可能な38形状を全て拒否。boolの4関係演算は実物もエラーなので、38件へ混ぜていない。
+
+期待：持ち上げられた演算子を使う有効な比較を扱うか、その機能が未対応として止める。DEVELOPMENT.mdの「値型とnullの比較不可」という言語説明も是正が必要。
+
+根拠：[C#仕様 Lifted operators](https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/language-specification/expressions#1248-lifted-operators)。.NET 8.0.15／SDK 8.0.408で全42形状をコンパイル・実行。
+
+### R7-165（P2）uncheckedで有効な定数式を誤停止し、参照の注意書きも誤る
+
+対象：C#。再現：ee01f07で対象種類を選び、既定モデルに次のコードを入力して実行する。Rのコンソール書式とアプリのc(...)表記の違いそのものは欠陥としない。ファイル出力の実物検証は一時作業ディレクトリで行う。
+
+```text
+using System;
+class Program { static void Main() {
+Console.WriteLine(unchecked(2147483647+1));
+} }
+```
+
+実際：実.NETは−2147483648。アプリは整数のオーバーフローというCompileError。uncheckedブロック内での同じ定数式も誤停止。リファレンスuncheckedの注意も「定数式のオーバーフローはuncheckedでもコンパイルエラー」と教える。
+
+期待：明示unchecked内の定数式をビット幅で折り返すか未対応停止にする。通常の定数式の既定checkedと混同しない。
+
+根拠：[Microsoft Learn checked／unchecked](https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/statements/checked-and-unchecked)の定数式の明示unchecked規則と実.NET出力。実装はliteral同士なら常にCompileErrorにする。
+
+### R7-166（P2）checkedのシフトに存在しないオーバーフロー例外を出す
+
+対象：C#。再現：ee01f07で対象種類を選び、既定モデルに次のコードを入力して実行する。Rのコンソール書式とアプリのc(...)表記の違いそのものは欠陥としない。ファイル出力の実物検証は一時作業ディレクトリで行う。
+
+```text
+using System;
+class Program { static void Main() {
+int x=1; Console.WriteLine(checked(x<<31));
+} }
+```
+
+実際：実.NETは−2147483648、アプリはOverflowException。checkedブロック内でも同じ。
+
+期待：シフトをchecked／uncheckedのどちらでも同じビット演算として扱う。
+
+根拠：[Microsoft Learn bitwise and shift operators](https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/operators/bitwise-and-shift-operators)はcheckedにかかわらず同じ結果と定義する。実.NETで両形式を実測。
+
+### R7-167（P2）uintの演算結果をsigned intの負数へ変える
+
+対象：C#。再現：ee01f07で対象種類を選び、既定モデルに次のコードを入力して実行する。Rのコンソール書式とアプリのc(...)表記の違いそのものは欠陥としない。ファイル出力の実物検証は一時作業ディレクトリで行う。
+
+```text
+using System;
+class Program { static void Main() {
+uint x=2147483647; uint y=1; Console.WriteLine(x+y);
+} }
+```
+
+実際：実.NETは2147483648、アプリは−2147483648。uint x=1のx<<31も同じ誤値。両オペランドの宣言値はモデルの制限内で、結果もJavaScriptの安全整数範囲内。
+
+期待：uintの結果の型と32ビット符号なしの演算を保持するか、モデル制限を正直に停止する。符号付きの負数を返さない。
+
+根拠：[C#数値昇格](https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/language-specification/expressions)、[ビット演算](https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/operators/bitwise-and-shift-operators)。実装のarithmeticTypeはC#のuintをCのunsigned型名として認識しない。
+
+### R7-168（P2）checked／unchecked式の型をintにして後続の除算を切り捨てる
+
+対象：C#。再現：ee01f07で対象種類を選び、既定モデルに次のコードを入力して実行する。Rのコンソール書式とアプリのc(...)表記の違いそのものは欠陥としない。ファイル出力の実物検証は一時作業ディレクトリで行う。
+
+```text
+using System;
+class Program { static void Main() {
+double x=5; Console.WriteLine(checked(x)/2);
+} }
+```
+
+実際：実.NETは2.5、アプリは2。unchecked(x)/2も同じ。xはdoubleの5。
+
+期待：checked／unchecked式は内側の型を保ち、後続もdouble除算にする。
+
+根拠：[C#仕様 checked and unchecked operators](https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/language-specification/expressions#12820-the-checked-and-unchecked-operators)。実.NETで型付きdoubleを包んだ両形式を再現。typeOfのcallが既定intとなる。
+
+### R7-169（P2）三項演算子の結果型をthen側だけで決める
+
+対象：C／C++／C#。再現：ee01f07で対象種類を選び、既定モデルに次のコードを入力して実行する。Rのコンソール書式とアプリのc(...)表記の違いそのものは欠陥としない。ファイル出力の実物検証は一時作業ディレクトリで行う。
+
+```text
+using System;
+class Program { static void Main() {
+bool b=true; Console.WriteLine((b?1:2.5)/2);
+} }
+```
+
+実際：実.NETは0.5、アプリは0。C++も0.5対0。Cの同じ数値式を%fへ渡すと、実GCCは0.500000だがアプリは書式と引数型の不一致という偽の未定義動作で止まる。
+
+期待：選ばれなかった枝も含む両枝の型から条件式の結果型を決め、選んだ値をその型へ変換する。
+
+根拠：[C#条件演算子](https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/operators/conditional-operator)、[WG14 N1570 §6.5.15](https://www.open-std.org/jtc1/sc22/wg14/www/docs/n1570.pdf)、[WG21 N4659 expr.cond](https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2017/n4659.pdf)。実3ランタイムで再現。typeOfはa.thenのみを読む。
+
+### R7-170（P2）Consoleメソッドの無効な呼出しを入力・出力として成立させる
+
+対象：C#。再現：ee01f07で対象種類を選び、既定モデルに次のコードを入力して実行する。Rのコンソール書式とアプリのc(...)表記の違いそのものは欠陥としない。ファイル出力の実物検証は一時作業ディレクトリで行う。
+
+```text
+using System;
+class Program { static void Main() {
+string x=Console.ReadLine(1); Console.WriteLine(x);
+} }
+```
+
+実際：実コンパイラはReadLineに1引数のオーバーロードがないとしてCS1501。アプリは標準入力または終端という未確定値を作り正常継続する。別のConsole.WriteLine(null)も実物はchar[]／string間のCS0121だが、アプリは空行の正常出力にする。
+
+期待：実際に選べるオーバーロードを検証して停止する。未知の標準入力があることと、コンパイル不能な呼出しを区別する。
+
+根拠：[.NET 8公式Consoleソース](https://github.com/dotnet/runtime/blob/v8.0.0/src/libraries/System.Console/src/System/Console.cs)の引数なしReadLine、WriteLineのchar[]／stringオーバーロード、および実コンパイラCS1501／CS0121。
+
+### R7-171（P2）Console.WriteLine(char[])が配列の文字列型名を出す
+
+対象：C#。再現：ee01f07で対象種類を選び、既定モデルに次のコードを入力して実行する。Rのコンソール書式とアプリのc(...)表記の違いそのものは欠陥としない。ファイル出力の実物検証は一時作業ディレクトリで行う。
+
+```text
+using System;
+class Program { static void Main(){
+char[] x={'a','b'};Console.WriteLine(x);
+} }
+```
+
+実際：実.NETはab、アプリはSystem.Char[]。char[]用のオーバーロードを通る1引数の正しい呼出しを、object.ToString相当へ変えてしまう。
+
+期待：char[]の要素を順番に出力する。一般のint[]等の型名表示をchar[]へ適用しない。
+
+根拠：[.NET 8公式Console.WriteLine(char[])](https://github.com/dotnet/runtime/blob/v8.0.0/src/libraries/System.Console/src/System/Console.cs)と実.NET出力。配列の宣言・要素値・引数個数に相違はない。
+
+### R7-172（P2）最小intを−1で剰余計算すると必要な例外を消して0を返す
+
+対象：C#。再現：ee01f07で対象種類を選び、既定モデルに次のコードを入力して実行する。Rのコンソール書式とアプリのc(...)表記の違いそのものは欠陥としない。ファイル出力の実物検証は一時作業ディレクトリで行う。
+
+```text
+using System;
+class Program { static void Main() {
+int x=int.MinValue; int y=-1; Console.WriteLine(unchecked(x%y));
+} }
+```
+
+実際：実.NET 8.0.15はOverflowExceptionで終了し標準出力は空。アプリは0を正常出力する。同じオペランドの除算/は実物もアプリもOverflowExceptionで止まるため、%だけに残る漏れ。
+
+期待：このランタイムで除算がオーバーフローする組合せの剰余も規則に従って停止する。
+
+根拠：[C#仕様 Remainder operator](https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/language-specification/expressions#12134-remainder-operator)は最小値／−1の%についてx/yが例外となる場合にOverflowExceptionを要求する。Linux .NET 8.0.15の実測であり、Windowsを測った結果とはしない。
+
+### R7-173（P2）nullで初期化した配列参照を配列長不足と誤診する
+
+対象：C#。再現：ee01f07で対象種類を選び、既定モデルに次のコードを入力して実行する。Rのコンソール書式とアプリのc(...)表記の違いそのものは欠陥としない。ファイル出力の実物検証は一時作業ディレクトリで行う。
+
+```text
+using System;
+class Program { static void Main(){
+int[] x4=null;
+Console.WriteLine(x4==null);
+} }
+```
+
+実際：実.NETはTrue。アプリは「配列長を指定してください」で停止する。sbyte／byte／short／ushort／int／uint／long／ulong／float／double／bool／char／stringの全13配列型で再現。
+
+期待：nullの配列参照を有効な初期値として扱うか、null配列がモデルで未対応と正直に表示する。サイズを指定して配列実体を作ることとは区別する。
+
+根拠：[Microsoft Learn Arrays](https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/builtin-types/arrays)の参照型の規則。13型のnative確認は1プログラムへまとめて各Trueを採取し、アプリ側は13コードを独立実行した。
+
+### R7-174（P3）実装済みNULL／nullptrに参照項目も意図的除外宣言もない
+
+対象：C／C++。再現：ee01f07で対象種類を選び、既定モデルに次のコードを入力して実行する。Rのコンソール書式とアプリのc(...)表記の違いそのものは欠陥としない。ファイル出力の実物検証は一時作業ディレクトリで行う。
+
+```text
+#include <stdio.h>
+int main(){
+int *p=NULL;
+if(p==NULL) printf("%d",1);
+return 0;
+}
+```
+
+実際：C／C++でNULLを使った空ポインタの初期化・比較を処理し1を出す。C++ではnullptrへ置換しても1。一方C26項目・C++31項目の全フィールドにこれらの語がなく、ポインタ項目にも説明がない。DEVELOPMENT.mdにもC／C++の意図的除外宣言はない。
+
+期待：ポインタ項目等に束ねて語・書式・役割を説明するか、意図的な参照除外を宣言する。nullptrはキーワード、NULLはマクロとして区別し、環境変数等として教えない。
+
+根拠：[WG14 N1570 §7.19](https://www.open-std.org/jtc1/sc22/wg14/www/docs/n1570.pdf)、[WG21 N4659 lex.nullptr／support.types.nullptr](https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2017/n4659.pdf)。実行・参照・宣言を固定対象で照合。
+
+### R7-175（P2）存在しないグローバルabsをCの関数として実行する
+
+対象：C#。再現：ee01f07で対象種類を選び、既定モデルに次のコードを入力して実行する。Rのコンソール書式とアプリのc(...)表記の違いそのものは欠陥としない。ファイル出力の実物検証は一時作業ディレクトリで行う。
+
+```text
+using System;
+class Program { static void Main(){
+Console.WriteLine(abs(-3));
+} }
+```
+
+実際：実C#コンパイラはabsが現在のコンテキストに存在しないというCS0103。アプリは3を正常出力する。C／C++用のabsハンドラがmanagedの場合にも通り、C#53項目にない架空の組込み関数を公開している。
+
+期待：C#では未定義のabs呼出しとして停止する。System.Math.Absとは名前・参照方法を区別し、C用の関数をC#へ流用しない。
+
+根拠：[Microsoft Learn System.Math.Abs](https://learn.microsoft.com/en-us/dotnet/api/system.math.abs?view=net-8.0)、実C#コンパイラのCS0103。固定対象の共通c-family.jsはprintfにはmanaged拒否がある一方、absには言語ガードがない。
+
+### R7-176（P2）seqが小数刻みの終点を落とし、列の要素数を減らす
+
+対象：R。再現：ee01f07で対象種類を選び、既定モデルに次のコードを入力して実行する。Rのコンソール書式とアプリのc(...)表記の違いそのものは欠陥としない。ファイル出力の実物検証は一時作業ディレクトリで行う。
+
+```text
+print(seq(0,0.3,by=0.1))
+```
+
+実際：実Rは0／0.1／0.2／0.3の4要素。アプリは0／0.1／0.2の3要素。開始値0／1／−1、刻み±0.1／±0.2／±0.3、間隔数0／1／2／3／4／5／10の全126組で20組が要素不足。
+
+期待：終点付近の浮動小数点丸めをRの許容規則で扱い、数学的に含まれる終点を捨てない。条件式・添字・ループ回数でも欠落が伝播する。既報R7-21の1引数形式とは別の、from／to／byが全て明示された形式。
+
+根拠：[公式seq](https://stat.ethz.ch/R-manual/R-devel/library/base/html/seq.html)は丸め誤差の許容と終点への切詰めを定義する。実R 4.2.2と同じ十進リテラルで全126組を照合。実装はMath.floor((to-from)/by)+1だけで件数を決める。
+
+### R7-177（P2）printfが文字配列の有効な書式を文字列不足と誤診する
+
+対象：C／C++。再現：ee01f07で対象種類を選び、既定モデルに次のコードを入力して実行する。Rのコンソール書式とアプリのc(...)表記の違いそのものは欠陥としない。ファイル出力の実物検証は一時作業ディレクトリで行う。
+
+```text
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdbool.h>
+int main(){
+char fmt[]="%d";printf(fmt,7);
+return 0;
+}
+```
+
+実際：実GCC／G++は7を出力。アプリは「printfの書式文字列が必要です」で停止する。書式をchar fmt[]="%d"へ格納して渡しただけで、文字列リテラル直接指定と違う結果になる。
+
+期待：char配列が先頭要素へのポインタへ変換され、ヌル終端した書式文字列になることを扱うか、この形式がモデルで未対応と明示する。書式を渡していないとは案内しない。
+
+根拠：[WG14 N1570 §6.3.2.1／7.21.6.3](https://www.open-std.org/jtc1/sc22/wg14/www/docs/n1570.pdf)の配列変換とprintfのconst char *format引数。実装は値がJS stringかだけを検査し、同じエンジンの%sにあるモデル文字列の読取りを使わない。
+
+### R7-178（P3）printfの注意書きが対応済み%uを対応外として教える
+
+対象：C／C++。再現：ee01f07で対象種類を選び、既定モデルに次のコードを入力して実行する。Rのコンソール書式とアプリのc(...)表記の違いそのものは欠陥としない。ファイル出力の実物検証は一時作業ディレクトリで行う。
+
+```text
+#include <stdio.h>
+int main(){
+unsigned int n=1;
+printf("%u",n);
+return 0;
+}
+```
+
+実際：アプリも実GCC／G++も1を表示する。DEVELOPMENT.mdもprintfの%u追加を宣言している。一方C／C++のprintf参照は「%d / %i / %f / %s / %c / %%のみ」とし、全フィールドに%uの説明がない。
+
+期待：実装・対応宣言と参照の対応書式を一致させ、%uのunsigned intという引数型も説明する。
+
+根拠：[WG14 N1570 §7.21.6.1](https://www.open-std.org/jtc1/sc22/wg14/www/docs/n1570.pdf)のu、固定対象のDEVELOPMENT.mdとC／C++ printf参照の全フィールド。既報R7-52の前置インクリメントとは別の書式範囲の不一致。
+
+## 節目7の残作業
+
+**観点1〜8は引き続き未完了。** 対象は固定コミットの全15種類・104教材・978参照項目・111用語・全ビューのまま維持する。配信先mainが進んでも、その新しい製品状態の修正残存確認を混ぜず、依頼された固定対象の監査として記録する。
+
+| 観点 | 今回の進捗 | 残作業 |
+|---|---|---|
+| 1 一次情報 | R／C17／C++17／.NET 8の実物、WG14／WG21、Microsoft Learn、R公式 | 全15種類の残る関数・構文・型・書式の一次照合、未接続製品との実機差 |
+| 2 宣言 | C#値型とnull・uncheckedの言語説明、C#へ漏れるC関数、NULL／nullptrの参照除外未宣言 | DEVELOPMENT.mdの全宣言の双方向表、未対応・型・名前・値域の境界での正直な停止 |
+| 3 パス・状態・表示 | seqの126全組、引数束縛・名前添字・列、型が伝播する式、例外、36画面再現 | 全エンジンの未確認分岐制約、前節の保存・移行・同時編集の未了経路、C系参照・配列の残る交差 |
+| 4 cmd／PowerShell | 前節までの実Windows連結echo等の回答を保持 | 残る全引数・展開段階・パイプライン・表示書式・停止理由。今回はWindows CIの追加測定なし |
+| 5 完全性・正確性 | R23関数名、C系の有効ハンドラ名と漏れ、154参照例、uncheckedの誤記 | 978項目の全記述・期待値、全実装名／属性／定数／別名／構文と参照の完全対応、111用語の一次逐文・教材語・ビュー間矛盾 |
+| 6 全関数の境界等 | R479＋seq126、C／C++104、C#境界・null比較42・null配列13型・Console・型伝播 | 全引数位置・全型・未知値・空集合・巨大値・副作用・入れ子・連鎖・パイプライン。TryParseのout修飾子／out型、宣言修飾子、残る整数昇格・型推論・条件式等も継続 |
+| 7 104教材・全停止理由 | 4種類24教材の全コード・主張、偽のsizeof／書式UB、C#偽CompileError／配列長等 | 前節までの未照合教材、全エンジンの全停止理由を再現して原因と対応させる作業 |
+| 8 文面・a11y・劣化・性能 | %f書式・戻り値、char[]表示、正直でない出力先、参照の誤説明、36画面操作 | 全文面・aria・ラベル・フォーカス全経路、実容量枯渇・キャッシュ世代、最重入力探索とWindows UI性能。既報のWindows性能実測は保持 |
+
+VBA・ImageJ・CloudFormation・PAD・AutoHotkey・UI.Vision・Power Apps・Python・R・C・C++・C#・JavaScript・cmd・PowerShellの未了事項を全て継続する。Rでもmedianの文字列入力やseq／repの全形式、read.csvの全引数、名前・属性・欠損・数値精度の残る交差は未了。C系でも全オーバーロード・定数式・キャスト・宣言型・ポインタ／配列の全経路を完了とはしない。
+
+実Excel／Canvas／PAD／AWS／UI.Vision製品セッション、実スクリーンリーダー、Safari／Firefox／iOS実機、ImageJのGUI全経路は環境・接続がなく未実施。新しいR版の実行・Windowsでの今回追加コードの実行は未実施。Windows CIで可能な残作業を「不可能」と書き換えず、Linuxの時間や終了コードをWindowsの測定値として捏造しない。今回の有限集合を全体の最重ケースと呼ばず、性能探索の未了を残す。
+
+使用量・回数制限の通知は受けていない。リセット権は使っていない。リセット時刻の通知もないため推測しない。今回も未完了の節目報告であり、全範囲完了や欠陥収束の宣言ではない。
