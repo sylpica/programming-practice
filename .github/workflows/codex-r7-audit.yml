@@ -16,12 +16,10 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Check auxiliary VBScript boundaries and VBA model on Windows
-        run: python audit-probes/step8/native-vb.py
+      - name: Check cmd and PowerShell 7.4.6 boundaries
+        run: python audit-probes/step9/native.py
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: codex-r7-native-evidence
-          path: |
-            audit-probes/step8/results*.json
-            audit-probes/step8/native-stdout.txt
+          path: audit-probes/step9/results*.json

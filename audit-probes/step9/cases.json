@@ -1,0 +1,2197 @@
+[
+  {
+    "kind": "cmd",
+    "name": "if-numeric",
+    "code": "if 2 EQU 10 (echo YES) else (echo NO)",
+    "id": 0
+  },
+  {
+    "kind": "cmd",
+    "name": "if-numeric",
+    "code": "if -1 EQU 0 (echo YES) else (echo NO)",
+    "id": 1
+  },
+  {
+    "kind": "cmd",
+    "name": "if-numeric",
+    "code": "if 1 EQU 1 (echo YES) else (echo NO)",
+    "id": 2
+  },
+  {
+    "kind": "cmd",
+    "name": "if-numeric",
+    "code": "if 01 EQU 1 (echo YES) else (echo NO)",
+    "id": 3
+  },
+  {
+    "kind": "cmd",
+    "name": "if-numeric",
+    "code": "if 2147483648 EQU 2147483647 (echo YES) else (echo NO)",
+    "id": 4
+  },
+  {
+    "kind": "cmd",
+    "name": "if-numeric",
+    "code": "if 4294967295 EQU -1 (echo YES) else (echo NO)",
+    "id": 5
+  },
+  {
+    "kind": "cmd",
+    "name": "if-numeric",
+    "code": "if 08 EQU 8 (echo YES) else (echo NO)",
+    "id": 6
+  },
+  {
+    "kind": "cmd",
+    "name": "if-numeric",
+    "code": "if 00010 EQU 8 (echo YES) else (echo NO)",
+    "id": 7
+  },
+  {
+    "kind": "cmd",
+    "name": "if-numeric",
+    "code": "if /i 2 EQU 10 (echo YES) else (echo NO)",
+    "id": 8
+  },
+  {
+    "kind": "cmd",
+    "name": "if-numeric",
+    "code": "if /i -1 EQU 0 (echo YES) else (echo NO)",
+    "id": 9
+  },
+  {
+    "kind": "cmd",
+    "name": "if-numeric",
+    "code": "if /i 1 EQU 1 (echo YES) else (echo NO)",
+    "id": 10
+  },
+  {
+    "kind": "cmd",
+    "name": "if-numeric",
+    "code": "if /i 01 EQU 1 (echo YES) else (echo NO)",
+    "id": 11
+  },
+  {
+    "kind": "cmd",
+    "name": "if-numeric",
+    "code": "if /i 2147483648 EQU 2147483647 (echo YES) else (echo NO)",
+    "id": 12
+  },
+  {
+    "kind": "cmd",
+    "name": "if-numeric",
+    "code": "if /i 4294967295 EQU -1 (echo YES) else (echo NO)",
+    "id": 13
+  },
+  {
+    "kind": "cmd",
+    "name": "if-numeric",
+    "code": "if /i 08 EQU 8 (echo YES) else (echo NO)",
+    "id": 14
+  },
+  {
+    "kind": "cmd",
+    "name": "if-numeric",
+    "code": "if /i 00010 EQU 8 (echo YES) else (echo NO)",
+    "id": 15
+  },
+  {
+    "kind": "cmd",
+    "name": "if-numeric",
+    "code": "if 2 NEQ 10 (echo YES) else (echo NO)",
+    "id": 16
+  },
+  {
+    "kind": "cmd",
+    "name": "if-numeric",
+    "code": "if -1 NEQ 0 (echo YES) else (echo NO)",
+    "id": 17
+  },
+  {
+    "kind": "cmd",
+    "name": "if-numeric",
+    "code": "if 1 NEQ 1 (echo YES) else (echo NO)",
+    "id": 18
+  },
+  {
+    "kind": "cmd",
+    "name": "if-numeric",
+    "code": "if 01 NEQ 1 (echo YES) else (echo NO)",
+    "id": 19
+  },
+  {
+    "kind": "cmd",
+    "name": "if-numeric",
+    "code": "if 2147483648 NEQ 2147483647 (echo YES) else (echo NO)",
+    "id": 20
+  },
+  {
+    "kind": "cmd",
+    "name": "if-numeric",
+    "code": "if 4294967295 NEQ -1 (echo YES) else (echo NO)",
+    "id": 21
+  },
+  {
+    "kind": "cmd",
+    "name": "if-numeric",
+    "code": "if 08 NEQ 8 (echo YES) else (echo NO)",
+    "id": 22
+  },
+  {
+    "kind": "cmd",
+    "name": "if-numeric",
+    "code": "if 00010 NEQ 8 (echo YES) else (echo NO)",
+    "id": 23
+  },
+  {
+    "kind": "cmd",
+    "name": "if-numeric",
+    "code": "if /i 2 NEQ 10 (echo YES) else (echo NO)",
+    "id": 24
+  },
+  {
+    "kind": "cmd",
+    "name": "if-numeric",
+    "code": "if /i -1 NEQ 0 (echo YES) else (echo NO)",
+    "id": 25
+  },
+  {
+    "kind": "cmd",
+    "name": "if-numeric",
+    "code": "if /i 1 NEQ 1 (echo YES) else (echo NO)",
+    "id": 26
+  },
+  {
+    "kind": "cmd",
+    "name": "if-numeric",
+    "code": "if /i 01 NEQ 1 (echo YES) else (echo NO)",
+    "id": 27
+  },
+  {
+    "kind": "cmd",
+    "name": "if-numeric",
+    "code": "if /i 2147483648 NEQ 2147483647 (echo YES) else (echo NO)",
+    "id": 28
+  },
+  {
+    "kind": "cmd",
+    "name": "if-numeric",
+    "code": "if /i 4294967295 NEQ -1 (echo YES) else (echo NO)",
+    "id": 29
+  },
+  {
+    "kind": "cmd",
+    "name": "if-numeric",
+    "code": "if /i 08 NEQ 8 (echo YES) else (echo NO)",
+    "id": 30
+  },
+  {
+    "kind": "cmd",
+    "name": "if-numeric",
+    "code": "if /i 00010 NEQ 8 (echo YES) else (echo NO)",
+    "id": 31
+  },
+  {
+    "kind": "cmd",
+    "name": "if-numeric",
+    "code": "if 2 LSS 10 (echo YES) else (echo NO)",
+    "id": 32
+  },
+  {
+    "kind": "cmd",
+    "name": "if-numeric",
+    "code": "if -1 LSS 0 (echo YES) else (echo NO)",
+    "id": 33
+  },
+  {
+    "kind": "cmd",
+    "name": "if-numeric",
+    "code": "if 1 LSS 1 (echo YES) else (echo NO)",
+    "id": 34
+  },
+  {
+    "kind": "cmd",
+    "name": "if-numeric",
+    "code": "if 01 LSS 1 (echo YES) else (echo NO)",
+    "id": 35
+  },
+  {
+    "kind": "cmd",
+    "name": "if-numeric",
+    "code": "if 2147483648 LSS 2147483647 (echo YES) else (echo NO)",
+    "id": 36
+  },
+  {
+    "kind": "cmd",
+    "name": "if-numeric",
+    "code": "if 4294967295 LSS -1 (echo YES) else (echo NO)",
+    "id": 37
+  },
+  {
+    "kind": "cmd",
+    "name": "if-numeric",
+    "code": "if 08 LSS 8 (echo YES) else (echo NO)",
+    "id": 38
+  },
+  {
+    "kind": "cmd",
+    "name": "if-numeric",
+    "code": "if 00010 LSS 8 (echo YES) else (echo NO)",
+    "id": 39
+  },
+  {
+    "kind": "cmd",
+    "name": "if-numeric",
+    "code": "if /i 2 LSS 10 (echo YES) else (echo NO)",
+    "id": 40
+  },
+  {
+    "kind": "cmd",
+    "name": "if-numeric",
+    "code": "if /i -1 LSS 0 (echo YES) else (echo NO)",
+    "id": 41
+  },
+  {
+    "kind": "cmd",
+    "name": "if-numeric",
+    "code": "if /i 1 LSS 1 (echo YES) else (echo NO)",
+    "id": 42
+  },
+  {
+    "kind": "cmd",
+    "name": "if-numeric",
+    "code": "if /i 01 LSS 1 (echo YES) else (echo NO)",
+    "id": 43
+  },
+  {
+    "kind": "cmd",
+    "name": "if-numeric",
+    "code": "if /i 2147483648 LSS 2147483647 (echo YES) else (echo NO)",
+    "id": 44
+  },
+  {
+    "kind": "cmd",
+    "name": "if-numeric",
+    "code": "if /i 4294967295 LSS -1 (echo YES) else (echo NO)",
+    "id": 45
+  },
+  {
+    "kind": "cmd",
+    "name": "if-numeric",
+    "code": "if /i 08 LSS 8 (echo YES) else (echo NO)",
+    "id": 46
+  },
+  {
+    "kind": "cmd",
+    "name": "if-numeric",
+    "code": "if /i 00010 LSS 8 (echo YES) else (echo NO)",
+    "id": 47
+  },
+  {
+    "kind": "cmd",
+    "name": "if-numeric",
+    "code": "if 2 LEQ 10 (echo YES) else (echo NO)",
+    "id": 48
+  },
+  {
+    "kind": "cmd",
+    "name": "if-numeric",
+    "code": "if -1 LEQ 0 (echo YES) else (echo NO)",
+    "id": 49
+  },
+  {
+    "kind": "cmd",
+    "name": "if-numeric",
+    "code": "if 1 LEQ 1 (echo YES) else (echo NO)",
+    "id": 50
+  },
+  {
+    "kind": "cmd",
+    "name": "if-numeric",
+    "code": "if 01 LEQ 1 (echo YES) else (echo NO)",
+    "id": 51
+  },
+  {
+    "kind": "cmd",
+    "name": "if-numeric",
+    "code": "if 2147483648 LEQ 2147483647 (echo YES) else (echo NO)",
+    "id": 52
+  },
+  {
+    "kind": "cmd",
+    "name": "if-numeric",
+    "code": "if 4294967295 LEQ -1 (echo YES) else (echo NO)",
+    "id": 53
+  },
+  {
+    "kind": "cmd",
+    "name": "if-numeric",
+    "code": "if 08 LEQ 8 (echo YES) else (echo NO)",
+    "id": 54
+  },
+  {
+    "kind": "cmd",
+    "name": "if-numeric",
+    "code": "if 00010 LEQ 8 (echo YES) else (echo NO)",
+    "id": 55
+  },
+  {
+    "kind": "cmd",
+    "name": "if-numeric",
+    "code": "if /i 2 LEQ 10 (echo YES) else (echo NO)",
+    "id": 56
+  },
+  {
+    "kind": "cmd",
+    "name": "if-numeric",
+    "code": "if /i -1 LEQ 0 (echo YES) else (echo NO)",
+    "id": 57
+  },
+  {
+    "kind": "cmd",
+    "name": "if-numeric",
+    "code": "if /i 1 LEQ 1 (echo YES) else (echo NO)",
+    "id": 58
+  },
+  {
+    "kind": "cmd",
+    "name": "if-numeric",
+    "code": "if /i 01 LEQ 1 (echo YES) else (echo NO)",
+    "id": 59
+  },
+  {
+    "kind": "cmd",
+    "name": "if-numeric",
+    "code": "if /i 2147483648 LEQ 2147483647 (echo YES) else (echo NO)",
+    "id": 60
+  },
+  {
+    "kind": "cmd",
+    "name": "if-numeric",
+    "code": "if /i 4294967295 LEQ -1 (echo YES) else (echo NO)",
+    "id": 61
+  },
+  {
+    "kind": "cmd",
+    "name": "if-numeric",
+    "code": "if /i 08 LEQ 8 (echo YES) else (echo NO)",
+    "id": 62
+  },
+  {
+    "kind": "cmd",
+    "name": "if-numeric",
+    "code": "if /i 00010 LEQ 8 (echo YES) else (echo NO)",
+    "id": 63
+  },
+  {
+    "kind": "cmd",
+    "name": "if-numeric",
+    "code": "if 2 GTR 10 (echo YES) else (echo NO)",
+    "id": 64
+  },
+  {
+    "kind": "cmd",
+    "name": "if-numeric",
+    "code": "if -1 GTR 0 (echo YES) else (echo NO)",
+    "id": 65
+  },
+  {
+    "kind": "cmd",
+    "name": "if-numeric",
+    "code": "if 1 GTR 1 (echo YES) else (echo NO)",
+    "id": 66
+  },
+  {
+    "kind": "cmd",
+    "name": "if-numeric",
+    "code": "if 01 GTR 1 (echo YES) else (echo NO)",
+    "id": 67
+  },
+  {
+    "kind": "cmd",
+    "name": "if-numeric",
+    "code": "if 2147483648 GTR 2147483647 (echo YES) else (echo NO)",
+    "id": 68
+  },
+  {
+    "kind": "cmd",
+    "name": "if-numeric",
+    "code": "if 4294967295 GTR -1 (echo YES) else (echo NO)",
+    "id": 69
+  },
+  {
+    "kind": "cmd",
+    "name": "if-numeric",
+    "code": "if 08 GTR 8 (echo YES) else (echo NO)",
+    "id": 70
+  },
+  {
+    "kind": "cmd",
+    "name": "if-numeric",
+    "code": "if 00010 GTR 8 (echo YES) else (echo NO)",
+    "id": 71
+  },
+  {
+    "kind": "cmd",
+    "name": "if-numeric",
+    "code": "if /i 2 GTR 10 (echo YES) else (echo NO)",
+    "id": 72
+  },
+  {
+    "kind": "cmd",
+    "name": "if-numeric",
+    "code": "if /i -1 GTR 0 (echo YES) else (echo NO)",
+    "id": 73
+  },
+  {
+    "kind": "cmd",
+    "name": "if-numeric",
+    "code": "if /i 1 GTR 1 (echo YES) else (echo NO)",
+    "id": 74
+  },
+  {
+    "kind": "cmd",
+    "name": "if-numeric",
+    "code": "if /i 01 GTR 1 (echo YES) else (echo NO)",
+    "id": 75
+  },
+  {
+    "kind": "cmd",
+    "name": "if-numeric",
+    "code": "if /i 2147483648 GTR 2147483647 (echo YES) else (echo NO)",
+    "id": 76
+  },
+  {
+    "kind": "cmd",
+    "name": "if-numeric",
+    "code": "if /i 4294967295 GTR -1 (echo YES) else (echo NO)",
+    "id": 77
+  },
+  {
+    "kind": "cmd",
+    "name": "if-numeric",
+    "code": "if /i 08 GTR 8 (echo YES) else (echo NO)",
+    "id": 78
+  },
+  {
+    "kind": "cmd",
+    "name": "if-numeric",
+    "code": "if /i 00010 GTR 8 (echo YES) else (echo NO)",
+    "id": 79
+  },
+  {
+    "kind": "cmd",
+    "name": "if-numeric",
+    "code": "if 2 GEQ 10 (echo YES) else (echo NO)",
+    "id": 80
+  },
+  {
+    "kind": "cmd",
+    "name": "if-numeric",
+    "code": "if -1 GEQ 0 (echo YES) else (echo NO)",
+    "id": 81
+  },
+  {
+    "kind": "cmd",
+    "name": "if-numeric",
+    "code": "if 1 GEQ 1 (echo YES) else (echo NO)",
+    "id": 82
+  },
+  {
+    "kind": "cmd",
+    "name": "if-numeric",
+    "code": "if 01 GEQ 1 (echo YES) else (echo NO)",
+    "id": 83
+  },
+  {
+    "kind": "cmd",
+    "name": "if-numeric",
+    "code": "if 2147483648 GEQ 2147483647 (echo YES) else (echo NO)",
+    "id": 84
+  },
+  {
+    "kind": "cmd",
+    "name": "if-numeric",
+    "code": "if 4294967295 GEQ -1 (echo YES) else (echo NO)",
+    "id": 85
+  },
+  {
+    "kind": "cmd",
+    "name": "if-numeric",
+    "code": "if 08 GEQ 8 (echo YES) else (echo NO)",
+    "id": 86
+  },
+  {
+    "kind": "cmd",
+    "name": "if-numeric",
+    "code": "if 00010 GEQ 8 (echo YES) else (echo NO)",
+    "id": 87
+  },
+  {
+    "kind": "cmd",
+    "name": "if-numeric",
+    "code": "if /i 2 GEQ 10 (echo YES) else (echo NO)",
+    "id": 88
+  },
+  {
+    "kind": "cmd",
+    "name": "if-numeric",
+    "code": "if /i -1 GEQ 0 (echo YES) else (echo NO)",
+    "id": 89
+  },
+  {
+    "kind": "cmd",
+    "name": "if-numeric",
+    "code": "if /i 1 GEQ 1 (echo YES) else (echo NO)",
+    "id": 90
+  },
+  {
+    "kind": "cmd",
+    "name": "if-numeric",
+    "code": "if /i 01 GEQ 1 (echo YES) else (echo NO)",
+    "id": 91
+  },
+  {
+    "kind": "cmd",
+    "name": "if-numeric",
+    "code": "if /i 2147483648 GEQ 2147483647 (echo YES) else (echo NO)",
+    "id": 92
+  },
+  {
+    "kind": "cmd",
+    "name": "if-numeric",
+    "code": "if /i 4294967295 GEQ -1 (echo YES) else (echo NO)",
+    "id": 93
+  },
+  {
+    "kind": "cmd",
+    "name": "if-numeric",
+    "code": "if /i 08 GEQ 8 (echo YES) else (echo NO)",
+    "id": 94
+  },
+  {
+    "kind": "cmd",
+    "name": "if-numeric",
+    "code": "if /i 00010 GEQ 8 (echo YES) else (echo NO)",
+    "id": 95
+  },
+  {
+    "kind": "cmd",
+    "name": "errorlevel",
+    "code": "set /a N=2+3\necho EL=%ERRORLEVEL%",
+    "seed": 0,
+    "id": 96
+  },
+  {
+    "kind": "cmd",
+    "name": "errorlevel",
+    "code": "set /a N=2+3\necho EL=%ERRORLEVEL%",
+    "seed": 7,
+    "id": 97
+  },
+  {
+    "kind": "cmd",
+    "name": "errorlevel",
+    "code": "set X=1\necho EL=%ERRORLEVEL%",
+    "seed": 0,
+    "id": 98
+  },
+  {
+    "kind": "cmd",
+    "name": "errorlevel",
+    "code": "set X=1\necho EL=%ERRORLEVEL%",
+    "seed": 7,
+    "id": 99
+  },
+  {
+    "kind": "cmd",
+    "name": "errorlevel",
+    "code": "set X=\necho EL=%ERRORLEVEL%",
+    "seed": 0,
+    "id": 100
+  },
+  {
+    "kind": "cmd",
+    "name": "errorlevel",
+    "code": "set X=\necho EL=%ERRORLEVEL%",
+    "seed": 7,
+    "id": 101
+  },
+  {
+    "kind": "cmd",
+    "name": "errorlevel",
+    "code": "setlocal\necho EL=%ERRORLEVEL%",
+    "seed": 0,
+    "id": 102
+  },
+  {
+    "kind": "cmd",
+    "name": "errorlevel",
+    "code": "setlocal\necho EL=%ERRORLEVEL%",
+    "seed": 7,
+    "id": 103
+  },
+  {
+    "kind": "cmd",
+    "name": "errorlevel",
+    "code": "setlocal EnableDelayedExpansion\necho EL=%ERRORLEVEL%",
+    "seed": 0,
+    "id": 104
+  },
+  {
+    "kind": "cmd",
+    "name": "errorlevel",
+    "code": "setlocal EnableDelayedExpansion\necho EL=%ERRORLEVEL%",
+    "seed": 7,
+    "id": 105
+  },
+  {
+    "kind": "cmd",
+    "name": "errorlevel",
+    "code": "endlocal\necho EL=%ERRORLEVEL%",
+    "seed": 0,
+    "id": 106
+  },
+  {
+    "kind": "cmd",
+    "name": "errorlevel",
+    "code": "endlocal\necho EL=%ERRORLEVEL%",
+    "seed": 7,
+    "id": 107
+  },
+  {
+    "kind": "cmd",
+    "name": "errorlevel",
+    "code": "cd .\necho EL=%ERRORLEVEL%",
+    "seed": 0,
+    "id": 108
+  },
+  {
+    "kind": "cmd",
+    "name": "errorlevel",
+    "code": "cd .\necho EL=%ERRORLEVEL%",
+    "seed": 7,
+    "id": 109
+  },
+  {
+    "kind": "cmd",
+    "name": "errorlevel",
+    "code": "cd sub\necho EL=%ERRORLEVEL%",
+    "seed": 0,
+    "id": 110
+  },
+  {
+    "kind": "cmd",
+    "name": "errorlevel",
+    "code": "cd sub\necho EL=%ERRORLEVEL%",
+    "seed": 7,
+    "id": 111
+  },
+  {
+    "kind": "cmd",
+    "name": "errorlevel",
+    "code": "mkdir fresh\necho EL=%ERRORLEVEL%",
+    "seed": 0,
+    "id": 112
+  },
+  {
+    "kind": "cmd",
+    "name": "errorlevel",
+    "code": "mkdir fresh\necho EL=%ERRORLEVEL%",
+    "seed": 7,
+    "id": 113
+  },
+  {
+    "kind": "cmd",
+    "name": "errorlevel",
+    "code": "rmdir empty\necho EL=%ERRORLEVEL%",
+    "seed": 0,
+    "id": 114
+  },
+  {
+    "kind": "cmd",
+    "name": "errorlevel",
+    "code": "rmdir empty\necho EL=%ERRORLEVEL%",
+    "seed": 7,
+    "id": 115
+  },
+  {
+    "kind": "cmd",
+    "name": "errorlevel",
+    "code": "del /q notes.txt\necho EL=%ERRORLEVEL%",
+    "seed": 0,
+    "id": 116
+  },
+  {
+    "kind": "cmd",
+    "name": "errorlevel",
+    "code": "del /q notes.txt\necho EL=%ERRORLEVEL%",
+    "seed": 7,
+    "id": 117
+  },
+  {
+    "kind": "cmd",
+    "name": "errorlevel",
+    "code": "copy /y notes.txt fresh.txt\necho EL=%ERRORLEVEL%",
+    "seed": 0,
+    "id": 118
+  },
+  {
+    "kind": "cmd",
+    "name": "errorlevel",
+    "code": "copy /y notes.txt fresh.txt\necho EL=%ERRORLEVEL%",
+    "seed": 7,
+    "id": 119
+  },
+  {
+    "kind": "cmd",
+    "name": "errorlevel",
+    "code": "move /y notes.txt fresh.txt\necho EL=%ERRORLEVEL%",
+    "seed": 0,
+    "id": 120
+  },
+  {
+    "kind": "cmd",
+    "name": "errorlevel",
+    "code": "move /y notes.txt fresh.txt\necho EL=%ERRORLEVEL%",
+    "seed": 7,
+    "id": 121
+  },
+  {
+    "kind": "cmd",
+    "name": "errorlevel",
+    "code": "ren notes.txt fresh.txt\necho EL=%ERRORLEVEL%",
+    "seed": 0,
+    "id": 122
+  },
+  {
+    "kind": "cmd",
+    "name": "errorlevel",
+    "code": "ren notes.txt fresh.txt\necho EL=%ERRORLEVEL%",
+    "seed": 7,
+    "id": 123
+  },
+  {
+    "kind": "cmd",
+    "name": "errorlevel",
+    "code": "dir /b\necho EL=%ERRORLEVEL%",
+    "seed": 0,
+    "id": 124
+  },
+  {
+    "kind": "cmd",
+    "name": "errorlevel",
+    "code": "dir /b\necho EL=%ERRORLEVEL%",
+    "seed": 7,
+    "id": 125
+  },
+  {
+    "kind": "cmd",
+    "name": "errorlevel",
+    "code": "type notes.txt\necho EL=%ERRORLEVEL%",
+    "seed": 0,
+    "id": 126
+  },
+  {
+    "kind": "cmd",
+    "name": "errorlevel",
+    "code": "type notes.txt\necho EL=%ERRORLEVEL%",
+    "seed": 7,
+    "id": 127
+  },
+  {
+    "kind": "cmd",
+    "name": "errorlevel",
+    "code": "echo hi\necho EL=%ERRORLEVEL%",
+    "seed": 0,
+    "id": 128
+  },
+  {
+    "kind": "cmd",
+    "name": "errorlevel",
+    "code": "echo hi\necho EL=%ERRORLEVEL%",
+    "seed": 7,
+    "id": 129
+  },
+  {
+    "kind": "cmd",
+    "name": "errorlevel",
+    "code": "echo.\necho EL=%ERRORLEVEL%",
+    "seed": 0,
+    "id": 130
+  },
+  {
+    "kind": "cmd",
+    "name": "errorlevel",
+    "code": "echo.\necho EL=%ERRORLEVEL%",
+    "seed": 7,
+    "id": 131
+  },
+  {
+    "kind": "cmd",
+    "name": "errorlevel",
+    "code": "rem hi\necho EL=%ERRORLEVEL%",
+    "seed": 0,
+    "id": 132
+  },
+  {
+    "kind": "cmd",
+    "name": "errorlevel",
+    "code": "rem hi\necho EL=%ERRORLEVEL%",
+    "seed": 7,
+    "id": 133
+  },
+  {
+    "kind": "cmd",
+    "name": "errorlevel",
+    "code": "cls\necho EL=%ERRORLEVEL%",
+    "seed": 0,
+    "id": 134
+  },
+  {
+    "kind": "cmd",
+    "name": "errorlevel",
+    "code": "cls\necho EL=%ERRORLEVEL%",
+    "seed": 7,
+    "id": 135
+  },
+  {
+    "kind": "cmd",
+    "name": "errorlevel",
+    "code": "echo hi|find \"hi\"\necho EL=%ERRORLEVEL%",
+    "seed": 0,
+    "id": 136
+  },
+  {
+    "kind": "cmd",
+    "name": "errorlevel",
+    "code": "echo hi|find \"hi\"\necho EL=%ERRORLEVEL%",
+    "seed": 7,
+    "id": 137
+  },
+  {
+    "kind": "cmd",
+    "name": "errorlevel",
+    "code": "echo hi|find \"absent\"\necho EL=%ERRORLEVEL%",
+    "seed": 0,
+    "id": 138
+  },
+  {
+    "kind": "cmd",
+    "name": "errorlevel",
+    "code": "echo hi|find \"absent\"\necho EL=%ERRORLEVEL%",
+    "seed": 7,
+    "id": 139
+  },
+  {
+    "kind": "cmd",
+    "name": "set-p",
+    "code": "set X=before\nset /p X=prompt\necho X=%X%\necho EL=%ERRORLEVEL%",
+    "seed": 0,
+    "stdin": "\n",
+    "inputs": {
+      "X": ""
+    },
+    "id": 140
+  },
+  {
+    "kind": "cmd",
+    "name": "set-p",
+    "code": "set X=before\nset /p X=prompt\necho X=%X%\necho EL=%ERRORLEVEL%",
+    "seed": 7,
+    "stdin": "\n",
+    "inputs": {
+      "X": ""
+    },
+    "id": 141
+  },
+  {
+    "kind": "cmd",
+    "name": "set-p",
+    "code": "set X=before\nset /p X=prompt\necho X=%X%\necho EL=%ERRORLEVEL%",
+    "seed": 0,
+    "stdin": "hello\n",
+    "inputs": {
+      "X": "hello"
+    },
+    "id": 142
+  },
+  {
+    "kind": "cmd",
+    "name": "set-p",
+    "code": "set X=before\nset /p X=prompt\necho X=%X%\necho EL=%ERRORLEVEL%",
+    "seed": 7,
+    "stdin": "hello\n",
+    "inputs": {
+      "X": "hello"
+    },
+    "id": 143
+  },
+  {
+    "kind": "cmd",
+    "name": "other",
+    "code": "for %%i in (\"a b\" c) do echo [%%i]",
+    "seed": 7,
+    "id": 144
+  },
+  {
+    "kind": "cmd",
+    "name": "other",
+    "code": "for %%i in (a,,b;c=d) do echo [%%i]",
+    "seed": 7,
+    "id": 145
+  },
+  {
+    "kind": "cmd",
+    "name": "other",
+    "code": "for /L %%i in (1,1,0) do echo %%i",
+    "seed": 7,
+    "id": 146
+  },
+  {
+    "kind": "cmd",
+    "name": "other",
+    "code": "for /L %%i in (0,-1,-2) do echo %%i",
+    "seed": 7,
+    "id": 147
+  },
+  {
+    "kind": "cmd",
+    "name": "other",
+    "code": "call :sub\necho EL=%ERRORLEVEL%\ngoto :eof\n:sub\nsetlocal\nset /a N=1\nexit /b",
+    "seed": 7,
+    "id": 148
+  },
+  {
+    "kind": "cmd",
+    "name": "other",
+    "code": "if 0x10 EQU 16 (echo YES) else (echo NO)",
+    "seed": 7,
+    "id": 149
+  },
+  {
+    "kind": "cmd",
+    "name": "other",
+    "code": "if +1 EQU 1 (echo YES) else (echo NO)",
+    "seed": 7,
+    "id": 150
+  },
+  {
+    "kind": "powershell",
+    "name": "path-Get-Content",
+    "code": "Get-Content -Path 'notes.txt'",
+    "id": 151
+  },
+  {
+    "kind": "powershell",
+    "name": "path-Get-Content",
+    "code": "Get-Content -Path 'missing.txt'",
+    "id": 152
+  },
+  {
+    "kind": "powershell",
+    "name": "path-Get-Content",
+    "code": "Get-Content -Path '*.txt'",
+    "id": 153
+  },
+  {
+    "kind": "powershell",
+    "name": "path-Get-Content",
+    "code": "Get-Content -Path '[n]otes.txt'",
+    "id": 154
+  },
+  {
+    "kind": "powershell",
+    "name": "path-Get-Content",
+    "code": "Get-Content -Path 'l*\\trace.txt'",
+    "id": 155
+  },
+  {
+    "kind": "powershell",
+    "name": "path-Get-Content",
+    "code": "Get-Content -Path 'l*\\*.txt'",
+    "id": 156
+  },
+  {
+    "kind": "powershell",
+    "name": "path-Get-Content",
+    "code": "Get-Content -Path ''",
+    "id": 157
+  },
+  {
+    "kind": "powershell",
+    "name": "path-Get-Content",
+    "code": "Get-Content -Path $null",
+    "id": 158
+  },
+  {
+    "kind": "powershell",
+    "name": "path-Get-Content",
+    "code": "Get-Content -Path @('notes.txt','readme.txt')",
+    "id": 159
+  },
+  {
+    "kind": "powershell",
+    "name": "path-Get-Content",
+    "code": "Get-Content -Path @('notes.txt','missing.txt')",
+    "id": 160
+  },
+  {
+    "kind": "powershell",
+    "name": "path-Test-Path",
+    "code": "Test-Path -Path 'notes.txt'",
+    "id": 161
+  },
+  {
+    "kind": "powershell",
+    "name": "path-Test-Path",
+    "code": "Test-Path -Path 'missing.txt'",
+    "id": 162
+  },
+  {
+    "kind": "powershell",
+    "name": "path-Test-Path",
+    "code": "Test-Path -Path '*.txt'",
+    "id": 163
+  },
+  {
+    "kind": "powershell",
+    "name": "path-Test-Path",
+    "code": "Test-Path -Path '[n]otes.txt'",
+    "id": 164
+  },
+  {
+    "kind": "powershell",
+    "name": "path-Test-Path",
+    "code": "Test-Path -Path 'l*\\trace.txt'",
+    "id": 165
+  },
+  {
+    "kind": "powershell",
+    "name": "path-Test-Path",
+    "code": "Test-Path -Path 'l*\\*.txt'",
+    "id": 166
+  },
+  {
+    "kind": "powershell",
+    "name": "path-Test-Path",
+    "code": "Test-Path -Path ''",
+    "id": 167
+  },
+  {
+    "kind": "powershell",
+    "name": "path-Test-Path",
+    "code": "Test-Path -Path $null",
+    "id": 168
+  },
+  {
+    "kind": "powershell",
+    "name": "path-Test-Path",
+    "code": "Test-Path -Path @('notes.txt','readme.txt')",
+    "id": 169
+  },
+  {
+    "kind": "powershell",
+    "name": "path-Test-Path",
+    "code": "Test-Path -Path @('notes.txt','missing.txt')",
+    "id": 170
+  },
+  {
+    "kind": "powershell",
+    "name": "path-Get-ChildItem",
+    "code": "Get-ChildItem -Path 'notes.txt' | ForEach-Object { $_.Name }",
+    "id": 171
+  },
+  {
+    "kind": "powershell",
+    "name": "path-Get-ChildItem",
+    "code": "Get-ChildItem -Path 'missing.txt' | ForEach-Object { $_.Name }",
+    "id": 172
+  },
+  {
+    "kind": "powershell",
+    "name": "path-Get-ChildItem",
+    "code": "Get-ChildItem -Path '*.txt' | ForEach-Object { $_.Name }",
+    "id": 173
+  },
+  {
+    "kind": "powershell",
+    "name": "path-Get-ChildItem",
+    "code": "Get-ChildItem -Path '[n]otes.txt' | ForEach-Object { $_.Name }",
+    "id": 174
+  },
+  {
+    "kind": "powershell",
+    "name": "path-Get-ChildItem",
+    "code": "Get-ChildItem -Path 'l*\\trace.txt' | ForEach-Object { $_.Name }",
+    "id": 175
+  },
+  {
+    "kind": "powershell",
+    "name": "path-Get-ChildItem",
+    "code": "Get-ChildItem -Path 'l*\\*.txt' | ForEach-Object { $_.Name }",
+    "id": 176
+  },
+  {
+    "kind": "powershell",
+    "name": "path-Get-ChildItem",
+    "code": "Get-ChildItem -Path '' | ForEach-Object { $_.Name }",
+    "id": 177
+  },
+  {
+    "kind": "powershell",
+    "name": "path-Get-ChildItem",
+    "code": "Get-ChildItem -Path $null | ForEach-Object { $_.Name }",
+    "id": 178
+  },
+  {
+    "kind": "powershell",
+    "name": "path-Get-ChildItem",
+    "code": "Get-ChildItem -Path @('notes.txt','readme.txt') | ForEach-Object { $_.Name }",
+    "id": 179
+  },
+  {
+    "kind": "powershell",
+    "name": "path-Get-ChildItem",
+    "code": "Get-ChildItem -Path @('notes.txt','missing.txt') | ForEach-Object { $_.Name }",
+    "id": 180
+  },
+  {
+    "kind": "powershell",
+    "name": "path-Set-Content",
+    "code": "Set-Content -Path 'notes.txt' -Value 'x'",
+    "id": 181
+  },
+  {
+    "kind": "powershell",
+    "name": "path-Set-Content",
+    "code": "Set-Content -Path 'missing.txt' -Value 'x'",
+    "id": 182
+  },
+  {
+    "kind": "powershell",
+    "name": "path-Set-Content",
+    "code": "Set-Content -Path '*.txt' -Value 'x'",
+    "id": 183
+  },
+  {
+    "kind": "powershell",
+    "name": "path-Set-Content",
+    "code": "Set-Content -Path 'bad?.txt' -Value 'x'",
+    "id": 184
+  },
+  {
+    "kind": "powershell",
+    "name": "path-Set-Content",
+    "code": "Set-Content -Path 'bad<.txt' -Value 'x'",
+    "id": 185
+  },
+  {
+    "kind": "powershell",
+    "name": "path-Set-Content",
+    "code": "Set-Content -Path '' -Value 'x'",
+    "id": 186
+  },
+  {
+    "kind": "powershell",
+    "name": "path-Set-Content",
+    "code": "Set-Content -Path $null -Value 'x'",
+    "id": 187
+  },
+  {
+    "kind": "powershell",
+    "name": "path-Set-Content",
+    "code": "Set-Content -Path @('notes.txt','readme.txt') -Value 'x'",
+    "id": 188
+  },
+  {
+    "kind": "powershell",
+    "name": "path-Add-Content",
+    "code": "Add-Content -Path 'notes.txt' -Value 'x'",
+    "id": 189
+  },
+  {
+    "kind": "powershell",
+    "name": "path-Add-Content",
+    "code": "Add-Content -Path 'missing.txt' -Value 'x'",
+    "id": 190
+  },
+  {
+    "kind": "powershell",
+    "name": "path-Add-Content",
+    "code": "Add-Content -Path '*.txt' -Value 'x'",
+    "id": 191
+  },
+  {
+    "kind": "powershell",
+    "name": "path-Add-Content",
+    "code": "Add-Content -Path 'bad?.txt' -Value 'x'",
+    "id": 192
+  },
+  {
+    "kind": "powershell",
+    "name": "path-Add-Content",
+    "code": "Add-Content -Path 'bad<.txt' -Value 'x'",
+    "id": 193
+  },
+  {
+    "kind": "powershell",
+    "name": "path-Add-Content",
+    "code": "Add-Content -Path '' -Value 'x'",
+    "id": 194
+  },
+  {
+    "kind": "powershell",
+    "name": "path-Add-Content",
+    "code": "Add-Content -Path $null -Value 'x'",
+    "id": 195
+  },
+  {
+    "kind": "powershell",
+    "name": "path-Add-Content",
+    "code": "Add-Content -Path @('notes.txt','readme.txt') -Value 'x'",
+    "id": 196
+  },
+  {
+    "kind": "powershell",
+    "name": "path-New-Item",
+    "code": "New-Item -Path 'notes.txt' -ItemType File -Value 'x' -Force",
+    "id": 197
+  },
+  {
+    "kind": "powershell",
+    "name": "path-New-Item",
+    "code": "New-Item -Path 'missing.txt' -ItemType File -Value 'x' -Force",
+    "id": 198
+  },
+  {
+    "kind": "powershell",
+    "name": "path-New-Item",
+    "code": "New-Item -Path '*.txt' -ItemType File -Value 'x' -Force",
+    "id": 199
+  },
+  {
+    "kind": "powershell",
+    "name": "path-New-Item",
+    "code": "New-Item -Path 'bad?.txt' -ItemType File -Value 'x' -Force",
+    "id": 200
+  },
+  {
+    "kind": "powershell",
+    "name": "path-New-Item",
+    "code": "New-Item -Path 'bad<.txt' -ItemType File -Value 'x' -Force",
+    "id": 201
+  },
+  {
+    "kind": "powershell",
+    "name": "path-New-Item",
+    "code": "New-Item -Path '' -ItemType File -Value 'x' -Force",
+    "id": 202
+  },
+  {
+    "kind": "powershell",
+    "name": "path-New-Item",
+    "code": "New-Item -Path $null -ItemType File -Value 'x' -Force",
+    "id": 203
+  },
+  {
+    "kind": "powershell",
+    "name": "path-New-Item",
+    "code": "New-Item -Path @('notes.txt','readme.txt') -ItemType File -Value 'x' -Force",
+    "id": 204
+  },
+  {
+    "kind": "powershell",
+    "name": "path-Remove-Item",
+    "code": "Remove-Item -Path 'notes.txt'",
+    "id": 205
+  },
+  {
+    "kind": "powershell",
+    "name": "path-Remove-Item",
+    "code": "Remove-Item -Path 'missing.txt'",
+    "id": 206
+  },
+  {
+    "kind": "powershell",
+    "name": "path-Remove-Item",
+    "code": "Remove-Item -Path '*.txt'",
+    "id": 207
+  },
+  {
+    "kind": "powershell",
+    "name": "path-Remove-Item",
+    "code": "Remove-Item -Path 'bad?.txt'",
+    "id": 208
+  },
+  {
+    "kind": "powershell",
+    "name": "path-Remove-Item",
+    "code": "Remove-Item -Path 'bad<.txt'",
+    "id": 209
+  },
+  {
+    "kind": "powershell",
+    "name": "path-Remove-Item",
+    "code": "Remove-Item -Path ''",
+    "id": 210
+  },
+  {
+    "kind": "powershell",
+    "name": "path-Remove-Item",
+    "code": "Remove-Item -Path $null",
+    "id": 211
+  },
+  {
+    "kind": "powershell",
+    "name": "path-Remove-Item",
+    "code": "Remove-Item -Path @('notes.txt','readme.txt')",
+    "id": 212
+  },
+  {
+    "kind": "powershell",
+    "name": "path-Rename-Item",
+    "code": "Rename-Item -Path 'notes.txt' -NewName 'renamed.txt'",
+    "id": 213
+  },
+  {
+    "kind": "powershell",
+    "name": "path-Rename-Item",
+    "code": "Rename-Item -Path 'missing.txt' -NewName 'renamed.txt'",
+    "id": 214
+  },
+  {
+    "kind": "powershell",
+    "name": "path-Rename-Item",
+    "code": "Rename-Item -Path '*.txt' -NewName 'renamed.txt'",
+    "id": 215
+  },
+  {
+    "kind": "powershell",
+    "name": "path-Rename-Item",
+    "code": "Rename-Item -Path 'bad?.txt' -NewName 'renamed.txt'",
+    "id": 216
+  },
+  {
+    "kind": "powershell",
+    "name": "path-Rename-Item",
+    "code": "Rename-Item -Path 'bad<.txt' -NewName 'renamed.txt'",
+    "id": 217
+  },
+  {
+    "kind": "powershell",
+    "name": "path-Rename-Item",
+    "code": "Rename-Item -Path '' -NewName 'renamed.txt'",
+    "id": 218
+  },
+  {
+    "kind": "powershell",
+    "name": "path-Rename-Item",
+    "code": "Rename-Item -Path $null -NewName 'renamed.txt'",
+    "id": 219
+  },
+  {
+    "kind": "powershell",
+    "name": "path-Rename-Item",
+    "code": "Rename-Item -Path @('notes.txt','readme.txt') -NewName 'renamed.txt'",
+    "id": 220
+  },
+  {
+    "kind": "powershell",
+    "name": "path-Copy-Item",
+    "code": "Copy-Item -Path 'notes.txt' -Destination 'dest.txt' -Force",
+    "id": 221
+  },
+  {
+    "kind": "powershell",
+    "name": "path-Copy-Item",
+    "code": "Copy-Item -Path 'missing.txt' -Destination 'dest.txt' -Force",
+    "id": 222
+  },
+  {
+    "kind": "powershell",
+    "name": "path-Copy-Item",
+    "code": "Copy-Item -Path '*.txt' -Destination 'dest.txt' -Force",
+    "id": 223
+  },
+  {
+    "kind": "powershell",
+    "name": "path-Copy-Item",
+    "code": "Copy-Item -Path 'bad?.txt' -Destination 'dest.txt' -Force",
+    "id": 224
+  },
+  {
+    "kind": "powershell",
+    "name": "path-Copy-Item",
+    "code": "Copy-Item -Path 'bad<.txt' -Destination 'dest.txt' -Force",
+    "id": 225
+  },
+  {
+    "kind": "powershell",
+    "name": "path-Copy-Item",
+    "code": "Copy-Item -Path '' -Destination 'dest.txt' -Force",
+    "id": 226
+  },
+  {
+    "kind": "powershell",
+    "name": "path-Copy-Item",
+    "code": "Copy-Item -Path $null -Destination 'dest.txt' -Force",
+    "id": 227
+  },
+  {
+    "kind": "powershell",
+    "name": "path-Copy-Item",
+    "code": "Copy-Item -Path @('notes.txt','readme.txt') -Destination 'dest.txt' -Force",
+    "id": 228
+  },
+  {
+    "kind": "powershell",
+    "name": "path-Move-Item",
+    "code": "Move-Item -Path 'notes.txt' -Destination 'dest.txt' -Force",
+    "id": 229
+  },
+  {
+    "kind": "powershell",
+    "name": "path-Move-Item",
+    "code": "Move-Item -Path 'missing.txt' -Destination 'dest.txt' -Force",
+    "id": 230
+  },
+  {
+    "kind": "powershell",
+    "name": "path-Move-Item",
+    "code": "Move-Item -Path '*.txt' -Destination 'dest.txt' -Force",
+    "id": 231
+  },
+  {
+    "kind": "powershell",
+    "name": "path-Move-Item",
+    "code": "Move-Item -Path 'bad?.txt' -Destination 'dest.txt' -Force",
+    "id": 232
+  },
+  {
+    "kind": "powershell",
+    "name": "path-Move-Item",
+    "code": "Move-Item -Path 'bad<.txt' -Destination 'dest.txt' -Force",
+    "id": 233
+  },
+  {
+    "kind": "powershell",
+    "name": "path-Move-Item",
+    "code": "Move-Item -Path '' -Destination 'dest.txt' -Force",
+    "id": 234
+  },
+  {
+    "kind": "powershell",
+    "name": "path-Move-Item",
+    "code": "Move-Item -Path $null -Destination 'dest.txt' -Force",
+    "id": 235
+  },
+  {
+    "kind": "powershell",
+    "name": "path-Move-Item",
+    "code": "Move-Item -Path @('notes.txt','readme.txt') -Destination 'dest.txt' -Force",
+    "id": 236
+  },
+  {
+    "kind": "powershell",
+    "name": "binding-Set-Content",
+    "code": "Set-Content -Path 'notes.txt' 'new value'",
+    "id": 237
+  },
+  {
+    "kind": "powershell",
+    "name": "binding-Set-Content",
+    "code": "Set-Content 'notes.txt' -Value 'new value'",
+    "id": 238
+  },
+  {
+    "kind": "powershell",
+    "name": "binding-Add-Content",
+    "code": "Add-Content -Path 'notes.txt' 'new value'",
+    "id": 239
+  },
+  {
+    "kind": "powershell",
+    "name": "binding-Add-Content",
+    "code": "Add-Content 'notes.txt' -Value 'new value'",
+    "id": 240
+  },
+  {
+    "kind": "powershell",
+    "name": "binding-Copy-Item",
+    "code": "Copy-Item -Path 'notes.txt' 'dest.txt'",
+    "id": 241
+  },
+  {
+    "kind": "powershell",
+    "name": "binding-Copy-Item",
+    "code": "Copy-Item 'notes.txt' -Destination 'dest.txt'",
+    "id": 242
+  },
+  {
+    "kind": "powershell",
+    "name": "binding-Move-Item",
+    "code": "Move-Item -Path 'notes.txt' 'dest.txt'",
+    "id": 243
+  },
+  {
+    "kind": "powershell",
+    "name": "binding-Move-Item",
+    "code": "Move-Item 'notes.txt' -Destination 'dest.txt'",
+    "id": 244
+  },
+  {
+    "kind": "powershell",
+    "name": "binding-Rename-Item",
+    "code": "Rename-Item -Path 'notes.txt' 'renamed.txt'",
+    "id": 245
+  },
+  {
+    "kind": "powershell",
+    "name": "binding-Rename-Item",
+    "code": "Rename-Item 'notes.txt' -NewName 'renamed.txt'",
+    "id": 246
+  },
+  {
+    "kind": "powershell",
+    "name": "value-Set-Content",
+    "code": "Set-Content -Path 'fresh.txt' -Value $null\nGet-Content -Path fresh.txt -Raw",
+    "id": 247
+  },
+  {
+    "kind": "powershell",
+    "name": "value-Add-Content",
+    "code": "Add-Content -Path 'fresh.txt' -Value $null\nGet-Content -Path fresh.txt -Raw",
+    "id": 248
+  },
+  {
+    "kind": "powershell",
+    "name": "value-New-Item",
+    "code": "New-Item -Path 'fresh.txt' -Value $null -ItemType File\nGet-Content -Path fresh.txt -Raw",
+    "id": 249
+  },
+  {
+    "kind": "powershell",
+    "name": "value-Set-Content",
+    "code": "Set-Content -Path 'fresh.txt' -Value @()\nGet-Content -Path fresh.txt -Raw",
+    "id": 250
+  },
+  {
+    "kind": "powershell",
+    "name": "value-Add-Content",
+    "code": "Add-Content -Path 'fresh.txt' -Value @()\nGet-Content -Path fresh.txt -Raw",
+    "id": 251
+  },
+  {
+    "kind": "powershell",
+    "name": "value-New-Item",
+    "code": "New-Item -Path 'fresh.txt' -Value @() -ItemType File\nGet-Content -Path fresh.txt -Raw",
+    "id": 252
+  },
+  {
+    "kind": "powershell",
+    "name": "value-Set-Content",
+    "code": "Set-Content -Path 'fresh.txt' -Value @(1,2)\nGet-Content -Path fresh.txt -Raw",
+    "id": 253
+  },
+  {
+    "kind": "powershell",
+    "name": "value-Add-Content",
+    "code": "Add-Content -Path 'fresh.txt' -Value @(1,2)\nGet-Content -Path fresh.txt -Raw",
+    "id": 254
+  },
+  {
+    "kind": "powershell",
+    "name": "value-New-Item",
+    "code": "New-Item -Path 'fresh.txt' -Value @(1,2) -ItemType File\nGet-Content -Path fresh.txt -Raw",
+    "id": 255
+  },
+  {
+    "kind": "powershell",
+    "name": "value-Set-Content",
+    "code": "Set-Content -Path 'fresh.txt' -Value 0\nGet-Content -Path fresh.txt -Raw",
+    "id": 256
+  },
+  {
+    "kind": "powershell",
+    "name": "value-Add-Content",
+    "code": "Add-Content -Path 'fresh.txt' -Value 0\nGet-Content -Path fresh.txt -Raw",
+    "id": 257
+  },
+  {
+    "kind": "powershell",
+    "name": "value-New-Item",
+    "code": "New-Item -Path 'fresh.txt' -Value 0 -ItemType File\nGet-Content -Path fresh.txt -Raw",
+    "id": 258
+  },
+  {
+    "kind": "powershell",
+    "name": "value-Set-Content",
+    "code": "Set-Content -Path 'fresh.txt' -Value 1\nGet-Content -Path fresh.txt -Raw",
+    "id": 259
+  },
+  {
+    "kind": "powershell",
+    "name": "value-Add-Content",
+    "code": "Add-Content -Path 'fresh.txt' -Value 1\nGet-Content -Path fresh.txt -Raw",
+    "id": 260
+  },
+  {
+    "kind": "powershell",
+    "name": "value-New-Item",
+    "code": "New-Item -Path 'fresh.txt' -Value 1 -ItemType File\nGet-Content -Path fresh.txt -Raw",
+    "id": 261
+  },
+  {
+    "kind": "powershell",
+    "name": "value-Set-Content",
+    "code": "Set-Content -Path 'fresh.txt' -Value -1\nGet-Content -Path fresh.txt -Raw",
+    "id": 262
+  },
+  {
+    "kind": "powershell",
+    "name": "value-Add-Content",
+    "code": "Add-Content -Path 'fresh.txt' -Value -1\nGet-Content -Path fresh.txt -Raw",
+    "id": 263
+  },
+  {
+    "kind": "powershell",
+    "name": "value-New-Item",
+    "code": "New-Item -Path 'fresh.txt' -Value -1 -ItemType File\nGet-Content -Path fresh.txt -Raw",
+    "id": 264
+  },
+  {
+    "kind": "powershell",
+    "name": "value-Set-Content",
+    "code": "Set-Content -Path 'fresh.txt' -Value ''\nGet-Content -Path fresh.txt -Raw",
+    "id": 265
+  },
+  {
+    "kind": "powershell",
+    "name": "value-Add-Content",
+    "code": "Add-Content -Path 'fresh.txt' -Value ''\nGet-Content -Path fresh.txt -Raw",
+    "id": 266
+  },
+  {
+    "kind": "powershell",
+    "name": "value-New-Item",
+    "code": "New-Item -Path 'fresh.txt' -Value '' -ItemType File\nGet-Content -Path fresh.txt -Raw",
+    "id": 267
+  },
+  {
+    "kind": "powershell",
+    "name": "value-Set-Content",
+    "code": "Set-Content -Path 'fresh.txt' -Value 'abc'\nGet-Content -Path fresh.txt -Raw",
+    "id": 268
+  },
+  {
+    "kind": "powershell",
+    "name": "value-Add-Content",
+    "code": "Add-Content -Path 'fresh.txt' -Value 'abc'\nGet-Content -Path fresh.txt -Raw",
+    "id": 269
+  },
+  {
+    "kind": "powershell",
+    "name": "value-New-Item",
+    "code": "New-Item -Path 'fresh.txt' -Value 'abc' -ItemType File\nGet-Content -Path fresh.txt -Raw",
+    "id": 270
+  },
+  {
+    "kind": "powershell",
+    "name": "value-Set-Content",
+    "code": "Set-Content -Path 'fresh.txt' -Value @{a=1}\nGet-Content -Path fresh.txt -Raw",
+    "id": 271
+  },
+  {
+    "kind": "powershell",
+    "name": "value-Add-Content",
+    "code": "Add-Content -Path 'fresh.txt' -Value @{a=1}\nGet-Content -Path fresh.txt -Raw",
+    "id": 272
+  },
+  {
+    "kind": "powershell",
+    "name": "value-New-Item",
+    "code": "New-Item -Path 'fresh.txt' -Value @{a=1} -ItemType File\nGet-Content -Path fresh.txt -Raw",
+    "id": 273
+  },
+  {
+    "kind": "powershell",
+    "name": "arity-Get-Location",
+    "code": "Get-Location",
+    "id": 274
+  },
+  {
+    "kind": "powershell",
+    "name": "arity-Get-Location",
+    "code": "Get-Location  'extra'",
+    "id": 275
+  },
+  {
+    "kind": "powershell",
+    "name": "arity-Set-Location",
+    "code": "Set-Location",
+    "id": 276
+  },
+  {
+    "kind": "powershell",
+    "name": "arity-Set-Location",
+    "code": "Set-Location 'sub' 'extra'",
+    "id": 277
+  },
+  {
+    "kind": "powershell",
+    "name": "arity-Read-Host",
+    "code": "Read-Host 'ask' 'extra'",
+    "id": 278
+  },
+  {
+    "kind": "powershell",
+    "name": "arity-Get-ChildItem",
+    "code": "Get-ChildItem",
+    "id": 279
+  },
+  {
+    "kind": "powershell",
+    "name": "arity-Get-ChildItem",
+    "code": "Get-ChildItem '.' 'extra'",
+    "id": 280
+  },
+  {
+    "kind": "powershell",
+    "name": "arity-Test-Path",
+    "code": "Test-Path",
+    "id": 281
+  },
+  {
+    "kind": "powershell",
+    "name": "arity-Test-Path",
+    "code": "Test-Path 'notes.txt' 'extra'",
+    "id": 282
+  },
+  {
+    "kind": "powershell",
+    "name": "arity-Get-Content",
+    "code": "Get-Content",
+    "id": 283
+  },
+  {
+    "kind": "powershell",
+    "name": "arity-Get-Content",
+    "code": "Get-Content 'notes.txt' 'extra'",
+    "id": 284
+  },
+  {
+    "kind": "powershell",
+    "name": "arity-Set-Content",
+    "code": "Set-Content",
+    "id": 285
+  },
+  {
+    "kind": "powershell",
+    "name": "arity-Set-Content",
+    "code": "Set-Content 'fresh.txt' 'x' 'extra'",
+    "id": 286
+  },
+  {
+    "kind": "powershell",
+    "name": "arity-Add-Content",
+    "code": "Add-Content",
+    "id": 287
+  },
+  {
+    "kind": "powershell",
+    "name": "arity-Add-Content",
+    "code": "Add-Content 'fresh.txt' 'x' 'extra'",
+    "id": 288
+  },
+  {
+    "kind": "powershell",
+    "name": "arity-New-Item",
+    "code": "New-Item",
+    "id": 289
+  },
+  {
+    "kind": "powershell",
+    "name": "arity-New-Item",
+    "code": "New-Item 'fresh.txt' 'extra'",
+    "id": 290
+  },
+  {
+    "kind": "powershell",
+    "name": "arity-Remove-Item",
+    "code": "Remove-Item",
+    "id": 291
+  },
+  {
+    "kind": "powershell",
+    "name": "arity-Remove-Item",
+    "code": "Remove-Item 'notes.txt' 'extra'",
+    "id": 292
+  },
+  {
+    "kind": "powershell",
+    "name": "arity-Rename-Item",
+    "code": "Rename-Item",
+    "id": 293
+  },
+  {
+    "kind": "powershell",
+    "name": "arity-Rename-Item",
+    "code": "Rename-Item 'notes.txt' 'renamed.txt' 'extra'",
+    "id": 294
+  },
+  {
+    "kind": "powershell",
+    "name": "arity-Copy-Item",
+    "code": "Copy-Item",
+    "id": 295
+  },
+  {
+    "kind": "powershell",
+    "name": "arity-Copy-Item",
+    "code": "Copy-Item 'notes.txt' 'dest.txt' 'extra'",
+    "id": 296
+  },
+  {
+    "kind": "powershell",
+    "name": "arity-Move-Item",
+    "code": "Move-Item",
+    "id": 297
+  },
+  {
+    "kind": "powershell",
+    "name": "arity-Move-Item",
+    "code": "Move-Item 'notes.txt' 'dest.txt' 'extra'",
+    "id": 298
+  },
+  {
+    "kind": "powershell",
+    "name": "arity-Write-Output",
+    "code": "Write-Output",
+    "id": 299
+  },
+  {
+    "kind": "powershell",
+    "name": "arity-Write-Output",
+    "code": "Write-Output 'x' 'extra'",
+    "id": 300
+  },
+  {
+    "kind": "powershell",
+    "name": "arity-Write-Host",
+    "code": "Write-Host",
+    "id": 301
+  },
+  {
+    "kind": "powershell",
+    "name": "arity-Write-Host",
+    "code": "Write-Host 'x' 'extra'",
+    "id": 302
+  },
+  {
+    "kind": "powershell",
+    "name": "arity-Where-Object",
+    "code": "Where-Object",
+    "id": 303
+  },
+  {
+    "kind": "powershell",
+    "name": "arity-Where-Object",
+    "code": "Where-Object {$_} 'extra'",
+    "id": 304
+  },
+  {
+    "kind": "powershell",
+    "name": "arity-ForEach-Object",
+    "code": "ForEach-Object",
+    "id": 305
+  },
+  {
+    "kind": "powershell",
+    "name": "arity-ForEach-Object",
+    "code": "ForEach-Object {$_} 'extra'",
+    "id": 306
+  },
+  {
+    "kind": "powershell",
+    "name": "arity-Select-Object",
+    "code": "Select-Object",
+    "id": 307
+  },
+  {
+    "kind": "powershell",
+    "name": "arity-Select-Object",
+    "code": "Select-Object  'extra'",
+    "id": 308
+  },
+  {
+    "kind": "powershell",
+    "name": "arity-Sort-Object",
+    "code": "Sort-Object",
+    "id": 309
+  },
+  {
+    "kind": "powershell",
+    "name": "arity-Sort-Object",
+    "code": "Sort-Object  'extra'",
+    "id": 310
+  },
+  {
+    "kind": "powershell",
+    "name": "arity-Measure-Object",
+    "code": "Measure-Object",
+    "id": 311
+  },
+  {
+    "kind": "powershell",
+    "name": "arity-Measure-Object",
+    "code": "Measure-Object  'extra'",
+    "id": 312
+  },
+  {
+    "kind": "powershell",
+    "name": "select-count",
+    "code": "1,2,3,4 | Select-Object -First 0",
+    "id": 313
+  },
+  {
+    "kind": "powershell",
+    "name": "select-count",
+    "code": "1,2,3,4 | Select-Object -Last 0",
+    "id": 314
+  },
+  {
+    "kind": "powershell",
+    "name": "select-count",
+    "code": "1,2,3,4 | Select-Object -Skip 0",
+    "id": 315
+  },
+  {
+    "kind": "powershell",
+    "name": "select-count",
+    "code": "1,2,3,4 | Select-Object -First 1",
+    "id": 316
+  },
+  {
+    "kind": "powershell",
+    "name": "select-count",
+    "code": "1,2,3,4 | Select-Object -Last 1",
+    "id": 317
+  },
+  {
+    "kind": "powershell",
+    "name": "select-count",
+    "code": "1,2,3,4 | Select-Object -Skip 1",
+    "id": 318
+  },
+  {
+    "kind": "powershell",
+    "name": "select-count",
+    "code": "1,2,3,4 | Select-Object -First -1",
+    "id": 319
+  },
+  {
+    "kind": "powershell",
+    "name": "select-count",
+    "code": "1,2,3,4 | Select-Object -Last -1",
+    "id": 320
+  },
+  {
+    "kind": "powershell",
+    "name": "select-count",
+    "code": "1,2,3,4 | Select-Object -Skip -1",
+    "id": 321
+  },
+  {
+    "kind": "powershell",
+    "name": "select-count",
+    "code": "1,2,3,4 | Select-Object -First 0.5",
+    "id": 322
+  },
+  {
+    "kind": "powershell",
+    "name": "select-count",
+    "code": "1,2,3,4 | Select-Object -Last 0.5",
+    "id": 323
+  },
+  {
+    "kind": "powershell",
+    "name": "select-count",
+    "code": "1,2,3,4 | Select-Object -Skip 0.5",
+    "id": 324
+  },
+  {
+    "kind": "powershell",
+    "name": "select-count",
+    "code": "1,2,3,4 | Select-Object -First 1.5",
+    "id": 325
+  },
+  {
+    "kind": "powershell",
+    "name": "select-count",
+    "code": "1,2,3,4 | Select-Object -Last 1.5",
+    "id": 326
+  },
+  {
+    "kind": "powershell",
+    "name": "select-count",
+    "code": "1,2,3,4 | Select-Object -Skip 1.5",
+    "id": 327
+  },
+  {
+    "kind": "powershell",
+    "name": "select-count",
+    "code": "1,2,3,4 | Select-Object -First 2.5",
+    "id": 328
+  },
+  {
+    "kind": "powershell",
+    "name": "select-count",
+    "code": "1,2,3,4 | Select-Object -Last 2.5",
+    "id": 329
+  },
+  {
+    "kind": "powershell",
+    "name": "select-count",
+    "code": "1,2,3,4 | Select-Object -Skip 2.5",
+    "id": 330
+  },
+  {
+    "kind": "powershell",
+    "name": "select-count",
+    "code": "1,2,3,4 | Select-Object -First 2147483648",
+    "id": 331
+  },
+  {
+    "kind": "powershell",
+    "name": "select-count",
+    "code": "1,2,3,4 | Select-Object -Last 2147483648",
+    "id": 332
+  },
+  {
+    "kind": "powershell",
+    "name": "select-count",
+    "code": "1,2,3,4 | Select-Object -Skip 2147483648",
+    "id": 333
+  },
+  {
+    "kind": "powershell",
+    "name": "select-count",
+    "code": "1,2,3,4 | Select-Object -First '1.5'",
+    "id": 334
+  },
+  {
+    "kind": "powershell",
+    "name": "select-count",
+    "code": "1,2,3,4 | Select-Object -Last '1.5'",
+    "id": 335
+  },
+  {
+    "kind": "powershell",
+    "name": "select-count",
+    "code": "1,2,3,4 | Select-Object -Skip '1.5'",
+    "id": 336
+  },
+  {
+    "kind": "powershell",
+    "name": "select-count",
+    "code": "1,2,3,4 | Select-Object -First $null",
+    "id": 337
+  },
+  {
+    "kind": "powershell",
+    "name": "select-count",
+    "code": "1,2,3,4 | Select-Object -Last $null",
+    "id": 338
+  },
+  {
+    "kind": "powershell",
+    "name": "select-count",
+    "code": "1,2,3,4 | Select-Object -Skip $null",
+    "id": 339
+  },
+  {
+    "kind": "powershell",
+    "name": "select-count",
+    "code": "1,2,3,4 | Select-Object -First $true",
+    "id": 340
+  },
+  {
+    "kind": "powershell",
+    "name": "select-count",
+    "code": "1,2,3,4 | Select-Object -Last $true",
+    "id": 341
+  },
+  {
+    "kind": "powershell",
+    "name": "select-count",
+    "code": "1,2,3,4 | Select-Object -Skip $true",
+    "id": 342
+  },
+  {
+    "kind": "powershell",
+    "name": "select-count",
+    "code": "1,2,3,4 | Select-Object -First @()",
+    "id": 343
+  },
+  {
+    "kind": "powershell",
+    "name": "select-count",
+    "code": "1,2,3,4 | Select-Object -Last @()",
+    "id": 344
+  },
+  {
+    "kind": "powershell",
+    "name": "select-count",
+    "code": "1,2,3,4 | Select-Object -Skip @()",
+    "id": 345
+  },
+  {
+    "kind": "powershell",
+    "name": "other",
+    "code": "1,2,3 | Measure-Object -Property X -Sum",
+    "id": 346
+  },
+  {
+    "kind": "powershell",
+    "name": "other",
+    "code": "1,2,3 | Measure-Object -Property Count -Sum",
+    "id": 347
+  },
+  {
+    "kind": "powershell",
+    "name": "other",
+    "code": "@{a=1},@{b=2} | ForEach-Object { $_.a }",
+    "id": 348
+  },
+  {
+    "kind": "powershell",
+    "name": "other",
+    "code": "$x=@(@{a=1},@{b=2}); $x.a.Count",
+    "id": 349
+  },
+  {
+    "kind": "powershell",
+    "name": "other",
+    "code": "$x=@('a',$null,'b');$x.Length",
+    "id": 350
+  },
+  {
+    "kind": "powershell",
+    "name": "other",
+    "code": "1,2,3 | Write-Host -Separator \"|\"",
+    "id": 351
+  },
+  {
+    "kind": "powershell",
+    "name": "other",
+    "code": "New-Item -Path sub -ItemType Directory -Force",
+    "id": 352
+  },
+  {
+    "kind": "powershell",
+    "name": "other",
+    "code": "New-Item -Path notes.txt -ItemType Directory -Force",
+    "id": 353
+  }
+]

@@ -1,0 +1,38 @@
+[
+  {
+    "path": "C:\\Practice",
+    "type": "directory"
+  },
+  {
+    "path": "C:\\Practice\\notes.txt",
+    "type": "file",
+    "content": "notes\r\n"
+  },
+  {
+    "path": "C:\\Practice\\readme.txt",
+    "type": "file",
+    "content": "Practice\r\n"
+  },
+  {
+    "path": "C:\\Practice\\data.csv",
+    "type": "file",
+    "content": "Name,Score\r\nAlice,80\r\n"
+  },
+  {
+    "path": "C:\\Practice\\logs",
+    "type": "directory"
+  },
+  {
+    "path": "C:\\Practice\\logs\\trace.txt",
+    "type": "file",
+    "content": "trace\r\n"
+  },
+  {
+    "path": "C:\\Practice\\sub",
+    "type": "directory"
+  },
+  {
+    "path": "C:\\Practice\\empty",
+    "type": "directory"
+  }
+]
