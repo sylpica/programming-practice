@@ -1,0 +1,34 @@
+[
+  {
+    "name": "constant-assignment:TRUE",
+    "code": "TRUE <- 7\nprint(TRUE)\na <- TRUE"
+  },
+  {
+    "name": "constant-assignment:FALSE",
+    "code": "FALSE <- 7\nprint(FALSE)\na <- FALSE"
+  },
+  {
+    "name": "constant-assignment:NULL",
+    "code": "NULL <- 7\nprint(NULL)\na <- NULL"
+  },
+  {
+    "name": "constant-assignment:NA",
+    "code": "NA <- 7\nprint(NA)\na <- NA"
+  },
+  {
+    "name": "constant-assignment:NaN",
+    "code": "NaN <- 7\nprint(NaN)\na <- NaN"
+  },
+  {
+    "name": "constant-assignment:Inf",
+    "code": "Inf <- 7\nprint(Inf)\na <- Inf"
+  },
+  {
+    "name": "constant-assignment:T",
+    "code": "T <- 7\nprint(T)\na <- T"
+  },
+  {
+    "name": "constant-assignment:F",
+    "code": "F <- 7\nprint(F)\na <- F"
+  }
+]

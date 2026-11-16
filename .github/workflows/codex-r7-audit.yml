@@ -20,10 +20,10 @@ jobs:
         with:
           r-version: '4.2.2'
           use-public-rspm: false
-      - name: Compare R types, extraction, replacement and references
-        run: python audit-probes/step13/run.py
+      - name: Check R reserved constants and mutable aliases
+        run: python audit-probes/step13-extra/run.py
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: codex-r7-native-evidence
-          path: audit-probes/step13/results*
+          path: audit-probes/step13-extra/results*
