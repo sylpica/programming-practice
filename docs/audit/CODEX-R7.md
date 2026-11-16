@@ -1,4 +1,18 @@
-# Codex R7 独立監査 — ee01f07（節目8・未完了）
+# Codex R7 独立監査 — ee01f07（節目9・未完了）
+
+対象は引き続き **ee01f07402b404c7b9dbcd83935b4be3bc4de187、全15種類・104テンプレート・978リファレンス・111用語**。配信日：2026-11-16 JST。Muse側の指摘一覧・個票を見ず、固定対象の実装・公式資料・実Windowsから独立に確認した。
+
+節目9の追加は **14件（P2：13、P3：1）**。累計 **209件（P1：0、P2：191、P3：18）**。Museとの重複を除いた件数ではない。同じ原因の入力違い、既報の補強、保留差分、監査ハーネスの差は新規欠陥へ加算していない。[今回の検証範囲](#節目9の検証範囲と証拠)、[追加指摘](#節目9の追加指摘)、[残作業](#節目9の残作業)を参照。
+
+**使った書き込みコール数：4件（この節目）。累計26件。** 監査専用ブランチへのgit push 3回と、報告書だけをmainへ一括配信するgit push 1回。過去の節目は5、4、2、2、1、1、1、6件。従来と同じくGitHubへ書き込むgit pushを数え、ローカルの検証コード・データ作成、読取り、CI内の保存を含めない。製品コード・教材・既存テスト・DEVELOPMENT.mdは変更していない。監査ブランチをmainへマージしない。
+
+配信準備時のmainは `53be9ceddb13b73d5039f02df313d34d4106c40f`。その既存変更を保持して報告書だけを配信する。対象製品はee01f07に固定し、その後のmainの修正残存や追加種類の監査を済ませたとの意味ではない。
+
+**観点1〜8は未完了。** 今回はcmd／PowerShellの実Windows検証を423ケースまで進め、参照73項目・各6用語・16教材の文面とモデル結果、側面／専用ビューを確認した。全15種類・全104教材・978項目・111用語・全ビューの未了分を維持する。モデル／推論設定をツールから変更・検証できない制約も継続する。サブエージェント・リセット権は使っていない。
+
+## 節目8までの記録
+
+以下は前回報告を保持した履歴。件数・書き込み回数・未実施の記述は当時の値であり、今回の状況は末尾の節目9で更新する。
 
 対象は引き続き **ee01f07402b404c7b9dbcd83935b4be3bc4de187、全15種類・104テンプレート・978リファレンス・111用語**。配信日：2026-11-16 UTC。Muse側の指摘一覧・個票を見ず、固定対象の実装・公式資料・実ランタイムから独立に確認した。
 
@@ -3938,3 +3952,307 @@ Debug.Printそのものの見た目の相違ではなく、CStrが返すString�
 実Excel／Canvas／PAD／AWS／UI.Visionの製品セッション、実スクリーンリーダー、Safari／Firefox／iOS実機、ImageJ GUI全経路は接続・実行環境がなく未実施。LinuxのImageJ本体・実ChromiumとWindows CIで可能な検証は実施したが、これらが未接続製品の実測を代替したとは書かない。Windows CIで実行できる残作業を環境上不可能とはしない。最重ケースを発見したとも断定しない。
 
 使用量・回数制限、リセット時刻の通知は受けていない。リセット権・サブエージェントは使っていない。依頼されたモデル／推論設定をこの会話のツールで変更・確認できない制約も継続する。これは継続中の節目報告であり、全範囲完了や欠陥収束の宣言ではない。
+
+
+## 節目9の検証範囲と証拠
+
+固定対象ee01f07に対し、cmd／PowerShellの関数境界・パス・停止理由を継続した。Museの監査カタログ・個票を参照せず、実装・Microsoft Learn・公式PowerShellソース・実Windowsから確認した。
+
+共通fixture：現在フォルダ `C:\Practice`、filesは次の8項目。各ケースで実Windowsの新しい一時フォルダへ同じ相対ツリーを作り、パスだけを置き換えて実行した。終了後のファイル内容・バイト長も保存した。
+
+| 項目 | 型・内容 |
+|---|---|
+| C:\Practice | directory |
+| notes.txt | file、`notes\r\n`（7byte） |
+| readme.txt | file、`Practice\r\n`（10byte） |
+| data.csv | file、`Name,Score\r\nAlice,80\r\n`（22byte） |
+| logs | directory |
+| logs\trace.txt | file、`trace\r\n`（7byte） |
+| sub | 空directory |
+| empty | 空directory |
+
+cmdの大半は初期ERRORLEVEL=0、終了コード検査は0／7を明記し、set /pには空入力／helloを明示した。アプリではモデルerrorlevel／inputs、実cmdでは先行する `cmd /d /c exit N` と標準入力で揃えた。Native PowerShellは7.4.6を明示取得し、各入力を別スコープで実行した。エラー検証はErrorActionPreference=Stop／NonInteractiveで取得しており、対話プロンプト・既定の非終端エラー後の全継続を測定したという意味ではない。成功ストリームのnullを保持するJSON記録と、Write-Hostの画面表示は区別している。
+
+最終証拠：[Windows CI run43798498861](https://github.com/sylpica/programming-practice/actions/runs/43798498861)、監査専用コミット `35ba424f93841d608d4714f79ad8e3f6965629d9`、`audit-probes/step9/`。Windows Server2025／build26100、PowerShell7.4.6、Node22.23.4、Python3.12。ローカルの入力・解析・ブラウザ証拠は `/workspace/work/r7i/`。監査ブランチはee01f07由来で、製品コードは変えていない。最終runは **423ケース（cmd160／PowerShell263）をすべて回収、タイムアウト0**。
+
+| 検証 | 今回実施した範囲 | 結論の限界 |
+|---|---|---|
+| cmd比較 | EQU／NEQ／LSS／LEQ／GTR／GEQ ×/I有無×8数値対の96組。0始まり・符号・32bit境界を含む | 60組は出力一致で、その60組の新規欠陥は**確認済み・なし**。36組の差分はR7-196／197へ原因をまとめ、36件とは数えない |
+| cmd終了状態 | 22処理×初期0／7の44組、set /p4組、ラベル・ループ等7組、終了状態補足7組、copy／moveパイプ2組。合計160 | set／set /p／type／rd、endlocal境界、成功出力による分岐を確認。clsの制御文字、dirの順序は明示された表示・順序モデルと区別し、新規件数へ入れない |
+| PSパス | Get-Content／Test-Path／Get-ChildItemの3名×10形、変更7名×8形。名前付き／位置引数併用10形、Valueの3名×9値 | Path配列・glob・不正文字を、内容と件数・最終FSまで照合。Pathの全名前空間／予約名／全ワイルドカードではない |
+| PS引数等 | 対応20コマンドレット名の引数欠落／過剰39形、Select3パラメーター×11値の33組、その他8組と補足12組 | 受理した値から偽ファイルを作るものと、正直な未対応停止を分けた。既報R7-07／15／73等の補強を新規件数へ含めない。全パラメーターセットや全副作用交差は未了 |
+| PS引用 | 引用2種×12文字列×単独式／引数の48組を実7.4.6と照合 | 20誤停止、4正常扱いの出力欠落をR7-207へまとめた。一致した24組では新規欠陥は**確認済み・なし**。引用・字句の全組合せを網羅したという意味ではない |
+| メンバー列挙 | Hashtable／PSCustomObject、欠落／null／全てにキーありを分けて確認 | Hashtable列のCount誤りに限定。PSCustomObjectの同形Count=2、全要素にaのあるHashtable列Count=2等、今回一致した形では新規欠陥は**確認済み・なし** |
+| 参照・用語 | cmd28／PS45の名前・書式・説明を再読し、有効ハンドラと別名を突合。各6用語を確認 | 新規のコマンド名・別名の項目漏れは**確認済み・なし**（既報$Matches等を除く）。各属性・全演算・全例・111用語の逐文検証を完了したという意味ではない。Remove-ItemのForceの意味を新規指摘 |
+| 教材 | cmd8／PS8の全16教材を教材固有modelまたは標準modelで再実行し、タイトル・introの主張を読み合わせた。合計14、0 1／0 2／0 3、Alice／4／3、Count4・Sum20、N6・N12、書込み後の2行等を確認 | 今回のアプリ初期モデルの記載値に新規不一致は**確認済み・なし**。cmd-writeのmove成功標準出力はR7-209と同じ欠落。全16を実Windows上で教材固有の入力・日本語・UI込みにして照合する作業は未了であり、全104教材の完了とはしない |
+| ビュー間 | 側面の各参照を73項目すべて選択し、専用ビュー73カードと全文を比較。用語集の側面／専用表示、16教材カードも取得 | 比較した文面のビュー間不一致は**確認済み・なし**。Forceの誤説明は両ビューに同じように出る。文面が一致することを内容の正しさやアクセシビリティ全経路の合格とはしない |
+| 画面 | 新規14件＋既報補強2件の16ソースを、種類選択→model panelでfixture入力→編集→実行で再現 | Chromium156、pageerror0。全aria・ラベル・フォーカス・画面幅・スクリーンリーダーの完了ではない |
+
+### Windows性能（有限集合の実測）
+
+最終runのアプリsimulateは、cmd160件で合計 **47.8144ms**、集合内最長 **13.3201ms**（最初のif比較）。PowerShell263件は合計 **264.8850ms**、最長 **221.9803ms**（引数なしSort-Object）。先行run421件ではPS最長160.9033msなどの揺れがあり、今回の最長が全入力の最重ケースとは断定しない。計測はWindows上のNode内でsimulateを順次実行した時間で、ブラウザの描画やWorker起動を含まない。
+
+実PowerShellの263ケースを含む補助プロセス全体は **5583.0612ms**（fixture作成・回収・清掃を含む）。各nativeの実行時間には結果正規化も含み、アプリとの単純な速度比は出さない。制限内ケースの確認を、全エンジンの最悪実行時間の調査の代用にはしない。
+
+### 既報の補強と保留（新規件数へ加算しない）
+
+- **R7-07**：コマンドレットの名前付き／位置引数にも同じ未消費引数の割当て違い。`Set-Content -Path 'notes.txt' 'new value'` は実7.4.6でnew value+CRLF（11byte）、モデルで空ファイル。Copy-Item／Move-Itemの-Path指定＋位置Destinationでも、実物はdest.txtへ操作し、モデルはnullという先を作る。関数だけでなく組込み側にも及ぶ補強として記録する。
+- **R7-15**：Set-Content／Add-ContentのPath省略・nullは実物の必須／null検証を回避し、モデルでnullというファイルを作る。Get-ChildItem -Path $nullは逆に実物が現在フォルダを列挙し、モデルがnullの不存在を断定する。同じnull文字列化の問題として補強する。
+- **R7-73**：Measure-Objectで存在しないプロパティ／ETS固有Count等を集計すると、モデルが実物にはない集計オブジェクトを出す。同じ原因のため再採番しない。
+- **setlocalの資料と実測の不一致（保留）**：[Microsoft Learn](https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/setlocal)は引数なしのERRORLEVELを1と記す。今回のWindows build26100では、初期7をif errorlevel 7で確認→setlocal→echoでは0となり、if errorlevel 1も偽。0／7初期値および別runでも再現し、モデルは資料どおり1。どちらかを黙って正解へ差し替えず、別Windows環境・バージョンと起動条件の追加照合を残し、今回の確定欠陥件数には含めない。
+- New-Itemの既存fileへDirectory／Forceを指定する境界、関数・pipelineの全引数束縛、停止と対話確認、コピー／移動の全上書き条件は未了。今回の通常ファイルfixtureにはhidden／read-only属性がないため、その強制処理を測定済みとはしない。
+
+監査ブランチの3回のpushは `ea437d0`（354ケース）、`a7d67a4`（421ケース）、`35ba424`（423ケース）。最初のcmdハーネスはfixture内にprobe.cmdを置いており、dir列挙には監査ファイルが混じった。この差を製品欠陥と数えず、2回目以降はバッチをfixture外に置いて取り直した。3runとも成功だが、成功ステータスだけで判定せず、件数・version・エラー・ファイル内容を回収した。
+
+## 節目9の追加指摘
+
+### R7-196（P2）cmdの/Iが数値比較まで文字列比較に変え、大小の分岐を逆にする
+
+対象：cmd。位置：`js/types/cmd/engine.js compare の insensitive 処理`。
+
+再現：固定ee01f07で種類を選び、次を実行する。共通fixtureは本節の検証範囲に示す。
+
+```bat
+if /i 2 LSS 10 (echo YES) else (echo NO)
+```
+
+実際：アプリの標準出力は `NO`。
+
+期待・一次根拠：実cmdは `YES`。/Iは文字列比較で大小文字を無視する指定であり、数値2と10の大小を逆転させない。 [Microsoft Learn if](https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/if)。
+
+6演算子×/I有無×8数値対の96組を照合。2対10のLSS／LEQ／GTR／GEQが/Iだけで逆転する。数値化した後にStringへ戻す箇所を確認した。
+
+### R7-197（P2）cmdのEQU等が10進のNumberで固定解釈され、0始まりと大きな値を誤比較する
+
+対象：cmd。位置：`js/types/cmd/engine.js compare の Number 変換`。
+
+再現：固定ee01f07で種類を選び、次を実行する。共通fixtureは本節の検証範囲に示す。
+
+```bat
+if 00010 EQU 8 (echo YES) else (echo NO)
+```
+
+実際：アプリは `NO`。
+
+期待・一次根拠：実cmdは `YES`（00010と8が一致）。cmdの比較で行われる数値解釈を再現するか、確定できない形式・範囲を未確認として止める。 [Microsoft Learn if の比較形式](https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/if)、[数値表記の公式説明（set /a）](https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/set_1)。
+
+他の実測：`if 08 EQU 8 (echo YES) else (echo NO)` は実物NO／モデルYES。`if 2147483648 EQU 2147483647 ...` は実物YES／モデルNO。set /aの表記規則をifへそのまま適用したとの推測で正解を決めず、実cmdの各出力を根拠にする。大きな値全体の飽和・比較アルゴリズムをこの有限組から断定しない。
+
+### R7-198（P2）set／set /p／type／rdの終了コードを誤更新し、後続のif errorlevelを誤る
+
+対象：cmd。位置：`js/types/cmd/engine.js の各コマンド分岐`。
+
+再現：固定ee01f07で種類を選び、次を実行する。共通fixtureは本節の検証範囲に示す。R7-198はモデルerrorlevel=7。実cmdでは先に `cmd /d /c exit 7` を実行して同じ初期値にする。
+
+```bat
+set X=one
+if errorlevel 1 (echo BAD) else (echo GOOD)
+```
+
+実際：初期ERRORLEVEL=7でアプリは `BAD`。
+
+期待・一次根拠：実cmdは `GOOD`。成功したset代入ではERRORLEVELが0になり、その後のif errorlevel 1は偽。 [set](https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/set_1)、[type](https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/type)、[rd／rmdir](https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/rmdir)、[if errorlevel](https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/if)。
+
+ほかの実測（各行は独立fixture）：初期7で `type notes.txt` 後は実物0／モデル7、初期7で `rd empty` 後は実物7／モデル0。入力が空の `set /p X=prompt` は実物1／モデル0（初期0）、非空入力では実物0／モデル7（初期7のまま）。4命令の終了コード管理としてまとめ、入力違いを別件にしない。Microsoft Learnは各命令の全ERRORLEVEL更新表を列挙していないため、更新値そのものの根拠は添付の実Windows測定。
+
+### R7-199（P2）対応するsetlocalがないendlocalを致命的な実行エラーにする
+
+対象：cmd。位置：`js/types/cmd/engine.js case endlocal`。
+
+再現：固定ee01f07で種類を選び、次を実行する。共通fixtureは本節の検証範囲に示す。
+
+```bat
+endlocal
+echo EL=%ERRORLEVEL%
+```
+
+実際：「対応するsetlocalがありません」で停止し、出力なし。
+
+期待・一次根拠：実cmdはエラーなしで継続し `EL=0`。初期7でも7のまま継続する。未確定扱いで止めるのとは異なり、実cmdにはない実行エラーを断定しない。 [Microsoft Learn endlocal](https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/endlocal)。
+
+実cmdのstderrは空、returncodeは初期0では0、初期7では7。setlocalと対になる通常の復元とは別に、保存環境がない境界を確認した。
+
+### R7-200（P2）複数パスの配列を1つのカンマ入りパスへ変え、対象ファイルを取り違える
+
+対象：powershell。位置：`js/types/shell/model.js windowsPath と PowerShellのPath受理`。
+
+再現：固定ee01f07で種類を選び、次を実行する。共通fixtureは本節の検証範囲に示す。
+
+```powershell
+Set-Content -Path @('notes.txt','readme.txt') -Value 'x'
+```
+
+実際：notes.txt／readme.txtを変更せず、`notes.txt,readme.txt` という別ファイルへxとCRLFを書く。
+
+期待・一次根拠：実PowerShellは両ファイルそれぞれを `x
+` へ置換する。Pathのstring[]を個々に処理するか、複数パス未対応として停止する。 [Set-Content Path=string[]](https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.management/set-content?view=powershell-7.4)、[Test-Path](https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.management/test-path?view=powershell-7.4)。
+
+Get-Content／Get-ChildItemでは存在する配列の2対象を「モデルにない」と誤診し、Test-PathはTrue,Trueの代わりにFalseを1個返す。Add-Content／New-Itemもカンマ入りの別名を作る。Copy-Itemは単一ファイルの対応宣言を尊重し、配列対応自体を要求せず、無言の文字列化を問題とする。
+
+### R7-201（P2）ワイルドカードのPathを通常の名前にして書き込み、既存対象を更新しない
+
+対象：powershell。位置：`js/types/powershell/engine.js のcontent操作とパス解決`。
+
+再現：固定ee01f07で種類を選び、次を実行する。共通fixtureは本節の検証範囲に示す。
+
+```powershell
+Set-Content -Path '*.txt' -Value 'x'
+```
+
+実際：`*.txt` という架空のファイルを新設し、notes.txtとreadme.txtは元の内容。
+
+期待・一次根拠：実PowerShellは2つの.txtファイルをxとCRLFへ置換し、*.txtというファイルは作らない。未対応のパターンなら明示停止する。 [Set-Content 例1](https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.management/set-content?view=powershell-7.4)、[Get-Content](https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.management/get-content?view=powershell-7.4)。
+
+Add-Contentでも同型。Get-Content -Path "*.txt" は実物notes／Practice、モデルは不存在エラー。Test-Path "[n]otes.txt" と "l*\trace.txt" は実物True／モデルFalse。Get-ChildItem "l*\*.txt" は実物trace.txt／モデル空。既報R7-69の-Recurse問題は再計上せず、今回の非再帰・内容操作・各階層の展開を記録する。
+
+### R7-202（P2）Windowsで使用できない文字を含むファイルを正常作成済みとして捏造する
+
+対象：powershell。位置：`js/types/shell/model.js windowsPath／writeFile`。
+
+再現：固定ee01f07で種類を選び、次を実行する。共通fixtureは本節の検証範囲に示す。
+
+```powershell
+New-Item -Path 'bad<.txt' -ItemType File -Value 'x' -Force
+```
+
+実際：bad<.txtが長さ1、内容xのFileInfoとして出力され、モデルFSへ残る。
+
+期待・一次根拠：実PowerShellはIOExceptionで、The filename, directory name, or volume label syntax is incorrect. と表示し、ファイルを作らない。名前の不正を検出するか未確認として止める。 [Microsoft Learn Windowsの命名規則](https://learn.microsoft.com/en-us/windows/win32/fileio/naming-a-file)、[New-Item](https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.management/new-item?view=powershell-7.4)。
+
+New-Itemのbad?.txt／*.txt、Set-ContentとAdd-Contentのbad<.txtも確認。ワイルドカードを展開すべきPathの問題R7-201と、文字通りの不正な名前を新設するこの問題は分ける。UNC・ADS・予約デバイス名すべてを確認したとの意味ではない。
+
+### R7-203（P2）Set-Content／Add-Contentがnullの要素から余分な改行を作る
+
+対象：powershell。位置：`js/types/powershell/engine.js の set-content／add-content`。
+
+再現：固定ee01f07で種類を選び、次を実行する。共通fixtureは本節の検証範囲に示す。
+
+```powershell
+Set-Content -Path 'fresh.txt' -Value $null
+Get-Content -Path fresh.txt -Raw
+```
+
+実際：fresh.txtの内容がCRLF、長さ2になる。
+
+期待・一次根拠：実PowerShellでは空ファイル、長さ0。nullは文字列の空行として書き込まれない。 [Set-Content Value](https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.management/set-content?view=powershell-7.4)、[公式7.4.6 FileSystemContentStream.WriteObject](https://github.com/PowerShell/PowerShell/blob/v7.4.6/src/System.Management.Automation/namespaces/FileSystemContentStream.cs#L1089)。
+
+既存notes.txtへのAdd-Content -Value $nullは実物で変更なし、モデルは末尾にCRLFを追加。@($null,"a",$null,"b") は実物a CRLF b CRLF（6byte）、モデルは空行2つを加え10byte。既報R7-70の空ファイルを読み返す値とは別に、書き込まれた物理内容・バイト数で確認した。
+
+### R7-204（P2）New-ItemのObject値を言語の配列文字列化で代用し、ファイル内容を変える
+
+対象：powershell。位置：`js/types/powershell/engine.js の new-item と text`。
+
+再現：固定ee01f07で種類を選び、次を実行する。共通fixtureは本節の検証範囲に示す。
+
+```powershell
+New-Item -Path 'fresh.txt' -Value @(1,2) -ItemType File
+Get-Content -Path fresh.txt -Raw
+```
+
+実際：fresh.txtの内容は `1 2`、長さ3。
+
+期待・一次根拠：実PowerShellは `System.Object[]`、長さ15。-Valueは単一Objectであり、FileSystem providerはそのToString()を書き込む。 [New-Item Value=Object](https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.management/new-item?view=powershell-7.4)、[公式7.4.6 NewItem のWrite(value.ToString())](https://github.com/PowerShell/PowerShell/blob/v7.4.6/src/System.Management.Automation/namespaces/FileSystemProvider.cs#L2205)。
+
+空配列でも実物はSystem.Object[]の15byte、モデルは空文字列の0byte。これは一般の[string]キャストや、Object[]を受けるSet-Contentと区別する必要がある。
+
+### R7-205（P2）Select-Objectがnull・配列・Int32範囲外の件数を正常な選択にする
+
+対象：powershell。位置：`js/types/powershell/engine.js の select-object`。
+
+再現：固定ee01f07で種類を選び、次を実行する。共通fixtureは本節の検証範囲に示す。
+
+```powershell
+1,2,3,4 | Select-Object -First $null
+```
+
+実際：-First $nullで1,2,3,4をすべて出力する。
+
+期待・一次根拠：実PowerShellはFirstのParameterBindingValidationExceptionで、null／emptyを受け付けない旨を示す。-Last／-Skipも同じ検証が必要。 [Select-Object のInt32パラメーター](https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.utility/select-object?view=powershell-7.4)。
+
+3パラメーター×11入力の33組を照合。2147483648は実物でInt32変換エラーだがモデルは全件／空結果。@()も実物は型変換エラー、モデルは0として選択する。小数の0.5／1.5／2.5は実物で偶数丸めされモデルは「不正」と止めるが、非整数→intが未対応との宣言もあるため、それ自体はこの新規件数へ加えず、停止理由の改善対象として残す。既報R7-09のFirst+Lastの連続切出しとも別。
+
+### R7-206（P2）ハッシュテーブル列のメンバー取得で欠落キーをnull要素として数える
+
+対象：powershell。位置：`js/types/powershell/engine.js property の配列列挙`。
+
+再現：固定ee01f07で種類を選び、次を実行する。共通fixtureは本節の検証範囲に示す。
+
+```powershell
+$x=@(@{a=1},@{b=2}); $x.a.Count
+```
+
+実際：Countが2。
+
+期待・一次根拠：実PowerShellは1。存在するaの値1を取得した結果に、欠落している別レコードの要素を足さない。 [about_Member-Access_Enumeration](https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_member-access_enumeration?view=powershell-7.4)。
+
+@(@{a=$null},@{b=2})のa.Countは実物0／モデル2。全要素にaがあると両方2。一方、同じ形のPSCustomObject列は今回の実測で両方2だったため、あらゆるObject列の欠落へ一般化しない。ハッシュテーブル列の挙動に限定した再現。
+
+### R7-207（P2）引用した文字列の記号・キーワードを構文とみなし、出力や後続処理を消す
+
+対象：powershell。位置：`js/types/powershell/parser.js の peek／statement／pipeline／oneArgument`。
+
+再現：固定ee01f07で種類を選び、次を実行する。共通fixtureは本節の検証範囲に示す。
+
+```powershell
+"return"; 'after'
+```
+
+実際："return"をreturn文とみなして、両文字列とも出力しない。
+
+期待・一次根拠：実PowerShellは `return`、`after` を順に出力。引用した文字列は構文キーワードではない。 [about_Quoting_Rules](https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_quoting_rules?view=powershell-7.4)。
+
+引用2種×12文字列×単独式／コマンド引数の48組。20組でアプリが誤停止、4組で正常扱いの出力欠落、24組は一致。`Write-Output ";"` はInputObject欠落という偽エラー、`Write-Output "|"` はEOFの式エラー、引用"{"は閉じ括弧エラーになる。セミコロン単独式はその出力だけを消す。正しい引用を削除・引数を追加するよう誤誘導する理由もこの原因へまとめる。
+
+### R7-208（P3）Remove-ItemのForceを確認省略のオプションとして説明する
+
+対象：powershell。位置：`js/types/powershell/index.js Remove-Item のdescription`。
+
+再現：固定ee01f07で種類を選び、次を実行する。共通fixtureは本節の検証範囲に示す。
+
+```powershell
+Remove-Item -Path logs -Force
+```
+
+実際：参照の説明文は「確認なしで削除する-Forceも実装されています」と記す。
+
+期待・一次根拠：-Forceはhidden／read-only等の削除を許す指定であり、確認全般を省略する意味ではない。実PowerShellで非空logsへ-Recurseなしの-Forceを使うと確認が必要で、今回のNonInteractive環境ではRead and Prompt functionality is not available. のエラーになる。 [Remove-Item -Force／-Recurse／-Confirm](https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.management/remove-item?view=powershell-7.4)。
+
+参照ビューの文面の指摘。アプリが同じコードで「フォルダが空ではありません」と止まることを、Forceなら無条件削除すべきという欠陥にはしていない。確認と属性の強制を混同させる説明を問題とする。
+
+### R7-209（P2）copy／moveの成功出力を落とし、findを通すと失敗側の分岐になる
+
+対象：cmd。位置：`js/types/cmd/engine.js copy／move と pipe-end`。
+
+再現：固定ee01f07で種類を選び、次を実行する。共通fixtureは本節の検証範囲に示す。
+
+```bat
+copy /y notes.txt fresh.txt | find "copied"
+if errorlevel 1 (echo BAD) else (echo GOOD)
+```
+
+実際：アプリはBADのみ。コピーの説明ステップはあるが、成功した件数を標準出力へ出していない。
+
+期待・一次根拠：英語表示の実cmdでは1 file(s) copied.に一致する行とGOOD。move／movedでも同じ。成功出力をモデル化できない場合は、空入力を捏造せず未確認として停止する。 [copy](https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/copy)、[move](https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/move)、[find の標準入力と終了コード](https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/find)。
+
+単独copy／moveで実物の成功出力が存在することを確認した後、パイプで終了コード・分岐まで変わる2ケースを追加して実測した。成功メッセージの言語は実Windowsの表示言語に依存し、英語文字列を全ロケールの正解とはしない。
+
+## 節目9の残作業
+
+**観点1〜8は未完了。** 固定ee01f07の全15種類・104教材・978参照項目・111用語・全ビューを維持し、今回の423ケースを全関数の境界・組合せを完了した代用にしない。今回触れなかった種類を「確認済み・なし」に変更しない。
+
+| 観点 | 今回の進捗 | 残作業 |
+|---|---|---|
+| 1 一次情報 | Microsoft Learnのcmd／PS、公式PowerShell7.4.6ソース、実Windows160cmd／263PSケース | 全15種類の残る関数・構文・型・書式。setlocalの資料と実測の食い違いを別環境・起動条件で切り分ける作業 |
+| 2 宣言 | 数値比較・Path受理・件数変換・モデルFS・Force説明と実装の整合 | DEVELOPMENT.mdの全宣言の双方向表、動的変数・暗黙変換・型・値域の残る範囲で正直に止まるかの検証 |
+| 3 分岐・状態・表示 | /I数値分岐、終了コード、copy／move→find、引用returnでの消失、ファイル内容・件数、メンバー列挙 | 全エンジンの未確認パス制約・例外・型伝播、全保存／移行／複数タブ／テンプレート切替経路、未確定のファイルパス・内容・型の交差 |
+| 4 cmd／PS | 実Windowsで160／263ケースを回収、終了状態とPath・パイプラインを追加照合 | 残る全引数・全展開段階・変数・ラベル・パイプライン・文字コード・書式・停止理由。従来のecho%CD%／echo!CD!／echo%ERRORLEVEL%の実測回答は保持し、今回追加実測したと混同しない |
+| 5 完全性・正確性 | cmd28／PS45の全名前・説明・書式を再読、有効命令／別名との突合、12用語、73参照と用語集の側面／専用ビューの一致、Forceの誤説明 | 978項目の逐文・例の戻り値・全実装名／変数／属性／定数／別名／構文の完全対応、111用語の一次逐文・教材語・全ビュー間矛盾。固定プロパティの説明・暗黙の列挙の残る意味も継続 |
+| 6 全関数の境界等 | cmd比較96全組、終了コード・入力、PSパス86形・値27形・束縛10形・引数39形・件数33形・引用48形ほか | 全関数の全引数位置・全型・空／null・巨大値・個数・ゼロ除算・入れ子・条件・メソッド連鎖・パイプライン。PSのnull／型変換とFS全属性・名前空間、cmdの残る展開と制御も未了 |
+| 7 全104教材・全停止 | cmd／PSの16教材の初期model・主張を再確認、引用の偽エラー、null・不正名の実原因を確認 | 全104教材の未了分、今回16教材の教材固有入力・日本語・対話込みの実Windows照合、ImageJ GUIを要する教材、全エンジンの全停止メッセージの原因との一対一再現 |
+| 8 文面・a11y・劣化・性能 | Forceの意味の誤り、入力欠落／EOF等への誤誘導、16画面再現、Windows423ケースの実行時間 | 全文面・aria・ラベル・全フォーカス・各画面幅、実容量枯渇時の保存救出、キャッシュ世代、全エンジンの最重入力探索とWindows UI描画性能 |
+
+VBA・ImageJ・CloudFormation・PAD・AutoHotkey・UI.Vision・Power Apps・Python・R・C・C++・C#・JavaScript・cmd・PowerShellすべてに未了分を保持する。前節のVBA Round桁数／Null・IsNumericのEmpty／Boolean・Unicode casingと補助VBSからの正しい切分け、R median／seq／rep／read.csvと名前・属性・精度、C系の全オーバーロード・定数式・整数昇格・宣言型・ポインタ／配列、C# TryParse out修飾子／型なども継続する。
+
+実Excel／Canvas／PAD／AWS／UI.Visionの製品セッション、実スクリーンリーダー、Safari／Firefox／iOS実機、ImageJ GUIの全経路は接続・環境がなく未実施。実cmdとWindows PowerShell7.4.6の今回ケースは実施済みだが、対話UI・全属性・全Windows版を網羅した意味ではない。Windows CIでできる残作業を不可能とせず、今回の集合内最大時間を全入力の最悪時間と断定しない。
+
+使用量・回数制限とリセット時刻の通知は受けていない。リセット権・サブエージェントは使用していない。依頼モデル／推論レベルをこの会話のツールから変更・検証できない制約は継続し、確認したと偽らない。全範囲完了や欠陥収束の宣言ではなく、継続中の節目報告である。
