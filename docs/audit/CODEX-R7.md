@@ -1,4 +1,18 @@
-# Codex R7 独立監査 — ee01f07（節目12・未完了）
+# Codex R7 独立監査 — ee01f07（節目13・未完了）
+
+対象は引き続き **ee01f07402b404c7b9dbcd83935b4be3bc4de187、全15種類・104テンプレート・978リファレンス・111用語**。配信日：2026-11-16 JST。Muse側の指摘一覧・個票を見ず、固定対象の実装・公式資料・実ランタイムから独立に確認した。
+
+節目13の追加は **17件（P2：15、P3：2）**。累計 **248件（P1：0、P2：224、P3：24）**。Museとの重複を除いた件数ではない。既報の追加再現、同じ原因の入力差、宣言したモデル差、未確定な表示モード・リンク到達性を重複計上していない。[検証範囲](#節目13の検証範囲と証拠)、[追加指摘](#節目13の追加指摘)、[残作業](#節目13の残作業)を参照。
+
+**使った書き込みコール数：3件（この節目）。累計36件。** 実RのWindows CI用に監査専用ブランチへgit push 2回（主集合と定数代入の追加）、報告書だけをmainへまとめて配信するgit push 1回。過去の節目は5、4、2、2、1、1、1、6、4、4、1、2件。従来と同じくGitHubへ書き込むgit pushを数え、ローカルの検証コード・データ作成、読取り、CI内の保存を含めない。製品コード・教材・既存テスト・DEVELOPMENT.mdは変更せず、監査ブランチをmainへマージしない。
+
+配信準備時のmainは `a9493e9d37608add1d92b3466cf58171f9621dfa`。既存変更を保持し、報告書だけを配信する。対象製品はee01f07に固定し、その後のmainの修正残存や追加種類を監査済みとする意味ではない。
+
+**観点1〜8は未完了。** 今回はR全6教材・44参照例を含む主集合1,022ソースと定数代入の追加8ソースを、LinuxとWindowsの実R 4.2.2・モデルで実行した。型・名前・行列数・警告まで回収し、添字・置換・0行／0列・中央値・seqの端点・CSV引数・文字列内容・参照の解決へ進めた。全15種類・104教材・978項目・111用語・全ビューの未了分を維持する。モデル／推論設定をツールから変更・検証できない制約も継続する。サブエージェント・リセット権は使っていない。
+
+## 節目12までの記録
+
+以下は前回報告を保持した履歴。件数・書き込み回数・未実施の記述は当時の値であり、今回の状況は末尾の節目13で更新する。
 
 対象は引き続き **ee01f07402b404c7b9dbcd83935b4be3bc4de187、全15種類・104テンプレート・978リファレンス・111用語**。配信日：2026-11-16 JST。Muse側の指摘一覧・個票を見ず、固定対象の実装・公式資料・公式ランタイムから独立に確認した。
 
@@ -4918,5 +4932,405 @@ If／IF、True／true、FALSE、Loopの6形すべてをアプリが受理。空�
 VBA・ImageJ・CloudFormation・PAD・AutoHotkey・UI.Vision・Power Apps・Python・R・C・C++・C#・JavaScript・cmd・PowerShellの全種類に未了分を維持する。VBAのRound／IsNumeric／Unicode casing等と実Excelによる切分け、Rのmedian／seq／rep／read.csv・名前・属性・精度、C系全オーバーロード・定数式・昇格・型・ポインタ／配列、C# TryParse out修飾子／型、保存・状態の残る交差も落とさない。
 
 実Excel／Canvas／PAD／AWS／UI.Vision製品セッション、実スクリーンリーダー、Safari／Firefox／iOS実機、ImageJ GUI全経路、実Windowsの手動UIは接続・環境がなく未実施。Windows CIで可能なコード実行を不可能とせず、今回得た有限集合の値・最大時間を全入力の結論に一般化しない。
+
+使用量・回数制限、リセット時刻の通知は受けていない。リセット権・サブエージェントは使っていない。モデル／推論設定をこの会話のツールで変更・検証できない制約を維持し、確認したと偽らない。これは継続中の節目報告であり、全範囲完了や欠陥収束の宣言ではない。
+
+
+## 節目13の検証範囲と証拠
+
+実施日：2026-11-16 JST。製品対象はee01f07、全15種類・104教材・978参照・111用語のまま。今回はRの値・型・名前・形状・置換・参照表示を進めた。Museの指摘一覧・個票は参照していない。配信先mainの新しい製品変更を保持するが、その修正残存を再監査したとはしない。
+
+### 実Rとモデルの比較集合
+
+Linuxの実R **4.2.2**と、Windows UCRT版の実R **4.2.2**を使用。各ソースを新しい環境で評価し、値だけでなくtypeof、名前、次元、列ごとの型、行数、警告、出力、作成変数を回収した。logicalのTRUEとnumericの1を比較言語の等値で同一視しない。モデルのinteger／double差は宣言どおりnumericとして扱い、長さ1ベクトルとモデルのスカラー表現もそろえて比較した。
+
+| 集合 | ソース数 | 範囲 |
+|---|---:|---|
+| 関数の型境界 | 378 | 18関数×NULL／0／1／−1／TRUE／FALSE／NA／NaN／±Inf／空・数値・非数値文字列／空・複数・欠損・名前付きベクトル／logicalベクトル／data.frameの21値 |
+| 原子ベクトル添字 | 54 | [／[[ ×27形。正負・ゼロ・複数・重複・小数・NULL・NA・NaN・±Inf・logical・文字列・未一致名 |
+| data.frame選択 | 197 | 単一列16形、行10形×列16形の160組、[[12形、$の曖昧・一意な部分一致9形 |
+| ベクトル置換 | 192 | 元4型・名前形×添字6形×置換値8形。型、名前、長さ、欠損、警告を比較 |
+| 列更新等の追加 | 54 | 列更新5、seq／c／names／median等18、数値文字列化18、CSV引数13 |
+| 指摘の追試 | 50 | 後続のsum・as.character・names・nrow・ncol・$、正しい単一選択、列削除、0行更新、正常対照等 |
+| 全23関数の引数形 | 46 | 各関数の0引数／20引数。可変長として正しい場合、必須不足・過剰・未知値の検査を区別 |
+| 全44参照例・全6教材 | 50 | 標準または固有モデル。実Rには標準モデルと同じmodel.csvを監査用作業ディレクトリに作成 |
+| 定数の代入 | 8 | TRUE／FALSE／NULL／NA／NaN／Infの代入と、上書き可能なT／Fの対照 |
+| 重い分岐 | 1 | 独立したreadline入力12個の2択、理論上4096通り。2000パス上限と時間を確認 |
+
+主集合は **1,022ソース**。875の基本集合＋96の追試・引数形＋50例＋重分岐1であり、重複する式・入力形を含む。さらに参照の最終照合で、予約された6定数と可変のT／Fへの代入8ソースを追加した。記録した検証集合は計 **1,030ソース**。全て両OSの実Rとモデルで実行した。LinuxとWindowsでモデルの結果が一致したのは重分岐を除く**1,029ソース**。重分岐は時間条件により探索の打切り理由が異なり得るため、通常の意味論一致へ合算しない。
+
+実R同士の差は乱数を含む参照rnorm／runif／sampleの3ソースのみ。これらの数値をモデルの未確定値の正解とはせず、未確定でよいこと・引数の検査と分けた。readlineの非対話実行は空文字列だが、モデルの対話入力の可能性を空文字列へ固定する要求にはしない。
+
+主な一次資料は、R公式の[Extract](https://stat.ethz.ch/R-manual/R-devel/library/base/html/Extract.html)、[Extract.data.frame](https://stat.ethz.ch/R-manual/R-devel/library/base/html/Extract.data.frame.html)、[names](https://stat.ethz.ch/R-manual/R-devel/library/base/html/names.html)、[seq](https://stat.ethz.ch/R-manual/R-devel/library/base/html/seq.html)、[c](https://stat.ethz.ch/R-manual/R-devel/library/base/html/c.html)、[median](https://stat.ethz.ch/R-manual/R-devel/library/stats/html/median.html)、[character](https://stat.ethz.ch/R-manual/R-devel/library/base/html/character.html)、[read.table／read.csv](https://stat.ethz.ch/R-manual/R-devel/library/utils/html/read.table.html)。公開R-devel資料は取得時4.6.0表記で、実行版と同じだと偽らない。実R 4.2.2のseq.default／median.default／[.data.frame／[[.data.frame／$<-.data.frameの本体と全23関数のargsもローカルで取得し、今回の規則と突き合わせた。全R版・全メソッドの互換性試験ではない。予約語と可変のT／Fの区別も、参照の説明、公式Reserved／logical、実Rの代入で確認した。
+
+### 宣言、参照・用語、全6教材
+
+明示callの23名（c、sum、mean、median、sd、length、seq、seq_len、rep、data.frame、nrow、ncol、names、is.na、as.numeric、as.character、print、cat、readline、read.csv、rnorm、runif、sample）は全て44参照項目に対応する。この**関数名集合の追加項目漏れは確認済み・なし**。FUNCTION_NAMESに載るだけで未対応停止となる関数名を、実装済みの計算関数へ数え替えていない。行名・因子・一般のS3/S4・パッケージ等の未対応も維持する。実装済みdata.frameの基本選択・行数や、受理する引数の検査を、それらの宣言で一律に免除しない。
+
+全44参照例と全6教材は、両OSの実R・モデルとも例自体のエラー0件。この**既定例の異常停止は確認済み・なし**であり、全説明・全オプション・全表示形式の正しさとは区別する。[[、$、c、seq、median、as.character、read.csvの範囲は今回の追加指摘で補う。特に[／[[の有効な異常境界と、言語では有効だが部分対応の形式を切り分けた。
+
+全6教材の主張とモデル上の結果を照合。NAとna.rmの集計、データフレーム列追加と平均80・1行選択、forの合計15と終了後i=5、正負の添字で10と30を選ぶ結果、5と8の合計13、B／Cの行選択と全行bonusの平均83.333…について、**タイトル・introが明示する既定モデルの結果の新規不一致は確認済み・なし**。任意のモデル変更、全未知入力、同じ教材中の全関数の全引数形式まで合格にしていない。
+
+用語5件（ベクトル、データフレーム、NA、リサイクル、未確定）の定義を再読し、今回読んだ定義文の意味・誤字の新規指摘は**確認済み・なし**。教材語の未収載は既報R7-56を維持し、全111語・全教材語の完了を意味しない。
+
+### 既報の補強と判定上の注意
+
+- **R7-21**：seq(-Inf)も実Rは有限値のエラーだが、モデルはc(1)を作る。単独の負数／単一要素ベクトルの解釈の既報に補強し、新規計数しない。
+- **R7-22／R7-100**：全23関数の0／20引数で、引数数を検査するべき形と、c／sum等の合法な可変長を分けた。乱数や入力を未確定とする前に必須・過剰・既知不正値を検査しない既報を再確認した。46形の差を別々の欠陥へ水増ししない。
+- **R7-83**：cat(data.frame(x=1:2))は実Rがlist型を扱えないと停止するが、モデルは[object Object]を出す。data.frameを単一の通常値へ変換する既報へ補強した。
+- **R7-152／153／155／157**：入れ子名・変換後の属性、重複列消失、na.rmの変換を含む既報は新規に数えない。d[c(1,1)]が2列にならず先の列だけ残すこともR7-155と同じObject.fromEntriesによる消失へ含める。
+- **空の型・NAの型**：モデルにない空ベクトルの詳細型、NAの型差だけで件数を作らず、今回の比較では値・属性・後続関数で観測できる違いを重視した。一方、median(TRUE)の型は文字列化すると実際の値が変わるためR7-240へ含めた。
+- **警告**：ネイティブの警告も保存した。値が合っただけで警告まで一致したとしない。置換の長さ警告はR7-234へ併記し、全警告経路の一対一再現は未了。
+
+**表示モードの保留**：sum(c(1,2,3))等の裸の式はモデルがtraceへ値を説明し、出力欄には追加しない。実Rの可視トップレベル評価をcapture.outputで取ると[1] 6が出る一方、sourceのecho／print.eval設定では自動表示の扱いが変わる。アプリがどのトップレベル表示規則を契約として選ぶかが明示されていないため、今回「全参照例の出力が完全一致」とは扱わず、Rscript／REPL／sourceの表示契約と可視性の監査を残す。明示print／catの表示差も、学習用の書式宣言と実際の文字列・改行内容を分ける。
+
+**出典リンクの到達性**：全44項目の出典29URLを直接HTTPで巡回しようとしたが、実行環境のプロキシがCONNECTを403で拒否し、サイト自身のHTTP状態を取得できなかった。webツールで上記の一次資料を取得する方法は使えた。data.frameの参照sourceはdataframe.htmlで、取得できた公式のdata.frame.htmlと綴りが異なるが、失敗を一律に404とは断定せず、全リンク到達性の確認を残す。これは使用量上限の通知ではなく、直接HTTP経路のアクセス制約。
+
+### 画面・全ビューとアクセシビリティの範囲
+
+Chromium156／Playwrightで追加・補強18ソースと、使用項目6ソース、定数代入8ソースの計32ソース、全6教材を画面で実行。全44参照項目の側面・専用ビューの表示テキスト、5用語の両ビュー定義は一致。この**ビュー間の同一項目の文面一致は確認済み・なし**。使用項目から演算子へ結び付かない別の欠陥はR7-247として分離した。
+
+Rの4ビュー×375／1440pxの8表示で横はみ出し0、可視input／select／textareaのlabel／aria-label／aria-labelledby欠落0、未処理pageerror0。この有限の静的ラベル・レイアウトは**確認済み・なし**。スクリーンリーダー、全ariaの意味、全フォーカス遷移、全ズーム・幅、保存破損・容量枯渇・下書き・切替の残る状態は今回追加検証していない。
+
+### Windows CI実測
+
+[Windows run 43827355590](https://github.com/sylpica/programming-practice/actions/runs/43827355590)、監査ブランチ2f649b8524c99efe5d2423d3182e5c6ac83b7280。Windows **10.0.26100**、Node **22.23.4**、実R **4.2.2 UCRT**。監査ブランチの製品はee01f07を保持し、今回の監査JSON・スクリプト・workflowのみを追加。mainへ製品コードとしてマージしない。
+
+| 測定対象 | 実測 |
+|---|---:|
+| モデル全1,022ソースのsimulate合計 | 1344.4574ms |
+| 重い入力を除く1,021ソースの合計 | 159.3541ms |
+| 集合内最長：独立readline入力12個 | 1185.1033ms |
+| 重い入力を除く集合内最長（index:[NULL） | 27.9741ms |
+| 実Rの全1,022ソースの一括プロセス経過時間 | 910.7895ms |
+
+重いモデル入力は**2000パス、truncated=true、理由「パス数の上限」**。理論上4096通りを全列挙したとは表示しない。この入力での打切りの明示は**確認済み・なし**。実Rの同じソースは非対話readlineが空文字列となる1経路であり、2000パスの探索との速度比を出さない。
+
+追加8ソースは[Windows run 43830872253](https://github.com/sylpica/programming-practice/actions/runs/43830872253)、監査ブランチb715684c52334e0c3f0d45589a566a25d32c97e1で実施。予約された6定数は実Rで代入エラー、T／Fの2形は実R・モデルとも7。両OSの全8形の値・停止は一致した。モデル8ソースの合計は **6.9960ms**、実Rの別プロセス一括時間は **321.3496ms**。主集合を再実行せず、新しく確認した宣言の不一致だけを短い追試へ分けた。
+
+モデルの時間はsimulate前後で、モデル複製・終了結果の組立てを含む。実Rの一括時間は起動・全コードの評価・型／警告／出力の回収を含む。GUI描画、ブラウザ、CIの準備・インストール時間は含まない。今回の集合の最大であり、全入力空間の最重ケースを確定した値ではない。既報repの大きな内部反復等を修正・再計測したとの意味でもない。
+
+ローカル証拠は`/workspace/work/r7m/`のcases.json、native-results.json、results.json、windows-native.json、windows-app.json、platform-differences.json、official-methods.txt、catalog.json、browser-results.jsonと各スクリプト。CI成果物は上記runのcodex-r7-native-evidence。初回の監査JSONエンコーダーには0列データフレームで不正JSONになる不具合があり、エンコーダーだけを直して全体を回収し直した。製品の欠陥や修正には数えていない。
+
+実Excel／Canvas／PAD／AWS／UI.Vision製品セッション、実スクリーンリーダー、Safari／Firefox／iOS実機、ImageJ GUI全経路、実Windowsの手動UIは接続・環境がなく未実施。定数の追加8ソースは別の短いWindows runで回収した。主集合1,022の測定を1,030ソースの一括時間へ読み替えない。今回はWindowsのRが使えたため、それを環境上不可能とは記さない。cmdの連結echo等の以前の実Windows回答は保持し、今回のR検証へ読み替えない。
+
+## 節目13の追加指摘
+
+共通再現：固定ee01f07でRを選び、自動実行をオフにし、標準モデルでコードを置き換えて実行する。期待値はLinuxとWindowsの**実R 4.2.2**で確認した。アプリの学習用c(...)表示と実コンソールの[1]等の表示差そのものは欠陥に数えない。integer／doubleをまとめたnumericモデルの宣言も尊重し、logical／characterの値や属性を失う問題と区別する。
+
+### R7-232（P2）[[の添字ベクトルの先頭だけを使い、再帰的な選択や本来のエラーを消す
+
+対象：R。位置：`js/types/r/index.js read` のa.double、`vec(indexes[0])[0]`。
+
+再現：
+
+```r
+v <- c(10,20)
+print(v[[c(1,2)]])
+```
+
+実際：アプリは10を返す。添字の2を捨てている。
+
+期待・一次根拠：原子ベクトルの[[で複数要素を一度に選べないため、実Rは `attempt to select more than one element in vectorIndex`。一方、再帰的なオブジェクトの添字ベクトルは順に掘り下げる。[R公式Extract](https://stat.ethz.ch/R-manual/R-devel/library/base/html/Extract.html)、[data.frameの添字](https://stat.ethz.ch/R-manual/R-devel/library/base/html/Extract.data.frame.html)。
+
+`d <- data.frame(x=1:3,y=4:6); d[[c(1,2)]]` は実Rで2、アプリでc(1,2,3)。c(2,1)は4に対してc(4,5,6)。さらにc(1,2,3)の本来の再帰選択エラーもアプリは最初の列の正常値にする。NULL・0・範囲外・NA・Inf等と長さ1の正常添字も追試した。
+
+同じ[[処理の追加診断：`c(10,20)[[1.9]]` は実Rで10、`c(10,20)[[-1]]` は20だが、アプリはともにsubscript out of bounds。整数化や単一要素を選ぶ規則を未対応にするなら、その制限を示し、範囲内の正しい書き方を範囲外と案内しない。
+
+### R7-233（P2）一意に部分一致する列名の$参照をNULLへ固定する
+
+対象：R。位置：同ファイルreadのmember処理、Object.hasOwnによる列名の完全一致。
+
+再現：
+
+```r
+d <- data.frame(score=1:3,y=4:6)
+print(sum(d$sc))
+```
+
+実際：アプリ0。scという完全名の列がないためNULLにし、その合計を0にする。
+
+期待・一次根拠：data.frameの$は、一意な部分一致を認める。実Rではd$scがscore列の1、2、3となり、合計6。[R公式Extract.data.frameの$](https://stat.ethz.ch/R-manual/R-devel/library/base/html/Extract.data.frame.html)。対応しない場合も、不確かな列読出しを既知のNULLに置き換えず未対応として止める。
+
+d$sも一意なら同じ。scoreとscaleの2列がある対照ではd$sc／d$sは実RもNULLとなり、アプリと一致した。正しい完全名d$scoreも一致。常に前方一致させる要求ではなく、曖昧でない部分一致だけが欠けている。
+
+### R7-234（P2）要素代入がベクトル全体の型・名前属性を更新せず、不整合な状態を作る
+
+対象：R。位置：同ファイルwriteのindex処理。
+
+再現：
+
+```r
+v <- c(TRUE,FALSE)
+v[1] <- 2
+print(as.character(v))
+```
+
+実際：アプリはc("2","FALSE")。数値2と論理FALSEが同じ原子ベクトルに混在する。
+
+期待・一次根拠：代入先の原子ベクトル全体を必要な上位型へ変換する。実Rではnumericのc(2,0)になり、文字列化した結果は"2"、"0"。[R公式ExtractのSubassignmentと型階層](https://stat.ethz.ch/R-manual/R-devel/library/base/html/Extract.html)。
+
+`v <- c(1,2); v[1] <- "x"` も実Rはc("x","2")、アプリは文字列と数値の混在。4種の元ベクトル×6種の添字×8種の置換値、192形を比較した。
+
+同じ単純な要素代入の補足：`v <- c(a=1,b=2); v[3] <- 7; names(v)` は実Rで"a"、"b"、""だが、アプリは2個の名前しか残さず、値とnamesの長さが食い違う。`v[c(1,2,3)] <- c(1,2)` は値だけなら一致するが、実Rの `number of items to replace is not a multiple of replacement length` 警告がアプリにない。これらも代入の型・属性・長さの処理として併記し、別件へ水増ししない。
+
+### R7-235（P2）一部だけ名前が付いたベクトルの無名要素をNAという名前にする
+
+対象：R。位置：同ファイルcのrawNamesとnamesのnull→NA変換。
+
+再現：
+
+```r
+print(names(c(a=1,2)))
+```
+
+実際：アプリc("a",NA)。
+
+期待・一次根拠：実Rはc("a","")。空文字列は「その要素に名前がない」を表し、名前そのものが欠損しているNAとは区別される。[R公式names](https://stat.ethz.ch/R-manual/R-devel/library/base/html/names.html)。
+
+`names(c(1,b=2))` も実Rは""、"b"、アプリはNA、"b"。名前のないベクトル全体ならnamesはNULLという対照と、全要素に名前を付けた場合は一致した。既報R7-152の入れ子名の連結、R7-153の型変換後の属性除去とは別の、存在するnames内の空値の誤り。
+
+### R7-236（P2）名前添字で見つからなかった要素へ、指定された名前を捏造する
+
+対象：R。位置：同ファイルsubsetの文字列添字、outNames.push(idx)。
+
+再現：
+
+```r
+v <- c(a=10,b=20)
+print(names(v["missing"]))
+```
+
+実際：アプリc("missing")。値のほうはNAなのに、存在した要素の名前のようにmissingを付ける。
+
+期待・一次根拠：実RはNAの名前を返す。未一致の文字列添字から作られる欠損要素の名前は、元のベクトルに存在した名前ではない。[R公式Extractの文字列添字](https://stat.ethz.ch/R-manual/R-devel/library/base/html/Extract.html)、[namesの欠損名](https://stat.ethz.ch/R-manual/R-devel/library/base/html/names.html)。
+
+`names(v[c("a","missing")])` は実Rで"a"、NA、アプリで"a"、"missing"。"a"だけの対照は両者一致。R7-235の無名要素の空文字列とは逆で、ここでは本来NAである位置に既知の名前を生成している。
+
+### R7-237（P2）列を0個にしたデータフレームの行数を0へ変える
+
+対象：R。位置：同ファイルreadのdata.frame選択結果と、nrowの先頭列だけによる算出。
+
+再現：
+
+```r
+d <- data.frame(x=1:3,y=4:6)
+print(nrow(d[NULL]))
+```
+
+実際：アプリ0。
+
+期待・一次根拠：列がなくても元の3行を持つデータフレームなので、実Rは3。列数と行数を独立に保つか、この形を未対応として止める。[R公式data.frameの行数・列構造](https://stat.ethz.ch/R-manual/R-devel/library/base/html/data.frame.html)、[data.frameの列選択](https://stat.ethz.ch/R-manual/R-devel/library/base/html/Extract.data.frame.html)。
+
+`nrow(d[1:2,NULL])` も実R2に対しアプリ0。ユーザーが行名を指定した例ではなく、既に判明している行数を列削除で失う問題。「行名は未対応」という宣言を理由に、nrowの既知値0として返せない。通常の2列・1列選択のnrowは一致した。
+
+### R7-238（P2）seqの終点と長さから開始値を決めず、過剰な指定も成功させる
+
+対象：R。位置：同ファイルseqのlengthOut処理。
+
+再現：
+
+```r
+print(seq(to=9,by=2,length.out=3))
+```
+
+実際：アプリc(1,3,5)。
+
+期待・一次根拠：実Rはc(5,7,9)。開始値を省略し終点・刻み・長さを指定した場合は、それらを満たす開始値を導く。`seq(to=9,length.out=3)` も実R c(7,8,9)に対しアプリc(1,5,9)。[R公式seq](https://stat.ethz.ch/R-manual/R-devel/library/base/html/seq.html)、実R 4.2.2のseq.defaultと両OSでの出力。
+
+`seq(from=1,to=9,by=2,length.out=3)` は実Rでtoo many argumentsだが、アプリはtoを無視してc(1,3,5)。along.withを使う形でも同じ。正しいfrom／by／length.outの指定は対照として一致した。浮動小数点刻みの終点丸めR7-176や、名前付き・位置引数の割当てR7-154とは別の、指定した端点と制約の扱い。
+
+### R7-239（P2）cのuse.names／recursiveを制御引数でなく追加データにする
+
+対象：R。位置：同ファイルcase cが全argsを値へ連結する箇所。
+
+再現：
+
+```r
+print(length(c(1,2,use.names=FALSE)))
+```
+
+実際：アプリ3。FALSEを数値0に変換して3要素目へ追加する。
+
+期待・一次根拠：実Rは2。use.namesは名前を保持するかを制御し、recursiveは再帰的な連結を制御する。データ要素にしない。未対応なら引数名を挙げて止める。[R公式cの署名](https://stat.ethz.ch/R-manual/R-devel/library/base/html/c.html)。
+
+`c(a=1,b=2,use.names=FALSE)` は実Rで無名のc(1,2)、アプリはa、b、use.namesという名前付きc(1,2,0)。`c(1,2,recursive=FALSE)` でも余分な0。一般のlist再帰処理は未対応でも、この既知の制御指定を正常データへ変えてはいけない。data.frameの制御引数を列にする既報R7-82とは異なる関数の検査漏れ。
+
+### R7-240（P2）medianが奇数長logicalを数値に変え、文字列の有効な中央値も拒否する
+
+対象：R。位置：同ファイルmedianが共通集計の型検査とnums=a.map(Number)を使う箇所。
+
+再現：
+
+```r
+print(as.character(median(TRUE)))
+```
+
+実際：アプリc("1")。
+
+期待・一次根拠：実Rは"TRUE"。medianの既定メソッドは通常入力と同じ型を返し、logical／integerが偶数長のときはdoubleとなる。[R公式medianのValue](https://stat.ethz.ch/R-manual/R-devel/library/stats/html/median.html)。
+
+median(c(TRUE,FALSE,TRUE))も同じ型喪失。偶数長のc(TRUE,FALSE)は両者0.5で一致した。`median(c("a","b","c"))` は実Rで文字列"b"、median("a")は"a"だが、アプリはinvalid type of argumentと停止する。文字列2個の実Rは警告とNAであり、アプリの一律型エラーとは違う。既報R7-24のNULL／NaNの扱いとは別で、欠損を含まない正しい入力でも生じる。
+
+### R7-241（P2）数値から文字列への変換をJSの表記にし、比較対象の文字列まで変える
+
+対象：R。位置：同ファイルas.characterと、cの共通型へのcoerce。
+
+再現：
+
+```r
+print(as.character(1e20) == "1e+20")
+```
+
+実際：アプリFALSE。as.character(1e20)を"100000000000000000000"へ変換する。
+
+期待・一次根拠：実RはTRUE。as.characterは実数を通常15有効桁で文字列化し、Rの数値表記と設定に従う。これは画面の近似表示ではなく、関数が返した文字列そのものの違い。[R公式character](https://stat.ethz.ch/R-manual/R-devel/library/base/html/character.html)。両OSともRの既定設定で確認した。
+
+1e-7は実R"1e-07"／アプリ"1e-7"、1e-6は"1e-06"／"0.000001"、1.2345678901234567は"1.23456789012346"／"1.2345678901234567"。c(数値,"x")の文字列への共通型変換でも同じ。c(Inf,"x")では実R"Inf"に対してアプリ"Infinity"を作る。負の0、NaN、as.character(Inf)などの対照も調べた。namesを残す既報R7-153とは別の文字列内容の誤り。
+
+### R7-242（P2）read.csvのオプションを黙って無視し、指定と異なる行・列・型を返す
+
+対象：R。位置：同ファイルcase read.csv。
+
+再現：標準モデルのmodel.csvを使う。
+
+```r
+print(nrow(read.csv("model.csv",nrows=1)))
+```
+
+実際：アプリ3。キャッシュされたモデル表をそのまま返す。
+
+期待・一次根拠：実Rで同じ内容のCSV（下記）を読むと1。モデルにない実ファイルを読む要求ではなく、対応しないオプションが渡されたら明示停止する必要がある。[R公式read.csv／read.table](https://stat.ethz.ch/R-manual/R-devel/library/utils/html/read.table.html)。
+
+```csv
+x,y
+1,4
+2,5
+3,6
+```
+
+col.names=c("a","b")は実Rで列名a／b、アプリx／y。colClasses="character"は実Rで"1"等の文字列、アプリ数値1等のまま。header、skip、na.strings、sep等も無視する。全CSVパーサの実装を要求せず、解析済み表しか持たないモデルの範囲外入力を既定の表の成功にすり替えない。オプション・file指定13形と、その結果をnrow／names／$へ渡す追試4形を実Rで確認した。
+
+### R7-243（P2）データフレームのlogical列添字を数値として扱い、TRUEで先頭列しか選ばない
+
+対象：R。位置：同ファイルdata.frameの列キー算出。
+
+再現：
+
+```r
+d <- data.frame(x=1:3,y=4:6)
+print(ncol(d[TRUE]))
+```
+
+実際：アプリ1。
+
+期待・一次根拠：TRUEを列数へリサイクルして全列を選ぶため、実Rは2。logicalの選択規則を適用するか未対応として止め、true-1=0というJSの算術で先頭列の位置にしない。[R公式Extractのlogical・負・ゼロ添字](https://stat.ethz.ch/R-manual/R-devel/library/base/html/Extract.html)、[data.frameの列選択](https://stat.ethz.ch/R-manual/R-devel/library/base/html/Extract.data.frame.html)。
+
+c(TRUE,FALSE)やFALSE、-1、c(0,2)は実Rで有効だが、アプリではundefined columns selected。単一列名・通常の正の整数・列順の入替えは対照として一致。列数超過3や未存在の列名が実際にエラーになる対照と区別する。重複列の選択を消す現象は既報R7-155へ補強し、新規へ重ねない。
+
+### R7-244（P3）$列へNULLを代入する正しい削除操作を、行数不一致と案内する
+
+対象：R。位置：同ファイルwriteのmember処理。
+
+再現：
+
+```r
+d <- data.frame(x=1:3,y=4:6)
+d$x <- NULL
+print(ncol(d))
+```
+
+実際：replacement has incompatible rowsで停止。
+
+期待・一次根拠：実Rではx列が削除され、列数1。NULL代入は列削除であり、不正な長さの値を入れようとしたのではない。[R公式Extract.data.frameのvalue=NULL](https://stat.ethz.ch/R-manual/R-devel/library/base/html/Extract.data.frame.html)。未対応なら削除操作が未対応と明示する。
+
+存在しないd$missingへNULLを代入する実Rは何も削除せず列数2だが、アプリは同じ行数不一致。c()もNULLなので同じ。2行の値を3行の列へ入れる本当の行数不一致とは別に診断すべきであり、一般のdata.frame添字代入未対応という宣言とも混同しない。ここでは$による列更新を使っている。
+
+### R7-245（P2）seq_lenのNULL／空文字列を0と解釈し、本来のエラーを空ベクトルにする
+
+対象：R。位置：同ファイルcase seq_lenのNumber(x)。
+
+再現：
+
+```r
+print(seq_len(NULL))
+```
+
+実際：アプリc()、エラーなし。
+
+期待・一次根拠：実Rは `argument must be coercible to non-negative integer` で停止。空値は指定長0ではない。seq_len("")も同じ実エラーだが、アプリは空ベクトルになる。[R公式seq_lenのlength.out](https://stat.ethz.ch/R-manual/R-devel/library/base/html/seq.html)。
+
+正常なseq_len(0)は両者空、1は両者1。負数、NA、Inf等の停止経路と区別して確認した。既報R7-85は正しい小数を拒否する問題で、今回は不正な空値を既知の0へ変えて通す反対方向の欠陥。
+
+### R7-246（P2）0行のデータフレームへの列代入を成功させ、列ごとに行数が違う表を作る
+
+対象：R。位置：同ファイルwriteのmember、既存行数0を||で置換値の長さへ置き換える箇所。
+
+再現：
+
+```r
+d <- data.frame(x=1:3,y=4:6)
+d <- d[FALSE,]
+d$z <- 1
+print(d)
+```
+
+実際：x／yは0要素、zだけ1要素という不整合なデータフレームを成功状態として保持する。
+
+期待・一次根拠：実Rは `replacement has 1 row, data has 0`。0行の表の列代入で勝手に行を増やさず、同じ行数という表の条件を守る。[R公式data.frame](https://stat.ethz.ch/R-manual/R-devel/library/base/html/data.frame.html)、[列代入の行数規則](https://stat.ethz.ch/R-manual/R-devel/library/base/html/Extract.data.frame.html)。
+
+既存xへ1を入れると、アプリはxだけ1要素にし、nrowまで1になる。新列zへ1:3でも3要素のzを作り、同じ表の列長が食い違う。正の行数に対する長さ1の通常のリサイクル更新は対照として一致。0を「行数が未設定」と取り違えているため、範囲外なら明示停止する必要がある。
+
+### R7-247（P3）Rの添字・演算子の参照項目が「使用中の項目」に解決されない
+
+対象：R／共通UI。位置：`js/core/script.js astRefs／scanScript` と`js/app.js updateUsed`。
+
+再現：Rのコードを次に置き換えて実行し、右側の「使用中の項目」を見る。
+
+```r
+7 %% 3
+```
+
+実際：計算は成功するが、「表示中のパス」「該当する項目はありません。」となる。%%というシミュレーション対応の参照項目は別ビュー・側面の参照一覧に存在する。
+
+期待・一次根拠：表示パスで使った対応項目を解決し、%%の説明へ移動できるようにするか、この表示から演算子を除外する仕様を明示する。DEVELOPMENT.mdは「表示パスに連動する使用項目」を宣言している。[R公式Arithmeticの%%／%/%](https://stat.ethz.ch/R-manual/R-devel/library/base/html/Arithmetic.html)。参照自体の意味と実装は照合した。
+
+%/%、:も項目なし。x[1]／x[[1]]はcだけ、d$xはdata.frameだけとなり、[／[[／$が落ちる。全6形をブラウザで確認した。共通scanScriptは識別子トークンだけを見て、astRefsもこれらの演算子を登録しない。側面と専用ビューの44項目が一致することは確認したが、練習ビューからその項目へ結び付く完全性は別に欠けている。他言語への一般化は今回の指摘に含めない。
+
+### R7-248（P2）予約された定数への代入を受理し、FALSEやNULLを通常の値で上書きする
+
+対象：R。位置：同ファイルの定数読出し・代入と、共有パーサ／writeの変数代入。TRUE／FALSE参照項目の宣言とも不一致。
+
+再現：
+
+```r
+FALSE <- 7
+print(FALSE)
+```
+
+実際：アプリは正常終了して7を出す。TRUE／NULLでも同じ。FALSEを条件へ使う後続の意味まで変わる。
+
+期待・一次根拠：引用しないTRUE、FALSE、NULL、NA、NaN、InfはRの予約された定数であり、通常の変数への代入として受理できない。実R 4.2.2は `invalid (do_set) left-hand side to assignment` で停止する。[R公式Reserved](https://stat.ethz.ch/R-manual/R-devel/library/base/html/Reserved.html)、[logical定数とT／Fの違い](https://stat.ethz.ch/R-manual/R-devel/library/base/html/logical.html)。バッククォートで引用した非構文名の扱いを禁止する要求ではない。
+
+6定数を別々に代入して確認。NA／NaN／Infはアプリの最終状態に7を保持する一方、printは元の定数を出して、同じ名前の表示も食い違う。上書き可能な変数T／Fへの代入は、実R・アプリとも7になる正常対照。TRUE／FALSEの参照は「予約語のため代入できません」と明示するが、実装がその制約を守らない。
+
+## 節目13の残作業
+
+**観点1〜8は未完了。** 固定ee01f07の全15種類・104教材・978参照項目・111用語・全ビューを維持する。今回のRの全6教材・44参照例を含む1,030ソースの検証集合を、全種類の全関数・全入力・全画面の完了へ読み替えない。
+
+| 観点 | 今回の進捗 | 残作業 |
+|---|---|---|
+| 1 一次情報 | R公式の添字・名前・seq・中央値・変換・CSV、両OS実R4.2.2、同版メソッド本体・23関数のargs | 全15種類の残る関数・構文・型・書式。R他版・全メソッド・設定差、実製品環境差、公式資料内の保留 |
+| 2 宣言 | Rのnumericモデルとlogical／characterの実値を区別。行名未対応と既知の行数喪失、CSVモデルと無視される引数を分類 | DEVELOPMENT.md全宣言の双方向表。全型・値域・名前・未確定入力と外部依存の境界で正直に止まるか。裸の式の表示契約 |
+| 3 状態・分岐・表示 | 再帰添字・部分列名・置換後の型／名前、0列／0行の表、端点制約、未一致名、演算子参照の解決 | 全エンジンの未確認パス制約、保存・移行・複数タブ・テンプレート切替の全状態、参照・配列・例外・未知値の残る交差 |
+| 4 cmd／PS | 前回までの実Windows教材・参照・連結echo等の証拠を維持。今回は追加シェル実測なし | 残る全引数位置・展開・修飾・変数・ラベル・パイプライン・関数スコープ・入れ子・エラー・表示。setlocalの版／条件差の保留 |
+| 5 参照・用語 | R23関数名と44項目、全44例の型・変数・出力回収、5語、全44項目・5語の両ビュー一致 | 978項目全説明・書式・期待値・注意、全実装名／属性／変数／別名と参照・除外宣言、111用語の一次逐文・教材語・全ビュー間矛盾。全出典リンク到達性 |
+| 6 全関数境界 | R18関数×21値、全23関数の0／20引数、原子／表添字251形、置換192形、seq等の組合せ、両OS1030ソース | 全関数・コマンドの全位置・全型・巨大値・過不足・ゼロ除算・入れ子・条件・連鎖・パイプライン。Rの残る引数束縛・部分名・属性・未知値・精度、全15種類の残る境界 |
+| 7 全104教材・全停止 | R全6教材と44参照例を両OSで実行。CSVや添字の次の集計・変換まで追試。誤停止理由・消えた実エラーを追加 | 残る教材の未了分、今回教材の任意変更モデル・全未知入力、全エンジンの全停止／警告理由の一対一再現。Rscript／REPL／sourceの可視性・出力契約 |
+| 8 文面・a11y・劣化・性能 | 32ソース＋6教材の画面、44参照・5定義の両表示、8表示幅／ビュー・ラベル、Windowsモデルと実Rの時間・重分岐 | 全文面・aria・全フォーカス・全幅／ズーム、実容量枯渇と保存救出、キャッシュ世代、全エンジンの最重入力探索と実Windows UI描画 |
+
+VBA・ImageJ・CloudFormation・PAD・AutoHotkey・UI.Vision・Power Apps・Python・R・C・C++・C#・JavaScript・cmd・PowerShellの全種類に未了分を維持する。VBAのRound／IsNumeric／Unicode casing等と実Excelによる切分け、Rのmedian／seq／rep／read.csv・名前・属性・精度、C系全オーバーロード・定数式・昇格・型・ポインタ／配列、C# TryParse out修飾子／型、保存・状態の残る交差も落とさない。
+
+実Excel／Canvas／PAD／AWS／UI.Vision製品セッション、実スクリーンリーダー、Safari／Firefox／iOS実機、ImageJ GUI全経路、実Windowsの手動UIは接続・環境がなく未実施。Windows CIの実RとNodeは今回使用できた。直接HTTPの出典巡回はプロキシCONNECTの403で不可だったが、webツールと実Rの一次情報は使用した。有限集合の値・最大時間を全入力の結論に一般化しない。
 
 使用量・回数制限、リセット時刻の通知は受けていない。リセット権・サブエージェントは使っていない。モデル／推論設定をこの会話のツールで変更・検証できない制約を維持し、確認したと偽らない。これは継続中の節目報告であり、全範囲完了や欠陥収束の宣言ではない。
