@@ -1,3 +1,19 @@
+# Codex R7 独立監査 — ee01f07（最終版・縮小後の範囲で終了）
+
+2026-11-16 JST。ユーザーの範囲変更に従い、残作業の**R・VBAの深掘りを実施して監査を終了**した。C系の残る深掘り、最後の全15種類横断照合、その他の残件は**「ユーザー指示により対象外」**。実Excel VBAの全面実測など環境上できなかった項目は、その理由・保留を明記した。対象外・実施不能を「確認済み・なし」とはしていない。
+
+最終節目の追加は **18件（P2：17、P3：1）**。累計 **266件（P1：0、P2：241、P3：25）**。固定対象は **ee01f07402b404c7b9dbcd83935b4be3bc4de187**。累計はMuseとの重複除外数でも、配信時点のmainの未修正欠陥数でもない。製品コード・教材・既存テスト・DEVELOPMENT.mdは修正していない。
+
+**使った書き込みコール数：3件（この最終節目）。累計39件。** 実WindowsのR／VBS補助・VBAモデル・性能検証のため監査専用ブランチへのgit push 2回、報告書のみをmainへ1回にまとめて配信するgit push 1回。過去13節目は5、4、2、2、1、1、1、6、4、4、1、2、3件（累計36件）。従来と同じくGitHubへ書き込むgit pushを数え、ローカル作業・読取り・CI内の保存を含めない。監査ブランチはmainへマージしない。
+
+今回の[検証・実測・追加指摘・対象外の詳細](#最終版範囲変更と完了条件)は末尾に記載。Rの追加1,477ソースをLinux／Windowsの実Rと比較し、VBAモデル2,465ソースと構造の追加2対照、VBS補助2,145式を確認。両種類の全14教材・134参照・19用語も確認した。**VBSはExcel VBAそのものではなく、実Excel互換の全面合格は宣言しない。** モデル／推論設定をツールで変更・検証できない制約も明記した。
+
+個別依頼の実Windows cmdの回答は履歴に原文を保持した。cd後の`echo%CD%`／`echo!CD!`はパスを出さず、測定パスでは`The filename, directory name, or volume label syntax is incorrect.`。`echo%ERRORLEVEL%`（7）は`echo7`という未知コマンドのエラー。停止する点は同じでも、CDの2形を「未知コマンド」と案内する診断理由までは一致しない。
+
+## 節目13以前の履歴（当時の件数・未了表示を保持）
+
+以下は既配信の記録であり、各節の件数・書き込み回数・「次回」「未完了」は当時の状態。**現在の範囲と終了判断は冒頭および末尾の最終版を優先**する。過去の指摘と実測値を消さず、今回対象外にした追加作業と区別して保持した。
+
 # Codex R7 独立監査 — ee01f07（節目13・未完了）
 
 対象は引き続き **ee01f07402b404c7b9dbcd83935b4be3bc4de187、全15種類・104テンプレート・978リファレンス・111用語**。配信日：2026-11-16 JST。Muse側の指摘一覧・個票を見ず、固定対象の実装・公式資料・実ランタイムから独立に確認した。
@@ -5334,3 +5350,329 @@ VBA・ImageJ・CloudFormation・PAD・AutoHotkey・UI.Vision・Power Apps・Pyth
 実Excel／Canvas／PAD／AWS／UI.Vision製品セッション、実スクリーンリーダー、Safari／Firefox／iOS実機、ImageJ GUI全経路、実Windowsの手動UIは接続・環境がなく未実施。Windows CIの実RとNodeは今回使用できた。直接HTTPの出典巡回はプロキシCONNECTの403で不可だったが、webツールと実Rの一次情報は使用した。有限集合の値・最大時間を全入力の結論に一般化しない。
 
 使用量・回数制限、リセット時刻の通知は受けていない。リセット権・サブエージェントは使っていない。モデル／推論設定をこの会話のツールで変更・検証できない制約を維持し、確認したと偽らない。これは継続中の節目報告であり、全範囲完了や欠陥収束の宣言ではない。
+
+
+## 最終版：範囲変更と完了条件
+
+2026-11-16のユーザー決定により、節目13以降の残作業は **RとExcel VBAの深掘りのみ**に変更された。Rの追加引数・束縛・型境界・演算・制御、VBAの全実装関数・任意引数・宣言型・オブジェクト・制御・停止理由、両種類の全参照・教材・用語の表示確認を実施し、この最終配信で監査を終了する。製品の修正・修正後の再監査・Museとの裁定は実施していない。
+
+**C／C++／C#の残る深掘り、最後の15種類横断照合、R・VBA以外の残件は「ユーザー指示により対象外」。** 既に報告した欠陥・実測結果は取り消さない。履歴中の「全15種類の未了分を継続」「観点1〜8は未完了」「次回の残作業」は当時の状態であり、今回の残作業指示ではない。対象外へ移したものを「確認済み・なし」や検証済みへ読み替えない。
+
+Excel本体・VBE・VBAランタイムを使えるホストがないため、**実Excel VBAでの全面差分実測は実施不能**。これはユーザーが対象外にした項目ではなく、VBA監査内の環境制約として残す。Windows Script HostのVBScriptを補助測定に用いたが、Excel VBAの代用品として合格判定していない。以下の確定指摘はVBA公式資料・MS-VBALの規定を根拠とし、資料と補助実測が食い違うものは保留へ分けた。
+
+### 最終節目の検証範囲と証拠
+
+固定対象は引き続き **ee01f07402b404c7b9dbcd83935b4be3bc4de187**。配信先mainの現在の製品に差を移して再採番していない。Museの指摘一覧・監査カタログは参照していない。GPT-6.1 Sol／推論「中」というユーザー指定を維持するが、ツールから実際のモデル名・推論設定を変更・検証できない制約は同じ。サブエージェント・リセット権は使用していない。今回、使用量制限・リセット時刻を伴う停止通知は受けていない。
+
+| 検証 | 実施内容・結果 |
+|---|---|
+| R・実物との照合 | 節目13の1,030ソースに追加して**1,477ソース**をLinuxのR 4.2.2 PatchedとWindowsのR 4.2.2 UCRTで実行。今回集合の両OSの「エラーか否か」の相違は0。戻り値の型・要素・名前・表の列・行数・警告・出力を採取。乱数の値そのものは一致判定しない |
+| R・追加の全位置 | meanのtrim／na.rm、sum／median／sdのna.rm、cのrecursive／use.names、repのtimes／each／length.out、seqのfrom／to／by／length.out／along.with、printのdigits／quote／na.print／right／max／width、catのsep／fill／labels／append、read.csvのnrows／header／skip／colClasses／na.strings／check.namesを各21入力で展開。NULL、0、1、−1、小数、logical、NA、NaN、±Inf、空・数値・非数値文字列、空・複数要素・名前付きベクトル、表を含む |
+| R・束縛／演算／制御 | 15関数の完全名・重複名・余分な名・1文字部分名、17演算子×11左入力×4右入力、break／nextの内外、repeat、入れ子分岐、予約定数代入を検証。23実装関数の必須／過剰引数と単引数型境界は節目13以前の全件集合を併用。未実装の関数名を単に構文色付けされるだけで「実装済み」と数えない |
+| VBA・関数全件 | **27呼出し名**：Range、Cells、Array、IsNull、IsEmpty、LBound、UBound、Len、Left、Right、Mid、Trim、LCase、UCase、Abs、Int、Fix、CInt、CLng、CDbl、CStr、Val、IsNumeric、Round、Replace、InStr、InputBox。各入力位置の通常・0／1／−1・小数・16／32bit境界・1E20／1E308・空文字・型違い・Empty／Null／Nothing・空／非空配列・未確定値と、引数過不足・入れ子を展開 |
+| VBA・値／文／構造 | Date／Now／Time／Rnd／Timer／Command／CurDir／FreeFile／DoEvents／IMEStatusの10裸参照、定数、RangeのValue／Value2／Count／Row／Column、SetとLet、型付き／Variant、未初期化配列、For／For Each／Do／Exit、Select Case、On Error、静的宣言検査を確認。さらにループ外Exit For／Exit Doを到達しない条件内へ置く2対照も実行。19演算子の型行列には未実装Eqv／Impも入れ、正直な未対応停止を欠陥へ数えない |
+| VBA・件数／実測の意味 | 主集合**2,013ソース**＋宣言型と入れ子の追加**452ソース**＝**2,465ソース**を固定モデルで実行。Windows VBScriptは主1,714式＋追加431式＝**2,145式**を補助比較。VBSにないVal、ダイアログを開くInputBox、Excel Range／Cells等はVBS実測へ混入しない。VBSのLenはVBAの型付き変数Lenと異なるため、型付きLenの正解として使わない |
+| 一次情報・参照全件 | VBA90項目に付属するMicrosoftDocs/VBA-Docsの公式原文を**90/90取得**し、構文・説明・例・返却型・注意と実装の対応を照合。R44項目は前節の公式マニュアル・実Rメソッド本体との全件照合を引き継ぎ、今回の任意引数・型の差を追加照合。R公式サイトへのローカルHTTP接続は前節同様プロキシのCONNECT拒否であり、404と判定していない |
+| 全ビュー | Chromium156でR44／VBA90参照のサイド表示と専用ビューを**134組**比較し、文面差0。用語はR5／VBA14の**19項目**を両ビューで比較し文面差0。375／1440px×4ビュー×2種類＝**16表示**で横はみ出し0、ラベルのない可視input／select／textareaは0、ページ例外0 |
+| 全教材 | R6／VBA8の**14テンプレート**を選択・手動実行し、タイトル・intro・コード・全展開解説・結果を確認。VBA inputは「はい」「いいえ」「その他」の3パス、arrayは下限1／上限3／エラー9、textは9文字とEXCEL、forは合計15と終了i=6。Rは明示された学習用c(...)表示と実コンソールの添字接頭辞を区別。既定14教材の主張と既定モデルの結果に新規の不一致は**確認済み・なし** |
+
+Windows原文・再実行可能なスクリプト：
+
+- [R主集合／VBA主集合の実測ジョブ](https://github.com/sylpica/programming-practice/actions/runs/43856634718)（success、監査専用コミット `a766578c9baf4811ad5c5aeb1019724b53d356d2`）。[ケース・採取スクリプト](https://github.com/sylpica/programming-practice/tree/a766578c9baf4811ad5c5aeb1019724b53d356d2/audit-probes/final-r-vba)。Rの型付き値・警告・出力、VBSの型・エラー番号・文字列・数値ビットを圧縮分割ログでも回収した。
+- [VBA宣言型／入れ子とR・VBA負荷試験](https://github.com/sylpica/programming-practice/actions/runs/43857415682)（success、`756fa88944de4bef855c055c4cbe79aee63d0770`）。[追加ケースとstress.mjs](https://github.com/sylpica/programming-practice/tree/756fa88944de4bef855c055c4cbe79aee63d0770/audit-probes/final-r-vba-extra)。いずれも製品ee01f07を基底とする監査用ブランチであり、mainへマージしない。
+
+### 性能の実測値と限界
+
+Windows Server 2025 build26100、Node22.23.4、R4.2.2 UCRT。主R実物の1,477ソース一括は **1,785.067ms**（R起動を含む）。モデルRのsimulate累計 **160.620ms**、単体最大 **9.637ms**。VBA主2,013ソースのハーネス全体 **343.324ms**、単体最大 **3.964ms**。VBA追加452ソースは全体 **186.754ms**、単体最大 **6.040ms**。いずれもブラウザーの描画・通信時間を含めない。VBS2バッチは240.091ms／188.462msであり、VBAの性能値ではない。
+
+| 負荷ケース（各3回） | Rモデル | VBAモデル | 停止・表示の確認 |
+|---|---:|---:|---|
+| 独立した未知条件12個（最大4,096組） | 1,225.024～1,250.182ms | 4,414.205～4,564.768ms | 両方2,000パス、truncated=true、パス数と探索時間の上限理由あり。全部を探索したとの正常完了にしない |
+| 1,000,000回を指定したループ | 0.142～0.740ms | 18.636～20.656ms | Rは列生成のベクトル長上限で停止。VBAは100回の反復上限で打切りと表示 |
+| 式の括弧66段 | 0.444～0.533ms | 0.304～0.417ms | いずれも「式の入れ子が深すぎます」で停止 |
+
+VBAの1,200msは計算途中の検査予算であり、上限発見後のパスへの注記・整形を含むsimulate全体は4秒台になった。ブラウザーには別途2,500msのWorker監視があるため、このNodeの値を実Windowsブラウザーで4秒待つという測定へ置き換えない。今回集合での最重実測を示したもので、任意入力全体の最悪時間を証明したものではない。Rの既報R7-86の巨大なrep内部反復は残り、再び10億回を実行して計測値を増やしていない。
+
+### 最終節目の追加指摘
+
+共通再現：製品ee01f07をHTTPで開き、対象種類を選び、既定モデルのまま自動実行を解除し、下記コードを入力して実行する。Rの値を明示出力したければ末尾にprint(a)を加える。VBAは必要に応じてコードを引数なしSubへ入れる。ここで「期待」は実物互換を実装しないなら、誤った既知値・誤原因にせず、未対応として正直に停止することも許す。
+
+### R7-249（P2）printの表示引数を黙って無視し、不正な指定も成功させる
+
+対象：R。
+
+```r
+a <- print("abc", quote=FALSE)
+b <- print(1.23456789, digits=2)
+```
+
+実際：モデルの出力は`"abc"`（引用符あり）と`1.23456789`。実R4.2.2の出力は`[1] abc`と`[1] 1.2`。また`print(1,digits=0)`は実Rの`invalid printing digits 0`を消して成功する。quote／digits／na.print／right／max／widthの指定は返す値の同一性だけでは検出できないため、出力・エラーも照合した。
+
+期待・一次根拠：[R公式print.default](https://stat.ethz.ch/R-manual/R-devel/library/base/html/print.default.html)のquoteと有効桁、digitsの1～22制約を反映するか、指定した表示オプションを未対応として止める。学習用c(...)と実コンソールの`[1]`の違いを欠陥にしているのではなく、利用者が明示した引用・丸め・検証を捨てる問題。
+
+### R7-250（P2）seqが明示的なNULLを未指定と混同し、型違いからも数列を作る
+
+対象：R。
+
+```r
+a <- seq(from=NULL, to=3)
+b <- seq(from=1, to=3, along.with=NULL)
+```
+
+実際：モデルはどちらもc(1,2,3)。実Rのaは`'from' must be of length 1`で停止し、bを単独実行するとinteger(0)。`seq(from="",to=3)`は実物が`'from' must be a finite number`なのに0,1,2,3を生成する。length.out=NULLも指定の長さエラーを消し、by="1"やlength.out="1"も数値として通す。
+
+期待・一次根拠：[R公式seq](https://stat.ethz.ch/R-manual/R-devel/library/base/html/seq.html)のfrom／toは長さ1、along.withは指定した対象の長さ、有限の数値入力という規定と、実R seq.defaultのmissing判定・数値検証を保つ。未指定の既定NULLと、呼出し側から明示したNULLを区別する。既報R7-238の制約過剰指定・端点計算、R7-245の別関数seq_lenとは分ける。
+
+### R7-251（P2）repの不正なtimesを既定回数や0回へ置き換える
+
+対象：R。
+
+```r
+a <- rep(c(a=1,b=2), times=NULL)
+b <- rep(1:2, times="")
+```
+
+実際：aは元の名前付きc(1,2)、bは空ベクトルを成功値として返す。実Rはいずれも`invalid 'times' argument`。データ自体がNULLのR7-84、length.out優先順位のR7-81とは違い、通常のデータに与えた不正な反復回数を黙って補う。
+
+期待・一次根拠：[R公式rep](https://stat.ethz.ch/R-manual/R-devel/library/base/html/rep.html)のtimesと実Rの検証に従って停止する。合法な0回の結果と、回数として無効な値を区別する。
+
+### R7-252（P2）meanのtrim=NULLを0として平均を確定する
+
+対象：R。
+
+```r
+a <- mean(c(1,100,2), trim=NULL)
+```
+
+実際：モデルは34.333333333333336を返す。実Rは`'trim' must be numeric of length one`。c()を渡しても同じ。trim=TRUEは両方で不正な型として止まり、TRUEを合法と推測した仮説は欠陥へ採用していない。
+
+期待・一次根拠：[R公式mean](https://stat.ethz.ch/R-manual/R-devel/library/base/html/mean.html)のtrim指定と、実R4.2.2 mean.defaultの`!is.numeric(trim) || length(trim)!=1L`検査。trimを省略した場合の0と、明示した長さ0を区別する。meanのデータがNULLのR7-23とは別。
+
+### R7-253（P2）長さ0の算術・論理演算が相手の型エラーを消す
+
+対象：R。
+
+```r
+a <- NULL + "1"
+```
+
+実際：モデルは空ベクトルで正常終了。実Rは`non-numeric argument to binary operator`。`NULL - "1"`、乗除・累乗・剰余・整数除算でも同様。`NULL & "1"`／`NULL | "1"`も、実物の型エラーを空ベクトルの成功へ置き換える。0要素だから演算できる型かの検査も不要、という扱いになっている。
+
+期待・一次根拠：[R公式Arithmetic](https://stat.ethz.ch/R-manual/R-devel/library/base/html/Arithmetic.html)、[Logic](https://stat.ethz.ch/R-manual/R-devel/library/base/html/Logic.html)が要求するオペランド型の検証を実施する。単なる空ベクトルの表示形式の差ではなく、本来失敗する式を合計や条件の後段へ渡せる問題。
+
+### R7-254（P2）logicalのTRUEを底にした累乗で、NAでも確定する1を失う
+
+対象：R。
+
+```r
+a <- TRUE ^ NA
+```
+
+実際：モデルNA、両OSの実Rはnumericの1。対照の`1 ^ NA`はモデルも1であり、全ての累乗に同じ不具合があるとはしていない。
+
+期待・一次根拠：[R公式Arithmetic](https://stat.ethz.ch/R-manual/R-devel/library/base/html/Arithmetic.html)はlogicalをTRUE=1／FALSE=0へ変換し、`1 ^ y`は常に1と規定する。logicalからの変換を行う前に欠損を伝播させない。
+
+### R7-255（P2）NaNとcharacterの比較で文字列への共通型変換を省き、NAにする
+
+対象：R。
+
+```r
+a <- NaN == "1"
+```
+
+実際：モデルNA、実RはFALSE。`NaN != "1"`はモデルNA／実R TRUE。`if (NaN == "1") {print("yes")} else {print("no")}`ではモデルがmissing value where TRUE/FALSE neededで停止するが、実物はnoの側へ進む。
+
+期待・一次根拠：[R公式Comparison](https://stat.ethz.ch/R-manual/R-devel/library/base/html/Comparison.html)の異種原子型比較の優先順位（characterがnumericより上）と、[character変換](https://stat.ethz.ch/R-manual/R-devel/library/base/html/character.html)。ここではNaNがまず文字列"NaN"になってから比較される。数値同士のNaN比較をNAとする規則を、型変換前に適用してはいけない。実R4.2.2の両OSでも確認した。NAのままになる通常の欠損との混同も避ける。
+
+### R7-256（P2）Range変数へのLet代入が既定Valueへ書かず、変数の上書きやエラーになる
+
+対象：Excel VBA。
+
+```vb
+Dim r As Range
+Set r = Range("A1")
+r = 7
+Debug.Print Range("A1").Value
+```
+
+実際：モデルは3行でエラー424「オブジェクトが必要です」。`Dim r`へ変えるとエラーは消えるが、A1は元の「商品」のままでr自体を7へ置換する。`r.Value=7`ならA1=7になる対照も確認した。
+
+期待・一次根拠：[Microsoft Range objectのdefault member](https://learn.microsoft.com/en-us/office/vba/api/excel.range(object))、[Range.Value](https://learn.microsoft.com/en-us/office/vba/api/excel.range.value)。引数なしの既定メンバーはValueであり、オブジェクトを保持するrへの値のLet代入はr.Valueへの代入となる。どちらの宣言でもA1を7にするか、この代入形式を未対応停止する。実Excelホストでの実測は未実施で、モデルと公式の明示規定との不一致として報告する。
+
+### R7-257（P2）Option Explicitの未宣言名を実行時にだけ検査し、実行不能なコードから出力する
+
+対象：Excel VBA。
+
+```vb
+Option Explicit
+Sub Test()
+    If False Then
+        Debug.Print missingR7
+    End If
+    Debug.Print "AFTER"
+End Sub
+```
+
+実際：モデルは正常終了してAFTER。到達する未宣言名へ変更し、前に`Debug.Print "BEFORE"`を置くと、BEFOREを出力した後で停止する。
+
+期待・一次根拠：[Microsoft Option Explicit](https://learn.microsoft.com/en-us/office/vba/language/reference/user-interface-help/option-explicit-statement)は未宣言変数のエラーを**compile time**とする。到達性で検査を免除せず、実行・セル更新・出力の前に止める。On Errorで実行時エラーを継続できるという仕様も、このコンパイル検査を後回しにする理由にはならない。VBEでの実測は未実施。
+
+### R7-258（P2）Optionの手続き内配置・重複を受理し、不正なモジュールを成功させる
+
+対象：Excel VBA。
+
+```vb
+Sub Test()
+    Option Base 1
+    Dim a(2)
+    Debug.Print LBound(a)
+End Sub
+```
+
+実際：モデルは1を出力して成功する。Sub内のOption Explicitも受理する。`Option Base 0`と`Option Base 1`をモジュール先頭へ続けて置いても、後者を採用して実行する。配列宣言後のOption Baseも受理する。
+
+期待・一次根拠：[Microsoft Option Base](https://learn.microsoft.com/en-us/office/vba/language/reference/user-interface-help/option-base-statement)は手続きより前・モジュール内1回・次元を持つ配列宣言より前と規定し、[Option Explicit](https://learn.microsoft.com/en-us/office/vba/language/reference/user-interface-help/option-explicit-statement)も手続きより前に置く。正式なSubを含むコードで規則を破っているため、アプリが許す「文だけの教材入力」形式の問題とは分けている。VBEでの実測は未実施。
+
+### R7-259（P2）0/0のエラー番号を11にし、Err.Numberを使う分岐を変える
+
+対象：Excel VBA。
+
+```vb
+On Error Resume Next
+Debug.Print 0 / 0
+Debug.Print Err.Number
+```
+
+実際：モデル11。期待はエラー6（Overflow）のため6。対照の1/0は11でよい。Windows VBScriptの補助測定でも0/0は6、1/0は11となった。
+
+期待・一次根拠：[MS-VBAL 5.6.9.3.5 / Operator](https://learn.microsoft.com/en-us/openspecs/microsoft_general_purpose_programming_languages/ms-vbal/8628f21c-3f02-42b1-908c-201bd7ffe1b5)は整数からDoubleになる0/0を6と明示する。非0/0の11や、元の左型と右Emptyに関する例外まで一律6へ変える提案ではない。\／Modの丸め後0除算へこの結果を一般化もしない。実VBA未実測。
+
+### R7-260（P2）Long変数を配列として使う静的エラーを、捕捉可能な実行時エラー13にする
+
+対象：Excel VBA。
+
+```vb
+Dim n As Long
+On Error Resume Next
+Debug.Print n(0)
+Debug.Print Err.Number
+Debug.Print "AFTER"
+```
+
+実際：モデルは13、AFTERを出して継続する。
+
+期待・一次根拠：[Microsoft Expected array](https://learn.microsoft.com/en-us/office/vba/language/reference/user-interface-help/expected-array)、[MS-VBAL 5.6.13 Index ExpressionsのStatic semantics](https://learn.microsoft.com/en-us/openspecs/microsoft_general_purpose_programming_languages/ms-vbal/551030b2-72a4-4c95-9cb0-fb8f8c8774b4)。宣言型LongはVariant／Object・既定メンバー・配列・呼出し可能な手続きのどれでもなく、この添字式は静的に無効。実行開始前に配列を要求するエラーとして止め、On Error Resume Nextで救済しない。実VBE未実測。未宣言Variantが実行時に配列でなかった場合と区別する。
+
+### R7-261（P2）LBound／UBoundの合法な第1次元指定を引数数エラー450にする
+
+対象：Excel VBA。
+
+```vb
+Dim a(1 To 3)
+Debug.Print LBound(a, 1)
+```
+
+実際：モデルは450「引数の数が一致していません」で停止。UBound(a,1)も同じ。引数1個の対照は正しく下限1／上限3を返す。
+
+期待・一次根拠：[Microsoft LBound](https://learn.microsoft.com/en-us/office/vba/language/reference/user-interface-help/lbound-function)、[UBound](https://learn.microsoft.com/en-us/office/vba/language/reference/user-interface-help/ubound-function)のdimensionは省略可能で、省略値は1。1次元配列へ1を明示する形も正しい。多次元の未対応とは別であり、未対応ならその形式を名指して停止する。450を捕捉した利用者へ「引数を減らさないとVBAとして誤り」と教えない。実VBA未実測。
+
+### R7-262（P2）Roundが大きな有限値からInfinityという正常値を作る
+
+対象：Excel VBA。
+
+```vb
+Debug.Print Round(1E+308, 2)
+```
+
+実際：モデルはエラーなしでInfinity。宣言したDouble変数を渡しても同じ。内部で10^2を掛ける途中の無限大を戻り値に流している。Windows VBScript補助実測ではDoubleの1E+308、Err=0。
+
+期待・一次根拠：[Microsoft Round](https://learn.microsoft.com/en-us/office/vba/language/reference/user-interface-help/round-function)の小数桁への丸め、[Doubleの範囲](https://learn.microsoft.com/en-us/office/vba/language/reference/user-interface-help/double-data-type)。この有限値はDouble範囲内であり、小数2桁への丸めが正常な無限大を作るべきではない。精度を扱えないなら正直に停止する。VBSとの差だけを根拠にVBA実測済みとはしていない。別途、公式Roundの掲載5例（0.12335／0.12345／0.12355／0.12365の4桁と0.00005の4桁）はモデルでも一致した。
+
+### R7-263（P3）For Eachの注意がRange型の制御変数を除外し、自身の教材と矛盾する
+
+対象：Excel VBAのFor Eachリファレンス（サイド・専用ビューとも同文）。注意は「配列はVariant、RangeはVariantまたはObject型の変数を使います」。一方、テンプレートeachは`Dim cell As Range`を使い、モデルも正常にA1:A5へ100を書き込む。
+
+再現：For Eachリファレンスの注意を読む→each教材を選び、Range型宣言を確認→実行してセルを確認する。
+
+期待・一次根拠：[Microsoft For Each...Next](https://learn.microsoft.com/en-us/office/vba/language/reference/user-interface-help/for-eachnext-statement)はcollectionのelementにVariant・generic objectだけでなく**specific object variable**も許す。Range型を有効な具体型として含め、配列のVariant限定と区別して説明する。実装を壊す指摘ではなく、正しい教材用法を注意書きが除外する文面の誤り。
+
+### R7-264（P2）InputBoxへ渡した既知の不正な文字列引数を、正常な未知の入力結果にする
+
+対象：Excel VBA。
+
+```vb
+answer = InputBox(Null)
+Debug.Print answer
+```
+
+実際：モデルはエラーなしで「InputBox の入力による」未確定文字列を返す。prompt／title／defaultの各位置へNullやArray()を渡しても同様。回答が未確定であることを、渡した引数を検証しない理由にしている。
+
+期待・一次根拠：[Microsoft InputBox](https://learn.microsoft.com/en-us/office/vba/language/reference/user-interface-help/inputbox-function)、[MS-VBAL InputBoxの各引数のデータ値](https://learn.microsoft.com/en-us/openspecs/microsoft_general_purpose_programming_languages/ms-vbal/64b763ff-9f5f-43cd-b247-c75557e51989)。prompt／title／defaultは文字列値であり、文字列として扱えない既知のNull／配列はエラーまたは明示的未対応として止める。通常の文字列で回答を未確定にする仕様はそのまま正しい。実Excel／対話VBSによるダイアログ実測は行っていない。引数個数を迂回する既報R7-35とは別の、正しい個数の既知不正値。
+
+### R7-265（P2）数値とNullのAnd／Orを一律Nullにし、確定できる結果を失う
+
+対象：Excel VBA。
+
+```vb
+Debug.Print 0 And Null
+Debug.Print 1 Or Null
+```
+
+実際：モデルはどちらもNull。期待はそれぞれ0と1。Windows VBScriptの補助実測でもIntegerの0／1で一致した。左右を逆にしても同じ差がある。False And Null／True Or NullというBooleanの対照だけはモデルにも特例があるが、数値へ一般化されていない。
+
+期待・一次根拠：[MS-VBAL And Operator](https://learn.microsoft.com/en-us/openspecs/microsoft_general_purpose_programming_languages/ms-vbal/d53142ee-9ac2-4ecf-bc24-d7167b806eb3)は0 And NullとNull And 0を0、[Or Operator](https://learn.microsoft.com/en-us/openspecs/microsoft_general_purpose_programming_languages/ms-vbal/8067b684-0a62-4860-840e-4a20abc10c02)は整数とNullのOrを整数側の値と明示する。また[Logical Operators](https://learn.microsoft.com/en-us/openspecs/microsoft_general_purpose_programming_languages/ms-vbal/2d70780d-6e99-47d6-9759-2b3a46b8e862)の非Null側のLet-coercionも必要で、"x" And Null等の型エラーをNull成功へ置き換えてはいけない。実VBA未実測。
+
+### R7-266（P2）到達しないExit For／Exit Doの構造違反を見逃し、参照例でも誤った成功になる
+
+対象：Excel VBA。
+
+```vb
+Sub Test()
+    If False Then
+        Exit For
+    End If
+    Debug.Print "AFTER"
+End Sub
+```
+
+実際：モデルは正常終了してAFTER。Exit Doへ置き換えても同じ。さらに、For Eachとは別項目の**Exit Forリファレンスの使用例**は`If i = 3 Then / Exit For / End If`だけで、外側のForがない。既定i=Emptyのモデルでは通過し「停止なし」になるが、実VBAとして独立実行可能な例ではない。
+
+期待・一次根拠：[Microsoft Exit statement](https://learn.microsoft.com/en-us/office/vba/language/reference/user-interface-help/exit-statement)はExit ForをFor／For Each内だけ、Exit DoをDo内だけに許す。実行されるかと独立して構造を検証し、実行前に停止する。参照例には必要な外側のループを含めるか、明確に部分コードと表示する。DEVELOPMENT.mdが対応参照例を自立コードとする宣言とも不一致。VBEでの実測は未実施で、公式の配置制約とモデルの成功の差として報告する。R7-257の未宣言名とは別の制御構造の静的検査不足。
+
+### 既報の補強・保留・確認済みなし
+
+**重複計上しないもの**：R7-22／100の必須・過剰・重複引数、R7-81のlength.outが有効なのにtimes=-1を先に検査する問題、R7-85のlogicalや小数の有効な件数を拒む問題、R7-157のna.rmの型・NULL・名前属性、R7-159のcatの制御引数、R7-239のcの制御引数、R7-242のCSVのオプションは今回の全位置展開でも再現した。VBAのR7-34（宣言型Len）、R7-35（Null／未知値と引数数）、R7-96（Val指数）、R7-98（Replace／IsNumericのNull）、R7-193（配列を内部Object文字列へ変換）、R7-194（文字列切出しのLong丸め・範囲）、R7-195（数値の文字列化）も追加入力で確認。Replaceの小数start／count、Roundの小数桁数の変換はVBS補助差として採取したが、Excel未実測の保留を独立確定指摘へ水増ししていない。
+
+**一次資料と補助系が揃わず保留したもの**：
+
+- VBAのIsNumeric(Boolean／Empty)、Roundの16桁以上、Unicodeの大小変換・text比較、Left等のLong最大値の細かな上限。今回VBSのIsNumeric(True／False／Empty)はTrueだったが、VBAホストで同じとは確認していない。MS-VBAL IsNumericの型リストはBooleanを含む一方でnumeric stringのOffice公式例との整合も要確認であり、Nullの既報以外へ拡張しない。
+- Array(Nothing)、IsNull(Nothing)、IsEmpty(Nothing)：モデル91に対しVBSは配列生成／False。Rangeを引数へ渡すときの既定Value評価も含め、Variant引数におけるオブジェクト保持・評価規則を実VBAで切り分ける必要がある。VBSだけから実Excel欠陥と断定していない。
+- `Abs(CInt(-32768))`／`Abs(CLng(-2147483648))`はVBSが型を拡張して返した。Absの公式「同じ型」記述だけから実VBAのオーバーフローを断定しない。型付きLenも含め、VBSとVBAを混同しないための対照として記録。
+- `-1 ^ 0`などの符号付きリテラルと累乗、String／numericの直接比較・`+`はVBScriptとVBAの規則差を含む。VBAの明示的未対応停止は合格扱いとし、VBSとの差一覧を欠陥一覧へ転記しない。
+- Rの数値NaNとNAが混じる算術の結果は公式にも処理系依存の余地がある。数値NaNとNAのJSONタグ差だけでは新規にしない。空ベクトルの型・namesの空配列対NULLも、後続で観測できる差を示せないものは単独欠陥にしていない。
+- Rの裸の最上位式をすべて自動printするかは、Rscript／REPL／sourceのどの実行表示を模すかの宣言が未確定のため、前節の保留を維持する。今回のprintの明示引数無視とは異なる。Rのdata.frame資料URLの到達性も、プロキシ拒否から不存在を断定しない。
+
+**確認済み・なし（この範囲に限定）**：
+
+- Rのループ外break／nextは実物と同じ原因を指して停止。到達しないbreak、ループ内break／next、repeat、通常のif／elseの既知条件は今回の対照で同じ値・分岐。VBAの通常のFor／Exit For、For Each Array、Do／Exit Do、Select Case、If Nullの対照は期待の値・出力になった。
+- R23実装関数とVBA27呼出し名＋10裸組込みに、新たな「実装済みだが項目も除外宣言もない名前」は**確認済み・なし**。参照があっても使用中リンクが落ちるR7-247や、任意引数・説明が誤る新規指摘は別に保持する。
+- R5／VBA14用語の定義に今回新規の誤り・両ビュー間の文面矛盾は**確認済み・なし**。教材で前提となる「添字」の欠落は既報R7-56を維持。全ての概念が収載されたとの合格宣言ではない。
+- 両種類の全14既定テンプレートの主張・実行結果に今回新規の差は**確認済み・なし**。VBAの82対応参照例は全件がモデルの結果を返し、予期しない停止0。ただし、これだけではVBAとして自立・合法とは言えず、Exit Forの例の静的違反をR7-266として確認した。参照専用8例の未対応停止は対応宣言と分けた。R44参照例の実行と文面照合も前節と今回の134表示比較を併用する。
+- 16表示の横はみ出し・可視フォームのラベル欠落・ページ例外、参照134組／用語19組のビュー文面差は**確認済み・なし**。スクリーンリーダー・実Windowsのフォーカス順・全ズームの実測済みという意味ではない。
+
+### 最終状態：実施済み・対象外・環境制約
+
+| 区分 | 最終の扱い |
+|---|---|
+| Rの深掘り | 公式資料・実Rの両OS差分・全23関数の境界／引数集合・属性／添字・出力／原因・全44参照／6教材／5用語・両ビューを追加確認し、結果と保留を報告。本依頼の残作業として終了 |
+| VBAの深掘り | 公式90原文・27呼出し名／10裸組込み・全90参照／8教材／14用語・2,465モデルケース・VBS補助2,145式・両ビュー・停止原因と上限を確認。本依頼の残作業として終了。実Excel互換性の全面実測は未実施 |
+| C／C++／C#の残る深掘り | **ユーザー指示により対象外** |
+| 最後の全15種類の横断照合 | **ユーザー指示により対象外**。104教材・978参照・111用語・保存／下書き／テンプレート切替の最終横断再試験を含む |
+| R／VBA以外の全種類のその他残件 | **ユーザー指示により対象外**。過去節の各未了項目・実製品との追加比較・全引数／全分岐／全エラーメッセージの追加展開を継続しない |
+| その他の共通基盤の残件 | **ユーザー指示により対象外**。最後の破損データ全形・実容量枯渇／救出・世代混在キャッシュ・オフライン移行・全aria／フォーカス／日本語全表面・全エンジン最重入力の追加網羅を含む。過去節の実施記録と確定指摘は保持 |
+| 実Excel VBAホスト | 環境にExcel／VBEがなく**実施不能**。文書との不一致は報告したが、VBS・.NET VBで実VBA実測済みとはしない |
+| 実Windowsブラウザー・支援技術 | Windows CIはシェル／Nodeであり、Excel UI、Windowsブラウザー描画、スクリーンリーダー・実機のフォーカスは未測定。Linux Chromiumの表示・ラベル確認と区別 |
+| 一次情報のアクセス制約 | R資料の一部への直接HTTPはプロキシCONNECT拒否。公式Web取得と実Rを利用し、到達性だけの保留を欠陥なし・404へ変換しない |
+| 修正・収束判定 | 監査のみ。266件は固定対象への指摘累計で、未修正の現在main欠陥数でもMuseとの重複除外数でもない。修正後の合格・両監査の収束は宣言しない |
+
+以上を最終版としてmainへ1回にまとめて配信する。終了理由はユーザーの範囲変更に基づく監査・報告の完了であり、使用量制限による打切りや、当初の全15種類・観点1〜8の無条件合格ではない。
