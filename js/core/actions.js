@@ -105,11 +105,21 @@ export function valueExpression(value, dialect = "js") {
     return parseExpression(value.slice(1, -1), dialect);
   return { k: "literal", value, line: 1 };
 }
-export function interpolate(text, s) {
+// R7-121（修正バッチ13・fxb班）: UI.Vision のように変数名の大小文字を
+// 区別しない種類向けに、caseInsensitive オプションを用意する。指定が
+// 無い種類では従来どおり完全一致で解決し、挙動は変わらない。表示上の
+// キー（最初に書かれた綴り）は保持し、参照側の綴り違いだけを吸収する。
+export function resolveVarKey(vars, key, caseInsensitive) {
+  if (Object.hasOwn(vars, key)) return key;
+  if (!caseInsensitive) return undefined;
+  const upper = String(key).toUpperCase();
+  return Object.keys(vars).find((k) => k.toUpperCase() === upper);
+}
+export function interpolate(text, s, options = {}) {
   if (typeof text !== "string") return text;
   let unknownValue;
   let value = text.replace(/\$\{([^}]+)\}|%([A-Za-z_]\w*)%/g, (_, a, b) => {
-    let key = a || b;
+    let key = resolveVarKey(s.vars, a || b, options.caseInsensitive) ?? (a || b);
     if (!Object.hasOwn(s.vars, key)) {
       if (b && (key === "True" || key === "False")) return key;
       throw new PracticeError("変数がありません：" + key);
@@ -125,19 +135,21 @@ export function interpolate(text, s) {
     ? { ...unknownValue, source: "変数を展開した文字列による" }
     : value;
 }
-export function uiCondition(text, s, api) {
+export function uiCondition(text, s, api, options = {}) {
   if (typeof text === "boolean") return text;
   if (typeof text !== "string")
     throw new PracticeError("条件は式で指定してください");
   let vars = {};
   let put = (key, percentStyle, asString) => {
-    if (!Object.hasOwn(s.vars, key)) {
+    // R7-121: caseInsensitive 指定時は綴り違いのキーを解決してから読む。
+    let resolved = resolveVarKey(s.vars, key, options.caseInsensitive);
+    if (resolved === undefined) {
       if (percentStyle && (key === "True" || key === "False"))
         return key === "True" ? "true" : "false";
       throw new PracticeError("変数がありません：" + key);
     }
     let id = "__condition_" + Object.keys(vars).length;
-    let v = s.vars[key];
+    let v = s.vars[resolved];
     vars[id] =
       !asString &&
       typeof v === "string" &&

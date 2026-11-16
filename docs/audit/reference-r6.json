@@ -458,7 +458,7 @@
  {
   "kind": "powershell",
   "name": "Set-Content",
-  "description": "仮想ファイルの内容を置き換えます。モデルはUTF-8・Windowsの改行を使用します。別名scでも同じ処理をします。構文行の基本形のほかに、末尾の改行を付けない-NoNewlineも実装されています。書き込み先が予約デバイス名の場合、NULは内容を破棄してファイルを作らず、CON／CONOUT$は画面へ出力し、それ以外のデバイスは名前を挙げて停止します。",
+  "description": "仮想ファイルの内容を置き換えます。モデルはUTF-8・Windowsの改行を使用します。構文行の基本形のほかに、末尾の改行を付けない-NoNewlineも実装されています。書き込み先が予約デバイス名の場合、NULは内容を破棄してファイルを作らず、CON／CONOUT$は画面へ出力し、それ以外のデバイスは名前を挙げて停止します。",
   "returns": "成功ストリームへの出力なし",
   "caution": "仮想FS・明示モデル内の対応部分集合です。実プロセス・実ファイル・実ホストには接続しません。",
   "example": "Set-Content out.txt -Value \"Hello\"\nGet-Content out.txt",
@@ -494,7 +494,7 @@
  {
   "kind": "powershell",
   "name": "Remove-Item",
-  "description": "モデルからファイル・フォルダを削除します。別名ri・rmでも同じ処理をします。フォルダとその中身をまとめて削除する-Recurse、確認なしで削除する-Forceも実装されています。",
+  "description": "モデルからファイル・フォルダを削除します。別名ri・rmでも同じ処理をします。フォルダとその中身をまとめて削除する-Recurse、隠し項目・読み取り専用項目の削除も許可する-Forceも実装されています（-Forceは確認そのものを省略するものではありません）。",
   "returns": "成功ストリームへの出力なし",
   "caution": "仮想FS・明示モデル内の対応部分集合です。実プロセス・実ファイル・実ホストには接続しません。",
   "example": "New-Item temp.txt -ItemType File\nRemove-Item temp.txt",

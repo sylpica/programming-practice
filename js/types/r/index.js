@@ -48,6 +48,108 @@ const NA = { kind: "NA" },
     if (names) arr.names = [...names];
     return arr;
   };
+// B13-R（R7-241）：R の as.character による数値→文字列変換。公式
+// ?character／?double は「15有効桁」と明記する。JS の String() は
+// 1e20 を全桁展開し、Inf を "Infinity" にするため使えない。指数部は
+// 2桁ゼロ詰め（"1e+20"／"1e-07"）。科学表記への切替は、10進指数が
+// -4 未満または有効桁数以上のとき（R の format と同じ規則）。
+const formatRNum = (v, sig = 15) => {
+  if (Number.isNaN(v)) return "NaN";
+  if (v === Infinity) return "Inf";
+  if (v === -Infinity) return "-Inf";
+  if (v === 0) return "0";
+  const expForm = v.toExponential(sig - 1);
+  const m = /^([+-]?)(\d)(?:\.(\d*))?e([+-]\d+)$/.exec(expForm);
+  if (!m) return String(v);
+  const sign = m[1] === "-" ? "-" : "",
+    digits = (m[2] + (m[3] || "")).replace(/0+$/, "") || "0",
+    exp = parseInt(m[4], 10);
+  if (exp < -4 || exp >= sig) {
+    const mant = digits.length === 1 ? digits : digits[0] + "." + digits.slice(1);
+    return sign + mant + "e" + (exp < 0 ? "-" : "+") + String(Math.abs(exp)).padStart(2, "0");
+  }
+  // 固定表記：有効桁 sig 桁をそのまま10進文字列にする。
+  let out;
+  if (exp >= 0) {
+    if (digits.length > exp + 1)
+      out = digits.slice(0, exp + 1) + "." + digits.slice(exp + 1);
+    else out = digits + "0".repeat(exp + 1 - digits.length);
+  } else out = "0." + "0".repeat(-exp - 1) + digits;
+  return sign + out;
+};
+// B13-R（R7-156）：sum の補償加算（Neumaier）。実 R の sum は拡張精度で
+// 蓄積するため 1e16 + 1 - 1e16 が 1 になる（Codex の Linux x64 実測。
+// プラットフォーム依存を含む形として扱う）。素の左結合加算は相殺で
+// 1 を失う。
+const compensatedSum = (nums) => {
+  let sum = 0,
+    c = 0;
+  for (const x of nums) {
+    const t = sum + x;
+    if (Number.isFinite(t)) {
+      if (Math.abs(sum) >= Math.abs(x)) c += sum - t + x;
+      else c += x - t + sum;
+    }
+    sum = t;
+  }
+  return sum + c;
+};
+// B13-R（R7-156）：平均。通常は補償合計÷個数（実 R が拡張精度の合計を
+// 割る挙動と一致し、通常値では素の合計÷個数とビット一致する）。有限値
+// だけから合計が溢れる場合（mean(c(1e308, 1e308))）のみ増分法へ
+// フォールバックして Inf 化を避ける。増分法を常時使うと通常値の末尾
+// 桁が実 R とずれる（70/3 等）ため主経路にはしない。
+const stableMean = (nums) => {
+  const total = compensatedSum(nums);
+  if (Number.isFinite(total)) return total / nums.length;
+  if (nums.every((x) => Number.isFinite(x))) {
+    let m = 0;
+    nums.forEach((x, i) => {
+      m += (x - m) / (i + 1);
+    });
+    return m;
+  }
+  return total / nums.length;
+};
+// B13-R（R7-249）：print の digits／quote を適用した表示。指定が無ければ
+// 通常の show と同一。digits は有効桁数、quote=FALSE は文字列の引用符を
+// 外す（print.default の規則）。
+const showFormatted = (v, opts) => {
+  if (!opts || (opts.digits === undefined && opts.quote !== false))
+    return show(v);
+  if (isNA(v)) return "NA";
+  if (v === null) return "NULL";
+  if (Array.isArray(v))
+    return (
+      "c(" +
+      v
+        .map((el, i) => {
+          const nm = v.names?.[i];
+          return (nm ? nm + " = " : "") + showFormatted(el, opts);
+        })
+        .join(", ") +
+      ")"
+    );
+  if (v?.kind === "data.frame")
+    return Object.keys(v.columns).length
+      ? Object.entries(v.columns)
+          .map(([k, col]) => k + ": " + showFormatted(col, opts))
+          .join("\n")
+      : `data frame with 0 columns and ${dfNrow(v)} rows`;
+  if (typeof v === "boolean") return v ? "TRUE" : "FALSE";
+  if (typeof v === "string") return opts.quote === false ? v : JSON.stringify(v);
+  if (typeof v === "number")
+    return opts.digits !== undefined
+      ? formatRNum(v, opts.digits)
+      : Number.isNaN(v)
+        ? "NaN"
+        : v === Infinity
+          ? "Inf"
+          : v === -Infinity
+            ? "-Inf"
+            : String(v);
+  return formatValue(v);
+};
 const show = (v) =>
   isNA(v)
     ? "NA"
@@ -228,6 +330,12 @@ function parseCsvText(text, opts = {}) {
   const finalNames = colNames.map((n) => (checkNames ? makeName(n, seen) : n));
   const columns = {};
   for (let c = 0; c < width; c++) {
+    // B13-R（R7-242）：colClasses の列ごとの強制（長さ1は全列へ再利用、
+    // "NULL" の列は読み飛ばす。?read.table の colClasses 規則）。
+    const forced = Array.isArray(opts.colClasses) && opts.colClasses.length
+      ? String(opts.colClasses[c % opts.colClasses.length])
+      : undefined;
+    if (forced === "NULL") continue;
     const cells = padded.map((r) => r[c]),
       trimmed = cells.map((f) => f.value.trim()),
       isMiss = trimmed.map((t) => t === "" || naStrings.has(t)),
@@ -245,7 +353,11 @@ function parseCsvText(text, opts = {}) {
       return Number(norm);
     };
     let kind = "character";
-    if (!present.length) kind = "logical";
+    if (forced === "character") kind = "character";
+    else if (forced === "logical") kind = "logical";
+    else if (forced === "integer") kind = "integer";
+    else if (forced === "numeric" || forced === "double") kind = "numeric";
+    else if (!present.length) kind = "logical";
     else if (present.every((t) => Object.hasOwn(LOGICALS, t))) kind = "logical";
     else if (
       present.every(
@@ -260,9 +372,10 @@ function parseCsvText(text, opts = {}) {
     columns[finalNames[c]] = cells.map((f, i) => {
       if (kind === "character") return naStrings.has(f.value) ? NA : f.value;
       if (isMiss[i]) return NA;
-      if (kind === "logical") return LOGICALS[trimmed[i]];
+      if (kind === "logical") return LOGICALS[trimmed[i]] ?? NA;
       if (trimmed[i] === "NaN" && kind === "numeric") return NaN;
-      return numericText(trimmed[i]);
+      const nv = numericText(trimmed[i]);
+      return nv === null ? NA : kind === "integer" ? Math.trunc(nv) : nv;
     });
   }
   const df = { kind: "data.frame", columns };
@@ -617,7 +730,9 @@ function coerce(values) {
           ? v
             ? "TRUE"
             : "FALSE"
-          : String(v),
+          : typeof v === "number"
+            ? formatRNum(v)
+            : String(v),
     );
   if (values.some((v) => typeof v === "number"))
     return values.map((v) => (isNA(v) ? NA : Number(v)));
@@ -672,7 +787,9 @@ function subset(values, index) {
       } else if (typeof idx === "string") {
         const at = srcNames ? srcNames.indexOf(idx) : -1;
         out.push(at >= 0 ? values[at] : NA);
-        outNames.push(idx);
+        // B13-R（R7-236）：一致しない名前添字の結果の名前は NA であり、
+        // 指定した名前を捏造しない（?Extract の名前添字の規則）。
+        outNames.push(at >= 0 ? idx : null);
       } else if (typeof idx === "number" && idx > 0) {
         out.push(values[idx - 1] ?? NA);
         outNames.push(srcNames?.[idx - 1] ?? null);
@@ -819,6 +936,10 @@ export const definition = {
   ],
   glossary: [
     ["ベクトル", "同じ基本型の値を順に並べたオブジェクトです。"],
+    [
+      "添字",
+      "ベクトルやデータフレームの要素の位置を指定する番号や条件です。Rでは1から始まり、負の数はその位置の要素の除外を表します。",
+    ],
     ["データフレーム", "同じ行数の列をまとめた表です。"],
     ["NA", "欠損値。FALSEでも実行時の未確定値でもありません。"],
     ["リサイクル", "長さの短いベクトルを繰り返して演算に用いる規則です。"],
@@ -861,7 +982,26 @@ export const definition = {
       },
     ],
   },
-  scan: (code) => scanScript(code, reference, "r"),
+  // B13-R（R7-247）：共有 scanScript は識別子トークンしか照合しないため、
+  // 演算子・添字の参照項目（%%／%/%／:／[／[[／$／%in%）が「使用中の
+  // 項目」に解決されなかった。R 側でトークンを補完する（演算子トークン
+  // は k を持たず、文字列リテラル中の同形文字列と区別できる）。
+  scan: (code) => {
+    const found = scanScript(code, reference, "r");
+    try {
+      const OPS = ["%%", "%/%", "%in%", ":", "[[", "[", "$"];
+      const present = new Set(
+        tokenize(code, "r")
+          .filter((t) => !t.k && OPS.includes(t.v))
+          .map((t) => t.v),
+      );
+      for (const op of OPS)
+        if (present.has(op) && !found.includes(op)) found.push(op);
+    } catch {
+      // トークナイズできないコードでは scanScript の結果をそのまま返す。
+    }
+    return found;
+  },
   async simulate(code, model, limits) {
     // R31-N13（script系モデル分）：モデル形状の入口検証。モデル自体が
     // オブジェクトでない場合はモデルを、variables／files の型違いは
@@ -1028,6 +1168,9 @@ export const definition = {
           if (a.k === "var" && a.name === "Inf")
             return { handled: true, value: Infinity };
           if (a.k === "member") {
+            // B13-R（R7-247）：$ は参照項目として trace refs へ登録する
+            // （共有基盤の pendingRefs 経路。JS 種の member 参照と同方式）。
+            (s.pendingRefs ??= []).push("$");
             let x = api.read(a.target, s);
             if (isUnknown(x)) return null;
             // R27-N25（読み取り側）：$ が有効なのは再帰的オブジェクト
@@ -1064,6 +1207,8 @@ export const definition = {
             }
           }
           if (a.k === "index") {
+            // B13-R（R7-247）：[ / [[ も参照項目として trace refs へ登録。
+            (s.pendingRefs ??= []).push(a.double ? "[[" : "[");
             let x = api.read(a.target, s),
               indexes = a.indexes.map((i) => (i ? api.read(i, s) : undefined));
             if (isUnknown(x) || indexes.some(isUnknown))
@@ -1081,89 +1226,185 @@ export const definition = {
             }
             if (!a.double && x?.kind !== "data.frame" && indexes.length > 1)
               api.fail("incorrect number of dimensions", a);
+            // B13-R（R7-232／237／243）：[[ の単一要素抽出（小数添字は
+            // 切り捨て、負添字は末尾から数える。?Extract）。ベクトルへの
+            // [[ に長さ2以上の添字ベクトルを渡すと実 R は
+            // "attempt to select more than one element" で停止し、
+            // データフレームでは再帰的に選択する。
+            const extractSingle = (arr, key) => {
+              if (typeof key === "string") {
+                const at = namesOf(arr) ? namesOf(arr).indexOf(key) : -1;
+                if (at < 0) api.fail("subscript out of bounds", a);
+                return arr[at];
+              }
+              if (typeof key === "boolean") key = Number(key);
+              if (typeof key !== "number" || isNA(key) || Number.isNaN(key))
+                api.fail("subscript out of bounds", a);
+              const i = Math.trunc(key);
+              if (i === 0) api.fail("subscript out of bounds", a);
+              const pos = i > 0 ? i : arr.length + i + 1;
+              if (pos < 1 || pos > arr.length)
+                api.fail("subscript out of bounds", a);
+              return arr[pos - 1];
+            };
+            // B13-R（R7-237）：行数の正本を行名として実体化する。列が
+            // 0本になる選択でも行数が残る（実 R の row.names 属性相当）。
+            const effectiveRowNames = (df) =>
+              Array.isArray(df.rowNames)
+                ? [...df.rowNames]
+                : Array.from({ length: dfNrow(df) }, (_, i) => String(i + 1));
+            // B13-R（R7-243）：データフレームの列選択。logical 添字は
+            // 列数へ再利用され、負添字は除外、0 は無視される
+            // （?Extract の列添字規則）。従来は TRUE を数値 1 とみなし
+            // 先頭列しか選ばず、FALSE／負／0 混在を一律エラーにしていた。
+            const selectColKeys = (keys, idxVal) => {
+              if (idxVal === undefined) return keys;
+              if (idxVal === null) return [];
+              const els = vec(idxVal);
+              if (els.some((e) => typeof e === "string"))
+                return els.map((e) => {
+                  if (typeof e === "string") {
+                    if (!keys.includes(e))
+                      api.fail("undefined columns selected", a);
+                    return e;
+                  }
+                  if (typeof e === "number" || typeof e === "boolean") {
+                    const k = keys[Math.trunc(Number(e)) - 1];
+                    if (!k) api.fail("undefined columns selected", a);
+                    return k;
+                  }
+                  api.fail("undefined columns selected", a);
+                });
+              if (
+                els.length &&
+                els.every((e) => typeof e === "boolean" || isNA(e))
+              ) {
+                const out = [];
+                for (let i = 0; i < keys.length; i++) {
+                  const f = els[i % els.length];
+                  if (isNA(f)) api.fail("undefined columns selected", a);
+                  if (f) out.push(keys[i]);
+                }
+                if (
+                  els.length > keys.length &&
+                  els.slice(keys.length).some((f) => f === true)
+                )
+                  api.fail("undefined columns selected", a);
+                return out;
+              }
+              if (els.some((e) => isNA(e) || isNaNVal(e)))
+                api.fail("undefined columns selected", a);
+              const nums = els.map((e) => Math.trunc(Number(e)));
+              const pos = nums.some((n) => n > 0),
+                neg = nums.some((n) => n < 0);
+              if (pos && neg)
+                api.fail("only 0 may be mixed with negative subscripts", a);
+              if (neg) {
+                const omit = new Set(nums.filter((n) => n < 0).map((n) => -n));
+                return keys.filter((_, i) => !omit.has(i + 1));
+              }
+              const out = [];
+              for (const n of nums) {
+                if (n === 0) continue;
+                const k = keys[n - 1];
+                if (!k) api.fail("undefined columns selected", a);
+                out.push(k);
+              }
+              return out;
+            };
+            // 列キーの並びを列オブジェクトへ変換する（重複選択は
+            // [.data.frame どおり make.unique 相当で一意化する）。
+            const colsObject = (keys, pick) => {
+              const seen = new Map(),
+                entries = [];
+              for (const k of keys) {
+                let name = k;
+                if (seen.has(k)) {
+                  let s = seen.get(k) + 1;
+                  name = k + "." + s;
+                  while (entries.some(([n]) => n === name)) name = k + "." + ++s;
+                  seen.set(k, s);
+                } else seen.set(k, 0);
+                entries.push([name, pick(k)]);
+              }
+              return Object.fromEntries(entries);
+            };
             if (x?.kind === "data.frame") {
               // RG-47: [[ selects a single column as a vector, not a data.frame.
               if (a.double) {
                 if (indexes.length !== 1)
                   api.fail("subscript out of bounds", a);
-                const key0 = vec(indexes[0])[0];
-                const key =
-                  typeof key0 === "string"
-                    ? key0
-                    : typeof key0 === "number" &&
-                        Number.isInteger(key0)
-                      ? Object.keys(x.columns)[key0 - 1]
-                      : undefined;
-                if (key === undefined || !Object.hasOwn(x.columns, key))
-                  api.fail("subscript out of bounds", a);
-                return { handled: true, value: x.columns[key] };
+                // B13-R（R7-232）：添字ベクトルは再帰選択する。
+                const idxVec = indexes[0] === null ? [] : vec(indexes[0]);
+                if (!idxVec.length) api.fail("subscript out of bounds", a);
+                let cur = x;
+                for (const key of idxVec) {
+                  if (cur?.kind === "data.frame") {
+                    const colKey =
+                      typeof key === "string"
+                        ? Object.hasOwn(cur.columns, key)
+                          ? key
+                          : undefined
+                        : typeof key === "number" || typeof key === "boolean"
+                          ? Object.keys(cur.columns)[Math.trunc(Number(key)) - 1]
+                          : undefined;
+                    if (colKey === undefined)
+                      api.fail("subscript out of bounds", a);
+                    cur = cur.columns[colKey];
+                  } else if (Array.isArray(cur)) cur = extractSingle(cur, key);
+                  else api.fail("subscript out of bounds", a);
+                }
+                return { handled: true, value: cur };
               }
               if (indexes.length === 1) {
-                let cols =
-                  indexes[0] === undefined
-                    ? Object.keys(x.columns)
-                    : indexes[0] === null ? [] : vec(indexes[0]).map((i) =>
-                        typeof i === "string"
-                          ? i
-                          : Object.keys(x.columns)[i - 1],
-                      );
+                const cols = selectColKeys(
+                  Object.keys(x.columns),
+                  indexes[0],
+                );
                 return {
                   handled: true,
                   value: {
                     kind: "data.frame",
-                    columns: Object.fromEntries(
-                      cols.map((k) => {
-                        if (!Object.hasOwn(x.columns, k))
-                          api.fail("undefined columns selected", a);
-                        return [k, x.columns[k]];
-                      }),
-                    ),
-                    // R28-N17：列の選択では行数は不変。rowNames（行数の
-                    // 正本）を引き継ぎ、0列選択でも行数が残るようにする。
-                    ...(x.rowNames ? { rowNames: x.rowNames } : {}),
+                    columns: colsObject(cols, (k) => x.columns[k]),
+                    // R28-N17＋B13-R（R7-237）：行名を実体化して引き継ぎ、
+                    // 0列選択でも行数が残るようにする。
+                    rowNames: effectiveRowNames(x),
                   },
                 };
               }
               let colKeys =
                 indexes[1] === undefined
                   ? Object.keys(x.columns)
-                  : indexes[1] === null ? [] : vec(indexes[1]).map((i) =>
-                      typeof i === "string" ? i : Object.keys(x.columns)[i - 1],
-                    );
-              let cols = Object.fromEntries(
-                colKeys.map((k) => {
-                  if (!x.columns[k]) api.fail("undefined columns selected", a);
-                  return [k, subset(x.columns[k], indexes[0])];
-                }),
+                  : selectColKeys(Object.keys(x.columns), indexes[1]);
+              let cols = colsObject(colKeys, (k) =>
+                subset(x.columns[k], indexes[0]),
               );
-              // R28-N17：行の選択では rowNames も同じ添字で選択し、行数の
-              // 正本が結果の行数と一致し続けるようにする。
-              const subRowNames = x.rowNames
-                ? [...subset(x.rowNames, indexes[0])]
-                : undefined;
+              // R28-N17：行の選択では rowNames も同じ添字で選択する。
+              // B13-R（R7-237）：2添字形の0列選択でも行数を保持する。
+              const subRowNames = [
+                ...subset(effectiveRowNames(x), indexes[0]),
+              ];
               return {
                 handled: true,
                 value:
                   colKeys.length === 1
-                    ? cols[colKeys[0]]
+                    ? cols[Object.keys(cols)[0]]
                     : {
                         kind: "data.frame",
                         columns: cols,
-                        ...(subRowNames ? { rowNames: subRowNames } : {}),
+                        rowNames: subRowNames,
                       },
               };
             }
             if (a.double) {
-              const first = vec(indexes[0])[0];
-              if (typeof first === "string") {
-                const at = namesOf(x) ? namesOf(x).indexOf(first) : -1;
-                if (at < 0) api.fail("subscript out of bounds", a);
-                return { handled: true, value: vec(x)[at] };
-              }
-              let i = Number(first);
-              if (!Number.isInteger(i) || i < 1 || i > vec(x).length)
-                api.fail("subscript out of bounds", a);
-              return { handled: true, value: vec(x)[i - 1] };
+              const idxVec = indexes[0] === null ? [] : vec(indexes[0]);
+              if (!idxVec.length) api.fail("subscript out of bounds", a);
+              if (idxVec.length > 1)
+                api.fail(
+                  "attempt to select more than one element in vectorIndex",
+                  a,
+                );
+              return { handled: true, value: extractSingle(vec(x), idxVec[0]) };
             }
             return { handled: true, value: subset(vec(x), indexes[0]) };
           }
@@ -1198,8 +1439,24 @@ export const definition = {
               // R28-N17：行数は dfNrow（rowNames 優先）で数える。0列でも
               // 行数が残っていればそれが正本になり、行数不一致の列追加が
               // 通らなくなる。0行×0列のときだけ追加する列が行数を決める。
-              let n = dfNrow(target) || vec(v).length,
+              // B13-R（R7-246）：行数が確定している0行表は「未設定」と
+              // 混同しない。0行への列代入は実 R どおり
+              // "replacement has N row(s), data has 0" で停止する。
+              const hasRowInfo =
+                Array.isArray(target.rowNames) ||
+                Object.keys(target.columns).length > 0;
+              let n = hasRowInfo ? dfNrow(target) : vec(v).length,
                 values = vec(v);
+              if (n === 0 && hasRowInfo) {
+                if (!values.length) {
+                  target.columns[a.name] = [];
+                  return true;
+                }
+                api.fail(
+                  `replacement has ${values.length} row${values.length === 1 ? "" : "s"}, data has 0`,
+                  node,
+                );
+              }
               if (!values.length || n % values.length)
                 api.fail("replacement has incompatible rows", node);
               target.columns[a.name] = Array.from({ length: n }, (_, i) =>
@@ -1269,22 +1526,87 @@ export const definition = {
             if (a.indexes.length > 1)
               api.fail("incorrect number of dimensions", node);
             let idx = vec(api.read(a.indexes[0], s));
-            if (
-              !Array.isArray(target) ||
-              idx.some((i) => !Number.isInteger(i) || i < 1)
-            )
+            if (idx.some((i) => !Number.isInteger(i) || i < 1))
               api.fail("この添字代入は未対応です", node);
             let values = vec(v);
             if (!values.length) api.fail("replacement has length zero", node);
+            // B13-R（R7-234）：要素代入はベクトル全体を共通型へ変換する
+            // （型階層 logical < numeric < character。?Extract の代入
+            // 意味論）。従来は代入した要素だけが新しい型になり、型の
+            // 混在した不正なベクトルが残っていた。あわせて、名前付き
+            // ベクトルの拡張では新しい位置の名前を "" で埋めて名前の
+            // 長さを値と一致させ、置換長の余りは警告として記録する。
+            const rankOf = (el) =>
+              isNA(el) || el === null
+                ? 0
+                : typeof el === "string"
+                  ? 3
+                  : typeof el === "number"
+                    ? 2
+                    : 1;
+            const convertTo = (el, rank) => {
+              if (isNA(el) || el === null) return el;
+              if (rank === 3)
+                return typeof el === "boolean"
+                  ? el
+                    ? "TRUE"
+                    : "FALSE"
+                  : typeof el === "number"
+                    ? formatRNum(el)
+                    : el;
+              if (rank === 2)
+                return typeof el === "boolean" ? Number(el) : el;
+              return el;
+            };
+            if (!Array.isArray(target)) {
+              // 長さ1のスカラーへの [1] 代入は値そのものの置換として扱う。
+              if (
+                target === null ||
+                target === undefined ||
+                (typeof target === "object" && !isNA(target)) ||
+                idx.length !== 1 ||
+                idx[0] !== 1 ||
+                a.target.k !== "var"
+              )
+                api.fail("この添字代入は未対応です", node);
+              const rank = Math.max(rankOf(target), ...values.map(rankOf));
+              s.vars[a.target.name] = convertTo(values[0], rank);
+              return true;
+            }
+            if (idx.length % values.length)
+              api.note(
+                s,
+                node,
+                "number of items to replace is not a multiple of replacement length",
+                "warning",
+              );
+            const rank = Math.max(
+              0,
+              ...target.map(rankOf),
+              ...values.map(rankOf),
+            );
+            for (let i = 0; i < target.length; i++)
+              target[i] = convertTo(target[i], rank);
+            const convValues = values.map((el) => convertTo(el, rank));
+            let namesArr = namesOf(target) ? [...namesOf(target)] : null;
+            if (namesArr)
+              while (namesArr.length < target.length) namesArr.push("");
             idx.forEach((index, j) => {
-              while (target.length < index) target.push(NA);
-              target[index - 1] = values[j % values.length];
+              while (target.length < index) {
+                target.push(NA);
+                if (namesArr) namesArr.push("");
+              }
+              target[index - 1] = convValues[j % convValues.length];
             });
+            if (namesArr) target.names = namesArr;
             return true;
           }
           return false;
         },
         binary(op, a, b, node, s, api) {
+          // B13-R（R7-247）：演算子も参照項目として trace refs へ登録する。
+          if (["%%", "%/%", ":", "%in%"].includes(op))
+            (s.pendingRefs ??= []).push(op);
           if (isUnknown(a) || isUnknown(b)) return baseBinary(op, a, b, "r");
           // RG-70（R19-N6）：データフレームへの二項演算は列ごとの要素演算として
           // 評価する。レコード（リスト相当）への演算は実 R どおりエラーにし、
@@ -1386,22 +1708,44 @@ export const definition = {
             if (!x.length) return [];
             const asText = [...x, ...y].some((v) => typeof v === "string");
             const key = (v) => {
-              if (isMissing(v)) return "\u0000missing";
+              // B13-R（R7-28）：match では NA と NaN は別物として照合する
+              // （公式 ?match：NA は NA に、NaN は NaN に一致し、相互には
+              // 一致しない）。従来は同じ欠損キーに潰していた。
+              if (isNA(v)) return "\u0000NA";
+              if (isNaNVal(v)) return "\u0000NaN";
               if (asText)
                 return typeof v === "boolean"
                   ? v
                     ? "TRUE"
                     : "FALSE"
-                  : String(v);
+                  : typeof v === "number"
+                    ? formatRNum(v)
+                    : String(v);
               return typeof v === "boolean" ? Number(v) : v;
             };
             const table = y.map(key);
-            return withNames(
-              x.map((u) => table.includes(key(u))),
-              namesOf(a),
-            );
+            // B13-R（R7-153）：%in% の結果は名前を持たない（?match）。
+            return x.map((u) => table.includes(key(u)));
           }
-          if (!x.length || !y.length) return [];
+          if (!x.length || !y.length) {
+            // B13-R（R7-253）：長さ0の相手でも、他方が型エラーになる
+            // 場合は実 R どおり停止する。長さ0を理由に型検証を省略しない。
+            const other = x.length ? x : y;
+            if (
+              ["+", "-", "*", "/", "^", "%%", "%/%"].includes(op) &&
+              other.some((v) => typeof v === "string")
+            )
+              api.fail("non-numeric argument to binary operator", node);
+            if (
+              (op === "&" || op === "|") &&
+              other.some((v) => typeof v === "string")
+            )
+              api.fail(
+                "operations are possible only for numeric, logical or complex types",
+                node,
+              );
+            return [];
+          }
           let length = Math.max(x.length, y.length);
           if (length % Math.min(x.length, y.length))
             api.note(
@@ -1428,7 +1772,15 @@ export const definition = {
                 "operations are possible only for numeric, logical or complex types",
                 node,
               );
-            if (op === "^" && (u === 1 || v === 0)) return 1;
+            // B13-R（R7-254）：^ の恒等形（1 ^ y = 1、x ^ 0 = 1）は
+            // logical の底・指数を数値化してから判定する。TRUE ^ NA は
+            // 欠損伝播より先に 1 になる（公式 ?Arithmetic の例外規則）。
+            if (
+              op === "^" &&
+              ((typeof u === "boolean" ? Number(u) : u) === 1 ||
+                (typeof v === "boolean" ? Number(v) : v) === 0)
+            )
+              return 1;
             // RG-45: NaN is treated as missing for comparisons and logic.
             if (
               (op === "&" || op === "|") &&
@@ -1462,8 +1814,16 @@ export const definition = {
             if (
               ["==", "!=", "<", ">", "<=", ">="].includes(op) &&
               (isMissing(u) || isMissing(v))
-            )
-              return NA;
+            ) {
+              // B13-R（R7-255）：相手が character のときは NaN も
+              // character へ変換してから比較する（NaN == "1" は
+              // "NaN" == "1" で FALSE）。NA（logical）との比較は
+              // 従来どおり NA のまま。
+              const nanVsChar =
+                (isNaNVal(u) && typeof v === "string") ||
+                (isNaNVal(v) && typeof u === "string");
+              if (!nanVsChar) return NA;
+            }
             if (isNA(u) || isNA(v)) return NA;
             if (["+", "-", "*", "/", "^", "%%", "%/%"].includes(op)) {
               if (typeof u === "string" || typeof v === "string")
@@ -1473,8 +1833,18 @@ export const definition = {
             if (op === "&") return Boolean(u && v);
             if (op === "|") return Boolean(u || v);
             if (typeof u === "string" || typeof v === "string") {
-              u = typeof u === "boolean" ? (u ? "TRUE" : "FALSE") : String(u);
-              v = typeof v === "boolean" ? (v ? "TRUE" : "FALSE") : String(v);
+              // B13-R（R7-241／255）：character への共通型変換でも数値は
+              // R 表記にする（Inf を "Infinity" にしない、NaN は "NaN"）。
+              const toChar = (w) =>
+                typeof w === "boolean"
+                  ? w
+                    ? "TRUE"
+                    : "FALSE"
+                  : typeof w === "number"
+                    ? formatRNum(w)
+                    : String(w);
+              u = toChar(u);
+              v = toChar(v);
             }
             return baseBinary(op, u, v, "r");
           });
@@ -1500,11 +1870,44 @@ export const definition = {
           // c / cat / data.frame / sum は ... が空でも正しく、
           // readline は prompt に既定値があるため対象外。
           const REQUIRED_FIRST = {
-            print: "x", length: "x", "is.na": "x", "as.numeric": "x",
-            "as.character": "x", nrow: "x", ncol: "x", names: "x",
+            print: "x", length: "x", "is.na": "x",
+            nrow: "x", ncol: "x", names: "x",
             rep: "x", mean: "x", median: "x", sd: "x",
             seq_len: "length.out", "read.csv": "file",
             rnorm: "n", runif: "n", sample: "x",
+          };
+          // B13-R（R7-26）：as.numeric()／as.character() は引数なしでも
+          // 実 R では長さ0ベクトルを返す（Codex の実 R 4.2.2 実測。
+          // primitive のため missing 検査の対象外）。REQUIRED_FIRST から
+          // 外し、各 case で引数なしを長さ0として扱う。
+          // B13-R（R7-154）：引数照合ヘルパ。名前付き引数が仮引数を
+          // 完全名で埋め、残りの仮引数へ位置引数を順に割り当てる
+          // （R の引数照合規則）。従来は名前付き x の次の位置引数が
+          // x そのものに化けていた。
+          const matchArgs = (formals) => {
+            const out = {},
+              used = new Set();
+            args.forEach((a, i) => {
+              if (
+                a.argName &&
+                formals.includes(a.argName) &&
+                !Object.hasOwn(out, a.argName)
+              ) {
+                out[a.argName] = { value: vals[i], present: true };
+                used.add(i);
+              }
+            });
+            let fi = 0;
+            args.forEach((a, i) => {
+              if (a.argName || used.has(i)) return;
+              while (fi < formals.length && Object.hasOwn(out, formals[fi])) fi++;
+              if (fi < formals.length) {
+                out[formals[fi]] = { value: vals[i], present: true };
+                used.add(i);
+                fi++;
+              }
+            });
+            return out;
           };
           if (
             Object.hasOwn(REQUIRED_FIRST, name) &&
@@ -1657,6 +2060,17 @@ export const definition = {
           }
           if (["readline", "rnorm", "runif", "sample"].includes(name))
             return api.freshUnknown(name + "の実行時の値", s);
+          // B13-R（R7-80）：存在しない関数は、引数が未確定値でも
+          // 「could not find function」相当の名指し停止にする。未確定
+          // 引数の早期 return が関数存在検査（switch の default）より
+          // 先にあると、綴り間違いの関数が正常扱いになっていた。
+          const IMPLEMENTED = new Set([
+            "c", "length", "is.na", "as.numeric", "as.character", "print",
+            "cat", "sum", "mean", "median", "sd", "data.frame", "nrow",
+            "ncol", "names", "seq_len", "seq", "rep", "read.csv",
+          ]);
+          if (!IMPLEMENTED.has(name))
+            api.fail("このR関数は説明に対応していません：" + name, node);
           // RG-80（R21-N4）: 出力系（print／cat）は未知値でも行自体を消さない。
           // 未知の部分はプレースホルダで示し、行が存在すること自体は伝える。
           if (pos.some(isUnknown) && !["print", "cat"].includes(name))
@@ -1667,11 +2081,28 @@ export const definition = {
               // RG-03: NULL contributes no elements; c() / c(NULL) is NULL itself.
               // RG-38: named arguments become element names, in argument order.
               if (vals.some(isUnknown)) return unknown("cの引数による");
+              // B13-R（R7-239）：use.names／recursive は c の仮引数であり
+              // データではない（公式 Usage：c(..., recursive = FALSE,
+              // use.names = TRUE)）。use.names=FALSE では名前を付けない。
+              let useNames = true;
+              const dataIdx = [];
+              args.forEach((a, i) => {
+                if (a.argName === "use.names" || a.argName === "recursive") {
+                  if (a.argName === "use.names") {
+                    const el = vals[i] === null ? null : vec(vals[i])[0];
+                    if (el !== null && el !== undefined && !isNA(el))
+                      useNames = Boolean(el);
+                  }
+                  return;
+                }
+                dataIdx.push(i);
+              });
               const rawValues = [],
                 rawNames = [];
-              args.forEach((a, i) => {
-                const v = vals[i];
-                if (v === null) return;
+              for (const i of dataIdx) {
+                const a = args[i],
+                  v = vals[i];
+                if (v === null) continue;
                 if (v?.kind === "data.frame")
                   api.fail("c()ではデータフレームをベクトル化できません", node);
                 const elems = vec(v),
@@ -1679,27 +2110,32 @@ export const definition = {
                 elems.forEach((el, j) => {
                   rawValues.push(el);
                   if (a.argName) {
-                    rawNames.push(
-                      elems.length === 1
-                        ? a.argName
-                        : existing?.[j]
-                          ? a.argName + existing[j]
-                          : a.argName + (j + 1),
-                    );
-                  } else rawNames.push(existing?.[j] ?? null);
+                    // B13-R（R7-152）：入れ子の名前はドットで連結する
+                    // （c(x = c(a = 1)) の名前は "x.a"）。内側の名前が
+                    // 無い複数要素は従来どおり x1, x2, ...。
+                    if (existing && typeof existing[j] === "string" && existing[j] !== "")
+                      rawNames.push(a.argName + "." + existing[j]);
+                    else if (elems.length === 1) rawNames.push(a.argName);
+                    else rawNames.push(a.argName + (j + 1));
+                  } else
+                    // B13-R（R7-235）：名前の供給源があるとき、無名要素の
+                    // 名前は "" であり NA ではない（名前属性自体が無い
+                    // 入力からは ""、名前属性がある入力からはその要素の
+                    // 名前（NA は null のまま）を引き継ぐ）。
+                    rawNames.push(existing ? existing[j] : "");
                 });
-              });
+              }
               const combined = coerce(rawValues);
               // R29-N17：名前の供給源（引数名・要素の名前属性）が1つも
               // 無ければ名前属性自体が無い（names は NULL）。供給源が
               // ある場合は、値が全て ""／NA でも属性はそのまま付ける。
-              const anyNameSource = args.some(
-                (a, i) =>
+              const anyNameSource = dataIdx.some(
+                (i) =>
                   vals[i] != null &&
-                  (a.argName || namesOf(vals[i]) !== null),
+                  (args[i].argName || namesOf(vals[i]) !== null),
               );
               return combined.length
-                ? withNames(combined, anyNameSource ? rawNames : null)
+                ? withNames(combined, useNames && anyNameSource ? rawNames : null)
                 : null;
             }
             case "length":
@@ -1729,50 +2165,96 @@ export const definition = {
                 namesOf(x),
               );
             case "as.numeric": {
-              const result = withNames(
-                vec(x).map((v) =>
-                  isNA(v)
-                    ? NA
-                    : typeof v === "string" && v.trim() === ""
-                      ? NA
-                      : Number.isNaN(Number(v))
-                        ? NA
-                        : Number(v),
-                ),
-                namesOf(x),
-              );
+              // B13-R（R7-26）：引数なしは numeric(0)（長さ0ベクトル）。
+              if (!vals.length) return [];
+              // B13-R（R7-83）：データフレームは list であり double へは
+              // 変換できない（実 R のエラーをそのまま名指す）。
+              if (x?.kind === "data.frame")
+                api.fail("'list' object cannot be coerced to type 'double'", node);
+              // B13-R（R7-25）：数値の NaN は NaN のまま保持する。NA に
+              // なるのは変換不能な文字列などだけ（?double）。
+              // B13-R（R7-153）：as.double は名前属性を取り除く
+              // （公式 ?double："like as.vector it strips attributes
+              // including names"）。
+              const result = vec(x).map((v) => {
+                if (isNA(v)) return NA;
+                if (typeof v === "number") return v;
+                if (typeof v === "boolean") return Number(v);
+                if (typeof v === "string") {
+                  const t = v.trim();
+                  if (t === "") return NA;
+                  const n = Number(t);
+                  return Number.isNaN(n) && t !== "NaN" ? NA : n;
+                }
+                return NA;
+              });
               if (result.some((v, i) => isNA(v) && !isNA(vec(x)[i]) && !Number.isNaN(vec(x)[i]))) api.note(s, node, "変換によりNAが生成されました（NAs introduced by coercion）", "warning");
               return result;
             }
-            case "as.character":
-              return withNames(
-                vec(x).map((v) =>
-                  isNA(v)
-                    ? NA
-                    : typeof v === "boolean"
-                      ? v
-                        ? "TRUE"
-                        : "FALSE"
-                      : typeof v === "number" && !Number.isFinite(v)
-                        ? v === Infinity
-                          ? "Inf"
-                          : v === -Infinity
-                            ? "-Inf"
-                            : "NaN"
-                        : String(v),
-                ),
-                namesOf(x),
-              );
+            case "as.character": {
+              // B13-R（R7-26）：引数なしは character(0)。
+              if (!vals.length) return [];
+              const toChar = (v) =>
+                isNA(v)
+                  ? NA
+                  : typeof v === "boolean"
+                    ? v
+                      ? "TRUE"
+                      : "FALSE"
+                    : typeof v === "number"
+                      ? formatRNum(v)
+                      : String(v);
+              // B13-R（R7-83）：データフレームは列ごとに文字列化した
+              // ベクトルになる（実 R の as.character.data.frame 相当）。
+              if (x?.kind === "data.frame") {
+                const out = [];
+                for (const col of Object.values(x.columns))
+                  for (const v of col) out.push(toChar(v));
+                return out;
+              }
+              // B13-R（R7-153／241）：名前属性は取り除かれ、数値は R の
+              // 15有効桁表記になる（公式 ?character も names を取り除く
+              // と明記）。
+              return vec(x).map(toChar);
+            }
             case "print": {
+              // B13-R（R7-249）：表示引数 digits／quote を無言で無視しない。
+              // digits は 1〜22 の整数でなければ実 R どおり
+              // "invalid printing digits" で停止する。
+              const pm = matchArgs(["x", "digits", "quote"]);
+              const px = pm.x?.present ? pm.x.value : x;
+              let digits;
+              if (pm.digits?.present && pm.digits.value !== null) {
+                const els = vec(pm.digits.value),
+                  el = els[0];
+                if (
+                  els.length !== 1 ||
+                  typeof el !== "number" ||
+                  !Number.isInteger(el) ||
+                  el < 1 ||
+                  el > 22
+                )
+                  api.fail(`invalid printing digits ${show(pm.digits.value)}`, node);
+                digits = el;
+              }
+              let quote = true;
+              if (pm.quote?.present && pm.quote.value !== null) {
+                const el = vec(pm.quote.value)[0];
+                if (typeof el === "boolean") quote = el;
+                else if (typeof el === "number" && !Number.isNaN(el))
+                  quote = el !== 0;
+              }
               // RG-80: 値全体が未知でも出力行は出す（値は実行時に決まる旨を示す）。
-              const text = isUnknown(x) ? "（実行時に決まる値）" : show(x);
+              const text = isUnknown(px)
+                ? "（実行時に決まる値）"
+                : showFormatted(px, { digits, quote });
               s.outputs.push({
                 channel: "print",
                 text,
                 line: node.line,
               });
               api.note(s, node, "出力します：" + text);
-              return x;
+              return px;
             }
             case "cat": {
               // R24-N28(b)：cat の仮引数（file／sep／fill／labels／append）
@@ -1781,7 +2263,26 @@ export const definition = {
               // 出力対象に含める。file が空文字列でない場合は画面ではなく
               // モデルのファイルへ書き出す（append=TRUE で追記）。
               const CAT_FORMALS = ["file", "sep", "fill", "labels", "append"];
-              let text = args
+              // B13-R（R7-159）：sep は文字列ベクトルとして要素間の
+              // 区切りを再利用し（cat(1:3, sep = c(",", ";")) は
+              // "1,2;3"）、NULL／数値などの不正な sep は実 R どおり
+              // エラーにする。従来は配列をそのまま join の区切りに渡し
+              // "1,,;2,,;3" のような誤連結になっていた。
+              let sepVec = [" "];
+              if (Object.hasOwn(named, "sep")) {
+                const raw = named.sep;
+                const els = raw === null ? [] : vec(raw);
+                if (
+                  !els.length ||
+                  els.some((e) => typeof e !== "string")
+                )
+                  api.fail(
+                    "catの sep は文字列で指定してください（invalid 'sep' argument）",
+                    node,
+                  );
+                sepVec = els.map(String);
+              }
+              const items = args
                 .flatMap((a, i) =>
                   a.argName && CAT_FORMALS.includes(a.argName)
                     ? []
@@ -1803,8 +2304,46 @@ export const definition = {
                             ? "-Inf"
                             : "NaN"
                         : String(v),
-                )
-                .join(named.sep ?? " ");
+                );
+              let text = "";
+              items.forEach((t, i) => {
+                if (i) text += sepVec[(i - 1) % sepVec.length];
+                text += t;
+              });
+              // B13-R（R7-159）：fill は行の折返し幅（TRUE は 80、正の
+              // 数値はその幅）。空白位置で折り返し、fill 有効時は行末に
+              // 改行を付ける（?cat の fill 規則）。
+              if (Object.hasOwn(named, "fill")) {
+                const fel = named.fill === null ? null : vec(named.fill)[0];
+                const width =
+                  fel === true
+                    ? 80
+                    : typeof fel === "number" && fel > 0
+                      ? Math.trunc(fel)
+                      : 0;
+                if (width) {
+                  const outLines = [];
+                  for (const line of text.split("\n")) {
+                    if (line.length <= width) {
+                      outLines.push(line);
+                      continue;
+                    }
+                    let cur = "";
+                    for (const w of line.split(" ")) {
+                      if (!cur) cur = w;
+                      else if (cur.length + 1 + w.length <= width)
+                        cur += " " + w;
+                      else {
+                        outLines.push(cur);
+                        cur = w;
+                      }
+                    }
+                    outLines.push(cur);
+                  }
+                  text = outLines.join("\n");
+                  if (!text.endsWith("\n")) text += "\n";
+                }
+              }
               const fileArg = named.file;
               if (fileArg !== undefined) {
                 const fname = vec(fileArg)[0];
@@ -1837,11 +2376,62 @@ export const definition = {
             case "mean":
             case "median":
             case "sd": {
-              if (name !== "sum" && pos.length > 1)
-                api.fail(
-                  "この関数は第2引数以降を名前付きで指定してください",
-                  node,
-                );
+              // B13-R（R7-154）：仮引数への照合（名前付きで埋まった
+              // 仮引数へ位置引数を重ねない）。mean(x, trim, na.rm)／
+              // median(x, na.rm)／sd(x, na.rm) の順で位置引数を割り当てる。
+              const FORMALS13 =
+                name === "mean"
+                  ? ["x", "trim", "na.rm"]
+                  : name === "median" || name === "sd"
+                    ? ["x", "na.rm"]
+                    : null;
+              const matched13 = FORMALS13 ? matchArgs(FORMALS13) : null;
+              const xVal13 =
+                name === "sum"
+                  ? x
+                  : matched13.x?.present
+                    ? matched13.x.value
+                    : x;
+              // B13-R（R7-157）：na.rm の解釈。sum／median／sd は
+              // as.logical 相当の強制（数値 1 は TRUE、名前付き長さ1
+              // logical も TRUE）を行い、NA／NULL は条件エラーにする。
+              // mean は Codex の留保どおり関数差があるため、実 TRUE
+              // （長さ1 logical の TRUE）のときだけ除去する isTRUE 相当
+              // の判定を維持する（裁定の再現形は mean の名前付き
+              // c(a = TRUE) であり、この判定で除去される）。
+              const parseNaRm13 = (raw) => {
+                if (raw === null)
+                  api.fail("argument is of length zero", node);
+                const els = vec(raw);
+                if (!els.length)
+                  api.fail("argument is of length zero", node);
+                const el = els[0];
+                if (isNA(el) || isNaNVal(el))
+                  api.fail("missing value where TRUE/FALSE needed", node);
+                if (typeof el === "boolean") return el;
+                if (typeof el === "number") return el !== 0;
+                if (typeof el === "string") {
+                  if (["TRUE", "T", "True", "true"].includes(el)) return true;
+                  if (["FALSE", "F", "False", "false"].includes(el)) return false;
+                }
+                api.fail("argument is not interpretable as logical", node);
+              };
+              let naRm13 = false,
+                naRmPresent13 = false,
+                naRmRaw13;
+              if (name === "sum") {
+                naRmPresent13 = Object.hasOwn(named, "na.rm");
+                naRmRaw13 = named["na.rm"];
+              } else {
+                naRmPresent13 = !!matched13["na.rm"]?.present;
+                naRmRaw13 = matched13["na.rm"]?.value;
+              }
+              if (naRmPresent13) {
+                if (name === "mean") {
+                  const els = naRmRaw13 === null ? [] : vec(naRmRaw13);
+                  naRm13 = els.length === 1 && els[0] === true;
+                } else naRm13 = parseNaRm13(naRmRaw13);
+              }
               // R24-N28（同根）：sum の `...` に入る名前付き引数（na.rm
               // 以外）はパラメータではなく合計対象のデータ（実 R の引数
               // 照合どおり）。従来は pos だけを見て黙って捨てていた。
@@ -1850,43 +2440,102 @@ export const definition = {
                   ? args.flatMap((ag, i) =>
                       ag.argName === "na.rm" ? [] : vec(vals[i]),
                     )
-                  : vec(x);
+                  : vec(xVal13);
               if (name === "sum" && a.some(isUnknown))
                 return unknown("sumの引数による");
-              if (named["na.rm"] === true)
+              // B13-R（R7-23）：mean(NULL) は NaN ではなく NA＋警告
+              // （NULL は numeric(0) とは別物。公式 ?mean の
+              // "argument is not numeric or logical: returning NA"）。
+              if (name === "mean" && xVal13 === null) {
+                api.note(s, node, "引数は数値でも論理値でもありません。NAを返します（argument is not numeric or logical: returning NA）", "warning");
+                return NA;
+              }
+              // B13-R（R7-24）：median(NULL) は NULL そのもの。
+              if (name === "median" && xVal13 === null) return null;
+              if (naRm13)
                 a = a.filter((v) => !isNA(v) && !Number.isNaN(v));
+              if (name === "median") {
+                // B13-R（R7-24／240）：median は型を保持する。欠損
+                // （NA／NaN）があれば NA、logical の奇数長は logical の
+                // 中央値、character は辞書順の中央値（偶数長は警告＋NA）。
+                if (a.some(isNA) || a.some(isNaNVal)) return NA;
+                if (!a.length) return NA;
+                if (a.every((v) => typeof v === "boolean")) {
+                  const sorted = [...a].sort((p, q) => Number(p) - Number(q)),
+                    m = Math.floor(sorted.length / 2);
+                  return sorted.length % 2
+                    ? sorted[m]
+                    : (Number(sorted[m - 1]) + Number(sorted[m])) / 2;
+                }
+                if (a.every((v) => typeof v === "string")) {
+                  const sorted = [...a].sort((p, q) => (p < q ? -1 : p > q ? 1 : 0)),
+                    m = Math.floor(sorted.length / 2);
+                  if (sorted.length % 2) return sorted[m];
+                  api.note(s, node, "偶数長の character の中央値は定義できません。NAを返します", "warning");
+                  return NA;
+                }
+                if (
+                  a.some((v) => typeof v !== "number" && typeof v !== "boolean")
+                )
+                  api.fail("invalid type of argument", node);
+                const nums = a.map(Number).sort((p, q) => p - q),
+                  m = Math.floor(nums.length / 2);
+                return nums.length % 2 ? nums[m] : (nums[m - 1] + nums[m]) / 2;
+              }
               if (name === "mean" && a.some(v => typeof v === "string")) {
                 api.note(s, node, "引数は数値でも論理値でもありません。NAを返します（argument is not numeric or logical: returning NA）", "warning");
                 return NA;
               }
+              // B13-R（R7-158）：sd は数値へ変換できる文字列を受け付ける
+              // （公式 ?sd：x は numeric へ変換可能なオブジェクト）。
+              // 変換できない文字列は従来どおり型エラーにする。
+              if (name === "sd")
+                a = a.map((v) => {
+                  if (typeof v !== "string") return v;
+                  const t = v.trim();
+                  if (t === "") return v;
+                  const n = Number(t);
+                  return Number.isNaN(n) && t !== "NaN" ? v : n;
+                });
               if (a.some(isNA)) return NA;
               if (
                 a.some((v) => typeof v !== "number" && typeof v !== "boolean")
               )
                 api.fail("invalid type of argument", node);
-              let nums = a.map(Number),
-                sum = nums.reduce((a, b) => a + b, 0);
-              if (name === "sum") return sum;
+              let nums = a.map(Number);
+              // B13-R（R7-156）：sum は補償加算、mean／sd の中心は
+              // オーバーフローしない増分平均で求める。
+              if (name === "sum") return compensatedSum(nums);
               if (name === "mean") {
-                const trim = named.trim ?? 0;
-                if (typeof trim !== "number" || !Number.isFinite(trim)) api.fail("trimは有限の数値で指定してください", node);
+                // B13-R（R7-252）：trim の明示 NULL は省略（0）と混同せず
+                // 実 R のエラーにする（公式 mean.R：
+                // "'trim' must be numeric of length one"）。
+                const trimRaw = matched13.trim?.present
+                  ? matched13.trim.value
+                  : 0;
+                const trimEls =
+                  trimRaw === null ? null : vec(trimRaw);
+                const trimEl = trimEls?.[0];
+                if (
+                  !trimEls ||
+                  trimEls.length !== 1 ||
+                  (typeof trimEl !== "number" && typeof trimEl !== "boolean") ||
+                  Number.isNaN(Number(trimEl))
+                )
+                  api.fail("'trim' must be numeric of length one", node);
+                const trim = Number(trimEl);
                 if (trim > 0 && nums.length) {
-                  const sorted = [...nums].sort((a,b) => a-b);
+                  const sorted = [...nums].sort((p, q) => p - q);
                   if (trim >= 0.5) { const m = Math.floor(sorted.length / 2); return sorted.length % 2 ? sorted[m] : (sorted[m-1]+sorted[m])/2; }
                   const cut = Math.floor(nums.length * trim), remaining = sorted.slice(cut, nums.length-cut);
-                  return remaining.reduce((a,b) => a+b,0)/remaining.length;
+                  return remaining.length ? stableMean(remaining) : NaN;
                 }
-                return nums.length ? sum / nums.length : NaN;
-              }
-              if (name === "median") {
-                if (!nums.length) return NA;
-                nums.sort((a, b) => a - b);
-                let m = Math.floor(nums.length / 2);
-                return nums.length % 2 ? nums[m] : (nums[m - 1] + nums[m]) / 2;
+                return nums.length ? stableMean(nums) : NaN;
               }
               if (nums.length < 2) return NA;
+              const center = stableMean(nums);
               return Math.sqrt(
-                nums.reduce((v, x) => v + (x - sum / nums.length) ** 2, 0) /
+                compensatedSum(nums.map((v) => (v - center) ** 2)) /
                   (nums.length - 1),
               );
             }
@@ -1905,19 +2554,174 @@ export const definition = {
                 "fix.empty.names",
                 "stringsAsFactors",
               ];
-              let colCount = 0;
+              // B13-R（R7-27／155）：列名は引数式由来で決まる（公式
+              // dataframe.R：名前のない引数は deparse した式を
+              // make.names(unique = TRUE) で整形する。data.frame(1) は
+              // "X1"、data.frame(v) は "v"、data.frame(1:3) は "X1.3"）。
+              // あわせて、重複名は make.names の一意化で x／x.1 として
+              // 両方保持し、NULL の引数は列を作らない。
+              // B13-RFIX（R7-27 差し戻し）：deparse の再構成は実 R の
+              // deparse.c の規則に合わせる。二項演算子は PP_BINARY2
+              // （/, ^, %%, %/%, :）だけが空白なしで、それ以外
+              // （+, -, *, 比較, &, |, %in% 等）は前後に空白を置く
+              // （R Core の Duncan Murdoch が deparse.c／names.c を
+              // 引いて r-devel で明言し、実 R の出力 "1 + 1"／"1/1"／
+              // "1 %in% 1" でも確認できる）。そのため data.frame(1 + 1)
+              // の列名は "1 + 1" → make.names → "X1...1" になる。
+              // 括弧は deparse.c の needsparens 相当：被演算子の優先
+              // 順位（?Syntax の段付け）が親より低い場合に補い、同順位
+              // では結合方向の逆側だけに補う（^ のみ右結合）。本アプリ
+              // のパーサは括弧を AST に残さないため、明示された冗長な
+              // 括弧までは再現できない（優先順位上必要な括弧は導出
+              // できる）。
+              const NO_SPACE_OPS13 = new Set(["/", "^", "%%", "%/%", ":"]);
+              const BIN_PREC13 = (op) => {
+                if (op === "^") return 90;
+                if (op === ":") return 70;
+                if (/^%.*%$/.test(op)) return 60;
+                if (op === "*" || op === "/") return 50;
+                if (op === "+" || op === "-") return 40;
+                if (["<", ">", "<=", ">=", "==", "!="].includes(op))
+                  return 30;
+                if (op === "&" || op === "&&") return 14;
+                if (op === "|" || op === "||") return 12;
+                if (op === "~") return 10;
+                return 40;
+              };
+              const UNARY_PREC13 = (op) => (op === "!" ? 20 : 80);
+              const nodePrec13 = (nd) =>
+                nd?.k === "binary"
+                  ? BIN_PREC13(nd.op)
+                  : nd?.k === "unary"
+                    ? UNARY_PREC13(nd.op)
+                    : Infinity;
+              const deparseArg = (nd) => {
+                if (!nd || typeof nd !== "object") return "";
+                switch (nd.k) {
+                  case "literal":
+                    return typeof nd.value === "string"
+                      ? nd.value
+                      : (nd.raw ?? String(nd.value));
+                  case "var":
+                    return nd.name;
+                  case "call": {
+                    const t =
+                      nd.target?.k === "var" ? nd.target.name : deparseArg(nd.target);
+                    if (!t) return "";
+                    return (
+                      t +
+                      "(" +
+                      (nd.args || [])
+                        .map((x) =>
+                          x?.argName
+                            ? x.argName + " = " + deparseArg(x)
+                            : deparseArg(x),
+                        )
+                        .join(", ") +
+                      ")"
+                    );
+                  }
+                  case "binary": {
+                    const p = BIN_PREC13(nd.op);
+                    const rightAssoc = nd.op === "^";
+                    const operand = (child, eqParens) => {
+                      const s = deparseArg(child);
+                      const cp = nodePrec13(child);
+                      return cp < p || (cp === p && eqParens)
+                        ? "(" + s + ")"
+                        : s;
+                    };
+                    const l = operand(nd.a, rightAssoc);
+                    const r = operand(nd.b, !rightAssoc);
+                    return NO_SPACE_OPS13.has(nd.op)
+                      ? l + nd.op + r
+                      : l + " " + nd.op + " " + r;
+                  }
+                  case "unary": {
+                    const u = UNARY_PREC13(nd.op);
+                    const s = deparseArg(nd.arg);
+                    return (
+                      nd.op +
+                      (nodePrec13(nd.arg) < u ? "(" + s + ")" : s)
+                    );
+                  }
+                  case "member": {
+                    const s = deparseArg(nd.target);
+                    return (
+                      (nd.target?.k === "binary" || nd.target?.k === "unary"
+                        ? "(" + s + ")"
+                        : s) +
+                      "$" +
+                      nd.name
+                    );
+                  }
+                  case "index": {
+                    const s = deparseArg(nd.target);
+                    return (
+                      (nd.target?.k === "binary" || nd.target?.k === "unary"
+                        ? "(" + s + ")"
+                        : s) +
+                      (nd.double ? "[[" : "[") +
+                      (nd.indexes || [])
+                        .map((x) => (x ? deparseArg(x) : ""))
+                        .join(", ") +
+                      (nd.double ? "]]" : "]")
+                    );
+                  }
+                  default:
+                    return "";
+                }
+              };
+              const makeNameR = (name, seen) => {
+                let out = String(name).replace(/[^\p{L}\p{N}._]/gu, ".");
+                if (out === "") out = "X";
+                if (/^[0-9]/.test(out) || /^\.[0-9]/.test(out)) out = "X" + out;
+                if (
+                  ["if", "else", "repeat", "while", "function", "for", "in", "next", "break", "TRUE", "FALSE", "NULL", "Inf", "NaN", "NA"].includes(out)
+                )
+                  out += ".";
+                if (seen) {
+                  const base = out;
+                  let k = 1;
+                  while (seen.has(out)) out = base + "." + k++;
+                  seen.add(out);
+                }
+                return out;
+              };
+              const checkNamesVal =
+                named["check.names"] === undefined
+                  ? true
+                  : vec(named["check.names"])[0] !== false;
+              const entries13 = [];
+              args.forEach((a, i) => {
+                if (a.argName && DF_FORMALS.includes(a.argName)) return;
+                const v = vals[i];
+                // NULL の引数は列にならない（dataframe.R：長さ0の
+                // NULL 要素は結果から落ちる）。
+                if (v === null) return;
+                entries13.push({
+                  rawName: a.argName ?? deparseArg(a),
+                  values: vec(v),
+                });
+              });
+              const seen13 = new Set();
+              const finalNames13 = entries13.map((e) =>
+                checkNamesVal
+                  ? makeNameR(e.rawName, seen13)
+                  : e.rawName === ""
+                    ? "Var." + (entries13.indexOf(e) + 1)
+                    : e.rawName,
+              );
+              if (
+                !checkNamesVal &&
+                new Set(finalNames13).size !== finalNames13.length
+              )
+                api.fail(
+                  "重複した列名はこのモデルでは表現できません（列名をキーとする表現のため、check.names = FALSE の重複名は名指しで停止します）",
+                  node,
+                );
               let cols = Object.fromEntries(
-                args
-                  .filter(
-                    (a) => !(a.argName && DF_FORMALS.includes(a.argName)),
-                  )
-                  .map((a) => {
-                    const i = args.indexOf(a);
-                    return [
-                      a.argName || "V" + ++colCount,
-                      vec(vals[i]),
-                    ];
-                  }),
+                entries13.map((e, i) => [finalNames13[i], e.values]),
               ),
                 lens = Object.values(cols).map((x) => x.length),
                 n = Math.max(0, ...lens);
@@ -1970,9 +2774,32 @@ export const definition = {
                 ? namesOf(x).map((n) => (n === null || n === undefined ? NA : n))
                 : null;
             case "seq_len": {
-              let n = Number(x);
-              if (!Number.isInteger(n) || n < 0 || n > 10000)
-                api.fail("invalid length", node);
+              // B13-R（R7-85／245）：小数は切り捨て、NULL／空文字列／
+              // NA／負数は実 R の
+              // "argument must be coercible to non-negative integer"
+              // で停止する。従来は Number(NULL) = 0 の読み替えで
+              // 空ベクトルになっていた。
+              const els13 = x === null || x === undefined ? [] : vec(x);
+              const el13 = els13[0];
+              if (
+                els13.length !== 1 ||
+                isNA(el13) ||
+                isNaNVal(el13) ||
+                typeof el13 === "string" ||
+                el13 === null ||
+                el13 === undefined
+              )
+                api.fail(
+                  "argument must be coercible to non-negative integer",
+                  node,
+                );
+              let n = Math.trunc(Number(el13));
+              if (!Number.isFinite(n) || n < 0)
+                api.fail(
+                  "argument must be coercible to non-negative integer",
+                  node,
+                );
+              if (n > 10000) api.fail("ベクトル長の上限です", node);
               return Array.from({ length: n }, (_, i) => i + 1);
             }
             case "seq": {
@@ -2061,8 +2888,16 @@ export const definition = {
                     node,
                   );
                 const el = els[0];
-                // 整数・論理値はそのまま、それ以外は as.numeric の後に
-                // ceiling（seq.R）。数値文字列も as.numeric で変換される。
+                // B13-R（R7-250）：length.out の文字列は変換しない。
+                // 公式 seq.R は length.out <- as.numeric(ceiling(
+                // length.out)) であり、ceiling は文字列を受け付けない
+                // （実 R は "non-numeric argument to mathematical
+                // function" で停止する）。
+                if (typeof el === "string")
+                  api.fail(
+                    "non-numeric argument to mathematical function",
+                    node,
+                  );
                 if (isNA(el)) lengthOut = NaN;
                 else if (
                   typeof el === "boolean" ||
@@ -2217,26 +3052,89 @@ export const definition = {
               for (const k of Object.keys(named))
                 if (!["x", "times", "length.out", "each"].includes(k))
                   api.fail(`repの引数 ${k} は説明に対応していません`, node);
-              const base = vec(x),
-                baseNames = namesOf(x),
-                countArg = (raw, label) => {
-                  const n = Number(vec(raw)[0]);
-                  if (!Number.isInteger(n) || n < 0)
-                    api.fail(`${label}は0以上の整数で指定してください`, node);
-                  return n;
-                };
-              const eachRaw = named.each ?? pos[3];
-              const each = eachRaw === undefined ? 1 : countArg(eachRaw, "each");
-              let pairs = [];
-              base.forEach((v, i) => {
-                for (let j = 0; j < each; j++)
-                  pairs.push([v, baseNames?.[i] ?? null]);
-              });
-              const timesRaw = named.times ?? pos[1];
-              let outPairs = pairs;
-              if (timesRaw !== undefined) {
-                if (Array.isArray(timesRaw) && timesRaw.length !== 1) {
-                  if (timesRaw.length !== base.length)
+              // B13-R（R7-154）：照合済みの仮引数を使う（x を名前付きで
+              // 渡したとき位置引数は times に割り当たる）。
+              const matchedR = matchArgs(["x", "times", "length.out", "each"]);
+              const xValR = matchedR.x?.present ? matchedR.x.value : x;
+              // B13-R（R7-85／251）：回数引数は小数を切り捨て、NULL／
+              // 空文字列／NA／負数は実 R の invalid argument で停止する。
+              // 明示された NULL を ?? で省略扱いにしないよう、照合結果の
+              // present で有無を判定する。
+              const countArg = (entry, label) => {
+                const raw = entry.value;
+                if (raw === null)
+                  api.fail(`invalid '${label}' argument`, node);
+                const els = vec(raw),
+                  el = els[0];
+                if (
+                  els.length !== 1 ||
+                  isNA(el) ||
+                  isNaNVal(el) ||
+                  el === null ||
+                  el === undefined ||
+                  (typeof el !== "number" && typeof el !== "boolean" &&
+                    typeof el !== "string") ||
+                  (typeof el === "string" &&
+                    (el.trim() === "" || Number.isNaN(Number(el))))
+                )
+                  api.fail(`invalid '${label}' argument`, node);
+                const n = Math.trunc(Number(el));
+                if (!Number.isFinite(n) || n < 0)
+                  api.fail(`invalid '${label}' argument`, node);
+                return n;
+              };
+              const each = matchedR.each?.present
+                ? countArg(matchedR.each, "each")
+                : 1;
+              const loR = matchedR["length.out"]?.present
+                ? countArg(matchedR["length.out"], "length.out")
+                : undefined;
+              // B13-R（R7-84）：rep(NULL) は常に NULL（公式 ?rep の
+              // Note）。length.out 指定時は警告付きで NULL。
+              if (xValR === null) {
+                if (loR !== undefined)
+                  api.note(
+                    s,
+                    node,
+                    "length.out specified with NULL x - returning NULL",
+                    "warning",
+                  );
+                return null;
+              }
+              const base = vec(xValR),
+                baseNames = namesOf(xValR);
+              // each 展開後の仮想列（実体化せず index で引く。巨大な
+              // each／times でも上限判定を先に行える：R7-86）。
+              const eachLen = base.length * each;
+              const eachAt = (k) => Math.floor(k / each) % base.length;
+              const buildFrom = (total, indexOf) => {
+                if (total > 10000) api.fail("ベクトル長の上限です", node);
+                const valsOut = [],
+                  namesOut = [];
+                for (let i = 0; i < total; i++) {
+                  const bi = indexOf(i);
+                  valsOut.push(base[bi]);
+                  namesOut.push(baseNames?.[bi] ?? null);
+                }
+                return withNames(
+                  valsOut,
+                  // R29-N17：x に名前属性が無ければ結果にも付けない
+                  baseNames ? namesOut : null,
+                );
+              };
+              // B13-R（R7-81）：length.out があれば times より優先し、
+              // each 展開後の列を length.out まで再利用する
+              // （times = 0 でも空にならない）。
+              if (loR !== undefined) {
+                if (!base.length) return [];
+                return buildFrom(loR, (i) => eachAt(i % eachLen));
+              }
+              if (matchedR.times?.present) {
+                const raw = matchedR.times.value;
+                if (raw === null)
+                  api.fail("invalid 'times' argument", node);
+                if (Array.isArray(raw) && raw.length !== 1) {
+                  if (raw.length !== base.length)
                     api.fail(
                       "repの times（ベクトル）の長さが x の長さと一致しません",
                       node,
@@ -2246,37 +3144,34 @@ export const definition = {
                       "repの times（ベクトル）と each の併用は説明に対応していません",
                       node,
                     );
-                  outPairs = [];
-                  base.forEach((v, i) => {
-                    const cnt = timesRaw[i];
-                    if (!Number.isInteger(cnt) || cnt < 0)
-                      api.fail("timesは0以上の整数で指定してください", node);
-                    for (let j = 0; j < cnt; j++)
-                      outPairs.push([v, baseNames?.[i] ?? null]);
+                  const counts = raw.map((cnt) => {
+                    if (
+                      isNA(cnt) ||
+                      isNaNVal(cnt) ||
+                      (typeof cnt !== "number" && typeof cnt !== "boolean") ||
+                      Math.trunc(Number(cnt)) < 0
+                    )
+                      api.fail("invalid 'times' argument", node);
+                    return Math.trunc(Number(cnt));
                   });
-                } else {
-                  const n = countArg(timesRaw, "times");
-                  outPairs = [];
-                  for (let j = 0; j < n; j++) outPairs.push(...pairs);
+                  const total = counts.reduce((p, q) => p + q, 0);
+                  if (total > 10000) api.fail("ベクトル長の上限です", node);
+                  const valsOut = [],
+                    namesOut = [];
+                  base.forEach((v, i) => {
+                    for (let j = 0; j < counts[i]; j++) {
+                      valsOut.push(v);
+                      namesOut.push(baseNames?.[i] ?? null);
+                    }
+                  });
+                  return withNames(valsOut, baseNames ? namesOut : null);
                 }
+                const n = countArg(matchedR.times, "times");
+                if (!base.length) return [];
+                return buildFrom(eachLen * n, (i) => eachAt(i % eachLen));
               }
-              const lengthOutRaw = named["length.out"] ?? pos[2];
-              if (lengthOutRaw !== undefined) {
-                const lo = countArg(lengthOutRaw, "length.out");
-                if (lo > 10000) api.fail("ベクトル長の上限です", node);
-                if (!outPairs.length) return [];
-                outPairs = Array.from(
-                  { length: lo },
-                  (_, i) => outPairs[i % outPairs.length],
-                );
-              }
-              if (outPairs.length > 10000)
-                api.fail("ベクトル長の上限です", node);
-              return withNames(
-                outPairs.map((p) => p[0]),
-                // R29-N17：x に名前属性が無ければ結果にも付けない
-                baseNames ? outPairs.map((p) => p[1]) : null,
-              );
+              if (!base.length) return [];
+              return buildFrom(eachLen, (i) => eachAt(i));
             }
             case "read.csv": {
               if (!Object.hasOwn(s.model.files || {}, x))
@@ -2308,8 +3203,17 @@ export const definition = {
                     ? undefined
                     : vec(named["col.names"]),
                 rowNames: named["row.names"],
-                skip: named.skip,
-                nrows: named.nrows,
+                // B13-R（R7-242）：skip／nrows はスカラーとして取り出す
+                // （従来は配列のまま parseCsvText へ渡り、整数判定に
+                // 落ちて無言で無視されていた）。
+                skip:
+                  named.skip === undefined ? undefined : vec(named.skip)[0],
+                nrows:
+                  named.nrows === undefined ? undefined : vec(named.nrows)[0],
+                colClasses:
+                  named["colClasses"] === undefined
+                    ? undefined
+                    : vec(named["colClasses"]).map(String),
               };
               const stored = s.model.files[x];
               if (typeof stored === "string") {
@@ -2319,9 +3223,19 @@ export const definition = {
                   api.fail(e.message, node);
                 }
               }
-              if (stored?.kind === "data.frame" && csvOpts.header === false) {
-                // 種まきファイルの header=FALSE は、見出し行をデータの
-                // 1行目としてテキストとして読み直した結果にする。
+              // B13-R（R7-242）：種まき data.frame 経路でも nrows／
+              // colClasses／skip／na.strings を無言で無視しない。これらが
+              // 明示された場合は、実ファイルがテキストであるのと同じく
+              // CSV テキストへ戻してパースする（header=FALSE の従来経路
+              // と同じ扱い）。
+              const needsTextParse =
+                stored?.kind === "data.frame" &&
+                (csvOpts.header === false ||
+                  csvOpts.nrows !== undefined ||
+                  csvOpts.colClasses !== undefined ||
+                  csvOpts.skip !== undefined ||
+                  Object.hasOwn(named, "na.strings"));
+              if (needsTextParse) {
                 try {
                   return parseCsvText(dfToCsvText(stored), csvOpts);
                 } catch (e) {

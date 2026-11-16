@@ -210,7 +210,7 @@ test("R22-N26 references without a caution render no empty caution element", () 
       total++;
       if (!r.caution) empty++;
     }
-  assert.equal(total, 1393); // 995 + 包含演算子（R24-N4）+ 数値の属性（R24 §3.2）+ プロパティ .Name/.FullName は既存項目への追記のため増減なし、比較演算子は既存項目の拡張 + 修正バッチ4 Python追随班の例外44件×2種（Python＋CloudFormation伝播）+ 修正バッチ6 R27-N20 組み込み定数3件×2種（同）+ R27-N7 VBA 定数94件 + 修正バッチ7 R28-N9 VBA 定数141件 + 修正バッチ8 13件（PowerShell 三項演算子＋VBA 参照専用12件）+ 第16種 IPA擬似言語 53件（MUSE-ADD-PSEUDO）
+  assert.equal(total, 1403); // +4 修正バッチ13 Python班（属性項目2件×2種）＋統合時に C／C++ NULL項目3件・UI.Vision 3件で +6 // 995 + 包含演算子（R24-N4）+ 数値の属性（R24 §3.2）+ プロパティ .Name/.FullName は既存項目への追記のため増減なし、比較演算子は既存項目の拡張 + 修正バッチ4 Python追随班の例外44件×2種（Python＋CloudFormation伝播）+ 修正バッチ6 R27-N20 組み込み定数3件×2種（同）+ R27-N7 VBA 定数94件 + 修正バッチ7 R28-N9 VBA 定数141件 + 修正バッチ8 13件（PowerShell 三項演算子＋VBA 参照専用12件）+ 第16種 IPA擬似言語 53件（MUSE-ADD-PSEUDO）
   assert.ok(empty > 0, "expected some references without a caution");
   assert.ok(
     appSource.includes('...(r.caution ? [el("p", r.caution, "caution")] : [])'),

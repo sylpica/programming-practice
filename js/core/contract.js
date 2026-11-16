@@ -8,8 +8,18 @@ export const LIMITS = Object.freeze({
   source: 100000,
   depth: 64,
 });
+// R7-182（修正バッチ13）：kind だけでは、利用者が書いた通常の
+// オブジェクト {kind:"unknown", value:1} まで内部タグと誤認してしまう。
+// 内部の未確定値は、原子的なものは source（由来）または id を必ず伴い、
+// 演算で合成されたものは op と被演算子（a／b）を持つ。どちらにも
+// 当たらない {kind:"unknown", …} は利用者の通常オブジェクトとして扱う。
 export const isUnknown = (v) =>
-  !!v && typeof v === "object" && v.kind === "unknown";
+  !!v &&
+  typeof v === "object" &&
+  v.kind === "unknown" &&
+  (typeof v.source === "string" ||
+    typeof v.id === "string" ||
+    (typeof v.op === "string" && ("a" in v || "b" in v)));
 export const unknown = (source, id = source) => ({
   kind: "unknown",
   source,

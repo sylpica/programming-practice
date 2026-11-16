@@ -2617,6 +2617,24 @@ export function createCFamily({ id, name, extensions, language }) {
       !managed,
     ],
     [
+      "NULL",
+      "定数",
+      "int *p = NULL;",
+      "ヌルポインタ定数を表すマクロです（<stddef.h> や <stdio.h> などで定義されます）。どのオブジェクトも指していないポインタを表します。",
+      "int *p = NULL;\nif (p == NULL) { p = NULL; }",
+      "モデルでは null として扱い、ポインタへの代入と比較に使えます。指していない先の読み書きは未定義動作として停止します。",
+      !managed,
+    ],
+    [
+      "nullptr",
+      "定数",
+      "int *p = nullptr;",
+      "C++11 で導入されたヌルポインタリテラルです。型は std::nullptr_t で、任意のポインタ型へ変換できますが整数型へは変換できません。NULL より型安全なため、C++ ではこちらが推奨されます。",
+      "int *p = nullptr;\nif (p == nullptr) { p = nullptr; }",
+      "モデルでは null として扱い、ポインタへの代入と比較に使えます。",
+      id === "cpp",
+    ],
+    [
       "if",
       "制御",
       "if (condition) { … } else { … }",
@@ -2654,7 +2672,7 @@ export function createCFamily({ id, name, extensions, language }) {
       'printf("%d\\n", n);',
       "書式と引数を対応させて出力を説明します。",
       'printf("%d\\n", n);',
-      "%d / %i / %f / %s / %c / %%のみです。書式と型の不一致は停止します。",
+      "%d / %i / %f / %s / %c / %u / %%のみです。書式と型の不一致は停止します。",
       !managed,
     ],
     [
@@ -2955,7 +2973,7 @@ export function createCFamily({ id, name, extensions, language }) {
       "標準入力から1行を読み取り、string 変数へ格納します。モデルでは実行時の入力を未確定値として扱います。std::cin はこの関数の第1引数として使います。",
       "string line;\nstd::getline(std::cin, line);",
       // D7 是正に合わせた文面：抽出先は未確定値になる。
-      "対応形式は std::getline(std::cin, 変数) のみです。cin >> x の抽出も、モデルでは抽出先の変数が未確定値になります（実際の入力内容は再現されません）。",
+      "対応形式は std::getline(std::cin, 変数) のみです。cin >> x の抽出も、モデルでは抽出先の変数が未確定値になります（実際の入力内容は再現されません）。戻り値は std::istream& であり読み取った文字列ではないため、変数へ代入する形（std::string r = std::getline(…) 等）はコンパイルエラーとして停止します。",
     ],
     [
       "endl",
@@ -3061,10 +3079,10 @@ export function createCFamily({ id, name, extensions, language }) {
   for (const r of reference) if (prelude[r.name]) r.example = prelude[r.name] + "\n" + r.example;
   if (managed) reference.find(r => r.name === "array").syntax = "int[] values = {1, 2, 3}; / int[,] table = {{1, 2}, {3, 4}}; / int[][] jagged = {new int[]{1, 2}, new int[]{3}};";
   const csharpOnly = ["uint","ulong","ushort","byte","sbyte","foreach","unchecked","new","文字列補間","int.TryParse","double.TryParse","Length","int.MaxValue","int.MinValue","uint.MaxValue","uint.MinValue","short.MaxValue","short.MinValue","byte.MaxValue","byte.MinValue","sbyte.MaxValue","sbyte.MinValue","char.MaxValue","char.MinValue","Math.PI","Math.E","String.Empty","string.Empty","long.MaxValue","long.MinValue","ulong.MaxValue"];
-  const cppOnly = ["参照","getline","endl"];
+  const cppOnly = ["参照","getline","endl","nullptr"];
   reference = reference.filter(r => !managed
     ? !["Console.WriteLine","Console.ReadLine","class","checked", ...csharpOnly, ...(id === "c" ? ["cout","string", ...cppOnly] : [])].includes(r.name)
-    : !["pointer","printf","cout","unsigned int","unsigned long","unsigned short","unsigned char","signed char","sizeof","abs", ...cppOnly].includes(r.name));
+    : !["pointer","printf","cout","unsigned int","unsigned long","unsigned short","unsigned char","signed char","sizeof","abs","NULL", ...cppOnly].includes(r.name));
   if (!managed) for (const r of reference) {
     if (id === "cpp") r.example = r.example.replace(/\b(cout|endl|printf|string)\b/g, "std::$1");
     // The native examples must compile as written: C needs <stdbool.h> for
@@ -3147,6 +3165,10 @@ export function createCFamily({ id, name, extensions, language }) {
               "参照オブジェクト",
               "複数の変数から同じ実体を参照できるオブジェクトです。",
             ],
+            [
+              "例外",
+              "実行中に起きた異常を表し、throwで投げてtry／catchで受け取る仕組みです。配列の範囲外の添字などが例外で停止します。",
+            ],
           ]
         : [
             [
@@ -3156,6 +3178,10 @@ export function createCFamily({ id, name, extensions, language }) {
             [
               "未定義動作",
               "言語仕様が結果を規定しない実行です。予測値を作らず停止します。",
+            ],
+            [
+              "添字",
+              "配列の要素の位置を指定する番号です。0から始まるため、先頭の要素の添字は0です。",
             ],
           ]),
       ...(id === "cpp"
@@ -3556,6 +3582,15 @@ export function createCFamily({ id, name, extensions, language }) {
               return "int";
             }
             if (nm === "Console.ReadLine") return "string";
+            // R7-168（修正バッチ13）：checked／unchecked 式の結果型は
+            // 中の式の型そのもの。int と決め打ちすると checked(x)/2
+            // （x は double）が整数除算に化けた（dotnet 実測は 2.5）。
+            if (
+              managed &&
+              ["checked", "unchecked"].includes(nm) &&
+              a.args?.length === 1
+            )
+              return typeOf(a.args[0], s);
             return "int";
           }
           if (a.k === "ternary") {
@@ -3735,6 +3770,60 @@ export function createCFamily({ id, name, extensions, language }) {
           return false;
         }
         function cast(v, type, s, node, api) {
+          // R7-95（修正バッチ13）：std::getline の戻り値は std::istream&
+          // であり、読み取った文字列ではない。戻り値マーカーを変数へ
+          // 初期化・代入する形は実 g++ でもコンパイルエラーになるため、
+          // 変換先の型を問わず名指しで停止する（文として呼び出す正規形
+          // は戻り値を破棄するため影響しない）。
+          if (isUnknown(v) && String(v.id).startsWith("getline-result"))
+            api.fail(
+              `std::getline の戻り値（std::istream&）は ${type} へ変換できません（戻り値は読み取った文字列ではありません）`,
+              node,
+              "CompileError",
+            );
+          // R7-57（修正バッチ13）：C# の整数型同士の暗黙変換は、変換先が
+          // 変換元の全ての値を表せる場合だけ存在する（int 変数→short は
+          // CS0266）。従来は接尾辞定数だけを検査し、変数・実行時値は
+          // 範囲内の値なら黙って受理していた。定数式は定数変換の規則
+          // （範囲内なら可）が別に効くため対象外とし、複合代入は組み込み
+          // のキャストバックがあるため対象外とする。浮動小数点が絡む
+          // 既存の縮小検査はこの後の既存ブロックが従来の文面で担う。
+          // 対象は符号付き系と char への変換だけに限る：符号なし型
+          // （byte／ushort／uint／ulong）への実行時値の代入は、修正
+          // バッチ2で確定したモデル規則（unchecked の折り返し。各符号
+          // なし項目の caution に開示済み）を維持し、ここでは止めない。
+          if (
+            managed &&
+            node?.value &&
+            !(node.k === "assign" && node.op && node.op !== "=") &&
+            !isConstantIntegerExpr(node.value)
+          ) {
+            const csIntegral = ["sbyte", "byte", "short", "ushort", "int", "uint", "long", "ulong", "char"];
+            if (["sbyte", "short", "int", "long", "char"].includes(type)) {
+              const srcT = typeOf(node.value, s);
+              const implicitTargets = {
+                sbyte: ["short", "int", "long"],
+                byte: ["short", "ushort", "int", "uint", "long", "ulong"],
+                short: ["int", "long"],
+                ushort: ["int", "uint", "long", "ulong"],
+                int: ["long"],
+                uint: ["long", "ulong"],
+                long: [],
+                ulong: [],
+                char: ["ushort", "int", "uint", "long", "ulong"],
+              };
+              if (
+                csIntegral.includes(srcT) &&
+                srcT !== type &&
+                !implicitTargets[srcT].includes(type)
+              )
+                api.fail(
+                  `${srcT} から ${type} への暗黙の変換はできません（CS0266：明示キャストが必要です）`,
+                  node,
+                  "CompileError",
+                );
+            }
+          }
           if (isUnknown(v)) return v;
           if (type.endsWith("*")) {
             if (!isPtr(v) && v !== null)
@@ -5395,6 +5484,26 @@ export function createCFamily({ id, name, extensions, language }) {
               if (arg.k !== "type") checkSizeOperand(arg);
               if (arg.k === "var" && !builtinTypes.includes(arg.name) && !["true", "false"].includes(arg.name) && !Object.hasOwn(s.types, arg.name)) api.fail("宣言されていないsizeof対象です", a, "CompileError");
               let type = arg.k === "var" && builtinTypes.includes(arg.name) ? arg.name : typeOf(arg, s);
+              // R7-160（修正バッチ13）：単項 +／-／~ の結果型は整数昇格後の
+              // 型（char／short／bool 等は int へ昇格。gcc／g++ 実測：
+              // sizeof(+x)（char）は 4、sizeof(-x)（short）は 4）。
+              // typeOf は単項演算子の型をオペランドの型のまま返すため、
+              // sizeof の型導出だけ昇格を適用する（オペランド自体は
+              // 評価されないので、他の経路の型には影響させない）。
+              if (arg.k === "unary") {
+                const promotedType = (e) => {
+                  if (e.k === "unary" && ["+", "-", "~"].includes(e.op)) {
+                    const inner = promotedType(e.arg);
+                    return ["char", "signed char", "unsigned char", "short", "unsigned short", "bool"].includes(inner)
+                      ? "int"
+                      : inner;
+                  }
+                  if (e.k === "unary" && e.op === "!")
+                    return language === "c" ? "int" : "bool";
+                  return typeOf(e, s);
+                };
+                type = promotedType(arg);
+              }
               if (arg.k === "literal" && typeof arg.value === "string" && arg.quote !== "'") return { handled: true, value: new TextEncoder().encode(arg.value).length + 1 };
               const sizes = { char: 1, bool: 1, int: 4, long: (s.model.longBits || 64) / 8, float: 4, double: 8 };
               if (type.startsWith("unsigned ") || type.startsWith("signed ")) type = type.replace(/^(unsigned|signed) /, "");
@@ -6223,6 +6332,30 @@ export function createCFamily({ id, name, extensions, language }) {
                 return ta + tb;
               }
               if (["==", "!=", "<", ">", "<=", ">="].includes(op)) {
+                // R7-164（修正バッチ13）：非 null 許容の値型と null の比較は
+                // 実 C# では CS0472 警告のみで、== は常に False、!= は常に
+                // True、関係演算は常に False（リフトした演算子。dotnet
+                // 8.0.428 実測）。「比較できません」の CompileError は
+                // 虚偽の言語規則だったため、確定した真偽を返す。
+                {
+                  const nullSide = (t, v) =>
+                    v === null
+                      ? "null"
+                      : t === "bool" || typeof v === "boolean"
+                        ? "bool"
+                        : t === "char"
+                          ? "char"
+                          : typeof v === "number" || ["sbyte", "byte", "short", "ushort", "int", "uint", "long", "ulong", "float", "double"].includes(t)
+                            ? "number"
+                            : null;
+                  const ca0 = nullSide(lt, a),
+                    cb0 = nullSide(rt, b);
+                  if (
+                    (ca0 === "null" && ["number", "bool", "char"].includes(cb0)) ||
+                    (cb0 === "null" && ["number", "bool", "char"].includes(ca0))
+                  )
+                    return op === "!=";
+                }
                 const cat = (t, v) =>
                   v === null
                     ? "null"
@@ -6273,20 +6406,20 @@ export function createCFamily({ id, name, extensions, language }) {
             }
             // RG-71（R19-N9）: C++ では std::string と数値の比較演算子は存在しない。
             // 無言で真偽を合成せず、型の組み合わせを指して停止する。
-            // （char・文字列リテラル・char* との比較は実 C++ でも有効なので対象外）
+            // （文字列リテラル・char* との比較は実 C++ でも有効なので対象外）
+            // R7-163（修正バッチ13）: std::string と char の比較演算子も
+            // 存在しない（g++ 13 実測：no match for 'operator=='、operand
+            // types are 'std::string' and 'char'）。旧コメントの「char との
+            // 比較は有効」は誤りで、 RG-71 の変換は虚偽の成功だった。
+            // char との + （連結）は operator+ の char オーバーロードが
+            // 実在するため、下の RG-40 ブロックで従来どおり扱う。
             if (
               !managed &&
               language === "cpp" &&
               ["==", "!=", "<", ">", "<=", ">="].includes(op)
             ) {
               const otherOk = (t) =>
-                t === "string" || t === "char[]" || t === "char" || t.endsWith("*");
-              // std::string と char の比較は実 C++ でも有効で、1文字文字列との
-              // 比較として評価する（char の数値コードを文字へ戻す）。
-              if (lt === "string" && rt === "char" && typeof b === "number")
-                b = String.fromCharCode(b);
-              if (rt === "string" && lt === "char" && typeof a === "number")
-                a = String.fromCharCode(a);
+                t === "string" || t === "char[]" || t.endsWith("*");
               if (
                 (lt === "string" && !otherOk(rt)) ||
                 (rt === "string" && !otherOk(lt))
@@ -6375,8 +6508,10 @@ export function createCFamily({ id, name, extensions, language }) {
               if (result < min || result > max) {
                 if (!managed)
                   api.fail("符号付き整数のオーバーフロー", node, "未定義動作");
-                if (s.checked)
-                  api.fail("整数のオーバーフロー", node, "OverflowException");
+                // R7-166（修正バッチ13）：C# のシフト演算は checked 文脈の
+                // 対象外で、結果はビット幅で折り返す（dotnet 8.0.428 実測：
+                // checked(x<<31) も checked ブロック内の x<<31 も
+                // -2147483648。例外は出ない）。
                 result = BigInt.asIntN(bits, result);
               }
               if (!Number.isSafeInteger(Number(result)))
@@ -6475,9 +6610,9 @@ export function createCFamily({ id, name, extensions, language }) {
             }
             if (
               integer &&
-              a === -2147483648 &&
               b === -1 &&
-              (managed ? op === "/" : ["/", "%"].includes(op))
+              ["/", "%"].includes(op) &&
+              a === -(2 ** (width(type, s) - 1))
             )
               api.fail(
                 "整数除算のオーバーフロー",
@@ -6515,7 +6650,13 @@ export function createCFamily({ id, name, extensions, language }) {
                 api.fail("std::getline は std::getline(std::cin, 変数) の形式のみ対応します", node, "未対応");
               const v = api.freshUnknown("標準入力の1行", s);
               api.write(args[1], v, s, node);
-              return v;
+              // R7-95（修正バッチ13）：戻り値は読み取った文字列ではなく
+              // std::istream&。文字列と区別できる専用マーカーを返し、
+              // 変数への初期化・代入は cast 側で名指し停止する。
+              return unknown(
+                "std::getline の戻り値（std::istream&）",
+                "getline-result",
+              );
             }
             if (managed && ["int.TryParse", "double.TryParse"].includes(name)) {
               // The out argument is write-only: it must not be read first
@@ -6595,6 +6736,16 @@ export function createCFamily({ id, name, extensions, language }) {
             if (name === "Console.WriteLine") {
               if (!managed || values.length !== 1)
                 api.fail("Console.WriteLineは1引数のみ対応します", node);
+              // R7-170（修正バッチ13）：null リテラルそのものは char[] と
+              // string の両方へ解釈でき、実 C# では CS0121 の曖昧エラー
+              // （dotnet 8.0.428 実測）。null を保持する string 変数や
+              // (string)null のキャスト形は従来どおり空行を出力する。
+              if (args[0]?.k === "literal" && args[0].value === null)
+                api.fail(
+                  "Console.WriteLine(null) は呼び出しが曖昧です（CS0121：char[] と string のどちらのオーバーロードか決められません）",
+                  node,
+                  "CompileError",
+                );
               const v0 = values[0],
                 argType = typeOf(args[0], s);
               let text;
@@ -6637,8 +6788,27 @@ export function createCFamily({ id, name, extensions, language }) {
             if (name === "printf") {
               if (managed) api.fail("C#のprintfは未対応です", node);
               let [fmt, ...rest] = values;
+              // R7-177（修正バッチ13）：書式は文字列リテラルだけでなく
+              // char 配列・char* 経由でも渡せる（gcc／g++ 実測：
+              // char fmt[]="%d"; printf(fmt,7) は 7 を出力）。ポインタは
+              // ヌル終端までの文字列として読み取る。std::string そのもの
+              // は const char* へ変換できないため対象外として名指す。
+              if (language === "cpp" && typeOf(args[0], s) === "string")
+                api.fail(
+                  "printf の書式に std::string は使えません（const char* が必要です）",
+                  node,
+                  "CompileError",
+                );
+              if (isPtr(fmt)) fmt = cString(fmt, s, api, node);
               if (typeof fmt !== "string")
                 api.fail("printfの書式文字列が必要です", node);
+              // R7-162（修正バッチ13）：書式文字列は最初のヌル文字で
+              // 終端する（gcc 実測：printf("A\0B%d",7) の出力は "A" で
+              // 戻り値は 1。ヌル以降の書式は読まれず、余った引数は
+              // 実物でも無視される）。
+              const nulAt = fmt.indexOf("\0");
+              const truncatedAtNul = nulAt >= 0;
+              if (truncatedAtNul) fmt = fmt.slice(0, nulAt);
               if (fmt.replace(/%[%disfcu]/g, "").includes("%")) api.fail("このprintf書式はモデルで扱えません", node, "未対応");
               let i = 0;
               let text = fmt.replace(/%([%disfcu])/g, (_, type) => {
@@ -6670,9 +6840,13 @@ export function createCFamily({ id, name, extensions, language }) {
                   );
                 // RG-04 追加表面（R21-N6）: 非有限値の %f は C の実物表記
                 // （inf／-inf／nan）。JS の toFixed が返す "Infinity" を出さない。
-                return type === "f" ? (!Number.isFinite(v) ? (Number.isNaN(v) ? "nan" : v > 0 ? "inf" : "-inf") : Object.is(v, -0) ? "-0.000000" : formatFixed6(Number(v))) : type === "c" ? String.fromCharCode(v) : String(v);
+                // R7-44（修正バッチ13）：%c は int の引数を unsigned char へ
+                // 変換してから1バイト出力する（gcc 実測：256 は 00、
+                // -1 は FF）。コード点として文字化すると存在しない
+                // 文字（U+0100 等）を捏造する。
+                return type === "f" ? (!Number.isFinite(v) ? (Number.isNaN(v) ? "nan" : v > 0 ? "inf" : "-inf") : Object.is(v, -0) ? "-0.000000" : formatFixed6(Number(v))) : type === "c" ? String.fromCharCode(((Math.trunc(v) % 256) + 256) % 256) : String(v);
               });
-              if (i !== rest.length)
+              if (i !== rest.length && !(truncatedAtNul && i < rest.length))
                 api.fail("printfの書式または引数の数は未対応です", node);
               s.outputs.push({ channel: "printf", text, line: node.line });
               api.note(s, node, "標準出力へ出します：" + text);

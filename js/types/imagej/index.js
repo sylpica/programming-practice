@@ -23,9 +23,9 @@ const exampleSetup = {
 for (const r of reference) if (Object.prototype.hasOwnProperty.call(exampleSetup, r.name)) r.example = exampleSetup[r.name] + "\n" + r.example;
 reference.find(r=>r.name === "File.exists").example = 'print(File.exists("/model/sample.tif"));';
 reference.find(r=>r.name === "open").example = 'open("/model/input/image1.tif");';
-const unmodeledReferences = new Set(["getValue", "setColor", "drawLine", "getPixelSize", "getLut", "getDateAndTime", "getLocationAndSize", "getDisplayedArea", "getSelectionCoordinates", "getLine", "getCursorLoc", "Roi.getBounds", "Roi.getCoordinates", "Roi.contains", "Roi.move", "Roi.translate", "Roi.setStrokeWidth", "Roi.setStrokeColor", "Roi.setFillColor", "Roi.setName", "Roi.getName", "Roi.setPosition", "Roi.getPosition", "Roi.getProperty", "Roi.setProperty", "RoiManager.select", "RoiManager.selectByName", "RoiManager.getName", "RoiManager.getIndex", "RoiManager.delete", "setForegroundColor", "File.open", "File.append", "runMacro", "Math.sinh", "Math.cosh", "Math.tanh"]);
+const unmodeledReferences = new Set(["getValue", "setColor", "drawLine", "getPixelSize", "getLut", "getDateAndTime", "getLocationAndSize", "getDisplayedArea", "getSelectionCoordinates", "getLine", "getCursorLoc", "Roi.getBounds", "Roi.getCoordinates", "Roi.contains", "Roi.move", "Roi.translate", "Roi.setStrokeWidth", "Roi.setStrokeColor", "Roi.setFillColor", "Roi.setName", "Roi.getName", "Roi.setPosition", "Roi.getPosition", "Roi.getProperty", "Roi.setProperty", "RoiManager.select", "RoiManager.selectByName", "RoiManager.getName", "RoiManager.getIndex", "RoiManager.delete", "setForegroundColor", "File.open", "File.append", "runMacro", "eval", "Math.sinh", "Math.cosh", "Math.tanh"]);
 for (const r of reference) {
-  // R29-N4（U-45）: この37件は「意味論を一次情報で確定できなかった（未確認）」
+  // R29-N4（U-45）: この38件（R7-88 で eval を追加）は「意味論を一次情報で確定できなかった（未確認）」
   // ものではなく、実体は未実装（未対応）である。34件は公式 Built-in Macro
   // Functions に定義がある実在関数で説明も確定しており、残り3件
   // （Math.sinh／cosh／tanh）は項目自身が「実物に存在しない」と確定記述して
@@ -54,6 +54,10 @@ export const definition = {
   glossary: [
     ["モデル画像", "画素値・幅・高さ・階調などを明示した学習用の画像です。"],
     ["ROI", "測定や処理の対象として選択した領域。"],
+    [
+      "チャンネル",
+      "画像を構成する色成分ごとの画像です。カラー画像のRGB成分や、蛍光標識ごとの成分がそれぞれ別のチャンネルになります。",
+    ],
     ["Log", "printの出力先です。"],
     [
       "スタック",

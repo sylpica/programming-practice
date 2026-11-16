@@ -193,7 +193,12 @@ test("R29-N17 empty names propagate through subsetting and combining ops", async
   await rOutIs(base + "print(names(v[1]))\nprint(names(v[c(TRUE, FALSE)]))\nprint(names(v[-1]))", ['c("")', 'c("")', 'c("")']);
   await rOutIs(base + "print(names(-v))\nprint(names(v + 0))", ['c("", "")', 'c("", "")']);
   await rOutIs(base + "print(names(rep(v, 2)))", ['c("", "", "", "")']);
-  await rOutIs(base + "print(names(c(v)))\nprint(names(as.character(v)))\nprint(names(as.numeric(v)))", ['c("", "")', 'c("", "")', 'c("", "")']);
+  await rOutIs(base + "print(names(c(v)))", ['c("", "")']);
+  // B13-R（R7-153）テスト是正：as.character／as.double（as.numeric）は
+  // 公式 ?character／?double どおり「like as.vector it strips attributes
+  // including names」で名前を取り除く。従来の伝播期待は一次情報と
+  // 矛盾する固定だった。
+  await rOutIs(base + "print(names(as.character(v)))\nprint(names(as.numeric(v)))", ["NULL", "NULL"]);
 });
 
 // ---------- R29-N17：名前属性が無い入力は無いまま（NULL のまま） ----------

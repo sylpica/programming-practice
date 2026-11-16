@@ -176,6 +176,26 @@ function isAuthorError(e) {
 }
 const CIRCULAR_TEMPLATE_MESSAGE =
   "テンプレートに循環参照があります（YAMLエイリアスなどが自分自身を参照しています）。循環しない形に書き直してください";
+// R7-217（修正バッチ13・fxb班）: fragment 内の JSON 変換不能値の走査。
+// Python エンジンの toModel は集合だけを内部表現（{__set:[...]}）のまま
+// 返すため、その形と、素の JS 数値として残る非有限数を検出する。循環は
+// toModel 側で未確定表現に置き換わるが、念のため祖先集合でも守る。
+// 戻り値は名指し用の表示（例：集合（set）、NaN、Infinity）。問題が
+// 無ければ null。
+function findNonJsonValue(v, ancestors = new Set()) {
+  if (typeof v === "number") return Number.isFinite(v) ? null : String(v);
+  if (!v || typeof v !== "object") return null;
+  if (isUnknown(v)) return null;
+  if (Array.isArray(v.__set)) return "集合（set）";
+  if (ancestors.has(v)) return null;
+  ancestors.add(v);
+  for (const child of Object.values(v)) {
+    const found = findNonJsonValue(child, ancestors);
+    if (found) return found;
+  }
+  ancestors.delete(v);
+  return null;
+}
 // R25-N4: js-yaml が作る循環オブジェクトグラフは、stripTransformKeys と
 // nested() の両方が循環検出なしに再帰しスタックを尽くすため、走査に
 // 入る前に反復走査（明示スタック）で循環だけを検出して原因を名指す。
@@ -454,6 +474,16 @@ export const definition = {
                 line: 1,
                 message: "ハンドラは辞書形式のレスポンスを返す必要があります",
               };
+            // R7-66（修正バッチ13・fxb班）: requestId のキー存在は、入力
+            // IDの値が未確定かどうかと無関係に判定できる。従来は入力ID
+            // が未確定だと照合ごと飛び、応答からの欠落まで見逃していた。
+            // 欠落は欠落として名指す（値の照合は従来どおり、双方が確定
+            // しているときだけ行う）。
+            else if (!Object.hasOwn(response, "requestId"))
+              p.error = {
+                line: 1,
+                message: "レスポンスにrequestIdが含まれていません",
+              };
             else if (
               response.requestId?.kind !== "unknown" &&
               event.requestId?.kind !== "unknown" &&
@@ -464,11 +494,24 @@ export const definition = {
                 line: 1,
                 message: "レスポンスのrequestIdが入力と一致しません",
               };
-            else if (typeof response.status !== "string")
+            // R7-67: status の「欠落」と「存在するが文字列でない」を
+            // 切り分ける。従来は typeof の不一致を一律「含まれていま
+            // せん」に潰し、存在するキーの型不正を欠落と誤診していた。
+            else if (!Object.hasOwn(response, "status"))
               p.error = {
                 line: 1,
                 message:
                   "レスポンスにstatusが含まれていません" +
+                  (typeof response.errorMessage === "string"
+                    ? "（errorMessage：" + response.errorMessage + "）"
+                    : ""),
+              };
+            else if (typeof response.status !== "string")
+              p.error = {
+                line: 1,
+                message:
+                  "レスポンスのstatusが文字列ではありません：" +
+                  formatValue(response.status) +
                   (typeof response.errorMessage === "string"
                     ? "（errorMessage：" + response.errorMessage + "）"
                     : ""),
@@ -505,6 +548,23 @@ export const definition = {
                 message:
                   "レスポンスのfragmentがオブジェクトではありません（変換後のテンプレート断片はオブジェクトで返してください）：" +
                   formatValue(response.fragment),
+              };
+            // R7-217: 応答は JSON として返されるため、fragment の中に
+            // JSON へ変換できない値（Python の集合、NaN／Infinity 等の
+            // 非有限数）が含まれていれば成功にはできない。CPython の
+            // json.dumps は集合で TypeError、allow_nan=False では非有限
+            // 数で ValueError になる。従来は境界検査が無く、集合の内部
+            // 表現（__set タグ）や "NaN" 文字列化した値を、正常な変換
+            // 結果として提示していた。入れ子を走査し、最初に見つけた
+            // 変換不能値を名指して止める（未確定値はモデル上の値として
+            // 対象外）。
+            else if (findNonJsonValue(response.fragment))
+              p.error = {
+                line: 1,
+                message:
+                  "レスポンスのfragmentにJSONへ変換できない値が含まれています：" +
+                  findNonJsonValue(response.fragment) +
+                  "（マクロのレスポンスはJSONで返されるため、集合やNaN／Infinityは使えません）",
               };
           }
           p.groups.push({
@@ -595,7 +655,11 @@ export const definition = {
           );
         if (["AWS::Include", "AWS::Serverless", "AWS::Serverless-2016-10-31"].includes(name))
           throw Object.assign(Error("未対応：組込みTransformの実際の変換・外部サービスへの接続は実装していません：" + name), {line, category: "未対応"});
-        if (!model.macros?.[name])
+        // R7-218: マクロ名の存在は自有プロパティで判定する。従来の
+        // model.macros?.[name] は Object.prototype の継承プロパティ
+        // （toString／constructor 等）をハンドラとして拾い、未登録名
+        // なのに汎用の予期しないエラーになっていた。
+        if (!model.macros || !Object.hasOwn(model.macros, name))
           throw Object.assign(
             Error("未確認：モデルにマクロ定義がありません：" + name),
             { line },

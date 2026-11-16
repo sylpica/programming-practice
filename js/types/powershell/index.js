@@ -116,7 +116,7 @@ const data = [
     "Set-Content",
     "ファイル",
     "Set-Content パス -Value 値",
-    "仮想ファイルの内容を置き換えます。モデルはUTF-8・Windowsの改行を使用します。別名scでも同じ処理をします。構文行の基本形のほかに、末尾の改行を付けない-NoNewlineも実装されています。書き込み先が予約デバイス名の場合、NULは内容を破棄してファイルを作らず、CON／CONOUT$は画面へ出力し、それ以外のデバイスは名前を挙げて停止します。",
+    "仮想ファイルの内容を置き換えます。モデルはUTF-8・Windowsの改行を使用します。構文行の基本形のほかに、末尾の改行を付けない-NoNewlineも実装されています。書き込み先が予約デバイス名の場合、NULは内容を破棄してファイルを作らず、CON／CONOUT$は画面へ出力し、それ以外のデバイスは名前を挙げて停止します。",
     'Set-Content out.txt -Value "Hello"\nGet-Content out.txt',
     "microsoft.powershell.management/set-content",
     "成功ストリームへの出力なし",
@@ -143,7 +143,7 @@ const data = [
     "Remove-Item",
     "ファイル",
     "Remove-Item パス [-Recurse] [-Force]",
-    "モデルからファイル・フォルダを削除します。別名ri・rmでも同じ処理をします。フォルダとその中身をまとめて削除する-Recurse、確認なしで削除する-Forceも実装されています。",
+    "モデルからファイル・フォルダを削除します。別名ri・rmでも同じ処理をします。フォルダとその中身をまとめて削除する-Recurse、隠し項目・読み取り専用項目の削除も許可する-Forceも実装されています（-Forceは確認そのものを省略するものではありません）。",
     "New-Item temp.txt -ItemType File\nRemove-Item temp.txt",
     "microsoft.powershell.management/remove-item",
     "成功ストリームへの出力なし",
@@ -549,6 +549,10 @@ export const definition = {
       "$_／$PSItemは現在のパイプライン項目を表します。$?は直近の成功状態、$LASTEXITCODEは外部プロセスの終了コードで、このモデルでは初期値を保持します。$PWDは現在のフォルダ、$PSVersionTableはバージョン情報、$HOMEはホームフォルダを表します。",
     ],
     ["仮想FS", "入力モデルに明示したフォルダとファイルだけを操作します。"],
+    [
+      "ハッシュテーブル",
+      "@{キー = 値}で作る、キーと値の対応の集まりです。値は$変数[キー]や$変数.キーで取り出します。",
+    ],
     [
       "未確定（値）",
       "実行時に決まる値のことです。このアプリでは値を仮定して作らず、未確定のまま扱って、到達可能な分岐をすべて表示します。",

@@ -51,7 +51,12 @@ test("RG-52 C# bool &, |, ^ are logical operators", async () => {
   assert.equal(output(await first("csharp", `if (true ^ false) { Console.WriteLine("y"); }`)), "y");
 });
 test("RG-52 C# MinValue % -1 is 0 while MinValue / -1 overflows", async () => {
-  assert.equal(output(await first("csharp", `int x = int.MinValue; Console.WriteLine(x % -1);`)), "0");
+  // 修正バッチ13（R7-172）で是正：変数経由の x % -1 は dotnet 8.0.428
+  // 実測で OverflowException（旧断定の 0 は、リテラル定数形
+  // int.MinValue % -1 が定数畳み込みで 0 になる挙動を変数形へ誤って
+  // 広げたもの）。モデルは int.MinValue を実行時の値として扱う除算形
+  // の規約に合わせ、% も例外で停止する。
+  await expectError("csharp", `int x = int.MinValue; Console.WriteLine(x % -1);`, /オーバーフロー/, "OverflowException");
   await expectError("csharp", `int x = int.MinValue; Console.WriteLine(x / -1);`, /オーバーフロー/, "OverflowException");
 });
 test("RG-52 C# ++/-- wrap in unchecked context; C/C++ ++ overflow is UB", async () => {
@@ -234,8 +239,13 @@ test("RG-71 std::string compared with a number stops with the types named", asyn
   const code = "#include <iostream>\n#include <string>\nint main() {\n    std::string s = \"a\";\n    std::cout << (s == 1) << std::endl;\n    return 0;\n}";
   const r = await run("cpp", code);
   assert.match(errors(r)[0].message, /std::string と int は比較できません/);
-  const ok = await first("cpp", "#include <iostream>\n#include <string>\nint main() {\n    std::string s = \"a\";\n    std::cout << (s == \"a\") << (s == 'a') << std::endl;\n    return 0;\n}");
-  assert.deepEqual(ok.outputs.map((o) => o.text), ["11\n"]);
+  const ok = await first("cpp", "#include <iostream>\n#include <string>\nint main() {\n    std::string s = \"a\";\n    std::cout << (s == \"a\") << std::endl;\n    return 0;\n}");
+  assert.deepEqual(ok.outputs.map((o) => o.text), ["1\n"]);
+  // 修正バッチ13（R7-163）で是正：std::string と char の比較演算子は
+  // 実在しない（g++ 13 実測：no match for 'operator=='）。旧断定の
+  // (s == 'a') = 1 は RG-71 時点の誤った前提に基づくため、エラー側へ移す。
+  const charCmp = await run("cpp", "#include <iostream>\n#include <string>\nint main() {\n    std::string s = \"a\";\n    std::cout << (s == 'a') << std::endl;\n    return 0;\n}");
+  assert.match(errors(charCmp)[0].message, /std::string と char は比較できません/);
 });
 
 // RG-76（R20-N6）: C++ で std::string を条件に置くと型エラーで停止する
@@ -258,9 +268,12 @@ test("RG-77 C# nested same-name declarations are CS0136, siblings stay legal", a
 });
 
 // RG-05 追加表面（R20-N8）: C# の値型と null の等値比較は CS0019 相当で停止する
+// 修正バッチ13（R7-164）で是正：値型と null の比較は dotnet 8.0.428
+// 実測で CS0472 警告のみとなり、== は False を返す（CS0019 ではない）。
+// 旧断定は虚偽の言語規則だったため、確定真偽側へ改める。
 test("RG-05 surface C# value-type == null stops instead of returning false", async () => {
-  const bad = await run("csharp", "using System;\nclass P {\n    static void Main() {\n        Console.WriteLine(true == null);\n    }\n}");
-  assert.match(errors(bad)[0].message, /bool と null は比較できません/);
+  const bad = await first("csharp", "using System;\nclass P {\n    static void Main() {\n        Console.WriteLine(true == null);\n    }\n}");
+  assert.deepEqual(bad.outputs.map((o) => o.text), ["False"]);
   const ok = await first("csharp", "using System;\nclass P {\n    static void Main() {\n        string t = \"x\";\n        Console.WriteLine(t == null);\n        Console.WriteLine(null == null);\n    }\n}");
   assert.deepEqual(ok.outputs.map((o) => o.text), ["False", "True"]);
 });

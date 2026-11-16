@@ -16,6 +16,10 @@ export const referenceDetails = {
     "returns": "戻り値なし（宣言または制御文）",
     "source": "https://en.cppreference.com/w/c/language/pointer"
   },
+  "NULL": {
+    "returns": "ヌルポインタ定数（型は処理系定義：void* へのポインタ、または整数の 0）",
+    "source": "https://en.cppreference.com/w/c/types/NULL"
+  },
   "if": {
     "returns": "戻り値なし（宣言または制御文）",
     "source": "https://en.cppreference.com/w/c/language/if"

@@ -90,7 +90,12 @@ function dynamicValue(name, s, api) {
   if (v !== undefined) return v;
   if (/^cd$/i.test(name)) return s.model.cwd;
   if (/^errorlevel$/i.test(name)) return s.cmd.errorlevel;
-  if (/^(random|date|time)$/i.test(name))
+  // R7-210: CMDEXTVERSION はコマンド拡張のバージョンで、cmd.exe では
+  // 2 に確定する（SS64「%CMDEXTVERSION%」）。CMDCMDLINE は起動時の
+  // コマンド行でありモデルは保持しないため、RANDOM 等と同じく
+  // 実行時に決まる未確定値として扱い、値を捏造しない。
+  if (/^cmdextversion$/i.test(name)) return "2";
+  if (/^(random|date|time|cmdcmdline)$/i.test(name))
     return api
       ? api.freshUnknown(name + " の実行時の値", s)
       : unknown(name + " の実行時の値");
@@ -109,7 +114,14 @@ function percent(text, s, api, node) {
   // R26-N23：定義済み（空文字を含む）変数と動的変数だけを展開対象とする。
   const expandable = (name) =>
     ciGet(s.vars, name) !== undefined ||
-    /^(cd|errorlevel|random|date|time)$/i.test(name);
+    /^(cd|errorlevel|random|date|time|cmdextversion|cmdcmdline)$/i.test(name);
+  // R7-01 是正: % 展開は実 cmd では「解析フェーズ」のテキスト置換であり、
+  // 展開されたテキストは再解析される（値中の & はコマンド区切りとして
+  // 働く）。そのため既知の値はスロット保護せずそのまま差し込む。
+  // 未確定値だけは、構造として扱えないため従来どおりスロットに保持する。
+  // （遅延展開 !X! は実行時展開で再解析されないため、従来どおり保護される。
+  // 旧 R22-N5 の % 形の前提は Codex 実機測定により誤りと裁定された。）
+  const insert = (v) => (isUnknown(v) ? slot(v, s) : String(v ?? ""));
   let out = "";
   for (let i = 0; i < text.length; i++) {
     if (out.length > CMD_VALUE_LIMIT)
@@ -135,7 +147,7 @@ function percent(text, s, api, node) {
         i += vm[0].length - 1;
         continue;
       }
-      out += slot(dynamicValue(vm[1], s, api), s);
+      out += insert(dynamicValue(vm[1], s, api));
       i += vm[0].length - 1;
       continue;
     }
@@ -161,17 +173,16 @@ function percent(text, s, api, node) {
           ? // %0 is the invoked batch name, which the model does not
             // hold: never fabricate one (R22-N8).
             slot(unknown("バッチファイル名（%0）の実行時の値"), s)
-          : slot(unquote(s.cmd.args[Number(m[1]) - 1] || ""), s);
+          : insert(unquote(s.cmd.args[Number(m[1]) - 1] || ""));
       i += m[0].length - 1;
       continue;
     }
     m = text.slice(i).match(/^%([0-9])/);
     if (m) {
-      out += slot(
+      out += insert(
         m[1] === "0"
           ? unknown("バッチファイル名（%0）の実行時の値")
           : s.cmd.args[Number(m[1]) - 1] || "",
-        s,
       );
       i++;
       continue;
@@ -190,7 +201,7 @@ function percent(text, s, api, node) {
       i = end;
       continue;
     }
-    out += slot(dynamicValue(name, s, api), s);
+    out += insert(dynamicValue(name, s, api));
     i = end;
   }
   return out;
@@ -214,10 +225,18 @@ function delayed(text, s, node, api) {
       fail("未対応：未束縛のfor変数／callによる二重展開", node.line);
     return track(slot(s.cmd.loops[name], s));
   });
-  if (s.cmd.delayed)
+  if (s.cmd.delayed) {
+    // R7-02: 遅延展開が有効なとき、対にならない単独の ! は実 cmd では
+    // 取り除かれる（echo hello!world → helloworld）。^! のエスケープは
+    // プレースホルダへ退避してから処理し、最後に ^! へ戻す（後段の
+    // キャレット解除でリテラルの ! になる）。
+    text = text.replace(/\^!/g, "\uE000");
     text = text.replace(/!([^!]*)!/g, (_, name) =>
       track(slot(dynamicValue(name, s, api), s)),
     );
+    text = text.replace(/!/g, "");
+    text = text.replace(/\uE000/g, "^!");
+  }
   let out = "",
     quote = false;
   for (let i = 0; i < text.length; i++) {
@@ -308,15 +327,43 @@ function partsIf(text, node) {
     insensitive,
   };
 }
+// R7-197: cmd の if 数値解釈。先頭 0 の整数は 8 進として読む
+// （00010 = 8。8／9 を含む 08 等は数値として解釈できない）、
+// 0x 接頭辞は 16 進、結果は 32 ビット符号付き範囲へ飽和させる
+// （2147483648 は 2147483647 として比較される。Codex 実機測定）。
+// 数値として解釈できない場合は null を返し、呼び出し側が文字列
+// 比較へ落とす。
+function cmdNumber(text) {
+  const t = String(text);
+  let sign = 1,
+    body = t;
+  if (/^[+-]/.test(t)) {
+    sign = t[0] === "-" ? -1 : 1;
+    body = t.slice(1);
+  }
+  let v = null;
+  if (/^0[xX][0-9a-fA-F]+$/.test(body)) v = parseInt(body, 16);
+  else if (/^\d+$/.test(body)) {
+    if (body.length > 1 && body.startsWith("0")) {
+      if (/^[0-7]+$/.test(body)) v = parseInt(body, 8);
+    } else v = parseInt(body, 10);
+  }
+  if (v === null || !Number.isFinite(v)) return null;
+  return Math.max(-2147483648, Math.min(2147483647, sign * v));
+}
 function compare(c, s, node) {
   let a = value(c.a, s),
     b = value(c.b || "", s),
     v;
   if (c.op === "defined") v = ciGet(s.vars, a) !== undefined;
   else if (c.op === "exist") {
+    // R7-03: exist の対象がワイルドカードを含む場合は、一致する
+    // 項目が1つでもあれば真（実 cmd の if exist *.txt）。
     v = isUnknown(a)
       ? unknown("指定したモデルパスの存在", a.id + ":exist")
-      : !!fsEntry(s, a, node.line);
+      : /[*?]/.test(String(a))
+        ? listFiles(s, a, node.line).length > 0
+        : !!fsEntry(s, a, node.line);
   } else if (c.op === "errorlevel") {
     a = s.cmd.errorlevel;
     b = Number(c.a);
@@ -327,23 +374,6 @@ function compare(c, s, node) {
       : a >= b;
   } else {
     let op = c.op;
-    if (op !== "==" && !isUnknown(a) && !isUnknown(b)) {
-      if (!/^[+-]?\d+$/.test(a) || !/^[+-]?\d+$/.test(b))
-        fail(
-          "未対応：数値でないEQU等の比較（文字列には == を使用）",
-          node.line,
-        );
-      a = Number(a);
-      b = Number(b);
-      if (!Number.isSafeInteger(a) || !Number.isSafeInteger(b))
-        fail("未確認：比較の数値範囲外", node.line, "未確認");
-    }
-    if (c.insensitive) {
-      if (isUnknown(a) || isUnknown(b))
-        fail("未確認：未確定文字列の /I 比較", node.line, "未確認");
-      a = String(a).toUpperCase();
-      b = String(b).toUpperCase();
-    }
     const mapped = {
       "==": "=",
       EQU: "=",
@@ -353,20 +383,50 @@ function compare(c, s, node) {
       GTR: ">",
       GEQ: ">=",
     }[op];
-    v =
-      isUnknown(a) || isUnknown(b)
-        ? { ...unknown("展開した環境変数の比較"), op: mapped, a, b }
-        : mapped === "="
-          ? a === b
+    if (isUnknown(a) || isUnknown(b)) {
+      if (c.insensitive)
+        fail("未確認：未確定文字列の /I 比較", node.line, "未確認");
+      v = { ...unknown("展開した環境変数の比較"), op: mapped, a, b };
+    } else if (op === "==") {
+      // == は常に文字列比較（/I のときだけ大文字小文字を区別しない）。
+      let x = String(a),
+        y = String(b);
+      if (c.insensitive) {
+        x = x.toUpperCase();
+        y = y.toUpperCase();
+      }
+      v = x === y;
+    } else {
+      // R7-196／R7-197: EQU 等は、両辺が cmd の数値として解釈できる
+      // 場合は /I の有無にかかわらず数値比較になる。解釈できない
+      // 場合は文字列比較（/I で大文字小文字を区別しない）。
+      const na = cmdNumber(a),
+        nb = cmdNumber(b);
+      let x, y;
+      if (na !== null && nb !== null) {
+        x = na;
+        y = nb;
+      } else {
+        x = String(a);
+        y = String(b);
+        if (c.insensitive) {
+          x = x.toUpperCase();
+          y = y.toUpperCase();
+        }
+      }
+      v =
+        mapped === "="
+          ? x === y
           : mapped === "<>"
-            ? a !== b
+            ? x !== y
             : mapped === "<"
-              ? a < b
+              ? x < y
               : mapped === "<="
-                ? a <= b
+                ? x <= y
                 : mapped === ">"
-                  ? a > b
-                  : a >= b;
+                  ? x > y
+                  : x >= y;
+    }
   }
   return c.negate
     ? isUnknown(v)
@@ -689,6 +749,34 @@ export function simulateCmd(source, model, limits) {
           return;
         }
         raw = delayed(raw, s, n, api);
+        // ECHO特別裁定: echo と展開結果が空白なしで連結した形
+        // （echo%CD%／echo!CD!／echo%ERRORLEVEL% 等）は、実 cmd では
+        // echo コマンドとして解釈されない。連結後のトークンがパス
+        // として不正な文字（\ / : 等）や展開残り（!）を含む場合は
+        // 構文エラー「The filename, directory name, or volume label
+        // syntax is incorrect.」になり、英数字だけのトークン
+        // （echo7 等）はその名前の未知コマンドとして扱われる。
+        if (/^echo/i.test(raw) && !/^echo(?:\.|\s|$)/i.test(raw)) {
+          // 分類はスロットを解決した実文字列で行う（内部プレース
+          // ホルダを学習者向け文言へ漏らさない）。
+          const resolved = value(raw, s),
+            token = isUnknown(resolved)
+              ? raw.match(/^\S+/)[0]
+              : String(resolved).match(/^\S+/)[0];
+          if (isUnknown(resolved) || /[\\/:*?"<>|!]/.test(token))
+            fail(
+              "The filename, directory name, or volume label syntax is incorrect.",
+              n.line,
+              "SyntaxError",
+            );
+          fail(
+            "'" +
+              token +
+              "' is not recognized as an internal or external command, operable program or batch file.",
+            n.line,
+            "実行エラー",
+          );
+        }
         const m = raw.match(/^(echo\.|[\w]+)(?:\s+([\s\S]*))?$/i);
         if (!m) fail("未対応：cmdの構文 " + raw, n.line);
         const name = m[1].toLowerCase(),
@@ -748,9 +836,16 @@ export function simulateCmd(source, model, limits) {
               break;
             }
             const input = /^\/p\s+/i.test(arg),
-              text = unquote(input ? arg.replace(/^\/p\s+/i, "") : arg),
+              // R7-209 追随: /p 形ではリダイレクト分離で付いた末尾の
+              // 空白が引用符の外側に残り、unquote が効かず変数名に
+              // 引用符が混入していた。/p の引数全体は末尾空白を
+              // 取り除いてから解釈する。
+              text = unquote(
+                input ? arg.replace(/^\/p\s+/i, "").trim() : arg,
+              ),
               at = text.indexOf("=");
             if (!arg) {
+              s.cmd.errorlevel = 0;
               api.note(s, n, "環境変数は下の終了状態で確認できます");
               break;
             }
@@ -762,9 +857,23 @@ export function simulateCmd(source, model, limits) {
                 fail("入力候補は1つ以上必要です", n.line, "モデルエラー");
               if (candidates.length > api.limits.paths)
                 api.stop(s, n, "入力候補のパス数上限");
+              // R7-209: set /p のプロンプトは標準出力へ書かれる
+              // （リダイレクト先のファイルにも入る）。改行は付かない。
+              const promptText = value(text.slice(at + 1), s);
               return candidates.slice(0, api.limits.paths).map((v) => {
                 const st = structuredClone(s);
                 if (v !== "") ciSet(st.vars, key, isUnknown(v) ? v : String(v));
+                if (typeof promptText === "string" && promptText !== "")
+                  st.outputs.push({
+                    channel: "stdout",
+                    text: promptText,
+                    uncertain: false,
+                    raw: true,
+                    line: n.line,
+                  });
+                // R7-198: set /p は、空入力なら ERRORLEVEL 1、
+                // 入力があれば 0 になる（実 cmd）。
+                if (!isUnknown(v)) st.cmd.errorlevel = v === "" ? 1 : 0;
                 api.note(
                   st,
                   n,
@@ -776,6 +885,8 @@ export function simulateCmd(source, model, limits) {
             const v = value(text.slice(at + 1), s);
             ciSet(s.vars, key, v === "" ? undefined : v);
             // NX-N28: set X= は空文字列の設定ではなく変数の削除（未定義化）。
+            // R7-198: 成功した set は ERRORLEVEL を 0 にする（実 cmd）。
+            s.cmd.errorlevel = 0;
             api.note(
               s,
               n,
@@ -800,8 +911,16 @@ export function simulateCmd(source, model, limits) {
             break;
           case "endlocal": {
             const prev = s.cmd.locals.pop();
-            if (!prev)
-              fail("対応するsetlocalがありません", n.line, "実行エラー");
+            // R7-199: 対のない endlocal は実 cmd ではエラーにならず、
+            // ERRORLEVEL も不変のまま継続する。
+            if (!prev) {
+              api.note(
+                s,
+                n,
+                "対応するsetlocalがないため、そのまま継続します",
+              );
+              break;
+            }
             s.vars = prev.vars;
             s.cmd.delayed = prev.delayed;
             api.note(s, n, "局所環境を戻します");
@@ -1043,6 +1162,8 @@ export function simulateCmd(source, model, limits) {
                 "未確認",
               );
             output(e.content, true);
+            // R7-198: 成功した type は ERRORLEVEL を 0 にする（実 cmd）。
+            s.cmd.errorlevel = 0;
             break;
           }
           case "md":
@@ -1092,7 +1213,8 @@ export function simulateCmd(source, model, limits) {
             if (!e || e.type !== "directory")
               fail("モデルにフォルダがありません", n.line, "実行エラー");
             removeEntry(s, paths[0], n.line, recursive);
-            s.cmd.errorlevel = 0;
+            // R7-198: rd は成功しても ERRORLEVEL を変更しない（実 cmd。
+            // Codex 実機測定：初期値 7 のまま残る）。
             api.note(s, n, "モデルからフォルダを削除します");
             break;
           }
@@ -1328,6 +1450,13 @@ export function simulateCmd(source, model, limits) {
             }
             if (deviceHandled) {
               s.cmd.errorlevel = 0;
+              // R7-209: NUL 宛てでも成功件数メッセージは標準出力へ出る。
+              if (deviceHandled.device === "NUL")
+                output(
+                  name === "move"
+                    ? "        1 file(s) moved."
+                    : "        1 file(s) copied.",
+                );
               api.note(
                 s,
                 n,
@@ -1350,6 +1479,13 @@ export function simulateCmd(source, model, limits) {
               overwrite,
             );
             s.cmd.errorlevel = 0;
+            // R7-209: copy／move の成功メッセージは標準出力へ出る
+            // （パイプ先にも渡る。実 cmd の英語環境の文面）。
+            output(
+              name === "move"
+                ? "        1 file(s) moved."
+                : "        1 file(s) copied.",
+            );
             api.note(
               s,
               n,

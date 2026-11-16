@@ -83,21 +83,21 @@
 | --- | ---: | ---: | ---: | ---: | ---: |
 | Excel VBA | 8 | 3 | 3 | 2 | 338 |
 | ImageJマクロ | 10 | 5 | 1 | 4 | 201 |
-| AWS CloudFormation Macros | 6 | 2 | 2 | 2 | 224 |
+| AWS CloudFormation Macros | 6 | 2 | 2 | 2 | 226 |
 | Power Automate | 6 | 2 | 2 | 2 | 15 |
 | AutoHotkey v2 | 6 | 2 | 2 | 2 | 26 |
-| UI.Vision RPA | 6 | 2 | 2 | 2 | 22 |
+| UI.Vision RPA | 6 | 2 | 2 | 2 | 25 |
 | Power Apps | 6 | 2 | 2 | 2 | 28 |
-| Python | 10 | 4 | 3 | 3 | 213 |
+| Python | 10 | 4 | 3 | 3 | 215 |
 | R | 6 | 2 | 2 | 2 | 44 |
-| C | 6 | 2 | 2 | 2 | 26 |
-| C++ | 6 | 2 | 2 | 2 | 31 |
+| C | 6 | 2 | 2 | 2 | 27 |
+| C++ | 6 | 2 | 2 | 2 | 33 |
 | C# | 6 | 2 | 2 | 2 | 53 |
 | JavaScript | 6 | 2 | 2 | 2 | 39 |
 | コマンドプロンプト | 8 | 2 | 3 | 3 | 28 |
 | PowerShell | 8 | 2 | 3 | 3 | 52 |
 | IPA擬似言語 | 8 | 3 | 3 | 2 | 53 |
 
-現在は112テンプレート／1393リファレンス（対応1319・参照専用74。第16種 IPA擬似言語の53件（全件対応）を追加した現在値。その前は修正バッチ8で PowerShell 三項演算子1件と VBA 参照専用12件を追加した現在値。その前は修正バッチ7で VBA 定数141件を追加した現在値。その前は修正バッチ6で VBA 定数94件と Python 組み込み定数3件（CloudFormation 伝播を含む）を追加した現在値。その前は修正バッチ4（Python追随班）で Python 例外44件（CloudFormation 伝播を含む）を追加した1086件。それ以前は修正バッチ3後の998件で、修正バッチ2の995件から、PowerShell 包含演算子の新設・Python 数値の属性の新設（CloudFormation 伝播を含む）で +3。リファレンス完全性修正で978件となった後、修正バッチ2で VBA Attribute・ImageJ `.length`・Python math 定数（CloudFormation 伝播を含む）・PowerShell プロパティ等の追加と分類是正を経た内訳で、種類別の内訳は本表のとおり。経緯は `docs/DEVELOPMENT.md` の「リファレンス完全性修正」節と `docs/audit/MUSE-FIX-BATCH2.md` を参照）。追加63件は公式原稿と掲載文面を照合し、[reference-r6.json](reference-r6.json)に公式原稿のコミットとハッシュを記録した。既存441件のCodex照合はR2、Muse追加7件の経緯と448件へのレビュー記録更新は統合済み監査記録に属する。511件すべてを今回新たに全文レビューしたとは扱わない。
+現在は112テンプレート／1403リファレンス（対応1328・参照専用75。修正バッチ13で Python 属性項目2件（rangeの属性／__annotations__、CloudFormation 伝播を含む）・UI.Vision 項目3件（endIf／endWhile／!StringEscape）・C の NULL と C++ の NULL／nullptr の3件を追加し、ImageJ の eval を未対応へ分類是正した現在値。その前は第16種 IPA擬似言語の53件（全件対応）を追加した現在値。その前は修正バッチ8で PowerShell 三項演算子1件と VBA 参照専用12件を追加した現在値。その前は修正バッチ7で VBA 定数141件を追加した現在値。その前は修正バッチ6で VBA 定数94件と Python 組み込み定数3件（CloudFormation 伝播を含む）を追加した現在値。その前は修正バッチ4（Python追随班）で Python 例外44件（CloudFormation 伝播を含む）を追加した1086件。それ以前は修正バッチ3後の998件で、修正バッチ2の995件から、PowerShell 包含演算子の新設・Python 数値の属性の新設（CloudFormation 伝播を含む）で +3。リファレンス完全性修正で978件となった後、修正バッチ2で VBA Attribute・ImageJ `.length`・Python math 定数（CloudFormation 伝播を含む）・PowerShell プロパティ等の追加と分類是正を経た内訳で、種類別の内訳は本表のとおり。経緯は `docs/DEVELOPMENT.md` の「リファレンス完全性修正」節と `docs/audit/MUSE-FIX-BATCH2.md` を参照）。追加63件は公式原稿と掲載文面を照合し、[reference-r6.json](reference-r6.json)に公式原稿のコミットとハッシュを記録した。既存441件のCodex照合はR2、Muse追加7件の経緯と448件へのレビュー記録更新は統合済み監査記録に属する。511件すべてを今回新たに全文レビューしたとは扱わない。
 
 第16種 IPA擬似言語の追加（2026-11-16、MUSE-ADD-PSEUDO）：上の37項目と R6 の考え方は新種にも適用する。仕様の正本は IPA 用語 Ver.5.1 別紙2「擬似言語の記述形式」で、53項目は [reference-r2.json](reference-r2.json) に照合個票（sha256）を追加して存在・到達性の両基準で照合した。簡易・高度のモード差は付けず、記述形式の全要素を最初から実装対象とした。解釈が割れる点の裁定（C1〜C11）と未対応・未確認の内訳は [MUSE-ADD-PSEUDO.md](MUSE-ADD-PSEUDO.md) に記録する。新種分の R6 実操作（4画面×2幅・テンプレート実走）は専用テストと独立検証で確認し、全体監査の収束宣言には含めない。

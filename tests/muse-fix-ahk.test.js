@@ -59,9 +59,16 @@ test("RG-19 compound assignment and postfix through a subscript stay 1-based", a
 
 // ---------- RG-48: member resolution is case-insensitive ----------
 test("RG-48 .Length (official spelling) works for arrays and strings", async () => {
-  const r = await run('a := [1, 2, 3]\nMsgBox a.Length\nMsgBox a.length\nMsgBox "hello".Length');
+  // 修正バッチ13・R7-40 でテスト是正：一次情報（公式 Objects.htm）では
+  // 文字列に Length プロパティは無く、使うとエラーになる。旧期待
+  // （"hello".Length → 5）は実物と矛盾するため、配列形のみ維持し、
+  // 文字列形はエラーで停止することを期待する形へ是正する。
+  const r = await run('a := [1, 2, 3]\nMsgBox a.Length\nMsgBox a.length');
   assert.deepEqual(errors(r), []);
-  assert.deepEqual(outputs(r), ["3", "3", "5"]);
+  assert.deepEqual(outputs(r), ["3", "3"]);
+  const s = await run('MsgBox "hello".Length');
+  assert.match(errors(s)[0]?.message || "", /プロパティがありません：Length/);
+  assert.deepEqual(outputs(s), []);
 });
 
 test("RG-48 object properties resolve case-insensitively for read and write", async () => {
@@ -245,8 +252,12 @@ test("RG-08 for loops iterate arrays and objects", async () => {
   assert.deepEqual(outputs(r), ["60"]);
   r = await run('out := ""\nfor v in ["a", "b"] {\n out := out . v\n}\nMsgBox out');
   assert.deepEqual(outputs(r), ["ab"]);
+  // 修正バッチ13・R7-103 でテスト是正：一次情報（公式 For.htm）では
+  // 通常の Object は __Enum を持たず列挙できない（TypeError）。
+  // 旧期待（プロパティ名と値で列挙する）は実物と矛盾するため是正。
   r = await run('for k, v in {name: "x"} {\n MsgBox k . "=" . v\n}');
-  assert.deepEqual(outputs(r), ["name=x"]);
+  assert.match(errors(r)[0]?.message || "", /列挙できません/);
+  assert.deepEqual(outputs(r), []);
 });
 
 test("RG-08 concatenation assignment .= works", async () => {

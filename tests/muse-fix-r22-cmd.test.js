@@ -125,9 +125,12 @@ test("cmd R22-N4 dir without /b still stops honestly and names bad options", () 
 });
 
 // R22-N5: quoted separators in a set value survive expansion intact.
+// テスト是正（修正バッチ13・R7-01）: % 展開の2ケースは Codex の実機
+// 測定により旧前提が誤りと裁定された。実 cmd では % 展開は解析
+// フェーズのテキスト置換であり再解析されるため、値中の & は
+// コマンド区切りとして働く（遅延展開 !X! は実行時展開で再解析
+// されないため、従来どおり値がそのまま残る）。
 for (const [name, code, expected] of [
-  ["ampersand value", 'set "X=a & b"\necho [%X%]', [["[a & b]"]]],
-  ["pipe value", 'set "X=a|b"\necho [%X%]', [["[a|b]"]]],
   [
     "delayed expansion of a pipe value",
     'setlocal EnableDelayedExpansion\nset "X=a|b"\necho !X!',
@@ -139,6 +142,17 @@ for (const [name, code, expected] of [
     assert.deepEqual(errors(r), []);
     assert.deepEqual(out(r), expected);
   });
+
+test("cmd R22-N5 corrected: percent expansion is re-parsed (R7-01)", () => {
+  // echo [%X%] は echo [a & b] として再解析され、[a までが出力され、
+  // b] は未知のコマンドとして停止する（実 cmd の2行挙動と同型）。
+  let r = run('set "X=a & b"\necho [%X%]');
+  assert.deepEqual(out(r), [["[a "]]);
+  assert.match(errors(r)[0].message, /cmdの構文 b\]/);
+  r = run('set "X=a|b"\necho [%X%]');
+  assert.equal(errors(r).length, 1);
+  assert.ok(!JSON.stringify(out(r)).includes("[a|b]"));
+});
 
 // R22-N6: !VAR! in a bare block expands at execution time too, while
 // %VAR% in the same block stays at read time.
@@ -199,7 +213,9 @@ test("cmd R22-N9 del of a missing file stops and does not continue", () => {
 test("cmd R22-N9 del of an existing file and unmatched wildcard", () => {
   let r = run("copy notes.txt temp.txt\ndel temp.txt\necho done");
   assert.deepEqual(errors(r), []);
-  assert.deepEqual(out(r), [["done"]]);
+  // テスト是正（修正バッチ13・R7-209）: copy の成功メッセージは実 cmd
+  // では標準出力へ出るため、期待値に含める。
+  assert.deepEqual(out(r), [["        1 file(s) copied.", "done"]]);
   r = run("del *.xyz");
   assert.match(errors(r)[0].message, /削除対象のファイルがありません/);
 });

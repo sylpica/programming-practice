@@ -221,9 +221,15 @@ test('sibling: makePolygon first point is rounded per Functions.java', async () 
   assert.deepEqual(outputs(p), ['11', '6']);
 });
 /* double のまま扱う引数は切り捨てない（誤った一律整数化をしない） */
-test('non-target: makeRectangle coordinates stay double (Functions.java)', async () => {
+/* テスト是正（修正バッチ13・R7-187）: 旧版は getSelectionBounds が小数の
+   まま返すことを固定していたが、Functions.java の getBounds は
+   Roi.getBounds() の整数矩形（java.awt.Rectangle）を返すため一次情報と
+   矛盾する。保持される ROI 座標が double である点は維持しつつ、
+   getSelectionBounds の戻りは整数境界（始点は切り捨て、終端は切り上げ）
+   へ是正した: (1.6, 2.6, 10.6, 5.6) → x=1、w=ceil(12.2)-1=12 */
+test('non-target corrected by R7-187: makeRectangle keeps double coords, getSelectionBounds returns integer bounds', async () => {
   const p = await first('makeRectangle(1.6, 2.6, 10.6, 5.6); getSelectionBounds(x, y, w, h); print(x); print(w);');
-  assert.deepEqual(outputs(p), ['1.6', '10.6']);
+  assert.deepEqual(outputs(p), ['1', '12']);
 });
 test('non-target: getPixel with fractional coordinates stays undetermined (interpolation)', async () => {
   const p = await first('print(getPixel(0.6, 0.6));');

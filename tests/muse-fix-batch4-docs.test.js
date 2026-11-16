@@ -39,14 +39,14 @@ test("R25-N7(a): both reference search predicates in app.js include syntax", () 
   assert.equal(occurrences, 2, "renderRefs と fullRefs の両述語に syntax が必要");
 });
 
-test("R25-N7(a): every reference item is found by its own name (all 1393)", () => {
+test("R25-N7(a): every reference item is found by its own name (all 1403)", () => {
   let n = 0;
   for (const d of definitions)
     for (const r of d.reference) {
       n++;
       assert.ok(searchHit(r, r.name), `${d.id}/${r.name} が項目名で到達しない`);
     }
-  assert.equal(n, 1393); // 998 + 修正バッチ4 Python追随班の例外44件×2種（Python＋CloudFormation伝播）+ 修正バッチ6 R27-N20 組み込み定数3件×2種（同）+ R27-N7 VBA 定数94件 + 修正バッチ7 R28-N9 VBA 定数141件 + 修正バッチ8 13件（PowerShell 三項演算子＋VBA 参照専用12件）+ 第16種 IPA擬似言語 53件（MUSE-ADD-PSEUDO）
+  assert.equal(n, 1403); // +4 修正バッチ13 Python班（属性項目2件×2種）＋統合時に C／C++ NULL項目3件・UI.Vision 3件で +6 // 998 + 修正バッチ4 Python追随班の例外44件×2種（Python＋CloudFormation伝播）+ 修正バッチ6 R27-N20 組み込み定数3件×2種（同）+ R27-N7 VBA 定数94件 + 修正バッチ7 R28-N9 VBA 定数141件 + 修正バッチ8 13件（PowerShell 三項演算子＋VBA 参照専用12件）+ 第16種 IPA擬似言語 53件（MUSE-ADD-PSEUDO）
 });
 
 // ---------- R25-N7(b)：比較演算子の description に基本形8綴りを列挙 ----------
@@ -113,7 +113,7 @@ function extractNames(item) {
   return [...names];
 }
 
-test("R25-N7(c): all bundled items' all names reach their own item (bundled=12 items, 95 names, 0 unreachable)", () => {
+test("R25-N7(c): all bundled items' all names reach their own item (bundled=14 items, 101 names, 0 unreachable)", () => {
   let bundled = 0,
     names = 0;
   const unreachable = [];
@@ -126,8 +126,8 @@ test("R25-N7(c): all bundled items' all names reach their own item (bundled=12 i
       for (const n of ns)
         if (!searchHit(r, n)) unreachable.push(`${d.id}/${r.name}: ${n}`);
     }
-  assert.equal(bundled, 12, "束ね項目数");
-  assert.equal(names, 95, "名前総数");
+  assert.equal(bundled, 14, "束ね項目数"); // +2 修正バッチ13 Python班（rangeの属性×2種）
+  assert.equal(names, 101, "名前総数"); // +6 同（.start／.stop／.step ×2種）
   assert.deepEqual(unreachable, [], "未到達の名前がある");
 });
 
@@ -170,7 +170,7 @@ test("R25-N7(d): DEVELOPMENT.md states the F-02 reachability criterion incl. the
 });
 
 // ---------- R25-N17：REQUIREMENTS.md の数表 ----------
-test("R25-N17: REQUIREMENTS.md reference counts match the measured definitions and total 1393", () => {
+test("R25-N17: REQUIREMENTS.md reference counts match the measured definitions and total 1403", () => {
   const req = read("../docs/audit/REQUIREMENTS.md");
   const nameToId = {
     "Excel VBA": "vba",
@@ -208,22 +208,25 @@ test("R25-N17: REQUIREMENTS.md reference counts match the measured definitions a
     );
   }
   assert.equal(rows, 16);
-  assert.equal(sum, 1393, "表の合計が本文の1393と一致しない");
-  assert.match(req, /1393リファレンス/);
+  assert.equal(sum, 1403, "表の合計が本文の1403と一致しない");
+  assert.match(req, /1403リファレンス/);
 });
 
 // ---------- R25-N30：AutoHotkey for の文面 ----------
 test("R25-N30: for description states array=value / object=property-name for the one-variable form", () => {
   const item = ahk.reference.find((r) => r.name === "for");
   assert.ok(item);
-  assert.match(item.description, /変数が1つだけのときは、配列では値だけを受け取りますが、オブジェクトではプロパティ名を受け取ります/);
-  assert.doesNotMatch(item.description, /変数が1つだけのときは値だけを受け取ります。/);
+  // 修正バッチ13・R7-103 でテスト是正：一次情報（公式 For.htm と Codex の
+  // Windows 実測）では通常の Object は __Enum を持たず for で列挙できない
+  // （TypeError）。旧文面・旧モデル挙動は実物と矛盾するため是正に追随。
+  assert.match(item.description, /変数が1つだけのときは、値だけを受け取ります/);
+  assert.doesNotMatch(item.description, /オブジェクトではプロパティ名を受け取ります/);
 });
 
 test("R25-N30: for caution discloses that the model returns values for objects (unlike real AHK)", () => {
   const item = ahk.reference.find((r) => r.name === "for");
-  assert.match(item.caution, /このアプリのモデルでは、オブジェクトに対する変数1つの形でも値を受け取ります/);
-  assert.match(item.caution, /実物ではプロパティ名を受け取る点が異なります/);
+  assert.match(item.caution, /通常の Object は列挙できないため TypeError になります/);
+  assert.match(item.caution, /Object は実物どおりエラーとして停止します/);
 });
 
 test("R25-N30: model behaviour behind the caution (array 1-var=value, object 1-var=value in the model, object 2-var key=property name)", async () => {
@@ -231,11 +234,11 @@ test("R25-N30: model behaviour behind the caution (array 1-var=value, object 1-v
   assert.deepEqual(ahkErrors(r), []);
   assert.deepEqual(ahkOutputs(r), ["10", "20", "30"]);
   r = await runAhk("for v in {a: 1, b: 2} {\n MsgBox v\n}");
-  assert.deepEqual(ahkErrors(r), []);
-  assert.deepEqual(ahkOutputs(r), ["1", "2"], "モデルはオブジェクトでも値を返す（caution 開示どおり）");
+  assert.match(ahkErrors(r)[0]?.message || "", /列挙できません/);
+  assert.deepEqual(ahkOutputs(r), []);
   r = await runAhk("for k, v in {a: 1, b: 2} {\n MsgBox k\n MsgBox v\n}");
-  assert.deepEqual(ahkErrors(r), []);
-  assert.deepEqual(ahkOutputs(r), ["a", "1", "b", "2"]);
+  assert.match(ahkErrors(r)[0]?.message || "", /列挙できません/);
+  assert.deepEqual(ahkOutputs(r), []);
 });
 
 const dumpsSorted = (fields) =>

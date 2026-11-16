@@ -162,11 +162,16 @@ function numeric(v, node) {
   if (typeof v === "number") return v;
   if (v === null) return 0;
   if (typeof v === "boolean") return Number(v);
-  if (
-    typeof v === "string" &&
-    /^[+-]?(?:\d+\.?\d*|\.\d+)(?:e[+-]?\d+)?$/i.test(v.trim())
-  )
-    return Number(v);
+  if (typeof v === "string") {
+    const t = v.trim();
+    // R7-12: 空文字列（空白のみを含む）の数値変換は実 PowerShell
+    // では 0 になる（[int]'' = 0、[double]'' = 0、0 -eq '' は True）。
+    if (t === "") return 0;
+    // R7-12: 16進文字列も数値として解釈される（0 -eq '0x0' は True）。
+    const hex = t.match(/^([+-]?)0x([0-9a-f]+)$/i);
+    if (hex) return (hex[1] === "-" ? -1 : 1) * parseInt(hex[2], 16);
+    if (/^[+-]?(?:\d+\.?\d*|\.\d+)(?:e[+-]?\d+)?$/i.test(t)) return Number(t);
+  }
   fail("数値へ変換できません：" + psFormat(v), node.line, "RuntimeException");
 }
 // P-N1: 値の「総内容量」の見積もり。状態スナップショットの転送
@@ -261,8 +266,14 @@ function property(v, key, node) {
       : typeof v === "string" || Array.isArray(v)
         ? v.length
         : null;
-  if (Array.isArray(v))
-    return v.flatMap((x) => enumerate(property(x, key, node)));
+  if (Array.isArray(v)) {
+    // R7-206: メンバー列挙では、プロパティを持たない要素や $null の
+    // 値は結果に数えない（ハッシュテーブル列の .a は、a を持つ要素の
+    // 値だけが返る。実 PowerShell のメンバー列挙規則）。
+    return v
+      .flatMap((x) => enumerate(property(x, key, node)))
+      .filter((x) => x !== null && x !== undefined);
+  }
   return null;
 }
 function info(e) {
@@ -282,7 +293,9 @@ function info(e) {
                 : unknown("モデルに未指定のサイズ", e.path + ":length")),
           }
         : {}),
-      Extension: dot > 0 ? name.slice(dot) : "",
+      // R7-16: 先頭ドットだけの名前（.hidden）の Extension は
+      // .NET Path.GetExtension と同じく名前全体（.hidden）になる。
+      Extension: dot >= 0 ? name.slice(dot) : "",
     },
     e.type === "directory" ? "DirectoryInfo" : "FileInfo",
   );
@@ -315,6 +328,13 @@ const isVersionValue = (v) => isObject(v) && v.psType === "Version";
 // Drive はドライブ名（例：C）・ルート・ドライブ相対の現在位置を持つ
 // PSDriveInfo 相当オブジェクト。
 function pathInfo(cwd) {
+  // R7-72: 現在フォルダが未確定値（$HOME）のときは、Path そのものを
+  // 未確定値として返す（ドライブ等は捏造しない）。
+  if (isUnknown(cwd))
+    return object(
+      { Path: cwd, ProviderPath: cwd, Drive: null, Provider: null },
+      "PathInfo",
+    );
   const driveName = /^[a-z]:/i.test(cwd) ? cwd[0].toUpperCase() : "",
     root = driveName ? driveName + ":\\" : cwd,
     provider = object({ Name: "FileSystem" }, "ProviderInfo"),
@@ -348,7 +368,7 @@ const alias = {
   pwd: "Get-Location",
   cat: "Get-Content",
   gc: "Get-Content",
-  sc: "Set-Content",
+  // R7-75: sc は PowerShell 7.4 の標準別名に存在しないため含めない。
   ac: "Add-Content",
   ni: "New-Item",
   ri: "Remove-Item",
@@ -598,7 +618,7 @@ export function simulatePowerShell(source, model, limits) {
       }
       fail("この添字・プロパティへ代入できません", n.line, "RuntimeException");
     }
-    function binary(op, a, b, s, n, api, floatCtx = false) {
+    function binary(op, a, b, s, n, api, floatCtx = false, inFilter = false) {
       // SH-P3: -f（書式演算子）は宣言どおり未対応だが、括弧不足など
       // 無関係な原因ではなく演算子を名指して止める。
       if (op === "-f") fail("未対応：書式演算子 -f", n.line);
@@ -700,7 +720,9 @@ export function simulatePowerShell(source, model, limits) {
           base = op.replace(/^-[ci]?/, "");
         if (Array.isArray(a)) {
           const filtered = a.filter((x) => {
-            const v = truth(binary(op, x, b, s, n, api));
+            // R7-08: 配列左辺のフィルタ意味論では $Matches は
+            // 更新されない（要素ごとの再帰呼び出しへ伝える）。
+            const v = truth(binary(op, x, b, s, n, api, false, true));
             if (isUnknown(v))
               fail(
                 "未確認：配列要素の比較結果が確定していません",
@@ -814,7 +836,11 @@ export function simulatePowerShell(source, model, limits) {
             }
           }
           const match = re.exec(input);
-          if (base === "match" && match)
+          // R7-08: スカラー入力では -match でも -notmatch でも、
+          // パターンが一致したときに $Matches が更新される
+          // （about_Comparison_Operators）。配列左辺のフィルタ
+          // 意味論（inFilter）では更新されない。
+          if (!inFilter && match && (base === "match" || base === "notmatch"))
             ciSet(s.vars, "Matches", hash(match.map((v, i) => [i, v])));
           return base.startsWith("not") ? !match : !!match;
         }
@@ -823,10 +849,21 @@ export function simulatePowerShell(source, model, limits) {
           // フィルタ意味論にならず通常のスカラー比較になる
           // （about_Comparison_Operators：右辺は常に単独の値として扱われる）。
           // $null -eq @() は False、$null -ne @() は True。
-          if (base === "eq") return false;
-          if (base === "ne") return true;
-          if (a === null) return false;
-          fail("未対応：右辺が配列の比較", n.line);
+          // R7-05 是正: 等値比較では右辺の配列が左辺の型へ変換される
+          // （真偽値へは配列の真偽、文字列へは要素の空白連結）。
+          // $true -eq @(1,2) は True、'1 2' -eq @(1,2) は True。
+          if (base === "eq" || base === "ne") {
+            if (a === null) return base === "ne";
+            if (typeof a === "boolean") b = truth(b);
+            else if (typeof a === "string") b = text(b, n);
+            // 数値左辺×配列右辺は R22-N14 の裁定（等しくない）を維持
+            // する（R7-05 の実測は真偽値・文字列左辺のみ）。
+            else if (typeof a === "number") return base === "ne";
+            else fail("未対応：右辺が配列の比較", n.line);
+          } else {
+            if (a === null) return false;
+            fail("未対応：右辺が配列の比較", n.line);
+          }
         }
         // R24-N14: バージョンオブジェクトとの比較は、相手（文字列・数値・
         // バージョンオブジェクト）を版として解釈し成分ごとに比べる
@@ -876,14 +913,26 @@ export function simulatePowerShell(source, model, limits) {
         }
         let x = a,
           y = b;
-        if (x === null || y === null)
-          return base === "eq"
-            ? x === y
-            : base === "ne"
-              ? x !== y
-              : base === "ge" || base === "le"
-                ? x === y
-                : false;
+        if (x === null || y === null) {
+          if (base === "eq") return x === y;
+          if (base === "ne") return x !== y;
+          if (x === null && y === null) return base === "ge" || base === "le";
+          // R7-04: 順序比較では $null は相手の型のゼロ値として
+          // 扱われる（1 -gt $null、-1 -lt $null、$null -lt 1、
+          // $null -gt -1、1 -ge $null はいずれも True）。
+          const other = x === null ? y : x,
+            zero =
+              typeof other === "number"
+                ? 0
+                : typeof other === "string"
+                  ? ""
+                  : typeof other === "boolean"
+                    ? false
+                    : null;
+          if (zero === null) return false;
+          if (x === null) x = zero;
+          else y = zero;
+        }
         if (typeof x === "string") {
           y = text(y, n);
           if (!sensitive) {
@@ -957,6 +1006,9 @@ export function simulatePowerShell(source, model, limits) {
         return a + tb;
       }
       if (op === "*") {
+        // R7-06: 左辺が $null の乗算は $null になる（0 にはならない。
+        // 逆向きの 5 * $null は従来どおり数値変換で 0）。
+        if (a === null) return null;
         // R22-N12／R24-N3残り：文字列・配列の繰返し
         // （about_Arithmetic_Operators）。回数は整数へ変換される。
         // 順方向（文字列／配列×数値）と逆方向（数値×配列／文字列）で
@@ -988,6 +1040,9 @@ export function simulatePowerShell(source, model, limits) {
               "未確認",
             );
           if (typeof value === "string") return value.repeat(count);
+          // R7-14: 空配列の繰返しは回数にかかわらず空配列で即時に
+          // 終わる（回数分の空転ループにしない）。
+          if (value.length === 0) return [];
           const repeated = [];
           for (let i = 0; i < count; i++) repeated.push(...value);
           return repeated;
@@ -1510,6 +1565,65 @@ export function simulatePowerShell(source, model, limits) {
       const full = windowsPath(raw, s.model.cwd, line);
       return isUnknown(full) ? null : full;
     };
+    // R7-201: PowerShell のワイルドカード（*／? と [abc]／[a-z] の
+    // 文字クラス）を正規表現へ変換する。
+    const psWildcardRegex = (mask) => {
+      let out = "^";
+      for (let i = 0; i < mask.length; i++) {
+        const c = mask[i];
+        if (c === "*") out += ".*";
+        else if (c === "?") out += ".";
+        else if (c === "[") {
+          const close = mask.indexOf("]", i + 1);
+          if (close > i + 1) {
+            out += "[" + mask.slice(i + 1, close).replace(/\\/g, "\\\\") + "]";
+            i = close;
+          } else out += "\\[";
+        } else out += c.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      }
+      return new RegExp(out + "$", "i");
+    };
+    // R7-10／R7-73: プロパティが実際に存在するか（値が $null の
+    // プロパティは存在する。property() の $null 返却とは区別する）。
+    const hasProperty = (v, key) => {
+      const lower = String(key).toLowerCase();
+      if (isObject(v)) {
+        if (v.psType === "Hashtable")
+          return (
+            hashKey(v, key) !== undefined ||
+            ["count", "keys", "values"].includes(lower)
+          );
+        return ciKey(v.properties, key) !== undefined || lower === "count";
+      }
+      if (Array.isArray(v)) return lower === "count" || lower === "length";
+      if (typeof v === "string") return lower === "length";
+      return false;
+    };
+    // R7-200／R7-201: パス文字列（ワイルドカード可）に一致する
+    // モデル項目を返す。recursive のときは下位フォルダも対象。
+    const matchEntries = (st, pattern, line, recursive = false) => {
+      const full = windowsPath(String(pattern), st.model.cwd, line);
+      if (isUnknown(full)) return full;
+      const slash = full.lastIndexOf("\\"),
+        parent = full.slice(0, slash).toLowerCase(),
+        mask = full.slice(slash + 1),
+        re = psWildcardRegex(mask);
+      return st.model.files.filter((e) => {
+        const at = e.path.lastIndexOf("\\"),
+          dir = e.path.slice(0, at).toLowerCase(),
+          name = e.path.slice(at + 1),
+          inScope = recursive
+            ? dir === parent || dir.startsWith(parent + "\\")
+            : dir === parent;
+        return inScope && re.test(name);
+      });
+    };
+    // R7-200: -Path に配列が渡された場合は要素ごとに展開し、
+    // ワイルドカード要素は一致項目へ、通常要素はそのまま返す。
+    const expandPathValues = (raw) =>
+      (Array.isArray(raw) ? raw : [raw]).flatMap((v) =>
+        v === null || v === undefined ? [v] : [typeof v === "string" ? v : text(v, { line: 1 })],
+      );
     // コピー／移動の最終的な書き込み先（既存フォルダ宛はその中へ元名で）。
     const finalDestPath = (srcRaw, dstRaw, s, line) => {
       const full = resolvedPath(dstRaw, s, line);
@@ -1645,16 +1759,39 @@ export function simulatePowerShell(source, model, limits) {
         s.ps.dbl = { ...(s.ps.dbl ?? {}) };
         s.vars = { ...s.vars };
         s.ps.functions = { ...s.ps.functions };
-        for (let i = 0; i < fn.params.length; i++) {
-          const param = fn.params[i];
-          // R27-N4: Alias 属性の別名でも名前付き引数を受け付ける
-          // （about_Functions_Advanced_Parameters）。
-          const namedKey = Object.keys(params).find(
+        // R7-07: 位置引数は、名前付きで束縛済みの仮引数を除いた
+        // 残りへ宣言順に割り当てる（f -a 1 2 では 2 が $b へ入る）。
+        const namedKeys = fn.params.map((param) =>
+          Object.keys(params).find(
             (k) =>
               k === param.name.toLowerCase() ||
               (param.aliases ?? []).some((al) => al.toLowerCase() === k),
-          );
-          const supplied = namedKey !== undefined || Object.hasOwn(args, i);
+          ),
+        );
+        const posIndex = new Array(fn.params.length).fill(-1);
+        let consumedPos = 0;
+        for (let i = 0; i < fn.params.length; i++)
+          if (namedKeys[i] === undefined && consumedPos < args.length)
+            posIndex[i] = consumedPos++;
+        const boundParams = [];
+        for (let i = 0; i < fn.params.length; i++) {
+          const param = fn.params[i];
+          // R7-213: 読み取り専用・定数の自動変数名（$true／$false／
+          // $null）は仮引数として束縛できない。
+          if (["true", "false", "null"].includes(param.name.toLowerCase()))
+            fail(
+              "変数 $" +
+                param.name +
+                " は読み取り専用または定数のため、パラメータとして束縛できません（Cannot overwrite variable " +
+                param.name.toLowerCase() +
+                " because it is read-only or constant.）",
+              c.line,
+              "RuntimeException",
+            );
+          // R27-N4: Alias 属性の別名でも名前付き引数を受け付ける
+          // （about_Functions_Advanced_Parameters）。
+          const namedKey = namedKeys[i];
+          const supplied = namedKey !== undefined || posIndex[i] >= 0;
           // R27-N4: Mandatory のパラメータが与えられない場合、実物は
           // 対話プロンプトで入力を求める。このモデルは対話入力を
           // 持ちないため、既定値で黙って埋めず真因を名指して止める。
@@ -1668,8 +1805,8 @@ export function simulatePowerShell(source, model, limits) {
           let v =
             namedKey !== undefined
               ? params[namedKey]
-              : Object.hasOwn(args, i)
-                ? args[i]
+              : posIndex[i] >= 0
+                ? args[posIndex[i]]
                 : param.value
                   ? read(param.value, s, api)
                   : null;
@@ -1880,6 +2017,7 @@ export function simulatePowerShell(source, model, limits) {
                 }
               }
             }
+          if (supplied) boundParams.push([param.name, v]);
           ciSet(s.vars, param.name, v);
           markDouble(s, param.name, v);
           // R29-N2: 引数・既定値・[double] 型制約の double 由来を
@@ -1896,8 +2034,8 @@ export function simulatePowerShell(source, model, limits) {
               typeDbl ||
               (namedKey !== undefined
                 ? !!namedDbl[namedKey]
-                : Object.hasOwn(args, i)
-                  ? !!argDbl[i]
+                : posIndex[i] >= 0
+                  ? !!argDbl[posIndex[i]]
                   : param.value
                     ? exprIsDouble(param.value, s)
                     : false);
@@ -1918,7 +2056,17 @@ export function simulatePowerShell(source, model, limits) {
               c.line,
               "RuntimeException",
             );
-        ciSet(s.vars, "args", args.slice(fn.params.length));
+        ciSet(s.vars, "args", args.slice(consumedPos));
+        // R7-211: 関数の自動変数。$input はパイプライン入力、
+        // $PSBoundParameters は束縛済みパラメータの表、
+        // $MyInvocation.MyCommand.Name は関数名。
+        ciSet(s.vars, "input", [...input]);
+        ciSet(s.vars, "PSBoundParameters", hash(boundParams));
+        ciSet(
+          s.vars,
+          "MyInvocation",
+          object({ MyCommand: object({ Name: fn.name }) }, "InvocationInfo"),
+        );
         return capture(fn.body, s, api).map((r) => {
           // R29-N2: 戻り値が単一値の場合、その double 由来（関数内の
           // 最後のパイプラインが状態へ残した lastDbl）を呼び出し側へ
@@ -1942,6 +2090,20 @@ export function simulatePowerShell(source, model, limits) {
         });
       }
       if (name === "write-output") {
+        // R7-11: -InputObject を名前付きで指定したうえでの追加の
+        // 位置引数は束縛先がなく、実 PowerShell では束縛エラーに
+        // なる。黙って捨てず名指しで止める
+        // （Write-Output -InputObject 1 2）。
+        // なお位置引数だけの複数形（Write-Output $a, $b = 1, 2 の
+        // 引数モード解釈）は RG-354 で固定された従来の出力規則を
+        // 維持する（報告書に残存として明記）。
+        if (Object.hasOwn(params, "inputobject") && args.length > 0)
+          fail(
+            "Write-Outputには束縛できない追加の引数があります：" +
+              psFormat(args.at(-1)),
+            c.line,
+            "ParameterBindingException",
+          );
         if (!args.length && !Object.hasOwn(params, "inputobject")) {
           if (!hasInput)
             fail(
@@ -2066,26 +2228,77 @@ export function simulatePowerShell(source, model, limits) {
       }
       if (name === "select-object") {
         let values = input.filter((v) => v !== null && v !== undefined);
-        const skip = Number(p("skip", 100, 0)),
-          first = p("first", 100, null),
-          last = p("last", 100, null);
-        for (const n of [skip, first, last].filter((v) => v !== null))
-          if (!Number.isInteger(Number(n)) || Number(n) < 0)
+        // R7-205: 件数パラメータに $null・配列・Int32 範囲外の値を
+        // 渡すと実 PowerShell では束縛／検証エラーになる。未指定
+        // （params に無い）場合と区別して検証する。
+        const countParam = (key) => {
+          if (!Object.hasOwn(params, key)) return null;
+          const v = params[key];
+          if (v === null || v === undefined)
+            fail(
+              "Select-Object -" +
+                key +
+                " に $null は指定できません（パラメータの値が $null です）",
+              c.line,
+              "ParameterBindingValidationException",
+            );
+          if (typeof v !== "number" || !Number.isFinite(v))
+            fail(
+              "Select-Object -" +
+                key +
+                " の値を System.Int32 へ変換できません：" +
+                psFormat(v),
+              c.line,
+              "ParameterBindingException",
+            );
+          if (v > 2147483647 || v < -2147483648)
+            fail(
+              "Select-Object -" +
+                key +
+                " の値が System.Int32 の範囲外です：" +
+                v,
+              c.line,
+              "ParameterBindingException",
+            );
+          if (!Number.isInteger(v) || v < 0)
             fail(
               "Select-Objectの件数は0以上の整数が必要です",
               c.line,
               "RuntimeException",
             );
+          return v;
+        };
+        const skip = countParam("skip") ?? 0,
+          first = countParam("first"),
+          last = countParam("last");
         values = values.slice(skip);
-        if (first !== null) values = values.slice(0, Number(first));
-        if (last !== null)
-          values = Number(last) === 0 ? [] : values.slice(-Number(last));
+        // R7-09: -First と -Last の併用は、先頭と末尾の和集合を
+        // 順序どおりに返す（連続スライスではない）。
+        if (first !== null && last !== null) {
+          if (first + last < values.length)
+            values = [
+              ...values.slice(0, first),
+              ...values.slice(values.length - last),
+            ];
+        } else if (first !== null) values = values.slice(0, first);
+        else if (last !== null)
+          values = last === 0 ? [] : values.slice(-last);
         const expand = p("expandproperty", 100, null);
         if (expand !== null)
           return [
             {
               s,
-              values: values.flatMap((v) => enumerate(property(v, expand, c))),
+              values: values.flatMap((v) => {
+                // R7-10: 存在しないプロパティの展開はエラーになる
+                // （実 PowerShell の "Property "..." cannot be found."）。
+                if (!hasProperty(v, expand))
+                  fail(
+                    'Property "' + expand + '" cannot be found.',
+                    c.line,
+                    "PropertyNotFoundException",
+                  );
+                return enumerate(property(v, expand, c));
+              }),
             },
           ];
         const keys = p("property", 0, null);
@@ -2095,16 +2308,29 @@ export function simulatePowerShell(source, model, limits) {
             values:
               keys === null
                 ? values
-                : values.map((v) =>
-                    object(
-                      Object.fromEntries(
-                        enumerate(keys).map((key) => [
-                          String(key),
-                          property(v, key, c),
-                        ]),
-                      ),
-                    ),
-                  ),
+                : values.map((v) => {
+                    // R7-74: -Property のワイルドカードは一致する
+                    // プロパティ名だけを選ぶ（"NoSuch*" は何も
+                    // 選ばず、文字通りの名前のプロパティは作らない）。
+                    const entries = [];
+                    for (const key of enumerate(keys)) {
+                      const ks = String(key);
+                      if (/[*?[]/.test(ks)) {
+                        const names = isObject(v)
+                          ? v.psType === "Hashtable"
+                            ? [...v.entries.keys()].filter(
+                                (k) => typeof k === "string",
+                              )
+                            : Object.keys(v.properties)
+                          : [];
+                        const re = psWildcardRegex(ks);
+                        for (const nm of names)
+                          if (re.test(nm))
+                            entries.push([nm, property(v, nm, c)]);
+                      } else entries.push([ks, property(v, key, c)]);
+                    }
+                    return object(Object.fromEntries(entries));
+                  }),
           },
         ];
       }
@@ -2113,6 +2339,16 @@ export function simulatePowerShell(source, model, limits) {
           descending = !!p("descending", 100, false);
         const values = input.filter((v) => v !== null && v !== undefined);
         const collator = new Intl.Collator("en-US", { sensitivity: "base" });
+        // R7-13: 混在型の並べ替えは先頭要素の型で決まる。先頭が
+        // 数値なら全体を数値として比較し（2,'10' → 2,10）、先頭が
+        // 文字列なら全体を文字列として比較する（'10',2 → '10',2）。
+        const firstKey = keys.length ? keys[0] : null,
+          firstVal = values.length
+            ? firstKey === null
+              ? values[0]
+              : property(values[0], firstKey, c)
+            : null,
+          numericMode = typeof firstVal === "number";
         values.sort((a, b) => {
           for (const key of keys.length ? keys : [null]) {
             const x = key === null ? a : property(a, key, c),
@@ -2123,8 +2359,9 @@ export function simulatePowerShell(source, model, limits) {
                 c.line,
                 "未確認",
               );
-            const diff =
-              typeof x === "number" && typeof y === "number"
+            const diff = numericMode
+              ? numeric(x, c) - numeric(y, c)
+              : typeof x === "number" && typeof y === "number"
                 ? x - y
                 : collator.compare(text(x, c), text(y, c));
             if (diff) return descending ? -diff : diff;
@@ -2134,8 +2371,17 @@ export function simulatePowerShell(source, model, limits) {
         return [{ s, values }];
       }
       if (name === "measure-object") {
-        const key = p("property", 0, null),
-          measured = input
+        const key = p("property", 0, null);
+        // R7-73: 指定プロパティを持つ入力が1つも無い場合は、測定
+        // 結果オブジェクトを作らず成功ストリームへ何も出さない。
+        if (
+          key !== null &&
+          !input.some(
+            (v) => v !== null && v !== undefined && hasProperty(v, key),
+          )
+        )
+          return [{ s, values: [] }];
+        const measured = input
             .map((v) => (key === null ? v : property(v, key, c)))
             .filter((v) => v !== null && v !== undefined),
           props = {
@@ -2173,11 +2419,26 @@ export function simulatePowerShell(source, model, limits) {
       if (name === "get-location")
         return [{ s, values: [pathInfo(s.model.cwd)] }];
       if (name === "set-location") {
-        const target = windowsPath(
-            p("path", 0, s.model.cwd),
-            s.model.cwd,
+        // R7-72: 引数なしの Set-Location は $HOME へ移動する（現在
+        // フォルダに留まらない）。$HOME が未確定値のモデルでは、
+        // 現在フォルダ自体をその未確定値として保持する。
+        const supplied = Object.hasOwn(params, "path") || args.length > 0;
+        if (!supplied) {
+          const home = get(s, "home");
+          s.model.cwd =
+            typeof home === "string"
+              ? windowsPath(home, s.model.cwd, c.line)
+              : home;
+          return [{ s, values: [] }];
+        }
+        const rawTarget = p("path", 0, null);
+        if (rawTarget === null || rawTarget === undefined)
+          fail(
+            "Set-Locationの-Pathに $null は指定できません",
             c.line,
-          ),
+            "ParameterBindingException",
+          );
+        const target = windowsPath(rawTarget, s.model.cwd, c.line),
           entry = fsEntry(s, target, c.line);
         if (isUnknown(entry)) fail("未確認：移動先", c.line, "未確認");
         if (!entry || entry.type !== "directory")
@@ -2190,45 +2451,65 @@ export function simulatePowerShell(source, model, limits) {
         return [{ s, values: [] }];
       }
       if (name === "get-childitem") {
-        const path = p("path", 0, s.model.cwd);
-        if (isUnknown(path)) fail("未確認：列挙パス", c.line, "未確認");
-        const entry = fsEntry(s, path, c.line),
-          pattern = String(path),
-          hasPattern = /[*?]/.test(pattern);
-        let values;
-        if (entry?.type === "file") values = [entry];
-        else {
-          if (!entry && !hasPattern)
-            fail(
-              "モデルにパスがありません：" + path,
-              c.line,
-              "ItemNotFoundException",
-            );
-          const folder = entry?.type === "directory" ? entry.path : s.model.cwd,
-            filter = p("filter", 100, hasPattern ? pattern : "*");
-          values = listFiles(
-            { ...s, model: { ...s.model, cwd: folder } },
-            filter,
-            c.line,
-          );
-          if (p("recurse", 100, false) && entry?.type === "directory") {
-            values = s.model.files.filter((e) =>
-              e.path.toLowerCase().startsWith(folder.toLowerCase() + "\\"),
-            );
-            if (filter !== "*") {
-              const re = new RegExp(
-                "^" +
-                  String(filter)
-                    .replace(/[.+^${}()|[\]\\]/g, "\\$&")
-                    .replaceAll("*", ".*")
-                    .replaceAll("?", ".") +
-                  "$",
-                "i",
+        const rawPath = p("path", 0, s.model.cwd);
+        if (isUnknown(rawPath)) fail("未確認：列挙パス", c.line, "未確認");
+        // 単一パスの列挙本体。R7-200 兄弟スイープとして -Path の
+        // 配列は要素ごとにこの本体を適用して連結する。
+        const gciOne = (path) => {
+          const entry = fsEntry(s, path, c.line),
+            pattern = String(path),
+            hasPattern = /[*?[]/.test(pattern);
+          let values;
+          if (entry?.type === "file") values = [entry];
+          else {
+            if (!entry && !hasPattern)
+              fail(
+                "モデルにパスがありません：" + path,
+                c.line,
+                "ItemNotFoundException",
               );
-              values = values.filter((e) => re.test(e.path.split("\\").at(-1)));
+            // R7-69: ワイルドカード指定のときも -Recurse は下位
+            // フォルダまでたどる（従来はフォルダ指定時だけだった）。
+            const recurse = !!p("recurse", 100, false);
+            let baseFolder, nameMask;
+            if (hasPattern) {
+              const slash = Math.max(
+                pattern.lastIndexOf("\\"),
+                pattern.lastIndexOf("/"),
+              );
+              const dirPart = slash >= 0 ? pattern.slice(0, slash) : ".";
+              nameMask = slash >= 0 ? pattern.slice(slash + 1) : pattern;
+              baseFolder = windowsPath(
+                dirPart === "" ? "\\" : dirPart,
+                s.model.cwd,
+                c.line,
+              );
+              const baseEntry = fsEntry(s, baseFolder, c.line);
+              if (!baseEntry || baseEntry.type !== "directory")
+                fail(
+                  "モデルにパスがありません：" + path,
+                  c.line,
+                  "ItemNotFoundException",
+                );
+              const filterParam = p("filter", 100, null);
+              if (filterParam !== null) nameMask = String(filterParam);
+            } else {
+              baseFolder = entry.path;
+              nameMask = String(p("filter", 100, "*"));
             }
+            values = matchEntries(
+              s,
+              baseFolder + "\\" + nameMask,
+              c.line,
+              recurse,
+            );
+            if (isUnknown(values)) fail("未確認：列挙パス", c.line, "未確認");
           }
-        }
+          return values;
+        };
+        let values = Array.isArray(rawPath)
+          ? rawPath.flatMap((single) => gciOne(single))
+          : gciOne(rawPath);
         if (p("file", 100, false))
           values = values.filter((e) => e.type === "file");
         if (p("directory", 100, false))
@@ -2236,108 +2517,207 @@ export function simulatePowerShell(source, model, limits) {
         return [{ s, values: values.map(info) }];
       }
       if (name === "test-path") {
-        const path = p("path", 0, null);
-        if (isUnknown(path))
-          return [
-            { s, values: [unknown("実行時のパスの存在", path.id + ":exists")] },
-          ];
-        if (path === null || path === undefined)
+        const rawPath = p("path", 0, null);
+        if (rawPath === null || rawPath === undefined)
           fail(
             "Test-Pathにはnull以外のパスが必要です",
             c.line,
             "ParameterBindingException",
           );
-        if (String(path).trim() === "") return [{ s, values: [false] }];
-        const e = /[*?]/.test(String(path))
-            ? listFiles(s, path, c.line)[0]
-            : fsEntry(s, path, c.line),
-          kind = String(p("pathtype", 100, "any")).toLowerCase();
+        const kind = String(p("pathtype", 100, "any")).toLowerCase();
         if (!["any", "leaf", "container"].includes(kind))
           fail("未対応：Test-Path -PathType", c.line);
-        return [
-          {
-            s,
-            values: [
-              !!e &&
-                (kind === "any" ||
-                  (kind === "leaf" && e.type === "file") ||
-                  (kind === "container" && e.type === "directory")),
-            ],
-          },
-        ];
+        // R7-200／R7-201: 配列パスは要素ごとに結果を返し、
+        // ワイルドカード（文字クラスを含む）も展開して判定する。
+        const testOne = (single) => {
+          if (single === null || single === undefined)
+            fail(
+              "Test-Pathにはnull以外のパスが必要です",
+              c.line,
+              "ParameterBindingException",
+            );
+          if (isUnknown(single))
+            return unknown("実行時のパスの存在", single.id + ":exists");
+          const str = typeof single === "string" ? single : text(single, c);
+          if (str.trim() === "") return false;
+          const e = /[*?[]/.test(str)
+            ? matchEntries(s, str, c.line)[0]
+            : fsEntry(s, str, c.line);
+          return (
+            !!e &&
+            (kind === "any" ||
+              (kind === "leaf" && e.type === "file") ||
+              (kind === "container" && e.type === "directory"))
+          );
+        };
+        if (Array.isArray(rawPath))
+          return [{ s, values: rawPath.map(testOne) }];
+        return [{ s, values: [testOne(rawPath)] }];
       }
       if (name === "get-content") {
-        // §3.3 再裁定：読み取り経路のデバイス名。NUL は即 EOF（空）として
-        // 正直に扱い、CON 等はデバイス名を名指して停止する（従来の
-        // 「モデルにファイルがありません」はデバイスを名指さない虚偽原因）。
-        const readDevice = deviceOf(p("path", 0, null), s, c.line);
-        if (readDevice === "NUL")
-          return [{ s, values: !!p("raw", 100, false) ? [""] : [] }];
-        if (readDevice)
+        // R7-15: -Path は必須であり、$null や未指定は束縛エラー。
+        const rawPath = p("path", 0, null);
+        if (rawPath === null || rawPath === undefined)
           fail(
-            "未対応：予約デバイス名 " +
-              readDevice +
-              " からの読み取り（デバイス入力はモデル化できません）",
+            "Get-Contentには-Pathが必要です（$null は指定できません）",
             c.line,
+            "ParameterBindingException",
           );
-        const e = fsEntry(s, p("path", 0, null), c.line);
-        if (!e || e.type !== "file")
-          fail("モデルにファイルがありません", c.line, "ItemNotFoundException");
-        if (e.content === undefined || isUnknown(e.content))
-          fail("未確認：ファイル内容がモデルにありません", c.line, "未確認");
-        const raw = !!p("raw", 100, false);
-        return [
-          {
-            s,
-            values: raw
-              ? [e.content]
-              : e.content
-                  .replace(/\r\n/g, "\n")
-                  .split("\n")
-                  .filter((v, i, a) => i < a.length - 1 || v !== ""),
-          },
-        ];
+        if (isUnknown(rawPath))
+          fail("未確認：読み取りパス", c.line, "未確認");
+        const raw = !!p("raw", 100, false),
+          values = [];
+        // R7-200／R7-201: 配列パス・ワイルドカードパスは一致する
+        // ファイルを順に読む。
+        for (const single of expandPathValues(rawPath)) {
+          if (single === null || single === undefined)
+            fail(
+              "Get-Contentには-Pathが必要です（$null は指定できません）",
+              c.line,
+              "ParameterBindingException",
+            );
+          // §3.3 再裁定：読み取り経路のデバイス名。NUL は即 EOF（空）。
+          const readDevice = deviceOf(single, s, c.line);
+          if (readDevice === "NUL") {
+            values.push(...(raw ? [""] : []));
+            continue;
+          }
+          if (readDevice)
+            fail(
+              "未対応：予約デバイス名 " +
+                readDevice +
+                " からの読み取り（デバイス入力はモデル化できません）",
+              c.line,
+            );
+          let entries;
+          if (/[*?[]/.test(single)) {
+            const matched = matchEntries(s, single, c.line);
+            if (isUnknown(matched))
+              fail("未確認：読み取りパス", c.line, "未確認");
+            entries = matched.filter((e) => e.type === "file");
+            if (!entries.length)
+              fail(
+                "モデルにパスがありません：" + single,
+                c.line,
+                "ItemNotFoundException",
+              );
+          } else {
+            const e = fsEntry(s, single, c.line);
+            if (isUnknown(e))
+              fail("未確認：読み取りパス", c.line, "未確認");
+            if (!e || e.type !== "file")
+              fail(
+                "モデルにファイルがありません",
+                c.line,
+                "ItemNotFoundException",
+              );
+            entries = [e];
+          }
+          for (const e of entries) {
+            if (e.content === undefined || isUnknown(e.content))
+              fail(
+                "未確認：ファイル内容がモデルにありません",
+                c.line,
+                "未確認",
+              );
+            if (raw)
+              // R7-70: 空ファイルの -Raw は $null を返す。
+              values.push(e.content === "" ? null : e.content);
+            else {
+              // R7-71: 行の区切りは CRLF／CR／LF のいずれでもよい。
+              const lines = e.content.split(/\r\n|\r|\n/);
+              if (lines.at(-1) === "") lines.pop();
+              values.push(...lines);
+            }
+          }
+        }
+        return [{ s, values }];
       }
       if (name === "set-content" || name === "add-content") {
-        const values = enumerate(p("value", 1, input));
-        const strings = values.map((v) => text(v, c));
+        // R7-15: -Path は必須であり、$null や未指定は束縛エラー
+        // （文字列 "null" のファイルを作らない）。
+        const rawPath = p("path", 0, null);
+        if (rawPath === null || rawPath === undefined)
+          fail(
+            canonical + "には-Pathが必要です（$null は指定できません）",
+            c.line,
+            "ParameterBindingException",
+          );
+        if (isUnknown(rawPath))
+          fail("未確認：書き込み先パス", c.line, "未確認");
+        // R7-203: -Value の $null は行を作らない（$null 単体なら
+        // 空ファイル、配列中の $null はその要素だけが抜ける）。
+        const rawVal = p("value", 1, input),
+          strings = (
+            rawVal === null || rawVal === undefined
+              ? []
+              : enumerate(rawVal).filter(
+                  (v) => v !== null && v !== undefined,
+                )
+          ).map((v) => text(v, c));
         if (strings.some(isUnknown))
           fail("未確認：書き込む文字列", c.line, "未確認");
         const noNewline = !!p("nonewline", 100, false),
           content = noNewline
             ? strings.join("")
             : strings.map((v) => v + "\r\n").join("");
-        // §3.3 再裁定：書き込み先が予約デバイス名なら通常ファイルを作らない。
-        const writeDevice = deviceOf(p("path", 0, null), s, c.line);
-        if (writeDevice === "NUL") {
-          api.note(
-            s,
-            { ...c, refs: [] },
-            "予約デバイス NUL へ書き込みます（内容は破棄され、ファイルは作られません）",
-          );
-          return [{ s, values: [] }];
+        // R7-200／R7-201: 配列パスは各ファイルへ、ワイルドカード
+        // パスは一致する既存ファイルへ書き込む。
+        for (const single of expandPathValues(rawPath)) {
+          if (single === null || single === undefined)
+            fail(
+              canonical + "には-Pathが必要です（$null は指定できません）",
+              c.line,
+              "ParameterBindingException",
+            );
+          let targets;
+          if (/[*?[]/.test(single)) {
+            const matched = matchEntries(s, single, c.line);
+            if (isUnknown(matched))
+              fail("未確認：書き込み先パス", c.line, "未確認");
+            targets = matched
+              .filter((e) => e.type === "file")
+              .map((e) => e.path);
+            if (!targets.length)
+              fail(
+                "モデルにパスがありません：" + single,
+                c.line,
+                "ItemNotFoundException",
+              );
+          } else targets = [single];
+          for (const target of targets) {
+            // §3.3 再裁定：書き込み先が予約デバイス名なら通常
+            // ファイルを作らない。
+            const writeDevice = deviceOf(target, s, c.line);
+            if (writeDevice === "NUL") {
+              api.note(
+                s,
+                { ...c, refs: [] },
+                "予約デバイス NUL へ書き込みます（内容は破棄され、ファイルは作られません）",
+              );
+              continue;
+            }
+            if (writeDevice === "CON" || writeDevice === "CONOUT$") {
+              s.outputs.push({
+                channel: "Write-Host",
+                text: noNewline ? strings.join("") : strings.join("\n"),
+                line: c.line,
+              });
+              api.note(
+                s,
+                { ...c, refs: [] },
+                "予約デバイス CON へ出力します（画面表示）",
+              );
+              continue;
+            }
+            if (writeDevice)
+              fail(
+                "未対応：予約デバイス名 " + writeDevice + " への書き込み",
+                c.line,
+              );
+            writeFile(s, target, content, c.line, name === "add-content");
+          }
         }
-        if (writeDevice === "CON" || writeDevice === "CONOUT$") {
-          s.outputs.push({
-            channel: "Write-Host",
-            text: noNewline ? strings.join("") : strings.join("\n"),
-            line: c.line,
-          });
-          api.note(s, { ...c, refs: [] }, "予約デバイス CON へ出力します（画面表示）");
-          return [{ s, values: [] }];
-        }
-        if (writeDevice)
-          fail(
-            "未対応：予約デバイス名 " + writeDevice + " への書き込み",
-            c.line,
-          );
-        writeFile(
-          s,
-          p("path", 0, null),
-          content,
-          c.line,
-          name === "add-content",
-        );
         return [{ s, values: [] }];
       }
       if (name === "new-item") {
@@ -2368,6 +2748,14 @@ export function simulatePowerShell(source, model, limits) {
           );
         if (typeof path === "string")
           path = windowsPath(path, s.model.cwd, c.line);
+        // R7-202: Windows で使用できない文字（< > : " | ? *）を含む
+        // 名前は、実 PowerShell では IOException になり作られない。
+        if (typeof path === "string" && /[<>"|?*:]/.test(path.slice(3)))
+          fail(
+            "The filename, directory name, or volume label syntax is incorrect.",
+            c.line,
+            "IOException",
+          );
         // §3.3 再裁定：デバイス名はファイル／フォルダ名として作らない。
         const itemDevice =
           typeof path === "string" ? reservedDeviceName(path) : null;
@@ -2403,16 +2791,38 @@ export function simulatePowerShell(source, model, limits) {
               parentEntry = fsEntry(s, parent, c.line);
             if (!parentEntry) makeDirectory(s, parent, c.line);
           }
-          e = writeFile(s, path, text(p("value", 100, ""), c), c.line);
+          // R7-204: -Value は単一の Object であり、配列を渡すと
+          // その ToString()（System.Object[]）が内容になる。
+          const newValue = p("value", 100, "");
+          e = writeFile(
+            s,
+            path,
+            Array.isArray(newValue)
+              ? "System.Object[]"
+              : text(newValue, c),
+            c.line,
+          );
         } else fail("未対応のNew-Item -ItemType：" + type, c.line);
         return [{ s, values: [info(e)] }];
       }
       if (name === "remove-item") {
-        const path = p("path", 0, null);
-        if (typeof path === "string" && /[*?]/.test(path)) {
-          for (const e of [...listFiles(s, path, c.line)])
-            removeEntry(s, e.path, c.line, !!p("recurse", 100, false));
-        } else removeEntry(s, path, c.line, !!p("recurse", 100, false));
+        const rawPath = p("path", 0, null),
+          recurse = !!p("recurse", 100, false);
+        // R7-200 兄弟スイープ: -Path の配列・ワイルドカード（文字
+        // クラスを含む）も要素ごとに展開する。
+        const singles =
+          rawPath === null || rawPath === undefined
+            ? [rawPath]
+            : expandPathValues(rawPath);
+        for (const single of singles) {
+          if (typeof single === "string" && /[*?[]/.test(single)) {
+            const matched = matchEntries(s, single, c.line);
+            if (isUnknown(matched))
+              fail("未確認：削除パス", c.line, "未確認");
+            for (const e of [...matched])
+              removeEntry(s, e.path, c.line, recurse);
+          } else removeEntry(s, single, c.line, recurse);
+        }
         return [{ s, values: [] }];
       }
       if (name === "rename-item") {

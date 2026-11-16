@@ -20,22 +20,27 @@ const outputs = (r) => (r.paths?.[0]?.outputs || []).map((o) => o.text);
 
 // ---------- RA-49: IsSetRef の returns は実物どおり、注意書きは差異として明示 ----------
 test("RA-49 IsSetRef returns stays the real contract and the caution marks the model divergence as a divergence", () => {
+  // 修正バッチ13・R7-101 でテスト是正：ステップ5裁定は、旧モデル挙動
+  // （代入済みの数値・文字列で 0）を「開示済みのモデル制限」とは認めず
+  // B（現行でも有効な欠陥）とした。一次情報（公式 IsSetRef の契約）どおり
+  // 挙動を是正したため、caution は差異の開示ではなく VarRef 必須と
+  // 型によらない判定の説明へ変わる。このテストも追随させる。
   const item = byName("IsSetRef");
   assert.equal(item.returns, "参照先が代入済みなら1、未代入なら0");
   assert.match(item.description, /代入済みなら1、未代入なら0/);
-  assert.match(item.caution, /実物では型によらず代入済みなら1/);
-  assert.match(item.caution, /実物と異なり/);
-  assert.match(item.caution, /モデル側の制限/);
-  assert.match(item.caution, /数値・文字列/);
+  assert.match(item.caution, /VarRef（&変数）の形で渡す必要があります/);
+  assert.match(item.caution, /値の型によらず判定します/);
+  assert.doesNotMatch(item.caution, /実物と異なり/);
 });
 
 test("RA-49 the disclosed model behaviour is what the engine actually does", async () => {
-  // 代入済みでも型によって 0 になるのがモデル側の制限（実物はすべて 1）。
-  assert.deepEqual(outputs(await run('s := "hi"\nMsgBox IsSetRef(&s)')), ["0"]);
-  assert.deepEqual(outputs(await run("n := 42\nMsgBox IsSetRef(&n)")), ["0"]);
-  assert.deepEqual(outputs(await run('e := ""\nMsgBox IsSetRef(&e)')), ["0"]);
-  assert.deepEqual(outputs(await run("u := A_Now\nMsgBox IsSetRef(&u)")), ["0"]);
-  // 配列・オブジェクトは 1、未代入は実物・モデルとも 0。
+  // 修正バッチ13・R7-101 でテスト是正（同上）：代入済みなら型によらず
+  // 1 が実物の契約であり、エンジンもそれに是正された。
+  assert.deepEqual(outputs(await run('s := "hi"\nMsgBox IsSetRef(&s)')), ["1"]);
+  assert.deepEqual(outputs(await run("n := 42\nMsgBox IsSetRef(&n)")), ["1"]);
+  assert.deepEqual(outputs(await run('e := ""\nMsgBox IsSetRef(&e)')), ["1"]);
+  assert.deepEqual(outputs(await run("u := A_Now\nMsgBox IsSetRef(&u)")), ["1"]);
+  // 配列・オブジェクトも 1、未代入は 0。
   assert.deepEqual(outputs(await run("a := [1, 2]\nMsgBox IsSetRef(&a)")), ["1"]);
   assert.deepEqual(outputs(await run("o := {x: 1}\nMsgBox IsSetRef(&o)")), ["1"]);
   assert.deepEqual(outputs(await run("MsgBox IsSetRef(&zzz)")), ["0"]);
@@ -136,7 +141,7 @@ test("r2 rows for the fixed AHK items match the definitions and keep their sha25
     "WinClose": "672b8ae9f15b64a1a2528af6efe246f6b1b1df039ed6e2afe8fb25a53b8bdbc3",
     "SetTitleMatchMode": "524505044244dbef1e292c91cba8a701e9c02d4d21516d74b54b9a6a65decf6e",
     "IsSet": "d71624cbc85a2010771a4179ac3cda6a8d087bb63058f3789598111dbff2a33f",
-    "IsSetRef": "cfd29525c0f4ee62090819a1d3081d39840df0919241921d55543a1e013502e5",
+    "IsSetRef": "0b2c5e22dd044147fd27a657d7868dc7430bf07d1c1af00e8b8fd9e14192a2a8",
     "A_*（組み込み変数）": "04bb7438fb485317d29c451ce786df39c5f579c35b23fdffe7380f75bad5e632",
   };
   for (const [name, sha] of Object.entries(expectedSha)) {

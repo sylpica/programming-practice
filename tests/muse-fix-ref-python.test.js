@@ -70,8 +70,8 @@ const FALLBACK_METHODS = [
 
 test("R22-ref python: totals after additions", () => {
   assert.equal(NEW_PY.length, 118);
-  assert.equal(py.reference.length, 213); // 42 + 118 + 5 (R23-N6 math 定数) + 1 (修正バッチ3 数値の属性) + 44 (修正バッチ4 Python追随班 例外44件) + 3 (修正バッチ6 R27-N20 組み込み定数 Ellipsis／NotImplemented／__debug__)
-  assert.equal(cf.reference.length, 224); // 49 + 118 (Python伝播) + 4 (固有) + 5 (R23-N6 伝播) + 1 (修正バッチ3 数値の属性 伝播) + 44 (例外44件 伝播) + 3 (修正バッチ6 R27-N20 組み込み定数 伝播)
+  assert.equal(py.reference.length, 215); // +2 修正バッチ13 Python班（rangeの属性／__annotations__） // 42 + 118 + 5 (R23-N6 math 定数) + 1 (修正バッチ3 数値の属性) + 44 (修正バッチ4 Python追随班 例外44件) + 3 (修正バッチ6 R27-N20 組み込み定数 Ellipsis／NotImplemented／__debug__)
+  assert.equal(cf.reference.length, 226); // +2 同項目の伝播 // 49 + 118 (Python伝播) + 4 (固有) + 5 (R23-N6 伝播) + 1 (修正バッチ3 数値の属性 伝播) + 44 (例外44件 伝播) + 3 (修正バッチ6 R27-N20 組み込み定数 伝播)
 });
 
 test("R22-ref python: every new item exists and is supported", () => {

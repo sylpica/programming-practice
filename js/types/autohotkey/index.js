@@ -117,7 +117,7 @@ const reference = rows([
     "IsSetRef(&変数)",
     "参照（&変数）で受け取った変数に値が代入されているかを調べ、代入済みなら1、未代入なら0を返します。参照先は評価されないため、未代入でもエラーになりません。",
     "y := [1, 2]\nMsgBox IsSetRef(&y)\nMsgBox IsSetRef(&z)",
-    "実物では型によらず代入済みなら1ですが、この教材のモデルは実物と異なり、参照先が配列・オブジェクトのときにだけ1を返し、代入済みの数値・文字列や未確定値でも0を返します（モデル側の制限です）。未代入のときは実物・モデルとも0です。",
+    "引数は VarRef（&変数）の形で渡す必要があります。& を付けない値やリテラルを渡すと実物でも TypeError になります。代入済みかどうかは値の型によらず判定します。",
   ],
   [
     "if",
@@ -137,9 +137,9 @@ const reference = rows([
     "for",
     "制御",
     "for Key, Value in Collection { … }",
-    "コレクションの要素を順に取り出し、Key（配列では1始まりの添字、オブジェクトではプロパティ名）とValue（要素の値）へ代入しながら本体を繰り返します。変数が1つだけのときは、配列では値だけを受け取りますが、オブジェクトではプロパティ名を受け取ります。",
+    "コレクションの要素を順に取り出し、Key（配列では1始まりの添字）とValue（要素の値）へ代入しながら本体を繰り返します。変数が1つだけのときは、値だけを受け取ります。",
     "total := 0\nfor idx, v in [10, 20] {\n total += v\n}\nMsgBox total",
-    "繰り返し対象が未確定値や配列・オブジェクトでない場合は未対応として停止します。このアプリのモデルでは、オブジェクトに対する変数1つの形でも値を受け取ります（実物ではプロパティ名を受け取る点が異なります）。",
+    "実物では __Enum を持つ値（配列・Mapなど）だけが列挙でき、通常の Object は列挙できないため TypeError になります。このモデルでも列挙に対応するのは配列だけで、Object は実物どおりエラーとして停止します。繰り返し対象が未確定値の場合は未対応として停止します。",
   ],
   [
     "break",
@@ -185,9 +185,9 @@ const reference = rows([
     "Length",
     "プロパティ",
     "対象.Length",
-    "配列では要素数を、文字列では文字数を返すプロパティです。配列では代入で長さを変更でき、長くすると値のない要素が増え、短くすると末尾が切り捨てられます。",
-    'a := [10, 20, 30]\nMsgBox a.Length\nMsgBox "hello".Length',
-    "プロパティ名は大文字小文字を区別しません（.lengthでも同じです）。文字列のLengthへは代入できません。",
+    "配列の要素数を返すプロパティです。配列では代入で長さを変更でき、長くすると値のない要素が増え、短くすると末尾が切り捨てられます。文字列には Length プロパティはありません（標準では存在せず、使うとエラーになります）。",
+    'a := [10, 20, 30]\nMsgBox a.Length',
+    "プロパティ名は大文字小文字を区別しません（.lengthでも同じです）。文字列の文字数は StrLen で数えますが、この教材では StrLen は未対応です。",
   ],
   [
     "while",
@@ -1316,10 +1316,14 @@ export const definition = {
   ],
   glossary: [
     ["ホットキー", "キーの組み合わせを起動イベントにする仕組みです。"],
+    [
+      "イベント",
+      "ホットキーの押下やホットストリングの入力など、スクリプトの処理を開始するきっかけです。発生したイベントに対応する処理が実行されます。",
+    ],
     ["ホットストリング", "入力した短い文字列を置き換える仕組みです。"],
     [
       "自動実行",
-      "スクリプトの冒頭部分で、起動時に上から順に実行される区間です。ホットキーなどの定義が始まるまでが自動実行部分になります。",
+      "スクリプトの起動時に実行される部分で、冒頭から始まります。AutoHotkey v2 では冒頭だけに限らず、ホットキー・ホットストリング・関数などの定義は読み飛ばされ、定義の後に書かれた文も自動実行として実行されます（return 等で自動実行スレッドが終わるまで）。",
     ],
     [
       "未確定（値）",
@@ -1449,8 +1453,25 @@ export const definition = {
         if (/^[+-]?0x[0-9a-f]+$/i.test(text)) return parseInt(text, 16);
         return null;
       }
+      // R7-104（修正バッチ13）：AutoHotkey の Float は整数値でも文字列化
+      // で小数部を保持する（1.0 → "1.0"）。JS の数値では 1.0 と 1 が
+      // 区別できないため、Float 値はタグ付きで保持し、数値演算・比較・
+      // 表示の各境界でだけ素の数値へ戻す。
+      const isFloatVal = (v) =>
+        !!v && typeof v === "object" && v.__ahkFloat === true && typeof v.v === "number";
+      const floatVal = (n) => ({ __ahkFloat: true, v: n });
+      const unf = (v) => (isFloatVal(v) ? v.v : v);
+      function ahkFloatText(n) {
+        if (Number.isInteger(n) && Math.abs(n) < 1e16) return n.toFixed(1);
+        return String(n);
+      }
+      function ahkStringOf(v) {
+        if (isFloatVal(v)) return ahkFloatText(v.v);
+        if (v === null || v === undefined) return "";
+        return String(v);
+      }
       function numeric(value, node, api) {
-        let v = value;
+        let v = unf(value);
         if (typeof v === "boolean") v = Number(v);
         if (typeof v === "string") {
           const text = v.trim();
@@ -1487,6 +1508,7 @@ export const definition = {
       // enter through the shared executor or raw model data) before any
       // learner-facing formatting in this dialect.
       function ahkDisplay(v) {
+        if (isFloatVal(v)) return ahkFloatText(v.v);
         if (typeof v === "boolean") return v ? 1 : 0;
         if (Array.isArray(v)) return v.map(ahkDisplay);
         if (v && typeof v === "object" && !isUnknown(v) && v.kind === undefined && !v.__class)
@@ -1616,11 +1638,15 @@ export const definition = {
       // property names, mirroring the executor's bookkeeping.
       function runForEach(n, s, api) {
         const coll = api.read(n.collection, s);
-        if (isUnknown(coll) || coll === null || typeof coll !== "object")
+        if (isUnknown(coll))
           unsupported("未確定または配列でない繰り返し対象", n.line);
-        const entries = Array.isArray(coll)
-          ? coll.map((v, i) => [i + 1, v])
-          : Object.entries(coll);
+        // R7-103（修正バッチ13）：実 AutoHotkey v2 の for は __Enum を
+        // 持つ値だけを列挙でき、通常の Object は TypeError になる
+        // （公式 For.htm）。このモデルで列挙できるのは配列だけとし、
+        // Object・文字列・数値などは実物どおりエラーで停止する。
+        if (!Array.isArray(coll))
+          api.fail("この値は列挙できません（for で列挙できるのは __Enum を持つ値だけで、通常の Object は列挙できません）", n, "TypeError");
+        const entries = coll.map((v, i) => [i + 1, v]);
         let active = [s];
         let done = [];
         for (let i = 0; i < entries.length; i++) {
@@ -1681,11 +1707,19 @@ export const definition = {
         logicalOperands: true,
         initialize(s, api) { for (const v of Object.values(s.vars)) if (typeof v === "number") numeric(v,{line:1},api); },
         read(a, s, api) {
-          if (a.k === "literal" && typeof a.value === "number") return {handled:true,value:numeric(a.value,a,api)};
+          if (a.k === "literal" && typeof a.value === "number") {
+            const n = numeric(a.value, a, api);
+            // R7-104：小数点・指数を含むリテラルは Float として保持する
+            // （16進リテラルは整数）。
+            if (a.raw && /[.eE]/.test(a.raw) && !/^0[xX]/.test(a.raw))
+              return { handled: true, value: floatVal(n) };
+            return { handled: true, value: n };
+          }
           if (a.k === "unary" && ["+", "-"].includes(a.op)) {
             const value = api.read(a.arg, s);
             if (isUnknown(value)) return {handled:true,value:{...unknown(a.op + formatValue(value)),op:a.op,a:value}};
-            return {handled:true,value:(a.op === "-" ? -1 : 1) * numeric(value,a,api)};
+            const result = (a.op === "-" ? -1 : 1) * numeric(value,a,api);
+            return {handled:true,value:isFloatVal(value) ? floatVal(result) : result};
           }
           // RG-08 (R9-N7): a ByRef marker &var is not a variable read.
           // A set variable passes its value; an unset one yields an
@@ -1705,7 +1739,17 @@ export const definition = {
           if (a.k === "unary" && a.op === "!") {
             const value = api.read(a.arg, s);
             if (isUnknown(value)) return {handled:true,value:{...unknown("!" + formatValue(value)),op:"!",a:value}};
-            return {handled:true,value:(value !== false && value !== 0 && value !== "" && value !== null) ? 0 : 1};
+            // R7-41（修正バッチ13）：真偽判定は条件式と同じ規則を使う
+            // （数値文字列は数値として解釈され、"0"／"0.0" は偽）。
+            // 文字列 "0" を厳密比較だけで真と扱うと if と食い違う。
+            const uv = unf(value);
+            let truthy;
+            if (typeof uv === "string") {
+              const num = ahkNumericValue(uv);
+              truthy = num !== null ? num !== 0 : uv !== "";
+            } else
+              truthy = uv !== false && uv !== 0 && uv !== "" && uv !== null && uv !== undefined;
+            return {handled:true,value:truthy ? 0 : 1};
           }
           // RG-19: 1-based subscripting for arrays (A_Index idiom included).
           if (a.k === "index") {
@@ -1744,7 +1788,10 @@ export const definition = {
             let lname = a.name.toLowerCase();
             if (lname === "length") {
               if (Array.isArray(target)) return { handled: true, value: target.length };
-              if (typeof target === "string") return { handled: true, value: target.length };
+              // R7-40（修正バッチ13）：文字列に Length プロパティは無い
+              // （公式 Objects.htm：DefProp で String プロトタイプへ定義
+              // した場合だけの拡張例）。下の文字列プロパティなしエラーへ
+              // 落とす。
             }
             if (Array.isArray(target)) api.fail("プロパティがありません：" + a.name, a);
             if (typeof target === "object") {
@@ -1925,6 +1972,7 @@ export const definition = {
           return null;
         },
         truth(v) {
+          v = unf(v);
           // RG-73（R20-N3）: 数値文字列は数値として解釈され、0 相当は偽になる。
           if (typeof v === "string") {
             const n = ahkNumericValue(v);
@@ -1934,8 +1982,11 @@ export const definition = {
         },
         increment(x, node, s, api) {
           if (isUnknown(x)) api.fail("未確認：不確定な値のインクリメント", node, "未確認");
+          const wasFloat = isFloatVal(x);
           const previous = numeric(x,node,api), next = numeric(previous + (node.op === "++" ? 1 : -1),node,api);
-          return {previous,next};
+          return wasFloat
+            ? { previous: floatVal(previous), next: floatVal(next) }
+            : { previous, next };
         },
         binary(op, a, b, node, s, api) {
           if (isUnknown(a) || isUnknown(b)) {
@@ -1945,11 +1996,19 @@ export const definition = {
               return { ...unknown(`${formatValue(a)} . ${formatValue(b)}`), op: ".", a, b };
             return baseBinary(op, a, b, "ahk");
           }
+          // R7-104（修正バッチ13）：Float タグは演算の入力でのみ意味を
+          // 持ち、結果へ伝播させる。数値文字列の小数形も Float 相当。
+          const fa = isFloatVal(a), fb = isFloatVal(b);
+          const fsA = typeof a === "string" && /[.eE]/.test(a) && ahkNumericValue(a) !== null;
+          const fsB = typeof b === "string" && /[.eE]/.test(b) && ahkNumericValue(b) !== null;
+          a = unf(a); b = unf(b);
+          const floatIn = fa || fb || fsA || fsB;
           // R26-N16：累乗 `**` は AutoHotkey v2 の正式な演算子（公式ドキュメントの
           // 演算子表）。従来は `*` の単独名指しで未対応停止していた。
           if (op === "**") {
             a = numeric(a, node, api); b = numeric(b, node, api);
-            return numeric(a ** b, node, api);
+            const result = numeric(a ** b, node, api);
+            return floatIn || !Number.isInteger(result) ? floatVal(result) : result;
           }
           if (["^", "&", "|", "<<", ">>"].includes(op)) api.fail("未対応：AutoHotkeyの64ビットのビット演算", node, "未対応");
           if (["+", "-", "*", "/", "<", ">", "<=", ">="].includes(op)) {
@@ -1958,7 +2017,22 @@ export const definition = {
             const value = baseBinary(op, a, b, "ahk");
             // RG-55: comparisons produce 1/0, not JS true/false.
             if (typeof value === "boolean") return value ? 1 : 0;
-            return typeof value === "number" ? numeric(value,node,api) : value;
+            if (typeof value === "number") {
+              const checked = numeric(value, node, api);
+              // 除算は常に Float。Float 入力・非整数結果も Float。
+              return floatIn || op === "/" || !Number.isInteger(checked)
+                ? floatVal(checked)
+                : checked;
+            }
+            return value;
+          }
+          if (op === "." || op === ".concat") {
+            const la = fa ? ahkFloatText(a) : ahkStringOf(a);
+            const lb = fb ? ahkFloatText(b) : ahkStringOf(b);
+            // P-N1（値サイズ上限）：共有コアの concatGuard と同じ上限を
+            // ここでも守る（超えたら実体を作らず未確定値へ倒す）。
+            if (la.length + lb.length > 200000) return unknown("とても長い文字列");
+            return la + lb;
           }
           if (["=", "==", "!=", "!=="].includes(op)) {
             // AHK's default string comparison folds ASCII A-Z only.
@@ -1979,7 +2053,10 @@ export const definition = {
               const nv = ahkNumericValue(str);
               if (nv !== null) equal = nv === num;
               else {
-                const ns = String(num);
+                // R7-104：数値側が Float のときは小数部を保持した文字列
+                // と比較する（1.0 は "1.0" であって "1" ではない）。
+                const numIsFloat = typeof a === "number" ? fa : fb;
+                const ns = numIsFloat ? ahkFloatText(num) : String(num);
                 equal = ["=", "!="].includes(op) ? fold(str) === fold(ns) : str === ns;
               }
             } else {
@@ -1990,6 +2067,7 @@ export const definition = {
             return result ? 1 : 0;
           }
           const r = baseBinary(op, a, b, "ahk");
+          if (typeof r === "number" && floatIn) return floatVal(r);
           return typeof r === "boolean" ? (r ? 1 : 0) : r;
         },
         call(name, args, s, api, node) {
@@ -2008,7 +2086,12 @@ export const definition = {
           if (n === "isset" || n === "issetref") {
             if (args.length !== 1) api.fail("引数の数が一致していません", node);
             let a = args[0];
-            if (a.k === "unary" && a.op === "&") a = a.arg;
+            // R7-101（修正バッチ13）：IsSetRef は VarRef（&変数）の形が
+            // 必須で、参照先が代入済みかどうかは値の型によらない。
+            const isRefForm = a.k === "unary" && a.op === "&";
+            if (n === "issetref" && !isRefForm)
+              api.fail("IsSetRefの引数にはVarRef（&変数）が必要です", node, "TypeError");
+            if (isRefForm) a = a.arg;
             if (a.k === "var") {
               let key = Object.keys(s.vars).find((k) => k.toLowerCase() === a.name.toLowerCase());
               if (key === undefined) {
@@ -2016,12 +2099,23 @@ export const definition = {
                 let lname = a.name.toLowerCase();
                 return Object.hasOwn(AHK_BUILTIN_EXACT, lname) || AHK_BUILTIN_RUNTIME.has(lname) ? 1 : 0;
               }
-              if (n === "isset") return 1;
-              let v = s.vars[key];
-              return v !== null && typeof v === "object" && !isUnknown(v) ? 1 : 0;
+              return 1;
             }
-            api.read(a, s);
-            return n === "isset" ? 1 : 0;
+            if (a.k === "member" || a.k === "index") {
+              // プロパティ形は、対象が存在すれば1、無ければ0。
+              try {
+                api.read(a, s);
+                return 1;
+              } catch {
+                return 0;
+              }
+            }
+            // R7-42（修正バッチ13）：IsSet に変数以外（リテラル等）を
+            // 渡すと実物は "IsSet requires a variable." で停止する。
+            // 読み取って1を返す現行経路は誤り。
+            if (n === "isset")
+              api.fail("IsSetの引数には変数が必要です（IsSet requires a variable）", node, "TypeError");
+            api.fail("IsSetRefの引数にはVarRef（&変数）が必要です", node, "TypeError");
           }
           // RG-08 (R13-N6): an unimplemented function is reported by its
           // own name before any argument is evaluated, so reference
@@ -2071,24 +2165,67 @@ export const definition = {
             }
             api.fail("このAutoHotkey関数は未対応です：" + name, node);
           }
+          // R7-106（修正バッチ13）：組み込み関数の引数個数を実物の
+          // 署名どおり検査する。第1引数だけ処理して残りを黙って捨て
+          // ると、実物では Too many parameters で止まるコードが正常に
+          // 進んでしまう。
+          const ARITY = {
+            winexist: [0, 4], winactive: [0, 4], winactivate: [0, 4],
+            winclose: [0, 5], settitlematchmode: [1, 1],
+            sendtext: [1, 1], send: [1, 1], sleep: [1, 1],
+            inputbox: [0, 4], msgbox: [0, 3],
+          };
+          if (ARITY[n]) {
+            const [minArgs, maxArgs] = ARITY[n];
+            if (args.length > maxArgs)
+              api.fail(`引数が多すぎます：${name} は最大${maxArgs}個です（Too many parameters）`, node, "TypeError");
+            if (args.length < minArgs)
+              api.fail(`引数が不足しています：${name} には${minArgs}個必要です`, node, "TypeError");
+          }
           let vals = args.map((a) => api.read(a, s));
           // RG-55: arguments reaching a builtin are AHK values; a raw JS
           // boolean (e.g. from model data) is the number 1/0 here.
           vals = vals.map((v) => (typeof v === "boolean" ? (v ? 1 : 0) : v));
-          function window(title) {
+          // R7-107／108／109（修正バッチ13）：ウィンドウ解決は
+          // WinTitle／WinText／ExcludeTitle／ExcludeText の全条件で
+          // 照合し、一致した窓の集合から用途ごとに選ぶ。タイトルを
+          // 省略した場合は Last Found Window（最後に見つけた窓）を
+          // 対象にする（公式 WinTitle の規則）。
+          function titleMatches(w, title) {
+            let mode = s.model.titleMatchMode || 2;
+            const text = ahkStringOf(title);
+            return mode === 1
+              ? w.title.startsWith(text)
+              : mode === 3
+                ? w.title === text
+                : w.title.includes(text);
+          }
+          function findWindows(v) {
+            const [title, winText, excludeTitle, excludeText] = v;
+            if (title === undefined || title === "") {
+              const id = s.ahkLastFound;
+              if (id === undefined) return [];
+              const w = s.model.windows.find(
+                (x) => x.id === id && x.exists !== false,
+              );
+              return w ? [w] : [];
+            }
             if (isUnknown(title))
               api.fail("未確定タイトルのウィンドウ解決は未対応です", node);
-            let mode = s.model.titleMatchMode || 2,
-              match = s.model.windows.find(
-                (w) =>
-                  w.exists !== false &&
-                  (mode === 1
-                    ? w.title.startsWith(String(title))
-                    : mode === 3
-                      ? w.title === String(title)
-                      : w.title.includes(String(title))),
-              );
-            return match;
+            return s.model.windows.filter(
+              (w) =>
+                w.exists !== false &&
+                titleMatches(w, title) &&
+                (!winText ||
+                  String(w.text).toLowerCase().includes(String(winText).toLowerCase())) &&
+                (!excludeTitle ||
+                  !String(w.title).toLowerCase().includes(String(excludeTitle).toLowerCase())) &&
+                (!excludeText ||
+                  !String(w.text).toLowerCase().includes(String(excludeText).toLowerCase())),
+            );
+          }
+          function window(title) {
+            return findWindows([title])[0];
           }
           function active() {
             let w = s.model.windows.find(
@@ -2104,17 +2241,24 @@ export const definition = {
           }
           switch (n) {
             case "winexist": {
-              let w = window(vals[0] || "");
+              let w = findWindows(vals)[0];
+              if (w) s.ahkLastFound = w.id;
               return w?.id || 0;
             }
             case "winactive": {
-              let w = window(vals[0] || "");
-              return w?.id === s.model.activeId ? w.id : 0;
+              // R7-107：一致する窓のどれかがアクティブなら、その窓の
+              // HWND を返す（最初の一致窓だけで判定しない）。
+              let act = findWindows(vals).find(
+                (w) => w.id === s.model.activeId,
+              );
+              if (act) s.ahkLastFound = act.id;
+              return act?.id || 0;
             }
             case "winactivate": {
-              let w = window(vals[0] || "");
+              let w = findWindows(vals)[0];
               if (!w)
                 api.fail("対象ウィンドウがありません", node, "TargetError");
+              s.ahkLastFound = w.id;
               s.model.activeId = w.id;
               api.note(
                 s,
@@ -2124,9 +2268,10 @@ export const definition = {
               return null;
             }
             case "winclose": {
-              let w = window(vals[0] || "");
+              let w = findWindows(vals)[0];
               if (!w)
                 api.fail("対象ウィンドウがありません", node, "TargetError");
+              s.ahkLastFound = w.id;
               w.exists = false;
               if (s.model.activeId === w.id) s.model.activeId = null;
               api.note(
@@ -2162,7 +2307,7 @@ export const definition = {
                 w.text = unknown("送信する文字による");
                 return null;
               }
-              text = String(text);
+              text = ahkStringOf(text);
               // NX-N22: the note quotes the text as written. Keep a
               // display copy before "{Enter}" is expanded to a real
               // newline for the model state, and show any literal
@@ -2224,16 +2369,23 @@ export const definition = {
               );
               return null;
             case "sleep":
+              // R7-105（修正バッチ13）：Sleep の引数は数値（または数値
+              // 文字列）でなければならない。型不正を黙って通すと、
+              // 実物では TypeError で止まる後続処理まで進んでしまう。
+              if (!isUnknown(vals[0])) numeric(vals[0], node, api);
               api.note(
                 s,
                 node,
-                `${formatValue(vals[0])}ミリ秒の待機を説明します`,
+                `${fmt(vals[0])}ミリ秒の待機を説明します`,
               );
               return null;
             case "inputbox":
               return {
                 Value: api.freshUnknown("InputBoxの入力", s),
-                Result: unknown("InputBoxの確定／キャンセル"),
+                // R7-110（修正バッチ13）：Result も呼び出しごとに独立
+                // した未確定値にする。同じ未確定値を使い回すと、別々の
+                // InputBox の OK／Cancel の組み合わせのパスが欠ける。
+                Result: api.freshUnknown("InputBoxの確定／キャンセル", s),
               };
             case "msgbox":
               s.outputs.push({
@@ -2324,7 +2476,24 @@ export const definition = {
           },
         ],
       };
-      return executeProgram(nodes, model, semantics, limits);
+      const result = executeProgram(nodes, model, semantics, limits);
+      // R7-104（修正バッチ13）：最終状態の表示でも Float は小数部を
+      // 保持する。内部タグ付き値のままでは状態表示に内部表現が漏れる
+      // ため、完了後のスナップショットに限り AHK の文字列表現へ直す
+      // （実行中の数値としての働きは変えない）。
+      const floatSafe = (v, seen = new Map()) => {
+        if (isFloatVal(v)) return ahkFloatText(v.v);
+        if (!v || typeof v !== "object" || isUnknown(v)) return v;
+        if (seen.has(v)) return seen.get(v);
+        const out = Array.isArray(v) ? [] : {};
+        seen.set(v, out);
+        if (Array.isArray(v)) for (const x of v) out.push(floatSafe(x, seen));
+        else
+          for (const [k, x] of Object.entries(v)) out[k] = floatSafe(x, seen);
+        return out;
+      };
+      for (const p of result.paths || []) p.vars = floatSafe(p.vars);
+      return result;
     } catch (e) {
       return sourceFailure(
         e instanceof PracticeError || e?.category ? e : toLearnerError(e),

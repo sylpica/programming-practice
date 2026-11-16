@@ -125,6 +125,27 @@ export const REFERENCE = [
   "doc": "https://docs.python.org/ja/3.12/library/stdtypes.html#range"
  },
  {
+  "id": "rangeの属性",
+  "name": "rangeの属性（start / stop / step）",
+  "category": "組み込み関数",
+  "importance": "応用",
+  "level": "基礎",
+  "summary": "range オブジェクトが持つ読み取り専用の属性。作るときに渡した開始値 start、終了値 stop、間隔 step を、メソッドではなく値そのものとして返す。",
+  "syntax": "rangeオブジェクト.start\nrangeオブジェクト.stop\nrangeオブジェクト.step",
+  "args": "対象: 属性を読む range オブジェクト",
+  "returns": "start／stop／step はそれぞれ作るときに指定した整数（省略時は start=0、step=1）",
+  "example": "r = range(1, 5, 2)\nprint(r.start, r.stop, r.step)",
+  "expected": "1 5 2",
+  "pitfalls": "メソッドではないため呼び出しの括弧は付けない。stop は列に含まれない終了値そのものが返る（最後の要素ではない）。",
+  "related": [
+   "range",
+   "for",
+   "enumerate"
+  ],
+  "lesson": "loops",
+  "doc": "https://docs.python.org/ja/3.12/library/stdtypes.html#range"
+ },
+ {
   "id": "enumerate",
   "name": "enumerate()",
   "category": "組み込み関数",
@@ -2526,6 +2547,26 @@ export const REFERENCE = [
   ],
   "lesson": "variables-types",
   "doc": "https://docs.python.org/ja/3.12/reference/compound_stmts.html#function-definitions"
+ },
+ {
+  "id": "__annotations__",
+  "name": "__annotations__",
+  "category": "構文",
+  "importance": "応用",
+  "level": "応用",
+  "summary": "関数に付けた型注釈（アノテーション）を辞書として保持する属性。引数名と戻り値（キー 'return'）をキーに、注釈として書かれた値を返す。",
+  "syntax": "関数.__annotations__",
+  "args": "対象: 属性を読む関数",
+  "returns": "注釈の辞書（注釈が無い関数は空の辞書）",
+  "example": "def f(x: int) -> str:\n    return \"a\"\nprint(f.__annotations__)",
+  "expected": "{'x': <class 'int'>, 'return': <class 'str'>}",
+  "pitfalls": "メソッドではないため呼び出しの括弧は付けない。注釈は実行時の型チェックには使われず、情報として保持されるだけ。文字列で書いた注釈は文字列のまま入る。",
+  "related": [
+   "def",
+   "dict"
+  ],
+  "lesson": "variables-types",
+  "doc": "https://docs.python.org/ja/3.12/reference/datamodel.html"
  },
  {
   "id": "class",

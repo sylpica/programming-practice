@@ -1574,11 +1574,11 @@
   "fields": {
    "description": "頂点座標の配列から、種類を指定して選択を作る。type には \"polygon\"、\"freehand\"、\"polyline\"、\"freeline\"、\"angle\"、\"point\" などが指定できる。座標配列をプログラムで生成する処理と相性がよい。",
    "returns": "戻り値なし（処理または引数の変数への書き込み）",
-   "caution": "座標は2つの配列（x座標列とy座標列）で与える。",
+   "caution": "座標は2つの配列（x座標列とy座標列）で与え、長さが違うとエラーになる。第4引数 n を付けると先頭の n 点だけを使う（n が配列より大きいとエラー）。type には selectionType が返す数値も指定できる。\"line\" は折れ線（polyline、種別コード6）になる。",
    "example": "xs=newArray(0,10,10); ys=newArray(0,0,10);\nmakeSelection(\"polygon\", xs, ys);",
    "source": "https://imagej.net/ij/developer/macro/functions2.html#makeSelection"
   },
-  "sha256": "f1b4eea02890d05e11275b93e2865e775a5372a76dc1eee27475872165077340",
+  "sha256": "93474c9120815f376a5ebec7185b6db6e21fbf9967c3d358ac44c6c2285e4a90",
   "description": "照合済",
   "returns": "照合済",
   "caution": "照合済（モデル固有の限定は実装・試験で確認）"
@@ -2358,11 +2358,11 @@
   "fields": {
    "description": "指定したディレクトリ内のファイル名・サブディレクトリ名の一覧を文字列の配列で返す。フォルダ内の一括処理の入り口になる関数。",
    "returns": "ファイル名の配列",
-   "caution": "サブディレクトリ名は末尾に \"/\" が付いて含まれる。拡張子でふるい分けてから開くのが定石。",
+   "caution": "サブディレクトリ名は末尾に \"/\" が付いて含まれる。拡張子でふるい分けてから開くのが定石。\".\" で始まる名前と \"Thumbs.db\" は一覧に含まれない。",
    "example": "dir=getDirectory(\"フォルダ\");\nfiles = getFileList(dir);\nfor (i = 0; i < files.length; i++) { }",
    "source": "https://imagej.net/ij/developer/macro/functions2.html#getFileList"
   },
-  "sha256": "52e4b025a5e416d1839efaf72e3cb4d43972e48a0d054d0441570810dd66d744",
+  "sha256": "39b13d869493c4107ffba5592f368ae944a7680eb087bd1fa2e5e6fdd22d231e",
   "description": "照合済",
   "returns": "照合済",
   "caution": "照合済（モデル固有の限定は実装・試験で確認）"
@@ -2694,11 +2694,11 @@
   "fields": {
    "description": "文字列の長さ（文字数）を返す。配列を渡すとその要素数を返すため、配列の長さ取得にも使われる。",
    "returns": "文字数、または配列の要素数",
-   "caution": "",
+   "caution": "数値を渡すと \"String or array expected\" エラーになる（他の文字列関数のように数値は文字列化されない）。数値の文字数が要る場合は d2s や toString で文字列に変換してから渡す。",
    "example": "name=\"sample\"; arr=newArray(1,2);\nn = lengthOf(name);\nm = lengthOf(arr);",
    "source": "https://imagej.net/ij/developer/macro/functions2.html#lengthOf"
   },
-  "sha256": "0817dac7d31a0477e64b2027ee9ba26e09d8ca55a382426a32e218ae1c97232d",
+  "sha256": "292682aef5d4d1ac76057c3dca10af91861f0432d58ba7a29304bfc79fa5280d",
   "description": "照合済",
   "returns": "照合済",
   "caution": "照合済（モデル固有の限定は実装・試験で確認）"
@@ -2883,11 +2883,11 @@
   "fields": {
    "description": "配列をその場で並べ替える。数値配列は数値順、文字列配列は大文字小文字を区別しない順序でソートされる。元の配列自体が書き換わる。",
    "returns": "戻り値なし（処理または引数の変数への書き込み）",
-   "caution": "元の順序が必要な場合は Array.copy で複製してからソートする。",
+   "caution": "元の順序が必要な場合は Array.copy で複製してからソートする。後ろに配列を続けると、それらも同じ順序で並べ替わる（並行配列。長さが違うとエラー）。数値と文字列が混在した配列はエラーになる。",
    "example": "values=newArray(3,1,2);\nArray.sort(values);",
    "source": "https://imagej.net/ij/developer/macro/functions2.html#Array.sort"
   },
-  "sha256": "1f8f0737e2e0c40e6a88f0f40efa8e0174813cd0d5ed2497ebdf49e95d75d127",
+  "sha256": "775eef27ed2faa7cbf2bc4c0c6ce0b644c91abdfbcc877680d2cf11d326cebc6",
   "description": "照合済",
   "returns": "照合済",
   "caution": "照合済（モデル固有の限定は実装・試験で確認）"
@@ -3199,15 +3199,15 @@
  {
   "kind": "imagej",
   "name": "eval",
-  "supported": true,
+  "supported": false,
   "fields": {
    "description": "文字列として与えたマクロコードをその場で実行する。第1引数に \"js\" などを指定すると、第2引数の JavaScript などのスクリプトを評価できる。動的に組み立てたコードを実行する特殊な用途の関数。",
    "returns": "評価したコードが返した文字列（\"js\" などでは最後の文の値）",
-   "caution": "通常の処理では使わず、コードの動的生成が本当に必要な場合に限る。",
+   "caution": "通常の処理では使わず、コードの動的生成が本当に必要な場合に限る。このアプリでは未対応として停止する。",
    "example": "eval(\"print(getWidth());\");",
    "source": "https://imagej.net/ij/developer/macro/functions2.html#eval"
   },
-  "sha256": "05ef3a70fc8477243691e5e57f034edc57c6ab05b90328b3b258ff42e0b47abe",
+  "sha256": "86b927ba7dd6f44ee2c896aefacdba73a9c2bda37a7ba4b0e4ff14a56dea3fcc",
   "description": "照合済",
   "returns": "照合済",
   "caution": "照合済（モデル固有の限定は実装・試験で確認）"
@@ -4145,13 +4145,13 @@
   "name": "Display input dialog",
   "supported": true,
   "fields": {
-   "description": "入力ダイアログで得る文字列と押されたボタンを扱います。本モデルでは入力値を捏造しません。",
-   "returns": "UserInputとButtonPressed。本モデルの入力は未確定",
+   "description": "入力ダイアログで得る文字列を扱います。本モデルでは入力値を捏造しません。実 PAD のもう1つの出力 ButtonPressed（押されたボタン）は本モデルでは生成されないため、参照すると未定義の名前として停止します。",
+   "returns": "UserInput（本モデルでは target で指定した変数へ入り、入力は未確定として扱います）。ButtonPressed は本モデルでは未対応で、変数としては生成されません",
    "caution": "JSONはこのアプリの学習用フロー表現で、製品のエクスポート形式ではありません。",
    "example": "{\n  \"name\": \"学習フロー\",\n  \"actions\": [\n    {\n      \"action\": \"Set variable\",\n      \"target\": \"Count\",\n      \"value\": 0\n    },\n    {\n      \"action\": \"Set variable\",\n      \"target\": \"Items\",\n      \"value\": [\n        \"A\",\n        \"B\"\n      ]\n    },\n    {\n      \"action\": \"Display input dialog\",\n      \"target\": \"Answer\",\n      \"value\": \"入力してください\"\n    }\n  ]\n}",
    "source": "https://learn.microsoft.com/en-us/power-automate/desktop-flows/actions-reference/display#inputdialog"
   },
-  "sha256": "6214f36d582e4812081ecc6a333ef937d397a9ed349f3e36bebfc1e06ee1c32e",
+  "sha256": "c4a150ee8a016a18b2d2ceb6baa1a599efd450de847eaed38e366a2b5dd8bb5a",
   "description": "照合済",
   "returns": "照合済",
   "caution": "照合済（モデル固有の限定は実装・試験で確認）"
@@ -4641,13 +4641,13 @@
   "name": "type",
   "supported": true,
   "fields": {
-   "description": "入力要素の値を置き換えます。",
+   "description": "入力要素の値を置き換えます。組み込み変数 !StringEscape がtrue（既定）の間は、値の中の \\n が改行、\\t がタブ等として解釈されます。falseにすると文字どおり入力します。",
    "returns": "式の戻り値なし（コマンド）",
    "caution": "JavaScript条件は安全な構文解析の部分集合です。任意のスクリプトは実行しません。",
    "example": "{\n  \"Name\": \"練習マクロ\",\n  \"CreationDate\": \"モデル\",\n  \"Commands\": [\n    {\n      \"Command\": \"open\",\n      \"Target\": \"https://example.test/form\",\n      \"Value\": \"\"\n    },\n    {\n      \"Command\": \"store\",\n      \"Target\": \"0\",\n      \"Value\": \"count\"\n    },\n    {\n      \"Command\": \"store\",\n      \"Target\": \"完了\",\n      \"Value\": \"Result\"\n    },\n    {\n      \"Command\": \"click\",\n      \"Target\": \"id=submit\",\n      \"Value\": \"\"\n    },\n    {\n      \"Command\": \"type\",\n      \"Target\": \"id=name\",\n      \"Value\": \"こんにちは\"\n    }\n  ]\n}",
    "source": "https://ui.vision/rpa/docs/selenium-ide/type"
   },
-  "sha256": "dfc7eb8f3d8321555b626346b5bce74b7f08655917f8f8980e137e9908d5e9aa",
+  "sha256": "af5c15e55066a38557a064a667192dae720d91856dff9696486cc5f440cd646b",
   "description": "照合済",
   "returns": "照合済",
   "caution": "照合済（モデル固有の限定は実装・試験で確認）"
@@ -5185,13 +5185,13 @@
   "name": "Value",
   "supported": true,
   "fields": {
-   "description": "明示した10進数文字列を数値へ変換します。入力がBlankまたは空文字列の場合はBlankを返します。",
+   "description": "明示した10進数文字列を数値へ変換します。指数表記（1e3）と百分率（10%→0.1）も変換します。入力がBlankまたは空文字列の場合はBlankを返します。",
    "returns": "数値（ホストにより数値型が異なる）。入力がBlankまたは空文字列の場合はBlank",
    "caution": "言語タグはen-USのみ対応します。地域依存書式は未対応です。",
    "example": "Value(Input1.Text)",
    "source": "https://learn.microsoft.com/en-us/power-platform/power-fx/reference/function-value"
   },
-  "sha256": "b49e48b979eca4011bf6171f3f6920d7391c7dc6c15d684fb5210aea0bf56d3f",
+  "sha256": "c8e0c2cfcd2aa8ac8079bda8a7f0e2aa7513fed9aa01ca41bd0bf62d047bcecf",
   "description": "照合済",
   "returns": "照合済",
   "caution": "照合済（モデル固有の限定は実装・試験で確認）"
@@ -6403,11 +6403,11 @@
   "fields": {
    "description": "書式と引数を対応させて出力を説明します。",
    "returns": "int（出力した文字数。失敗は負の値）",
-   "caution": "%d / %i / %f / %s / %c / %%のみです。書式と型の不一致は停止します。",
+   "caution": "%d / %i / %f / %s / %c / %u / %%のみです。書式と型の不一致は停止します。",
    "example": "#include <stdio.h>\nint main() {\nint n=3;\nprintf(\"%d\\n\", n);\nreturn 0;\n}",
    "source": "https://en.cppreference.com/w/c/io/fprintf"
   },
-  "sha256": "27dc86dc66622d8b9b28cae601bc99ee03239c60209661ec53516c22d5051012",
+  "sha256": "71c5ec609810e738716dbc8d2a1488e4603b1aa3549aea8cc3c5eb0148ff9c5a",
   "description": "照合済",
   "returns": "照合済",
   "caution": "照合済（モデル固有の限定は実装・試験で確認）"
@@ -6531,11 +6531,11 @@
   "fields": {
    "description": "書式と引数を対応させて出力を説明します。",
    "returns": "int（出力した文字数。失敗は負の値）",
-   "caution": "%d / %i / %f / %s / %c / %%のみです。書式と型の不一致は停止します。",
+   "caution": "%d / %i / %f / %s / %c / %u / %%のみです。書式と型の不一致は停止します。",
    "example": "#include <iostream>\n#include <cstdio>\nint main() {\nint n=3;\nstd::printf(\"%d\\n\", n);\nreturn 0;\n}",
    "source": "https://en.cppreference.com/w/cpp/io/c/fprintf"
   },
-  "sha256": "3f3a55c87a718f74813b018212ae6e3af7a7f22dc2f1000bd4286ae5f07c9adc",
+  "sha256": "b32d975cf1c90c2dab8464b7d22096777dc2ce4521e38b45ecf46a99aa4ce443",
   "description": "照合済",
   "returns": "照合済",
   "caution": "照合済（モデル固有の限定は実装・試験で確認）"
@@ -6755,11 +6755,11 @@
   "fields": {
    "description": "モデルに明示したセレクターに対応する最初の要素を返します。",
    "returns": "最初に一致するElement、なければnull",
-   "caution": "一般のCSS探索は未対応です。model.selectorsで対応を指定できます。",
+   "caution": "対応するのは model.selectors の指定、#id、タグ名、.クラス、カンマ区切りの組み合わせだけです。子孫・属性・疑似クラス等のセレクターは未対応として停止します。",
    "example": "document.querySelector(\"#result\").textContent = \"完了\";",
    "source": "https://developer.mozilla.org/en-US/docs/Web/API/Document/querySelector"
   },
-  "sha256": "1295d55a0277d8b430fe0fe04b38a0c60d5840e3ca87335fe32f535674aeb963",
+  "sha256": "17fdf39bf8df551924eb1028995bf481c3c7bc802a63dcb52bd43a0354e4c90e",
   "description": "照合済",
   "returns": "照合済",
   "caution": "照合済（モデル固有の限定は実装・試験で確認）"
@@ -6785,13 +6785,13 @@
   "name": "appendChild",
   "supported": true,
   "fields": {
-   "description": "モデルの子要素一覧へ追加します。",
+   "description": "モデルの子要素一覧へ追加します。既に別の親がある要素は、元の親から外れて移動します。",
    "returns": "追加したNode",
    "caution": "",
    "example": "const p=document.createElement(\"p\");\ndocument.body.appendChild(p);",
    "source": "https://developer.mozilla.org/en-US/docs/Web/API/Node/appendChild"
   },
-  "sha256": "802c4af2c36addd6597adf3e1e319507a9867c526e00ded4e82f7d29e469e8fc",
+  "sha256": "eef5b9f87400ee21354afbdce0aa08ca60ed476757685ad462aa06990921cf3f",
   "description": "照合済",
   "returns": "照合済",
   "caution": "照合済（モデル固有の限定は実装・試験で確認）"
@@ -6977,13 +6977,13 @@
   "name": "JSON.stringify",
   "supported": true,
   "fields": {
-   "description": "JSON文字列へ変換します。",
+   "description": "JSON文字列へ変換します。第2引数にキーの配列を渡すとそのキーだけを残し、第3引数（数値または文字列）で字下げを指定できます。",
    "returns": "JSON文字列、対象によってundefined。循環参照等は例外",
    "caution": "",
    "example": "JSON.stringify({a:1})",
    "source": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/JSON/stringify"
   },
-  "sha256": "ee02809b567081f521795db4c5e8e623ebab55d489e098e52147a9da3a6cb2cd",
+  "sha256": "3548f4d0170ea561fee4b2257a6c1a4caf21bc21783575dd0ea9a1e23846b065",
   "description": "照合済",
   "returns": "照合済",
   "caution": "照合済（モデル固有の限定は実装・試験で確認）"
@@ -7387,11 +7387,11 @@
   "fields": {
    "description": "両方の式がTrueのときだけTrueを返します。数値ではビットごとのANDを行います。",
    "returns": "Boolean（論理積）または数値（ビットごとのAND）",
-   "caution": "短絡評価はされません。Nullを含む場合はNullが伝播します（FalseとのAndはFalse）。",
+   "caution": "短絡評価はされません。Nullを含む場合、FalseとのAndはFalse、数値とのAndは0、それ以外はNullが伝播します。",
    "example": "Debug.Print True And False",
    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/and-operator.md"
   },
-  "sha256": "5d7cb3fe5e2d455c987c5fc5609bbfede3662c5bf3a6a5d1c9d8bd232f6f7116"
+  "sha256": "e24639e3f20ee123375dbc9e06ca40d0dc0fa8172f5114183a90b4f1c3439dd8"
  },
  {
   "kind": "vba",
@@ -7400,11 +7400,11 @@
   "fields": {
    "description": "少なくとも一方の式がTrueならTrueを返します。数値ではビットごとのORを行います。",
    "returns": "Boolean（論理和）または数値（ビットごとのOR）",
-   "caution": "短絡評価はされません。Nullを含む場合はNullが伝播します（TrueとのOrはTrue）。",
+   "caution": "短絡評価はされません。Nullを含む場合、TrueとのOrはTrue、数値とのOrはその数値、それ以外はNullが伝播します。",
    "example": "Debug.Print True Or False",
    "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/or-operator.md"
   },
-  "sha256": "41bb64ba96e3221235baadc8e52d74ecccc2c96d9a6413f7641e3389c35d8a53"
+  "sha256": "03cf00bc44787fc4512ef376aab92ef641598636624b1e5d9044c35354ded961"
  },
  {
   "kind": "vba",
@@ -12059,24 +12059,24 @@
   "fields": {
    "description": "参照（&変数）で受け取った変数に値が代入されているかを調べ、代入済みなら1、未代入なら0を返します。参照先は評価されないため、未代入でもエラーになりません。",
    "returns": "参照先が代入済みなら1、未代入なら0",
-   "caution": "実物では型によらず代入済みなら1ですが、この教材のモデルは実物と異なり、参照先が配列・オブジェクトのときにだけ1を返し、代入済みの数値・文字列や未確定値でも0を返します（モデル側の制限です）。未代入のときは実物・モデルとも0です。",
+   "caution": "引数は VarRef（&変数）の形で渡す必要があります。& を付けない値やリテラルを渡すと実物でも TypeError になります。代入済みかどうかは値の型によらず判定します。",
    "example": "^!n:: {\ny := [1, 2]\nMsgBox IsSetRef(&y)\nMsgBox IsSetRef(&z)\n}",
    "source": "https://www.autohotkey.com/docs/v2/Variables.htm"
   },
-  "sha256": "cfd29525c0f4ee62090819a1d3081d39840df0919241921d55543a1e013502e5"
+  "sha256": "0b2c5e22dd044147fd27a657d7868dc7430bf07d1c1af00e8b8fd9e14192a2a8"
  },
  {
   "kind": "autohotkey",
   "name": "for",
   "supported": true,
   "fields": {
-   "description": "コレクションの要素を順に取り出し、Key（配列では1始まりの添字、オブジェクトではプロパティ名）とValue（要素の値）へ代入しながら本体を繰り返します。変数が1つだけのときは、配列では値だけを受け取りますが、オブジェクトではプロパティ名を受け取ります。",
+   "description": "コレクションの要素を順に取り出し、Key（配列では1始まりの添字）とValue（要素の値）へ代入しながら本体を繰り返します。変数が1つだけのときは、値だけを受け取ります。",
    "returns": "戻り値なし（宣言または制御文）",
-   "caution": "繰り返し対象が未確定値や配列・オブジェクトでない場合は未対応として停止します。このアプリのモデルでは、オブジェクトに対する変数1つの形でも値を受け取ります（実物ではプロパティ名を受け取る点が異なります）。",
+   "caution": "実物では __Enum を持つ値（配列・Mapなど）だけが列挙でき、通常の Object は列挙できないため TypeError になります。このモデルでも列挙に対応するのは配列だけで、Object は実物どおりエラーとして停止します。繰り返し対象が未確定値の場合は未対応として停止します。",
    "example": "^!n:: {\ntotal := 0\nfor idx, v in [10, 20] {\n total += v\n}\nMsgBox total\n}",
    "source": "https://www.autohotkey.com/docs/v2/lib/For.htm"
   },
-  "sha256": "97fdf9ad0f26c390548ad92bb46f1c05aaa249f62e5115915825b80461421eee"
+  "sha256": "f8f82354de7fe886144230d9590e2fc4d9d13a6900b4dba7e460387dee14ca87"
  },
  {
   "kind": "autohotkey",
@@ -12148,13 +12148,13 @@
   "name": "Length",
   "supported": true,
   "fields": {
-   "description": "配列では要素数を、文字列では文字数を返すプロパティです。配列では代入で長さを変更でき、長くすると値のない要素が増え、短くすると末尾が切り捨てられます。",
-   "returns": "配列の要素数または文字列の文字数（Integer）",
-   "caution": "プロパティ名は大文字小文字を区別しません（.lengthでも同じです）。文字列のLengthへは代入できません。",
-   "example": "^!n:: {\na := [10, 20, 30]\nMsgBox a.Length\nMsgBox \"hello\".Length\n}",
+   "description": "配列の要素数を返すプロパティです。配列では代入で長さを変更でき、長くすると値のない要素が増え、短くすると末尾が切り捨てられます。文字列には Length プロパティはありません（標準では存在せず、使うとエラーになります）。",
+   "returns": "配列の要素数（Integer）",
+   "caution": "プロパティ名は大文字小文字を区別しません（.lengthでも同じです）。文字列の文字数は StrLen で数えますが、この教材では StrLen は未対応です。",
+   "example": "^!n:: {\na := [10, 20, 30]\nMsgBox a.Length\n}",
    "source": "https://www.autohotkey.com/docs/v2/lib/Array.htm"
   },
-  "sha256": "9fa96aa3f8a84c0f26a3c58e99547d8ceba0224441f1f074c57c98303d901b7f"
+  "sha256": "83bdcc8488286ea3a04ea7d55ecf7d3c5edfc3e95ec0ae7dca72a66e4e62d3dd"
  },
  {
   "kind": "c",
@@ -12631,11 +12631,11 @@
   "fields": {
    "description": "標準入力から1行を読み取り、string 変数へ格納します。モデルでは実行時の入力を未確定値として扱います。std::cin はこの関数の第1引数として使います。",
    "returns": "std::istream&（第1引数のストリーム）",
-   "caution": "対応形式は std::getline(std::cin, 変数) のみです。cin >> x の抽出も、モデルでは抽出先の変数が未確定値になります（実際の入力内容は再現されません）。",
+   "caution": "対応形式は std::getline(std::cin, 変数) のみです。cin >> x の抽出も、モデルでは抽出先の変数が未確定値になります（実際の入力内容は再現されません）。戻り値は std::istream& であり読み取った文字列ではないため、変数へ代入する形（std::string r = std::getline(…) 等）はコンパイルエラーとして停止します。",
    "example": "#include <iostream>\n#include <cstdio>\n#include <string>\nint main() {\nstd::string line;\nstd::getline(std::cin, line);\nreturn 0;\n}",
    "source": "https://en.cppreference.com/w/cpp/string/basic_string/getline"
   },
-  "sha256": "8bd3bb640911dc228b5d8ef43d11451fb442a928b13877fcd01c382d397b0380"
+  "sha256": "20d582d85e832a3539a8722a55ee4a88954d5c0da29bec151e284b53665ec4fc"
  },
  {
   "kind": "cpp",
@@ -18840,5 +18840,144 @@
   "description": "照合済",
   "returns": "照合済",
   "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "python",
+  "name": "rangeの属性",
+  "supported": true,
+  "fields": {
+   "description": "range オブジェクトが持つ読み取り専用の属性。作るときに渡した開始値 start、終了値 stop、間隔 step を、メソッドではなく値そのものとして返す。",
+   "returns": "start／stop／step はそれぞれ作るときに指定した整数（省略時は start=0、step=1）",
+   "caution": "メソッドではないため呼び出しの括弧は付けない。stop は列に含まれない終了値そのものが返る（最後の要素ではない）。",
+   "example": "r = range(1, 5, 2)\nprint(r.start, r.stop, r.step)",
+   "source": "https://docs.python.org/ja/3.12/library/stdtypes.html#range"
+  },
+  "sha256": "81a1ee05129fa6848036cc0fd1791ce19ce27b5ce0a895f16ed429f66698afc4"
+ },
+ {
+  "kind": "python",
+  "name": "__annotations__",
+  "supported": true,
+  "fields": {
+   "description": "関数に付けた型注釈（アノテーション）を辞書として保持する属性。引数名と戻り値（キー 'return'）をキーに、注釈として書かれた値を返す。",
+   "returns": "注釈の辞書（注釈が無い関数は空の辞書）",
+   "caution": "メソッドではないため呼び出しの括弧は付けない。注釈は実行時の型チェックには使われず、情報として保持されるだけ。文字列で書いた注釈は文字列のまま入る。",
+   "example": "def f(x: int) -> str:\n    return \"a\"\nprint(f.__annotations__)",
+   "source": "https://docs.python.org/ja/3.12/reference/datamodel.html"
+  },
+  "sha256": "6fa71e8dc425ef3922d32412e35dd3793e7b977a48deafc29653e5e9f1360939"
+ },
+ {
+  "kind": "cloudformation",
+  "name": "rangeの属性",
+  "supported": true,
+  "fields": {
+   "description": "range オブジェクトが持つ読み取り専用の属性。作るときに渡した開始値 start、終了値 stop、間隔 step を、メソッドではなく値そのものとして返す。",
+   "returns": "start／stop／step はそれぞれ作るときに指定した整数（省略時は start=0、step=1）",
+   "caution": "メソッドではないため呼び出しの括弧は付けない。stop は列に含まれない終了値そのものが返る（最後の要素ではない）。",
+   "example": "def handler(event, context):\n    r = range(1, 5, 2)\n    print(r.start, r.stop, r.step)\n    return {\"requestId\":event[\"requestId\"],\"status\":\"success\",\"fragment\":event[\"fragment\"]}",
+   "source": "https://docs.python.org/ja/3.12/library/stdtypes.html#range"
+  },
+  "sha256": "5be36cae8d105aa4f6c1939388dbae69eb6c3f99719de7889dd5d749a5eb8d82"
+ },
+ {
+  "kind": "cloudformation",
+  "name": "__annotations__",
+  "supported": true,
+  "fields": {
+   "description": "関数に付けた型注釈（アノテーション）を辞書として保持する属性。引数名と戻り値（キー 'return'）をキーに、注釈として書かれた値を返す。",
+   "returns": "注釈の辞書（注釈が無い関数は空の辞書）",
+   "caution": "メソッドではないため呼び出しの括弧は付けない。注釈は実行時の型チェックには使われず、情報として保持されるだけ。文字列で書いた注釈は文字列のまま入る。",
+   "example": "def handler(event, context):\n    def f(x: int) -> str:\n        return \"a\"\n    print(f.__annotations__)\n    return {\"requestId\":event[\"requestId\"],\"status\":\"success\",\"fragment\":event[\"fragment\"]}",
+   "source": "https://docs.python.org/ja/3.12/reference/datamodel.html"
+  },
+  "sha256": "4a6ac7be495a772117813551271f13e579bf40a2556ddef995da57ec26e083af"
+ },
+ {
+  "kind": "c",
+  "name": "NULL",
+  "supported": true,
+  "fields": {
+   "description": "ヌルポインタ定数を表すマクロです（<stddef.h> や <stdio.h> などで定義されます）。どのオブジェクトも指していないポインタを表します。",
+   "returns": "ヌルポインタ定数（型は処理系定義：void* へのポインタ、または整数の 0）",
+   "caution": "モデルでは null として扱い、ポインタへの代入と比較に使えます。指していない先の読み書きは未定義動作として停止します。",
+   "example": "#include <stdio.h>\nint main() {\nint *p = NULL;\nif (p == NULL) { p = NULL; }\nreturn 0;\n}",
+   "source": "https://en.cppreference.com/w/c/types/NULL"
+  },
+  "sha256": "aba8caa85e5def3991258f1e868b14dd8672faff76f197c821527d459ef568b9",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "cpp",
+  "name": "NULL",
+  "supported": true,
+  "fields": {
+   "description": "ヌルポインタ定数を表すマクロです（<stddef.h> や <stdio.h> などで定義されます）。どのオブジェクトも指していないポインタを表します。",
+   "returns": "ヌルポインタ定数（整数の 0、または void* へのポインタ）",
+   "caution": "モデルでは null として扱い、ポインタへの代入と比較に使えます。指していない先の読み書きは未定義動作として停止します。",
+   "example": "#include <iostream>\n#include <cstdio>\nint main() {\nint *p = NULL;\nif (p == NULL) { p = NULL; }\nreturn 0;\n}",
+   "source": "https://en.cppreference.com/w/cpp/types/NULL"
+  },
+  "sha256": "e6fa9f78e7aca1dd52492ce16d56bc66a6e018fee12bf94e7ae689e50827ac24",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "cpp",
+  "name": "nullptr",
+  "supported": true,
+  "fields": {
+   "description": "C++11 で導入されたヌルポインタリテラルです。型は std::nullptr_t で、任意のポインタ型へ変換できますが整数型へは変換できません。NULL より型安全なため、C++ ではこちらが推奨されます。",
+   "returns": "std::nullptr_t 型の値（ヌルポインタ）",
+   "caution": "モデルでは null として扱い、ポインタへの代入と比較に使えます。",
+   "example": "#include <iostream>\n#include <cstdio>\nint main() {\nint *p = nullptr;\nif (p == nullptr) { p = nullptr; }\nreturn 0;\n}",
+   "source": "https://en.cppreference.com/w/cpp/language/nullptr"
+  },
+  "sha256": "ff081d36b6ddf4e36814b46454572a5de2eaa8bef27bf37816693e9eae460aae",
+  "description": "照合済",
+  "returns": "照合済",
+  "caution": "照合済（モデル固有の限定は実装・試験で確認）"
+ },
+ {
+  "kind": "uivision",
+  "name": "!StringEscape",
+  "supported": true,
+  "fields": {
+   "description": "typeコマンドで入力する値のエスケープ解釈を切り替える組み込み変数です。true（既定）では \\n が改行、\\r が復帰、\\t がタブ等として解釈され、falseではバックスラッシュを含めて文字どおり入力します。",
+   "returns": "設定値（文字列）",
+   "caution": "既定はtrueです。このモデルではtypeコマンドにだけ適用します。",
+   "example": "{\n  \"Name\": \"練習マクロ\",\n  \"CreationDate\": \"モデル\",\n  \"Commands\": [\n    {\n      \"Command\": \"open\",\n      \"Target\": \"https://example.test/form\",\n      \"Value\": \"\"\n    },\n    {\n      \"Command\": \"store\",\n      \"Target\": \"false\",\n      \"Value\": \"!StringEscape\"\n    },\n    {\n      \"Command\": \"type\",\n      \"Target\": \"id=name\",\n      \"Value\": \"a\\\\nb\"\n    }\n  ]\n}",
+   "source": "https://ui.vision/rpa/docs/"
+  },
+  "sha256": "6e1f4e848a4c363dea8ea8f2c7b7ddae8ca745343c469f5849276e61c57ecd52"
+ },
+ {
+  "kind": "uivision",
+  "name": "endIf",
+  "supported": true,
+  "fields": {
+   "description": "ifブロックを閉じます。endの別名で、endと同じ働きをします。",
+   "returns": "式の戻り値なし（コマンド）",
+   "caution": "endと同等です。対応するifが必要です。",
+   "example": "{\n  \"Name\": \"練習マクロ\",\n  \"CreationDate\": \"モデル\",\n  \"Commands\": [\n    {\n      \"Command\": \"open\",\n      \"Target\": \"https://example.test/form\",\n      \"Value\": \"\"\n    },\n    {\n      \"Command\": \"store\",\n      \"Target\": \"0\",\n      \"Value\": \"count\"\n    },\n    {\n      \"Command\": \"if\",\n      \"Target\": \"${count} == 0\",\n      \"Value\": \"\"\n    },\n    {\n      \"Command\": \"echo\",\n      \"Target\": \"YES\",\n      \"Value\": \"\"\n    },\n    {\n      \"Command\": \"endIf\",\n      \"Target\": \"\",\n      \"Value\": \"\"\n    }\n  ]\n}",
+   "source": "https://ui.vision/rpa/docs/selenium-ide/if"
+  },
+  "sha256": "c5a205ab83311f0f97ec02e1897a424d6a34872aaca8966b277eaa0a976482a7"
+ },
+ {
+  "kind": "uivision",
+  "name": "endWhile",
+  "supported": true,
+  "fields": {
+   "description": "whileブロックを閉じます。endの別名で、endと同じ働きをします。",
+   "returns": "式の戻り値なし（コマンド）",
+   "caution": "endと同等です。対応するwhileが必要です。",
+   "example": "{\n  \"Name\": \"練習マクロ\",\n  \"CreationDate\": \"モデル\",\n  \"Commands\": [\n    {\n      \"Command\": \"open\",\n      \"Target\": \"https://example.test/form\",\n      \"Value\": \"\"\n    },\n    {\n      \"Command\": \"store\",\n      \"Target\": \"0\",\n      \"Value\": \"count\"\n    },\n    {\n      \"Command\": \"while\",\n      \"Target\": \"${count} < 3\",\n      \"Value\": \"\"\n    },\n    {\n      \"Command\": \"executeScript_Sandbox\",\n      \"Target\": \"return Number(${count}) + 1;\",\n      \"Value\": \"count\"\n    },\n    {\n      \"Command\": \"endWhile\",\n      \"Target\": \"\",\n      \"Value\": \"\"\n    },\n    {\n      \"Command\": \"echo\",\n      \"Target\": \"${count}\",\n      \"Value\": \"\"\n    }\n  ]\n}",
+   "source": "https://ui.vision/rpa/docs/selenium-ide/while"
+  },
+  "sha256": "e9a29ad198eda6a0d95bfc254c72a1361670cac8112c467855c0b928369df874"
  }
 ]

@@ -43,9 +43,9 @@ export const definition = {
   templates: TEMPLATES.map((t) => ({
     ...t,
     intro: t.explain,
-    refs: reference
-      .filter((r) => t.code.includes(r.name + "("))
-      .map((r) => r.name),
+    // refs は定義の確定後に scan で解決して差し込む（R7-151：部分文字列の
+    // 一致では "print(" に 'int' が誤検出され、メソッド項目が落ちていた）。
+    refs: [],
   })),
   glossary: GLOSSARY.map((g) => [g.ja, g.def]),
   model: {
@@ -69,13 +69,16 @@ export const definition = {
   scan(code) {
     try {
       let used = collectUsed(parseProgram(splitLines(code).lines)).usedCalls;
-      return [
-        ...new Set(
-          used
-            .map((x) => x.name)
-            .filter((name) => reference.some((r) => r.name === name)),
-        ),
-      ];
+      let names = used
+        .map((x) => x.name)
+        .filter((name) => reference.some((r) => r.name === name));
+      // R7-151：メソッド呼び出しと属性参照は、レシーバの型ヒントで修飾名
+      // （str.split 等）へ解決して併せる。collectUsed はメソッドの短い名前
+      // しか返さないため、従来は参照リンクが付かなかった。
+      let analyzed = analyzeCode(code);
+      for (let list of analyzed.byLine.values())
+        names.push(...list.calls, ...list.attrs);
+      return [...new Set(names)];
     } catch {
       return [];
     }
@@ -126,28 +129,121 @@ export const definition = {
     }
   },
 };
-function callsByLine(code) {
-  let map = new Map();
+// 属性参照で解決される項目は実行時の dynCalls には現れないため、
+// normalize の動的フィルタを素通りさせる（R7-59／R7-151）。
+const ATTRIBUTE_REF_NAMES = new Set(["数値の属性", "rangeの属性", "__annotations__"]);
+// コードを静的に解析し、行ごとに「解決できた参照項目名」を集める。
+// メソッドはレシーバの型ヒント（リテラル・コンストラクタ・単純代入から
+// 推定）で修飾名へ解決し、候補が一意な場合だけ採用する（誤リンク防止）。
+// 属性は 数値の属性／rangeの属性／__annotations__ を対象に同じ方針で解決する。
+function analyzeCode(code) {
+  let byLine = new Map();
   try {
     let nodes = parseProgram(splitLines(code).lines);
-    function name(n) {
-      return n?.k === "name"
-        ? n.name
-        : n?.k === "attr"
-          ? name(n.obj) + "." + n.name
-          : "";
-    }
+    let hints = new Map();
+    let funcNames = new Set();
+    let ctorHint = (fname) =>
+      fname === "range"
+        ? "range"
+        : fname === "str" || fname === "list" || fname === "tuple" || fname === "dict" || fname === "set"
+          ? fname
+          : fname === "int" || fname === "float" || fname === "bool"
+            ? "num"
+            : null;
+    let exprHint = (n) => {
+      if (!n || typeof n !== "object") return null;
+      if (n.k === "str") return "str";
+      if (n.k === "list") return "list";
+      if (n.k === "tuple") return "tuple";
+      if (n.k === "dict") return "dict";
+      if (n.k === "set") return "set";
+      if (n.k === "num") return "num";
+      if (n.k === "call" && n.fn && n.fn.k === "name") return ctorHint(n.fn.name);
+      if (n.k === "name") return hints.get(n.name) || null;
+      return null;
+    };
+    let push = (line, kind, name) => {
+      if (!line || !name) return;
+      let entry = byLine.get(line) || { calls: [], attrs: [] };
+      if (!entry[kind].includes(name)) entry[kind].push(name);
+      byLine.set(line, entry);
+    };
+    let resolveMethod = (recv, short) => {
+      let candidates = reference.filter(
+        (r) => r.name === short || r.name.endsWith("." + short),
+      );
+      if (!candidates.length) return null;
+      let hint = exprHint(recv);
+      if (hint) {
+        let narrowed = candidates.filter(
+          (r) => r.name.split(".").slice(0, -1).join(".") === hint,
+        );
+        if (narrowed.length === 1) return narrowed[0].name;
+        if (narrowed.length > 1) return null;
+      }
+      return candidates.length === 1 ? candidates[0].name : null;
+    };
+    let resolveAttr = (recv, attr) => {
+      if (["real", "imag", "numerator", "denominator"].includes(attr)) {
+        let hint = exprHint(recv);
+        // 数値リテラル・数値と分かる変数・型が不明なレシーバは数値の属性へ。
+        // 別種と確定しているレシーバ（文字列・リスト等）には付けない。
+        if (hint === null || hint === "num") return "数値の属性";
+        return null;
+      }
+      if (["start", "stop", "step"].includes(attr)) {
+        if (exprHint(recv) === "range") return "rangeの属性";
+        return null;
+      }
+      if (attr === "__annotations__") {
+        if (recv && recv.k === "name" && funcNames.has(recv.name))
+          return "__annotations__";
+        if (exprHint(recv) === "func") return "__annotations__";
+        return null;
+      }
+      return null;
+    };
     function walk(n) {
       if (!n || typeof n !== "object") return;
+      if (n.k === "def" && n.name) funcNames.add(n.name);
+      if (
+        (n.k === "assign" || n.k === "annassign") &&
+        n.target &&
+        n.target.k === "name"
+      ) {
+        let hint = exprHint(n.expr);
+        if (hint) hints.set(n.target.name, hint);
+      }
+      if (n.k === "assignmulti" && Array.isArray(n.targets)) {
+        let hint = exprHint(n.expr);
+        if (hint)
+          for (let t of n.targets)
+            if (t && t.k === "name") hints.set(t.name, hint);
+      }
       if (n.k === "call") {
-        let call = name(n.fn);
-        let short = call.split(".").at(-1);
-        let found = reference.find((r) => r.name === call || r.name === short);
-        if (found) {
-          let list = map.get(n.line) || [];
-          if (!list.includes(found.name)) list.push(found.name);
-          map.set(n.line, list);
+        if (n.fn && n.fn.k === "name") {
+          if (reference.some((r) => r.name === n.fn.name))
+            push(n.line, "calls", n.fn.name);
+        } else if (n.fn && n.fn.k === "attr" && n.fn.obj && n.fn.obj.k === "attr") {
+          // os.path.join のような多段の属性チェーンは、完全名が参照項目と
+          // 一致するときだけ採用する（末尾の名前だけで誤解決しない）。
+          let build = (x) =>
+            x.k === "name"
+              ? x.name
+              : x.k === "attr"
+                ? build(x.obj) + "." + x.name
+                : null;
+          let chain = build(n.fn);
+          if (chain && reference.some((r) => r.name === chain))
+            push(n.line, "calls", chain);
+        } else if (n.fn && n.fn.k === "attr") {
+          let resolved = resolveMethod(n.fn.obj, n.fn.name);
+          if (resolved) push(n.line, "calls", resolved);
         }
+      }
+      if (n.k === "attr") {
+        let resolved = resolveAttr(n.obj, n.name);
+        if (resolved) push(n.line, "attrs", resolved);
       }
       for (let value of Object.values(n))
         if (Array.isArray(value)) value.forEach(walk);
@@ -155,6 +251,12 @@ function callsByLine(code) {
     }
     walk(nodes);
   } catch {}
+  return { byLine };
+}
+function callsByLine(code) {
+  let map = new Map();
+  for (let [line, entry] of analyzeCode(code).byLine)
+    map.set(line, [...entry.calls, ...entry.attrs]);
   return map;
 }
 export function normalize(raw, code, def = definition) {
@@ -187,6 +289,7 @@ export function normalize(raw, code, def = definition) {
       ].filter(
         (n) =>
           def.dynamicFilter === false ||
+          ATTRIBUTE_REF_NAMES.has(n) ||
           actual.includes(n) ||
           actual.some((x) => x.endsWith("." + n)),
       );
@@ -234,5 +337,8 @@ export function normalize(raw, code, def = definition) {
     reasons: raw.truncated ? ["探索またはループの上限"] : [],
   };
 }
+
+// 教材の refs は scan（静的解析＋型ヒント解決）で差し込む（R7-151）。
+for (const t of definition.templates) t.refs = definition.scan(t.code);
 
 ["基礎", "基礎", "基礎", "実践", "実践", "基礎", "実践", "応用", "応用", "応用"].forEach((level, i) => { definition.templates[i].level = level; });

@@ -110,7 +110,7 @@ for (const [label, code] of [
 // 既存テスト側の追随は統合側の作業であり、ここでは Python 側の実測を固定）。
 test("R27-N20 reference items exist, run, and match r2 python rows", async () => {
   const names = ["Ellipsis", "NotImplemented", "__debug__"];
-  assert.equal(d.reference.length, 213);
+  assert.equal(d.reference.length, 215); // 213 + 修正バッチ13 Python班の属性項目2件
   for (const name of names) {
     const item = d.reference.find((x) => x.name === name);
     assert.ok(item, `reference item ${name}`);

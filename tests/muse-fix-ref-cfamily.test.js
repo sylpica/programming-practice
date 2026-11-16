@@ -20,8 +20,10 @@ const csNew = ["long", "float", "char", "bool", "short", "string", "uint", "ulon
 const csStatics = ["int.MaxValue", "int.MinValue", "uint.MaxValue", "uint.MinValue", "short.MaxValue", "short.MinValue", "byte.MaxValue", "byte.MinValue", "sbyte.MaxValue", "sbyte.MinValue", "char.MaxValue", "char.MinValue", "Math.PI", "Math.E", "String.Empty", "string.Empty", "long.MaxValue", "long.MinValue", "ulong.MaxValue"];
 
 test("ref cfamily: reference totals after the fix", () => {
-  assert.equal(getDefinition("c").reference.length, 26);
-  assert.equal(getDefinition("cpp").reference.length, 31);
+  // 修正バッチ13（R7-174）：C に NULL、C++ に NULL／nullptr を新設
+  // （C 26→27、C++ 31→33。全種類合計 1393→1396）。
+  assert.equal(getDefinition("c").reference.length, 27);
+  assert.equal(getDefinition("cpp").reference.length, 33);
   assert.equal(getDefinition("csharp").reference.length, 53);
 });
 

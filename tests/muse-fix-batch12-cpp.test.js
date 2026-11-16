@@ -175,10 +175,8 @@ test("RG-376: previously correct surfaces stay correct", async () => {
     [`std::string a[2] = {"ab", "cd"}; std::string t = a[0]; std::cout << t;`, [["ab"]]],
     [`std::string a[2] = {"ab", "cd"}; printf("%s", a[0]);`, [["ab"]]],
     [`std::string a[2] = {"ab", "cd"}; std::cout << a[0].length;`, [["2"]]],
-    // 比較は従来どおり（要素同士・リテラル・変数）。char との比較も
-    // 1文字文字列との比較として正しく判定される（同根で是正）。
+    // 比較は従来どおり（要素同士・リテラル・変数）。
     [`std::string a[2] = {"ab", "cd"}; std::cout << (a[0] == "ab") << (a[0] == a[1]) << (a[0] < a[1]);`, [["101"]]],
-    [`std::string a[1] = {"x"}; std::cout << (a[0] == 'x');`, [["1"]]],
     // スカラー std::string の全挙動は不変。
     [`std::string s = "xy"; std::cout << s << s[0]; s[0] = 'z'; std::cout << s; s += "w"; std::cout << s;`, [["xyx", "zy", "zyw"]]],
     // int 配列・char 配列要素の直接 cout は不変。
@@ -192,6 +190,14 @@ test("RG-376: previously correct surfaces stay correct", async () => {
     assert.deepEqual(errors(r), [], `${body} -> ${JSON.stringify(errors(r))}`);
     assert.deepEqual(outputs(r), expected, body);
   }
+  // 修正バッチ13（R7-163）で是正：std::string 要素と char の比較演算子は
+  // 実在しない（g++ 13 実測）。旧「従来どおり」ケースの a[0] == 'x' は
+  // 誤った前提に基づいていたため、エラー側で固定する。
+  const charCmp = await run("cpp", cpp(`std::string a[1] = {"x"}; std::cout << (a[0] == 'x');`));
+  assert.ok(
+    errors(charCmp).some((e) => e.includes("std::string と char は比較できません")),
+    JSON.stringify(errors(charCmp)),
+  );
   // 範囲外添字は配列の有効範囲外として名指し停止（不変）。
   const oob = await run("cpp", cpp(`std::string a[2] = {"ab", "cd"}; std::cout << a[5];`));
   assert.ok(

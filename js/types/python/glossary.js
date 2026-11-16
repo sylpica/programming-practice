@@ -507,6 +507,22 @@ export const GLOSSARY = [
   ]
  },
  {
+  "id": "comprehension",
+  "ja": "内包表記",
+  "en": "comprehension",
+  "importance": "重要",
+  "def": "リスト・集合・辞書などの要素を、既存のイテラブルから式で生成する書き方。[式 for 変数 in イテラブル] の形で書き、if で条件を付けることもできる。",
+  "easy": "材料の並びから新しい並びを一気に作る『まとめ書き』。",
+  "example": "[x * 2 for x in range(3)]  # [0, 2, 4]",
+  "misconception": "内包表記は複雑な処理にも向くと思われがちだが、条件や入れ子が増えると読みにくくなり、通常の for 文の方が適する場合がある。",
+  "related": [
+   "list",
+   "dict",
+   "set",
+   "iterator"
+  ]
+ },
+ {
   "id": "unknown-value",
   "ja": "未確定（値）",
   "en": "unknown value",

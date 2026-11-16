@@ -144,8 +144,9 @@ for (const [code, param] of [
   ["x <- length(); print(x)", "x"],
   ["x <- is.na(); print(x)", "x"],
   ["x <- rep(); print(x)", "x"],
-  ["x <- as.numeric(); print(x)", "x"],
-  ["x <- as.character(); print(x)", "x"],
+  // B13-R（R7-26）テスト是正：as.numeric()／as.character() は実 R
+  // （Codex の実 R 4.2.2 実測）では引数なしで長さ0ベクトルを返すため、
+  // missing エラーの対象から外す。一次情報と矛盾する固定だった。
   ["x <- nrow(); print(x)", "x"],
   ["x <- ncol(); print(x)", "x"],
   ["x <- names(); print(x)", "x"],
@@ -171,6 +172,9 @@ test("R23-N4 calls that are valid with no arguments stay valid", async () => {
   const p = await okPath(runR, "x <- sum(); print(x)");
   assert.deepEqual(outputs(p), ["0"]);
   await okPath(runR, "x <- c(); print(length(x))");
+  // B13-R（R7-26）：引数なしの型変換は長さ0ベクトルとして有効。
+  await okPath(runR, "x <- as.numeric(); print(length(x))");
+  await okPath(runR, "x <- as.character(); print(length(x))");
   await okPath(runR, "cat()");
   await okPath(runR, "df <- data.frame(); print(ncol(df))");
   const p2 = await okPath(runR, "print(length(x = c(1, 2, 3)))");

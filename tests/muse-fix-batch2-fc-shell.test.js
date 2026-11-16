@@ -463,7 +463,9 @@ test("fc-shell SH-C1-follow ordinary copy/move destinations still work", () => {
   assert.ok(outCmd(copied)[0].some((t) => t.includes("学習メモ")));
   const toDir = runCmd("copy notes.txt logs\ndir /b logs");
   assert.deepEqual(errors(toDir), []);
-  assert.deepEqual(outCmd(toDir), [["notes.txt"]]);
+  // テスト是正（修正バッチ13・R7-209）: copy の成功メッセージは実 cmd
+  // では標準出力へ出るため、dir の一覧の前に並ぶ。
+  assert.deepEqual(outCmd(toDir), [["        1 file(s) copied.", "notes.txt"]]);
   const moved = runCmd("move notes.txt moved.txt\ndir /b");
   assert.deepEqual(errors(moved), []);
   assert.ok(fileNames(moved)[0].includes("moved.txt"));

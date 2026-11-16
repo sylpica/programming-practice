@@ -218,6 +218,10 @@ export const definition = {
   glossary: [
     ["アクション", "フロー内の1つの操作です。"],
     [
+      "ループ",
+      "同じ処理を繰り返す仕組みです。Loopは回数や条件で、For eachはリストの要素ごとに繰り返します。",
+    ],
+    [
       "デスクトップフロー",
       "自分のパソコン（デスクトップ）上のアプリ操作やファイル操作を自動化するフローです。Power Automate for desktop で作成し、アクションを組み合わせて組み立てます。",
     ],
@@ -302,8 +306,80 @@ export const definition = {
         dialect: "js",
         copyOnAssign: true,
         constants: { true: true, false: false, null: null, True: true, False: false },
+        read(a, s, api) {
+          // R7-123（バッチ13）: 通常 PAD の変数名は大小文字を同一視する。
+          // 書かれた大小と違うキーで保存されている変数を解決する
+          // （Power Fx 有効フローの大小区別と混同しない）。
+          if (a.k === "var") {
+            if (!Object.hasOwn(s.vars, a.name)) {
+              let key = ciVarKey(s.vars, a.name);
+              if (key !== undefined)
+                return { handled: true, value: s.vars[key] };
+            }
+            return null;
+          }
+          if (a.k === "member") {
+            let x;
+            try {
+              x = api.read(a.target, s);
+            } catch {
+              return null;
+            }
+            if (isUnknown(x) || x === null || x === undefined) return null;
+            let prop = a.name.toLowerCase();
+            // R7-228（バッチ13）: PAD のプロパティ語彙は、リストが
+            // Count（Length は無い）、文字列が Length（Count は無い）。
+            if (Array.isArray(x)) {
+              if (prop === "count") return { handled: true, value: x.length };
+              if (prop === "length")
+                throw new PracticeError(
+                  "リストに Length プロパティはありません（Power Automate Desktop では要素数は Count で取得します）",
+                  a.line,
+                );
+              return null;
+            }
+            if (typeof x === "string") {
+              if (prop === "length")
+                return { handled: true, value: x.length };
+              if (prop === "count")
+                throw new PracticeError(
+                  "文字列に Count プロパティはありません（Power Automate Desktop では文字数は Length で取得します）",
+                  a.line,
+                );
+              return null;
+            }
+            if (typeof x === "object" && !Object.hasOwn(x, a.name)) {
+              let key = ciVarKey(x, a.name);
+              if (key !== undefined)
+                return { handled: true, value: x[key] };
+            }
+            return null;
+          }
+          return null;
+        },
         binary(op, x, y, node) {
           if (isUnknown(x) || isUnknown(y)) return baseBinary(op, x, y, "js");
+          // R7-231（バッチ13）: 順序比較は同じ型同士でのみ行う。数値と
+          // 引用文字列等の型違いを JS の暗黙変換で真偽値にしない。
+          if (["<", ">", "<=", ">="].includes(op)) {
+            const cat = (v) =>
+              v === null || v === undefined
+                ? "null"
+                : Array.isArray(v)
+                  ? "リスト"
+                  : typeof v === "object"
+                    ? "オブジェクト"
+                    : { number: "数値", string: "文字列", boolean: "真偽値" }[
+                        typeof v
+                      ] || typeof v;
+            let cx = cat(x),
+              cy = cat(y);
+            if (cx !== cy)
+              throw new PracticeError(
+                `異なる型同士の順序比較はできません（${cx} と ${cy}）`,
+                node?.line || 1,
+              );
+          }
           if (
             (op === "/" || op === "%") &&
             ((typeof y === "number" && y === 0) ||
@@ -318,7 +394,15 @@ export const definition = {
         step(n, s, api) {
           let item = n.item;
           if (n.k === "action-if") {
-            let v = uiCondition(unwrapPercentWrapped(n.test), s, api),
+            // R7-123: 条件中の %変数% は保存キーの大小へ寄せてから
+            // uiCondition（大小区別）に渡す。
+            let condText = unwrapPercentWrapped(n.test);
+            if (typeof condText === "string")
+              condText = condText.replace(
+                /%([A-Za-z_]\w*)%/g,
+                (m, name) => "%" + (ciVarKey(s.vars, name) ?? name) + "%",
+              );
+            let v = uiCondition(condText, s, api),
               done = [];
             for (let r of api.choose(s, v, n)) {
               api.note(
@@ -341,28 +425,65 @@ export const definition = {
                     : "for",
             };
             if (n.mode === "each") {
+              // R7-46（バッチ13）: 出力先の変数名が必須。欠落で undefined
+              // という名前の変数を作らない。
+              if (
+                item.target === undefined ||
+                item.target === null ||
+                String(item.target).trim() === ""
+              )
+                api.fail(
+                  "For each には現在の項目の変数名（target）が必要です",
+                  n,
+                );
+              checkPadReservedName(item.target, n);
               newNode.name = item.target;
               let v = resolve(item.value, s, api);
               newNode.collection = { k: "literal", value: v, line: n.line };
             } else if (n.mode === "while") {
               newNode.test = conditionAST(item.condition, s);
             } else {
-              for (let key of ["from", "to", "step"])
+              if (
+                item.target !== undefined &&
+                item.target !== null &&
+                String(item.target).trim() !== ""
+              )
+                checkPadReservedName(item.target, n);
+              // R7-226（バッチ13）: 明示した null と省略を区別する。
+              // from／to の null を 0 へ変換せず、step の null を既定値
+              // 1 でごまかさず、いずれも項目名を挙げて停止する。既定値
+              // 1 が効くのは step を省略した場合だけ。
+              let bounds = {};
+              for (let [key, label] of [
+                ["from", "開始値"],
+                ["to", "終了値"],
+                ["step", "増分"],
+              ]) {
+                if (key === "step" && item.step === undefined) {
+                  bounds.step = 1;
+                  continue;
+                }
+                if (item[key] === undefined || item[key] === null)
+                  api.fail(
+                    `Loopの${label}（${key}）が必要です（数値で指定してください）`,
+                    n,
+                  );
+                let v = resolve(item[key], s, api);
+                if (isUnknown(v)) api.fail("未確定のLoop境界は未対応です", n);
                 if (
-                  isUnknown(
-                    resolve(
-                      item[key] ?? (key === "step" ? 1 : undefined),
-                      s,
-                      api,
-                    ),
-                  )
+                  typeof v === "string" &&
+                  v.trim() !== "" &&
+                  !Number.isNaN(Number(v))
                 )
-                  api.fail("未確定のLoop境界は未対応です", n);
-              let from = Number(resolve(item.from, s, api)),
-                to = Number(resolve(item.to, s, api)),
-                step = Number(resolve(item.step ?? 1, s, api));
-              if (!step || ![from, to, step].every(Number.isFinite))
-                api.fail("Loopの開始・終了・増分が不正です", n);
+                  v = Number(v);
+                if (typeof v !== "number" || !Number.isFinite(v))
+                  api.fail("Loopの開始・終了・増分が不正です", n);
+                bounds[key] = v;
+              }
+              let from = bounds.from,
+                to = bounds.to,
+                step = bounds.step;
+              if (!step) api.fail("Loopの開始・終了・増分が不正です", n);
               let variable = {
                 k: "var",
                 name: item.target || "LoopIndex",
@@ -405,7 +526,11 @@ export const definition = {
                 api.fail("Set variable には変数名（target）が必要です", n);
               if (a.value === undefined)
                 api.fail("Set variable には値（value）が必要です", n);
-              s.vars[a.target] = structuredClone(value);
+              // R7-227（バッチ13）: PAD の予約語は変数名に使えない。
+              checkPadReservedName(a.target, n);
+              // R7-123: 大小だけ違う既存変数は同一変数として更新する。
+              s.vars[ciVarKey(s.vars, a.target) ?? a.target] =
+                structuredClone(value);
               api.note(
                 s,
                 n,
@@ -413,28 +538,38 @@ export const definition = {
               );
               break;
             case "Increase variable": {
+              if (a.target === undefined || a.target === null || String(a.target).trim() === "")
+                api.fail("Increase variable には変数名（target）が必要です", n);
               // M-N6: 変数が存在しない場合は型の問題と区別し、不存在を
               // 先に名指しする（%Undefined% 参照時の文言と揃える）。
-              if (!Object.hasOwn(s.vars, a.target))
+              // R7-123: 変数名の大小は同一視して解決する。
+              let incKey = ciVarKey(s.vars, a.target);
+              if (incKey === undefined)
                 api.fail("変数がありません：" + a.target, n);
               if (
-                typeof s.vars[a.target] !== "number" ||
+                typeof s.vars[incKey] !== "number" ||
                 typeof value !== "number"
               )
                 api.fail("数値型の変数と増分が必要です", n);
-              s.vars[a.target] += value;
+              s.vars[incKey] += value;
               // NX-N16: 説明の動詞は実際の増減方向に合わせる（増分が
               // 負なら減少、0 なら不変であり、「増やします」ではない）。
               if (value > 0)
-                api.note(s, n, `${a.target} を ${s.vars[a.target]} に増やします`);
+                api.note(s, n, `${a.target} を ${s.vars[incKey]} に増やします`);
               else if (value < 0)
-                api.note(s, n, `${a.target} を ${s.vars[a.target]} に減らします`);
+                api.note(s, n, `${a.target} を ${s.vars[incKey]} に減らします`);
               else
-                api.note(s, n, `${a.target} は ${s.vars[a.target]} のまま変わりません`);
+                api.note(s, n, `${a.target} は ${s.vars[incKey]} のまま変わりません`);
               break;
             }
             case "Display input dialog":
-              s.vars[a.target] = api.freshUnknown("入力ダイアログの入力", s);
+              // R7-46（バッチ13）: 出力変数名が必須。欠落で undefined と
+              // いう名前の変数を作らない。R7-227: 予約語も使えない。
+              if (a.target === undefined || a.target === null || String(a.target).trim() === "")
+                api.fail("Display input dialog には出力変数名（target）が必要です", n);
+              checkPadReservedName(a.target, n);
+              s.vars[ciVarKey(s.vars, a.target) ?? a.target] =
+                api.freshUnknown("入力ダイアログの入力", s);
               api.note(s, n, "入力値は実行時に決まります");
               break;
             case "Display message":
@@ -446,7 +581,14 @@ export const definition = {
               api.note(s, n, `メッセージを表示します：${formatValue(value)}`);
               break;
             case "Write text to file": {
-              let path = interpolate(a.target, s);
+              // R7-46（バッチ13）: ファイルパス（target）と書き込む
+              // テキスト（value）が必須。target 欠落で "undefined" という
+              // 名前のモデルファイルを作らない。
+              if (a.target === undefined || a.target === null || String(a.target).trim() === "")
+                api.fail("Write text to file にはファイルパス（target）が必要です", n);
+              if (a.value === undefined)
+                api.fail("Write text to file には書き込むテキスト（value）が必要です", n);
+              let path = padInterpolate(a.target, s, api);
               if (isUnknown(path))
                 api.fail("未確定のファイルパスは未対応です", n);
               s.model.files ??= {};
@@ -464,18 +606,28 @@ export const definition = {
               break;
             }
             case "Read text from file": {
+              // R7-46（バッチ13）: 出力変数名（target）とファイルパス
+              // （value）が必須。target 欠落を無言で通さない。
+              if (a.target === undefined || a.target === null || String(a.target).trim() === "")
+                api.fail("Read text from file には出力変数名（target）が必要です", n);
+              if (a.value === undefined || a.value === null || String(a.value).trim() === "")
+                api.fail("Read text from file にはファイルパス（value）が必要です", n);
+              checkPadReservedName(a.target, n);
+              let readKey = ciVarKey(s.vars, a.target) ?? a.target;
               if (isUnknown(value))
-                s.vars[a.target] = unknown("読み取り先のファイルによる");
+                s.vars[readKey] = unknown("読み取り先のファイルによる");
               else if (!Object.hasOwn(s.model.files || {}, value))
                 api.fail("モデルにファイルがありません：" + value, n);
-              else s.vars[a.target] = s.model.files[value];
+              else s.vars[readKey] = s.model.files[value];
               api.note(s, n, `モデルファイルを ${a.target} に読み込みます`);
               break;
             }
             case "Send email": {
+              if (a.target === undefined || a.target === null || String(a.target).trim() === "")
+                api.fail("Send email には宛先（target）が必要です", n);
               s.model.sentMail ??= [];
               s.model.sentMail.push({
-                to: interpolate(a.target, s),
+                to: padInterpolate(a.target, s, api),
                 subject: resolve(a.subject || "", s, api),
                 body: value,
               });
@@ -529,20 +681,132 @@ function resolve(v, s, api) {
   // 対照があり、値側だけが不揃いだった）。判定・包み外し・式の解釈は
   // 全て trim 済みの文字列で統一する。
   const t = typeof v === "string" ? v.trim() : v;
-  if (typeof t === "string" && /^%[\s\S]*%$/.test(t)) {
-    // R27-N9: 先頭が %変数% 参照で始まる形（"%N% + 1%" 等）は包み形では
-    // ない。先頭の %…% は変数参照として消費されるため、末尾の % は式の
-    // 終端ではなく、包みを外すと閉じ % が剰余演算子に化けて黙って誤値に
-    // なる。実 PAD でも解釈エラーになる形なので、名前を挙げて停止する。
-    // 単独の %変数% 参照そのもの（"%N%"）は従来どおり変数の値として読む。
-    if (startsWithPercentVariable(t) && !/^%[A-Za-z_]\w*%$/.test(t))
-      throw new PracticeError(
-        "%変数% で始まる文字列は式として解釈できません（式全体を %…% で包む場合は、内側の変数名を % なしで書いてください）",
-        1,
-      );
-    return api.read(parseExpression(t.slice(1, -1)), s);
+  if (typeof t === "string" && t.includes("%")) {
+    // R7-124（バッチ13）: %% エスケープを含む文字列は PAD 補間で処理する
+    // （%% はリテラルの % になり、%%Price%% は "%Price%" になる）。
+    if (t.includes("%%")) return padInterpolate(t, s, api);
+    if (/^%[\s\S]*%$/.test(t)) {
+      // R27-N9: 先頭が %変数% 参照で始まる形（"%N% + 1%" 等）は包み形では
+      // ない。先頭の %…% は変数参照として消費されるため、末尾の % は式の
+      // 終端ではなく、包みを外すと閉じ % が剰余演算子に化けて黙って誤値に
+      // なる。実 PAD でも解釈エラーになる形なので、名前を挙げて停止する。
+      // 単独の %変数% 参照そのもの（"%N%"）は従来どおり変数の値として読む。
+      if (startsWithPercentVariable(t) && !/^%[A-Za-z_]\w*%$/.test(t)) {
+        // R7-225（バッチ13）: "%A% %B%" のように完全な %変数% 参照と
+        // リテラルだけで構成される文字列は、包み形ではなく補間として
+        // 解釈する（残りに単独の % が残る形は従来どおり R27-N9 で停止）。
+        if (isPurePercentInterpolation(t)) return padInterpolate(t, s, api);
+        throw new PracticeError(
+          "%変数% で始まる文字列は式として解釈できません（式全体を %…% で包む場合は、内側の変数名を % なしで書いてください）",
+          1,
+        );
+      }
+      return api.read(parseExpression(t.slice(1, -1)), s);
+    }
+    // R7-225: 文中に埋め込まれた %式%（"total=%N + 1%" 等）も展開する。
+    return padInterpolate(v, s, api);
   }
   return interpolate(v, s);
+}
+// 大小文字を同一視した変数キーの解決（R7-123）。PAD 専用で、共有コアの
+// interpolate（UI.Vision 等の大小区別）には影響させない。
+function ciVarKey(vars, name) {
+  if (!vars || typeof vars !== "object") return undefined;
+  return Object.keys(vars).find(
+    (k) => k.toLowerCase() === String(name).toLowerCase(),
+  );
+}
+// R7-227（バッチ13）: PAD の予約語（Microsoft Learn の変数・フロー制御の
+// キーワード）は変数名に使えない。
+const PAD_RESERVED_NAMES = new Set([
+  "if", "else", "elseif", "loop", "foreach", "for", "each", "while",
+  "end", "and", "or", "not", "true", "false", "switch", "case",
+  "default", "exit", "next", "then", "do",
+]);
+function checkPadReservedName(name, node) {
+  if (PAD_RESERVED_NAMES.has(String(name).trim().toLowerCase()))
+    throw new PracticeError(
+      `変数名「${name}」は Power Automate Desktop の予約語のため使えません`,
+      node?.line || 1,
+    );
+}
+// 完全な %変数% 参照と %% エスケープとリテラルだけで構成されるか。
+function isPurePercentInterpolation(text) {
+  let rest = text
+    .replace(/%%/g, " ")
+    .replace(/%[A-Za-z_][\w.]*%/g, "");
+  return !rest.includes("%");
+}
+// PAD の文字列補間（R7-123／124／225）: %% はリテラルの %、%変数% は
+// 大小同一視で展開、%式%（演算子やプロパティを含む内側）は式として評価
+// する。単独で残る % はリテラルとして残す。
+function padInterpolate(text, s, api) {
+  if (typeof text !== "string") return text;
+  let unknownValue;
+  const embedName = (key) => {
+    if (key === "True" || key === "False") return key;
+    let stored = ciVarKey(s.vars, key);
+    if (stored === undefined)
+      throw new PracticeError("変数がありません：" + key);
+    let v = s.vars[stored];
+    if (v?.kind === "unknown") {
+      unknownValue = v;
+      return "";
+    }
+    return String(v);
+  };
+  let out = "",
+    i = 0;
+  while (i < text.length) {
+    if (text.startsWith("%%", i)) {
+      out += "%";
+      i += 2;
+      continue;
+    }
+    if (text.startsWith("${", i)) {
+      let j = text.indexOf("}", i + 2);
+      if (j > i + 2) {
+        out += embedName(text.slice(i + 2, j));
+        i = j + 1;
+        continue;
+      }
+    }
+    if (text[i] === "%") {
+      let m = /^%([^%]*)%/.exec(text.slice(i));
+      if (m) {
+        let inner = m[1].trim();
+        if (/^[A-Za-z_]\w*$/.test(inner)) {
+          out += embedName(inner);
+          i += m[0].length;
+          continue;
+        }
+        // プロパティ参照（Items.Count）や埋込み式（N + 1）は式として評価。
+        if (inner && api && /[+\-*/.<>=]/.test(inner)) {
+          let ast = null;
+          try {
+            ast = parseExpression(inner);
+          } catch {
+            ast = null;
+          }
+          if (ast) {
+            let val = api.read(ast, s);
+            if (isUnknown(val)) unknownValue = val;
+            else out += String(val ?? "");
+            i += m[0].length;
+            continue;
+          }
+        }
+      }
+      out += "%";
+      i++;
+      continue;
+    }
+    out += text[i];
+    i++;
+  }
+  return unknownValue
+    ? { ...unknownValue, source: "変数を展開した文字列による" }
+    : out;
 }
 // 文字列が完全な %変数% 参照で始まるか（R27-N9 の判定）。
 // "%N + 1%"（裸の変数名で始まる正規の包み形）や "%4 / 2%"（数値で始まる
@@ -551,9 +815,10 @@ function startsWithPercentVariable(text) {
   return /^%[A-Za-z_]\w*%/.test(text.trim());
 }
 function conditionAST(text, s) {
+  // R7-123: %変数% は保存キーの大小へ寄せてから裸の名前へ置換する。
   let normalized = unwrapPercentWrapped(text).replace(
     /%([A-Za-z_]\w*)%/g,
-    "$1",
+    (m, name) => ciVarKey(s.vars, name) ?? name,
   );
   return parseExpression(normalized);
 }

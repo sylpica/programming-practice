@@ -11,7 +11,7 @@ export const referenceDetails = {
     "source": "https://ui.vision/rpa/docs/selenium-ide/click"
   },
   "type": {
-    "description": "入力要素の値を置き換えます。",
+    "description": "入力要素の値を置き換えます。組み込み変数 !StringEscape がtrue（既定）の間は、値の中の \\n が改行、\\t がタブ等として解釈されます。falseにすると文字どおり入力します。",
     "returns": "式の戻り値なし（コマンド）",
     "source": "https://ui.vision/rpa/docs/selenium-ide/type"
   },
@@ -111,5 +111,20 @@ export const referenceDetails = {
     "description": "文字列\"true\"に設定すると、コマンドでエラーが起きてもマクロを止めずに継続します。",
     "returns": "設定値（文字列）",
     "source": "https://ui.vision/rpa/docs/#!errorignore"
+  },
+  "!StringEscape": {
+    "description": "typeコマンドで入力する値のエスケープ解釈を切り替える組み込み変数です。true（既定）では \\n が改行、\\r が復帰、\\t がタブ等として解釈され、falseではバックスラッシュを含めて文字どおり入力します。",
+    "returns": "設定値（文字列）",
+    "source": "https://ui.vision/rpa/docs/"
+  },
+  "endIf": {
+    "description": "ifブロックを閉じます。endの別名で、endと同じ働きをします。",
+    "returns": "式の戻り値なし（コマンド）",
+    "source": "https://ui.vision/rpa/docs/selenium-ide/if"
+  },
+  "endWhile": {
+    "description": "whileブロックを閉じます。endの別名で、endと同じ働きをします。",
+    "returns": "式の戻り値なし（コマンド）",
+    "source": "https://ui.vision/rpa/docs/selenium-ide/while"
   }
 };

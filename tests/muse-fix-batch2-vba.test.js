@@ -135,7 +135,7 @@ test("D1-4 reference-r2.json carries the matching Attribute row and no sha256 ch
   const rows = JSON.parse(readFileSync(new URL("../docs/audit/reference-r2.json", import.meta.url), "utf8"));
   // 統合後の総数: 905 existing + Attribute + ImageJ .length（D1-1）+ Python math 定数5件とその CloudFormation 伝播5件（R23-N6）
   // 修正バッチ6統合: R27-N20 の Python 組み込み定数3件＋その CloudFormation 伝播3件と、R27-N7 の VBA 定数94件を追加したため 1007 → 1107。
-  assert.equal(rows.length, 1313, "905 existing + Attribute + .length + math constants x2 kinds + batch3 数値の属性 x2 kinds + batch4 pyref exceptions x2 kinds + batch6 python constants x2 kinds + batch6 VBA constants 94 + batch7 VBA constants 141 + batch8 VBA reference-only 12 + pseudo (MUSE-ADD-PSEUDO) 53");
+  assert.equal(rows.length, 1323, "905 existing + Attribute + .length + math constants x2 kinds + batch3 数値の属性 x2 kinds + batch4 pyref exceptions x2 kinds + batch6 python constants x2 kinds + batch6 VBA constants 94 + batch7 VBA constants 141 + batch8 VBA reference-only 12 + pseudo (MUSE-ADD-PSEUDO) 53 + batch13 python attributes x2 kinds 4 + batch13 C/C++ NULL items 3 + batch13 UI.Vision items 3");
   const row = rows.find((r) => r.kind === "vba" && r.name === "Attribute");
   assert.ok(row, "Attribute row must exist in reference-r2.json");
   assert.equal(row.supported, true);

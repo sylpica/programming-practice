@@ -7,6 +7,8 @@ let active = getDefinition("vba"),
 let drafts = {},
   editorPlugin = null,
   storageBlocked = false,
+  // R7-50: 起動時に部分的な型破損を検出して原文退避＋整復した場合の通知フラグ。
+  recoveredDraftNotice = false,
   // S-N2: 保全書き込みに失敗した原文。save() のたびに再試行し、
   // 全て成功するまで破損データを上書きしない（保全設計は維持する）。
   pendingRecoveries = [];
@@ -23,7 +25,23 @@ try {
         typeof saved.drafts !== "object"
       )
         throw Error("保存形式が不正です");
-      drafts = saved.drafts;
+      // R7-50: 下書き項目単位で型検証する。部分的に壊れた下書き（code が
+      // 文字列でない等）は、原文を recovery へ退避し、壊れた項目だけを
+      // 取り除いてから使う（原文を残さず自動上書きしない）。
+      let sanitized = sanitizeDrafts(saved.drafts);
+      drafts = sanitized.drafts;
+      if (sanitized.invalid) {
+        recoveredDraftNotice = true;
+        try {
+          localStorage.setItem("programming-practice-recovery-v3", raw);
+        } catch {
+          storageBlocked = true;
+          pendingRecoveries = [
+            ...pendingRecoveries,
+            { key: "programming-practice-recovery-v3", raw },
+          ];
+        }
+      }
       active = getDefinition(saved.active);
     } catch {
       try {
@@ -48,7 +66,21 @@ if (!Object.keys(drafts).length) {
     // 判定は純関数 parseLegacyV2 に寄せ、パース失敗をここで握り潰さない。
     let migrated = parseLegacyV2(raw);
     if (migrated.kind === "drafts") {
-      drafts = migrated.drafts;
+      // R7-50: v2 移行分も v3 と同じ項目単位の型検証を通す。
+      let sanitized = sanitizeDrafts(migrated.drafts);
+      drafts = sanitized.drafts;
+      if (sanitized.invalid) {
+        recoveredDraftNotice = true;
+        try {
+          localStorage.setItem("programming-practice-recovery-v2", raw);
+        } catch {
+          storageBlocked = true;
+          pendingRecoveries = [
+            ...pendingRecoveries,
+            { key: "programming-practice-recovery-v2", raw: migrated.raw },
+          ];
+        }
+      }
       active = getDefinition(migrated.active);
     } else if (migrated.kind === "recovery") {
       try {
@@ -69,7 +101,12 @@ if (!drafts.vba) {
     // 無検証で取り込むと数字キーとして下書きへ混入・永続化するため、
     // 判定は純関数 parseLegacyV1 に寄せる。
     let migrated = parseLegacyV1(localStorage.getItem("vba-practice-v1"));
-    if (migrated.kind === "draft") drafts.vba = migrated.draft;
+    if (migrated.kind === "draft") {
+      // R7-50: v1 移行分も項目単位の型検証を通す。
+      let sanitized = sanitizeDrafts({ vba: migrated.draft });
+      if (sanitized.drafts.vba) drafts.vba = sanitized.drafts.vba;
+      if (sanitized.invalid) recoveredDraftNotice = true;
+    }
   } catch {}
 }
 // RG-86: 起動時点の下書きスナップショット。save() はこれを基準に
@@ -77,7 +114,7 @@ if (!drafts.vba) {
 // 保存済み（他タブが書いた）版を採用する。複数タブで開いても、他タブの
 // 下書きが丸ごと上書きで無言消失しないようにするための基準点。
 let baseDrafts = structuredClone(drafts);
-import { decodeFile } from "./import.js";
+import { decodeFile, MAX_FILE_BYTES } from "./import.js";
 const $ = (id) => document.getElementById(id);
 const el = (tag, text, cls) => {
   let n = document.createElement(tag);
@@ -179,7 +216,10 @@ function save() {
       typeof saved.drafts === "object" &&
       !Array.isArray(saved.drafts)
     )
-      storedDrafts = saved.drafts;
+      // R7-50（兄弟表面）：他タブが書いた保存済み下書きにも型破損が
+      // あり得るため、マージへ渡す前に同じ項目単位検証で整復する。
+      // 整復しないと文字列エントリが数字キーへ分解されて再永続化する。
+      storedDrafts = sanitizeDrafts(saved.drafts).drafts;
   } catch {}
   // RG-57: 下書きは由来テンプレートごとに保持する（自由編集は freeDraft）。
   // 単一枠だった freeDraft へ最新編集を上書きする旧規則は廃止した。
@@ -259,6 +299,10 @@ function changed() {
   $("final").textContent =
     "コード・フローまたはモデルが変わりました。実行して状態を確認してください。";
   $("resultStatus").textContent = "更新後のコードは未実行です";
+  // R7-128: 未解消のアクション欄エラーは、他の変更で痕跡なく消えないよう
+  // 状態欄へ出し直す。
+  if (editorPlugin?.hasPendingError?.())
+    $("resultStatus").textContent = editorPlugin.getPendingError();
   $("limit").hidden = true;
   updateLines();
   updateUsed();
@@ -395,6 +439,116 @@ function parseLegacyV1(raw) {
     return { kind: "draft", draft: interim };
   return { kind: "empty" };
 }
+// R7-50: 下書き項目単位の型検証（純関数）。保存データが JSON として
+// 読めても、個別の下書きが部分的に型破損している場合（code が文字列で
+// ない、種類エントリが文字列、byTemplate のスロットが壊れている等）は、
+// 壊れた項目だけを取り除いた整復済み下書きと invalid フラグを返す。
+// 呼び出し側は invalid の場合に原文を recovery へ退避し、通知する。
+// 文字列エントリをそのまま使うと数字キーへ分解されて永続化するため、
+// エントリ単位で落とすことが要点。
+function isPlainRecord(v) {
+  return !!v && typeof v === "object" && !Array.isArray(v);
+}
+function sanitizeDraftSnapshotFields(entry) {
+  let invalid = false;
+  for (const f of ["code", "templateId", "draftOrigin", "sort"])
+    if (entry[f] !== undefined && typeof entry[f] !== "string") {
+      delete entry[f];
+      invalid = true;
+    }
+  if (
+    entry.modelText !== undefined &&
+    entry.modelText !== null &&
+    typeof entry.modelText !== "string"
+  ) {
+    delete entry.modelText;
+    invalid = true;
+  }
+  if (entry.auto !== undefined && typeof entry.auto !== "boolean") {
+    delete entry.auto;
+    invalid = true;
+  }
+  if (
+    entry.pathId !== undefined &&
+    entry.pathId !== null &&
+    typeof entry.pathId !== "number"
+  ) {
+    delete entry.pathId;
+    invalid = true;
+  }
+  if (
+    entry.model !== undefined &&
+    entry.model !== null &&
+    !isPlainRecord(entry.model)
+  ) {
+    delete entry.model;
+    invalid = true;
+  }
+  return invalid;
+}
+function sanitizeDrafts(input) {
+  if (!isPlainRecord(input)) return { drafts: {}, invalid: true };
+  let out = {},
+    invalid = false;
+  for (const [id, entry] of Object.entries(input)) {
+    if (!isPlainRecord(entry)) {
+      invalid = true;
+      continue;
+    }
+    let clean = { ...entry };
+    if (sanitizeDraftSnapshotFields(clean)) invalid = true;
+    if (clean.byTemplate !== undefined) {
+      if (!isPlainRecord(clean.byTemplate)) {
+        delete clean.byTemplate;
+        invalid = true;
+      } else {
+        let bt = {};
+        for (const [tid, slot] of Object.entries(clean.byTemplate)) {
+          if (!isPlainRecord(slot)) {
+            invalid = true;
+            continue;
+          }
+          const codeBad =
+            slot.code !== undefined && typeof slot.code !== "string";
+          let s = { ...slot };
+          if (sanitizeDraftSnapshotFields(s)) invalid = true;
+          if (codeBad) {
+            // コード自体が壊れたスロットは内容を失っているため落とす。
+            invalid = true;
+            continue;
+          }
+          bt[tid] = s;
+        }
+        clean.byTemplate = bt;
+      }
+    }
+    if (clean.freeDraft !== undefined) {
+      if (!isPlainRecord(clean.freeDraft)) {
+        delete clean.freeDraft;
+        invalid = true;
+      } else if (
+        clean.freeDraft.code !== undefined &&
+        typeof clean.freeDraft.code !== "string"
+      ) {
+        delete clean.freeDraft;
+        invalid = true;
+      } else {
+        let fd = { ...clean.freeDraft };
+        if (sanitizeDraftSnapshotFields(fd)) invalid = true;
+        clean.freeDraft = fd;
+      }
+    }
+    out[id] = clean;
+  }
+  return { drafts: out, invalid };
+}
+// R7-134: 最終状態欄のエラー分類（純関数）。モデル検証エラーは構文エラー
+// と表示せず、モデルの修正を促す文言にする。
+function finalErrorMessage(error) {
+  if (error?.category === "モデルエラー")
+    return "モデルの確認で停止しました。モデルを修正して再実行してください。実行結果はありません。";
+  return "構文の確認で停止しました。実行結果はありません。";
+}
 // S-N2: 保全書き込みの再試行（純関数）。storage は setItem を持つ
 // ストレージ互換オブジェクト。書き込めた分は落とし、失敗した分だけを
 // 残りとして返す。呼び出し側は残りが空になるまで通常保存へ進まない。
@@ -446,23 +600,61 @@ function mergeDraftsForSave(base, mine, stored, activeId) {
 // RG-86: アクティブ種類の下書き土台のマージ（純関数）。他タブが同じ種類の
 // 別テンプレート下書きを増やしていても消えないよう、byTemplate は和集合に
 // し、freeDraft はこのタブが base から変更した場合だけ自分の版を使う。
+// R7-127: 従来の {...stored, ...mine} 合成では、自タブが保持する古い
+// スロット写しが他タブの新しい保存を上書きして巻き戻していた。スロット
+// 単位で base と比較し、このタブが base から変更したスロットだけ自分の
+// 版を採用し、未変更のスロットは stored（他タブ）の版を採用する。
+// トップレベルのスナップショット項目（code 等）も同じ規則で選ぶ。
 function mergeActivePrevious(baseEntry, mineEntry, storedEntry) {
+  // R7-50（防御）：レコードでないエントリは「無いもの」として扱い、
+  // 分解（{..."abc"} の数字キー化）を持ち込まない。
+  if (baseEntry && (typeof baseEntry !== "object" || Array.isArray(baseEntry)))
+    baseEntry = null;
+  if (mineEntry && (typeof mineEntry !== "object" || Array.isArray(mineEntry)))
+    mineEntry = null;
+  if (
+    storedEntry &&
+    (typeof storedEntry !== "object" || Array.isArray(storedEntry))
+  )
+    storedEntry = null;
   if (!storedEntry) return mineEntry || {};
   if (!mineEntry) return storedEntry;
   if (JSON.stringify(mineEntry) === JSON.stringify(storedEntry)) return mineEntry;
-  return {
-    ...storedEntry,
-    ...mineEntry,
-    byTemplate: {
-      ...(storedEntry.byTemplate || {}),
-      ...(mineEntry.byTemplate || {}),
-    },
-    freeDraft:
-      JSON.stringify(mineEntry.freeDraft ?? null) !==
-      JSON.stringify(baseEntry?.freeDraft ?? null)
-        ? mineEntry.freeDraft
-        : storedEntry.freeDraft,
+  const strip = (e) => {
+    const { byTemplate, freeDraft, ...rest } = e || {};
+    return rest;
   };
+  const mineChangedTop =
+    JSON.stringify(strip(mineEntry)) !== JSON.stringify(strip(baseEntry || {}));
+  const merged = { ...(mineChangedTop ? strip(mineEntry) : strip(storedEntry)) };
+  let byTemplate = {};
+  const slotIds = new Set([
+    ...Object.keys(baseEntry?.byTemplate || {}),
+    ...Object.keys(mineEntry.byTemplate || {}),
+    ...Object.keys(storedEntry.byTemplate || {}),
+  ]);
+  for (const id of slotIds) {
+    const mineSlot = mineEntry.byTemplate?.[id];
+    const storedSlot = storedEntry.byTemplate?.[id];
+    const changed =
+      JSON.stringify(mineSlot ?? null) !==
+      JSON.stringify(baseEntry?.byTemplate?.[id] ?? null);
+    const v = changed ? mineSlot : storedSlot !== undefined ? storedSlot : mineSlot;
+    if (v !== undefined) byTemplate[id] = v;
+  }
+  if (
+    Object.keys(byTemplate).length ||
+    mineEntry.byTemplate ||
+    storedEntry.byTemplate
+  )
+    merged.byTemplate = byTemplate;
+  const freeDraft =
+    JSON.stringify(mineEntry.freeDraft ?? null) !==
+    JSON.stringify(baseEntry?.freeDraft ?? null)
+      ? mineEntry.freeDraft
+      : storedEntry.freeDraft;
+  if (freeDraft !== undefined) merged.freeDraft = freeDraft;
+  return merged;
 }
 function resolveReferenceName(name, referenceNames) {
   if (referenceNames.indexOf(name) >= 0) return name;
@@ -774,7 +966,7 @@ function applyResult(r) {
     $("pathNav").hidden = true;
     $("outputs").replaceChildren();
     $("limit").hidden = true;
-    $("final").textContent = "構文の確認で停止しました。実行結果はありません。";
+    $("final").textContent = finalErrorMessage(r.error);
     updateUsed();
     return;
   }
@@ -798,6 +990,15 @@ function applyResult(r) {
   renderPath();
 }
 function run() {
+  // R7-128: アクション欄に未反映の不正入力がある間は、古い値で正常実行
+  // せず、エラーを状態欄に残したまま実行を抑止する。
+  if (editorPlugin?.hasPendingError?.()) {
+    $("run").disabled = false;
+    $("resultStatus").textContent =
+      editorPlugin.getPendingError() +
+      "（アクション欄の入力が未反映のため実行しませんでした）";
+    return;
+  }
   clearTimeout(timer);
   clearTimeout(watchdog);
   worker?.terminate();
@@ -986,7 +1187,7 @@ async function importFile(file) {
     editVersion = request,
     extensions = [...active.extensions];
   try {
-    if (file.size > 300000) throw Error("ファイルは300KB以内にしてください。");
+    if (file.size > MAX_FILE_BYTES) throw Error("ファイルは300KB以内にしてください。");
     let buffer = await file.arrayBuffer();
     if (active.id !== targetId || request !== editVersion) {
       $("resultStatus").textContent =
@@ -1132,6 +1333,9 @@ for (let type of definitions) {
 $("macroType").onchange = (e) => switchType(e.target.value);
 $("modelJson").oninput = changed;
 switchType(active.id, false);
+// R7-50: 起動時に壊れた下書きを退避・整復した場合は、その旨を通知する。
+// switchType 内の save() が成功しても消えないよう、初期化の最後で出す。
+if (recoveredDraftNotice) $("recoveryNotice").hidden = false;
 if ("serviceWorker" in navigator)
   navigator.serviceWorker
     .register("./sw.js")

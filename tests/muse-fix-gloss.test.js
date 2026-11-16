@@ -11,22 +11,26 @@ const defOf = (id, word) =>
   getDefinition(id).glossary.find((g) => g[0] === word)?.[1];
 
 test("gloss cfamily: C# glossary has no pointer / undefined-behavior (G-N1, G-N2)", () => {
-  assert.deepEqual(terms("csharp"), ["配列", "参照オブジェクト", "未確定（値）"]);
+  // R7-56（修正バッチ13）で C# に「例外」を追加したため配列は4語になった。
+  assert.deepEqual(terms("csharp"), ["配列", "参照オブジェクト", "例外", "未確定（値）"]);
   assert.ok(!terms("csharp").includes("ポインタ"));
   assert.ok(!terms("csharp").includes("未定義動作"));
 });
 
 test("gloss cfamily: C glossary has no C#-only 参照オブジェクト (G-N3)", () => {
-  assert.deepEqual(terms("c"), ["配列", "ポインタ", "未定義動作", "未確定（値）"]);
+  // R7-56（修正バッチ13）で C に「添字」を追加したため配列は5語になった。
+  assert.deepEqual(terms("c"), ["配列", "ポインタ", "未定義動作", "添字", "未確定（値）"]);
   assert.ok(!terms("c").includes("参照オブジェクト"));
   assert.ok(!terms("c").includes("参照"));
 });
 
 test("gloss cfamily: C++ glossary uses 参照, not 参照オブジェクト (G-N4)", () => {
+  // R7-56（修正バッチ13）で C++ に「添字」を追加したため配列は6語になった。
   assert.deepEqual(terms("cpp"), [
     "配列",
     "ポインタ",
     "未定義動作",
+    "添字",
     "参照",
     "未確定（値）",
   ]);
@@ -37,8 +41,10 @@ test("gloss cfamily: C++ glossary uses 参照, not 参照オブジェクト (G-N
 test("gloss cfamily: splitting the glossary left shared data untouched", () => {
   // Reference and template sets are built from the same factory; the
   // glossary split must not leak into them (totals pinned by RG-131..133).
-  assert.equal(getDefinition("c").reference.length, 26);
-  assert.equal(getDefinition("cpp").reference.length, 31);
+  // 修正バッチ13（R7-174）：C に NULL、C++ に NULL／nullptr を新設
+  // （C 26→27、C++ 31→33）。
+  assert.equal(getDefinition("c").reference.length, 27);
+  assert.equal(getDefinition("cpp").reference.length, 33);
   assert.equal(getDefinition("csharp").reference.length, 53);
   for (const id of ["c", "cpp", "csharp"])
     assert.equal(getDefinition(id).templates.length, 6);
@@ -86,22 +92,27 @@ test("gloss autohotkey: 自動実行 exists (G-N13)", () => {
 });
 
 test("gloss: totals and structural sanity across all types", () => {
+  // R7-56（修正バッチ13）で未収載15箇所を追加：添字（vba／r／c／cpp）、
+  // チャンネル（imagej）、ループ（powerautomate）、イベント（autohotkey）、
+  // サンドボックス（uivision）、表示数式・再計算（powerapps）、
+  // 内包表記（python）、例外（csharp）、巻き上げ（javascript）、
+  // サブルーチン（cmd）、ハッシュテーブル（powershell）。合計 124 → 139。
   const expected = {
-    vba: 14,
-    imagej: 7,
+    vba: 15,
+    imagej: 8,
     cloudformation: 5,
-    powerautomate: 3,
-    autohotkey: 4,
-    uivision: 3,
-    powerapps: 7,
-    python: 35,
-    r: 5,
-    c: 4,
-    cpp: 5,
-    csharp: 3,
-    javascript: 4,
-    cmd: 6,
-    powershell: 6,
+    powerautomate: 4,
+    autohotkey: 5,
+    uivision: 4,
+    powerapps: 9,
+    python: 36,
+    r: 6,
+    c: 5,
+    cpp: 6,
+    csharp: 4,
+    javascript: 5,
+    cmd: 7,
+    powershell: 7,
     pseudo: 13,
   };
   let total = 0;
@@ -117,5 +128,5 @@ test("gloss: totals and structural sanity across all types", () => {
       seen.add(word);
     }
   }
-  assert.equal(total, 124); // 111 + 第16種 IPA擬似言語 13語（MUSE-ADD-PSEUDO）
+  assert.equal(total, 139); // 124 + R7-56（修正バッチ13）の追加15箇所
 });

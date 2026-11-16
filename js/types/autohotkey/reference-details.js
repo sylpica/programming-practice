@@ -93,7 +93,7 @@ export const referenceDetails = {
     "source": "https://www.autohotkey.com/docs/v2/Variables.htm"
   },
   "Length": {
-    "returns": "配列の要素数または文字列の文字数（Integer）",
+    "returns": "配列の要素数（Integer）",
     "source": "https://www.autohotkey.com/docs/v2/lib/Array.htm"
   },
   "Hotkey": {

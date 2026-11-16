@@ -253,7 +253,7 @@ test("batch9-docs PRG-5: PROGRESS.md latest current-state bullet matches measure
   const lines = prog.split("\n").filter((l) => l.includes("現在の状態（"));
   assert.ok(lines.length >= 2, "現在の状態 bullet が想定より少ない");
   const last = lines[lines.length - 1];
-  assert.ok(last.includes("修正バッチ12"), "最後の現在の状態 bullet は修正バッチ12時点のもののはず");
+  assert.ok(last.includes("修正バッチ13"), "最後の現在の状態 bullet は修正バッチ13時点のもののはず");
   const m = last.match(/全(\d+)種類、([\d,]+)教材、([\d,]+)リファレンス（対応([\d,]+)／参照専用([\d,]+)）、用語集([\d,]+)件/);
   assert.ok(m, "最後の現在の状態 bullet の数値列が見つからない");
   assert.equal(num(m[1]), kinds);

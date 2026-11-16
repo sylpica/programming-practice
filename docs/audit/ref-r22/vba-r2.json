@@ -222,7 +222,7 @@
     "fields": {
       "description": "両方の式がTrueのときだけTrueを返します。数値ではビットごとのANDを行います。",
       "returns": "Boolean（論理積）または数値（ビットごとのAND）",
-      "caution": "短絡評価はされません。Nullを含む場合はNullが伝播します（FalseとのAndはFalse）。",
+      "caution": "短絡評価はされません。Nullを含む場合、FalseとのAndはFalse、数値とのAndは0、それ以外はNullが伝播します。",
       "example": "Debug.Print True And False",
       "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/and-operator.md"
     }
@@ -234,7 +234,7 @@
     "fields": {
       "description": "少なくとも一方の式がTrueならTrueを返します。数値ではビットごとのORを行います。",
       "returns": "Boolean（論理和）または数値（ビットごとのOR）",
-      "caution": "短絡評価はされません。Nullを含む場合はNullが伝播します（TrueとのOrはTrue）。",
+      "caution": "短絡評価はされません。Nullを含む場合、TrueとのOrはTrue、数値とのOrはその数値、それ以外はNullが伝播します。",
       "example": "Debug.Print True Or False",
       "source": "https://raw.githubusercontent.com/MicrosoftDocs/VBA-Docs/main/Language/Reference/User-Interface-Help/or-operator.md"
     }

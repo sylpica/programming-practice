@@ -223,7 +223,11 @@ test("batch3 R24-N35 trace notes for Set / Switch do not leak \"null\" for Blank
 test("batch3 R24-N35 concatenation and Text() keep Blank as empty (already-correct surfaces pinned)", async () => {
   assert.deepEqual(fxOutputs(await fxFirst('Notify("a" & Blank() & "b")')), ["ab"]);
   assert.deepEqual(fxOutputs(await fxFirst("Notify(Text(Blank()))")), [""]);
-  assert.deepEqual(fxOutputs(await fxFirst('Notify(Text(Blank(), "0.00"))')), [""]);
+  // バッチ13（R7-116）で是正: 書式付き Text(Blank(), "0.00") は、実
+  // Power Fx（SDK 実測）では Blank を 0 として整形し "0.00" を返す。
+  // 旧期待値 "" は一次情報と矛盾するため変更した（テスト是正）。
+  // 書式なしの Text(Blank()) が "" である点は従来どおり。
+  assert.deepEqual(fxOutputs(await fxFirst('Notify(Text(Blank(), "0.00"))')), ["0.00"]);
 });
 
 test("batch3 R24-N35 non-Blank Notify values are unchanged", async () => {

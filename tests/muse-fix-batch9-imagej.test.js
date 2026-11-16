@@ -107,9 +107,23 @@ test('R30-N23 numeric receiver of method-style string calls is stringified too',
   assert.deepEqual(outputs(await first('s = 12345; print(s.substring(1, 3));')), ['23']);
 });
 
-test('R30-N23 lengthOf already stringified numbers and still does', async () => {
-  assert.deepEqual(outputs(await first('print(lengthOf(123));')), ['3']);
-  assert.deepEqual(outputs(await first('print(lengthOf(1.5));')), ['3']);
+/* テスト是正（修正バッチ13・R7-31）: 旧版のこのテストは lengthOf(123) → 3
+   （数値を文字列化して長さを返す）を正として固定していたが、一次情報
+   （Functions.java の lengthOf 実装: 文字列定数／文字列関数／変数（文字列値
+   または配列）のみ受理し、数値は default 分岐で "String or array expected"
+   エラー。数値変数も Variable.getString() が null のため同エラー）と矛盾
+   するため、実物どおりエラー停止へ是正した。startsWith 等の他関数
+   （getString 系で文字列化が正）は別経路であり、上の R30-N23 の断定は
+   そのまま維持する */
+test('R30-N23 corrected by R7-31: lengthOf does NOT stringify numbers (Functions.java)', async () => {
+  for (const code of ['print(lengthOf(123));', 'print(lengthOf(1.5));', 'x = 123; print(lengthOf(x));']) {
+    const r = await run(code + ' print("after");');
+    assert.ok(errors(r).some((m) => /lengthOf には文字列か配列が必要です/.test(m)), code + ' -> ' + JSON.stringify(errors(r)));
+    assert.ok(!JSON.stringify(r.paths).includes('after'), code);
+  }
+  // 文字列と配列は従来どおり長さを返す
+  assert.deepEqual(outputs(await first('print(lengthOf("abc"));')), ['3']);
+  assert.deepEqual(outputs(await first('a = newArray(1, 2, 3); print(lengthOf(a));')), ['3']);
 });
 
 /* ---------- R30-N24: replace の正規表現経路は Java のエラー意味論 ---------- */

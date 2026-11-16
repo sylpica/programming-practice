@@ -81,7 +81,7 @@ test("F-02(pyref): all 69 builtin exception names have a python reference item",
     assert.equal(r.category, "例外", name);
     assert.equal(r.supported, true, name);
   }
-  assert.equal(py.reference.length, 213); // 166 + 例外44件 + 修正バッチ6 R27-N20 組み込み定数3件
+  assert.equal(py.reference.length, 215); // +2 修正バッチ13 Python班（属性項目2件） // 166 + 例外44件 + 修正バッチ6 R27-N20 組み込み定数3件
 });
 
 test("F-02(pyref): every exception name reaches its own item via the app search predicate (0 unreachable)", () => {
@@ -121,7 +121,7 @@ test("F-02(pyref): new exception examples run clean in python and match expected
 });
 
 test("F-02(pyref): new exception items propagate to CloudFormation and their handler examples run clean", async () => {
-  assert.equal(cf.reference.length, 224); // 177 + 伝播44件 + 修正バッチ6 R27-N20 組み込み定数3件の伝播
+  assert.equal(cf.reference.length, 226); // +2 同項目の伝播 // 177 + 伝播44件 + 修正バッチ6 R27-N20 組み込み定数3件の伝播
   for (const name of NEW_NAMES) {
     const r = cf.reference.find((x) => x.name === name);
     assert.ok(r, `missing in cloudformation: ${name}`);
@@ -150,7 +150,7 @@ const r2 = JSON.parse(
 );
 
 test("F-02(pyref): reference-r2 rows for python/cloudformation are fully in sync (fields + sha256)", () => {
-  assert.equal(r2.length, 1313); // 919 + python 44 + cloudformation 44 + 修正バッチ6 R27-N20 python 3 + cloudformation 伝播3（統合時に追加）+ R27-N7 VBA 定数94 + 修正バッチ7 R28-N9 VBA 定数141 + 修正バッチ8 VBA 参照専用12 + 第16種 IPA擬似言語 53（MUSE-ADD-PSEUDO）
+  assert.equal(r2.length, 1323); // +4 修正バッチ13 Python班（属性項目2件×2種）＋統合時に C／C++ NULL項目3件・UI.Vision 3件で +6 // 919 + python 44 + cloudformation 44 + 修正バッチ6 R27-N20 python 3 + cloudformation 伝播3（統合時に追加）+ R27-N7 VBA 定数94 + 修正バッチ7 R28-N9 VBA 定数141 + 修正バッチ8 VBA 参照専用12 + 第16種 IPA擬似言語 53（MUSE-ADD-PSEUDO）
   for (const [kind, def] of [
     ["python", py],
     ["cloudformation", cf],
@@ -232,5 +232,5 @@ for (const [label, code, expect] of HANDLER_CASES) {
 test("except-handler: totals across all definitions stay 1327 after the propagation", () => {
   let n = 0;
   for (const d of definitions) n += d.reference.length;
-  assert.equal(n, 1393); // 1086 + 修正バッチ6 R27-N20 組み込み定数3件×2種（Python＋CloudFormation伝播）+ R27-N7 VBA 定数94件 + 修正バッチ7 R28-N9 VBA 定数141件 + 修正バッチ8 13件（PowerShell 三項演算子1件＋VBA 参照専用12件）+ 第16種 IPA擬似言語 53件（MUSE-ADD-PSEUDO）
+  assert.equal(n, 1403); // +4 修正バッチ13 Python班（属性項目2件×2種）＋統合時に C／C++ NULL項目3件・UI.Vision 3件で +6 // 1086 + 修正バッチ6 R27-N20 組み込み定数3件×2種（Python＋CloudFormation伝播）+ R27-N7 VBA 定数94件 + 修正バッチ7 R28-N9 VBA 定数141件 + 修正バッチ8 13件（PowerShell 三項演算子1件＋VBA 参照専用12件）+ 第16種 IPA擬似言語 53件（MUSE-ADD-PSEUDO）
 });

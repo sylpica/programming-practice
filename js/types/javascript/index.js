@@ -28,7 +28,7 @@ const reference = rows([
     'document.querySelector("#id")',
     "モデルに明示したセレクターに対応する最初の要素を返します。",
     'document.querySelector("#result").textContent = "完了";',
-    "一般のCSS探索は未対応です。model.selectorsで対応を指定できます。",
+    "対応するのは model.selectors の指定、#id、タグ名、.クラス、カンマ区切りの組み合わせだけです。子孫・属性・疑似クラス等のセレクターは未対応として停止します。",
   ],
   [
     "document.createElement",
@@ -41,7 +41,7 @@ const reference = rows([
     "appendChild",
     "DOM",
     "parent.appendChild(node)",
-    "モデルの子要素一覧へ追加します。",
+    "モデルの子要素一覧へ追加します。既に別の親がある要素は、元の親から外れて移動します。",
     "document.body.appendChild(p);",
   ],
   [
@@ -113,8 +113,8 @@ const reference = rows([
   [
     "JSON.stringify",
     "オブジェクト",
-    "JSON.stringify(value)",
-    "JSON文字列へ変換します。",
+    "JSON.stringify(value, replacer, space)",
+    "JSON文字列へ変換します。第2引数にキーの配列を渡すとそのキーだけを残し、第3引数（数値または文字列）で字下げを指定できます。",
     "JSON.stringify({a:1})",
   ],
   [
@@ -417,6 +417,36 @@ function markForLog(v, seen = new Map()) {
   for (const [k, x] of Object.entries(v)) out[k] = markForLog(x, seen);
   return out;
 }
+// R7-181（修正バッチ13）：値の奥に埋まった未確定値を探す。変換関数が
+// 未確定値をホストの String／Number へ素の内部オブジェクトとして流すと
+// "[object Object]" や NaN に固定されてしまうため、変換前に検出する。
+function findUnknown(value, seen = new Set()) {
+  if (isUnknown(value)) return value;
+  if (!value || typeof value !== "object" || seen.has(value)) return null;
+  seen.add(value);
+  for (const v of Object.values(value)) {
+    const found = findUnknown(v, seen);
+    if (found) return found;
+  }
+  return null;
+}
+// Web IDL DOMString 変換／実 JavaScript の String 変換（alert・
+// textContent・id の書き込みと String() で共用する）。BigInt は末尾の
+// n なし、配列は要素をカンマで連結（null／undefined の要素は空文字）、
+// 通常オブジェクトは "[object Object]"。
+function jsStringValue(v) {
+  if (typeof v === "string") return v;
+  if (typeof v === "bigint") return v.toString();
+  if (isRecordLikeArray(v)) return "[object Object]";
+  if (Array.isArray(v))
+    return v
+      .map((el) =>
+        el === null || el === undefined ? "" : jsStringValue(el),
+      )
+      .join(",");
+  if (v && typeof v === "object") return "[object Object]";
+  return String(v);
+}
 function logText(x) {
   if (typeof x === "bigint") return x.toString() + "n";
   if (typeof x === "number" && Object.is(x, -0)) return "-0";
@@ -466,6 +496,10 @@ export const definition = {
     ["DOM", "文書を要素ノードの構造として扱う仕組みです。"],
     ["参照", "同じオブジェクトを指す値です。"],
     ["const", "変数への再代入を禁止します。オブジェクトの内容は変更できます。"],
+    [
+      "巻き上げ",
+      "varの変数宣言や関数宣言が、スコープの先頭で宣言されたものとして扱われる動作です。varの変数は代入より前に参照するとundefinedになります。",
+    ],
     [
       "未確定（値）",
       "実行時に決まる値のことです。このアプリでは値を仮定して作らず、未確定のまま扱って、到達可能な分岐をすべて表示します。",
@@ -546,6 +580,54 @@ export const definition = {
       );
     if (model.variables !== undefined && !isModelObject(model.variables))
       return modelFailure("モデルvariablesはオブジェクトで指定してください");
+    // 修正バッチ13（R7-38／39／78／185／186）：モデルDOMの意味論。
+    // 要素は tagName を持つオブジェクトとして識別し、親子関係は
+    // children 配列そのものから辿る（索引の複製を持たないことで、
+    // id の書き換えや移動に常に追随する）。
+    const isDomNode = (v) =>
+      !!v && typeof v === "object" && typeof v.tagName === "string";
+    const walkDom = (root, visit, seen = new Set()) => {
+      if (!root || typeof root !== "object" || seen.has(root)) return;
+      seen.add(root);
+      visit(root);
+      for (const c of root.children || []) walkDom(c, visit, seen);
+    };
+    // 注意：実行中の要素は状態側の複製（s.model）の中にあるため、
+    // 探索は必ず呼び出し時点の s.model に対して行う。
+    const domRoots = (m) => [
+      m.dom.body,
+      ...Object.values(m.dom.elements),
+    ];
+    const findById = (m, id) => {
+      let found = null;
+      for (const root of domRoots(m))
+        walkDom(root, (el) => {
+          if (!found && el.id === id) found = el;
+        });
+      return found;
+    };
+    const findParentOf = (m, child) => {
+      let parent = null;
+      for (const root of domRoots(m))
+        walkDom(root, (el) => {
+          if (!parent && (el.children || []).includes(child)) parent = el;
+        });
+      return parent;
+    };
+    const domText = (el, seen = new Set()) => {
+      if (!el || typeof el !== "object" || seen.has(el)) return "";
+      seen.add(el);
+      let text = typeof el.textContent === "string" ? el.textContent : "";
+      for (const c of el.children || []) text += domText(c, seen);
+      return text;
+    };
+    const isDomAncestor = (ancestor, node) => {
+      let found = false;
+      walkDom(ancestor, (el) => {
+        if (el === node) found = true;
+      });
+      return found;
+    };
     const result = simulateScript(
       code,
       model,
@@ -712,11 +794,24 @@ export const definition = {
             // R31-N5 兄弟表面：単項演算子も演算子名を名指す（** の
             // 二項形と水準を揃える）。
             api.fail("このJavaScript演算子は未対応です：" + a.op, a, "未対応");
-          if (a.k === "var" && a.name === "undefined")
+          // R7-180（修正バッチ13）：undefined／NaN／Infinity はグローバル
+          // 値だが、同名の宣言束縛（let／const）がある場合はそちらが
+          // 優先する（ECMA-262 の ResolveBinding）。束縛の有無を確認
+          // せずにグローバル値を返すと、let undefined = 1 等を無視して
+          // しまう。一方、この3つのグローバルプロパティは書込み不可
+          // のため、宣言なしの代入（undefined = 5）は実 JavaScript でも
+          // 黙って無視され、値は変わらない（R25-N8 の sloppy 挙動）。
+          // 宣言束縛かどうかは型記録とスコープ記録で判定する。
+          const declaredLocal = (name) =>
+            Object.hasOwn(s.types, name) ||
+            (s.scopeStack || []).some((f) =>
+              (f.records || []).some((r) => r.name === name),
+            );
+          if (a.k === "var" && a.name === "undefined" && !(Object.hasOwn(s.vars, "undefined") && declaredLocal("undefined")))
             return { handled: true, value: undefined };
-          if (a.k === "var" && a.name === "NaN")
+          if (a.k === "var" && a.name === "NaN" && !(Object.hasOwn(s.vars, "NaN") && declaredLocal("NaN")))
             return { handled: true, value: NaN };
-          if (a.k === "var" && a.name === "Infinity")
+          if (a.k === "var" && a.name === "Infinity" && !(Object.hasOwn(s.vars, "Infinity") && declaredLocal("Infinity")))
             return { handled: true, value: Infinity };
           if (a.k === "member") {
             // RG-59 統合対応：リファレンス語彙にあるメンバ名（textContent／value 等の
@@ -754,6 +849,14 @@ export const definition = {
                 handled: true,
                 value: unknown("実行時のオブジェクトプロパティ"),
               };
+            // R7-39／R7-186（修正バッチ13）：DOM要素の textContent は
+            // 自分と子孫のテキストの集約であり、id は未設定なら空文字列。
+            if (isDomNode(value)) {
+              if (a.name === "textContent")
+                return { handled: true, value: domText(value) };
+              if (a.name === "id")
+                return { handled: true, value: value.id ?? "" };
+            }
             return { handled: true, value: value[a.name] };
           }
           if (a.k === "index") {
@@ -820,20 +923,88 @@ export const definition = {
               );
             if (["__proto__", "constructor", "prototype"].includes(key))
               api.fail("このプロパティはモデルでは未対応です", node);
+            // R7-186（修正バッチ13）：DOMプロパティは素のレコード項目
+            // ではない。tagName は読み取り専用（非strictでは代入を黙って
+            // 無視）、textContent は DOMString 変換（null は空文字列＝
+            // LegacyNullToEmptyString）を受け、設定すると子要素は置き
+            // 換えられる。id も DOMString 変換を受ける。
+            if (isDomNode(obj) && !isUnknown(v)) {
+              if (key === "tagName") return true;
+              if (key === "textContent") {
+                obj.textContent = v === null ? "" : jsStringValue(v);
+                if (Array.isArray(obj.children)) obj.children = [];
+                return true;
+              }
+              if (key === "id") {
+                obj.id = jsStringValue(v);
+                return true;
+              }
+            }
             obj[key] = v;
             return true;
           }
           return false;
         },
         call(name, args, s, api, node) {
-          const values = () => args.map((a) => api.read(a, s));
+          let evaluated = null;
+          const values = () => {
+            if (!evaluated) evaluated = args.map((a) => api.read(a, s));
+            return evaluated;
+          };
           // R24-N24：引数の欠落は null ではなく undefined として渡る
           // （ECMAScript の呼び出し規約）。共有コアの read は「AST ノード
           // が無い」場合に null を返すため、args[0] を直接 read すると
           // 欠落と明示的な null が混同され、Math.abs() が 0、
           // JSON.stringify() が "null" 等の誤値になっていた。欠落位置は
           // ここで undefined に直してから各関数へ渡す。
-          const arg = (idx) => (idx < args.length ? api.read(args[idx], s) : undefined);
+          const arg = (idx) => (idx < args.length ? values()[idx] : undefined);
+          // R7-125（修正バッチ13）：対応済み関数では、関数が使わない
+          // 追加引数も含めて全引数を評価する（ECMA-262 の
+          // ArgumentListEvaluation）。未使用引数の中の未定義名や
+          // プロパティ参照エラーを黙って消さない。未対応関数は従来
+          // どおり関数名を名指して停止する（引数を評価しない）。
+          const EAGER = new Set([
+            "console.log", "alert", "prompt",
+            "document.getElementById", "document.querySelector",
+            "document.createElement",
+            "Number", "String", "Boolean", "parseInt",
+            "Math.abs", "Math.floor", "Math.round", "JSON.stringify",
+          ]);
+          if (EAGER.has(name)) values();
+          // R7-180（修正バッチ13）：組み込みと同名のローカル束縛がある
+          // 場合、その束縛が優先する。ローカル値は呼び出せないため、
+          // 組み込みへ直行せず実 JavaScript どおり TypeError で止める
+          // （document だけはモデルが注入したオブジェクト自身なら対象外）。
+          {
+            const rootName = name.split(".")[0];
+            const SHADOWABLE = new Set([
+              "Number", "String", "Boolean", "parseInt", "parseFloat",
+              "isNaN", "isFinite", "prompt", "alert", "BigInt", "Array",
+              "Object", "Symbol", "Function", "Date", "RegExp", "Error",
+              "TypeError", "RangeError", "SyntaxError", "ReferenceError",
+              "Map", "Set", "WeakMap", "WeakSet", "Promise", "Proxy",
+              "ArrayBuffer", "DataView",
+              "Math", "JSON", "console", "document", "globalThis",
+              "window", "Intl", "Reflect",
+            ]);
+            if (
+              SHADOWABLE.has(rootName) &&
+              Object.hasOwn(s.vars, rootName) &&
+              !(rootName === "document" && s.vars.document?.body === s.model.dom.body)
+            ) {
+              if (isUnknown(s.vars[rootName]))
+                api.fail(
+                  "未確認：組み込みと同名のローカル変数 " + rootName + " の呼び出し",
+                  node,
+                  "未確認",
+                );
+              api.fail(
+                rootName + " は関数ではありません（同名のローカル変数が組み込みを隠しています）",
+                node,
+                "TypeError",
+              );
+            }
+          }
           switch (name) {
             case "console.log": {
               let v = values();
@@ -844,49 +1015,130 @@ export const definition = {
               });
               return undefined;
             }
-            case "alert":
+            case "alert": {
+              // R7-183（修正バッチ13）：alert の文面は Web IDL の
+              // DOMString 変換。引数なしは空文字列、undefined は
+              // "undefined"、BigInt は末尾 n なし、配列はカンマ連結、
+              // 通常オブジェクトは "[object Object]"。
+              const v = arg(0);
               s.outputs.push({
                 channel: "alert",
-                text: formatValue(displayValue(arg(0))),
+                text:
+                  args.length === 0
+                    ? ""
+                    : isUnknown(v)
+                      ? formatValue(displayValue(v))
+                      : jsStringValue(isRecordLikeArray(v) ? displayValue(v) : v),
                 line: node.line,
               });
               return undefined;
+            }
             case "prompt":
               return { ...api.freshUnknown("promptの入力またはキャンセル", s), valueType: "prompt" };
             case "document.getElementById":
             {
+              // R7-77（修正バッチ13）：必須引数の欠落は未発見 null では
+              // なく TypeError（Web IDL）。R7-185：検索は要素自身の現在
+              // の id プロパティに対して行う（id の書き換えに追随する）。
+              if (!args.length)
+                api.fail("引数が不足しています：document.getElementByIdにはIDを1つ渡してください", node, "TypeError");
               const id = arg(0);
               if (isUnknown(id)) api.fail("未確定のIDによるDOM探索は未確認です", node, "未確認");
-              return Object.hasOwn(s.model.dom.elements,id) ? s.model.dom.elements[id] : null;
+              return findById(s.model, String(id));
             }
             case "document.querySelector": {
-              let selector = arg(0),
-                id = Object.hasOwn(s.model.dom.selectors || {},selector) ? s.model.dom.selectors[selector] : undefined;
-              if (id) return s.model.dom.elements[id] ?? null;
-              if (typeof selector === "string" && selector.startsWith("#"))
-                return Object.hasOwn(s.model.dom.elements,selector.slice(1)) ? s.model.dom.elements[selector.slice(1)] : null;
-              api.fail("モデルに未定義のCSSセレクターです", node);
+              // R7-184（修正バッチ13）：対応範囲は model.selectors の
+              // 指定、#id、タグ名、.クラス、カンマ区切りの組み合わせ。
+              // 末尾空白は実ブラウザどおり許容する。範囲外（子孫・属性・
+              // 疑似クラス等）は確定 null を返さず未対応として名指しで
+              // 停止し、構文として不正なものは SyntaxError で止める。
+              if (!args.length)
+                api.fail("引数が不足しています：document.querySelectorにはセレクターを1つ渡してください", node, "TypeError");
+              let selector = arg(0);
+              if (isUnknown(selector)) api.fail("未確定のセレクターによるDOM探索は未確認です", node, "未確認");
+              if (typeof selector !== "string") selector = jsStringValue(selector);
+              const table = s.model.dom.selectors || {};
+              if (Object.hasOwn(table, selector))
+                return findById(s.model, String(table[selector]));
+              const resolveSimple = (sel) => {
+                if (sel.startsWith("#")) {
+                  const idPart = sel.slice(1);
+                  if (!/^[A-Za-z0-9_-]+$/.test(idPart)) {
+                    if (/[:[\]()>+~]/.test(idPart))
+                      api.fail("このCSSセレクターは未対応です：" + sel, node, "未対応");
+                    api.fail("セレクターの構文が不正です：" + selector, node, "SyntaxError");
+                  }
+                  return findById(s.model, idPart);
+                }
+                if (sel.startsWith(".")) {
+                  const cls = sel.slice(1);
+                  if (!/^[A-Za-z0-9_-]+$/.test(cls))
+                    api.fail("セレクターの構文が不正です：" + selector, node, "SyntaxError");
+                  let found = null;
+                  for (const root of domRoots(s.model))
+                    walkDom(root, (el) => {
+                      if (!found && typeof el.className === "string" && el.className.split(/\s+/).includes(cls)) found = el;
+                    });
+                  return found;
+                }
+                if (/^[A-Za-z][A-Za-z0-9-]*$/.test(sel)) {
+                  let found = null;
+                  for (const root of domRoots(s.model))
+                    walkDom(root, (el) => {
+                      if (!found && el.tagName === sel.toUpperCase()) found = el;
+                    });
+                  return found;
+                }
+                if (/^[A-Za-z0-9_#.*-]+$/.test(sel) === false && sel.trim() === "")
+                  api.fail("セレクターの構文が不正です：" + selector, node, "SyntaxError");
+                api.fail("このCSSセレクターは未対応です：" + sel, node, "未対応");
+              };
+              const parts = selector.split(",").map((p) => p.trim());
+              if (parts.some((p) => p === ""))
+                api.fail("セレクターの構文が不正です：" + selector, node, "SyntaxError");
+              for (const part of parts) {
+                const hit = resolveSimple(part);
+                if (hit) return hit;
+              }
+              return null;
             }
-            case "document.createElement":
+            case "document.createElement": {
+              // R7-76（修正バッチ13）：タグ名は必須（Web IDL）で、
+              // 有効な要素名でなければならない。値の DOMString 変換
+              // 自体は実物どおり（null は "null" で有効な名前になる）。
+              if (!args.length)
+                api.fail("引数が不足しています：document.createElementにはタグ名を1つ渡してください", node, "TypeError");
+              const rawTag = arg(0);
+              if (isUnknown(rawTag)) api.fail("未確定のタグ名による要素作成は未確認です", node, "未確認");
+              const tag = jsStringValue(rawTag);
+              if (!/^[A-Za-z][A-Za-z0-9._-]*$/.test(tag))
+                api.fail("要素名が不正です：" + tag, node, "InvalidCharacterError");
               return {
-                tagName: String(arg(0)).toUpperCase(),
+                id: "",
+                tagName: tag.toUpperCase(),
                 textContent: "",
                 children: [],
               };
+            }
             case "Number": {
               if (!args.length) return 0;
               let v = arg(0);
-              return isUnknown(v)
-                ? convertedUnknown(v, "Number")
-                : Number(v);
+              if (isUnknown(v)) return convertedUnknown(v, "Number");
+              // R7-181（修正バッチ13）：配列等の奥の未確定値も変換済み
+              // 未確定値へ倒す（ホスト Number へ流して NaN に固定しない）。
+              const inner = findUnknown(v);
+              if (inner) return convertedUnknown(inner, "Number");
+              return Number(isRecordLikeArray(v) ? displayValue(v) : v);
             }
             case "String": {
               if (!args.length) return "";
               let v = arg(0);
               if (isUnknown(v)) return convertedUnknown(v, "String");
+              const inner = findUnknown(v);
+              if (inner) return convertedUnknown(inner, "String");
               // P-N1: 文字列化の結果も値サイズ上限の対象にする（大きな
               // 配列の文字列化などで実体が爆発しないようにする）。
-              const text = String(v);
+              const text = jsStringValue(v);
               return text.length > 200000
                 ? { ...unknown("とても長い文字列"), valueType: "string" }
                 : text;
@@ -897,25 +1149,41 @@ export const definition = {
             }
             case "parseInt": {
               let [v, radix] = values();
-              return isUnknown(v)
-                ? unknown("parseIntの入力による")
-                : parseInt(v, radix);
+              // R7-181（修正バッチ13）：基数側の未確定値も結果を未確定に
+              // する（未確定の基数をホストへ流して基数10等に固定しない）。
+              if (isUnknown(v) || isUnknown(radix) || findUnknown(v) || findUnknown(radix))
+                return unknown("parseIntの入力による");
+              return parseInt(v, radix);
             }
             case "Math.abs":
             case "Math.floor":
             case "Math.round": {
               let v = arg(0);
-              return isUnknown(v)
+              return isUnknown(v) || findUnknown(v)
                 ? unknown(name + "の引数による")
                 : Math[name.split(".")[1]](v);
             }
             case "JSON.stringify": {
               let v = arg(0);
+              // R7-37（修正バッチ13）：第2引数 replacer（キーの配列）と
+              // 第3引数 space（字下げ）を実 JavaScript どおり適用する。
+              // 関数形 replacer はこの方言では値として存在しない。
+              const replacer = args.length > 1 ? arg(1) : undefined;
+              const space = args.length > 2 ? arg(2) : undefined;
               if (containsUnknown(v)) return unknown("JSON.stringifyの入力に未確定値があります");
+              if (findUnknown(replacer) || findUnknown(space))
+                return unknown("JSON.stringifyの引数に未確定値があります");
               if (containsBigInt(v))
                 api.fail("BigIntはJSONへ変換できません", node, "TypeError");
               try {
-                const json = JSON.stringify(displayValue(v));
+                const replacerArg = Array.isArray(replacer) ? replacer : null;
+                const spaceArg =
+                  typeof space === "number"
+                    ? Math.min(10, Math.max(0, Math.trunc(space) || 0))
+                    : typeof space === "string"
+                      ? space.slice(0, 10)
+                      : 0;
+                const json = JSON.stringify(displayValue(v), replacerArg, spaceArg);
                 // P-N1: JSON 文字列も値サイズ上限の対象にする。
                 return json !== undefined && json.length > 200000
                   ? { ...unknown("とても長い文字列"), valueType: "string" }
@@ -956,11 +1224,25 @@ export const definition = {
                   );
                 return object.push(...vals);
               }
-              if (method === "pop") return object.pop();
+              if (method === "pop") {
+                values();
+                return object.pop();
+              }
               if (method === "join") {
+                // R7-181（修正バッチ13）：区切りや要素に未確定値があれば
+                // 結果も未確定にする（内部オブジェクトを "[object
+                // Object]" 等へ文字列化して固定しない）。
+                const sepArg = values()[0];
+                if (isUnknown(sepArg) || containsUnknown(object)) {
+                  const u = isUnknown(sepArg) ? sepArg : findUnknown(object);
+                  return {
+                    ...unknown("joinの入力に未確定値があります", "join:" + (u?.id ?? "")),
+                    rootId: u?.rootId || u?.id,
+                    valueType: "string",
+                  };
+                }
                 // P-N1: join の結果長を要素ごとに見積もる（区切り文字を
                 // 含め、上限を超える場合は実体を作らず未確定値へ倒す）。
-                const sepArg = values()[0];
                 const sep = sepArg === undefined ? "," : String(sepArg);
                 let total = 0;
                 for (let i = 0; i < object.length; i++) {
@@ -978,9 +1260,23 @@ export const definition = {
               }
             }
             if (method === "appendChild") {
+              values();
+              // R7-78（修正バッチ13）：レシーバーも子も DOM ノードで
+              // なければならない。R7-38：既に親がある要素は移動する
+              // （旧親から外し、重複させない）。自分自身や祖先の追加は
+              // 循環になるため HierarchyRequestError で止める。
+              if (!isDomNode(object))
+                api.fail("appendChildは関数ではありません（対象がDOM要素ではありません）", node, "TypeError");
               let child = arg(0);
-              if (!child || typeof child !== "object")
-                api.fail("ノードが必要です", node, "TypeError");
+              if (!isDomNode(child))
+                api.fail("appendChildの引数はNodeが必要です", node, "TypeError");
+              if (child === object || isDomAncestor(child, object))
+                api.fail("要素を自身またはその子孫へ追加できません", node, "HierarchyRequestError");
+              const oldParent = findParentOf(s.model, child);
+              if (oldParent) {
+                const idx = oldParent.children.indexOf(child);
+                if (idx >= 0) oldParent.children.splice(idx, 1);
+              }
               object.children ??= [];
               object.children.push(child);
               if (child.id) s.model.dom.elements[child.id] = child;

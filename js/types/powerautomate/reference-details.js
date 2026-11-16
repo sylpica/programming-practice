@@ -11,9 +11,9 @@ export const referenceDetails = {
     "description": "数値変数を指定量だけ増加させます。"
   },
   "Display input dialog": {
-    "returns": "UserInputとButtonPressed。本モデルの入力は未確定",
+    "returns": "UserInput（本モデルでは target で指定した変数へ入り、入力は未確定として扱います）。ButtonPressed は本モデルでは未対応で、変数としては生成されません",
     "source": "https://learn.microsoft.com/en-us/power-automate/desktop-flows/actions-reference/display#inputdialog",
-    "description": "入力ダイアログで得る文字列と押されたボタンを扱います。本モデルでは入力値を捏造しません。"
+    "description": "入力ダイアログで得る文字列を扱います。本モデルでは入力値を捏造しません。実 PAD のもう1つの出力 ButtonPressed（押されたボタン）は本モデルでは生成されないため、参照すると未定義の名前として停止します。"
   },
   "If": {
     "returns": "戻り値なし（宣言または制御文）",

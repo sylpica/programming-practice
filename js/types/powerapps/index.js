@@ -158,7 +158,7 @@ const reference = rows([
     "Value",
     "型変換",
     "Value(Text [, LanguageTag])",
-    "明示した10進数文字列を数値へ変換します。入力がBlankまたは空文字列の場合はBlankを返します。",
+    "明示した10進数文字列を数値へ変換します。指数表記（1e3）と百分率（10%→0.1）も変換します。入力がBlankまたは空文字列の場合はBlankを返します。",
     "Value(Input1.Text)",
     "言語タグはen-USのみ対応します。地域依存書式は未対応です。",
   ],
@@ -232,13 +232,15 @@ function lowerBehavior(expr, line = expr.line || 1) {
       `${callName(expr.target)} の引数の数が正しくありません（2 個以上が必要です。空の引数は書けません）`,
       line,
     );
-  // Switch の最小は2個（Value と Default だけの形も、末尾＝Default の
-  // 解釈として実 Power Fx どおり受理する。F01A-7 で確認済みの正挙動）。
-  // 0〜1個は最小引数不足として引数個数エラーにする（call() 側の
-  // アリティ表も同じ最小2個に揃える）。
-  if (expr.k === "call" && name === "switch" && expr.args.length < 2)
+  // R7-220（バッチ13）: Switch の最小は3個（Value＋Match＋Result）。
+  // Microsoft Learn の Switch 構文では Match と Result の組が必須で、
+  // Default は組の後ろに置く任意引数のため、2個形（Value と Default
+  // だけ）は引数不足である。旧解釈（2個形を Default として受理）は
+  // 一次情報と矛盾するため是正し、call() 側のアリティ表も最小3個に
+  // 揃える。
+  if (expr.k === "call" && name === "switch" && expr.args.length < 3)
     throw new PracticeError(
-      `${callName(expr.target)} の引数の数が正しくありません（2 個以上が必要です。空の引数は書けません）`,
+      `${callName(expr.target)} の引数の数が正しくありません（3 個以上が必要です。空の引数は書けません）`,
       line,
     );
   if (expr.k === "call" && name === "if") {
@@ -275,7 +277,9 @@ function lowerBehavior(expr, line = expr.line || 1) {
       otherwise = [
         {
           k: "if",
-          test: { k: "binary", op: "=", a: temp, b: args[1 + i * 2], line },
+          // R7-216（バッチ13）: Switch の比較であることを印付けし、
+          // binary 側で比較値と一致値の型検査を行う。
+          test: { k: "binary", op: "=", a: temp, b: args[1 + i * 2], fxSwitchCompare: true, line },
           body: lowerBehavior(args[2 + i * 2], line),
           otherwise,
           line,
@@ -312,9 +316,9 @@ function lowerBehavior(expr, line = expr.line || 1) {
           `${callName(branch.target)} の引数の数が正しくありません（2 個以上が必要です。空の引数は書けません）`,
           line,
         );
-      if (bn === "switch" && branch.args.length < 2)
+      if (bn === "switch" && branch.args.length < 3)
         throw new PracticeError(
-          `${callName(branch.target)} の引数の数が正しくありません（2 個以上が必要です。空の引数は書けません）`,
+          `${callName(branch.target)} の引数の数が正しくありません（3 個以上が必要です。空の引数は書けません）`,
           line,
         );
     }
@@ -366,6 +370,17 @@ function lowerBehavior(expr, line = expr.line || 1) {
 // （大小不区別）で、空テキストは Blank として偽。それ以外のテキストは
 // 変換エラーとして停止する（Microsoft Learn「Boolean function」の規則）。
 function fxTruth(v, line) {
+  // R7-65（バッチ13）: テーブル／レコードは真偽値へ暗黙変換しない
+  // （JS の truthy で Not(Table()) が false になる等を防ぐ型エラー）。
+  // 未確定値は従来どおり呼び出し側の分岐処理に委ねる。
+  if (
+    (Array.isArray(v) || (v !== null && typeof v === "object")) &&
+    !(v && v.kind === "unknown")
+  )
+    throw new PracticeError(
+      "テーブルやレコードは真偽値として使えません（型が一致しません）",
+      line,
+    );
   if (typeof v === "string") {
     const t = v.toLowerCase();
     if (t === "true") return true;
@@ -498,6 +513,14 @@ export const definition = {
       "SetやNavigateなど、操作イベントに応じて状態を変更する数式です。",
     ],
     [
+      "表示数式",
+      "コントロールのプロパティに結び付けられ、その評価結果で表示内容が決まる数式です。",
+    ],
+    [
+      "再計算",
+      "変数やコントロールの値が変わったときに、表示数式を評価し直して表示を最新の結果に更新することです。",
+    ],
+    [
       "未確定（値）",
       "実行時に決まる値のことです。このアプリでは値を仮定して作らず、未確定のまま扱って、到達可能な分岐をすべて表示します。",
     ],
@@ -564,6 +587,27 @@ export const definition = {
       // ことを回帰テストで固定する。
       function fxFormatValue(v) {
         return v === null || v === undefined ? "" : formatValue(v);
+      }
+      // R7-216（バッチ13）: Switch の型検査用の型名。Blank と未確定値は
+      // 型検査の対象外（Blank はどの一致値とも不一致として扱う）。
+      function fxTypeOf(v) {
+        if (v === null || v === undefined || isUnknown(v)) return null;
+        if (Array.isArray(v)) return "テーブル";
+        if (typeof v === "object") return "レコード";
+        return (
+          { number: "数値", string: "テキスト", boolean: "真偽値" }[
+            typeof v
+          ] || typeof v
+        );
+      }
+      function checkSwitchType(value, match, node, api) {
+        let a = fxTypeOf(value),
+          b = fxTypeOf(match);
+        if (a && b && a !== b)
+          api.fail(
+            `Switch の一致値の型が比較値と一致しません（${a} と ${b}）`,
+            node,
+          );
       }
       // RG-15: numeric custom formats for Text(Value, Format), following the
       // number placeholders documented by Microsoft (0, #, ".", grouping ",",
@@ -645,44 +689,146 @@ export const definition = {
             (value * Math.pow(100, pctCount)) / Math.pow(1000, scaling);
         if (!Number.isFinite(scaled) || Math.abs(scaled) >= 1e21)
           fail("Text の書式：大きすぎる数値は未対応です：" + format);
+        // R7-118（バッチ13）: 丸めは JS の toFixed（2進表現依存で
+        // 1.005→"1.00" になる）ではなく、10進文字列のまま半上げする
+        // （Power Fx／SDK 実測: 1.005→"1.01"、2.675→"2.68"）。
+        function expandDecimal(str) {
+          if (!/[eE]/.test(str)) return str;
+          let [mant, expS] = str.split(/[eE]/),
+            exp = parseInt(expS, 10),
+            neg = mant.startsWith("-");
+          mant = mant.replace("-", "");
+          let [ip, fp = ""] = mant.split("."),
+            digits = ip + fp,
+            point = ip.length + exp,
+            out;
+          if (point <= 0) out = "0." + "0".repeat(-point) + digits;
+          else if (point >= digits.length)
+            out = digits + "0".repeat(point - digits.length);
+          else out = digits.slice(0, point) + "." + digits.slice(point);
+          return (neg ? "-" : "") + out;
+        }
+        function decimalRound(abs, digits) {
+          let s = expandDecimal(String(abs)),
+            [ip, fp = ""] = s.split(".");
+          ip = ip.replace(/^0+(?=\d)/, "");
+          if (fp.length <= digits)
+            return {
+              intDigits: ip,
+              fracDigits: fp.padEnd(digits, "0"),
+            };
+          let keep = fp.slice(0, digits);
+          if (fp[digits] < "5") return { intDigits: ip, fracDigits: keep };
+          let combined = (ip + keep).split(""),
+            i = combined.length - 1;
+          while (i >= 0 && combined[i] === "9") {
+            combined[i] = "0";
+            i--;
+          }
+          if (i < 0) combined.unshift("1");
+          else combined[i] = String(Number(combined[i]) + 1);
+          let joined = combined.join("");
+          return {
+            intDigits: digits ? joined.slice(0, joined.length - digits) || "0" : joined,
+            fracDigits: digits ? joined.slice(joined.length - digits) : "",
+          };
+        }
         let negative = scaled < 0,
-          fixed = Math.abs(scaled).toFixed(fracCount),
-          [intDigits, fracRaw = ""] = fixed.split(".");
-        let fracDigits = fracRaw;
+          rounded = decimalRound(Math.abs(scaled), fracCount),
+          rawInt = rounded.intDigits;
+        let fracDigits = rounded.fracDigits;
         while (
           fracDigits.length > mandatoryFrac &&
           fracDigits.endsWith("0")
         )
           fracDigits = fracDigits.slice(0, -1);
-        intDigits = intDigits.padStart(Math.max(minInt, 1), "0");
-        if (
-          minInt === 0 &&
-          intDigits === "0" &&
-          fracDigits &&
-          /[1-9]/.test(fracDigits)
-        )
-          intDigits = "";
-        if (grouping && intDigits.length > 3)
-          intDigits = intDigits.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+        // R7-117（バッチ13）: # だけの整数部では 0 を表示しない
+        // （Text(0,"#") は空文字列、Text(0,"#.00") は ".00"）。
+        // 丸め結果が 0 のときは負号も付けない。
+        let intZero = /^0*$/.test(rawInt),
+          resultZero = intZero && !/[1-9]/.test(fracDigits);
+        if (resultZero) negative = false;
+        // 位置割り当てが必要なのは、プレースホルダの「間」にリテラルが
+        // ある場合だけ（"$ #,###" のように先頭に付くリテラルは対象外で、
+        // 桁区切り等の通常処理を維持する）。
+        let hasMidLit = (toks) =>
+          toks.some(
+            (t, idx) =>
+              t.t === "lit" &&
+              toks.slice(0, idx).some((x) => x.t === "ph") &&
+              toks.slice(idx + 1).some((x) => x.t === "ph"),
+          );
+        let intHasLit = hasMidLit(intTokens),
+          fracHasLit = hasMidLit(fracTokens);
+        let intDisplay = "";
+        if (!(intZero && minInt === 0)) {
+          intDisplay = rawInt.padStart(minInt, "0");
+          if (!intHasLit && grouping && intDisplay.length > 3)
+            intDisplay = intDisplay.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+        }
+        // R7-119（バッチ13）: 整数部の桁の途中にリテラルがある書式
+        // （"00-00" 等）は、数字をプレースホルダ位置へ右詰めで割り当て、
+        // リテラルをその位置に残す（末尾へ移動させない）。
+        let posIntChars = null,
+          posIntSpill = "";
+        if (intHasLit) {
+          if (intZero && minInt === 0)
+            posIntChars = intPh.map(() => "");
+          else {
+            let dig = rawInt.padStart(minInt, "0");
+            posIntSpill =
+              dig.length > intPh.length
+                ? dig.slice(0, dig.length - intPh.length)
+                : "";
+            let tail = dig.slice(Math.max(0, dig.length - intPh.length)),
+              padCount = intPh.length - tail.length;
+            posIntChars = intPh.map((t, idx) =>
+              idx < padCount ? (t.v === "0" ? "0" : "") : tail[idx - padCount],
+            );
+          }
+        }
         let out = "",
           intDone = false,
-          fracDone = false;
-        for (let t of tokens) {
+          fracDone = false,
+          intPhIdx = 0,
+          fracPhIdx = 0;
+        for (let ti = 0; ti < tokens.length; ti++) {
+          let t = tokens[ti];
           if (t.t === "ph") {
-            let inFrac = dotAt >= 0 && tokens.indexOf(t) > dotAt;
-            if (!inFrac && !intDone) {
-              out += intDigits;
-              intDone = true;
-            } else if (inFrac && !fracDone) {
+            let inFrac = dotAt >= 0 && ti > dotAt;
+            if (!inFrac) {
+              if (intHasLit) {
+                if (!intDone) {
+                  out += posIntSpill;
+                  intDone = true;
+                }
+                out += posIntChars[intPhIdx++] ?? "";
+              } else if (!intDone) {
+                out += intDisplay;
+                intDone = true;
+              }
+            } else if (fracHasLit) {
+              let idx = fracPhIdx++;
+              out +=
+                idx < fracDigits.length
+                  ? fracDigits[idx]
+                  : fracPh[idx]?.v === "0"
+                    ? "0"
+                    : "";
+              fracDone = true;
+            } else if (!fracDone) {
               out += fracDigits;
               fracDone = true;
             }
-          } else if (t.t === "dot") out += ".";
-          else if (t.t === "pct") out += "%";
+          } else if (t.t === "dot") {
+            // R7-117: 小数部に表示する数字が無ければ小数点も付けない
+            // （Text(1,"0.##") は "1" であって "1." ではない）。
+            if (fracDigits.length > 0) out += ".";
+          } else if (t.t === "pct") out += "%";
           else if (t.t === "comma") continue;
           else out += t.v;
         }
-        if (!intDone && intDigits) out = intDigits + out;
+        if (!intDone && intDisplay) out = intDisplay + out;
         return (negative ? "-" : "") + out;
       }
       let parser = new ScriptParser(code, "fx"),
@@ -797,6 +943,16 @@ export const definition = {
                   Error: "Error",
                 },
               };
+            // R7-111（バッチ13）: コンテキスト変数（現在の画面）と
+            // グローバル変数は別スコープで、同名ではコンテキストが
+            // 優先する（実 Power Fx の規則）。レコードスコープ内は
+            // 行の列が優先するため、この解決は行の外でのみ行う。
+            if (s.record === undefined) {
+              let ctx = s.model.screens?.[s.model.screen]?.context;
+              let ctxKey = ctx ? ciKey(ctx, a.name) : undefined;
+              if (ctxKey !== undefined)
+                return { handled: true, value: ctx[ctxKey] };
+            }
             let key = Object.keys(s.vars).find(
               (k) => k.toLowerCase() === a.name.toLowerCase(),
             );
@@ -845,6 +1001,11 @@ export const definition = {
           return fxTruth(v, line);
         },
         binary(op, a, b, node, s, api) {
+          // R7-216（バッチ13）: lowerBehavior が印付けた Switch の比較は、
+          // 比較値と一致値の型が異なれば型エラーで停止する（型違いを
+          // 不一致として既定分岐へ落とさない）。
+          if (op === "=" && node?.fxSwitchCompare)
+            checkSwitchType(a, b, node, api);
           // RG-07（統合）: Power Fx の in／exactin を評価する。
           // 文字列では部分文字列（含む側・含まれる側とも文字列のとき）、
           // テーブルでは要素の包含を判定する。in はテキスト比較で大文字小文字を
@@ -935,10 +1096,10 @@ export const definition = {
             and: [2, Infinity],
             or: [2, Infinity],
             if: [2, Infinity],
-            // R26-N15: Switch の最小は2個（Value＋Default 形を
-            // lowerBehavior 側と揃える。従来の3個では、値として
-            // 評価される Switch(値, Default) が誤って停止していた）。
-            switch: [2, Infinity],
+            // R7-220（バッチ13）: Switch の最小は3個（Value＋Match＋
+            // Result）に是正（Learn 構文では組が必須。2個形の Default
+            // 解釈は一次情報と矛盾した旧解釈）。
+            switch: [3, Infinity],
             set: [2, 2],
             updatecontext: [1, 1],
             table: [0, Infinity],
@@ -983,11 +1144,35 @@ export const definition = {
           function rowEval(table, formula) {
             if (!Array.isArray(table)) api.fail("テーブルが必要です", node);
             if (table.length > 1000) api.fail("モデルの行数上限です", node);
+            // R7-214（バッチ13）: テーブルのスキーマは全行の列の和集合で、
+            // ある行に無い列はその行では Blank になる（未定義名エラーに
+            // しない）。R7-215: テーブル値そのものが行になる場合は
+            // Value 列のレコードとして扱う。
+            let union = [];
+            for (let rec of table)
+              if (rec && typeof rec === "object" && !Array.isArray(rec))
+                for (let k of Object.keys(rec))
+                  if (!union.includes(k)) union.push(k);
+            let ctxOverlay =
+              s.model.screens?.[s.model.screen]?.context || {};
             return table.map((record, i) => {
               let previous = s.vars,
                 old = s.record;
-              s.record = record;
-              s.vars = { ...previous, ...record, ThisRecord: record };
+              let scoped = Array.isArray(record)
+                ? { Value: record }
+                : record && typeof record === "object"
+                  ? {
+                      ...Object.fromEntries(union.map((k) => [k, null])),
+                      ...record,
+                    }
+                  : record;
+              s.record = scoped;
+              s.vars = {
+                ...previous,
+                ...ctxOverlay,
+                ...(scoped && typeof scoped === "object" ? scoped : {}),
+                ThisRecord: scoped,
+              };
               try {
                 api.check();
                 let v = api.read(formula, s);
@@ -1018,18 +1203,24 @@ export const definition = {
               return isUnknown(v) ? v : !fxTruth(v, node.line);
             }
             case "and": {
-              let vals = args.map((_, i) => get(i)),
-                unk = vals.find(isUnknown);
-              return unk !== undefined
-                ? unk
-                : vals.every((v) => fxTruth(v, node.line));
+              // R7-64（バッチ13）: 関数形 And は短絡評価する。偽が確定した
+              // 時点で残りの引数は評価しない（And(false, 1/0=0) が
+              // ゼロ除算で停止しない。SDK 実測どおり）。
+              for (let i = 0; i < args.length; i++) {
+                let v = get(i);
+                if (isUnknown(v)) return v;
+                if (!fxTruth(v, node.line)) return false;
+              }
+              return true;
             }
             case "or": {
-              let vals = args.map((_, i) => get(i)),
-                unk = vals.find(isUnknown);
-              return unk !== undefined
-                ? unk
-                : vals.some((v) => fxTruth(v, node.line));
+              // R7-64（バッチ13）: 関数形 Or も短絡評価する（真で確定）。
+              for (let i = 0; i < args.length; i++) {
+                let v = get(i);
+                if (isUnknown(v)) return v;
+                if (fxTruth(v, node.line)) return true;
+              }
+              return false;
             }
             case "if": {
               for (let i = 0; i + 1 < args.length; i += 2) {
@@ -1047,8 +1238,12 @@ export const definition = {
               let value = get(0);
               if (isUnknown(value))
                 api.fail("未確定Switchは動作数式として記述してください", node);
-              for (let i = 1; i + 1 < args.length; i += 2)
-                if (value === get(i)) return get(i + 1);
+              for (let i = 1; i + 1 < args.length; i += 2) {
+                // R7-216（バッチ13）: 一致値の型が比較値と異なれば型エラー。
+                let match = get(i);
+                checkSwitchType(value, match, node, api);
+                if (value === match) return get(i + 1);
+              }
               return args.length % 2 === 0 ? get(args.length - 1) : null;
             }
             case "set": {
@@ -1106,8 +1301,36 @@ export const definition = {
               recalc(s, api);
               return null;
             }
-            case "table":
-              return args.map((_, i) => get(i));
+            case "table": {
+              // R7-63（バッチ13）: テーブル引数は行として展開し、スカラーは
+              // レコードとして受理しない（型エラー）。R7-214: 列は全行の
+              // 和集合に揃え、欠けたセルは Blank（null）にする。
+              let outRows = [];
+              for (let i = 0; i < args.length; i++) {
+                let v = get(i);
+                if (Array.isArray(v)) outRows.push(...v);
+                else if (v !== null && typeof v === "object")
+                  outRows.push(v);
+                else
+                  api.fail(
+                    "Table の引数はレコードまたはテーブルで指定してください",
+                    node,
+                  );
+              }
+              let keys = [];
+              for (let row of outRows)
+                if (row && typeof row === "object" && !Array.isArray(row))
+                  for (let k of Object.keys(row))
+                    if (!keys.includes(k)) keys.push(k);
+              return outRows.map((row) => {
+                if (!row || typeof row !== "object" || Array.isArray(row))
+                  return row;
+                let normalized = {};
+                for (let k of keys)
+                  normalized[k] = Object.hasOwn(row, k) ? row[k] : null;
+                return normalized;
+              });
+            }
             case "sequence": {
               // R31-N11: 件数（Records）は Microsoft Learn の規則どおり
               // 最も近い整数へ切り捨てて受理する（Sequence(0.9) は0件＝
@@ -1117,6 +1340,21 @@ export const definition = {
               // 分け、上限超過では上限値を正直に示す。Start／Step は
               // Learn に切り捨て・丸めの規定がなく、小数の Step（0.5）の
               // 例もあるため、従来どおり値をそのまま使う。
+              // R7-65（バッチ13）: テーブル／レコード／真偽値を件数として
+              // 暗黙変換しない（Sequence(Table()) が空表を返す等を防ぐ）。
+              for (let i = 0; i < args.length; i++) {
+                let av = get(i);
+                if (
+                  !isUnknown(av) &&
+                  (Array.isArray(av) ||
+                    (av !== null && typeof av === "object") ||
+                    typeof av === "boolean")
+                )
+                  api.fail(
+                    "Sequenceの引数は数値で指定してください（テーブルやレコード、真偽値は使えません）",
+                    node,
+                  );
+              }
               let raw = Number(get(0)),
                 start = args[1] ? Number(get(1)) : 1,
                 step = args[2] ? Number(get(2)) : 1;
@@ -1144,7 +1382,16 @@ export const definition = {
               let result = rowEval(get(0), args[1]);
               return result
                 .filter((v) => v !== null)
-                .map((v) => (typeof v === "object" ? v : { Value: v }));
+                .map((v) =>
+                  // R7-215（バッチ13）: 結果がテーブル（配列）の行は裸の
+                  // 配列でなく Value 列のレコードにする（次の行スコープで
+                  // Value として参照できる）。
+                  Array.isArray(v)
+                    ? { Value: v }
+                    : typeof v === "object"
+                      ? v
+                      : { Value: v },
+                );
             }
             case "countrows": {
               // D-4: テーブルでない引数は、他のテーブル関数（Sum／Filter／
@@ -1168,10 +1415,20 @@ export const definition = {
                     "Sum のテーブル形式は引数が2個必要です（テーブルと集計式）",
                     node,
                   );
-                return rowEval(first, args[1]).reduce(
-                  (a, b) => a + Number(b ?? 0),
-                  0,
-                );
+                // R7-115（バッチ13）: Blank の値は合計に数えない（0 として
+                // 加算しない）。非 Blank が1つも無ければ結果は Blank で
+                // あって 0 ではない（SDK 実測: IsBlank(Sum(...)) は true）。
+                let values = rowEval(first, args[1]),
+                  unk = values.find(isUnknown);
+                if (unk !== undefined) return unk;
+                let seen = false,
+                  total = 0;
+                for (let b of values) {
+                  if (b === null || b === undefined) continue;
+                  seen = true;
+                  total += Number(b);
+                }
+                return seen ? total : null;
               }
               if (first === null && args.length >= 2) {
                 // Blank が第1引数の2引数形は、テーブル形の誤り
@@ -1194,9 +1451,13 @@ export const definition = {
                   rest.some((v) => v !== null && typeof v !== "number")
                 )
                   api.fail("テーブルが必要です", node);
-                return rest.reduce((a, b) => a + Number(b ?? 0), 0);
+                // R7-115: 数値形でも Blank だけなら結果は Blank。
+                return rest.every((v) => v === null)
+                  ? null
+                  : rest.reduce((a, b) => a + Number(b ?? 0), 0);
               }
-              let total = 0;
+              let total = 0,
+                seenNum = false;
               for (let i = 0; i < args.length; i++) {
                 let v = i === 0 ? first : get(i);
                 if (isUnknown(v)) return v;
@@ -1206,9 +1467,10 @@ export const definition = {
                     "Sum の数値形式の引数は数値である必要があります",
                     node,
                   );
+                seenNum = true;
                 total += v;
               }
-              return total;
+              return seenNum ? total : null;
             }
             case "filter":
             case "lookup": {
@@ -1220,14 +1482,18 @@ export const definition = {
                   .map((formula) => rowEval(table, formula));
                 if (condLists.some((list) => list.some(isUnknown)))
                   api.fail("未確定のFilter / LookUp条件は未対応です", node);
+                // R7-48（バッチ13）: 条件の真偽は fxTruth に統一する
+                // （テキスト "false" を真として行を採用しない）。
                 return table.filter((_, i) =>
-                  condLists.every((list) => list[i]),
+                  condLists.every((list) => fxTruth(list[i], node.line)),
                 );
               }
               let results = rowEval(table, args[1]);
               if (results.some(isUnknown))
                 api.fail("未確定のFilter / LookUp条件は未対応です", node);
-              let selected = table.filter((_, i) => results[i]);
+              let selected = table.filter((_, i) =>
+                fxTruth(results[i], node.line),
+              );
               if (fn === "filter") return selected;
               let found = selected[0] ?? null;
               // RG-18: LookUp's third argument (the reduction formula)
@@ -1322,6 +1588,28 @@ export const definition = {
                 table.push(result);
               } else {
                 let index = table.indexOf(base);
+                if (index < 0) {
+                  // R7-113（バッチ13）: Set 等で変数へ保存されたレコードは
+                  // 複製されるため参照同一性では見つからない。保存前の
+                  // レコードと全項目が一致する行を対象として認識する。
+                  let baseKeys =
+                    base && typeof base === "object"
+                      ? Object.keys(base).filter(
+                          (k) => k !== "__defaultSource",
+                        )
+                      : [];
+                  if (baseKeys.length)
+                    index = table.findIndex(
+                      (row) =>
+                        row &&
+                        typeof row === "object" &&
+                        baseKeys.every(
+                          (k) =>
+                            JSON.stringify(row[k]) ===
+                            JSON.stringify(base[k]),
+                        ),
+                    );
+                }
                 if (index < 0)
                   api.fail("更新するレコードがデータソースにありません", node);
                 result = Object.assign(table[index], changes);
@@ -1338,11 +1626,35 @@ export const definition = {
               let screen = get(0)?.screen;
               if (!s.model.screens[screen])
                 api.fail("モデルに画面がありません", node);
+              // R7-111（バッチ13）: 旧画面のコンテキスト変数を s.vars から
+              // 外す際、同名のグローバル変数／コレクション等があれば
+              // その値へ戻す（コンテキストと同名のグローバルを遷移で
+              // 消さない）。
               let oldContext = s.model.screens[s.model.screen]?.context || {};
-              for (let k of Object.keys(oldContext)) delete s.vars[k];
+              for (let k of Object.keys(oldContext)) {
+                let flatKey = ciKey(s.vars, k) ?? k,
+                  restored =
+                    (ciKey(s.model.variables, k) !== undefined
+                      ? s.model.variables[ciKey(s.model.variables, k)]
+                      : undefined) ??
+                    (ciKey(s.model.collections, k) !== undefined
+                      ? s.model.collections[ciKey(s.model.collections, k)]
+                      : undefined) ??
+                    (ciKey(s.model.dataSources, k) !== undefined
+                      ? s.model.dataSources[ciKey(s.model.dataSources, k)]
+                      : undefined) ??
+                    (ciKey(s.model.controls, k) !== undefined
+                      ? s.model.controls[ciKey(s.model.controls, k)]
+                      : undefined);
+                if (restored === undefined) delete s.vars[flatKey];
+                else s.vars[flatKey] = restored;
+              }
               s.model.screen = screen;
               Object.assign(s.vars, s.model.screens[screen].context || {});
               api.note(s, node, "画面を " + screen + " に切り替えます");
+              // R7-112（バッチ13）: 遷移後は新しい画面のスコープで表示
+              // 数式を再計算する（旧画面の値を残さない）。
+              recalc(s, api);
               return true;
             }
             case "reset": {
@@ -1402,6 +1714,15 @@ export const definition = {
             case "text": {
               let v = get(0);
               if (isUnknown(v)) return v;
+              // R7-65（バッチ13）: テーブルを文字列へ暗黙変換しない
+              // （Text(Table()) が "[]" になる等を防ぐ型エラー）。
+              // レコードの Text() は RG-18 で確定した人間可読表示の
+              // 仕様があるため対象外（書式付きは従来どおり数値のみ）。
+              if (Array.isArray(v))
+                api.fail(
+                  "Text：テーブルは文字列に変換できません（型が一致しません）",
+                  node,
+                );
               // RG-15: the optional format argument is honoured for
               // numbers (see fxFormatNumber) instead of being accepted
               // and silently discarded. Formats outside the supported
@@ -1425,13 +1746,17 @@ export const definition = {
                       node,
                     );
                 }
-                if (v === null) return "";
-                if (typeof v !== "number")
+                // R7-116（バッチ13）: Blank 入力でも書式処理を行う
+                // （SDK 実測: Text(Blank(),"0") は "0"、"0.00" は "0.00"。
+                // Blank を 0 として整形する）。
+                if (v !== null && typeof v !== "number")
                   api.fail(
                     "Text の書式指定はこのモデルでは数値に対してのみ対応しています",
                     node,
                   );
-                return fxFormatNumber(v, format, (m) => api.fail(m, node));
+                return fxFormatNumber(v ?? 0, format, (m) =>
+                  api.fail(m, node),
+                );
               }
               return v === null ? "" : fxTextOf(v);
             }
@@ -1459,12 +1784,22 @@ export const definition = {
               if (v === null) return null;
               if (typeof v === "number") return v;
               if (typeof v === "string" && v.trim() === "") return null;
+              // R7-49（バッチ13）: Microsoft Learn／SDK 実測（en-US）で
+              // 変換できる指数表記（"1e3"→1000）と百分率（"10%"→0.1）を
+              // 実装する。「変換できません」と断定する虚偽の文言で、
+              // 変換可能な入力を止めない。
+              if (typeof v !== "string")
+                api.fail("Value：数値へ変換できません", node);
+              let text = v.trim(),
+                percent = text.endsWith("%"),
+                numericPart = percent ? text.slice(0, -1).trim() : text;
               if (
-                typeof v !== "string" ||
-                !/^[-+]?(?:\d+(?:\.\d*)?|\.\d+)$/.test(v.trim())
+                !/^[-+]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][-+]?\d+)?$/.test(
+                  numericPart,
+                )
               )
                 api.fail("Value：数値へ変換できません", node);
-              return Number(v);
+              return percent ? Number(numericPart) / 100 : Number(numericPart);
             }
             default:
               api.fail(

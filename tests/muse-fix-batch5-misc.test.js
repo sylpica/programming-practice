@@ -11,7 +11,10 @@ import { getDefinition } from "../js/types/registry.js";
 //  N14: AWS CloudFormation 公式ドキュメント（Transform はマクロ名／
 //       その配列／Name・Parameters オブジェクトのみ）。
 //  N15: Microsoft Learn Power Fx リファレンス（If は条件＋結果の組が
-//       必須、Switch は末尾の単独引数を Default として受ける）。
+//       必須、Switch も一致値＋結果の組が必須）。
+//       ※バッチ13（R7-220）で是正: Switch の2個形（Value＋Default）を
+//       受理する旧解釈は Learn の Switch 構文（Match／Result の組が必須、
+//       Default は組の後ろの任意引数）と矛盾するため、最小3個へ変更した。
 //  N17: 値側の %…% 式記法（PAD）と条件側の解釈を揃える（アプリ内整合）。
 //  N18: RG-02 と同型の表示矛盾是正（echo と最終状態の一致）。
 
@@ -152,14 +155,18 @@ test("R26-N15 If nested as a value is an argument-count error", async () => {
   assert.match(await fxErr("UpdateContext({R: If()})"), /If の引数の数が正しくありません/);
 });
 test("R26-N15 Switch() / Switch(value) are argument-count errors, not generic text", async () => {
-  assert.equal(await fxErr("Set(R, Switch())"), "Switch の引数の数が正しくありません（2 個以上が必要です。空の引数は書けません）");
-  assert.equal(await fxErr("Set(R, Switch(1))"), "Switch の引数の数が正しくありません（2 個以上が必要です。空の引数は書けません）");
+  assert.equal(await fxErr("Set(R, Switch())"), "Switch の引数の数が正しくありません（3 個以上が必要です。空の引数は書けません）");
+  assert.equal(await fxErr("Set(R, Switch(1))"), "Switch の引数の数が正しくありません（3 個以上が必要です。空の引数は書けません）");
   assert.match(await fxErr("Switch()"), /Switch の引数の数が正しくありません/);
 });
-test("R26-N15 Switch(value, default) keeps the Default interpretation", async () => {
-  assert.equal(await fxR("Set(R, Switch(1, 1))"), 1);
-  assert.equal(await fxR("Set(R, Switch(1, 2))"), 2);
-  assert.equal(await fxR('Set(R, Text(Switch(1, "def")))'), "def");
+// バッチ13（R7-220）で是正: 旧テストは Switch(値, Default) の2個形を
+// 正挙動として固定していたが、Microsoft Learn の Switch 構文では
+// Match／Result の組が必須であり2個形は引数不足。一次情報に基づき
+// 引数個数エラーへ期待値を変更した（テスト是正）。
+test("R26-N15 Switch(value, default) two-argument form is an argument-count error (batch13 correction)", async () => {
+  assert.equal(await fxErr("Set(R, Switch(1, 1))"), "Switch の引数の数が正しくありません（3 個以上が必要です。空の引数は書けません）");
+  assert.equal(await fxErr("Set(R, Switch(1, 2))"), "Switch の引数の数が正しくありません（3 個以上が必要です。空の引数は書けません）");
+  assert.match(await fxErr('Set(R, Text(Switch(1, "def")))'), /Switch の引数の数が正しくありません/);
 });
 test("R26-N15 normal If / Switch forms keep working (unchanged)", async () => {
   assert.equal(await fxR("Set(R, If(true, 42))"), 42);

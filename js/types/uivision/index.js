@@ -6,7 +6,7 @@ import {
   toLearnerError,
 } from "../../core/script.js";
 import { rows, sourceFailure } from "../../core/data.js";
-import { actionProgram, interpolate, uiCondition } from "../../core/actions.js";
+import { actionProgram, interpolate, resolveVarKey, uiCondition } from "../../core/actions.js";
 import { createActionEditor } from "../../core/action-editor.js";
 import { formatModelValue as formatValue, isUnknown, unknown } from "../../core/contract.js";
 const samples = [
@@ -164,6 +164,63 @@ reference.push({
   caution: "このモデルでは文字列\"true\"のときだけ有効です。",
   supported: true,
 });
+// R7-224（修正バッチ13・fxb班）: 公式の組み込み変数 !StringEscape を実装に
+// 合わせて載せる。true（既定）では type の値の \n／\r／\t 等を JavaScript
+// と同じエスケープとして解釈し、false では文字どおり入力する（公式
+// ドキュメント「Internal variables」: !StringEscape (read/write) – If true
+// \n \r are interpreted as escape sequence (default). TYPE と SENDKEYS に
+// 適用され、XTYPE には適用されない。本モデルに SENDKEYS／XTYPE は無い）。
+reference.push({
+  name: "!StringEscape",
+  category: "組み込み変数",
+  syntax: "${!StringEscape}",
+  description:
+    "typeコマンドで入力する値のエスケープ解釈を切り替えます。true（既定）では \\n が改行、\\t がタブ等として解釈され、文字列\"false\"に設定するとバックスラッシュを含めて文字どおり入力します。",
+  example: encode([
+    cmd("open", "https://example.test/form"),
+    cmd("store", "false", "!StringEscape"),
+    cmd("type", "id=name", "a\\nb"),
+  ]),
+  caution: "既定はtrueです。このモデルではtypeコマンドにだけ適用します。",
+  supported: true,
+});
+// R7-122（修正バッチ13・fxb班）: endIf／endWhile は end の別名として実行
+// 側では受理していたが、リファレンス項目が無く別名であることも除外宣言も
+// 無かった。項目を追加し、end の別名であることを明記する（項目数は
+// 22→25件：endIf／endWhile／!StringEscape の3件追加）。
+reference.push({
+  name: "endIf",
+  category: "コマンド",
+  syntax: "endIf",
+  description:
+    "ifブロックを閉じます。endの別名で、if／elseif／else のブロックを閉じる位置では end と同じ働きをします。",
+  example: encode([
+    cmd("open", "https://example.test/form"),
+    cmd("store", "0", "count"),
+    cmd("if", "${count} == 0"),
+    cmd("echo", "YES"),
+    cmd("endIf"),
+  ]),
+  caution: "endと同等です。対応するifが必要です。",
+  supported: true,
+});
+reference.push({
+  name: "endWhile",
+  category: "コマンド",
+  syntax: "endWhile",
+  description:
+    "whileブロックを閉じます。endの別名で、while のブロックを閉じる位置では end と同じ働きをします。",
+  example: encode([
+    cmd("open", "https://example.test/form"),
+    cmd("store", "0", "count"),
+    cmd("while", "${count} < 3"),
+    cmd("executeScript_Sandbox", "return Number(${count}) + 1;", "count"),
+    cmd("endWhile"),
+    cmd("echo", "${count}"),
+  ]),
+  caution: "endと同等です。対応するwhileが必要です。",
+  supported: true,
+});
 // R31-N13: モデル形状の入口検証。モデル自体がオブジェクトでない場合と、
 // defaults の実項目（pages／url／variables／clicks）の欠落・型違い、各
 // ページとその elements の型違いを、汎用のホスト文言（「null / undefined
@@ -273,6 +330,10 @@ export const definition = {
   ],
   glossary: [
     ["ロケーター", "id=などでページ要素を識別する指定です。"],
+    [
+      "サンドボックス",
+      "executeScript_SandboxがJavaScriptを実行する、ページの状態から隔離された環境です。値の受け渡しは変数の展開と戻り値を通じて行われます。",
+    ],
     ["モデルページ", "URL、要素、クリック後の効果を明示した仮想ページです。"],
     [
       "未確定（値）",
@@ -381,8 +442,27 @@ export const definition = {
           normalizeElseIfRefs(n.otherwise);
         }
       })(nodes);
+      // R7-121（修正バッチ13・fxb班）: UI.Vision の変数名は大小文字を区別
+      // しない（公式 variables.js は set／get とも大文字へ正規化する）。
+      // 表示上のキー（最初に書かれた綴り）は保持したまま、読み書きの
+      // 解決だけを大小文字無視にするヘルパーを全表面で使う。
+      const varKeyCI = (vars, key) => resolveVarKey(vars, key, true);
+      const getVarCI = (vars, key) => {
+        const k = varKeyCI(vars, key);
+        return k === undefined ? undefined : vars[k];
+      };
+      const setVarCI = (vars, key, value) => {
+        vars[varKeyCI(vars, key) ?? String(key)] = value;
+      };
+      // R7-62: while 条件は繰り返しのたびに現在値で評価し直す必要がある
+      // ため、${変数} を合成識別子へ置き換え、read のたびに実変数から
+      // 解決する。asString は引用で囲まれた展開（文字列のまま読む）。
+      const whileVars = new Map();
       const semantics = {
         dialect: "js",
+        // R7-230: Sandbox の &&／|| は JavaScript と同じく、短絡したとき
+        // 選ばれたオペランドの値そのものを返す（真偽値へ潰さない）。
+        logicalOperands: true,
         initialize(s) {
           s.vars["!statusOK"] = true;
         },
@@ -397,16 +477,66 @@ export const definition = {
             return { handled: true, value: NaN };
           if (a?.k === "var" && a.name === "Infinity")
             return { handled: true, value: Infinity };
-          if (a?.k === "var" && typeof s.vars[a.name] === "string") {
-            let text = s.vars[a.name].trim();
-            if (text !== "" && !Number.isNaN(Number(text)))
-              return { handled: true, value: Number(text) };
+          if (a?.k !== "var") return undefined;
+          // R7-60: uiCondition が作る一時変数（__condition_N）は、引用の
+          // 有無に応じた変換（引用なし＝数値化、引用あり＝文字列のまま）
+          // を put 側で済ませている。ここで数値文字列→Number 変換を
+          // 再適用すると、引用した "001" の先行ゼロと文字列型が失われる
+          // ため、一時変数は保持した値をそのまま返す。
+          if (a.name.startsWith("__condition_"))
+            return { handled: true, value: s.vars[a.name] };
+          // R7-62: while 条件の合成識別子は、評価のたびに実変数の現在値
+          // へ解決する（引用ありは文字列のまま、引用なしは従来どおり
+          // 数値文字列を数値として読む）。
+          if (whileVars.has(a.name)) {
+            const { key, asString } = whileVars.get(a.name);
+            const actual = varKeyCI(s.vars, key);
+            if (actual === undefined)
+              throw new PracticeError("変数がありません：" + key, a.line);
+            let v = s.vars[actual];
+            if (isUnknown(v)) return { handled: true, value: v };
+            if (asString)
+              return {
+                handled: true,
+                value: typeof v === "string" ? v : String(v),
+              };
+            if (typeof v === "string") {
+              let text = v.trim();
+              if (text !== "" && !Number.isNaN(Number(text)))
+                return { handled: true, value: Number(text) };
+            }
+            return { handled: true, value: v };
           }
-          return undefined;
+          // true／false／null は共有コアの定数として解決させる。
+          if (["true", "false", "null"].includes(a.name)) return undefined;
+          // R7-223: マクロ変数は Sandbox の裸の識別子としては読めない
+          // （公式の JS-Interpreter では未束縛名は ReferenceError）。
+          // マクロ変数を読むには ${名前} と書く。共有コアの通常解決へ
+          // 落とすと s.vars の同名キーを拾ってしまうため、ここで名指し
+          // の ReferenceError として止める（undefined 側の処置済み範囲
+          // ＝大域名解決は上の分岐で維持する）。
+          throw new PracticeError(
+            `未定義の名前：${a.name}`,
+            a.line,
+            "ReferenceError",
+          );
         },
         call(name, args, s, api, node) {
+          // R7-125（修正バッチ13）：呼出しで使わない追加引数も評価する
+          // （ECMAScript の ArgumentListEvaluation。JavaScript 種類と
+          // 同根）。未使用引数の中の未定義名などの例外を消さない。
+          const evaluated = args.map((a) => api.read(a, s));
+          // R7-61: 引数なし呼出しは JavaScript の変換規則どおり、欠落を
+          // undefined へ変換するのではなく各関数の既定結果を返す
+          // （String() は空文字列、Number() は 0。Node 実測で確認）。
+          // 引数ありで undefined を渡す形（String(undefined) 等）は従来
+          // どおり undefined の変換になるため、個数で切り分ける。
+          if (!args.length) {
+            if (name === "String") return "";
+            if (name === "Number") return 0;
+          }
           // 引数の欠落は null ではなく undefined として渡る（JS 本体と同根）。
-          const arg0 = args.length ? api.read(args[0], s) : undefined;
+          const arg0 = args.length ? evaluated[0] : undefined;
           if (name === "Number") {
             let v = arg0;
             return isUnknown(v)
@@ -421,7 +551,7 @@ export const definition = {
         },
         step(n, s, api) {
           if (n.k === "action-if") {
-            let value = uiCondition(n.test, s, api),
+            let value = uiCondition(n.test, s, api, { caseInsensitive: true }),
               done = [];
             for (let r of api.choose(s, value, n)) {
               api.note(
@@ -434,13 +564,30 @@ export const definition = {
             return done;
           }
           if (n.k === "action-loop") {
-            let test = String(n.item.Target).replace(/\$\{([^}]+)\}/g, "$1");
-            if (n.mode === "while")
+            if (n.mode === "while") {
+              // R7-62: 従来は ${x} を識別子文字列 x へ単純置換していたため、
+              // 引用した "${x}" が固定文字列リテラル "x" に化け、条件が
+              // 変数の現在値と無関係に確定していた。引用の有無を保った
+              // 合成識別子へ置き換え、read のたびに現在値へ解決する
+              // （uiCondition と同じ引用規則を、繰り返し評価でも保つ）。
+              const registerWhileVar = (key, asString) => {
+                const id = "__while_" + whileVars.size;
+                whileVars.set(id, { key: key.trim(), asString });
+                return id;
+              };
+              let test = String(n.item.Target)
+                .replace(/(["'])\$\{([^}]+)\}\1/g, (_, q, name) =>
+                  registerWhileVar(name, true),
+                )
+                .replace(/\$\{([^}]+)\}/g, (_, name) =>
+                  registerWhileVar(name, false),
+                );
               return api.run(
                 [{ ...n, k: "while", test: parseExpression(test) }],
                 [s],
               );
-            let count = Number(interpolate(n.item.Target, s));
+            }
+            let count = Number(interpolate(n.item.Target, s, { caseInsensitive: true }));
             if (!Number.isInteger(count) || count < 0)
               api.fail("timesの回数が不正です", n);
             const hadCounter = Object.hasOwn(s.vars, "!times"), previousCounter = s.vars["!times"];
@@ -456,8 +603,22 @@ export const definition = {
           }
         },
         action(n, s, api) {
-          let target = interpolate(n.item.Target ?? "", s),
-            value = interpolate(n.item.Value ?? "", s);
+          let target = "",
+            value = "";
+          // R7-126: 保存先の変数名の検証。公式は !TIMES を read-only と
+          // 宣言し、公式 setter は空キーを除外する。読取専用名・空名へ
+          // store すると存在しない状態を作ってしまうため、保存系の全
+          // コマンド（store／storeText／storeValue／
+          // executeScript_Sandbox）で保存前に名指しで止める。
+          const assertWritableVar = (name) => {
+            if (String(name) === "")
+              api.fail("保存先の変数名が空です", n);
+            if (String(name).toUpperCase() === "!TIMES")
+              api.fail(
+                "!times は読み取り専用の組み込み変数のため保存できません",
+                n,
+              );
+          };
           function element(optional = false) {
             if (isUnknown(target))
               api.fail("未確定ロケーターの要素は説明できません", n);
@@ -468,6 +629,13 @@ export const definition = {
           // D-6: エラーで止まらない失敗（#LNF）を記録するフラグ。
           let softFail = false;
           try {
+            // R7-222: Target／Value の変数展開も try の内側で行う。展開は
+            // コマンド実行の一部であり、展開で発生したエラーだけが
+            // !errorIgnore の継続処理を迂回してマクロを止める理由はない
+            // （対照の click 失敗は継続するのに展開失敗は止まっていた）。
+            // R7-121: 展開の変数解決は大小文字を区別しない。
+            target = interpolate(n.item.Target ?? "", s, { caseInsensitive: true });
+            value = interpolate(n.item.Value ?? "", s, { caseInsensitive: true });
             switch (n.action) {
               case "open":
                 if (isUnknown(target)) api.fail("URLが未確定です", n);
@@ -480,11 +648,34 @@ export const definition = {
                 let e = element();
                 if (!["input", "textarea"].includes(e.tag))
                   api.fail("入力できない要素です", n);
-                e.value = value;
+                // R7-224: 公式の !StringEscape（既定 true）相当を実装する。
+                // true の間は値の中の \n／\r／\t 等を JavaScript と同じ
+                // エスケープとして解釈し、文字列 "false"（大小無視）や
+                // false が保存されているときは文字どおり入力する。
+                let typed = value;
+                const escapeSetting = getVarCI(s.vars, "!StringEscape");
+                const escapeOn = !(
+                  escapeSetting === false ||
+                  (typeof escapeSetting === "string" &&
+                    escapeSetting.toLowerCase() === "false")
+                );
+                if (escapeOn && typeof typed === "string")
+                  typed = typed.replace(/\\(.)/gs, (_, c) =>
+                    ({
+                      n: "\n",
+                      r: "\r",
+                      t: "\t",
+                      b: "\b",
+                      f: "\f",
+                      v: "\v",
+                      0: "\0",
+                    })[c] ?? c,
+                  );
+                e.value = typed;
                 api.note(
                   s,
                   n,
-                  `${target} の入力値を ${formatValue(value)} に置き換えます`,
+                  `${target} の入力値を ${formatValue(typed)} に置き換えます`,
                 );
                 break;
               }
@@ -524,7 +715,8 @@ export const definition = {
                 break;
               }
               case "store":
-                s.vars[String(value)] = target;
+                assertWritableVar(value);
+                setVarCI(s.vars, String(value), target);
                 api.note(
                   s,
                   n,
@@ -533,8 +725,9 @@ export const definition = {
                 break;
               case "storeText":
               case "storeValue": {
+                assertWritableVar(value);
                 const e = element(true);
-                s.vars[String(value)] = !e ? "#LNF" : n.action === "storeValue" ? (e.value ?? "") : ["input", "select", "textarea"].includes(e.tag?.toLowerCase()) ? "" : (e.text ?? "");
+                setVarCI(s.vars, String(value), !e ? "#LNF" : n.action === "storeValue" ? (e.value ?? "") : ["input", "select", "textarea"].includes(e.tag?.toLowerCase()) ? "" : (e.text ?? ""));
                 // D-6: ロケーター不一致（#LNF）はエラーで止まらないが、
                 // !statusOK は false になる（公式ドキュメント／Changelog
                 // V5.3.17）。成功扱いのまま true を返すと、後続の状態
@@ -552,15 +745,20 @@ export const definition = {
                 api.note(s, n, "ログへ出力します：" + formatValue(target));
                 break;
               case "executeScript_Sandbox": {
+                assertWritableVar(value);
                 let expr = String(n.item.Target).trim();
                 if (!/^return\s/.test(expr))
                   api.fail("return 式 のみ対応しています", n);
                 expr = expr.replace(/^return\s+/, "").replace(/;\s*$/, "");
-                s.vars[String(value)] = uiCondition(expr, s, api);
+                setVarCI(
+                  s.vars,
+                  String(value),
+                  uiCondition(expr, s, api, { caseInsensitive: true }),
+                );
                 api.note(
                   s,
                   n,
-                  `${value} に単純式の結果 ${formatValue(s.vars[String(value)])} を保存します`,
+                  `${value} に単純式の結果 ${formatValue(getVarCI(s.vars, String(value)))} を保存します`,
                 );
                 break;
               }
@@ -603,18 +801,23 @@ export const definition = {
             // とおり、false は成功したコマンドでは自動では true に
             // 戻らない（store で true を保存すれば手動で戻せる）。
             // store で !statusOK 自体へ保存した場合は、その値を尊重する。
+            // R7-121: 内部変数名の照合も大小文字を区別しない（保存時の
+            // 綴りが !STATUSOK 等でも、同じ組み込み変数として扱う）。
             if (
               n.action === "store" &&
-              String(value) === "!statusOK" &&
+              String(value).toUpperCase() === "!STATUSOK" &&
               (target === "true" || target === "false")
             )
-              s.vars["!statusOK"] = target === "true";
-            else if (softFail || s.vars["!statusOK"] === false)
-              s.vars["!statusOK"] = false;
-            else s.vars["!statusOK"] = true;
+              setVarCI(s.vars, "!statusOK", target === "true");
+            else if (softFail || getVarCI(s.vars, "!statusOK") === false)
+              setVarCI(s.vars, "!statusOK", false);
+            else setVarCI(s.vars, "!statusOK", true);
           } catch (e) {
-            s.vars["!statusOK"] = false;
-            if (s.vars["!errorIgnore"] === "true") {
+            setVarCI(s.vars, "!statusOK", false);
+            if (
+              getVarCI(s.vars, "!errorIgnore") === "true" ||
+              getVarCI(s.vars, "!errorIgnore") === true
+            ) {
               api.note(
                 s,
                 n,

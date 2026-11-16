@@ -63,8 +63,12 @@ test("NX-N2 for continue skips one element and reaches the statements after the 
 });
 
 test("NX-N2 for continue works for objects and on the last element", async () => {
+  // 修正バッチ13・R7-103 でテスト是正：一次情報（公式 For.htm）では
+  // 通常の Object は for で列挙できないため、continue の検証対象を
+  // 等価な配列形（値を1つ飛ばす）へ置き換える。continue の意味論
+  // （該当要素だけ残りを飛ばす）の検証意図は不変。
   const obj = await run(
-    'out := ""\nfor k, v in {a: 1, b: 2, c: 3} {\n if v = 2 {\n  continue\n }\n out .= k\n}\nMsgBox out',
+    'out := ""\nfor v in ["a", "b", "c"] {\n if v = "b" {\n  continue\n }\n out .= v\n}\nMsgBox out',
   );
   assert.deepEqual(errors(obj), []);
   assert.deepEqual(outputs(obj), ["ac"]);

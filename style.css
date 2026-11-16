@@ -1054,6 +1054,10 @@ footer p {
   font-family: var(--mono);
   font-size: 12px;
 }
+.action-list input[aria-invalid="true"] {
+  border-color: #a83d30;
+  background: #fff0ee;
+}
 .state-row dd {
   white-space: pre-wrap;
 }

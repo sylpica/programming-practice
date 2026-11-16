@@ -249,7 +249,8 @@ const psAlias = {
   pwd: "get-location",
   cat: "get-content",
   gc: "get-content",
-  sc: "set-content",
+  // R7-75: PowerShell 7.4 に sc という標準別名は存在しない
+  // （Get-Alias sc は結果なし）。別名として受理しない。
   ac: "add-content",
   ni: "new-item",
   ri: "remove-item",
@@ -482,11 +483,16 @@ export class PSParser {
     this.argGlued = 0;
   }
   peek(v) {
-    return this.ts[this.i]?.v === v;
+    const t = this.ts[this.i];
+    // R7-207: 文字列トークンの内容は構文記号ではない。";"・"|"・"{"
+    // 等を内容とする引用文字列が、文の区切り・パイプ・ブロック開始
+    // として誤認されないよう、文字列トークンは構造照合に一致させない。
+    return t?.v === v && t.k !== "string";
   }
   take(v) {
     const t = this.ts[this.i++];
-    if (v && t?.v !== v) fail(v + " が必要です", t?.line || 1, "SyntaxError");
+    if (v && (t?.v !== v || t?.k === "string"))
+      fail(v + " が必要です", t?.line || 1, "SyntaxError");
     return t;
   }
   skip() {
@@ -540,7 +546,9 @@ export class PSParser {
   }
   statementBody() {
     const t = this.ts[this.i],
-      name = t.v.toLowerCase(),
+      // R7-207: キーワードとして解釈するのは単語トークンだけ。
+      // "return" 等を内容とする引用文字列はキーワードではない。
+      name = t.k === "word" ? t.v.toLowerCase() : "",
       line = t.line;
     if (name === "if") {
       this.take();
@@ -548,10 +556,16 @@ export class PSParser {
         body = this.block();
       this.skip();
       let other = [];
-      if (this.ts[this.i]?.v.toLowerCase() === "elseif") {
+      if (
+        this.ts[this.i]?.k === "word" &&
+        this.ts[this.i].v.toLowerCase() === "elseif"
+      ) {
         this.ts[this.i] = { ...this.ts[this.i], v: "if" };
         other = [this.statement()];
-      } else if (this.ts[this.i]?.v.toLowerCase() === "else") {
+      } else if (
+        this.ts[this.i]?.k === "word" &&
+        this.ts[this.i].v.toLowerCase() === "else"
+      ) {
         this.take();
         other = this.block();
       }
@@ -671,8 +685,13 @@ export class PSParser {
     }
     if (["break", "continue", "return"].includes(name)) {
       this.take();
+      const nextTok = this.ts[this.i];
       const value =
-        name === "return" && ![";", "}", "<eof>"].includes(this.ts[this.i].v)
+        name === "return" &&
+        !(
+          nextTok.k !== "string" &&
+          [";", "}", "<eof>"].includes(nextTok.v)
+        )
           ? this.pipeline()
           : null;
       return { k: name, value, line };
@@ -717,7 +736,10 @@ export class PSParser {
       this.i = saved;
     }
     const pipe = this.pipeline();
-    const op = this.ts[this.i]?.v;
+    // R7-207: 代入演算子として読むのは演算子トークンだけ（"=" を
+    // 内容とする引用文字列は代入演算子ではない）。
+    const opToken = this.ts[this.i],
+      op = opToken?.k === "op" ? opToken.v : undefined;
     if (["=", "+=", "-=", "*=", "/=", "%="].includes(op)) {
       this.take();
       if (pipe.stages.length !== 1 || pipe.stages[0].k !== "expression")
@@ -1001,6 +1023,24 @@ export class PSParser {
       this.take();
     }
     this.take(")");
+    // R7-212: 同名（大文字小文字違いを含む）の仮引数の重複は、実
+    // PowerShell では解析エラー（Duplicate parameter $x in parameter
+    // list.）になる。後の値で黙って上書きしない。
+    const seenParams = new Set();
+    for (const p of params) {
+      const key = p.name.toLowerCase();
+      if (seenParams.has(key))
+        fail(
+          "パラメータ $" +
+            p.name +
+            " が重複しています（Duplicate parameter $" +
+            p.name +
+            " in parameter list.）",
+          p.line,
+          "SyntaxError",
+        );
+      seenParams.add(key);
+    }
     return params;
   }
   condition() {
@@ -1047,9 +1087,18 @@ export class PSParser {
       const name = this.take().v,
         args = [],
         params = {};
-      while (![";", "|", ")", "}", "<eof>"].includes(this.ts[this.i]?.v)) {
+      // R7-207: 引数列の終端判定も文字列トークンを構文記号として
+      // 扱わない（Write-Output "|" の "|" はパイプではない）。
+      while (
+        this.ts[this.i]?.k === "string" ||
+        ![";", "|", ")", "}", "<eof>"].includes(this.ts[this.i]?.v)
+      ) {
         const token = this.ts[this.i];
-        if (token.v === "-" && this.ts[this.i + 1]?.k === "word") {
+        if (
+          token.k !== "string" &&
+          token.v === "-" &&
+          this.ts[this.i + 1]?.k === "word"
+        ) {
           this.take();
           const p = this.take().v.toLowerCase();
           if (Object.hasOwn(params, p))
@@ -1082,8 +1131,11 @@ export class PSParser {
             // カテゴリも値がある場合（engine 側の判定）と揃える。
             if (
               !next ||
-              [";", "|", ")", "}", ",", "<eof>"].includes(next.v) ||
-              (next.v === "-" && this.ts[this.i + 1]?.k === "word")
+              (next.k !== "string" &&
+                [";", "|", ")", "}", ",", "<eof>"].includes(next.v)) ||
+              (next.k !== "string" &&
+                next.v === "-" &&
+                this.ts[this.i + 1]?.k === "word")
             ) {
               const canonical =
                 psAlias[name.toLowerCase()] || name.toLowerCase(),
@@ -1146,7 +1198,10 @@ export class PSParser {
   }
   oneArgument() {
     const t = this.ts[this.i];
-    if (t.v === "{") return { k: "block", body: this.block(), line: t.line };
+    // R7-207: スクリプトブロックとして読むのは演算子トークンの {
+    // だけ（"{" という引用文字列は文字列引数）。
+    if (t.k === "op" && t.v === "{")
+      return { k: "block", body: this.block(), line: t.line };
     // R27-N5: 引数モードで不完全な数値リテラルで始まる入力は、式として
     // 解釈できないため文法 B.1.7 の generic-token として単一の文字列
     // 引数になる（RG-183／RG-195 の接着形と同じ規則）。接着した後続

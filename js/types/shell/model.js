@@ -62,6 +62,10 @@ export function reservedDeviceName(path) {
 }
 export function windowsPath(path, cwd = "C:\\Practice", line = 1) {
   if (isUnknown(path)) return path;
+  // R7-72: 現在フォルダ自体が未確定値（$HOME へ移動したモデル等）の
+  // ときは、相対パスを捏造せず未確定値として返す。
+  if (isUnknown(cwd))
+    return unknown("現在フォルダを基準にしたパス", cwd.id + ":relpath");
   path = unquote(String(path)).replaceAll("/", "\\");
   if (/^\\\\|^[a-z]:[^\\]/i.test(path))
     fail("未対応：UNC・ドライブ相対パス", line);

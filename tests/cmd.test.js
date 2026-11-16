@@ -155,9 +155,12 @@ for (const [name, code, expected] of [
   ],
   ["pipe", 'echo apple | find "app"', [["apple "]]],
   [
+    // テスト是正（修正バッチ13・R7-209）: copy／move の成功メッセージは
+    // 実 cmd では標準出力へ出る。従来の期待値はメッセージ欠落という
+    // 誤った振る舞いを固定していたため、実物の出力に合わせて是正する。
     "filesystem mutations",
     "md extra\ncopy notes.txt extra\\copy.txt\nren extra\\copy.txt renamed.txt\nmove extra\\renamed.txt moved.txt\ntype moved.txt\ndel moved.txt\nrd extra",
-    [["学習メモ\r\n"]],
+    [["        1 file(s) copied.", "        1 file(s) moved.", "学習メモ\r\n"]],
   ],
   [
     "pause",

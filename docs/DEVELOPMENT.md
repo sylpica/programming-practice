@@ -1,6 +1,6 @@
 # 本体開発の実装範囲（2026-11-15 JST）
 
-本体初版と監査修正後の対応範囲です。Muse／Codexの独立監査は第33ラウンド（CodexはR6）まで実施され、各修正バッチ（RG-87〜RG-379）を適用済みです。2026-11-16 に第16種 IPA擬似言語を追加しました（RG-293〜RG-296、報告書は `docs/audit/MUSE-ADD-PSEUDO.md`）。二重監査の収束は宣言していません。
+本体初版と監査修正後の対応範囲です。Muse／Codexの独立監査は第33ラウンド（CodexはR6）まで実施され、各修正バッチ（RG-87〜RG-594）を適用済みです。2026-11-16 に第16種 IPA擬似言語を追加しました（RG-293〜RG-296、報告書は `docs/audit/MUSE-ADD-PSEUDO.md`）。二重監査の収束は宣言していません。
 
 ## 共通基盤
 
@@ -52,7 +52,7 @@
 - C/C++/C#：掲載APIを対象言語別に整理。C#配列の別名・要素型・初期値、C++のbool昇格・出力、実行入力の識別を修正した。
 - 共通UI：モデル入力はコード側で開閉。使用項目・リファレンス・用語集は右（375pxは下）、終了状態はコードの下。テンプレート解説はその下へ全展開し、内側スクロールを設けない。「なし」にすると非表示になる。
 
-対応表示リファレンスの使用例は、自立コードとして実行確認する対象である（現行1,319件の対応項目の使用例はテストで全件実行される）。説明文・実物仕様の照合は項目単位の個票（REFERENCE-R2.md、reference-r2.json／reference-r6.json、MUSE-REF-R22.md）で管理し、使用例試験と区別する。
+対応表示リファレンスの使用例は、自立コードとして実行確認する対象である（現行1,328件の対応項目の使用例はテストで全件実行される）。説明文・実物仕様の照合は項目単位の個票（REFERENCE-R2.md、reference-r2.json／reference-r6.json、MUSE-REF-R22.md）で管理し、使用例試験と区別する。
 
 ### 練習テンプレートの補充
 
@@ -68,7 +68,7 @@
 - JavaScript：typeof（未宣言名とTDZを区別）とReferenceError表示。戻り値のない出力文の重複説明を除去。
 - AutoHotkey：SetTitleMatchModeが変更前のモードを返す。UI.Vision：storeText/storeValueのロケーター不一致は#LNFを保存して継続する。
 - CloudFormation：TransformのName/Parametersオブジェクトと配列内オブジェクトを解析する。カスタムLambdaのトップレベルparamsは公式のevent仕様に従い空にする。AWS::IncludeのトップレベルParametersは専用の組込み仕様であり、このモデルでは実装しない。Fn::Transformのparamsとは混同しない。
-- リファレンスは説明・戻り値・注意点を一次資料へ対応付ける。戻り値と公式資料リンクも表示する。対応／参照専用の区別は維持（現行は対応1,319件／参照専用74件）。静的説明文の照合と、任意コード・全引数の実環境互換性は別である。個票はdocs/audit/REFERENCE-R2.mdとMUSE-REF-R22.mdを参照。
+- リファレンスは説明・戻り値・注意点を一次資料へ対応付ける。戻り値と公式資料リンクも表示する。対応／参照専用の区別は維持（現行は対応1,328件／参照専用75件）。静的説明文の照合と、任意コード・全引数の実環境互換性は別である。個票はdocs/audit/REFERENCE-R2.mdとMUSE-REF-R22.mdを参照。
 
 新アイコンはMuse側の25e40db以降で反映済み。636f8d0でmanifest変更後のprecache再生成も完了し、Codex第3ラウンドではPNGの実体・寸法を確認して保持する。
 
@@ -95,7 +95,7 @@
 - Excel VBA：行継続 `_`、Replace の任意引数（start／count／compare。compare の -1 は未対応）、括弧なし組み込み関数参照（Time／Rnd／Timer 等は実行時に決まる値）、文字列リテラルと数値の古典的な `+` 規則、条件位置の "True"／"False" 文字列変換に対応。`Dim a()` の動的配列宣言は対応（要素参照はエラー9）、ReDim／ReDim Preserve は未対応と明記。Boolean は True／False、文字列は引用符なしで表示する。
 - Python：タブ・空白混在インデントは TabError 相当で停止。dict メソッド等のキーワード引数は名前を挙げて検証する（`int(..., base=)` は実装）。先行ゼロ整数リテラルは形式を引用して SyntaxError。大きな range は代表パスとして打ち切りを明示し、到達不可能なパスを作らない。
 - R：NULL（長さ0）の意味論、名前付きベクトルと名前添字、`%in%`、`df[[列]]` の列取り出し、データフレームへの要素演算、`seq` の length.out／along.with、`rep` の each／length.out／ベクトル times に対応。ユーザー関数定義と関数名引数は対象を名指して未対応停止する。表示は学習用の c(...) 表記に統一し、空ベクトルと長さ1スカラーの実 R コンソール表記（numeric(0) 等）とは異なる。
-- C／C++／C#：三項演算子、do-while、中括弧なし if-else、被演算子位置の代入式、前置 ++/--、複合代入 `%=`、二項シフト、基数・8進・接尾辞付きリテラル、行スプライス（C／C++ のコメント）に対応。C++ の std::string は既定構築で空文字列になり、添字・直接初期化・数値との比較不可・条件不可を実 C++ どおり扱う。C# は文字列補間（基本形）、foreach、キャスト、静的メンバー、TryParse、文字列の .Length と添字、入れ子宣言スペースの同名禁止（CS0136）、値型と null の比較不可に対応。未対応として明記：switch 文、ユーザー定義の関数・メソッド定義、ジェネリック型宣言、raw 文字列、C# decimal、#include 以外の前処理ディレクティブ、ポインタ型等の sizeof、C# 補間の整列・書式指定子。
+- C／C++／C#：三項演算子、do-while、中括弧なし if-else、被演算子位置の代入式、前置 ++/--、複合代入 `%=`、二項シフト、基数・8進・接尾辞付きリテラル、行スプライス（C／C++ のコメント）に対応。C++ の std::string は既定構築で空文字列になり、添字・直接初期化・数値との比較不可・条件不可を実 C++ どおり扱う。C# は文字列補間（基本形）、foreach、キャスト、静的メンバー、TryParse、文字列の .Length と添字、入れ子宣言スペースの同名禁止（CS0136）、値型と null の比較は CS0472 相当の確定真偽（== は false、!= は true）として扱うことに対応。未対応として明記：switch 文、ユーザー定義の関数・メソッド定義、ジェネリック型宣言、raw 文字列、C# decimal、#include 以外の前処理ディレクティブ、ポインタ型等の sizeof、C# 補間の整列・書式指定子。
 - AutoHotkey：Loop の Until 節と For、IsSet／IsSetRef、組み込み変数 A_*（実行時に決まる値として扱い、A_Space・A_Tab は固定値）、暗黙の連結と省略引数、キーワード・プロパティ名の大文字小文字不区別、配列の1始まり添字、真偽結果の 1／0 表示、数値文字列の真偽・等値変換、v2 のコメント規則に対応。未対応として明記：ユーザー関数定義、Try／Catch、Switch、クラス定義、ラベル／Goto、Loop Files／Parse／Read 等。
 - Power Apps：0除算はエラーとして停止、関数の引数個数を検証、ThisRecord はレコードスコープ内のみ、True／False は大小を問わず受理、Text の数値書式と LookUp の削減式、条件位置のテキスト変換（"true"／"false" のみ）に対応。
 - JavaScript：オブジェクトリテラルの宣言初期化、BigInt リテラルと BigInt 同士の演算（表示は末尾 n 付き）に対応（未対応は Symbol 等）。
@@ -165,6 +165,8 @@ IPA『試験で使用する情報技術に関する用語・プログラム言�
 その後の修正バッチ6（2026-11-15）で、VBA 組み込み定数94件の項目化（R27-N7：色・MsgBox・曜日・TriState・VarType 等の定数族84件の新規定義＋項目化と、RG-204 で定義済みだった10件の項目化）と、Python 組み込み定数3件（Ellipsis／NotImplemented／__debug__。CloudFormation 伝播を含む。R27-N20）の項目化を行い、その後の修正バッチ7（2026-11-16）で、VBA 組み込み定数の完成（R28-N9：StrConv／Shell／CallType／IMEStatus／QueryClose／Form／KeyCode／Calendar 等141件の新規定義＋項目化）を行い、その後の修正バッチ8（2026-11-16）で、PowerShell 三項演算子の項目化（R29-N3）と、VBA 参照専用12件（StrConv／Shell／CallByName／QueryClose／Show／Unload／GetAttr／SetAttr／Dir／FormatDateTime／VarType／Weekday）の追加を行い、現在の件数は次のとおり：Excel VBA 338、ImageJ 201、CloudFormation 224（固有11＋Python委譲213）、Power Automate 15、AutoHotkey 26、UI.Vision 22、Power Apps 28、Python 213、R 44、C 26、C++ 31、C# 53、JavaScript 39、cmd 28、PowerShell 52。合計 **1,340件（対応1,266／参照専用74）**。照合個票は `docs/audit/reference-r2.json` 1,260行／`docs/audit/reference-r6.json` 80行。詳細は `docs/audit/MUSE-FIX-BATCH8.md`（バッチ7分は `docs/audit/MUSE-FIX-BATCH7.md`）。
 
 その後の第16種追加（2026-11-16、MUSE-ADD-PSEUDO）で、IPA擬似言語 53件（全件対応）を追加し、現在の件数は次のとおり：Excel VBA 338、ImageJ 201、CloudFormation 224（固有11＋Python委譲213）、Power Automate 15、AutoHotkey 26、UI.Vision 22、Power Apps 28、Python 213、R 44、C 26、C++ 31、C# 53、JavaScript 39、cmd 28、PowerShell 52、IPA擬似言語 53。合計 **1,393件（対応1,319／参照専用74）**。テンプレートは全112件（新種8件：基礎3・実践3・応用2）、用語集は全124件（新種13語）。照合個票は `docs/audit/reference-r2.json` 1,313行／`docs/audit/reference-r6.json` 80行。詳細は `docs/audit/MUSE-ADD-PSEUDO.md`。
+
+その後の修正バッチ13（RG-380〜RG-594、2026-11-17）で、Codex 一周監査（CODEX-R7）の有効指摘215件（B判定214件＋ECHO文言1件）の処置に伴い、Python 属性項目2件（rangeの属性／__annotations__。CloudFormation 伝播を含む）、UI.Vision の endIf／endWhile／!StringEscape 3件、C の NULL・C++ の NULL／nullptr 3件を新設し、ImageJ の eval を未対応へ分類是正（対応から参照専用へ移行）し、用語集へ15箇所の概念を追加し、現在の件数は次のとおり：Excel VBA 338、ImageJ 201、CloudFormation 226（固有11＋Python委譲215）、Power Automate 15、AutoHotkey 26、UI.Vision 25、Power Apps 28、Python 215、R 44、C 27、C++ 33、C# 53、JavaScript 39、cmd 28、PowerShell 52、IPA擬似言語 53。合計 **1,403件（対応1,328／参照専用75）**。テンプレートは全112件（新種8件：基礎3・実践3・応用2）、用語集は全139件（新種13語）。照合個票は `docs/audit/reference-r2.json` 1,323行／`docs/audit/reference-r6.json` 80行。詳細は `docs/audit/MUSE-FIX-BATCH13.md`。
 
 その後の修正バッチ9（2026-11-16）ではリファレンス件数に変更はなく、現行 **1,393件（対応1,319／参照専用74）** を維持している（第30ラウンド監査の新規欠陥39件＝擬似言語の統合・仕様適合、PowerShell／R／JS／C#／VBA／ImageJ／Python の隣接形・一次情報確定分、合成変数の露出、precache 陳腐化、文書ドリフト回帰1件を含む、を処置。あわせて第16種追加の配信コミットで失敗した CI の原因が precache の内容ハッシュ陳腐化であることを特定し、再生成で是正した）。詳細は `docs/audit/MUSE-FIX-BATCH9.md`。
 

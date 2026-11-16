@@ -34,7 +34,7 @@ const errText = (r) =>
     .join(" / ");
 
 // ---------------------------------------------------------------- N4: 分類
-const IMAGEJ_37 = [
+const IMAGEJ_38 = [ // R7-88（修正バッチ13）で eval を未対応へ分類替えし38件になった
   "getValue", "setColor", "drawLine", "getPixelSize", "getLut",
   "getDateAndTime", "getLocationAndSize", "getDisplayedArea",
   "getSelectionCoordinates", "getLine", "getCursorLoc", "Roi.getBounds",
@@ -44,18 +44,18 @@ const IMAGEJ_37 = [
   "Roi.getProperty", "Roi.setProperty", "RoiManager.select",
   "RoiManager.selectByName", "RoiManager.getName", "RoiManager.getIndex",
   "RoiManager.delete", "setForegroundColor", "File.open", "File.append",
-  "runMacro", "Math.sinh", "Math.cosh", "Math.tanh",
+  "runMacro", "eval", "Math.sinh", "Math.cosh", "Math.tanh",
 ];
 
-test("R29-N4 ImageJ reference-only set is exactly the 37 items", () => {
+test("R29-N4 ImageJ reference-only set is exactly the 38 items", () => {
   const ij = getDefinition("imagej");
   const uns = ij.reference.filter((r) => !r.supported).map((r) => r.name);
-  assert.deepEqual([...uns].sort(), [...IMAGEJ_37].sort());
+  assert.deepEqual([...uns].sort(), [...IMAGEJ_38].sort());
 });
 
-test("R29-N4 all 37 cautions use 未対応 and never 未確認として停止", () => {
+test("R29-N4 all 38 cautions use 未対応 and never 未確認として停止", () => {
   const ij = getDefinition("imagej");
-  for (const name of IMAGEJ_37) {
+  for (const name of IMAGEJ_38) {
     const r = ij.reference.find((x) => x.name === name);
     assert.ok(r, name);
     assert.ok(
@@ -83,9 +83,9 @@ test("R29-N4 Math.sinh/cosh/tanh keep the confirmed non-existence note", () => {
   }
 });
 
-test("R29-N4 all 37 examples stop with 未対応： and never 未確認", async () => {
+test("R29-N4 all 38 examples stop with 未対応： and never 未確認", async () => {
   const ij = getDefinition("imagej");
-  for (const name of IMAGEJ_37) {
+  for (const name of IMAGEJ_38) {
     const r = ij.reference.find((x) => x.name === name);
     const res = await run("imagej", r.example);
     const text = errText(res);
@@ -104,8 +104,8 @@ test("R29-N4 every engine template that says 未対応 carries the 未対応： 
     .split("\n")
     .filter((l) => l.includes("はモデルで未対応です"));
   // 文字列メソッド／配列メソッド／File.*／公式／フォールバック／
-  // RoiManager 操作／メニューコマンドの7テンプレート。
-  assert.equal(lines.length, 7);
+  // RoiManager 操作／メニューコマンド／eval（修正バッチ13 R7-88）の8テンプレート。
+  assert.equal(lines.length, 8);
   for (const l of lines) {
     assert.ok(l.includes("未対応："), l);
     assert.ok(!l.includes("未確認"), l);
@@ -168,7 +168,7 @@ test("R29-N4 inventory: no reference-only item in any type mixes the labels", as
       );
     }
   }
-  assert.equal(count, 74); // 62 + 修正バッチ8 VBA 参照専用12件
+  assert.equal(count, 75); // 62 + 修正バッチ8 VBA 参照専用12件 + 修正バッチ13 R7-88 の eval 1件
 });
 
 test("R29-N4 Python/CFN reference-only runtime messages start with 未対応：", async () => {
@@ -408,7 +408,7 @@ test("R29-N5 #refList marks exactly the reference-only items (all 15 types, all 
       if (!r.supported) marked++;
     });
   }
-  assert.equal(marked, 74); // 62 + 修正バッチ8 VBA 参照専用12件
+  assert.equal(marked, 75); // 62 + 修正バッチ8 VBA 参照専用12件 + 修正バッチ13 R7-88 の eval 1件
 });
 
 test("R29-N5 #refList marking survives search filtering", () => {
@@ -436,7 +436,7 @@ test("R29-N5 used chips mark exactly the reference-only items (all items via tra
       if (!r.supported) marked++;
     }
   }
-  assert.equal(marked, 74); // 62 + 修正バッチ8 VBA 参照専用12件
+  assert.equal(marked, 75); // 62 + 修正バッチ8 VBA 参照専用12件 + 修正バッチ13 R7-88 の eval 1件
 });
 
 test("R29-N5 used chips via scan (pre-run) also mark reference-only items", () => {

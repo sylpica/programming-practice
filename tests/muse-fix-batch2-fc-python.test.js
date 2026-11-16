@@ -141,8 +141,8 @@ test("R23-N11 valid targets keep working", async () => {
 
 // ---- R23-N6: math constants have reference items that match the real behaviour
 test("R23-N6 math constant reference items exist, are supported, and their examples run", async () => {
-  assert.equal(py.reference.length, 213); // +1 修正バッチ3（R24 §3.2「数値の属性」）+44 修正バッチ4 Python追随班（例外44件）+3 修正バッチ6 R27-N20（組み込み定数 Ellipsis／NotImplemented／__debug__）
-  assert.equal(cf.reference.length, 224); // +1 同項目の CloudFormation 伝播 +44 例外44件の伝播 +3 修正バッチ6 R27-N20 組み込み定数の伝播
+  assert.equal(py.reference.length, 215); // +2 修正バッチ13 Python班（rangeの属性／__annotations__） // +1 修正バッチ3（R24 §3.2「数値の属性」）+44 修正バッチ4 Python追随班（例外44件）+3 修正バッチ6 R27-N20（組み込み定数 Ellipsis／NotImplemented／__debug__）
+  assert.equal(cf.reference.length, 226); // +2 同項目の CloudFormation 伝播 // +1 同項目の CloudFormation 伝播 +44 例外44件の伝播 +3 修正バッチ6 R27-N20 組み込み定数の伝播
   for (const [name, expected] of [["math.pi", "3.141592653589793"], ["math.e", "2.718281828459045"], ["math.tau", "6.283185307179586"], ["math.inf", "inf"], ["math.nan", "nan"]]) {
     const item = ref(py, name);
     assert.ok(item, name);
@@ -205,9 +205,9 @@ test("RA-22 dict item states the key condition as hashability", () => {
 // ---- reference-r2 ledger stays in sync (changed rows follow the definitions, new rows exist)
 test("r2 ledger rows for changed and new python items match the definitions", () => {
   const rows = JSON.parse(fs.readFileSync(new URL("../docs/audit/reference-r2.json", import.meta.url)));
-  assert.equal(rows.length, 1313); // +2 修正バッチ3（「数値の属性」の Python 行＋CloudFormation 伝播行）+88 修正バッチ4 Python追随班（例外44件の Python 行＋CloudFormation 伝播行）+6 修正バッチ6 R27-N20（組み込み定数の Python 行＋CloudFormation 伝播行）+94 修正バッチ6 R27-N7（VBA 定数）+141 修正バッチ7 R28-N9（VBA 定数）+12 修正バッチ8（VBA 参照専用）+53 第16種 IPA擬似言語（MUSE-ADD-PSEUDO）
-  assert.equal(rows.filter((r) => r.kind === "python").length, 213);
-  assert.equal(rows.filter((r) => r.kind === "cloudformation").length, 224);
+  assert.equal(rows.length, 1323); // +4 修正バッチ13 Python班（属性項目2件×2種）＋統合時に C／C++ NULL項目3件・UI.Vision 3件で +6 // +2 修正バッチ3（「数値の属性」の Python 行＋CloudFormation 伝播行）+88 修正バッチ4 Python追随班（例外44件の Python 行＋CloudFormation 伝播行）+6 修正バッチ6 R27-N20（組み込み定数の Python 行＋CloudFormation 伝播行）+94 修正バッチ6 R27-N7（VBA 定数）+141 修正バッチ7 R28-N9（VBA 定数）+12 修正バッチ8（VBA 参照専用）+53 第16種 IPA擬似言語（MUSE-ADD-PSEUDO）
+  assert.equal(rows.filter((r) => r.kind === "python").length, 215);
+  assert.equal(rows.filter((r) => r.kind === "cloudformation").length, 226);
   const names = ["ModuleNotFoundError", "UnicodeError", "FileNotFoundError", "LookupError", "ArithmeticError", "NameError", "KeyboardInterrupt", "Exception", "global", "comprehension", "f-string", "with", "math", "dict", "math.pi", "math.e", "math.tau", "math.inf", "math.nan", "数値の属性"];
   for (const [kind, def] of [["python", py], ["cloudformation", cf]]) {
     for (const name of names) {

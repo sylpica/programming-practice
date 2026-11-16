@@ -80,9 +80,12 @@ test("RG-38 names() and numeric subset preserve names", async () => {
   assert.deepEqual(outputs(p), ['c("a", "b")', "c(b = 2)", "c(1, 2)"]);
 });
 
-test("RG-38 missing name gives named NA, unnamed c() unchanged", async () => {
+test("RG-38 missing name gives name-NA, unnamed c() unchanged", async () => {
+  // テスト是正（Batch13 R7-236）: 旧期待 c(z = NA) は実Rと矛盾する。Codex実R4.2.2実測
+  // （findings-step5-rb R7-236）では未一致の文字列添字の結果名は指定名でなく NA。
+  // v["z"] の値側も名前 NA で表示されるため期待を c(NA) に是正した。
   const p = await first('v <- c(a = 1)\nprint(v["z"])\nw <- c(10, 20)\nprint(w[1])');
-  assert.deepEqual(outputs(p), ["c(z = NA)", "c(10)"]);
+  assert.deepEqual(outputs(p), ["c(NA)", "c(10)"]);
 });
 
 // ---- RG-45: NaN comparisons and logic yield NA ----

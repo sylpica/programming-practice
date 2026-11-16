@@ -453,7 +453,10 @@ export function parse(source) {
     base = 0,
     explicit = false,
     sub = false,
-    subClosed = false;
+    subClosed = false,
+    // バッチ13 R7-258: Option 文の配置・重複の検証用
+    optionSeen = new Set(),
+    statementSeen = false;
   const starts = (s) =>
     lines[i]?.slice(0, s.split(" ").length).map(lower).join(" ") === s;
   function block(stops = [], depth = 0) {
@@ -477,8 +480,28 @@ export function parse(source) {
         if (subClosed) fail("End Sub の後に実行文は置けません");
         if (w === "rem" || w === "attribute") continue;
         if (w === "option") {
+          // バッチ13 R7-258: Option 文はモジュールの先頭（すべての
+          // 手続き・宣言より前）に、各1回だけ置ける（Microsoft Learn
+          // Option Base／Option Explicit：Option Base は手続きより前・
+          // モジュール内1回・次元を持つ配列宣言より前）。手続き内配置・
+          // 宣言後配置・重複は、黙って受理せず名指しで停止する。
+          const optLabel =
+            words[1] === "base"
+              ? "Option Base"
+              : words[1] === "explicit"
+                ? "Option Explicit"
+                : null;
+          if (optLabel) {
+            if (optionSeen.has(words[1]))
+              fail(`${optLabel} はモジュール内で1回だけ指定できます`);
+            if (depth > 0 || sub || statementSeen)
+              fail(
+                `${optLabel} はモジュールの先頭（手続きや宣言より前）に置く必要があります`,
+              );
+          }
           if (words[1] === "explicit" && row.length === 2) {
             explicit = true;
+            optionSeen.add("explicit");
             continue;
           }
           if (
@@ -487,10 +510,12 @@ export function parse(source) {
             row.length === 3
           ) {
             base = Number(words[2]);
+            optionSeen.add("base");
             continue;
           }
           unsupported(words.join(" "));
         }
+        statementSeen = true;
         if (w === "sub") {
           if (depth > 0) fail("Sub をブロック内に置くことはできません");
           if (
@@ -772,6 +797,220 @@ export function parse(source) {
   }
   return { body, base, explicit };
 }
+// バッチ13 静的検査（R7-257／R7-260／R7-266）: 実行を始める前に、
+// 到達可能性と独立にモジュール全体を検査する。到達しないコードの
+// 違反も、出力や副作用が先行することなく、実行開始前に停止する。
+// ・R7-257: Option Explicit がある場合、未宣言の識別子の使用は
+//   コンパイル時エラー（Microsoft Learn Option Explicit）。宣言は
+//   本エンジンの従来どおりモジュール全体の Dim を有効とする
+//   （Dim のホイストと一致）。検査範囲は全ての文・式（到達しない
+//   分岐・ループ境界・代入先・For 変数を含む）。
+// ・R7-260: スカラー型（Integer／Long／Double／Single／String／
+//   Boolean）で宣言された変数への添字適用は静的に無効
+//   （Microsoft Learn「Expected array」、MS-VBAL 5.6.13 の
+//   Static semantics）。捕捉可能な実行時エラー13にはしない。
+// ・R7-266: Exit For／Exit Do は対応するループの中でのみ有効
+//   （Microsoft Learn Exit statement）。
+const STATIC_BUILTIN_FUNCS = new Set([
+  "range",
+  "cells",
+  "array",
+  "isnull",
+  "isempty",
+  "lbound",
+  "ubound",
+  "len",
+  "left",
+  "right",
+  "mid",
+  "trim",
+  "lcase",
+  "ucase",
+  "abs",
+  "int",
+  "fix",
+  "cint",
+  "clng",
+  "cdbl",
+  "cstr",
+  "val",
+  "isnumeric",
+  "round",
+  "replace",
+  "instr",
+  "inputbox",
+]);
+const STATIC_SCALAR_TYPES = new Set([
+  "integer",
+  "long",
+  "double",
+  "single",
+  "string",
+  "boolean",
+]);
+function staticValidate(ast) {
+  // 組み込み定数名の集合は、VBA_ENUM_CONSTANTS の初期化後に使うため
+  // 呼び出し時に構築する（モジュール評価順序に依存させない）。
+  const STATIC_BUILTIN_IDS = new Set([
+    "empty",
+    "null",
+    "nothing",
+    "true",
+    "false",
+    "err",
+    "date",
+    "now",
+    ...Object.keys(VBA_ENUM_CONSTANTS),
+    "vbcrlf",
+    "vbcr",
+    "vblf",
+    "vbnewline",
+    "vbnullchar",
+    "vbnullstring",
+    "vbtab",
+    "vbformfeed",
+    "vbverticaltab",
+    "vbbinarycompare",
+    "vbtextcompare",
+    "vbdatabasecompare",
+    "time",
+    "rnd",
+    "timer",
+    "command",
+    "curdir",
+    "freefile",
+    "doevents",
+    "imestatus",
+  ]);
+  const declared = new Map();
+  const collectDecl = (nodes) => {
+    for (const n of nodes || []) {
+      if (n.k === "dim")
+        for (const d of n.declarations)
+          declared.set(d.name, {
+            type: d.type,
+            isArray: !!d.bounds || !!d.dynamic,
+          });
+      if (n.body) collectDecl(n.body);
+      if (n.branches) for (const b of n.branches) collectDecl(b.body);
+      if (n.otherwise) collectDecl(n.otherwise);
+      if (n.cases) for (const c of n.cases) collectDecl(c.body);
+    }
+  };
+  collectDecl(ast.body);
+  const failAt = (line, message) => {
+    const e = new VBAError(message, 0);
+    e.line = line;
+    throw e;
+  };
+  function checkExpr(a, line) {
+    if (!a) return;
+    switch (a.k) {
+      case "lit":
+        return;
+      case "id":
+        if (STATIC_BUILTIN_IDS.has(a.name)) return;
+        if (ast.explicit && !declared.has(a.name))
+          failAt(line, `変数が定義されていません：${a.name}`);
+        return;
+      case "unary":
+        checkExpr(a.a, line);
+        return;
+      case "binary":
+        checkExpr(a.a, line);
+        checkExpr(a.b, line);
+        return;
+      case "member":
+        checkExpr(a.a, line);
+        return;
+      case "call": {
+        if (a.target.k === "id") {
+          const tn = a.target.name,
+            decl = declared.get(tn);
+          if (decl && STATIC_SCALAR_TYPES.has(decl.type) && !decl.isArray)
+            failAt(
+              line,
+              `配列が必要です：${tn} は ${typeLabel(decl.type)} 型の変数で、添字は使えません`,
+            );
+          if (!STATIC_BUILTIN_FUNCS.has(tn) && !decl && ast.explicit)
+            failAt(line, `変数が定義されていません：${tn}`);
+        } else checkExpr(a.target, line);
+        for (const arg of a.args) checkExpr(arg, line);
+        return;
+      }
+    }
+  }
+  function checkBlock(nodes, loopStack) {
+    for (const n of nodes || []) {
+      const line = n.line || 1;
+      switch (n.k) {
+        case "dim":
+          for (const d of n.declarations)
+            if (d.bounds) for (const b of d.bounds) checkExpr(b, line);
+          break;
+        case "assign":
+          checkExpr(n.target, line);
+          checkExpr(n.value, line);
+          break;
+        case "output":
+          for (const a of n.args) checkExpr(a, line);
+          break;
+        case "if":
+          for (const b of n.branches) {
+            checkExpr(b.test, b.line || line);
+            checkBlock(b.body, loopStack);
+          }
+          checkBlock(n.otherwise, loopStack);
+          break;
+        case "select":
+          checkExpr(n.test, line);
+          for (const c of n.cases) {
+            if (c.checks)
+              for (const x of c.checks) {
+                if (x.value) checkExpr(x.value, c.line || line);
+                if (x.low) checkExpr(x.low, c.line || line);
+                if (x.high) checkExpr(x.high, c.line || line);
+              }
+            checkBlock(c.body, loopStack);
+          }
+          break;
+        case "for":
+          checkExpr(n.from, line);
+          checkExpr(n.to, line);
+          checkExpr(n.step, line);
+          if (
+            ast.explicit &&
+            !declared.has(n.name) &&
+            !STATIC_BUILTIN_IDS.has(n.name)
+          )
+            failAt(line, `変数が定義されていません：${n.name}`);
+          checkBlock(n.body, [...loopStack, "for"]);
+          break;
+        case "each":
+          checkExpr(n.collection, line);
+          if (
+            ast.explicit &&
+            !declared.has(n.name) &&
+            !STATIC_BUILTIN_IDS.has(n.name)
+          )
+            failAt(line, `変数が定義されていません：${n.name}`);
+          checkBlock(n.body, [...loopStack, "for"]);
+          break;
+        case "do":
+          if (n.test) checkExpr(n.test, line);
+          checkBlock(n.body, [...loopStack, "do"]);
+          break;
+        case "exit":
+          if (n.what === "for" && !loopStack.includes("for"))
+            failAt(line, "Exit for が対応するループの外にあります");
+          if (n.what === "do" && !loopStack.includes("do"))
+            failAt(line, "Exit do が対応するループの外にあります");
+          break;
+      }
+    }
+  }
+  checkBlock(ast.body, []);
+}
 // R30-N18（F01A-N1）: 文字列→数値変換は実 VBA の規則で行う。JS の
 // Number() は 0x／0o／0b 接頭辞を受理し &H／&O を知らないため、そのまま
 // 使うと基数接頭辞の受理・拒否が実 VBA と逆転していた（CDbl("0x10") が
@@ -853,6 +1092,22 @@ function binary(op, a, b) {
     }
     if (op === "and" && (a === false || b === false)) return false;
     if (op === "or" && (a === true || b === true)) return true;
+    // バッチ13 R7-265: 数値と Null の And／Or も、確定できる場合は
+    // Null を伝播させない（MS-VBAL の And／Or Operator：ビット演算
+    // として Null は 0 として扱われるため、n And Null は 0、
+    // n Or Null は n になる）。Boolean の特例（False And Null = False、
+    // True Or Null = True）は上の分岐で従来どおり優先する。
+    // 数値文字列も数値へ変換してから同じ規則で扱う。
+    if (op === "and" || op === "or") {
+      const other = a?.kind === "null" ? b : a;
+      const n =
+        typeof other === "number"
+          ? other
+          : typeof other === "string"
+            ? vbaStringNumber(other)
+            : null;
+      if (n !== null) return op === "and" ? 0 : n;
+    }
     return NULL;
   }
   if (isU(a) || isU(b))
@@ -915,6 +1170,10 @@ function binary(op, a, b) {
   // 実 VBA どおりエラー5（底に負数を使えるのは指数が整数の場合のみ）。
   if (op === "^" && x < 0 && !Number.isInteger(y))
     fail("プロシージャの呼び出し、または引数が不正です", 5);
+  // バッチ13 R7-259: MS-VBAL 5.6.9.3.5 は浮動小数点除算の 0 / 0 を
+  // 0除算（エラー11）ではなくオーバーフロー（エラー6）と明示する。
+  // 被除数が 0 でない 0 除算（1 / 0 等）は従来どおりエラー11。
+  if (op === "/" && x === 0 && y === 0) fail("オーバーフローしました", 6);
   if (["/", "\\", "mod"].includes(op) && y === 0) fail("0 で除算しました", 11);
   // RG-31: \ と Mod は被演算子を丸めてから除算する。丸めた後の除数が 0 なら
   // どちらもエラー11（0除算）であり、Mod だけオーバーフロー(6)にしない。
@@ -941,6 +1200,18 @@ function roundEven(n) {
   let f = Math.floor(n),
     d = n - f;
   return d === 0.5 ? (f % 2 === 0 ? f : f + 1) : Math.round(n);
+}
+// バッチ13 R7-194: Long 型の引数（Left／Right／Mid の文字数・開始位置、
+// Cells の行・列、配列の添字、LBound／UBound の次元、InStr／Replace の
+// 位置引数、Round の桁数、Dim の配列境界）は、銀行丸めで整数化した後に
+// Long の範囲（-2147483648〜2147483647）を超えたら、実 VBA どおり
+// オーバーフロー（エラー6）で停止する。範囲検証がないと、範囲外の
+// 長さが「巨大な長さ」として受理され、切り出しが全文を返す等の
+// 黙った誤値になっていた（Left("abcd", 2147483648) が "abcd" を返した）。
+function toLong(v) {
+  const n = roundEven(num(v));
+  if (n > 2147483647 || n < -2147483648) fail("オーバーフローしました", 6);
+  return n;
 }
 function cast(v, type) {
   if (isU(v))
@@ -1385,6 +1656,15 @@ function evalExpr(a, s) {
         // で拒否しない（戻り値が未確定値である点は従来どおり）。
         if (args.length < 1 || args.length > 7)
           fail("引数の数が一致していません", 450);
+        // バッチ13 R7-264: InputBox の各引数は文字列値である
+        // （Microsoft Learn／MS-VBAL InputBox）。既知の不正な引数は
+        // 「結果は未確定」の仕様で覆わず、Null はエラー94、配列は
+        // 型不一致エラー13で停止する。未確定値（isU）は値が定まらない
+        // ため検証対象にしない（従来どおり未確定の入力結果になる）。
+        for (let arg of args) {
+          if (arg?.kind === "null") fail("Null の使い方が不正です", 94);
+          if (arg?.kind === "array") fail("型が一致しません", 13);
+        }
         return unknown("InputBox の入力による", {
           symbol: `input-${s.inputId++}`,
           valueType: "string",
@@ -1420,6 +1700,43 @@ function evalExpr(a, s) {
       ];
       if (!known.includes(name) && !(name in s.vars))
         unsupported(`関数 ${name}`);
+      // バッチ13 R7-35: 引数の個数の検査は、Null／未確定値の伝播より
+      // 先に行う。個数が合わない呼び出しは、引数に Null が含まれて
+      // いても実 VBA どおりエラー450で停止する（Len(Null, 1) が
+      // Null を返して継続していた）。配列変数への添字アクセスは
+      // 関数呼び出しではないため対象外。
+      const arityEarly = {
+        len: [1, 1],
+        left: [2, 2],
+        right: [2, 2],
+        mid: [2, 3],
+        trim: [1, 1],
+        lcase: [1, 1],
+        ucase: [1, 1],
+        abs: [1, 1],
+        int: [1, 1],
+        fix: [1, 1],
+        cint: [1, 1],
+        clng: [1, 1],
+        cdbl: [1, 1],
+        cstr: [1, 1],
+        val: [1, 1],
+        isnumeric: [1, 1],
+        round: [1, 2],
+        replace: [3, 6],
+        instr: [2, 4],
+        isnull: [1, 1],
+        isempty: [1, 1],
+        lbound: [1, 2],
+        ubound: [1, 2],
+      };
+      if (
+        arityEarly[name] &&
+        s.vars[name]?.kind !== "array" &&
+        (args.length < arityEarly[name][0] ||
+          args.length > arityEarly[name][1])
+      )
+        fail("引数の数が一致していません", 450);
       if (args.some(isU)) {
         if (["range", "cells", "lbound", "ubound"].includes(name))
           unsupported(`${name} の引数が未確定`);
@@ -1450,8 +1767,9 @@ function evalExpr(a, s) {
         if (args.length !== 2) unsupported("Cells は行・列の2引数のみ対応");
         // F-VBA-06（同根の兄弟表面）: 行・列は Long 引数なので、小数は
         // VBA の暗黙変換（銀行丸め）で整数化してから範囲判定する。
-        let r = roundEven(num(args[0])),
-          c = roundEven(num(args[1]));
+        // バッチ13 R7-194: Long 範囲外は toLong がエラー6で止める。
+        let r = toLong(args[0]),
+          c = toLong(args[1]);
         if (r < 1 || r > 5 || c < 1 || c > 3)
           unsupported("モデルシートは A1:C5 のみ対応");
         return { kind: "range", cells: [String.fromCharCode(64 + c) + r] };
@@ -1463,7 +1781,8 @@ function evalExpr(a, s) {
         if (args.length !== 1) unsupported("多次元配列");
         // F-VBA-06: 添字は Long への暗黙変換（銀行丸め）を受ける。
         // 整数でないことを理由にエラー9にはしない。
-        let index = roundEven(num(args[0]));
+        // バッチ13 R7-194: Long 範囲外は toLong がエラー6で止める。
+        let index = toLong(args[0]);
         if (index < arr.low || index >= arr.low + arr.values.length)
           fail("インデックスが有効範囲にありません", 9);
         return arr.values[index - arr.low];
@@ -1488,7 +1807,7 @@ function evalExpr(a, s) {
         if (args[0]?.kind !== "array") fail("型が一致しません", 13);
         if (args[0].dynamic && !args[0].values.length)
           fail("インデックスが有効範囲にありません", 9);
-        let dim = args.length === 2 ? roundEven(num(args[1])) : 1;
+        let dim = args.length === 2 ? toLong(args[1]) : 1;
         if (dim !== 1) fail("インデックスが有効範囲にありません", 9);
         return (
           args[0].low + (name === "ubound" ? args[0].values.length - 1 : 0)
@@ -1556,8 +1875,11 @@ function evalExpr(a, s) {
         // F-VBA-06: 文字数・開始位置・長さは Long 引数なので、先に暗黙変換
         // （銀行丸め）してから範囲を判定する。整数でないことを理由に
         // エラー5にはせず、長さを切り捨てで黙って誤値を返すこともしない。
-        let n = roundEven(num(y)),
-          m = z === undefined ? undefined : roundEven(num(z));
+        // バッチ13 R7-194: Long 範囲外（例：2147483648）は toLong が
+        // オーバーフロー（エラー6）で止める。巨大な長さとして受理して
+        // 全文を返すことはしない。
+        let n = toLong(y),
+          m = z === undefined ? undefined : toLong(z);
         if (n < 0 || (name === "mid" && n < 1) || (m !== undefined && m < 0))
           fail("プロシージャの呼び出し、または引数が不正です", 5);
         return name === "left"
@@ -1602,7 +1924,13 @@ function evalExpr(a, s) {
           return basedPrefix[1] === "-" ? -n : n;
         }
         if (/[%&!#@]/.test(cleaned)) unsupported("Val の型接尾辞");
-        let m = cleaned.match(/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)/);
+        // バッチ13 R7-96: 指数部（E／e＋符号＋数字）も数値の一部として
+        // 読む。Val("1e3") は 1000、Val("1.2e-2") は 0.012 であり、
+        // 指数だけを読み捨てて仮数を返すことはしない。指数の数字が
+        // 無い形（"1e" 等）は指数部を読まず仮数だけを返す。
+        let m = cleaned.match(
+          /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?/,
+        );
         return m ? Number(m[0]) : 0;
       }
       if (name === "isnumeric") {
@@ -1626,10 +1954,20 @@ function evalExpr(a, s) {
       }
       if (name === "round") {
         // F-VBA-06: 桁数は Long 引数として銀行丸めで変換してから判定する。
-        let dp = y === undefined ? 0 : roundEven(num(y));
+        // バッチ13 R7-194: Long 範囲外は toLong がエラー6で止める。
+        let dp = y === undefined ? 0 : toLong(y);
         if (dp < 0 || dp > 15)
           fail("プロシージャの呼び出し、または引数が不正です", 5);
-        return roundEven(num(x) * 10 ** dp) / 10 ** dp;
+        // バッチ13 R7-262: 大きな有限値に 10^dp を掛けると中間値が
+        // Infinity になり、それが正常な戻り値として流れていた
+        // （Round(1E+308, 2) が Infinity）。その大きさでは値は既に
+        // 整数で小数部は表現できないため、丸め結果は値そのもの。
+        // 入力自体が非有限ならオーバーフロー（エラー6）。
+        let xv = num(x),
+          scaled = xv * 10 ** dp;
+        if (!Number.isFinite(xv)) fail("オーバーフローしました", 6);
+        if (!Number.isFinite(scaled)) return xv;
+        return roundEven(scaled) / 10 ** dp;
       }
       if (name === "replace") {
         // Replace(対象, 検索, 置換, [start], [count], [compare])（Microsoft 仕様）
@@ -1639,9 +1977,10 @@ function evalExpr(a, s) {
           findText = str(y),
           replacement = str(z);
         // F-VBA-06: start／count／compare は整数引数として銀行丸めで変換する。
-        let start = args[3] === undefined ? 1 : roundEven(num(args[3])),
-          count = args[4] === undefined ? -1 : roundEven(num(args[4])),
-          compare = args[5] === undefined ? 0 : roundEven(num(args[5]));
+        // バッチ13 R7-194: Long 範囲外は toLong がエラー6で止める。
+        let start = args[3] === undefined ? 1 : toLong(args[3]),
+          count = args[4] === undefined ? -1 : toLong(args[4]),
+          compare = args[5] === undefined ? 0 : toLong(args[5]);
         if (start < 1)
           fail("プロシージャの呼び出し、または引数が不正です", 5);
         if (count < -1)
@@ -1695,10 +2034,11 @@ function evalExpr(a, s) {
           s1 = str(x);
           s2 = str(y);
         } else {
-          startPos = roundEven(num(x));
+          // バッチ13 R7-194: start／compare は Long 引数（範囲外はエラー6）。
+          startPos = toLong(x);
           s1 = str(y);
           s2 = str(z);
-          compare = args[3] === undefined ? 0 : roundEven(num(args[3]));
+          compare = args[3] === undefined ? 0 : toLong(args[3]);
         }
         if (startPos < 1)
           fail("プロシージャの呼び出し、または引数が不正です", 5);
@@ -1730,6 +2070,18 @@ function assign(target, v, s, set = false) {
     if (isVbaBuiltinConstant(name)) failConstAssign(name);
     if (s.explicit && !(name in s.vars))
       fail(`変数が定義されていません：${name}`);
+    // バッチ13 R7-256: Range を保持する変数への Let 代入は、変数そのものの
+    // 置き換えではなく、既定メンバー Value への書き込みである
+    // （Excel Range オブジェクトの既定メンバーは Value。Microsoft Learn
+    // Range object）。r = 7 は r.Value = 7 と同じくセルへ書き、型付き
+    // Range 変数でエラー424、Variant では変数置換になる誤りを直す。
+    // Set 代入は参照の置き換えなので従来どおり対象外。
+    if (!set && s.vars[name]?.kind === "range") {
+      let targetRange = s.vars[name],
+        written = value(v, s);
+      targetRange.cells.forEach((c) => (s.cells[c] = written));
+      return `セル ${targetRange.cells.join(", ")} に ${display(written)} を入れます`;
+    }
     let type = s.types[name] || "variant";
     if (set) {
       if (!["range", "nothing"].includes(v?.kind))
@@ -1753,7 +2105,8 @@ function assign(target, v, s, set = false) {
   ) {
     let arr = s.vars[target.target.name],
       // F-VBA-06（書込側の兄弟表面）: 添字は読取側と同じく銀行丸めで変換する。
-      idx = roundEven(num(value(evalExpr(target.args[0], s), s)));
+      // バッチ13 R7-194: Long 範囲外は toLong がエラー6で止める。
+      idx = toLong(value(evalExpr(target.args[0], s), s));
     if (target.args.length !== 1) unsupported("多次元配列");
     if (idx < arr.low || idx >= arr.low + arr.values.length)
       fail("インデックスが有効範囲にありません", 9);
@@ -1788,6 +2141,24 @@ function simulateImpl(source, model = {}, custom = {}) {
     ast = parse(source);
   } catch (e) {
     // P-N3：パース段階のホスト例外も生文言を返さない。
+    const le = toLearnerVBAError(e);
+    return {
+      paths: [],
+      error: {
+        line: le.line || Number(le.message.match(/^(\d+)行/)?.[1]) || 1,
+        message: le.message,
+        code: le.code || 0,
+      },
+      truncated: false,
+      operations,
+    };
+  }
+  try {
+    // バッチ13: 静的検査（Option Explicit の未宣言検査・スカラー変数への
+    // 添字・ループ外の Exit）は、宣言処理・実行より前に行い、違反時は
+    // 出力やセルの変化を一切出さずに停止する（コンパイル時エラー相当）。
+    staticValidate(ast);
+  } catch (e) {
     const le = toLearnerVBAError(e);
     return {
       paths: [],
@@ -2144,8 +2515,9 @@ function simulateImpl(source, model = {}, custom = {}) {
               unsupported("Dim の配列添字は定数式のみ対応");
             // F-VBA-06（同根の兄弟表面）: 配列の境界も Long への暗黙変換
             // （銀行丸め）を受けてから判定する。
-            let low = roundEven(num(evalExpr(d.bounds[0], s))),
-              high = roundEven(num(evalExpr(d.bounds[1], s)));
+            // バッチ13 R7-194: Long 範囲外は toLong がエラー6で止める。
+            let low = toLong(evalExpr(d.bounds[0], s)),
+              high = toLong(evalExpr(d.bounds[1], s));
             if (high < low) fail("インデックスが有効範囲にありません", 9);
             if (high - low > 10000) unsupported("配列要素は10001個まで");
             s.vars[d.name] = {

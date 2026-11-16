@@ -80,11 +80,18 @@ test("R24-N24: JSON.stringify() with no argument gives undefined", async () => {
   assert.deepEqual(outputs(r), [["undefined"]]);
 });
 test("R24-N24: other no-arg builtins match Node", async () => {
-  const r = await js("console.log(Number(), String() === '', Boolean(), parseInt(), document.getElementById());");
+  const r = await js("console.log(Number(), String() === '', Boolean(), parseInt());");
   assert.deepEqual(errors(r), []);
-  assert.deepEqual(outputs(r), [["0 true false NaN null"]]);
+  assert.deepEqual(outputs(r), [["0 true false NaN"]]);
+  // 修正バッチ13・R7-76／R7-77 でテスト是正：DOM API の必須引数欠落は
+  // Web IDL では TypeError であり、Node 基準の「欠落＝undefined」を
+  // DOM にまで一律適用した旧期待（getElementById() → null、
+  // createElement().tagName → "UNDEFINED"）は一次情報と矛盾する。
+  const noId = await js("console.log(document.getElementById());");
+  assert.match(errors(noId)[0] || "", /引数が不足しています：document.getElementById/);
   const el = await js("console.log(document.createElement().tagName);");
-  assert.deepEqual(outputs(el), [["UNDEFINED"]]);
+  assert.match(errors(el)[0] || "", /引数が不足しています：document.createElement/);
+  assert.deepEqual(outputs(el), [[]]);
 });
 
 // ---------- R24-N25：typeof のグローバル名解決 ----------
