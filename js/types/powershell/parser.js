@@ -1,4 +1,8 @@
 import { fail } from "../shell/model.js";
+import {
+  advancedActive,
+  ADVANCED_SWITCHES,
+} from "./engine-advanced.js";
 export function tokenizePS(source) {
   const ts = [];
   let i = 0,
@@ -103,6 +107,23 @@ export function tokenizePS(source) {
         if (end < 0) fail("変数名の } がありません", line, "SyntaxError");
         const v = source.slice(i + 1, end);
         i = end + 1;
+        push("var", v, start);
+        continue;
+      }
+      // FIX-PS-A2: $$／$^（Microsoft Learn about_Automatic_Variables）は
+      // セッションが受け取った最後の行の最後／最初のトークンを保持する
+      // 自動変数である。波括弧形 ${$}／${^} は従来から AUTOVARS の
+      // 未検証ハンドラ（engine-advanced-vars.js の "$"／"^" キー）へ
+      // var トークン（v = "$"／"^"）として到達し、$PID／$PSHOME と同じ
+      // ラベルつき未確定値を返してきた。未検証の自動変数は「ラベルつき
+      // 未確定値を返す」が本アプリの一貫した設計であり、裸形だけが
+      // 字句規則で拒否されるのは異常であるため、裸形も波括弧形と同一の
+      // var トークンとして受理し、同じ未検証応答に届かせる
+      // （コーディネーター裁定）。FIX-PS-A が入れた「裸形を名指し
+      // 未対応停止にする」変更はこの裁定と合わないため取り消した。
+      if (source[i] === "$" || source[i] === "^") {
+        const v = source[i];
+        i++;
         push("var", v, start);
         continue;
       }
@@ -282,19 +303,141 @@ const psValueParams = {
   "move-item": ["path", "destination"],
 };
 const prec = {
-  "-or": 1,
-  "-and": 2,
-  "+": 4,
-  "-": 4,
-  "*": 5,
-  "/": 5,
-  "%": 5,
+  "-or": 10,
+  "-and": 20,
+  "+": 40,
+  "-": 40,
+  "*": 50,
+  "/": 50,
+  "%": 50,
   // SH-P3: -f は未対応だが、優先順位表に無いと式の途中で止まって
   // 「) が必要です」という虚偽原因になる。パースは通し、評価側で
   // 「未対応：書式演算子 -f」と名指す。
-  "-f": 5,
-  "..": 6,
+  // FIX-PS-A（D3）: 段位は Microsoft Learn about_Operator_Precedence
+  // へ是正する。-f は範囲 ..（60）の次位で、乗除 * / %（50）より上位
+  // であるため、その間の 55 に置く。50 で * / % と同格だった従来は
+  // 2 * "{0}" -f 3 が (2 * "{0}") -f 3 と結合して誤っていた。
+  "-f": 55,
+  "..": 60,
 };
+// 高度モード差分（ブロックB3）: 高度モードでのみ受理する二項演算子の
+// 優先順位。基礎の prec とは別の表に分ける（簡易モードのパース挙動と
+// F-02 機械照合（prec キー抽出）を不変に保つため）。水準は基礎表と
+// 同じ尺度で、一次情報（about_Operator_Precedence）の順序に従う:
+// 比較系（-split/-join 二項・-is/-isnot/-as・-replace 系）は比較演算子と
+// 同水準（30）、ビット演算は比較より下・論理より上（25）、-xor は
+// -or と同水準（10。基礎が -and/-or を分離している既存裁定に倣う）、
+// ?? は三項より下（5）。
+const ADV_PREC = {
+  "??": 5,
+  "-xor": 10,
+  "-band": 25,
+  "-bor": 25,
+  "-bxor": 25,
+  "-shl": 25,
+  "-shr": 25,
+  "-replace": 30,
+  "-ireplace": 30,
+  "-creplace": 30,
+  "-split": 30,
+  "-join": 30,
+  "-is": 30,
+  "-isnot": 30,
+  "-as": 30,
+};
+// 高度二項演算子の単語部（字句解析が「-」と単語に分けるため、
+// パーサ側で接着を条件に結合する）。
+const ADV_OP_WORDS = new Set([
+  "band",
+  "bor",
+  "bxor",
+  "shl",
+  "shr",
+  "xor",
+  "replace",
+  "ireplace",
+  "creplace",
+  "split",
+  "join",
+  "is",
+  "isnot",
+  "as",
+]);
+// FIX-PS-A（D5／D10）: 複合演算子（&&／||／??=／リダイレクト）の
+// 名指し停止。字句解析はこれらを単一文字トークン（&／|／?／>）へ
+// 分割するため、従来は停止文言が断片（「式：&」「式：|」「式：=」
+// 「式：>」）しか指さなかった。接着したトークン列から演算子全体を
+// 復元し、アプリの標準形「未対応：<名前>（理由）」で止める。
+// 一次情報は Microsoft Learn about_Pipeline_Chain_Operators／
+// about_Assignment_Operators／about_Redirection。単独の & は呼び出し
+// 演算子として従来どおり扱い（この判定では対象にしない）、単独の
+// | はパイプライン区切りとして従来どおり扱う。
+export function compoundOperatorAt(ts, idx) {
+  const t = ts[idx];
+  if (!t || t.k !== "op") return null;
+  const adj = (a, b) => Boolean(a && b && b.start === a.end),
+    n1 = ts[idx + 1],
+    n2 = ts[idx + 2];
+  if (t.v === "&" && adj(t, n1) && n1.v === "&") return "&&";
+  if (t.v === "|") {
+    if (adj(t, n1) && n1.v === "|") return "||";
+    // パイプライン側が1本目の | を消費した直後の2本目も || とする。
+    const prev = ts[idx - 1];
+    if (prev?.v === "|" && prev.end === t.start) return "||";
+    return null;
+  }
+  if (
+    t.v === "?" &&
+    adj(t, n1) &&
+    n1.v === "?" &&
+    adj(n1, n2) &&
+    n2.v === "="
+  )
+    return "??=";
+  if (t.v === ">") {
+    let base = ">";
+    if (adj(t, n1) && n1.v === ">") base = ">>";
+    else if (
+      adj(t, n1) &&
+      n1.v === "&" &&
+      adj(n1, n2) &&
+      n2.k === "number"
+    )
+      base = ">&" + n2.v;
+    // 接着したストリーム番号（2> の 2 等）は演算子の一部として含める。
+    const prev = ts[idx - 1];
+    if (
+      prev &&
+      prev.end === t.start &&
+      ((prev.k === "number" && /^[1-6]$/.test(prev.v)) || prev.v === "*")
+    )
+      return prev.v + base;
+    return base;
+  }
+  return null;
+}
+function compoundOperatorReason(name) {
+  if (name === "&&" || name === "||")
+    return "文レベルのパイプライン連結の実行基盤がモデルに無いため";
+  if (name === "??=")
+    return "null合体の複合代入は代入演算子の受理範囲に含まれないため";
+  if (/>&\d+$/.test(name))
+    return "リダイレクト基盤がモデルに無く、ストリームのマージはモデル化されていないため";
+  if (/^[2-6]/.test(name))
+    return "リダイレクト基盤がモデルに無く、エラーストリームは値としてモデル化されていないため";
+  return "成功ストリームのリダイレクト基盤がモデルに無いため";
+}
+// 現在位置が複合演算子なら全体を名指して止め、その名前を返す。
+// 複合演算子でなければ null を返して何もしない。
+export function failCompoundOperator(ts, idx) {
+  const name = compoundOperatorAt(ts, idx);
+  if (name)
+    fail(
+      "未対応：" + name + "（" + compoundOperatorReason(name) + "）",
+      ts[idx].line,
+    );
+  return name;
+}
 // SH-P3: 比較演算子は -c／-i 変種と包含演算子（-contains／-in 系）まで
 // 優先順位表に載せる。字句解析だけが受理して優先順位表に無いと、
 // 括弧内などで「) が必要です」という無関係な原因で止まっていた。
@@ -314,7 +457,7 @@ for (const base of [
   "in",
   "notin",
 ])
-  for (const prefix of ["-", "-c", "-i"]) prec[prefix + base] = 3;
+  for (const prefix of ["-", "-c", "-i"]) prec[prefix + base] = 30;
 // R23-N2: 数値リテラル文字列（0x 接頭辞・単位接尾辞つき）を値へ変換する。
 // R24-N2: 字句解析側と同じ文法に揃え、先行ドット形（.5）と末尾ドット形
 // （1.／1.e2）も変換できるようにする。
@@ -1075,6 +1218,9 @@ export class PSParser {
       this.skip();
       stages.push(this.stage());
     }
+    // FIX-PS-A（D5／D10）: ステージの後ろに複合演算子が残っていたら、
+    // 呼び出し側の汎用文言ではなく演算子全体を名指して止める。
+    failCompoundOperator(this.ts, this.i);
     return { stages, line: stages[0].line };
   }
   stage() {
@@ -1120,6 +1266,11 @@ export class PSParser {
             "force",
             "nonewline",
           ];
+          // 高度モード差分（ブロックB3）: 高度モード時のみ、高度
+          // コマンドレットのスイッチ型パラメータも裸で受理する。
+          if (advancedActive())
+            for (const sw of ADVANCED_SWITCHES)
+              if (!switches.includes(sw)) switches.push(sw);
           if (switches.includes(p))
             params[p] = { k: "literal", value: true, line: token.line };
           else {
@@ -1388,7 +1539,7 @@ export class PSParser {
     // 式解析の間は argGlued を立て、expr() 側の接着判定を効かせる。
     this.argGlued++;
     try {
-      const first = this.expr(7);
+      const first = this.expr(70);
       // §3.3 既知残存の是正：引数モードでも範囲演算子は式として受理する
       // （Write-Output 1..3 は実 PowerShell では 1,2,3 を出力する。
       // 代入形・括弧形は従来から正常だった）。左辺は expr(7) が範囲の
@@ -1399,7 +1550,7 @@ export class PSParser {
           k: "binary",
           op: "..",
           a: first,
-          b: this.expr(7),
+          b: this.expr(70),
           line: t.line,
         };
       }
@@ -1495,6 +1646,31 @@ export class PSParser {
     } else if (t.k === "string")
       a = { k: "string", value: t.v, quote: t.quote, line };
     else if (t.k === "var") a = { k: "var", name: t.v, line };
+    // 高度モード差分（ブロックB3）: 字句解析は高度演算子を「-」＋単語の
+    // 2トークンに分けるため、接着している場合だけ単項演算子として
+    // 結合する（高度モード時のみ）。
+    else if (
+      advancedActive() &&
+      t.v === "-" &&
+      this.ts[this.i]?.k === "word" &&
+      ["bnot", "split", "join"].includes(this.ts[this.i].v.toLowerCase()) &&
+      this.ts[this.i].start === t.end
+    ) {
+      const opName = "-" + this.ts[this.i].v.toLowerCase();
+      this.take();
+      const savedGlued = this.argGlued,
+        savedComma = this.noComma;
+      this.argGlued = 0;
+      this.noComma = 0;
+      let unaryArg;
+      try {
+        unaryArg = this.expr(80);
+      } finally {
+        this.argGlued = savedGlued;
+        this.noComma = savedComma;
+      }
+      a = { k: "unary", op: opName, arg: unaryArg, line };
+    }
     else if (["-", "+", "!", "-not"].includes(t.v.toLowerCase())) {
       // R24-N3: 単項演算子の被演算子はカンマ演算子を含まない
       // （-1,2 は (-1) と 2 の配列であり、-(1,2) ではないため）。
@@ -1509,7 +1685,7 @@ export class PSParser {
       this.noComma = 0;
       let unaryArg;
       try {
-        unaryArg = this.expr(8);
+        unaryArg = this.expr(80);
       } finally {
         this.argGlued = savedGlued;
         this.noComma = savedComma;
@@ -1524,7 +1700,7 @@ export class PSParser {
       this.noComma = 0;
       let preTarget;
       try {
-        preTarget = this.expr(8);
+        preTarget = this.expr(80);
       } finally {
         this.argGlued = savedGlued;
         this.noComma = savedComma;
@@ -1686,7 +1862,7 @@ export class PSParser {
         this.noComma = 0;
         let castArg;
         try {
-          castArg = this.expr(8);
+          castArg = this.expr(80);
         } finally {
           this.argGlued = savedGlued;
           this.noComma = savedComma;
@@ -1696,8 +1872,13 @@ export class PSParser {
     } else if (t.k === "eof")
       // R31-N8: 内部終端トークン名 "<eof>" を出さず、途中終了として示す。
       failTruncatedExpression(line);
-    else
+    else {
+      // FIX-PS-A（D5／D10）: 式の先頭に複合演算子（&&／||／??=／
+      // リダイレクト）が現れた場合は、断片ではなく演算子全体を
+      // 名指して止める。複合演算子でなければ従来どおり汎用文言にする。
+      failCompoundOperator(this.ts, this.i - 1);
       fail("未対応または不正なPowerShellの式：" + t.v, line, "SyntaxError");
+    }
     while (true) {
       if (this.peek(".")) {
         this.take();
@@ -1881,18 +2062,41 @@ export class PSParser {
       // 演算子（最大6＝範囲）より上の7とし、要素は expr(8)（カンマも
       // 二項演算子も含まない一次側）で読む。連鎖は平坦な配列にする。
       // param 既定値などカンマが区切りの文脈では noComma で抑止する。
-      if (this.peek(",") && !this.noComma && min <= 7) {
+      if (this.peek(",") && !this.noComma && min <= 70) {
         const values = a.k === "array" ? [...a.values] : [a];
         while (this.peek(",")) {
           this.take();
-          values.push(this.expr(8));
+          values.push(this.expr(80));
         }
         a = { k: "array", values, line };
         continue;
       }
       const opToken = this.ts[this.i],
-        op = opToken?.v.toLowerCase(),
-        p = prec[op];
+        opNext = this.ts[this.i + 1];
+      // FIX-PS-A（D5／D10）: 複合演算子（&&／||／??=／リダイレクト）の
+      // 断片が演算子の位置に来たら、演算子全体を名指して止める。
+      failCompoundOperator(this.ts, this.i);
+      // 高度モード差分（ブロックB3）: ?? は字句上「?」2トークンに分かれる
+      // ため、接着している場合だけ合体演算子として扱う（高度モード時のみ）。
+      const advNullCoal =
+        advancedActive() &&
+        opToken?.v === "?" &&
+        opNext?.v === "?" &&
+        opNext.start === opToken.end;
+      // 高度モード差分（ブロックB3）: 高度二項演算子は字句上「-」＋単語の
+      // 2トークンに分かれるため、接着している場合だけ結合する。
+      const advCombined =
+        advancedActive() &&
+        opToken?.v === "-" &&
+        opNext?.k === "word" &&
+        opNext.start === opToken.end &&
+        ADV_OP_WORDS.has(opNext.v.toLowerCase())
+          ? "-" + opNext.v.toLowerCase()
+          : null;
+      const op = advNullCoal ? "??" : advCombined ?? opToken?.v.toLowerCase(),
+        p =
+          prec[op] ??
+          (advancedActive() ? ADV_PREC[op] : undefined);
       if (p === undefined) {
         // SH-P3（同根の一掃）：単一トークンの -演算子が優先順位表に無いまま
         // ここで黙って止まると、呼び出し側が「) が必要です」等と
@@ -1912,6 +2116,7 @@ export class PSParser {
       }
       if (p < min) break;
       this.take();
+      if (advNullCoal || advCombined) this.take();
       if (op === "..") {
         // R25-N2（R24-N3 の裁定を是正）：範囲演算子の右辺も左辺と対称に
         // array-literal-expression（カンマ列）として読む。根拠は一次情報：
@@ -1931,16 +2136,46 @@ export class PSParser {
         // @()・@{}・キャスト・単項・添字・ブロック等の内側では各分岐が
         // noComma を 0 へ戻してから読むため、内側の範囲右辺はここで
         // 通常どおり収集される。
-        let b = this.expr(8);
+        let b = this.expr(80);
         if (this.peek(",") && !this.noComma) {
           const values = [b];
           while (this.peek(",")) {
             this.take();
-            values.push(this.expr(8));
+            values.push(this.expr(80));
           }
           b = { k: "array", values, line };
         }
         a = { k: "binary", op, a, b, line };
+      } else if (
+        advancedActive() &&
+        ["-is", "-isnot", "-as"].includes(op) &&
+        this.ts[this.i]?.v === "["
+      ) {
+        // 高度モード差分（ブロックB3）: 型演算子の右辺の型リテラル
+        // [int] / [System.Int32] は式として評価できないため、型名
+        // ノードとして読む。
+        let j = this.i + 1,
+          tname = "";
+        while (this.ts[j]?.k === "word") {
+          tname += this.ts[j].v;
+          j++;
+          if (this.ts[j]?.v === "." && this.ts[j + 1]?.k === "word") {
+            tname += ".";
+            j++;
+          } else break;
+        }
+        if (tname && this.ts[j]?.v === "]") {
+          this.i = j + 1;
+          a = { k: "binary", op, a, b: { k: "typename", name: tname, line }, line };
+        } else {
+          a = { k: "binary", op, a, b: this.expr(p + 1), line };
+        }
+      } else if (op === "??") {
+        // FIX-PS-A（D2）: ?? は右結合であり、連鎖（$a ?? $b ?? $c）では
+        // 右辺を同じ水準で読んで右へ伸ばす。expr(p + 1) では2つ目の
+        // ?? を取り込めず、呼び出し側が最初の「?」を三項と誤認して
+        // 断片で止まっていた。
+        a = { k: "binary", op, a, b: this.expr(p), line };
       } else {
         a = { k: "binary", op, a, b: this.expr(p + 1), line };
       }
@@ -1958,7 +2193,7 @@ export class PSParser {
     const assignChain = castChain(a);
     if (
       this.assignDepth > 0 &&
-      min <= 1 &&
+      min <= 10 &&
       ["=", "+=", "-=", "*=", "/=", "%="].includes(this.ts[this.i]?.v) &&
       (["var", "member", "index"].includes(a.k) ||
         // R30-N11: 括弧内でも型付き代入式（[int]$x = "42"）を文位置と
@@ -1998,7 +2233,7 @@ export class PSParser {
     // ここには来ない。
     if (
       this.assignDepth > 0 &&
-      min <= 1 &&
+      min <= 10 &&
       ["=", "+=", "-=", "*=", "/=", "%="].includes(this.ts[this.i]?.v) &&
       !["var", "member", "index"].includes(a.k) &&
       !(
@@ -2014,7 +2249,36 @@ export class PSParser {
     // 扱い、式の値の後に現れる場合だけが三項演算子になる。従来は
     // この読みが無く、括弧が揃っているのに呼び出し側が「) が必要です」
     // という虚偽原因で止まっていた。
-    if (min <= 1 && this.peek("?")) {
+    // 高度モード差分（ブロックB3）: 接着した ?. ／ ?[] は三項演算子では
+    // なく null 条件アクセスであり、モデルでは未対応として名指しする
+    // （従来は「: が必要です」という無関係な原因で止まっていた）。
+    if (advancedActive() && min <= 10 && this.peek("?")) {
+      const qTok = this.ts[this.i],
+        qNext = this.ts[this.i + 1],
+        qPrev = this.ts[this.i - 1];
+      if (
+        qNext &&
+        (qNext.v === "." || qNext.v === "[") &&
+        qNext.start === qTok.end &&
+        qPrev &&
+        qPrev.end === qTok.start
+      )
+        fail(
+          "未対応：null条件アクセス（?.／?[]）はモデルで未対応です",
+          qTok.line,
+          "SyntaxError",
+        );
+    }
+    // FIX-PS-A（D2）: 接着した「?」の対は ?? 演算子であり、三項の
+    // 先頭ではない。三項として誤認すると最初の「?」で止まるため、
+    // ?? の場合は三項の判定をスキップする（?? 本体は二項演算子の
+    // ループ側・三項後の折り返しで扱う）。
+    const nullCoalAhead =
+      advancedActive() &&
+      this.ts[this.i]?.v === "?" &&
+      this.ts[this.i + 1]?.v === "?" &&
+      this.ts[this.i + 1].start === this.ts[this.i].end;
+    if (min <= 10 && this.peek("?") && !nullCoalAhead) {
       this.take();
       const thenBranch = this.expr(0);
       if (!this.peek(":"))
@@ -2024,9 +2288,29 @@ export class PSParser {
         k: "ternary",
         test: a,
         then: thenBranch,
-        else: this.expr(0),
+        // 高度モード差分（ブロックB3）: else 枝は ??（水準5）より上で
+        // 読む。?? は三項より緩く結合する（about_Operator_Precedence）。
+        // 基礎演算子は全て水準10以上のため、簡易モードの挙動は不変。
+        else: this.expr(6),
         line,
       };
+      // FIX-PS-A（D2）: ?? は三項より緩く結合するため、三項の直後に
+      // ?? が続く形（$c ? a : b ?? d）は三項全体を ?? の左辺として
+      // 読み直す（(三項) ?? d）。この折り返しが無いと、呼び出し側が
+      // 残った「?」を三項と誤認して断片で止まっていた。
+      if (advancedActive() && min <= 5) {
+        const coalTok = this.ts[this.i],
+          coalNext = this.ts[this.i + 1];
+        if (
+          coalTok?.v === "?" &&
+          coalNext?.v === "?" &&
+          coalNext.start === coalTok.end
+        ) {
+          this.take();
+          this.take();
+          a = { k: "binary", op: "??", a, b: this.expr(5), line };
+        }
+      }
     }
     this.depth--;
     return a;

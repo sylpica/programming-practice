@@ -1,0 +1,188 @@
+/* 高度モード B7：Python 標準ライブラリのエンジン拡張フック。
+ * 契約（advanced-interface.md 第5章 (e)）の予約フック applyAdvancedEngine の
+ * 実体。各 impl-advanced-*.js は import の副作用で stdlib レジストリへ
+ * モジュールを登録する。エンジン本体（engine.js）の stdlib フックは
+ * 「レジストリに登録がある場合のみ」働く汎用ディスパッチであり、
+ * モード分岐は持たない。登録はこのファイル（＝高度差分）が読み込まれた
+ * ときだけ起きるため、簡易モードの挙動・カタログには影響しない。
+ * import 一覧は統合時にディレクトリから機械生成した（全 impl／group）。 */
+import './group-advanced-g13.js';
+import './group-advanced-g3.js';
+import './group-advanced-g4.js';
+import './group-advanced-g5.js';
+import './group-advanced-g6.js';
+import './group-advanced-g7.js';
+import './impl-advanced-abc.js';
+import './impl-advanced-annotationlib.js';
+import './impl-advanced-argparse.js';
+import './impl-advanced-array.js';
+import './impl-advanced-ast.js';
+import './impl-advanced-base64.js';
+import './impl-advanced-binascii.js';
+import './impl-advanced-bisect.js';
+import './impl-advanced-bz2.js';
+import './impl-advanced-calendar.js';
+import './impl-advanced-cmd.js';
+import './impl-advanced-code.js';
+import './impl-advanced-codecs.js';
+import './impl-advanced-codeop.js';
+import './impl-advanced-collections-abc.js';
+import './impl-advanced-collections.js';
+import './impl-advanced-colorsys.js';
+import './impl-advanced-compression.zstd.js';
+import './impl-advanced-configparser.js';
+import './impl-advanced-contextlib.js';
+import './impl-advanced-contextvars.js';
+import './impl-advanced-copy.js';
+import './impl-advanced-copyreg.js';
+import './impl-advanced-csv.js';
+import './impl-advanced-dataclasses.js';
+import './impl-advanced-datetime.js';
+import './impl-advanced-debugtools.js';
+import './impl-advanced-decimal.js';
+import './impl-advanced-difflib.js';
+import './impl-advanced-dis.js';
+import './impl-advanced-doctest.js';
+import './impl-advanced-email-charset.js';
+import './impl-advanced-email-contentmanager.js';
+import './impl-advanced-email-encoders.js';
+import './impl-advanced-email-errors.js';
+import './impl-advanced-email-generator.js';
+import './impl-advanced-email-header.js';
+import './impl-advanced-email-headerregistry.js';
+import './impl-advanced-email-iterators.js';
+import './impl-advanced-email-message.js';
+import './impl-advanced-email-mime-application.js';
+import './impl-advanced-email-mime-audio.js';
+import './impl-advanced-email-mime-base.js';
+import './impl-advanced-email-mime-image.js';
+import './impl-advanced-email-mime-message.js';
+import './impl-advanced-email-mime-multipart.js';
+import './impl-advanced-email-mime-nonmultipart.js';
+import './impl-advanced-email-mime-text.js';
+import './impl-advanced-email-parser.js';
+import './impl-advanced-email-policy.js';
+import './impl-advanced-email-utils.js';
+import './impl-advanced-email.js';
+import './impl-advanced-enum.js';
+import './impl-advanced-errno.js';
+import './impl-advanced-faulthandler.js';
+import './impl-advanced-filecmp.js';
+import './impl-advanced-fnmatch.js';
+import './impl-advanced-functools.js';
+import './impl-advanced-g1-random.js';
+import './impl-advanced-g1.js';
+import './impl-advanced-g11-common.js';
+import './impl-advanced-g13-common.js';
+import './impl-advanced-g4-common.js';
+import './impl-advanced-g5-common.js';
+import './impl-advanced-g7-common.js';
+import './impl-advanced-g8-common.js';
+import './impl-advanced-gc.js';
+import './impl-advanced-getopt.js';
+import './impl-advanced-gettext.js';
+import './impl-advanced-glob.js';
+import './impl-advanced-graphlib.js';
+import './impl-advanced-gzip.js';
+import './impl-advanced-hashlib.js';
+import './impl-advanced-heapq.js';
+import './impl-advanced-hmac.js';
+import './impl-advanced-html-entities.js';
+import './impl-advanced-html-parser.js';
+import './impl-advanced-html.js';
+import './impl-advanced-http-cookiejar.js';
+import './impl-advanced-http-cookies.js';
+import './impl-advanced-inspect.js';
+import './impl-advanced-io.js';
+import './impl-advanced-ipaddress.js';
+import './impl-advanced-itertools.js';
+import './impl-advanced-json.js';
+import './impl-advanced-keyword.js';
+import './impl-advanced-linecache.js';
+import './impl-advanced-locale.js';
+import './impl-advanced-logging.js';
+import './impl-advanced-lzma.js';
+import './impl-advanced-marshal.js';
+import './impl-advanced-math-integer.js';
+import './impl-advanced-math.js';
+import './impl-advanced-mimetypes.js';
+import './impl-advanced-modulefinder.js';
+import './impl-advanced-netrc.js';
+import './impl-advanced-operator.js';
+import './impl-advanced-optparse.js';
+import './impl-advanced-pathlib.js';
+import './impl-advanced-pickle.js';
+import './impl-advanced-pkgutil.js';
+import './impl-advanced-platform.js';
+import './impl-advanced-plistlib.js';
+import './impl-advanced-pprint.js';
+import './impl-advanced-pyclbr.js';
+import './impl-advanced-queue.js';
+import './impl-advanced-quopri.js';
+import './impl-advanced-re.js';
+import './impl-advanced-reprlib.js';
+import './impl-advanced-sched.js';
+import './impl-advanced-secrets.js';
+import './impl-advanced-shlex.js';
+import './impl-advanced-site.js';
+import './impl-advanced-stat.js';
+import './impl-advanced-statistics.js';
+import './impl-advanced-string-templatelib.js';
+import './impl-advanced-string.js';
+import './impl-advanced-stringprep-tables.js';
+import './impl-advanced-stringprep.js';
+import './impl-advanced-struct.js';
+import './impl-advanced-symtable.js';
+import './impl-advanced-sys.js';
+import './impl-advanced-sysconfig.js';
+import './impl-advanced-tabnanny.js';
+import './impl-advanced-tarfile.js';
+import './impl-advanced-textwrap.js';
+import './impl-advanced-time.js';
+import './impl-advanced-token.js';
+import './impl-advanced-tokenize.js';
+import './impl-advanced-tomllib.js';
+import './impl-advanced-traceback.js';
+import './impl-advanced-types.js';
+import './impl-advanced-typing.js';
+import './impl-advanced-unicodedata-tables.js';
+import './impl-advanced-unicodedata.js';
+import './impl-advanced-unittest-mock.js';
+import './impl-advanced-unittest.js';
+import './impl-advanced-urllib-parse.js';
+import './impl-advanced-urllib-robotparser.js';
+import './impl-advanced-uuid.js';
+import './impl-advanced-warnings.js';
+import './impl-advanced-wave.js';
+import './impl-advanced-weakref.js';
+import './impl-advanced-wsgiref-headers.js';
+import './impl-advanced-wsgiref-util.js';
+import './impl-advanced-xml-dom-minidom.js';
+import './impl-advanced-xml-dom-pulldom.js';
+import './impl-advanced-xml-dom.js';
+import './impl-advanced-xml-etree-elementinclude.js';
+import './impl-advanced-xml-etree-elementtree.js';
+import './impl-advanced-xml-parsers-expat-errors.js';
+import './impl-advanced-xml-parsers-expat-model.js';
+import './impl-advanced-xml-parsers-expat.js';
+import './impl-advanced-xml-sax-handler.js';
+import './impl-advanced-xml-sax-saxutils.js';
+import './impl-advanced-xml-sax-xmlreader.js';
+import './impl-advanced-xml-sax.js';
+import './impl-advanced-xml.js';
+import './impl-advanced-zipfile.js';
+import './impl-advanced-zipimport.js';
+import './impl-advanced-zlib.js';
+import './impl-advanced-zoneinfo.js';
+
+let applied = false;
+
+/* definition／merged は契約の引数。B7 の登録は import 副作用で完結する
+ * ため、この関数は冪等な適用済みマーカーとして働く（複数回呼ばれても
+ * 登録内容は変わらない）。 */
+export function applyAdvancedEngine(definition, merged) {
+  applied = true;
+  return true;
+}
+
+export function advancedEngineApplied() { return applied; }
