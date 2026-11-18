@@ -1,0 +1,66 @@
+/* 高度モード B7 G8：modulefinder モジュールのリファレンス差分（全6件）。
+ * 形式は高度モード契約（advanced-interface.md 第4章）の正規形。
+ * 全件が新規収載（referenceAdvanced）。生成器：/tmp/g8gen/gen.py（作業用） */
+export const referenceAdvanced = [
+ {
+  "name": "modulefinder.ModuleFinder",
+  "category": "標準ライブラリ",
+  "syntax": "modulefinder.ModuleFinder",
+  "description": "モジュールの依存関係を探すクラス。",
+  "example": "import modulefinder\nprint(modulefinder.ModuleFinder)",
+  "caution": "本アプリの高度モードでは未対応です。ファイルシステム上のモジュール探索が前提で、エンジンでは再現できないため。",
+  "status": "unsupported",
+  "source": "https://docs.python.org/ja/3.15/library/modulefinder.html#modulefinder.ModuleFinder",
+ },
+ {
+  "name": "modulefinder.ModuleFinder.modules",
+  "category": "標準ライブラリ",
+  "syntax": "modulefinder.ModuleFinder.modules",
+  "description": "見つけたモジュールの辞書。",
+  "example": "import modulefinder\nprint(modulefinder.ModuleFinder.modules)",
+  "caution": "本アプリの高度モードでは未対応です。ファイルシステム上のモジュール探索が前提で、エンジンでは再現できないため。",
+  "status": "unsupported",
+  "source": "https://docs.python.org/ja/3.15/library/modulefinder.html#modulefinder.ModuleFinder",
+ },
+ {
+  "name": "modulefinder.ModuleFinder.run_script",
+  "category": "標準ライブラリ",
+  "syntax": "modulefinder.ModuleFinder.run_script(...)",
+  "description": "ModuleFinder のメソッド。",
+  "example": "import modulefinder\nprint(modulefinder.ModuleFinder.run_script)",
+  "caution": "本アプリの高度モードでは未対応です。ファイルシステム上のモジュール探索が前提で、エンジンでは再現できないため。",
+  "status": "unsupported",
+  "source": "https://docs.python.org/ja/3.15/library/modulefinder.html#modulefinder.ModuleFinder",
+ },
+ {
+  "name": "modulefinder.ModuleFinder.report",
+  "category": "標準ライブラリ",
+  "syntax": "modulefinder.ModuleFinder.report(...)",
+  "description": "ModuleFinder のメソッド。",
+  "example": "import modulefinder\nprint(modulefinder.ModuleFinder.report)",
+  "caution": "本アプリの高度モードでは未対応です。ファイルシステム上のモジュール探索が前提で、エンジンでは再現できないため。",
+  "status": "unsupported",
+  "source": "https://docs.python.org/ja/3.15/library/modulefinder.html#modulefinder.ModuleFinder",
+ },
+ {
+  "name": "modulefinder.AddPackagePath",
+  "category": "標準ライブラリ",
+  "syntax": "modulefinder.AddPackagePath(...)",
+  "description": "パッケージ探索の調整関数。",
+  "example": "import modulefinder\nprint(modulefinder.AddPackagePath)",
+  "caution": "本アプリの高度モードでは未対応です。ファイルシステム上のモジュール探索が前提で、エンジンでは再現できないため。",
+  "status": "unsupported",
+  "source": "https://docs.python.org/ja/3.15/library/modulefinder.html#modulefinder.AddPackagePath",
+ },
+ {
+  "name": "modulefinder.ReplacePackage",
+  "category": "標準ライブラリ",
+  "syntax": "modulefinder.ReplacePackage(...)",
+  "description": "パッケージ探索の調整関数。",
+  "example": "import modulefinder\nprint(modulefinder.ReplacePackage)",
+  "caution": "本アプリの高度モードでは未対応です。ファイルシステム上のモジュール探索が前提で、エンジンでは再現できないため。",
+  "status": "unsupported",
+  "source": "https://docs.python.org/ja/3.15/library/modulefinder.html#modulefinder.ReplacePackage",
+ },
+];
+export const referenceOverrides = [];
