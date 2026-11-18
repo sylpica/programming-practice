@@ -3843,11 +3843,11 @@
   "fields": {
    "description": "波括弧 {} の位置に値を差し込んで文字列を作るメソッド。",
    "returns": "str: 整形済み文字列",
-   "caution": "現在は f文字列（f\"{x}\"）の方が簡潔な場面が多い。{} に対して引数が足りないと IndexError（多すぎる引数は無視される）。このアプリのシミュレーションでは未対応として停止する。",
+   "caution": "現在は f文字列（f\"{x}\"）の方が簡潔な場面が多い。{} に対して引数が足りないと IndexError（多すぎる引数は無視される）。str.format 自体は本アプリでも実行できる（この項目は未対応分類の参照専用として残している）。",
    "example": "def handler(event, context):\n    print(\"{} + {} = {}\".format(2, 3, 5))\n    return {\"requestId\":event[\"requestId\"],\"status\":\"success\",\"fragment\":event[\"fragment\"]}",
    "source": "https://docs.python.org/ja/3.12/library/stdtypes.html#str.format"
   },
-  "sha256": "0f4e42640645c49c96432b8f2dc29e98b8311f3b36b885cce0ec9d8b979d0c61",
+  "sha256": "9b823593a929e0268337a1c389afc3c2b45369078f247b840b49fcb5ac9a4484",
   "description": "照合済",
   "returns": "照合済",
   "caution": "照合済（モデル固有の限定は実装・試験で確認）"
@@ -3969,13 +3969,13 @@
   "name": "with",
   "supported": true,
   "fields": {
-   "description": "リソースの後始末（ファイルのクローズ等）を自動化する構文。本アプリでは本文を実行する部分対応で、後始末そのものは再現しない。",
+   "description": "リソースの後始末（ファイルのクローズ等）を自動化する構文。__enter__／__exit__ を定義したオブジェクトでは、本アプリでもその処理を含めて再現する。",
    "returns": "—（構文のため戻り値なし）",
-   "caution": "ブロックを抜けると例外時でも __exit__ が呼ばれ後始末される（実際の Python）。対象はコンテキストマネージャ対応オブジェクトに限る。本アプリでは部分対応である：本文は実行されるが、__enter__／__exit__ の実際の処理や後始末は再現されず、as 変数には未確定値が入る。open() と組み合わせた場合は open 自体が未対応のため停止する。",
+   "caution": "__enter__／__exit__ を定義したオブジェクトでは、その処理も含めて実際の Python と同じに再現する。ブロックを抜けると、例外時でも __exit__ が呼ばれ、__exit__ が True を返すと起きた例外は抑えられる。as 変数には __enter__ の戻り値が入る。定義していないオブジェクトに使う場合は部分対応である：本文は実行されるが、as 変数には未確定値が入り、後始末は再現されない。open() と組み合わせた場合は open 自体が未対応のため停止する。",
    "example": "def handler(event, context):\n    class Ctx:\n        def __enter__(self):\n            return self\n        def __exit__(self, *args):\n            return False\n    with Ctx() as c:\n        print(\"本文を実行\")\n    return {\"requestId\":event[\"requestId\"],\"status\":\"success\",\"fragment\":event[\"fragment\"]}",
    "source": "https://docs.python.org/ja/3.12/reference/compound_stmts.html#the-with-statement"
   },
-  "sha256": "be76a06b0d1b65cc8813762eaf9371efb065aa24941e073ab1112ca6ed2cf67a",
+  "sha256": "a9d50fe4ee5d9fe5ecc3504450f53e9e66649a14a97693288ca840e08b05e1f4",
   "description": "照合済",
   "returns": "照合済",
   "caution": "照合済（モデル固有の限定は実装・試験で確認）"
@@ -4019,11 +4019,11 @@
   "fields": {
    "description": "乱数やランダムな選択を提供する標準ライブラリ。",
    "returns": "モジュール",
-   "caution": "再現性が必要な実験では seed() を固定する。セキュリティ用途（パスワード等）には使わず secrets モジュールを使う。このアプリのシミュレーションでは未対応として停止する。",
+   "caution": "再現性が必要な実験では seed() を固定する。セキュリティ用途（パスワード等）には使わず secrets モジュールを使う。この項目は未対応分類の参照専用として残している。簡易モードではモジュールの読み込み自体が未対応として停止するが、高度モードでは読み込みや主な機能を実行できる。",
    "example": "def handler(event, context):\n    import random\n    random.seed(0)\n    print(random.choice([\"a\", \"b\", \"c\"]))\n    return {\"requestId\":event[\"requestId\"],\"status\":\"success\",\"fragment\":event[\"fragment\"]}",
    "source": "https://docs.python.org/ja/3.12/library/random.html"
   },
-  "sha256": "5124b942ac714fcbae3a64044d1b37acc9a328e8102ca0823fa90413c570bd96",
+  "sha256": "6fbba2e6befa22500cdbcc491d8a976af0684a88fa974c2f32d472be4d37fd1e",
   "description": "照合済",
   "returns": "照合済",
   "caution": "照合済（モデル固有の限定は実装・試験で確認）"
@@ -4035,11 +4035,11 @@
   "fields": {
    "description": "PythonオブジェクトとJSON文字列を相互変換する標準ライブラリ。",
    "returns": "モジュール",
-   "caution": "dumps は文字列化、dump はファイル出力。タプルはJSONでは配列になる。日付型はそのままでは変換できない。このアプリのシミュレーションでは未対応として停止する。",
+   "caution": "dumps は文字列化、dump はファイル出力。タプルはJSONでは配列になる。日付型はそのままでは変換できない。この項目は未対応分類の参照専用として残している。簡易モードではモジュールの読み込み自体が未対応として停止するが、高度モードでは読み込みや主な機能を実行できる。",
    "example": "def handler(event, context):\n    import json\n    print(json.dumps({\"name\": \"タロウ\", \"age\": 20}, ensure_ascii=False))\n    return {\"requestId\":event[\"requestId\"],\"status\":\"success\",\"fragment\":event[\"fragment\"]}",
    "source": "https://docs.python.org/ja/3.12/library/json.html"
   },
-  "sha256": "2c4d649dda9a12f32755130f857e7fac21d2a83d3b450415668da27cc80a02d1",
+  "sha256": "195ea459b29b8f4875255a1bbb60549025ae696106c1b480a5442faecb7cdef1",
   "description": "照合済",
   "returns": "照合済",
   "caution": "照合済（モデル固有の限定は実装・試験で確認）"
@@ -4067,11 +4067,11 @@
   "fields": {
    "description": "日付と時刻を扱う標準ライブラリ。",
    "returns": "モジュール",
-   "caution": "2024年はうるう年のため2月29日が存在する。年・月・日の順序や書式コード（%Y等）を間違えやすい。タイムゾーンが必要なら datetime.timezone を使う。このアプリのシミュレーションでは未対応として停止する。",
+   "caution": "2024年はうるう年のため2月29日が存在する。年・月・日の順序や書式コード（%Y等）を間違えやすい。タイムゾーンが必要なら datetime.timezone を使う。この項目は未対応分類の参照専用として残している。簡易モードではモジュールの読み込み自体が未対応として停止するが、高度モードでは読み込みや主な機能を実行できる。",
    "example": "def handler(event, context):\n    import datetime\n    d = datetime.date(2024, 2, 29)\n    print(d.strftime(\"%Y-%m-%d\"))\n    return {\"requestId\":event[\"requestId\"],\"status\":\"success\",\"fragment\":event[\"fragment\"]}",
    "source": "https://docs.python.org/ja/3.12/library/datetime.html"
   },
-  "sha256": "48a15a3919f1d10b421931b82572e38b38063391f95e5bca0caef9b3704a301e",
+  "sha256": "e7cefee590121f4919737d4e8210db13a8f79a3bc5df6ad3552717f199ba6d81",
   "description": "照合済",
   "returns": "照合済",
   "caution": "照合済（モデル固有の限定は実装・試験で確認）"
@@ -5651,11 +5651,11 @@
   "fields": {
    "description": "波括弧 {} の位置に値を差し込んで文字列を作るメソッド。",
    "returns": "str: 整形済み文字列",
-   "caution": "現在は f文字列（f\"{x}\"）の方が簡潔な場面が多い。{} に対して引数が足りないと IndexError（多すぎる引数は無視される）。このアプリのシミュレーションでは未対応として停止する。",
+   "caution": "現在は f文字列（f\"{x}\"）の方が簡潔な場面が多い。{} に対して引数が足りないと IndexError（多すぎる引数は無視される）。str.format 自体は本アプリでも実行できる（この項目は未対応分類の参照専用として残している）。",
    "example": "print(\"{} + {} = {}\".format(2, 3, 5))",
    "source": "https://docs.python.org/ja/3.12/library/stdtypes.html#str.format"
   },
-  "sha256": "269aa870321792c35859d83a65408e1f1d1d7eee8393cad18708341dd17d5a6a",
+  "sha256": "fdb47711a9c6433d24661311a0f63d62a5a3ae584884dcec675d1cf972a13e88",
   "description": "照合済",
   "returns": "照合済",
   "caution": "照合済（モデル固有の限定は実装・試験で確認）"
@@ -5777,13 +5777,13 @@
   "name": "with",
   "supported": true,
   "fields": {
-   "description": "リソースの後始末（ファイルのクローズ等）を自動化する構文。本アプリでは本文を実行する部分対応で、後始末そのものは再現しない。",
+   "description": "リソースの後始末（ファイルのクローズ等）を自動化する構文。__enter__／__exit__ を定義したオブジェクトでは、本アプリでもその処理を含めて再現する。",
    "returns": "—（構文のため戻り値なし）",
-   "caution": "ブロックを抜けると例外時でも __exit__ が呼ばれ後始末される（実際の Python）。対象はコンテキストマネージャ対応オブジェクトに限る。本アプリでは部分対応である：本文は実行されるが、__enter__／__exit__ の実際の処理や後始末は再現されず、as 変数には未確定値が入る。open() と組み合わせた場合は open 自体が未対応のため停止する。",
+   "caution": "__enter__／__exit__ を定義したオブジェクトでは、その処理も含めて実際の Python と同じに再現する。ブロックを抜けると、例外時でも __exit__ が呼ばれ、__exit__ が True を返すと起きた例外は抑えられる。as 変数には __enter__ の戻り値が入る。定義していないオブジェクトに使う場合は部分対応である：本文は実行されるが、as 変数には未確定値が入り、後始末は再現されない。open() と組み合わせた場合は open 自体が未対応のため停止する。",
    "example": "class Ctx:\n    def __enter__(self):\n        return self\n    def __exit__(self, *args):\n        return False\nwith Ctx() as c:\n    print(\"本文を実行\")",
    "source": "https://docs.python.org/ja/3.12/reference/compound_stmts.html#the-with-statement"
   },
-  "sha256": "4a86dfdb9b1bcf99f3f6067d3a1d624d348255ee60d87f5427425b582d5945b7",
+  "sha256": "f1947c28ca7b6ca59dc39bef99a072db0e9bbeeefb601420c998427ac9b957c5",
   "description": "照合済",
   "returns": "照合済",
   "caution": "照合済（モデル固有の限定は実装・試験で確認）"
@@ -5827,11 +5827,11 @@
   "fields": {
    "description": "乱数やランダムな選択を提供する標準ライブラリ。",
    "returns": "モジュール",
-   "caution": "再現性が必要な実験では seed() を固定する。セキュリティ用途（パスワード等）には使わず secrets モジュールを使う。このアプリのシミュレーションでは未対応として停止する。",
+   "caution": "再現性が必要な実験では seed() を固定する。セキュリティ用途（パスワード等）には使わず secrets モジュールを使う。この項目は未対応分類の参照専用として残している。簡易モードではモジュールの読み込み自体が未対応として停止するが、高度モードでは読み込みや主な機能を実行できる。",
    "example": "import random\nrandom.seed(0)\nprint(random.choice([\"a\", \"b\", \"c\"]))",
    "source": "https://docs.python.org/ja/3.12/library/random.html"
   },
-  "sha256": "8882c79f889e926bb7827f2c62e94ef03634b8091f26f8ef5d8cde7c958045b7",
+  "sha256": "0b8e8413c296b6c1d45fe9d00cb7763942751d80d015e41b3bfe2f6adcae0347",
   "description": "照合済",
   "returns": "照合済",
   "caution": "照合済（モデル固有の限定は実装・試験で確認）"
@@ -5843,11 +5843,11 @@
   "fields": {
    "description": "PythonオブジェクトとJSON文字列を相互変換する標準ライブラリ。",
    "returns": "モジュール",
-   "caution": "dumps は文字列化、dump はファイル出力。タプルはJSONでは配列になる。日付型はそのままでは変換できない。このアプリのシミュレーションでは未対応として停止する。",
+   "caution": "dumps は文字列化、dump はファイル出力。タプルはJSONでは配列になる。日付型はそのままでは変換できない。この項目は未対応分類の参照専用として残している。簡易モードではモジュールの読み込み自体が未対応として停止するが、高度モードでは読み込みや主な機能を実行できる。",
    "example": "import json\nprint(json.dumps({\"name\": \"タロウ\", \"age\": 20}, ensure_ascii=False))",
    "source": "https://docs.python.org/ja/3.12/library/json.html"
   },
-  "sha256": "06428e27714d7d36f21d25fd3fb3ade20d60a2ed5124d4945c3614a5be4fe77c",
+  "sha256": "c5fb0b49810bed65f9e23d2dad6b11c36b9c1e040e6eb0809fb7a21071ffa32d",
   "description": "照合済",
   "returns": "照合済",
   "caution": "照合済（モデル固有の限定は実装・試験で確認）"
@@ -5875,11 +5875,11 @@
   "fields": {
    "description": "日付と時刻を扱う標準ライブラリ。",
    "returns": "モジュール",
-   "caution": "2024年はうるう年のため2月29日が存在する。年・月・日の順序や書式コード（%Y等）を間違えやすい。タイムゾーンが必要なら datetime.timezone を使う。このアプリのシミュレーションでは未対応として停止する。",
+   "caution": "2024年はうるう年のため2月29日が存在する。年・月・日の順序や書式コード（%Y等）を間違えやすい。タイムゾーンが必要なら datetime.timezone を使う。この項目は未対応分類の参照専用として残している。簡易モードではモジュールの読み込み自体が未対応として停止するが、高度モードでは読み込みや主な機能を実行できる。",
    "example": "import datetime\nd = datetime.date(2024, 2, 29)\nprint(d.strftime(\"%Y-%m-%d\"))",
    "source": "https://docs.python.org/ja/3.12/library/datetime.html"
   },
-  "sha256": "c48de51c0682c9bfa21f6a731aeb54d8bb9a8e3f036e6df357616d3f08fc405c",
+  "sha256": "f290c213f388b2ebae140e6acced6d44f832f1d931241f27cdc0d3225a2905a3",
   "description": "照合済",
   "returns": "照合済",
   "caution": "照合済（モデル固有の限定は実装・試験で確認）"
@@ -12748,11 +12748,11 @@
   "fields": {
    "description": "16ビット符号なし整数（System.UInt16）です。範囲は 0〜65535。",
    "returns": "戻り値なし（宣言または制御文）",
-   "caution": "既定（unchecked）では、範囲を超える演算・変換は 65536 の剰余で折り返します。checked では OverflowException になります。また ushort.MaxValue／MinValue は静的メンバーの表になく未対応として停止します（型自体は対応済み）。",
+   "caution": "既定（unchecked）では、範囲を超える演算・変換は 65536 の剰余で折り返します。checked では OverflowException になります。ushort.MaxValue／MinValue 自体も参照できます。",
    "example": "using System;\nclass Program {\n    static void Main() {\nushort n = 1;\n    }\n}",
    "source": "https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/builtin-types/integral-numeric-types"
   },
-  "sha256": "9dfb66d2c66302c5c684b9bf596a5f9dfc2b1e036d82dc6cd157caf0da6a9cce"
+  "sha256": "c16302f514856673d2711395b8157d7166c73a7f2f6211ec43b0f86d1a1d05ed"
  },
  {
   "kind": "csharp",
