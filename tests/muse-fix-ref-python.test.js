@@ -179,15 +179,19 @@ test("R22-ref cloudformation: four intrinsic items exist with contracts", async 
   assert.ok(errors(rr).some((e) => /変換できませんでした/.test(e.message)), JSON.stringify(errors(rr)));
 });
 
-test("R22-ref python: fallback-only names stay unitemized by design", () => {
+test("R22-ref python: fallback-only names stay unitemized in the base catalog", () => {
+  // 基礎（簡易モード）カタログに項目を作らない設計は不変。ただし高度モード
+  // （ブロックB6、計画 §1.1／F-16）で ascii／casefold 等は単一エンジンに
+  // 実装され、高度差分カタログ（ref-*-advanced.js）に収載されたため、
+  // 「呼び出しは未対応として止まる」という旧来の実態確認は supersede された。
+  // エンジンは単一であり、実装済みの名前はモードによらず動作する。
   const names = new Set(py.reference.map((r) => r.name));
   for (const n of FALLBACK_BUILTINS) assert.ok(!names.has(n), `should not be itemized: ${n}`);
   for (const n of FALLBACK_METHODS) assert.ok(!names.has(n), `should not be itemized: ${n}`);
-  // フォールバック受理の実態：名前は受理されるが呼び出しは未対応として止まる
   return (async () => {
     const r = await run(py, 'print(ascii("a"))');
-    assert.ok(errors(r).some((e) => /未対応/.test(e.message)));
+    assert.deepEqual(errors(r), []);
     const r2 = await run(py, 's = "Ab"\nprint(s.casefold())');
-    assert.ok(errors(r2).some((e) => /casefold/.test(e.message)));
+    assert.deepEqual(errors(r2), []);
   })();
 });

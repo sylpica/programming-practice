@@ -255,17 +255,33 @@ test("R26-N25 legal random forms keep the unknown-value model", async () => {
 });
 
 test("R26-N25 unimplemented random relatives still stop by name", async () => {
-  // 実装済みの乱数系は rnorm／runif／sample のみ。残りは検証対象では
-  // なく、未実装として名指し停止する従来経路にあること。
-  for (const code of [
-    "sample.int(10, 5)",
-    "rbinom(-1, 10, 0.5)",
-    "rpois(-1, 2)",
-  ]) {
+  // 前提更新（2026-11-18、高度モード B4S）：rbinom／rpois は stats の
+  // 分布関数として対応化された（引数検証つき freshUnknown）。そのため
+  // 本テストの対象は base 範囲で未実装のままの sample.int のみに縮小し、
+  // rbinom／rpois は下の新テストで新挙動を固定する。sample.int は
+  // 従来どおり未実装として名指し停止する経路にあること。
+  for (const code of ["sample.int(10, 5)"]) {
     const errs = await errOf(code);
     assert.ok(
       errs.some((e) => /説明に対応していません/.test(e.message)),
       code + " -> " + JSON.stringify(errs),
     );
+  }
+});
+
+test("R26-N25 (B4S) rbinom / rpois validate arguments like real R", async () => {
+  // 実 R 4.3.3 実測：rbinom(-1, 10, 0.5) / rpois(-1, 2) は
+  // "invalid arguments" でエラー。正の引数では実行時の値（未確定値）
+  // となり、決め打ちの値を返さない。
+  for (const code of ["rbinom(-1, 10, 0.5)", "rpois(-1, 2)"]) {
+    const errs = await errOf(code);
+    assert.ok(
+      errs.some((e) => e.message === "invalid arguments"),
+      code + " -> " + JSON.stringify(errs),
+    );
+  }
+  for (const code of ["rbinom(3, 10, 0.5)", "rpois(3, 2)"]) {
+    const errs = await errOf(code);
+    assert.deepEqual(errs, [], code);
   }
 });

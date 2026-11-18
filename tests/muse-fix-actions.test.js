@@ -208,7 +208,11 @@ test("RG-10 CloudFormation YAML short tags become an unsupported declaration", a
   assert.match(r.error.message, /未対応：YAML短縮タグ !If/);
   assert.doesNotMatch(r.error.message, /unknown tag/);
 });
-test("RG-10 UI.Vision forEach block reports the start command as unsupported", async () => {
+test("RG-10 UI.Vision forEach block executes as an each loop (advanced mode B1)", async () => {
+  // 高度モード ブロックB1 で forEach を実装したため、RG-10 当時の
+  // 「未対応として報告される」前提は置き換わった（単一エンジン＋2層
+  // カタログの計画決定）。ここでは新しい正本の挙動を固定する：
+  // 配列変数を反復して本体を実行し、End 欠落はループの原因表示で止まる。
   let r = await run("uivision", uiv([
     cmd("executeScript_Sandbox", "return [1, 2];", "items"),
     cmd("forEach", "${items}", "item"),
@@ -216,10 +220,10 @@ test("RG-10 UI.Vision forEach block reports the start command as unsupported", a
     cmd("end"),
   ]));
   assert.equal(r.paths.length, 1);
-  assert.match(r.paths[0].error.message, /このコマンドは説明に対応していません：forEach/);
-  assert.doesNotMatch(r.paths[0].error.message, /対応する開始アクションがありません/);
+  assert.equal(r.paths[0].error, undefined);
+  assert.deepEqual(r.paths[0].outputs.map((o) => o.text), ["1", "2"]);
   let noEnd = await run("uivision", uiv([cmd("forEach", "${items}", "item"), cmd("echo", "x")]));
-  assert.match(noEnd.error.message, /forEach に対応するEndがありません/);
+  assert.match(noEnd.error.message, /ループに対応するEndがありません/);
 });
 
 /* RG-25: CloudFormation の未設定値 "undefined" をメッセージに混入させない */

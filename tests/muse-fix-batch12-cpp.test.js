@@ -251,13 +251,12 @@ test("RG-376: multidimensional std::string arrays and sibling surfaces", async (
     errors(extra).some((e) => e.includes("添字の数が次元の数を超えています")),
     JSON.stringify(errors(extra)),
   );
-  // std::vector<std::string> はジェネリック型そのものが未対応という
-  // 真実の名指しのまま（要素の問題ではない）。
+  // B8 高度モードで std::vector<std::string> の宣言・要素アクセスを実装
+  // したため、この形は正常動作する（旧仕様「ジェネリック型そのものが
+  // 未対応」は B8 で意図的に反転）。
   const vec = await run("cpp", cpp(`std::vector<std::string> v = {"ab"}; std::cout << v[0];`));
-  assert.ok(
-    errors(vec).some((e) => e.includes("未対応") && e.includes("vector")),
-    JSON.stringify(errors(vec)),
-  );
+  assert.deepEqual(errors(vec), [], JSON.stringify(errors(vec)));
+  assert.deepEqual(outputs(vec), [["ab"]]);
 });
 
 /* ---------- 対照言語（C／C#）の不変 ---------- */

@@ -83,13 +83,16 @@ test("batch10-vba sweep-a Boolean arithmetic and comparison use True = -1", asyn
   assert.deepEqual(await vbaOut("Debug.Print True = -1"), ["True"]);
   assert.deepEqual(await vbaOut("Debug.Print Abs(True)"), ["1"]);
 });
-test("batch10-vba sweep-a CCur/CSng/CBool stay named unsupported stops (no reference items)", async () => {
-  for (const fn of ["CCur", "CSng", "CBool"]) {
-    const r = await vbaRun(`Debug.Print ${fn}(True)`);
-    const errs = [r.error, ...(r.paths || []).map((p) => p.error)].filter(Boolean);
-    assert.ok(errs.length, fn);
-    assert.match(errs.map((e) => e.message).join(" "), new RegExp(fn, "i"));
-  }
+test("batch10-vba sweep-a CCur/CSng/CBool execute as VBA conversions (B4 implementation)", async () => {
+  // 統合第2弾の裁定（ADV-B4-REPORT §5）：CCur／CSng／CBool は B4 が高度
+  // 実装したため、名指し停止ではなく実 VBA の変換規則で実行される。
+  // 根拠：Microsoft Learn の各変換関数（Boolean の True は数値変換で -1、
+  // CBool(0) は False）。基礎リファレンスに項目が無い点は不変。
+  assert.deepEqual(await vbaOut("Debug.Print CCur(True)"), ["-1"]);
+  assert.deepEqual(await vbaOut("Debug.Print CSng(True)"), ["-1"]);
+  assert.deepEqual(await vbaOut("Debug.Print CBool(True)"), ["True"]);
+  assert.deepEqual(await vbaOut("Debug.Print CBool(0)"), ["False"]);
+  assert.deepEqual(await vbaOut("Debug.Print CCur(1.5)"), ["1.5"]);
 });
 test("batch10-vba sweep-c degenerate models and truncated expressions leak no internal tokens", async () => {
   for (const model of [null, 123, "x", [], {}]) {

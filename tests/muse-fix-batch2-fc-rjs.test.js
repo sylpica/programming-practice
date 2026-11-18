@@ -101,13 +101,11 @@ test("R-02 sibling: [[ keeps exact matching by default (?Extract exact=TRUE)", a
 });
 
 // ---- JS-01：未対応メンバー呼び出しの理由は虚偽にしない ----
+// 高度モード（ブロックB5）で Math.max／Math.ceil／Math.sqrt／JSON.parse／
+// Object.keys／Array.isArray は実装済みになったため、停止前提の固定を
+// 実装済みの検証へ反転した（単一エンジン方式：モードは実行結果を変えず、
+// 表示範囲だけを変える）。未実装の console.warn は従来どおり名前付き停止。
 for (const [code, name] of [
-  ["console.log(Math.max(1, 2));", "Math.max"],
-  ["console.log(Math.ceil(1.5));", "Math.ceil"],
-  ["console.log(Math.sqrt(4));", "Math.sqrt"],
-  ["console.log(JSON.parse('{}'));", "JSON.parse"],
-  ["console.log(Object.keys({a: 1}));", "Object.keys"],
-  ["console.log(Array.isArray([1]));", "Array.isArray"],
   ["console.warn('x');", "console.warn"],
 ]) {
   test("JS-01 unsupported member call names the function: " + code, async () => {
@@ -116,6 +114,19 @@ for (const [code, name] of [
     assert.equal(e.message, "このJavaScript関数は説明に対応していません：" + name);
     assert.notEqual(e.category, "ReferenceError");
     assert.doesNotMatch(e.message, /未定義の名前/);
+  });
+}
+for (const [code, expected] of [
+  ["console.log(Math.max(1, 2));", ["2"]],
+  ["console.log(Math.ceil(1.5));", ["2"]],
+  ["console.log(Math.sqrt(4));", ["2"]],
+  ["console.log(JSON.parse('{\"a\": 1}').a);", ["1"]],
+  ["console.log(Object.keys({a: 1}).length);", ["1"]],
+  ["console.log(Array.isArray([1]));", ["true"]],
+]) {
+  test("JS-01 advanced-implemented member call runs: " + code, async () => {
+    const p = await okPath(runJS, code);
+    assert.deepEqual(outputs(p), expected);
   });
 }
 test("JS-01 supported members still work and true undefined names still ReferenceError", async () => {
@@ -128,9 +139,9 @@ test("JS-01 supported members still work and true undefined names still Referenc
   assert.match(errOf(r).message, /未定義の名前：foo/);
 });
 test("JS-01 sibling surfaces: property reads and bare global names are honest", async () => {
-  const r = await runJS("console.log(Math.PI);");
-  assert.match(errOf(r).message, /このJavaScriptプロパティは説明に対応していません：Math\.PI/);
-  assert.doesNotMatch(errOf(r).message, /未定義の名前/);
+  // 高度モード（ブロックB5）で Math.PI の読み取りは実装済み（実値を返す）。
+  const pPI = await okPath(runJS, "console.log(Math.PI);");
+  assert.deepEqual(outputs(pPI), ["3.141592653589793"]);
   // ユーザーが同名の変数を定義した場合はそちらが優先される
   const p = await okPath(runJS, "let Math = {max: 5}; console.log(Math.max);");
   assert.deepEqual(outputs(p), ["5"]);

@@ -34,9 +34,17 @@ const searchHitOld = (r, q) =>
     .includes(q.toLowerCase());
 
 test("R25-N7(a): both reference search predicates in app.js include syntax", () => {
-  const occurrences =
-    appSrc.split('r.description + " " + r.syntax').length - 1;
-  assert.equal(occurrences, 2, "renderRefs と fullRefs の両述語に syntax が必要");
+  // 統合第1弾（台帳 RG-601）: 述語は共通ヘルパー refSearchText へ
+  // 一本化された（B5 §3 の機構側要件で inventoryNames／scan も索引へ
+  // 追加）。形状検査は「両経路が同じヘルパーを使い、そのヘルパーが
+  // name／category／description／syntax の4要素を含む」形へ追従する。
+  // 検査の意図（両経路とも syntax で到達できること）は不変。
+  const uses = appSrc.split("refSearchText(r).includes(q)").length - 1;
+  assert.equal(uses, 2, "renderRefs と fullRefs の両経路が refSearchText を使う必要");
+  assert.ok(
+    appSrc.includes("[r.name, r.category, r.description, r.syntax]"),
+    "refSearchText が name／category／description／syntax を索引に含む必要",
+  );
 });
 
 test("R25-N7(a): every reference item is found by its own name (all 1403)", () => {

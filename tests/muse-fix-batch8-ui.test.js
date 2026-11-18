@@ -104,8 +104,10 @@ test("R29-N4 every engine template that says 未対応 carries the 未対応： 
     .split("\n")
     .filter((l) => l.includes("はモデルで未対応です"));
   // 文字列メソッド／配列メソッド／File.*／公式／フォールバック／
-  // RoiManager 操作／メニューコマンド／eval（修正バッチ13 R7-88）の8テンプレート。
-  assert.equal(lines.length, 8);
+  // RoiManager 操作／メニューコマンド／eval（修正バッチ13 R7-88）の8テンプレートに、
+  // 高度モード ブロックB3 の高度レジストリ未対応テンプレート（engine.js の
+  // advancedEntry 委譲）を加えた9テンプレート。
+  assert.equal(lines.length, 9);
   for (const l of lines) {
     assert.ok(l.includes("未対応："), l);
     assert.ok(!l.includes("未確認"), l);
@@ -175,6 +177,13 @@ test("R29-N4 Python/CFN reference-only runtime messages start with 未対応："
   for (const id of ["python", "cloudformation"]) {
     const d = getDefinition(id);
     for (const r of d.reference.filter((x) => !x.supported)) {
+      // 高度モード（ブロックB6）で str.format は単一エンジンに実装され、
+      // 高度差分（ref-types-advanced.js の referenceOverrides）で対応に
+      // 上書きされる。基礎カタログの参照専用分類は簡易モード表示用に
+      // 残るが、実行時の「未対応：」停止はもう起きない（計画 §1.1）。
+      // CloudFormation の同名項目も、Python 形式コードを Python エンジンへ
+      // 委譲する実装（cloudformation/index.js）のため同じく実行できる。
+      if (r.name === "str.format") continue;
       const res = await d.simulate(
         r.example,
         structuredClone(d.model.defaults),
@@ -332,6 +341,11 @@ function makeHarness() {
     "renderRefs",
     "fullRefs",
     "updateUsed",
+    // 統合第1弾: renderRefs／fullRefs が refSearchText を、updateUsed が
+    // renderResultNotes（mode を参照）を呼ぶようになったための追従。
+    // アサーションは変更していない。
+    "refSearchText",
+    "renderResultNotes",
   ];
   const factory = new Function(
     "document",
@@ -340,7 +354,7 @@ function makeHarness() {
     "showRef",
     "refsInTrace",
     "console",
-    "let reference = [], active = null, result = null, paths = [], current = 0;\n" +
+    "let reference = [], active = null, result = null, paths = [], current = 0, mode = \"simple\";\n" +
       extractFunctions(appSource, names) +
       "\nreturn { renderRefs, fullRefs, updateUsed, renderExplanation, refArticle, referenceOnlyMark," +
       " setState(s) { if ('reference' in s) reference = s.reference; if ('active' in s) active = s.active;" +

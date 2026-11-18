@@ -220,5 +220,5 @@ test("r2 ledger rows for changed and new python items match the definitions", ()
   }
   // 統合裁定：sha256 は fields の正規方式（sort_keys・ensure_ascii=False の JSON の sha256）で再計算された値に一致する
   const w = rows.find((r) => r.kind === "python" && r.name === "with");
-  assert.equal(w.sha256, "4a86dfdb9b1bcf99f3f6067d3a1d624d348255ee60d87f5427425b582d5945b7");
+  assert.equal(w.sha256, "f1947c28ca7b6ca59dc39bef99a072db0e9bbeeefb601420c998427ac9b957c5");
 });

@@ -101,6 +101,16 @@ for (const [name, exp] of Object.entries(NEW_REF_ONLY)) {
   test(`vbasweep reference-only owner example stops honestly (no silent success): ${name}`, async () => {
     const r = vba.reference.find((x) => x.name === name);
     const res = await vba.simulate(r.example, structuredClone(vba.model.defaults));
+    // 統合第2弾の裁定（ADV-B4-REPORT §5）：FormatDateTime／VarType／
+    // Weekday は B4 が高度実装したため、基礎リファレンスでは参照のみ
+    // のままでもエンジンでは例が実行できる（単一エンジン原則）。
+    // FormatDateTime／Weekday の例は Date（実行時値）を引数にするため
+    // 結果は未確定値になり、VarType の例は値が返る。いずれも停止しない
+    // ことが正しい挙動。根拠：Microsoft Learn の各関数。
+    if (["FormatDateTime", "VarType", "Weekday"].includes(name)) {
+      assert.equal(vbaErrs(res).length, 0, `${name} example must run: ${r.example}`);
+      return;
+    }
     assert.ok(vbaErrs(res).length >= 1, `${name} example must stop: ${r.example}`);
   });
 }
@@ -109,14 +119,28 @@ test("vbasweep function owners stop naming the function", async () => {
   for (const [code, re] of [
     ['x = GetAttr("TESTFILE")', /getattr/],
     ['x = Dir("*.txt")', /dir/],
-    ["x = FormatDateTime(Date, vbLongDate)", /formatdatetime/],
-    ["x = VarType(42)", /vartype/],
-    ["x = Weekday(Date)", /weekday/],
   ]) {
     const r = await vba.simulate(code, structuredClone(vba.model.defaults));
     assert.ok(vbaErrs(r).length >= 1, code);
     assert.match(vbaErrs(r)[0].message, re, code);
   }
+  // 統合第2弾の裁定（ADV-B4-REPORT §5）：FormatDateTime／VarType／
+  // Weekday は B4 が高度実装したため実行できる。FormatDateTime／
+  // Weekday は Date が実行時値のため未確定値、VarType(42) は本エンジン
+  // の数値モデル（実数は Double）により vbDouble=5 を返す。
+  for (const code of [
+    "x = FormatDateTime(Date, vbLongDate)",
+    "x = VarType(42)",
+    "x = Weekday(Date)",
+  ]) {
+    const r = await vba.simulate(code, structuredClone(vba.model.defaults));
+    assert.equal(vbaErrs(r).length, 0, code);
+  }
+  const vt = await vba.simulate(
+    "x = VarType(42)",
+    structuredClone(vba.model.defaults),
+  );
+  assert.equal(vt.paths[0].vars.x, 5);
   // SetAttr は文形式のため、文全体を名指しした未対応停止になる
   const r = await vba.simulate(
     'SetAttr "TESTFILE", vbReadOnly',

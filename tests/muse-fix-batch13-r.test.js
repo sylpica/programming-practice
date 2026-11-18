@@ -102,7 +102,10 @@ test("B13-RFIX data.frame column names keep deparse spacing for binary operators
   await outIs("print(names(data.frame(1 + (2 + 3))))", ['c("X1....2...3.")']);
   await outIs("print(names(data.frame((2 ^ 3) ^ 2)))", ['c("X.2.3..2")']);
   await outIs("print(names(data.frame(2 ^ 3 ^ 2)))", ['c("X2.3.2")']);
-  await outIs("print(names(data.frame(-(1 + 1))))", ['c("..1...1.")']);
+  // A4-R是正（実 R 4.3.3 実測＋?make.names）：make.names の X 接頭辞は
+  // 変換後の先頭ではなく元の先頭文字で決まるため "-(1 + 1)" は
+  // "X..1...1." になる（実測 names(data.frame(-(1 + 1)))＝"X..1...1."）。
+  await outIs("print(names(data.frame(-(1 + 1))))", ['c("X..1...1.")']);
   await outIs("print(names(data.frame(-1 + 1)))", ['c("X.1...1")']);
   await outIs("print(names(data.frame(mean(1 + 1))))", ['c("mean.1...1.")']);
   await outIs("print(names(data.frame(c(a = 1))))", ['c("c.a...1.")']);
@@ -112,7 +115,9 @@ test("B13-RFIX data.frame column names keep deparse spacing for binary operators
   await outIs("print(names(data.frame(-1)))", ['c("X.1")']);
   await outIs("print(names(data.frame(2.5)))", ['c("X2.5")']);
   await outIs("print(names(data.frame(mean(1))))", ['c("mean.1.")']);
-  await outIs("print(names(data.frame(!TRUE)))", ['c(".TRUE")']);
+  // A4-R是正（実 R 4.3.3 実測＋?make.names）：同上。"!TRUE" は
+  // "X.TRUE" になる（実測 names(data.frame(!TRUE))＝"X.TRUE"）。
+  await outIs("print(names(data.frame(!TRUE)))", ['c("X.TRUE")']);
 });
 
 // ---- R7-28：%in% の NA と NaN ----
@@ -124,12 +129,18 @@ test("B13-R %in% matches NA to NA and NaN to NaN but not across", async () => {
 });
 
 // ---- R7-80：存在しない関数×未確定引数 ----
+// 統合第2弾の裁定（ADV-B4-REPORT §5）：B4 が sqrt を高度実装したため、
+// sqrt(readline()) は「sqrt 名指しの停止」ではなく、実在関数の未確定
+// 引数として未確定値を伝播するのが正しい挙動になった（本テスト後半の
+// as.numeric の規則と一致）。存在しない関数（as.numerci）が名指しで
+// 停止する検証は不変。
 test("B13-R unknown function with unknown argument still names the function", async () => {
   await errMatch("a <- as.numerci(readline()); print(a)", /as\.numerci/);
-  await errMatch("print(sqrt(readline()))", /sqrt/);
   // 実在する関数の未確定引数は従来どおり未確定値として扱う。
   const p = await first("a <- as.numeric(readline()); print(a)");
   assert.deepEqual(outputs(p), ["（実行時に決まる値）"]);
+  const ps = await first("print(sqrt(readline()))");
+  assert.deepEqual(outputs(ps), ["（実行時に決まる値）"]);
 });
 
 // ---- R7-81／84／85／86／251：rep の規則 ----
@@ -223,11 +234,24 @@ test("B13-R na.rm coercion and condition errors", async () => {
 });
 
 // ---- R7-158：sd の文字列変換 ----
+// A4-R是正：非数値文字列の扱いは実 R 4.3.3 実測＋公式 ?sd／?var で再裁定
+// した。sd は var 経由で as.double 強制するため、変換できない文字列は
+// エラーではなく警告「NAs introduced by coercion」とともに NA になる
+// （実測：sd(c("a","b"))＝NA＋警告、sd(c("a","1","2"), na.rm=TRUE)＝
+// 0.7071067811865476）。従来の「invalid type of argument」期待値は
+// 実 R と異なるため変更する。
 test("B13-R sd accepts numeric strings", async () => {
   const p = await first('print(sd(c("1", "2")))');
   assert.ok(Math.abs(Number(outputs(p)[0]) - 0.7071067811865476) < 1e-15, outputs(p)[0]);
   await outIs('print(sd("1"))', ["NA"]);
-  await errMatch('print(sd(c("a", "b")))', /invalid type of argument/);
+  const p2 = await first('print(sd(c("a", "b")))');
+  assert.deepEqual(outputs(p2), ["NA"]);
+  assert.ok(
+    p2.trace.some((t) => t.kind === "warning" && /NAs introduced by coercion/.test(t.text)),
+    JSON.stringify(p2.trace),
+  );
+  const p3 = await first('print(sd(c("a", "1", "2"), na.rm = TRUE))');
+  assert.ok(Math.abs(Number(outputs(p3)[0]) - 0.7071067811865476) < 1e-15, outputs(p3)[0]);
 });
 
 // ---- R7-159：cat の sep／fill／sep 検証 ----

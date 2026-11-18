@@ -218,10 +218,9 @@ test("batch12-cs: C/C++ behavior at the same positions is unchanged", async () =
   const cppCast = await run("cpp", cpp(`double d = 1.9; int x = (int)d; std::cout << x;`));
   assert.deepEqual(errors(cppCast), []);
   assert.deepEqual(outputs(cppCast), [["1"]]);
-  // C++ のジェネリック（テンプレート）利用形の既存の名指しは不変。
+  // B8 高度モードで std::vector の宣言・size() を実装したため、この形は
+  // 正常動作する（旧仕様「ジェネリック型は未対応」は B8 で意図的に反転）。
   const cppVec = await run("cpp", cpp(`std::vector<int> v; std::cout << v.size();`));
-  assert.ok(
-    errors(cppVec).some((e) => e.includes("ジェネリック型 vector<...> の宣言は未対応です")),
-    JSON.stringify(errors(cppVec)),
-  );
+  assert.deepEqual(errors(cppVec), []);
+  assert.deepEqual(outputs(cppVec), [["0"]]);
 });

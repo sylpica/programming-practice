@@ -115,7 +115,9 @@ test("RG-06 assignment expressions, foreach, checked expressions", async () => {
 test("RG-06 prefix ++/--, %=, generics, TryParse, new array initializer, getline, do-while, switch", async () => {
   assert.equal(output(await first("c", String.raw`int main(){ int x = 1; ++x; printf("%d", x); return 0; }`)), "2");
   assert.equal(output(await first("c", String.raw`int main(){ int x = 10; x %= 3; printf("%d", x); return 0; }`)), "1");
-  await expectError("cpp", `#include <iostream>\nint main(){ std::vector<int> v; return 0; }`, /ジェネリック型 vector/, "未対応");
+  // B8 高度モードで std::vector の宣言・size() を実装したため、この形は
+  // 正常動作する（旧仕様「ジェネリック型は未対応」は B8 で意図的に反転）。
+  assert.equal(output(await first("cpp", `#include <iostream>\n#include <vector>\nint main(){ std::vector<int> v; std::cout << v.size(); return 0; }`)), "0");
   assert.equal(output(await first("csharp", `string t = "42"; int v; bool ok = int.TryParse(t, out v); Console.WriteLine(v);`)), "42");
   assert.equal(output(await first("csharp", `string t = "42"; bool ok = int.TryParse(t, out int v); Console.WriteLine(v);`)), "42");
   assert.equal(output(await first("csharp", `int[] a = new int[] {1, 2}; Console.WriteLine(a[1]);`)), "2");

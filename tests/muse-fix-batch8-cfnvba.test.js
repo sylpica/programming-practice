@@ -251,13 +251,29 @@ for (const [name, exp] of Object.entries(NEW_REF_ONLY)) {
   test(`reference-only owner example stops honestly (no silent success): ${name}`, async () => {
     const r = vba.reference.find((x) => x.name === name);
     const res = await vba.simulate(r.example, structuredClone(vba.model.defaults));
+    // 統合第2弾の裁定（ADV-B4-REPORT §5）：StrConv は B4 が高度実装した
+    // ため、基礎リファレンスでは参照のみのままでもエンジンでは例が
+    // 実行できる（単一エンジン原則）。停止ではなく実 VBA どおりの
+    // 結果を検証する。根拠：Microsoft Learn StrConv 関数。
+    if (name === "StrConv") {
+      assert.equal(vbaErrs(res).length, 0, `${name} example must run: ${r.example}`);
+      assert.deepEqual(res.paths[0].outputs.map((o) => o.text), ["ABC"], name);
+      return;
+    }
     assert.ok(vbaErrs(res).length >= 1, `${name} example must stop: ${r.example}`);
   });
 }
 
 test("StrConv/Shell/CallByName calls stop naming the function", async () => {
+  // 統合第2弾の裁定（ADV-B4-REPORT §5）：StrConv は B4 が高度実装した
+  // ため実行できる。Shell／CallByName は未実装のまま名指しで停止する。
+  const conv = await vba.simulate(
+    'x = StrConv("abc", vbUpperCase)',
+    structuredClone(vba.model.defaults),
+  );
+  assert.equal(vbaErrs(conv).length, 0);
+  assert.equal(conv.paths[0].vars.x, "ABC");
   for (const [code, re] of [
-    ['x = StrConv("abc", vbUpperCase)', /strconv/],
     ['x = Shell("calc.exe")', /shell/],
     ['x = CallByName(Me, "Foo", vbMethod)', /callbyname/],
   ]) {
