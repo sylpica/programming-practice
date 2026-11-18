@@ -1,9 +1,34 @@
 import { LIMITS, formatValue, refsInTrace } from "./core/contract.js";
-import { definitions, getDefinition } from "./types/registry.js";
+import {
+  definitions,
+  advancedOnlyDefinitions,
+  getDefinition,
+} from "./types/registry.js";
+import { getMode, setMode } from "./core/mode.js";
+import {
+  itemStatus,
+  statusInfo,
+  countByStatus,
+  mergeCatalog,
+} from "./core/catalog.js";
+import { loadAdvanced } from "./core/advanced-loader.js";
 let active = getDefinition("vba"),
   templates = active.templates,
   reference = active.reference,
   glossary = active.glossary || [];
+// 高度モード基盤: 現在のモード（保存が無い・壊れている場合は "simple"）。
+let mode = getMode(),
+  // カタログ再構築の世代カウンタ。種類切替・モード切替が連続した場合に
+  // 古い非同期結果で新しいカタログを上書きしないためのガード。
+  catalogGeneration = 0,
+  // 直近の高度データ読み込みで failed があったか（modeNote の末尾注記用）。
+  catalogFailed = false;
+const MODE_NOTES = {
+  simple:
+    "簡易モード：よく使う関数を中心に収録しています。全ての関数が実装されているわけではありません。網羅的な収録は高度モードにあります。",
+  advanced:
+    "高度モード：各言語・ツールの関数を網羅的に収録しています。項目ごとに「対応／未対応／未検証」を表示します。",
+};
 let drafts = {},
   editorPlugin = null,
   storageBlocked = false,
@@ -730,9 +755,47 @@ function normalizeLineEndings(code) {
 // するための表示情報。文言はリファレンスビューのバッジ
 // （refArticle の「参照用 · 操作は未対応」）と揃える。色だけに頼らず、
 // ボタン／チップの本文にも「未対応」のテキストタグを付ける。
+// 高度モード基盤: 3値ステータス（supported／unsupported／unverified）へ
+// 一般化した。判定と文言は基盤 API（itemStatus／statusInfo）を正とする。
+// このブロックは単体テストがソース抽出して実行するため、import が
+// 解決できない抽出環境では基盤 API と同一規則のフォールバックを使う。
+// 状態導出の単一窓口。実環境では基盤 API の itemStatus を正とし、
+// ソース抽出テスト環境（itemStatus が無い）では catalog.js と同一規則の
+// 導出にフォールバックする（status は3値のいずれかの場合のみ採用し、
+// それ以外は supported から導出する。監査 D-4 の是正：生の status 文字列を
+// そのまま使うと件数表示（itemStatus）とフィルタ・タグが食い違う）。
+function statusWithFallback(r) {
+  if (typeof itemStatus === "function") return itemStatus(r);
+  const s = r?.status;
+  if (s === "supported" || s === "unsupported" || s === "unverified") return s;
+  return r?.supported === false ? "unsupported" : "supported";
+}
 function referenceOnlyMark(r) {
-  if (!r || r.supported !== false) return null;
-  return { tag: "未対応", ariaSuffix: "（参照用 · 操作は未対応）" };
+  if (!r) return null;
+  let info;
+  if (typeof itemStatus === "function" && typeof statusInfo === "function")
+    info = statusInfo(itemStatus(r));
+  else {
+    // 抽出環境用の自己完結フォールバック。導出規則は catalog.js の
+    // itemStatus と同一（status は3値の場合のみ採用、それ以外は
+    // supported から導出。監査 D-4 の是正）。
+    let status =
+      r.status === "supported" ||
+      r.status === "unsupported" ||
+      r.status === "unverified"
+        ? r.status
+        : r.supported === false
+          ? "unsupported"
+          : "supported";
+    info =
+      status === "unsupported"
+        ? { tag: "未対応", ariaSuffix: "（参照用 · 操作は未対応）" }
+        : status === "unverified"
+          ? { tag: "未検証", ariaSuffix: "（参照用 · 意味論は未検証）" }
+          : { tag: null, ariaSuffix: "" };
+  }
+  if (!info || !info.tag) return null;
+  return { tag: info.tag, ariaSuffix: info.ariaSuffix };
 }
 // End of pure helpers.
 function linkedText(text) {
@@ -804,22 +867,47 @@ $("template").onchange = (e) => loadTemplate(e.target.value);
 // R29-N5（U-45）: 一覧ボタン／チップに参照専用の判別表示を付ける。
 // .unsupported の配色はバッジ（.badge.unsupported）と同一にし、
 // 「未対応」タグ（テキスト）と aria-label でも区別する（色のみに依存しない）。
+// 高度モード基盤: unverified はタグ「未検証」・クラス unverified で
+// 判別する（文言自体が異なるため色だけに頼らない）。unsupported の
+// 表示（タグ・クラス・aria・title）は従来と完全に同一に保つ。
 function applyReferenceOnlyMark(button, r) {
   const mark = referenceOnlyMark(r);
   if (!mark) return;
+  if (mark.tag === "未検証") {
+    button.classList.add("unverified");
+    button.append(el("span", mark.tag, "unsupported-tag unverified"));
+    button.setAttribute("aria-label", r.name + mark.ariaSuffix);
+    button.title = "参照用 · 意味論は未検証";
+    return;
+  }
   button.classList.add("unsupported");
   button.append(el("span", mark.tag, "unsupported-tag"));
   button.setAttribute("aria-label", r.name + mark.ariaSuffix);
   button.title = "参照用 · 操作は未対応";
 }
 function refArticle(r, expanded = false, heading = "h3") {
+  // 高度モード基盤: バッジは3値ステータス（基盤 API の statusInfo）を正とする。
+  // 単体テストのソース抽出環境では同一規則のフォールバックを使う。
+  // supported／unsupported の文言とクラスは従来と完全に同一。
+  let info;
+  if (typeof itemStatus === "function" && typeof statusInfo === "function")
+    info = statusInfo(itemStatus(r));
+  else {
+    let status = r.status
+      ? r.status
+      : r.supported === false
+        ? "unsupported"
+        : "supported";
+    info =
+      status === "unsupported"
+        ? { badge: "参照用 · 操作は未対応", badgeClass: " unsupported" }
+        : status === "unverified"
+          ? { badge: "参照用 · 意味論は未検証", badgeClass: " unverified" }
+          : { badge: "シミュレーション対応", badgeClass: "" };
+  }
   let article = el("article", undefined, expanded ? "" : "ref-card");
   article.append(
-    el(
-      "span",
-      r.supported ? "シミュレーション対応" : "参照用 · 操作は未対応",
-      "badge" + (r.supported ? "" : " unsupported"),
-    ),
+    el("span", info.badge, "badge" + info.badgeClass),
     el(heading, r.name),
     el("pre", r.syntax),
     el("p", r.description),
@@ -847,13 +935,27 @@ function showRef(name) {
     block: "nearest",
   });
 }
+// 統合第1弾（B5 §3 の機構側要件）: 検索の索引には、項目名・分類・
+// 説明・構文に加えて、高度項目が持つ到達性メタデータ（inventoryNames
+// ＝束ねられた棚卸し名の配列、scan ＝コード上の短いトークン）も含める。
+// これが無いと、束ね項目へ統合された棚卸し名（例: JS の
+// DataView.prototype.buffer）で検索しても自項目に到達できない。
+// メタデータを持たない基礎項目では従来と同一の文字列になる。
+function refSearchText(r) {
+  let parts = [r.name, r.category, r.description, r.syntax];
+  if (Array.isArray(r.inventoryNames)) parts.push(...r.inventoryNames);
+  if (typeof r.scan === "string") parts.push(r.scan);
+  return parts.filter((x) => typeof x === "string").join(" ").toLowerCase();
+}
 function renderRefs() {
   let q = $("referenceSearch").value.toLowerCase();
+  let f = $("refStatusFilter")?.value || "all";
   $("refList").replaceChildren();
-  for (let r of reference.filter((r) =>
-    (r.name + " " + r.category + " " + r.description + " " + r.syntax)
-      .toLowerCase()
-      .includes(q),
+  for (let r of reference.filter(
+    (r) =>
+      refSearchText(r).includes(q) &&
+      // 状態判定は statusWithFallback（itemStatus が正。監査 D-4）。
+      (f === "all" || statusWithFallback(r) === f),
   )) {
     let b = el("button", r.name);
     applyReferenceOnlyMark(b, r);
@@ -865,11 +967,12 @@ function renderRefs() {
 }
 function fullRefs() {
   let q = $("fullSearch").value.toLowerCase();
+  let f = $("refStatusFilter")?.value || "all";
   $("fullReferences").replaceChildren();
-  for (let r of reference.filter((r) =>
-    (r.name + " " + r.category + " " + r.description + " " + r.syntax)
-      .toLowerCase()
-      .includes(q),
+  for (let r of reference.filter(
+    (r) =>
+      refSearchText(r).includes(q) &&
+      (f === "all" || statusWithFallback(r) === f),
   ))
     $("fullReferences").append(refArticle(r, false, "h2"));
   if (!$("fullReferences").childElementCount)
@@ -877,6 +980,26 @@ function fullRefs() {
 }
 $("referenceSearch").oninput = renderRefs;
 $("fullSearch").oninput = fullRefs;
+// 高度モード基盤: 状態フィルタは保存しない（開くたび "all"）。
+// fullRefs() と renderRefs() の両方へ適用する。
+$("refStatusFilter").onchange = () => {
+  renderRefs();
+  fullRefs();
+};
+// 現在の種類・現在のモードのカタログでの状態別件数表示。
+function updateRefStatusSummary() {
+  let counts = countByStatus(reference);
+  $("refStatusSummary").textContent =
+    "対応 " +
+    counts.supported +
+    " 件／未対応 " +
+    counts.unsupported +
+    " 件／未検証 " +
+    counts.unverified +
+    " 件（全 " +
+    counts.total +
+    " 件）";
+}
 function renderGlossary() {
   $("glossaryList").replaceChildren();
   $("sideGlossary").replaceChildren();
@@ -905,6 +1028,10 @@ function updateUsed() {
     $("usedScope").textContent = "表示中のパス";
   } else {
     names = active.scan($("editor").value);
+    // 統合第1弾: scan 結果にフックの注記（CFN の台帳外タイプ注記等）が
+    // 付いている場合はそちらを表示し、無ければ前の注記を消す（配列の
+    // notes プロパティ。結果が無い状態では scan 側が注記の正）。
+    renderResultNotes(Array.isArray(names) ? names.notes : null);
     $("usedScope").textContent = "コード全体";
   }
   $("used").replaceChildren();
@@ -944,6 +1071,21 @@ function errorDescription(error) {
   const { category, message } = error;
   return category && category !== "エラー" && !message.startsWith(category + "：") ? category + "：" + message : message;
 }
+// 統合第1弾: 高度エンジンフック（CloudFormation の台帳外タイプ注記等）
+// が結果や scan に付けた注記（notes）の描画。注記は成否・パス・エラー
+// に影響しない告知であり、高度モードでのみ表示する（簡易モードでは
+// 基礎の見た目を完全に保つ）。notes が無い・空なら枠ごと隠す。
+function renderResultNotes(notes) {
+  const box = $("resultNotes");
+  if (!box) return;
+  const list =
+    mode === "advanced" && Array.isArray(notes)
+      ? notes.filter((n) => typeof n === "string" && n)
+      : [];
+  box.replaceChildren();
+  box.hidden = !list.length;
+  for (let note of list) box.append(el("p", note));
+}
 function applyResult(r) {
   result = r;
   paths = [...r.paths];
@@ -955,6 +1097,8 @@ function applyResult(r) {
     if (at >= 0) current = at;
   }
   $("run").disabled = false;
+  // 統合第1弾: フックが結果へ付けた注記（あれば）をステータス下に表示。
+  renderResultNotes(r.notes);
   if (r.error) {
     $("resultStatus").textContent = `${r.error.line}行：${errorDescription(r.error)}`;
     $("trace").replaceChildren();
@@ -1035,7 +1179,16 @@ function run() {
       $("resultStatus").textContent =
         "解析用Workerでエラーが発生しました。コードを小さくして再実行してください。";
     };
-    worker.postMessage({ id, code, model, typeId: active.id });
+    // 統合第1弾: Worker 内でも高度エンジンを有効化できるよう、現在の
+    // モードとカタログ適用の成否を渡す（Worker は実行ごとに作り直され、
+    // メインスレッドの有効化状態を引き継がないため）。
+    worker.postMessage({
+      id,
+      code,
+      model,
+      typeId: active.id,
+      advanced: mode === "advanced" && !catalogFailed,
+    });
     watchdog = setTimeout(() => {
       worker.terminate();
       $("run").disabled = false;
@@ -1245,6 +1398,149 @@ $("download").onclick = () => {
   a.click();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 };
+// 高度モード基盤: モード開示文。モード文面は常時表示し、高度データの
+// 一部が読み込めなかった場合だけ末尾に注記を付ける。
+function renderModeNote() {
+  let note = MODE_NOTES[mode] || MODE_NOTES.simple;
+  if (mode === "advanced" && catalogFailed)
+    note += "（高度データの一部を読み込めませんでした）";
+  $("modeNote").textContent = note;
+}
+function updateModeToggle() {
+  $("modeSimple").setAttribute(
+    "aria-pressed",
+    mode === "simple" ? "true" : "false",
+  );
+  $("modeAdvanced").setAttribute(
+    "aria-pressed",
+    mode === "advanced" ? "true" : "false",
+  );
+  renderModeNote();
+}
+// 高度モード基盤: 現在種類のカタログを現在のモードで再構築する。
+// simple は基礎カタログをそのまま使う。advanced は loadAdvanced を
+// await し、mergeCatalog の結果を使う。読み込み中は基礎カタログの
+// 表示のまま待ち（偽の件数や項目を出さない）、完了後に差し替える。
+// 世代カウンタで、種類切替・モード切替が連続した場合の古い非同期
+// 結果による上書きを防ぐ。エディタのコード文字列は変更しない。
+async function applyCatalog() {
+  let generation = ++catalogGeneration;
+  let target = active;
+  if (mode !== "advanced") {
+    catalogFailed = false;
+    reference = target.reference;
+    templates = target.templates;
+    glossary = target.glossary || [];
+  } else {
+    let loaded = null,
+      loadError = false;
+    try {
+      loaded = await loadAdvanced(target);
+    } catch {
+      loadError = true;
+    }
+    // 読み込み中に種類・モードが変わっていたら、この結果は破棄する。
+    if (generation !== catalogGeneration || active !== target) return;
+    if (loadError || (loaded?.failed && loaded.failed.length)) {
+      // 契約 §7.1（advanced-interface.md）: 読み込み失敗（failed）がある場合は
+      // 部分合成せず、基礎カタログのみで動作する（監査 D-1 の是正）。
+      // 失敗の事実は catalogFailed 経由で modeNote の注記に表示する。
+      catalogFailed = true;
+      reference = target.reference;
+      templates = target.templates;
+      glossary = target.glossary || [];
+    } else {
+      let merged = mergeCatalog(
+        {
+          reference: target.reference,
+          templates: target.templates,
+          glossary: target.glossary || [],
+        },
+        loaded,
+      );
+      // 統合第1弾: エンジン拡張フック（契約 第5章(e)）の接続。合成が
+      // 成功した場合に限り、ローダーが返した engineModule の
+      // applyAdvancedEngine(definition, merged) を1回呼ぶ。フックは
+      // 冪等であることが各ブロックの前提（有効化フラグ／登録／包みの
+      // 二重適用ガード）。フックが例外を投げた場合は、高度側が半端に
+      // 有効化された状態を避けるため、読み込み失敗と同じ扱い（基礎
+      // カタログのみ＋失敗注記）に倒す。
+      let hookFailed = false;
+      const engineModule = loaded?.engineModule;
+      if (engineModule && typeof engineModule.applyAdvancedEngine === "function") {
+        try {
+          const hooked = engineModule.applyAdvancedEngine(target, merged);
+          // 戻り値で包んだ定義を返すフック（現行ブロックでは不在だが
+          // 契約上ありうる）にも追従する：scan／simulate だけを引き継ぐ。
+          if (hooked && hooked !== target) {
+            if (typeof hooked.scan === "function") target.scan = hooked.scan;
+            if (typeof hooked.simulate === "function")
+              target.simulate = hooked.simulate;
+          }
+        } catch {
+          hookFailed = true;
+        }
+      }
+      if (merged.problems?.length)
+        console.info(
+          "高度カタログの合成で契約違反を検出しました：" +
+            merged.problems.map((p) => `${p.kind}:${p.name}`).join(", "),
+        );
+      if (hookFailed) {
+        catalogFailed = true;
+        reference = target.reference;
+        templates = target.templates;
+        glossary = target.glossary || [];
+      } else {
+        catalogFailed = false;
+        reference = merged.reference;
+        templates = merged.templates;
+        glossary = merged.glossary || [];
+      }
+    }
+  }
+  // 統合第1弾: 種類側の scan／名前解決が「いま有効なカタログ」を参照
+  // するための機構側の差し込み（cmd／UI.Vision／Python が利用する。
+  // 未設定のまま使う単体テスト環境では各種類の従来動作になる）。
+  target.__catalogReference = reference;
+  renderModeNote();
+  // 再構築後のカタログに現在のテンプレートが無ければ選択を外す
+  // （解説は消すが、エディタのコード文字列は変更しない）。
+  if (templateId && !templates.some((t) => t.id === templateId))
+    templateId = "";
+  renderTemplates();
+  $("template").value = templateId;
+  renderGlossary();
+  renderRefs();
+  fullRefs();
+  updateRefStatusSummary();
+  renderExplanation(
+    templateId ? templates.find((t) => t.id === templateId) : null,
+  );
+  // チップの状態タグを新しいカタログで付け直すため再解析する。
+  run();
+}
+// 高度モード基盤: トグル操作。保存し、トグル表示と開示文を更新して
+// 現在種類のカタログを再構築する。エディタ・下書きには触れない
+// （applyCatalog／run はコード文字列を変更しない）。
+function changeMode(next) {
+  if (next !== "simple" && next !== "advanced") return;
+  mode = next;
+  setMode(mode);
+  catalogFailed = false;
+  updateModeToggle();
+  // 統合第1弾: 高度モードでのみ現れる種別（U-47）の表示を切り替える。
+  renderTypeOptions();
+  if (active.advancedOnly && mode !== "advanced") {
+    // 表示できなくなった種別に留まらない。下書きは switchType の
+    // save() で退避され、高度モードへ戻れば復元できる。
+    switchType("vba");
+    return;
+  }
+  applyCatalog();
+}
+$("modeSimple").onclick = () => changeMode("simple");
+$("modeAdvanced").onclick = () => changeMode("advanced");
 function switchType(id, savePrevious = true) {
   if (savePrevious) save();
   worker?.terminate();
@@ -1252,9 +1548,20 @@ function switchType(id, savePrevious = true) {
   clearTimeout(watchdog);
   request++;
   active = getDefinition(id);
+  // 統合第1弾: 高度モード専用種別は簡易モードでは開かない（防御的
+  // フォールバック。通常はセレクタに現れないため到達しない）。
+  if (active.advancedOnly && mode !== "advanced") active = getDefinition("vba");
   templates = active.templates;
   reference = active.reference;
   glossary = active.glossary || [];
+  // 統合第1弾: 有効カタログの差し込み（applyCatalog が高度分で更新する）。
+  active.__catalogReference = active.reference;
+  renderResultNotes(null);
+  // 高度モード基盤: 種類が変わるので、進行中の高度データ読み込みは
+  // 世代カウンタで無効化し、失敗注記も基礎カタログ用にリセットする。
+  catalogGeneration++;
+  catalogFailed = false;
+  renderModeNote();
   result = null;
   paths = [];
   current = 0;
@@ -1287,6 +1594,7 @@ function switchType(id, savePrevious = true) {
   $("fullSearch").value = "";
   renderRefs();
   fullRefs();
+  updateRefStatusSummary();
   $("refDetail").replaceChildren(...refArticle(reference[0], true).childNodes);
   let saved = drafts[active.id],
     first = templates[0];
@@ -1324,14 +1632,31 @@ function switchType(id, savePrevious = true) {
   updateUsed();
   save();
   run();
+  // 高度モード基盤: 基礎カタログで即時描画してから、高度モードなら
+  // 高度データの読み込みとマージで再構築する。
+  if (mode === "advanced") applyCatalog();
 }
-for (let type of definitions) {
-  let option = el("option", type.name);
-  option.value = type.id;
-  $("macroType").append(option);
+// 統合第1弾: 種別セレクタの選択肢はモードで変わる（高度モードでのみ
+// 現れる種別 U-47 を含めるかどうか）。現在の種別が選択肢に残る場合は
+// その選択を保つ。
+function renderTypeOptions() {
+  const visible =
+    mode === "advanced"
+      ? [...definitions, ...advancedOnlyDefinitions]
+      : definitions;
+  $("macroType").replaceChildren();
+  for (let type of visible) {
+    let option = el("option", type.name);
+    option.value = type.id;
+    $("macroType").append(option);
+  }
+  $("macroType").value = active.id;
 }
+renderTypeOptions();
 $("macroType").onchange = (e) => switchType(e.target.value);
 $("modelJson").oninput = changed;
+// 高度モード基盤: 起動時の保存モードをトグル表示と開示文へ反映する。
+updateModeToggle();
 switchType(active.id, false);
 // R7-50: 起動時に壊れた下書きを退避・整復した場合は、その旨を通知する。
 // switchType 内の save() が成功しても消えないよう、初期化の最後で出す。

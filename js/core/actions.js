@@ -91,6 +91,39 @@ export function actionProgram(
         nodes.push({ ...base, body });
         continue;
       }
+      // 高度モード（UI.Vision）: do ... repeatIf。classify が "do" を返す
+      // 種類でのみ到達する（他種類は "do" を返さないため無影響）。
+      // 本体は対応する "repeatIf" までで、条件は repeatIf 項目の Target、
+      // ノードの item は repeatIf 項目とする（契約 adv-b1）。
+      if (type === "do") {
+        let body = block(["repeatIf"]);
+        if (
+          i >= data[key].length ||
+          classify(data[key][i][command]) !== "repeatIf"
+        )
+          throw new PracticeError("do に対応するrepeatIfがありません", line);
+        let repItem = data[key][i],
+          repIndex = i,
+          repLine = locations.get("/" + key + "/" + i) || 1;
+        i++;
+        nodes.push({
+          ...base,
+          k: "action-loop",
+          mode: "do",
+          body,
+          test: repItem.Target,
+          item: repItem,
+          line: repLine,
+          nodeId: "action-" + repIndex,
+          refs: [tag, repItem[command]],
+        });
+        continue;
+      }
+      if (type === "repeatIf")
+        throw new PracticeError(
+          "対応する開始アクションがありません：repeatIf には対応する do が必要です",
+          line,
+        );
       if (["end", "else", "elseif"].includes(type))
         throw new PracticeError("対応する開始アクションがありません", line);
       nodes.push(base);

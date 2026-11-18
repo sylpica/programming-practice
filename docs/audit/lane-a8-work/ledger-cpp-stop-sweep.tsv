@@ -1,0 +1,306 @@
+item	stratum	shape	result	error	outputs	probe
+std::string::append_range	A-supported-class-member	memberFunc	named-stop	エラー:この関数は説明に対応していません：s.append_range		std::string s = "abc"; s.append_range(s); std::cout << 7;  return 0; }
+std::string::assign_range	A-supported-class-member	memberFunc	named-stop	エラー:この関数は説明に対応していません：s.assign_range		std::string s = "abc"; s.assign_range(s); std::cout << 7;  return 0; }
+std::string::c_str	A-supported-class-member	memberFunc	named-stop	エラー:この関数は説明に対応していません：s.c_str		std::string s = "abc"; s.c_str(); std::cout << 7;  return 0; }
+std::string::capacity	A-supported-class-member	memberFunc	named-stop	エラー:この関数は説明に対応していません：s.capacity		std::string s = "abc"; s.capacity(); std::cout << 7;  return 0; }
+std::string::copy	A-supported-class-member	memberFunc	named-stop	エラー:この関数は説明に対応していません：s.copy		std::string s = "abc"; char buf[8] = {}; s.copy(buf, 2); std::cout << 7;  return 0; }
+std::string::data	A-supported-class-member	memberFunc	named-stop	エラー:この関数は説明に対応していません：s.data		std::string s = "abc"; s.data(); std::cout << 7;  return 0; }
+std::string::get_allocator	A-supported-class-member	memberFunc	named-stop	エラー:この関数は説明に対応していません：s.get_allocator		std::string s = "abc"; s.get_allocator(); std::cout << 7;  return 0; }
+std::string::insert_range	A-supported-class-member	memberFunc	named-stop	エラー:この関数は説明に対応していません：s.insert_range		std::string s = "abc"; s.insert_range(s.begin(), s); std::cout << 7;  return 0; }
+std::string::max_size	A-supported-class-member	memberFunc	named-stop	エラー:この関数は説明に対応していません：s.max_size		std::string s = "abc"; s.max_size(); std::cout << 7;  return 0; }
+std::string::replace_with_range	A-supported-class-member	memberFunc	named-stop	エラー:この関数は説明に対応していません：s.replace_with_range		std::string s = "abc"; s.replace_with_range(s.begin(), s.end(), s); std::cout << 7;  return 0; }
+std::string::resize_and_overwrite	A-supported-class-member	memberFunc	named-stop	エラー:この関数は説明に対応していません：s.resize_and_overwrite		std::string s = "abc"; s.resize_and_overwrite(); std::cout << 7;  return 0; }
+std::string::allocator_type	A-supported-class-member	memberType-decl	unnamed-stop	エラー:変数名が必要です		std::string::allocator_type probeVar; std::cout << 7;  return 0; }
+std::string::const_iterator	A-supported-class-member	memberType-iterator	silent-success		a	std::string s = "abc"; std::string::const_iterator it = s.cbegin(); std::cout << *it;  return 0; }
+std::string::const_pointer	A-supported-class-member	memberType-decl	unnamed-stop	エラー:変数名が必要です		std::string::const_pointer probeVar; std::cout << 7;  return 0; }
+std::string::const_reference	A-supported-class-member	memberType-decl	unnamed-stop	エラー:変数名が必要です		std::string::const_reference probeVar; std::cout << 7;  return 0; }
+std::string::const_reverse_iterator	A-supported-class-member	memberType-iterator	silent-success		c	std::string s = "abc"; std::string::const_reverse_iterator it = s.rbegin(); std::cout << *it;  return 0; }
+std::string::difference_type	A-supported-class-member	memberType-decl	unnamed-stop	エラー:変数名が必要です		std::string::difference_type probeVar; std::cout << 7;  return 0; }
+std::string::iterator	A-supported-class-member	memberType-iterator	silent-success		a	std::string s = "abc"; std::string::iterator it = s.begin(); std::cout << *it;  return 0; }
+std::string::pointer	A-supported-class-member	memberType-decl	unnamed-stop	エラー:変数名が必要です		std::string::pointer probeVar; std::cout << 7;  return 0; }
+std::string::reference	A-supported-class-member	memberType-decl	unnamed-stop	エラー:変数名が必要です		std::string::reference probeVar; std::cout << 7;  return 0; }
+std::string::reverse_iterator	A-supported-class-member	memberType-iterator	silent-success		c	std::string s = "abc"; std::string::reverse_iterator it = s.rbegin(); std::cout << *it;  return 0; }
+std::string::size_type	A-supported-class-member	memberType-decl	unnamed-stop	エラー:変数名が必要です		std::string::size_type probeVar; std::cout << 7;  return 0; }
+std::string::traits_type	A-supported-class-member	memberType-decl	unnamed-stop	エラー:変数名が必要です		std::string::traits_type probeVar; std::cout << 7;  return 0; }
+std::string::value_type	A-supported-class-member	memberType-decl	unnamed-stop	エラー:変数名が必要です		std::string::value_type probeVar; std::cout << 7;  return 0; }
+std::array::data	A-supported-class-member	memberFunc	named-stop	エラー:この関数は説明に対応していません：a.data		std::array<int, 3> a = {7, 8, 9}; a.data(); std::cout << 7;  return 0; }
+std::array::const_iterator	A-supported-class-member	memberType-iterator	silent-success		7	(補正形で再実行) std::array<int, 3>::const_iterator::const_iterator it = obj.begin/rbegin/cbegin; std::cout << *it;
+std::array::const_pointer	A-supported-class-member	memberType-decl	unnamed-stop	エラー:式を解釈できません：::		(補正形で再実行) std::array::const_pointer probeVar; std::cout << 7;
+std::array::const_reference	A-supported-class-member	memberType-decl	unnamed-stop	エラー:式を解釈できません：::		(補正形で再実行) std::array::const_reference probeVar; std::cout << 7;
+std::array::const_reverse_iterator	A-supported-class-member	memberType-iterator	silent-success		9	(補正形で再実行) std::array<int, 3>::const_reverse_iterator::const_reverse_iterator it = obj.begin/rbegin/cbegin; std::cout << *it;
+std::array::difference_type	A-supported-class-member	memberType-decl	unnamed-stop	エラー:式を解釈できません：::		(補正形で再実行) std::array::difference_type probeVar; std::cout << 7;
+std::array::iterator	A-supported-class-member	memberType-iterator	silent-success		7	(補正形で再実行) std::array<int, 3>::iterator it = obj.begin/rbegin/cbegin; std::cout << *it;
+std::array::pointer	A-supported-class-member	memberType-decl	unnamed-stop	エラー:式を解釈できません：::		(補正形で再実行) std::array::pointer probeVar; std::cout << 7;
+std::array::reference	A-supported-class-member	memberType-decl	unnamed-stop	エラー:式を解釈できません：::		(補正形で再実行) std::array::reference probeVar; std::cout << 7;
+std::array::reverse_iterator	A-supported-class-member	memberType-iterator	silent-success		9	(補正形で再実行) std::array<int, 3>::reverse_iterator::reverse_iterator it = obj.begin/rbegin/cbegin; std::cout << *it;
+std::array::size_type	A-supported-class-member	memberType-decl	unnamed-stop	エラー:式を解釈できません：::		(補正形で再実行) std::array::size_type probeVar; std::cout << 7;
+std::array::value_type	A-supported-class-member	memberType-decl	unnamed-stop	エラー:式を解釈できません：::		(補正形で再実行) std::array::value_type probeVar; std::cout << 7;
+std::vector::append_range	A-supported-class-member	memberFunc	named-stop	エラー:この関数は説明に対応していません：v.append_range		std::vector<int> v = {10, 20, 30}; v.append_range(v); std::cout << 7;  return 0; }
+std::vector::assign_range	A-supported-class-member	memberFunc	named-stop	エラー:この関数は説明に対応していません：v.assign_range		std::vector<int> v = {10, 20, 30}; v.assign_range(v); std::cout << 7;  return 0; }
+std::vector::capacity	A-supported-class-member	memberFunc	named-stop	エラー:この関数は説明に対応していません：v.capacity		std::vector<int> v = {10, 20, 30}; v.capacity(); std::cout << 7;  return 0; }
+std::vector::data	A-supported-class-member	memberFunc	named-stop	エラー:この関数は説明に対応していません：v.data		std::vector<int> v = {10, 20, 30}; v.data(); std::cout << 7;  return 0; }
+std::vector::get_allocator	A-supported-class-member	memberFunc	named-stop	エラー:この関数は説明に対応していません：v.get_allocator		std::vector<int> v = {10, 20, 30}; v.get_allocator(); std::cout << 7;  return 0; }
+std::vector::insert_range	A-supported-class-member	memberFunc	named-stop	エラー:この関数は説明に対応していません：v.insert_range		std::vector<int> v = {10, 20, 30}; v.insert_range(v.begin(), v); std::cout << 7;  return 0; }
+std::vector::max_size	A-supported-class-member	memberFunc	named-stop	エラー:この関数は説明に対応していません：v.max_size		std::vector<int> v = {10, 20, 30}; v.max_size(); std::cout << 7;  return 0; }
+std::vector::allocator_type	A-supported-class-member	memberType-decl	unnamed-stop	エラー:式を解釈できません：::		(補正形で再実行) std::vector::allocator_type probeVar; std::cout << 7;
+std::vector::const_iterator	A-supported-class-member	memberType-iterator	silent-success		10	(補正形で再実行) std::vector<int>::const_iterator::const_iterator it = obj.begin/rbegin/cbegin; std::cout << *it;
+std::vector::const_pointer	A-supported-class-member	memberType-decl	unnamed-stop	エラー:式を解釈できません：::		(補正形で再実行) std::vector::const_pointer probeVar; std::cout << 7;
+std::vector::const_reference	A-supported-class-member	memberType-decl	unnamed-stop	エラー:式を解釈できません：::		(補正形で再実行) std::vector::const_reference probeVar; std::cout << 7;
+std::vector::const_reverse_iterator	A-supported-class-member	memberType-iterator	silent-success		30	(補正形で再実行) std::vector<int>::const_reverse_iterator::const_reverse_iterator it = obj.begin/rbegin/cbegin; std::cout << *it;
+std::vector::difference_type	A-supported-class-member	memberType-decl	unnamed-stop	エラー:式を解釈できません：::		(補正形で再実行) std::vector::difference_type probeVar; std::cout << 7;
+std::vector::iterator	A-supported-class-member	memberType-iterator	silent-success		10	(補正形で再実行) std::vector<int>::iterator it = obj.begin/rbegin/cbegin; std::cout << *it;
+std::vector::pointer	A-supported-class-member	memberType-decl	unnamed-stop	エラー:式を解釈できません：::		(補正形で再実行) std::vector::pointer probeVar; std::cout << 7;
+std::vector::reference	A-supported-class-member	memberType-decl	unnamed-stop	エラー:式を解釈できません：::		(補正形で再実行) std::vector::reference probeVar; std::cout << 7;
+std::vector::reverse_iterator	A-supported-class-member	memberType-iterator	silent-success		30	(補正形で再実行) std::vector<int>::reverse_iterator::reverse_iterator it = obj.begin/rbegin/cbegin; std::cout << *it;
+std::vector::size_type	A-supported-class-member	memberType-decl	unnamed-stop	エラー:式を解釈できません：::		(補正形で再実行) std::vector::size_type probeVar; std::cout << 7;
+std::vector::value_type	A-supported-class-member	memberType-decl	unnamed-stop	エラー:式を解釈できません：::		(補正形で再実行) std::vector::value_type probeVar; std::cout << 7;
+std::string::operator basic_string_view	A-supported-class-member	non-identifier	probe-inapplicable			
+std::pair::first_type	A-supported-class-member	memberType-decl	unnamed-stop	エラー:式を解釈できません：::		(補正形で再実行) std::pair::first_type probeVar; std::cout << 7;
+std::pair::second_type	A-supported-class-member	memberType-decl	unnamed-stop	エラー:式を解釈できません：::		(補正形で再実行) std::pair::second_type probeVar; std::cout << 7;
+std::ranges::swap	B-homonym	nestedType-decl	unnamed-stop	SyntaxError:; が必要です		std::ranges::swap probeVar; std::cout << 7;  return 0; }
+std::vector	B-homonym	class-decl	silent-success		7	(補正形で再実行) std::vector<int> probeObj; std::cout << 7;
+std::begin	B-homonym	class-decl	named-stop	NameError:未定義の名前：begin		std::begin<int> probeObj; std::cout << 7;  return 0; }
+std::end	B-homonym	class-decl	named-stop	NameError:未定義の名前：end		std::end<int> probeObj; std::cout << 7;  return 0; }
+std::ranges::iter_swap	B-homonym	nestedFunc-call	unnamed-stop	SyntaxError:; が必要です		std::vector<int> v = {3, 1, 2}; std::ranges::iter_swap(v); std::cout << 7;  return 0; }
+std::ranges::advance	B-homonym	nestedType-decl	unnamed-stop	SyntaxError:; が必要です		std::ranges::advance probeVar; std::cout << 7;  return 0; }
+std::ranges::distance	B-homonym	nestedType-decl	unnamed-stop	SyntaxError:; が必要です		std::ranges::distance probeVar; std::cout << 7;  return 0; }
+std::ranges::next	B-homonym	nestedType-decl	unnamed-stop	SyntaxError:; が必要です		std::ranges::next probeVar; std::cout << 7;  return 0; }
+std::ranges::prev	B-homonym	nestedType-decl	unnamed-stop	SyntaxError:; が必要です		std::ranges::prev probeVar; std::cout << 7;  return 0; }
+std::cbegin	B-homonym	class-decl	named-stop	NameError:未定義の名前：cbegin		std::cbegin<int> probeObj; std::cout << 7;  return 0; }
+std::cend	B-homonym	class-decl	named-stop	NameError:未定義の名前：cend		std::cend<int> probeObj; std::cout << 7;  return 0; }
+std::rbegin	B-homonym	class-decl	named-stop	NameError:未定義の名前：rbegin		std::rbegin<int> probeObj; std::cout << 7;  return 0; }
+std::rend	B-homonym	class-decl	named-stop	NameError:未定義の名前：rend		std::rend<int> probeObj; std::cout << 7;  return 0; }
+std::crbegin	B-homonym	class-decl	named-stop	NameError:未定義の名前：crbegin		std::crbegin<int> probeObj; std::cout << 7;  return 0; }
+std::crend	B-homonym	class-decl	named-stop	NameError:未定義の名前：crend		std::crend<int> probeObj; std::cout << 7;  return 0; }
+std::size	B-homonym	class-decl	named-stop	NameError:未定義の名前：size		std::size<int> probeObj; std::cout << 7;  return 0; }
+std::empty	B-homonym	class-decl	named-stop	NameError:未定義の名前：empty		std::empty<int> probeObj; std::cout << 7;  return 0; }
+std::pair	B-homonym	class-decl	silent-success		7	std::pair<int, int> probeObj; std::cout << 7;  return 0; }
+std::ranges::iota	B-homonym	nestedType-decl	unnamed-stop	SyntaxError:; が必要です		std::ranges::iota probeVar; std::cout << 7;  return 0; }
+std::erase	B-homonym	class-decl	named-stop	NameError:未定義の名前：erase		std::erase<int, int> probeObj; std::cout << 7;  return 0; }
+std::ranges::contains	B-homonym	nestedFunc-call	unnamed-stop	SyntaxError:; が必要です		std::vector<int> v = {3, 1, 2}; std::ranges::contains(v); std::cout << 7;  return 0; }
+std::ranges::find	B-homonym	nestedFunc-call	unnamed-stop	SyntaxError:; が必要です		std::vector<int> v = {3, 1, 2}; std::ranges::find(v); std::cout << 7;  return 0; }
+std::find_first_of	B-homonym	class-decl	named-stop	NameError:未定義の名前：find_first_of		std::find_first_of<int, int> probeObj; std::cout << 7;  return 0; }
+std::ranges::find_first_of	B-homonym	nestedFunc-call	unnamed-stop	SyntaxError:; が必要です		std::vector<int> v = {3, 1, 2}; std::ranges::find_first_of(v); std::cout << 7;  return 0; }
+std::ranges::count	B-homonym	nestedFunc-call	unnamed-stop	SyntaxError:; が必要です		std::vector<int> v = {3, 1, 2}; std::ranges::count(v); std::cout << 7;  return 0; }
+std::ranges::mismatch	B-homonym	nestedFunc-call	unnamed-stop	SyntaxError:; が必要です		std::vector<int> v = {3, 1, 2}; std::ranges::mismatch(v); std::cout << 7;  return 0; }
+std::ranges::equal	B-homonym	nestedFunc-call	unnamed-stop	SyntaxError:; が必要です		std::vector<int> v = {3, 1, 2}; std::ranges::equal(v); std::cout << 7;  return 0; }
+std::ranges::starts_with	B-homonym	nestedFunc-call	unnamed-stop	SyntaxError:; が必要です		std::vector<int> v = {3, 1, 2}; std::ranges::starts_with(v); std::cout << 7;  return 0; }
+std::ranges::copy	B-homonym	nestedFunc-call	unnamed-stop	SyntaxError:; が必要です		std::vector<int> v = {3, 1, 2}; std::ranges::copy(v); std::cout << 7;  return 0; }
+std::ranges::copy_n	B-homonym	nestedFunc-call	unnamed-stop	SyntaxError:; が必要です		std::vector<int> v = {3, 1, 2}; std::ranges::copy_n(v); std::cout << 7;  return 0; }
+std::ranges::move	B-homonym	nestedFunc-call	unnamed-stop	SyntaxError:; が必要です		std::vector<int> v = {3, 1, 2}; std::ranges::move(v); std::cout << 7;  return 0; }
+std::ranges::replace	B-homonym	nestedFunc-call	unnamed-stop	SyntaxError:; が必要です		std::vector<int> v = {3, 1, 2}; std::ranges::replace(v); std::cout << 7;  return 0; }
+std::ranges::fill	B-homonym	nestedType-decl	unnamed-stop	SyntaxError:; が必要です		std::ranges::fill probeVar; std::cout << 7;  return 0; }
+std::ranges::fill_n	B-homonym	nestedType-decl	unnamed-stop	SyntaxError:; が必要です		std::ranges::fill_n probeVar; std::cout << 7;  return 0; }
+std::ranges::remove	B-homonym	nestedFunc-call	unnamed-stop	SyntaxError:; が必要です		std::vector<int> v = {3, 1, 2}; std::ranges::remove(v); std::cout << 7;  return 0; }
+std::ranges::unique	B-homonym	nestedFunc-call	unnamed-stop	SyntaxError:; が必要です		std::vector<int> v = {3, 1, 2}; std::ranges::unique(v); std::cout << 7;  return 0; }
+std::ranges::reverse	B-homonym	nestedFunc-call	unnamed-stop	SyntaxError:; が必要です		std::vector<int> v = {3, 1, 2}; std::ranges::reverse(v); std::cout << 7;  return 0; }
+std::ranges::rotate	B-homonym	nestedFunc-call	unnamed-stop	SyntaxError:; が必要です		std::vector<int> v = {3, 1, 2}; std::ranges::rotate(v); std::cout << 7;  return 0; }
+std::ranges::sort	B-homonym	nestedFunc-call	unnamed-stop	SyntaxError:; が必要です		std::vector<int> v = {3, 1, 2}; std::ranges::sort(v); std::cout << 7;  return 0; }
+std::ranges::stable_sort	B-homonym	nestedFunc-call	unnamed-stop	SyntaxError:; が必要です		std::vector<int> v = {3, 1, 2}; std::ranges::stable_sort(v); std::cout << 7;  return 0; }
+std::ranges::partial_sort	B-homonym	nestedFunc-call	unnamed-stop	SyntaxError:; が必要です		std::vector<int> v = {3, 1, 2}; std::ranges::partial_sort(v); std::cout << 7;  return 0; }
+std::ranges::is_sorted	B-homonym	nestedFunc-call	unnamed-stop	SyntaxError:; が必要です		std::vector<int> v = {3, 1, 2}; std::ranges::is_sorted(v); std::cout << 7;  return 0; }
+std::ranges::nth_element	B-homonym	nestedFunc-call	unnamed-stop	SyntaxError:; が必要です		std::vector<int> v = {3, 1, 2}; std::ranges::nth_element(v); std::cout << 7;  return 0; }
+std::ranges::lower_bound	B-homonym	nestedFunc-call	unnamed-stop	SyntaxError:; が必要です		std::vector<int> v = {3, 1, 2}; std::ranges::lower_bound(v); std::cout << 7;  return 0; }
+std::ranges::upper_bound	B-homonym	nestedFunc-call	unnamed-stop	SyntaxError:; が必要です		std::vector<int> v = {3, 1, 2}; std::ranges::upper_bound(v); std::cout << 7;  return 0; }
+std::ranges::equal_range	B-homonym	nestedFunc-call	unnamed-stop	SyntaxError:; が必要です		std::vector<int> v = {3, 1, 2}; std::ranges::equal_range(v); std::cout << 7;  return 0; }
+std::ranges::binary_search	B-homonym	nestedFunc-call	unnamed-stop	SyntaxError:; が必要です		std::vector<int> v = {3, 1, 2}; std::ranges::binary_search(v); std::cout << 7;  return 0; }
+std::ranges::min	B-homonym	nestedFunc-call	unnamed-stop	SyntaxError:; が必要です		std::vector<int> v = {3, 1, 2}; std::ranges::min(v); std::cout << 7;  return 0; }
+std::ranges::max	B-homonym	nestedFunc-call	unnamed-stop	SyntaxError:; が必要です		std::vector<int> v = {3, 1, 2}; std::ranges::max(v); std::cout << 7;  return 0; }
+std::ranges::minmax	B-homonym	nestedFunc-call	unnamed-stop	SyntaxError:; が必要です		std::vector<int> v = {3, 1, 2}; std::ranges::minmax(v); std::cout << 7;  return 0; }
+std::ranges::min_element	B-homonym	nestedFunc-call	unnamed-stop	SyntaxError:; が必要です		std::vector<int> v = {3, 1, 2}; std::ranges::min_element(v); std::cout << 7;  return 0; }
+std::ranges::max_element	B-homonym	nestedFunc-call	unnamed-stop	SyntaxError:; が必要です		std::vector<int> v = {3, 1, 2}; std::ranges::max_element(v); std::cout << 7;  return 0; }
+std::ranges::clamp	B-homonym	nestedFunc-call	unnamed-stop	SyntaxError:; が必要です		std::vector<int> v = {3, 1, 2}; std::ranges::clamp(v); std::cout << 7;  return 0; }
+std::ranges::lexicographical_compare	B-homonym	nestedFunc-call	unnamed-stop	SyntaxError:; が必要です		std::vector<int> v = {3, 1, 2}; std::ranges::lexicographical_compare(v); std::cout << 7;  return 0; }
+std::ranges::next_permutation	B-homonym	nestedFunc-call	unnamed-stop	SyntaxError:; が必要です		std::vector<int> v = {3, 1, 2}; std::ranges::next_permutation(v); std::cout << 7;  return 0; }
+std::ranges::prev_permutation	B-homonym	nestedFunc-call	unnamed-stop	SyntaxError:; が必要です		std::vector<int> v = {3, 1, 2}; std::ranges::prev_permutation(v); std::cout << 7;  return 0; }
+std::ranges::begin	B-homonym	nestedFunc-call	unnamed-stop	SyntaxError:; が必要です		std::vector<int> v = {3, 1, 2}; std::ranges::begin(v); std::cout << 7;  return 0; }
+std::ranges::end	B-homonym	nestedFunc-call	unnamed-stop	SyntaxError:; が必要です		std::vector<int> v = {3, 1, 2}; std::ranges::end(v); std::cout << 7;  return 0; }
+std::ranges::cbegin	B-homonym	nestedFunc-call	unnamed-stop	SyntaxError:; が必要です		std::vector<int> v = {3, 1, 2}; std::ranges::cbegin(v); std::cout << 7;  return 0; }
+std::ranges::cend	B-homonym	nestedFunc-call	unnamed-stop	SyntaxError:; が必要です		std::vector<int> v = {3, 1, 2}; std::ranges::cend(v); std::cout << 7;  return 0; }
+std::ranges::rbegin	B-homonym	nestedFunc-call	unnamed-stop	SyntaxError:; が必要です		std::vector<int> v = {3, 1, 2}; std::ranges::rbegin(v); std::cout << 7;  return 0; }
+std::ranges::rend	B-homonym	nestedFunc-call	unnamed-stop	SyntaxError:; が必要です		std::vector<int> v = {3, 1, 2}; std::ranges::rend(v); std::cout << 7;  return 0; }
+std::ranges::crbegin	B-homonym	nestedFunc-call	unnamed-stop	SyntaxError:; が必要です		std::vector<int> v = {3, 1, 2}; std::ranges::crbegin(v); std::cout << 7;  return 0; }
+std::ranges::crend	B-homonym	nestedFunc-call	unnamed-stop	SyntaxError:; が必要です		std::vector<int> v = {3, 1, 2}; std::ranges::crend(v); std::cout << 7;  return 0; }
+std::ranges::size	B-homonym	nestedFunc-call	unnamed-stop	SyntaxError:; が必要です		std::vector<int> v = {3, 1, 2}; std::ranges::size(v); std::cout << 7;  return 0; }
+std::ranges::empty	B-homonym	nestedFunc-call	unnamed-stop	SyntaxError:; が必要です		std::vector<int> v = {3, 1, 2}; std::ranges::empty(v); std::cout << 7;  return 0; }
+std::ranges::views::empty	B-homonym	nestedFunc-call	unnamed-stop	SyntaxError:; が必要です		std::vector<int> v = {3, 1, 2}; std::ranges::views::empty(v); std::cout << 7;  return 0; }
+std::ranges::views::iota	B-homonym	nestedFunc-call	unnamed-stop	SyntaxError:; が必要です		std::vector<int> v = {3, 1, 2}; std::ranges::views::iota(v); std::cout << 7;  return 0; }
+std::ranges::views::reverse	B-homonym	nestedFunc-call	unnamed-stop	SyntaxError:; が必要です		std::vector<int> v = {3, 1, 2}; std::ranges::views::reverse(v); std::cout << 7;  return 0; }
+std::ranges::views::as_const	B-homonym	nestedFunc-call	unnamed-stop	SyntaxError:; が必要です		std::vector<int> v = {3, 1, 2}; std::ranges::views::as_const(v); std::cout << 7;  return 0; }
+std::NULL	B-homonym	object-ref	silent-success		null	std::cout << std::NULL;  return 0; }
+std::transform	C-frequent	class-decl	named-stop	NameError:未定義の名前：transform		std::transform<int, int> probeObj; std::cout << 7;  return 0; }
+std::find_if	C-frequent	class-decl	named-stop	NameError:未定義の名前：find_if		std::find_if<int, int> probeObj; std::cout << 7;  return 0; }
+std::count_if	C-frequent	class-decl	named-stop	NameError:未定義の名前：count_if		std::count_if<int, int> probeObj; std::cout << 7;  return 0; }
+std::all_of	C-frequent	class-decl	named-stop	NameError:未定義の名前：all_of		std::all_of<int, int> probeObj; std::cout << 7;  return 0; }
+std::any_of	C-frequent	class-decl	named-stop	NameError:未定義の名前：any_of		std::any_of<int, int> probeObj; std::cout << 7;  return 0; }
+std::none_of	C-frequent	class-decl	named-stop	NameError:未定義の名前：none_of		std::none_of<int, int> probeObj; std::cout << 7;  return 0; }
+std::for_each	C-frequent	class-decl	named-stop	NameError:未定義の名前：for_each		std::for_each<int, int> probeObj; std::cout << 7;  return 0; }
+std::generate	C-frequent	class-decl	named-stop	NameError:未定義の名前：generate		std::generate<int, int> probeObj; std::cout << 7;  return 0; }
+std::shuffle	C-frequent	class-decl	named-stop	NameError:未定義の名前：shuffle		std::shuffle<int, int> probeObj; std::cout << 7;  return 0; }
+std::map	C-frequent	class-decl	named-stop	未対応:この構文は説明に対応していません：ジェネリック型 map<...> の宣言は未対応です		std::map<int, int> probeObj; std::cout << 7;  return 0; }
+std::unordered_map	C-frequent	class-decl	named-stop	未対応:この構文は説明に対応していません：ジェネリック型 unordered_map<...> の宣言は未対応です		std::unordered_map<int, int> probeObj; std::cout << 7;  return 0; }
+std::multimap	C-frequent	class-decl	named-stop	NameError:未定義の名前：multimap		std::multimap<int, int> probeObj; std::cout << 7;  return 0; }
+std::set	C-frequent	class-decl	named-stop	未対応:この構文は説明に対応していません：ジェネリック型 set<...> の宣言は未対応です		std::set<int, int> probeObj; std::cout << 7;  return 0; }
+std::unordered_set	C-frequent	class-decl	named-stop	未対応:この構文は説明に対応していません：ジェネリック型 unordered_set<...> の宣言は未対応です		std::unordered_set<int, int> probeObj; std::cout << 7;  return 0; }
+std::multiset	C-frequent	class-decl	named-stop	NameError:未定義の名前：multiset		std::multiset<int, int> probeObj; std::cout << 7;  return 0; }
+std::deque	C-frequent	class-decl	named-stop	未対応:この構文は説明に対応していません：ジェネリック型 deque<...> の宣言は未対応です		std::deque<int, int> probeObj; std::cout << 7;  return 0; }
+std::list	C-frequent	class-decl	named-stop	未対応:この構文は説明に対応していません：ジェネリック型 list<...> の宣言は未対応です		std::list<int, int> probeObj; std::cout << 7;  return 0; }
+std::forward_list	C-frequent	class-decl	named-stop	NameError:未定義の名前：forward_list		std::forward_list<int, int> probeObj; std::cout << 7;  return 0; }
+std::stack	C-frequent	class-decl	named-stop	未対応:この構文は説明に対応していません：ジェネリック型 stack<...> の宣言は未対応です		std::stack<int, int> probeObj; std::cout << 7;  return 0; }
+std::queue	C-frequent	class-decl	named-stop	未対応:この構文は説明に対応していません：ジェネリック型 queue<...> の宣言は未対応です		std::queue<int, int> probeObj; std::cout << 7;  return 0; }
+std::priority_queue	C-frequent	class-decl	named-stop	NameError:未定義の名前：priority_queue		std::priority_queue<int, int> probeObj; std::cout << 7;  return 0; }
+std::optional	C-frequent	class-decl	named-stop	NameError:未定義の名前：optional		std::optional<int> probeObj; std::cout << 7;  return 0; }
+std::variant	C-frequent	class-decl	named-stop	NameError:未定義の名前：variant		std::variant<int> probeObj; std::cout << 7;  return 0; }
+std::tuple	C-frequent	class-decl	named-stop	NameError:未定義の名前：tuple		std::tuple<int> probeObj; std::cout << 7;  return 0; }
+std::any	C-frequent	class-decl	named-stop	未対応:この構文は説明に対応していません：型 any の宣言は未対応です		std::any probeObj; std::cout << 7;  return 0; }
+std::expected	C-frequent	class-decl	named-stop	NameError:未定義の名前：expected		std::expected<int, int> probeObj; std::cout << 7;  return 0; }
+std::span	C-frequent	class-decl	named-stop	NameError:未定義の名前：span		std::span<int, int> probeObj; std::cout << 7;  return 0; }
+std::bitset	C-frequent	class-decl	named-stop	NameError:未定義の名前：bitset		std::bitset<int> probeObj; std::cout << 7;  return 0; }
+std::complex	C-frequent	class-decl	named-stop	NameError:未定義の名前：complex		std::complex<int> probeObj; std::cout << 7;  return 0; }
+std::valarray	C-frequent	class-decl	named-stop	NameError:未定義の名前：valarray		std::valarray<int> probeObj; std::cout << 7;  return 0; }
+std::thread	C-frequent	class-decl	named-stop	未対応:この構文は説明に対応していません：型 thread の宣言は未対応です		std::thread probeObj; std::cout << 7;  return 0; }
+std::mutex	C-frequent	class-decl	named-stop	未対応:この構文は説明に対応していません：型 mutex の宣言は未対応です		std::mutex probeObj; std::cout << 7;  return 0; }
+std::lock_guard	C-frequent	class-decl	named-stop	NameError:未定義の名前：lock_guard		std::lock_guard<int> probeObj; std::cout << 7;  return 0; }
+std::regex	C-frequent	class-decl	named-stop	未対応:この構文は説明に対応していません：型 regex の宣言は未対応です		std::regex probeObj; std::cout << 7;  return 0; }
+std::regex_match	C-frequent	class-decl	named-stop	NameError:未定義の名前：regex_match		std::regex_match<int, int> probeObj; std::cout << 7;  return 0; }
+std::regex_search	C-frequent	class-decl	named-stop	NameError:未定義の名前：regex_search		std::regex_search<int, int> probeObj; std::cout << 7;  return 0; }
+std::format	C-frequent	nsFunc-call	named-stop	エラー:この関数は説明に対応していません：format		std::format(); std::cout << 7;  return 0; }
+std::print	C-frequent	nsFunc-call	named-stop	エラー:この関数は説明に対応していません：print		std::print(); std::cout << 7;  return 0; }
+std::println	C-frequent	nsFunc-call	named-stop	エラー:この関数は説明に対応していません：println		std::println(); std::cout << 7;  return 0; }
+std::execution::par	C-frequent	nestedObject	unnamed-stop	SyntaxError:; が必要です		std::cout << std::execution::par;  return 0; }
+std::execution::seq	C-frequent	nestedObject	unnamed-stop	SyntaxError:; が必要です		std::cout << std::execution::seq;  return 0; }
+std::execution::par_unseq	C-frequent	nestedObject	unnamed-stop	SyntaxError:; が必要です		std::cout << std::execution::par_unseq;  return 0; }
+std::filesystem::path	C-frequent	nestedType-decl	unnamed-stop	SyntaxError:; が必要です		std::filesystem::path probeVar; std::cout << 7;  return 0; }
+std::string_view	C-frequent	class-decl	named-stop	未対応:この構文は説明に対応していません：型 string_view の宣言は未対応です		std::string_view probeObj; std::cout << 7;  return 0; }
+std::getenv	C-frequent	nsFunc-call	named-stop	エラー:この関数は説明に対応していません：getenv		std::getenv(); std::cout << 7;  return 0; }
+std::system	C-frequent	nsFunc-call	named-stop	エラー:この関数は説明に対応していません：system		std::system(); std::cout << 7;  return 0; }
+std::exit	C-frequent	nsFunc-call	named-stop	エラー:この関数は説明に対応していません：exit		std::exit(); std::cout << 7;  return 0; }
+std::abort	C-frequent	nsFunc-call	named-stop	エラー:この関数は説明に対応していません：abort		std::abort(); std::cout << 7;  return 0; }
+std::malloc	C-frequent	nsFunc-call	named-stop	エラー:この関数は説明に対応していません：malloc		std::malloc(); std::cout << 7;  return 0; }
+std::free	C-frequent	nsFunc-call	named-stop	エラー:この関数は説明に対応していません：free		std::free(); std::cout << 7;  return 0; }
+std::expm1	C-frequent	nsFunc-call	named-stop	エラー:この関数は説明に対応していません：expm1		std::expm1(); std::cout << 7;  return 0; }
+std::log1p	C-frequent	nsFunc-call	named-stop	エラー:この関数は説明に対応していません：log1p		std::log1p(); std::cout << 7;  return 0; }
+std::erf	C-frequent	nsFunc-call	named-stop	エラー:この関数は説明に対応していません：erf		std::erf(); std::cout << 7;  return 0; }
+std::tgamma	C-frequent	nsFunc-call	named-stop	エラー:この関数は説明に対応していません：tgamma		std::tgamma(); std::cout << 7;  return 0; }
+std::chrono::seconds	C-frequent	nestedType-decl	unnamed-stop	SyntaxError:; が必要です		std::chrono::seconds probeVar; std::cout << 7;  return 0; }
+std::chrono::system_clock	C-frequent	nestedType-decl	unnamed-stop	SyntaxError:; が必要です		std::chrono::system_clock probeVar; std::cout << 7;  return 0; }
+std::atomic	C-frequent	class-decl	named-stop	NameError:未定義の名前：atomic		std::atomic<int> probeObj; std::cout << 7;  return 0; }
+std::function	C-frequent	class-decl	named-stop	NameError:未定義の名前：function		std::function<int> probeObj; std::cout << 7;  return 0; }
+std::bind	C-frequent	class-decl	named-stop	NameError:未定義の名前：bind		std::bind<int, int> probeObj; std::cout << 7;  return 0; }
+std::move_if_noexcept	C-frequent	class-decl	named-stop	NameError:未定義の名前：move_if_noexcept		std::move_if_noexcept<int> probeObj; std::cout << 7;  return 0; }
+std::launder	C-frequent	class-decl	named-stop	NameError:未定義の名前：launder		std::launder<int> probeObj; std::cout << 7;  return 0; }
+std::byte	C-frequent	class-decl	named-stop	未対応:この構文は説明に対応していません：型 byte の宣言は未対応です		std::byte probeObj; std::cout << 7;  return 0; }
+std::source_location	C-frequent	object-ref	named-stop	NameError:未定義の名前：source_location		std::cout << std::source_location;  return 0; }
+std::jthread	C-frequent	class-decl	named-stop	未対応:この構文は説明に対応していません：型 jthread の宣言は未対応です		std::jthread probeObj; std::cout << 7;  return 0; }
+std::barrier	C-frequent	class-decl	named-stop	NameError:未定義の名前：barrier		std::barrier<int> probeObj; std::cout << 7;  return 0; }
+std::latch	C-frequent	class-decl	named-stop	未対応:この構文は説明に対応していません：型 latch の宣言は未対応です		std::latch probeObj; std::cout << 7;  return 0; }
+std::fstream	C-frequent	class-decl	named-stop	NameError:未定義の名前：fstream		std::fstream<int, int> probeObj; std::cout << 7;  return 0; }
+std::ifstream	C-frequent	class-decl	named-stop	NameError:未定義の名前：ifstream		std::ifstream<int, int> probeObj; std::cout << 7;  return 0; }
+std::ofstream	C-frequent	class-decl	named-stop	NameError:未定義の名前：ofstream		std::ofstream<int, int> probeObj; std::cout << 7;  return 0; }
+std::stringstream	C-frequent	class-decl	named-stop	未対応:この構文は説明に対応していません：型 stringstream の宣言は未対応です		std::stringstream probeObj; std::cout << 7;  return 0; }
+std::weak_ptr	C-frequent	class-decl	named-stop	NameError:未定義の名前：weak_ptr		std::weak_ptr<int> probeObj; std::cout << 7;  return 0; }
+std::shared_ptr	C-frequent	class-decl	named-stop	NameError:未定義の名前：shared_ptr		std::shared_ptr<int> probeObj; std::cout << 7;  return 0; }
+std::unique_ptr	C-frequent	class-decl	named-stop	NameError:未定義の名前：unique_ptr		std::unique_ptr<int, int> probeObj; std::cout << 7;  return 0; }
+std::make_unique	C-frequent	class-decl	named-stop	NameError:未定義の名前：make_unique		std::make_unique<int> probeObj; std::cout << 7;  return 0; }
+std::make_shared	C-frequent	class-decl	named-stop	NameError:未定義の名前：make_shared		std::make_shared<int> probeObj; std::cout << 7;  return 0; }
+std::hash	C-frequent	class-decl	named-stop	NameError:未定義の名前：hash		std::hash<int> probeObj; std::cout << 7;  return 0; }
+std::less	C-frequent	class-decl	named-stop	NameError:未定義の名前：less		std::less<int> probeObj; std::cout << 7;  return 0; }
+std::greater	C-frequent	class-decl	named-stop	NameError:未定義の名前：greater		std::greater<int> probeObj; std::cout << 7;  return 0; }
+std::plus	C-frequent	class-decl	named-stop	NameError:未定義の名前：plus		std::plus<int> probeObj; std::cout << 7;  return 0; }
+std::minus	C-frequent	class-decl	named-stop	NameError:未定義の名前：minus		std::minus<int> probeObj; std::cout << 7;  return 0; }
+std::multiplies	C-frequent	class-decl	named-stop	NameError:未定義の名前：multiplies		std::multiplies<int> probeObj; std::cout << 7;  return 0; }
+std::divides	C-frequent	class-decl	named-stop	NameError:未定義の名前：divides		std::divides<int> probeObj; std::cout << 7;  return 0; }
+std::modulus	C-frequent	class-decl	named-stop	NameError:未定義の名前：modulus		std::modulus<int> probeObj; std::cout << 7;  return 0; }
+std::negate	C-frequent	class-decl	named-stop	NameError:未定義の名前：negate		std::negate<int> probeObj; std::cout << 7;  return 0; }
+std::equal_to	C-frequent	class-decl	named-stop	NameError:未定義の名前：equal_to		std::equal_to<int> probeObj; std::cout << 7;  return 0; }
+std::not_equal_to	C-frequent	class-decl	named-stop	NameError:未定義の名前：not_equal_to		std::not_equal_to<int> probeObj; std::cout << 7;  return 0; }
+std::logical_and	C-frequent	class-decl	named-stop	NameError:未定義の名前：logical_and		std::logical_and<int> probeObj; std::cout << 7;  return 0; }
+std::logical_or	C-frequent	class-decl	named-stop	NameError:未定義の名前：logical_or		std::logical_or<int> probeObj; std::cout << 7;  return 0; }
+std::logical_not	C-frequent	class-decl	named-stop	NameError:未定義の名前：logical_not		std::logical_not<int> probeObj; std::cout << 7;  return 0; }
+std::bit_and	C-frequent	class-decl	named-stop	NameError:未定義の名前：bit_and		std::bit_and<int> probeObj; std::cout << 7;  return 0; }
+std::bit_or	C-frequent	class-decl	named-stop	NameError:未定義の名前：bit_or		std::bit_or<int> probeObj; std::cout << 7;  return 0; }
+std::bit_xor	C-frequent	class-decl	named-stop	NameError:未定義の名前：bit_xor		std::bit_xor<int> probeObj; std::cout << 7;  return 0; }
+std::bit_not	C-frequent	class-decl	named-stop	NameError:未定義の名前：bit_not		std::bit_not<int> probeObj; std::cout << 7;  return 0; }
+std::reference_wrapper	C-frequent	class-decl	named-stop	NameError:未定義の名前：reference_wrapper		std::reference_wrapper<int> probeObj; std::cout << 7;  return 0; }
+std::ref	C-frequent	class-decl	named-stop	NameError:未定義の名前：ref		std::ref<int> probeObj; std::cout << 7;  return 0; }
+std::cref	C-frequent	class-decl	named-stop	NameError:未定義の名前：cref		std::cref<int> probeObj; std::cout << 7;  return 0; }
+std::invoke	C-frequent	class-decl	named-stop	NameError:未定義の名前：invoke		std::invoke<int, int> probeObj; std::cout << 7;  return 0; }
+std::make_from_tuple	C-frequent	class-decl	named-stop	NameError:未定義の名前：make_from_tuple		std::make_from_tuple<int, int> probeObj; std::cout << 7;  return 0; }
+std::tie	C-frequent	nsFunc-call	named-stop	エラー:この関数は説明に対応していません：tie		std::tie(); std::cout << 7;  return 0; }
+std::ignore	C-frequent	object-ref	named-stop	NameError:未定義の名前：ignore		std::cout << std::ignore;  return 0; }
+std::forward_as_tuple	C-frequent	nsFunc-call	named-stop	エラー:この関数は説明に対応していません：forward_as_tuple		std::forward_as_tuple(); std::cout << 7;  return 0; }
+std::piecewise_construct	C-frequent	object-ref	named-stop	NameError:未定義の名前：piecewise_construct		std::cout << std::piecewise_construct;  return 0; }
+std::in_place	C-frequent	object-ref	named-stop	NameError:未定義の名前：in_place		std::cout << std::in_place;  return 0; }
+std::nullopt	C-frequent	object-ref	named-stop	NameError:未定義の名前：nullopt		std::cout << std::nullopt;  return 0; }
+std::bad_optional_access	C-frequent	class-decl	named-stop	未対応:この構文は説明に対応していません：型 bad_optional_access の宣言は未対応です		std::bad_optional_access probeObj; std::cout << 7;  return 0; }
+std::monostate	C-frequent	object-ref	named-stop	NameError:未定義の名前：monostate		std::cout << std::monostate;  return 0; }
+std::visit	C-frequent	class-decl	named-stop	NameError:未定義の名前：visit		std::visit<int, int> probeObj; std::cout << 7;  return 0; }
+std::holds_alternative	C-frequent	class-decl	named-stop	NameError:未定義の名前：holds_alternative		std::holds_alternative<int, int> probeObj; std::cout << 7;  return 0; }
+std::get	C-frequent	nsFunc-call	named-stop	エラー:この関数は説明に対応していません：get		std::get(); std::cout << 7;  return 0; }
+std::get_if	C-frequent	nsFunc-call	named-stop	エラー:この関数は説明に対応していません：get_if		std::get_if(); std::cout << 7;  return 0; }
+std::make_tuple	C-frequent	nsFunc-call	named-stop	エラー:この関数は説明に対応していません：make_tuple		std::make_tuple(); std::cout << 7;  return 0; }
+std::tuple_size	C-frequent	class-decl	named-stop	NameError:未定義の名前：tuple_size		std::tuple_size<int> probeObj; std::cout << 7;  return 0; }
+std::tuple_element	C-frequent	class-decl	named-stop	NameError:未定義の名前：tuple_element		std::tuple_element<int, int> probeObj; std::cout << 7;  return 0; }
+std::dec	C-frequent	nsFunc-call	named-stop	エラー:この関数は説明に対応していません：dec		std::dec(); std::cout << 7;  return 0; }
+std::hex	C-frequent	nsFunc-call	named-stop	エラー:この関数は説明に対応していません：hex		std::hex(); std::cout << 7;  return 0; }
+std::oct	C-frequent	nsFunc-call	named-stop	エラー:この関数は説明に対応していません：oct		std::oct(); std::cout << 7;  return 0; }
+std::flush	C-frequent	class-decl	named-stop	NameError:未定義の名前：flush		std::flush<int, int> probeObj; std::cout << 7;  return 0; }
+std::setw	C-frequent	nsFunc-call	named-stop	エラー:この関数は説明に対応していません：setw		std::setw(); std::cout << 7;  return 0; }
+std::setprecision	C-frequent	nsFunc-call	named-stop	エラー:この関数は説明に対応していません：setprecision		std::setprecision(); std::cout << 7;  return 0; }
+std::fixed	C-frequent	nsFunc-call	named-stop	エラー:この関数は説明に対応していません：fixed		std::fixed(); std::cout << 7;  return 0; }
+std::scientific	C-frequent	nsFunc-call	named-stop	エラー:この関数は説明に対応していません：scientific		std::scientific(); std::cout << 7;  return 0; }
+std::left	C-frequent	nsFunc-call	named-stop	エラー:この関数は説明に対応していません：left		std::left(); std::cout << 7;  return 0; }
+std::right	C-frequent	nsFunc-call	named-stop	エラー:この関数は説明に対応していません：right		std::right(); std::cout << 7;  return 0; }
+std::boolalpha	C-frequent	nsFunc-call	named-stop	エラー:この関数は説明に対応していません：boolalpha		std::boolalpha(); std::cout << 7;  return 0; }
+std::ws	C-frequent	class-decl	named-stop	NameError:未定義の名前：ws		std::ws<int, int> probeObj; std::cout << 7;  return 0; }
+std::ends	C-frequent	class-decl	named-stop	NameError:未定義の名前：ends		std::ends<int, int> probeObj; std::cout << 7;  return 0; }
+std::quoted	C-frequent	class-decl	named-stop	NameError:未定義の名前：quoted		std::quoted<int> probeObj; std::cout << 7;  return 0; }
+std::get_money	C-frequent	class-decl	named-stop	NameError:未定義の名前：get_money		std::get_money<int> probeObj; std::cout << 7;  return 0; }
+std::put_money	C-frequent	class-decl	named-stop	NameError:未定義の名前：put_money		std::put_money<int> probeObj; std::cout << 7;  return 0; }
+std::get_time	C-frequent	class-decl	named-stop	NameError:未定義の名前：get_time		std::get_time<int> probeObj; std::cout << 7;  return 0; }
+std::put_time	C-frequent	class-decl	named-stop	NameError:未定義の名前：put_time		std::put_time<int> probeObj; std::cout << 7;  return 0; }
+std::adjacent_find	D-systematic	class-decl	named-stop	NameError:未定義の名前：adjacent_find		std::adjacent_find<int> probeObj; std::cout << 7;  return 0; }
+std::ranges::remove_copy_result	D-systematic	nestedType-decl	unnamed-stop	SyntaxError:; が必要です		std::ranges::remove_copy_result probeVar; std::cout << 7;  return 0; }
+std::atomic_flag_test_explicit	D-systematic	nsFunc-call	named-stop	エラー:この関数は説明に対応していません：atomic_flag_test_explicit		std::atomic_flag_test_explicit(); std::cout << 7;  return 0; }
+std::ECONNRESET	D-systematic	object-ref	named-stop	NameError:未定義の名前：ECONNRESET		std::cout << std::ECONNRESET;  return 0; }
+std::DECIMAL_DIG	D-systematic	nsFunc-call	named-stop	エラー:この関数は説明に対応していません：DECIMAL_DIG		std::DECIMAL_DIG(); std::cout << 7;  return 0; }
+std::chrono::November	D-systematic	nestedFunc-call	unnamed-stop	SyntaxError:; が必要です		std::vector<int> v = {3, 1, 2}; std::chrono::November(v); std::cout << 7;  return 0; }
+std::PRIXN	D-systematic	object-ref	named-stop	NameError:未定義の名前：PRIXN		std::cout << std::PRIXN;  return 0; }
+std::copysignl	D-systematic	nsFunc-call	named-stop	エラー:この関数は説明に対応していません：copysignl		std::copysignl(); std::cout << 7;  return 0; }
+std::log10f	D-systematic	nsFunc-call	named-stop	エラー:この関数は説明に対応していません：log10f		std::log10f(); std::cout << 7;  return 0; }
+std::conj	D-systematic	class-decl	named-stop	NameError:未定義の名前：conj		std::conj<int> probeObj; std::cout << 7;  return 0; }
+std::int_fast64_t	D-systematic	class-decl	named-stop	未対応:この構文は説明に対応していません：型 int_fast64_t の宣言は未対応です		std::int_fast64_t probeObj; std::cout << 7;  return 0; }
+std::scanf	D-systematic	nsFunc-call	named-stop	エラー:この関数は説明に対応していません：scanf		std::scanf(); std::cout << 7;  return 0; }
+std::mbsrtowcs	D-systematic	nsFunc-call	named-stop	エラー:この関数は説明に対応していません：mbsrtowcs		std::mbsrtowcs(); std::cout << 7;  return 0; }
+std::execution::empty_env	D-systematic	nestedFunc-call	unnamed-stop	SyntaxError:; が必要です		std::vector<int> v = {3, 1, 2}; std::execution::empty_env(v); std::cout << 7;  return 0; }
+std::is_execution_policy_v	D-systematic	class-decl	named-stop	NameError:未定義の名前：is_execution_policy_v		std::is_execution_policy_v<int> probeObj; std::cout << 7;  return 0; }
+std::vformat	D-systematic	nsFunc-call	named-stop	エラー:この関数は説明に対応していません：vformat		std::vformat(); std::cout << 7;  return 0; }
+std::uppercase	D-systematic	nsFunc-call	named-stop	エラー:この関数は説明に対応していません：uppercase		std::uppercase(); std::cout << 7;  return 0; }
+std::input_or_output_iterator	D-systematic	class-decl	named-stop	NameError:未定義の名前：input_or_output_iterator		std::input_or_output_iterator<int> probeObj; std::cout << 7;  return 0; }
+std::linalg::vector_sum_of_squares	D-systematic	nestedFunc-call	unnamed-stop	SyntaxError:; が必要です		std::vector<int> v = {3, 1, 2}; std::linalg::vector_sum_of_squares(v); std::cout << 7;  return 0; }
+std::ranges::uninitialized_copy_result	D-systematic	nestedType-decl	unnamed-stop	SyntaxError:; が必要です		std::ranges::uninitialized_copy_result probeVar; std::cout << 7;  return 0; }
+std::meta::is_bounded_array_type	D-systematic	nestedFunc-call	unnamed-stop	SyntaxError:; が必要です		std::vector<int> v = {3, 1, 2}; std::meta::is_bounded_array_type(v); std::cout << 7;  return 0; }
+std::meta::is_special_member_function	D-systematic	nestedFunc-call	unnamed-stop	SyntaxError:; が必要です		std::vector<int> v = {3, 1, 2}; std::meta::is_special_member_function(v); std::cout << 7;  return 0; }
+std::unique_lock	D-systematic	class-decl	named-stop	NameError:未定義の名前：unique_lock		std::unique_lock<int> probeObj; std::cout << 7;  return 0; }
+std::uniform_random_bit_generator	D-systematic	class-decl	named-stop	NameError:未定義の名前：uniform_random_bit_generator		std::uniform_random_bit_generator<int> probeObj; std::cout << 7;  return 0; }
+std::ranges::views::lazy_split	D-systematic	nestedFunc-call	unnamed-stop	SyntaxError:; が必要です		std::vector<int> v = {3, 1, 2}; std::ranges::views::lazy_split(v); std::cout << 7;  return 0; }
+std::shared_lock	D-systematic	class-decl	named-stop	NameError:未定義の名前：shared_lock		std::shared_lock<int> probeObj; std::cout << 7;  return 0; }
+std::tuple_size_v	D-systematic	class-decl	named-stop	NameError:未定義の名前：tuple_size_v		std::tuple_size_v<int> probeObj; std::cout << 7;  return 0; }
+std::is_member_object_pointer	D-systematic	class-decl	named-stop	NameError:未定義の名前：is_member_object_pointer		std::is_member_object_pointer<int> probeObj; std::cout << 7;  return 0; }
+std::make_signed_t	D-systematic	class-decl	named-stop	NameError:未定義の名前：make_signed_t		std::make_signed_t<int> probeObj; std::cout << 7;  return 0; }
+std::atomic::atomic	D-systematic	memberOfUnsupportedClass	named-stop	NameError:未定義の名前：atomic		std::atomic<int> oprobe; oprobe.atomic(); std::cout << 7;  return 0; }
+std::chrono::time_point::operator-=	D-systematic	non-identifier	probe-inapplicable			
+std::filesystem::path::clear	D-systematic	memberOfUnsupportedClass	unnamed-stop	SyntaxError:; が必要です		std::filesystem::path oprobe; oprobe.clear(); std::cout << 7;  return 0; }
+std::flat_map::value_comp	D-systematic	memberOfUnsupportedClass	owner-named-stop	NameError:未定義の名前：flat_map		std::flat_map<int, int> oprobe; oprobe.value_comp(); std::cout << 7;  return 0; }
+std::flat_set::key_compare	D-systematic	memberOfUnsupportedClass	owner-named-stop	NameError:未定義の名前：flat_set		std::flat_set<int, int> oprobe; oprobe.key_compare(); std::cout << 7;  return 0; }
+std::function::second_argument_type	D-systematic	memberOfUnsupportedClass	owner-named-stop	NameError:未定義の名前：function		std::function<int> oprobe; oprobe.second_argument_type(); std::cout << 7;  return 0; }
+std::inplace_vector::assign_range	D-systematic	memberOfUnsupportedClass	owner-named-stop	NameError:未定義の名前：inplace_vector		std::inplace_vector<int, int> oprobe; oprobe.assign_range(); std::cout << 7;  return 0; }
+std::list::back	D-systematic	memberOfUnsupportedClass	owner-named-stop	未対応:この構文は説明に対応していません：ジェネリック型 list<...> の宣言は未対応です		std::list<int, int> oprobe; oprobe.back(); std::cout << 7;  return 0; }
+std::match_results::reference	D-systematic	memberOfUnsupportedClass	owner-named-stop	NameError:未定義の名前：match_results		std::match_results<int, int> oprobe; oprobe.reference(); std::cout << 7;  return 0; }
+std::multimap::operator=	D-systematic	non-identifier	probe-inapplicable			
+std::ostream::operator<<	D-systematic	non-identifier	probe-inapplicable			
+std::set::value_type	D-systematic	memberOfUnsupportedClass	owner-named-stop	未対応:この構文は説明に対応していません：ジェネリック型 set<...> の宣言は未対応です		std::set<int, int> oprobe; oprobe.value_type(); std::cout << 7;  return 0; }
+std::stack::stack	D-systematic	memberOfUnsupportedClass	named-stop	未対応:この構文は説明に対応していません：ジェネリック型 stack<...> の宣言は未対応です		std::stack<int, int> oprobe; oprobe.stack(); std::cout << 7;  return 0; }
+std::stringstream::char_type	D-systematic	memberOfUnsupportedClass	owner-named-stop	未対応:この構文は説明に対応していません：型 stringstream の宣言は未対応です		std::stringstream oprobe; oprobe.char_type(); std::cout << 7;  return 0; }
+std::unordered_map::max_load_factor	D-systematic	memberOfUnsupportedClass	owner-named-stop	未対応:この構文は説明に対応していません：ジェネリック型 unordered_map<...> の宣言は未対応です		std::unordered_map<int, int> oprobe; oprobe.max_load_factor(); std::cout << 7;  return 0; }
+std::unordered_multiset::hash_function	D-systematic	memberOfUnsupportedClass	owner-named-stop	NameError:未定義の名前：unordered_multiset		std::unordered_multiset<int, int> oprobe; oprobe.hash_function(); std::cout << 7;  return 0; }

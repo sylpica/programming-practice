@@ -3,6 +3,8 @@ import {
   truncateDisplayText,
   VALUE_LENGTH_LIMIT,
 } from "./core/presentation.js";
+import { advancedBuiltins } from "./types/vba/functions-advanced.js";
+import { advancedConstants } from "./types/vba/constants-advanced.js";
 /* Buildless, deterministic VBA teaching interpreter. Never evaluates user JavaScript. */
 export const LIMITS = Object.freeze({
   paths: 2000,
@@ -64,6 +66,12 @@ export function display(v) {
   if (v?.kind === "empty") return "Empty";
   if (v?.kind === "null") return "Null";
   if (v?.kind === "nothing") return "Nothing";
+  // 統合第2弾（B4報告書 §6(b) 申し送りの処置）：CVErr のエラー値は実 VBA
+  // どおり "Error 2042" と表示する。従来は表示ケースが無く String(v) に
+  // 落ちて "[object Object]" になっていた。Err オブジェクト自体（code を
+  // 持たない {kind:"err"}）は "Error" とだけ表示する。
+  if (v?.kind === "err")
+    return typeof v.code === "number" ? `Error ${v.code}` : "Error";
   if (v?.kind === "range") return `Range("${v.cells.join(":")}")`;
   if (v?.kind === "array")
     return truncateDisplayText(
@@ -289,6 +297,28 @@ export function lex(source) {
     }
     if (ID_EXCLUDED.test(c) || c.codePointAt(0) < 0x20)
       lexFail(`識別子や記号として扱えない文字があります：${charLabel(c)}`, line);
+    // 統合第2弾（B4報告書 §6(a) 申し送りの処置）：# はファイル番号を使う文
+    // （Open／Print # 等）と日付リテラルで現れるが、従来は「#」とだけ
+    // 名指しされ文名が出なかった（F-03 の粒度）。行頭の文名、または
+    // 日付リテラルの形から、何が未対応なのかを名指しする。受理範囲は
+    // 変えない（# は従来どおり停止する）。
+    if (c === "#") {
+      const lineStart = source.lastIndexOf("\n", i - 1) + 1;
+      let lineEnd = source.indexOf("\n", i);
+      if (lineEnd === -1) lineEnd = source.length;
+      const stmt = source
+        .slice(lineStart, lineEnd)
+        .match(
+          /^\s*(line\s+input|open|close|print|write|input|get|put|seek|lock|unlock|width|reset)\b/i,
+        );
+      if (stmt)
+        lexFail(
+          `この構文は説明に対応していません：${stmt[1].replace(/\s+/g, " ")} 文（ファイル番号 #）`,
+          line,
+        );
+      if (/\d/.test(source[i + 1] || ""))
+        lexFail(`この構文は説明に対応していません：#（日付リテラル）`, line);
+    }
     lexFail(`この構文は説明に対応していません：${c}`, line);
   }
   return result;
@@ -839,6 +869,7 @@ const STATIC_BUILTIN_FUNCS = new Set([
   "replace",
   "instr",
   "inputbox",
+  "string",
 ]);
 const STATIC_SCALAR_TYPES = new Set([
   "integer",
@@ -848,6 +879,9 @@ const STATIC_SCALAR_TYPES = new Set([
   "string",
   "boolean",
 ]);
+// 高度モード B4：高度差分の関数名を静的検査の組み込み関数集合へ登録する
+// （Option Explicit 下で高度関数が「変数が定義されていません」に化けないため）。
+for (const n of Object.keys(advancedBuiltins)) STATIC_BUILTIN_FUNCS.add(n);
 function staticValidate(ast) {
   // 組み込み定数名の集合は、VBA_ENUM_CONSTANTS の初期化後に使うため
   // 呼び出し時に構築する（モジュール評価順序に依存させない）。
@@ -1307,6 +1341,7 @@ function expressionType(a, s) {
         clng: "long",
         cdbl: "double",
         inputbox: "string",
+        string: "string",
       }[a.target.name] || "variant"
     );
   }
@@ -1337,6 +1372,23 @@ function typedCompare(op, x, y, xt, yt) {
   if (x?.kind === "null" || y?.kind === "null") return NULL;
   const numeric = (t) => !["string", "variant"].includes(t);
 
+  // A4-VBA-SEM-02（A-06／V7）: MS-VBAL の関係演算子では、String 型と
+  // 数値型（Integer／Long／Single／Double）の比較は文字列側を数値型へ
+  // Let 変換して数値比較する（2 < "10" は True、"10" = 10 は True、
+  // 変換できない文字列はエラー13）。従来は宣言型が静的に分かる場合
+  // だけ未対応として停止し、Variant 格納値では数値比較になっていた
+  // （宣言型依存の矛盾）。Boolean 型との比較は変換規則を一次情報で
+  // 確定できないため、従来どおり未対応として停止する。
+  const numericType = (t) =>
+    ["integer", "long", "double", "single"].includes(t);
+  if (
+    (xt === "string" && numericType(yt)) ||
+    (yt === "string" && numericType(xt))
+  ) {
+    if (!isU(x)) x = num(x);
+    if (!isU(y)) y = num(y);
+    return binary(op, x, y);
+  }
   if ((xt === "string" && numeric(yt)) || (yt === "string" && numeric(xt)))
     unsupported(
       "String型と数値型の直接比較（明示的な型変換を使用してください）",
@@ -1503,6 +1555,10 @@ const VBA_ENUM_CONSTANTS = {
   vbkeyf11: 122, vbkeyf12: 123, vbkeyf13: 124, vbkeyf14: 125, vbkeyf15: 126,
   vbkeyf16: 127,
 };
+// 高度モード B4：高度差分の定数を統合する（docs/audit/ADV-B4-SPEC.md）。
+// 本行は VBA_BUILTIN_CONSTANT_NAMES の構築より前に置き、代入ガードや
+// 静的検査の組み込み定数集合にも高度定数が含まれるようにする。
+Object.assign(VBA_ENUM_CONSTANTS, advancedConstants);
 // R28-N8: 組み込み定数への代入・同名宣言・ループ変数化のガード対象。
 // evalExpr の id 解決が s.vars より先に定数を引くため、書き込み側に
 // ガードが無いと「trace・最終状態は代入後の値、読み戻しは定数値」という
@@ -1648,6 +1704,33 @@ function evalExpr(a, s) {
           v?.kind === "nothing"
         )
           return v;
+        // A4-VBA-SEM-01: 検査系関数（IsArray／IsDate／IsError／IsObject／
+        // TypeName／VarType）も Nothing を検査対象として受け取る関数であり、
+        // 実 VBA では Nothing を渡してもエラー91にならず、IsArray／IsDate／
+        // IsError は False、IsObject は True、TypeName は "Nothing"、
+        // VarType は 9 を返す（R30-N20 と同根の兄弟表面。ハンドラ側は
+        // nothing を正しく処理する実装になっている）。
+        if (
+          [
+            "isarray",
+            "isdate",
+            "iserror",
+            "isobject",
+            "typename",
+            "vartype",
+          ].includes(name) &&
+          v?.kind === "nothing"
+        )
+          return v;
+        // A4-VBA-SEM-01（続き）: IsObject／TypeName／VarType は Range
+        // そのものを検査する関数なので、既定プロパティ（単一セルの値）へ
+        // 解決せずに渡す。実 VBA では TypeName(Range("A1")) は "Range"、
+        // VarType(Range("A1")) は 9（vbObject）、IsObject は True。
+        if (
+          ["isobject", "typename", "vartype"].includes(name) &&
+          v?.kind === "range"
+        )
+          return v;
         return value(v, s);
       });
       if (name === "inputbox") {
@@ -1697,6 +1780,8 @@ function evalExpr(a, s) {
         "round",
         "replace",
         "instr",
+        "string",
+        ...Object.keys(advancedBuiltins),
       ];
       if (!known.includes(name) && !(name in s.vars))
         unsupported(`関数 ${name}`);
@@ -1725,6 +1810,7 @@ function evalExpr(a, s) {
         round: [1, 2],
         replace: [3, 6],
         instr: [2, 4],
+        string: [2, 2],
         isnull: [1, 1],
         isempty: [1, 1],
         lbound: [1, 2],
@@ -1742,13 +1828,14 @@ function evalExpr(a, s) {
           unsupported(`${name} の引数が未確定`);
         let meta = ["len", "instr"].includes(name)
           ? { valueType: "long", min: 0, max: 2147483647 }
-          : ["cint", "clng", "cdbl", "cstr"].includes(name)
+          : ["cint", "clng", "cdbl", "cstr", "string"].includes(name)
             ? {
                 valueType: {
                   cint: "integer",
                   clng: "long",
                   cdbl: "double",
                   cstr: "string",
+                  string: "string",
                 }[name],
               }
             : name === "abs"
@@ -1813,15 +1900,27 @@ function evalExpr(a, s) {
           args[0].low + (name === "ubound" ? args[0].values.length - 1 : 0)
         );
       }
+      // 高度モード B4：高度差分の組み込み関数。Null の扱いは関数ごとに
+      // 異なるため、汎用の Null 伝播ブロックより前にディスパッチし、
+      // ハンドラ側が一次情報どおりの Null 規則を実装する（SPEC 第3章）。
+      if (Object.hasOwn(advancedBuiltins, name))
+        return advancedBuiltins[name](args, {
+          fail, unsupported, unknown, isU, value, s, display, str, num,
+          cast, toLong, roundEven, EMPTY, NULL, NOTHING,
+        });
       if (args.some((v) => v?.kind === "null")) {
         // F-VBA-05: Null の扱いは関数ごとに異なる。一括で Null を返して
         // 関数固有の規則を上書きしない。
-        // ・CStr／CInt／CLng／CDbl／Val はエラー94（値を取得できない）
+        // ・CStr／CInt／CLng／CDbl／Val／String はエラー94（値を取得できない）
         // ・Replace は文書の戻り値表で「Null ならエラー」と明記（94とする）
         // ・IsNumeric は Boolean を返す関数なので Null には False
         // ・上記以外（Len／Left／Right／Mid／Trim／UCase／LCase／Abs／Int／
         //   Fix／Round／InStr 等）は各関数の文書どおり Null を返す
-        if (["cstr", "cint", "clng", "cdbl", "val", "replace"].includes(name))
+        if (
+          ["cstr", "cint", "clng", "cdbl", "val", "replace", "string"].includes(
+            name,
+          )
+        )
           fail("Null の使い方が不正です", 94);
         if (name === "isnumeric") return false;
         return NULL;
@@ -1846,6 +1945,7 @@ function evalExpr(a, s) {
         round: [1, 2],
         replace: [3, 6],
         instr: [2, 4],
+        string: [2, 2],
       };
       if (!arity[name]) unsupported(`関数 ${name}`);
       if (args.length < arity[name][0] || args.length > arity[name][1])
@@ -1893,6 +1993,32 @@ function evalExpr(a, s) {
       if (name === "trim") return str(x).replace(/^ +| +$/g, "");
       if (name === "lcase") return str(x).toLowerCase();
       if (name === "ucase") return str(x).toUpperCase();
+      if (name === "string") {
+        // A4-VBA-SEM-03（V16／VB13）: String(number, character) は基礎
+        // カタログの String 型の項目と同名衝突で関数側が欠落していた。
+        // Microsoft Learn「String function」：character が文字列なら
+        // 先頭1文字を使い、数値なら文字コード（0〜255）として扱う。
+        // number が負ならエラー5、引数 Null は上の関数別規則でエラー94。
+        // 結果が長さ上限を超える場合は Space（高度側）と同じく実体を
+        // 作らず未確定値へ倒す（String(1000000, "a") で巨大な文字列を
+        // 作らない）。
+        let n = toLong(x);
+        if (n < 0)
+          fail("プロシージャの呼び出し、または引数が不正です", 5);
+        let ch;
+        if (typeof y === "string") {
+          if (y.length === 0)
+            fail("プロシージャの呼び出し、または引数が不正です", 5);
+          ch = y[0];
+        } else {
+          let code = toLong(y);
+          if (code < 0 || code > 255)
+            fail("プロシージャの呼び出し、または引数が不正です", 5);
+          ch = String.fromCharCode(code);
+        }
+        if (n > VALUE_LENGTH_LIMIT) return unknown("とても長い文字列");
+        return ch.repeat(n);
+      }
       if (name === "abs") return Math.abs(num(x));
       if (name === "int") return Math.floor(num(x));
       if (name === "fix") return Math.trunc(num(x));

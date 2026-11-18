@@ -1,4 +1,22 @@
 import { additionalTemplates } from "./additional-templates.js";
+// R-2 の「最低限の配線」：本ファイルに残る高度関連の配線は、高度ハンドラ
+// への各入口での委譲可否の最小チェック（advancedState.enabled の参照）
+// のみである。モード判定（localStorage・getMode 等）は一切書かない。
+// 有効化は機構の advanced-loader が advanced-engine.js の
+// applyAdvancedEngine を呼ぶ経路でのみ行われる。未適用時は基礎
+// （bba3b26）の挙動と完全に一致する。
+import {
+  dispatchAdvancedCall,
+  advancedClaimsCall,
+  advancedStep,
+  advancedIndexRead,
+  advancedIndexWrite,
+  isAhkMap,
+  isAhkBuffer,
+  isMatchInfo,
+  ADVANCED_STEP_KINDS,
+  advancedState,
+} from "./semantics-advanced.js";
 import {
   ScriptParser,
   executeProgram,
@@ -443,14 +461,47 @@ function prescanAHK(source) {
       const nx = tokens[i + 1];
       if (
         nx && nx.k === "id" && nx.line === t.line &&
-        ["files", "parse", "read", "reg"].includes(nx.v.toLowerCase())
+        // ADV-B2 ゲート：Loop Parse の停止免除は高度有効時のみ。未適用時は
+        // 基礎どおり "parse" も停止対象に含める。
+        (advancedState.enabled
+          ? ["files", "read", "reg"]
+          : ["files", "parse", "read", "reg"]).includes(nx.v.toLowerCase())
       )
         unsupported("Loop " + nx.v.charAt(0).toUpperCase() + nx.v.slice(1).toLowerCase(), t.line);
     }
     if (!atStmtStart) continue;
-    if (lower === "try" || lower === "catch" || lower === "finally") unsupported("Try／Catch", t.line);
-    if (lower === "throw") unsupported("Throw", t.line);
-    if (lower === "switch") unsupported("Switch", t.line);
+    // ADV-B2 ゲート：Try／Catch／Finally は高度有効時のみ「同じ行に { が
+    // 続く」形を実装対象として免除する（マーカー折り畳み）。未適用時は
+    // 基礎どおり無条件に名指しで止める。
+    if (lower === "try" || lower === "catch" || lower === "finally") {
+      if (!advancedState.enabled) unsupported("Try／Catch", t.line);
+      let ok = false;
+      if (lower === "finally") {
+        const nx = tokens[i + 1];
+        ok = !!nx && nx.v === "{" && nx.line === t.line;
+      } else {
+        let k = i + 1;
+        while (
+          tokens[k] && tokens[k].line === t.line &&
+          (tokens[k].k === "id" || tokens[k].v === ",")
+        ) k++;
+        ok = !!tokens[k] && tokens[k].v === "{" && tokens[k].line === t.line;
+      }
+      if (!ok) unsupported("Try／Catch", t.line);
+    }
+    // ADV-B2 ゲート：Throw の停止免除は高度有効時のみ。未適用時は基礎
+    // どおり名指しで止める。
+    if (lower === "throw" && !advancedState.enabled)
+      unsupported("Throw", t.line);
+    // ADV-B2 ゲート：Switch は高度有効時のみ「同じ行に { が続く」形を
+    // 実装対象として免除する。未適用時は基礎どおり無条件に止める。
+    if (lower === "switch") {
+      if (!advancedState.enabled) unsupported("Switch", t.line);
+      let ok = false;
+      for (let k = i + 1; k < tokens.length && tokens[k].line === t.line; k++)
+        if (tokens[k].v === "{") { ok = true; break; }
+      if (!ok) unsupported("Switch", t.line);
+    }
     if (lower === "class") unsupported("class（クラス定義）", t.line);
     if (lower === "goto") unsupported("Goto", t.line);
     if (lower === "gosub") unsupported("Gosub", t.line);
@@ -460,6 +511,9 @@ function prescanAHK(source) {
     }
     // Label: a lone "name:" at a line start (not a record entry, whose
     // previous significant token is a comma or whose value follows).
+    // ADV-B2 ゲート：Switch の Default: のラベル判定除外は高度有効時のみ。
+    // 未適用時は基礎どおりラベルとして名指しで止める対象になる。
+    if (lower === "default" && advancedState.enabled) continue;
     if (!prev || prev.k === "nl") {
       const n1 = tokens[i + 1],
         n2 = tokens[i + 2];
@@ -473,7 +527,12 @@ function prescanAHK(source) {
     // Function definition: Name(args) { with the brace on the same line.
     // (AutoHotkey itself reads a call followed by "{" as a definition.)
     if (
-      !["if", "else", "while", "loop", "for", "return", "break", "continue", "until", "and", "or", "not"].includes(lower)
+      // ADV-B2 ゲート：関数定義検出の除外語の拡張（switch 等）は高度
+      // 有効時のみ。未適用時は基礎の除外語リストと完全に一致させる。
+      !["if", "else", "while", "loop", "for", "return", "break", "continue", "until", "and", "or", "not",
+        ...(advancedState.enabled
+          ? ["switch", "try", "catch", "finally", "throw", "case", "default"]
+          : [])].includes(lower)
     ) {
       const n1 = tokens[i + 1];
       if (n1 && n1.v === "(" && n1.line === t.line) {
@@ -608,6 +667,15 @@ const AHK_COMMAND_NAMES = new Set([
   "mousemove", "sleep", "tooltip", "settitlematchmode", "winexist",
   "winactive", "inputbox",
 ]);
+// ADV-B2 ゲート：コマンド名 "exit"（裸の Exit 文の呼出化）は高度有効時
+// のみ追加する。未適用時は基礎の集合と完全に一致し、裸の Exit 文は
+// 基礎どおりの扱いになる。
+function ahkCommandHas(lowerName) {
+  return (
+    AHK_COMMAND_NAMES.has(lowerName) ||
+    (advancedState.enabled && lowerName === "exit")
+  );
+}
 // RG-08: statement-form (parenthesis-free) calls are rewritten to the
 // parenthesized form the shared parser handles uniformly. This fixes the
 // argument shapes the parser's own statement-form path mangled: a leading
@@ -632,7 +700,7 @@ function rewriteSegment(seg) {
       // name keeps the expression-statement reading (x - 3).
       if (
         !name.includes(".") &&
-        !AHK_COMMAND_NAMES.has(name.toLowerCase()) &&
+        !ahkCommandHas(name.toLowerCase()) &&
         !/^[A-Z]/.test(name)
       )
         return seg;
@@ -640,7 +708,7 @@ function rewriteSegment(seg) {
     return `${indent}${name}(${rest})${trail}`;
   }
   const bare = seg.match(/^([ \t]*)([\p{ID_Start}_][\p{ID_Continue}_]*)([ \t]*)$/u);
-  if (bare && AHK_COMMAND_NAMES.has(bare[2].toLowerCase()))
+  if (bare && ahkCommandHas(bare[2].toLowerCase()))
     return `${bare[1]}${bare[2]}()${bare[3]}`;
   return seg;
 }
@@ -686,9 +754,242 @@ function rewriteStatements(code) {
   }
   return out;
 }
+// ADV-B2：高度差分の文（Loop Parse／Try／Catch／Finally／Switch／Throw）を
+// 基礎パーサが扱えるマーカー呼び出しへ書き換える。基礎が既に受理している
+// 構文には触れない（対象は prescan が従来「未対応として停止」していた文だけ）。
+const AHK_ERROR_CLASS_NAMES = new Set([
+  "any", "error", "typeerror", "valueerror", "indexerror", "keyerror",
+  "membererror", "oserror", "zerodivisionerror", "targeterror", "unseterror",
+  "unsetitemerror", "methoderror", "propertyerror", "timeouterror",
+]);
+// 文字列リテラルの中身を空白化し、長さと位置を保つマスク（maskAhkStrings は
+// リテラルを1文字に潰すため、位置対応が必要な走査には使えない）。
+function maskAligned(text) {
+  let out = "";
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (c === '"' || c === "'") {
+      out += c;
+      i++;
+      while (i < text.length && text[i] !== c) {
+        if (text[i] === "`" && i + 1 < text.length) {
+          out += "  ";
+          i += 2;
+          continue;
+        }
+        out += " ";
+        i++;
+      }
+      if (i < text.length) out += c;
+    } else out += c;
+  }
+  return out;
+}
+function splitTopLevelCommas(text) {
+  const masked = maskAligned(text);
+  const parts = [];
+  let depth = 0, cur = "";
+  for (let i = 0; i < text.length; i++) {
+    const c = masked[i];
+    if (c === "(" || c === "[") depth++;
+    else if (c === ")" || c === "]") depth--;
+    if (c === "," && depth === 0) {
+      parts.push(cur);
+      cur = "";
+      continue;
+    }
+    cur += text[i];
+  }
+  parts.push(cur);
+  return parts;
+}
+function findTopLevelColon(text) {
+  const masked = maskAligned(text);
+  let depth = 0;
+  for (let i = 0; i < text.length; i++) {
+    const c = masked[i];
+    if (c === "(" || c === "[") depth++;
+    else if (c === ")" || c === "]") depth--;
+    else if (c === ":" && depth === 0) return i;
+  }
+  return -1;
+}
+function parseCatchParams(text) {
+  const t = text.trim();
+  // クラス指定のない Catch（裸の Catch／Catch as 変数）は、公式仕様では
+  // Error クラスのインスタンスだけを受ける（公式 Throw ページ："if
+  // Catch is used without specifying a class ..., it will only catch
+  // instances of the Error class"）。Error でない値（文字列・数値・
+  // オブジェクト等）を受けるのは Catch Any や Catch String のような
+  // 明示のクラス指定だけである（A2監査 F1：従来は逆に「投げられた値が
+  // 何であっても受ける」と実装され、コメントも誤っていた）。
+  if (!t) return { varName: "", classes: "Error" };
+  const asOnly = t.match(/^as\s+([\p{ID_Start}_][\p{ID_Continue}_]*)$/iu);
+  if (asOnly) return { varName: asOnly[1], classes: "Error" };
+  const parts = t.split(",").map((x) => x.trim()).filter(Boolean);
+  let varName = "";
+  let classParts = parts;
+  const last = parts[parts.length - 1];
+  const asMatch = last.match(/^(.*?)\s+as\s+([\p{ID_Start}_][\p{ID_Continue}_]*)$/iu);
+  if (asMatch) {
+    varName = asMatch[2];
+    classParts = [...parts.slice(0, -1), ...(asMatch[1] ? [asMatch[1]] : [])];
+  } else if (parts.length === 1) {
+    if (AHK_ERROR_CLASS_NAMES.has(parts[0].toLowerCase())) classParts = [parts[0]];
+    else if (/^(string|integer|float|array|map|buffer|object)$/i.test(parts[0]))
+      // 組み込みの型名はクラス指定として扱う（従来は変数名と誤認され、
+      // "Any" として何でも受けていた）。
+      classParts = [parts[0]];
+    else {
+      // クラス名でない単独の識別子は変数名として扱う。この形も受ける
+      // のは Error のみ（クラス指定なしと同じ）。
+      varName = parts[0];
+      classParts = [];
+    }
+  }
+  return { varName, classes: classParts.length ? classParts.join("|") : "Error" };
+}
+function rewriteAdvStatements(code) {
+  // ADV-B2 ゲート：高度文の書換えは高度有効時のみ行う。未適用時は入力を
+  // そのまま返し、基礎の書換え経路（rewriteUntil 等）と完全に一致する。
+  // maskAligned／splitTopLevelCommas／findTopLevelColon／parseCatchParams
+  // は本関数からのみ呼ばれるため、この入口のゲートで併せて無効化される。
+  if (!advancedState.enabled) return code;
+  let m;
+  // Loop Parse, String, DelimiterChars, OmitChars {
+  if ((m = code.match(/^(\s*)Loop\s+Parse\b\s*,?\s*(.+)$/i))) {
+    let rest = m[2].trim();
+    let suffix = "";
+    if (rest.endsWith("{")) {
+      // 末尾の { が括弧の外にある場合だけ本体ブロックの開始とみなす。
+      const masked = maskAligned(rest.slice(0, -1));
+      let depth = 0;
+      for (const ch of masked) {
+        if (ch === "(" || ch === "[") depth++;
+        else if (ch === ")" || ch === "]") depth--;
+      }
+      if (depth === 0) {
+        suffix = " {";
+        rest = rest.slice(0, -1).trim();
+      }
+    }
+    const args = splitTopLevelCommas(rest).map((x) => x.trim());
+    if (args.length >= 1 && args.length <= 3 && args.every((a) => a !== ""))
+      return `${m[1]}Loop __AHKPARSE__(${args.join(", ")})${suffix}`;
+    return code;
+  }
+  // Try {
+  if ((m = code.match(/^(\s*)Try\s*\{\s*$/i)))
+    return `${m[1]}Loop __AHKTRY__() {`;
+  // } Catch ... { / Catch ... {
+  if ((m = code.match(/^(\s*\}?\s*)Catch\b\s*(.*?)\s*\{\s*$/i))) {
+    const { varName, classes } = parseCatchParams(m[2]);
+    return `${m[1]}Loop __AHKCATCH__("${varName}", "${classes}") {`;
+  }
+  // } Finally { / Finally {
+  if ((m = code.match(/^(\s*\}?\s*)Finally\s*\{\s*$/i)))
+    return `${m[1]}Loop __AHKFINALLY__() {`;
+  // Switch ... {
+  if ((m = code.match(/^(\s*)Switch\b\s*(.*?)\s*\{\s*$/i))) {
+    const expr = m[2].trim().replace(/,\s*$/, "");
+    return `${m[1]}Loop __AHKSWITCH__(${expr}) {`;
+  }
+  // Case 値: 文
+  if ((m = code.match(/^(\s*)Case\b\s*(.+)$/i))) {
+    const colon = findTopLevelColon(m[2]);
+    if (colon >= 0) {
+      const values = m[2].slice(0, colon).trim();
+      const rest = m[2].slice(colon + 1).trim();
+      if (values)
+        return `${m[1]}__AHKCASE__(${values})` +
+          (rest ? `, ${rewriteSegment(rest)}` : "");
+    }
+    return code;
+  }
+  // Default: 文
+  if ((m = code.match(/^(\s*)Default\s*:\s*(.*)$/i))) {
+    const rest = m[2].trim();
+    return `${m[1]}__AHKDEFAULT__()` + (rest ? `, ${rewriteSegment(rest)}` : "");
+  }
+  // Throw 式
+  if ((m = code.match(/^(\s*)Throw\b\s*(.*)$/i))) {
+    const rest = m[2].trim();
+    return `${m[1]}AHKThrowStmt(${rest})`;
+  }
+  return code;
+}
+// ADV-B2（Try/Catch Else 是正）：Else は If と共有するキーワードのため、
+// 行単位の書換え（rewriteAdvStatements）では Try／Catch 所属かどうかを
+// 判定できない。そこでソース全体を行単位に走査し、ブロックの対応関係
+// （スタック）から「直前に閉じたブロックが Try または Catch」である
+// Else 行だけを専用マーカー Loop __AHKELSE__() へ書き換える全体パスを
+// 置く。If／Loop 等の Else は一切触らない。判定できるのは Try／Catch と
+// 同じ「同じ行に { が続く」ブロック形式だけで、それ以外の形式の
+// Try／Catch Else は、対応する if がないという虚偽の理由で止めず、
+// Else 節そのものを名指して止める。高度無効時は入力をそのまま返す。
+function rewriteTryCatchElse(source) {
+  if (!advancedState.enabled) return source;
+  const lines = source.split("\n");
+  const stack = [];
+  let lastClosed = null;
+  let inBlockComment = false;
+  for (let idx = 0; idx < lines.length; idx++) {
+    if (inBlockComment) {
+      if (lines[idx].includes("*/")) inBlockComment = false;
+      continue;
+    }
+    const split = splitCodeComment(lines[idx]);
+    if (split.opensBlock) inBlockComment = true;
+    let rest = maskAhkStrings(split.code).trim();
+    if (!rest) continue; // 空行・コメント行は直前の閉じブロックとの結びつきを保つ
+    let leadingClosed = null;
+    while (rest.startsWith("}")) {
+      leadingClosed = stack.pop() ?? null;
+      rest = rest.slice(1).trim();
+    }
+    if (!rest) {
+      lastClosed = leadingClosed;
+      continue;
+    }
+    const wordMatch = rest.match(/^[\p{ID_Start}_][\p{ID_Continue}_]*/u);
+    const word = wordMatch ? wordMatch[0].toLowerCase() : "";
+    if (word === "else") {
+      const assoc = leadingClosed ?? lastClosed;
+      const isBlockForm = /^else\s*\{$/i.test(rest);
+      if (assoc === "try" || assoc === "catch") {
+        if (!isBlockForm)
+          unsupported(
+            "Try／Catch の Else 節（「同じ行に { が続く」ブロック形式のみ対応しています）",
+            idx + 1,
+          );
+        const code = split.code.replace(
+          /^(\s*(?:\}\s*)*)else\s*\{\s*$/i,
+          "$1Loop __AHKELSE__() {",
+        );
+        lines[idx] =
+          code + (split.comment && !code.endsWith(" ") ? " " : "") + split.comment;
+      }
+      if (isBlockForm) stack.push("else");
+      else if (rest.endsWith("{")) stack.push("if"); // else if … { の本体ブロック
+      lastClosed = null;
+      continue;
+    }
+    lastClosed = null;
+    let kind = null;
+    if (word === "try") kind = "try";
+    else if (word === "catch") kind = "catch";
+    else if (word === "finally") kind = "finally";
+    else if (word === "if") kind = "if";
+    else if (word === "loop" || word === "while" || word === "for") kind = "loop";
+    else if (word === "switch") kind = "switch";
+    if (rest.endsWith("{")) stack.push(kind ?? "block");
+  }
+  return lines.join("\n");
+}
 function transformCodeLine(line) {
   const { code, comment, opensBlock } = splitCodeComment(line);
-  let c = rewriteUntil(code);
+  let c = rewriteAdvStatements(code);
+  c = rewriteUntil(c);
   c = rewriteFor(c);
   c = rewriteDotAssign(c);
   c = rewriteStatements(c);
@@ -728,6 +1029,10 @@ function maskAhkStrings(code) {
 // 行（:: で終わる形）は式ではないため除く。
 function ahkLineEndsIncomplete(maskedTrimmed) {
   if (!maskedTrimmed) return false;
+  // ADV-B2 ゲート：Switch の Case／Default 行の未完扱い除外は高度有効時
+  // のみ（基礎に Case 文は無く、この形は高度差分でのみ現れる）。未適用
+  // 時は基礎どおり末尾の : で未完判定する。
+  if (advancedState.enabled && /^(case|default)\b/i.test(maskedTrimmed)) return false;
   if (maskedTrimmed.endsWith("::")) return false;
   // 後置 ++ ／ -- で終わる行は完全な式（継続演算子の対象外。公式の
   // 継続行規則でも ++ ／ -- は例外と明記されている）。
@@ -1112,15 +1417,121 @@ function phaseC(source) {
 function prepareAHK(source) {
   const normalized = phaseA(source);
   prescanAHK(normalized);
-  return phaseC(phaseB(normalized));
+  // ADV-B2：Try／Catch の Else 行のマーカー化は全体走査でのみ判定できる
+  // ため、prescan の後に全体パスを通す（高度無効時は無変換で基礎と一致）。
+  return phaseC(phaseB(rewriteTryCatchElse(normalized)));
 }
 // Folds dialect marker nodes produced by the source preparation back into
 // the statements they belong to (RG-33 Until clauses; RG-08 for loops are
 // folded in transformLoopMarkers).
+// ADV-B2：Switch 本体（文の並び）を Case 節ごとに折り畳む。
+function foldSwitchNode(n) {
+  const cases = [];
+  let current = null,
+    defaultBody = null;
+  const flatten = (stmt) => {
+    if (stmt?.k === "expression" && stmt.value?.k === "comma") {
+      flatten({ k: "expression", value: stmt.value.a, line: stmt.line });
+      flatten({ k: "expression", value: stmt.value.b, line: stmt.line });
+      return;
+    }
+    if (stmt?.k === "expression" && stmt.value?.k === "call") {
+      const cn = callName(stmt.value.target).toLowerCase();
+      if (cn === "__ahkcase__") {
+        current = { values: stmt.value.args ?? [], body: [], line: stmt.line };
+        cases.push(current);
+        return;
+      }
+      if (cn === "__ahkdefault__") {
+        current = { values: null, body: [], line: stmt.line };
+        cases.push(current);
+        defaultBody = current.body;
+        return;
+      }
+    }
+    if (current) current.body.push(stmt);
+  };
+  for (const stmt of n.body ?? []) flatten(stmt);
+  return {
+    k: "ahkSwitch",
+    valueArgs: n.count.args ?? [],
+    cases: cases.filter((c) => c.values),
+    defaultBody,
+    line: n.line,
+    refs: ["Switch"],
+  };
+}
 function transformNodes(list) {
   for (let i = 0; i < list.length; i++) {
     let n = list[i];
     if (!n || typeof n !== "object") continue;
+    // ADV-B2 ゲート：高度差分のマーカー（Loop Parse／Switch／Try）の
+    // 専用ノードへの折り畳みは高度有効時のみ。未適用時はマーカー自体が
+    // 生成されない（prescan／書換えもゲート済み）うえ、本折り畳みも
+    // 行わず基礎と完全に一致する。foldSwitchNode もこの入口からのみ
+    // 呼ばれるため併せてゲートされる。
+    if (advancedState.enabled && n.k === "repeat" && n.count?.k === "call") {
+      const marker = callName(n.count.target).toLowerCase();
+      if (marker === "__ahkparse__") {
+        list[i] = n = {
+          k: "ahkLoopParse",
+          args: n.count.args ?? [],
+          body: n.body,
+          line: n.line,
+          refs: ["Loop Parse"],
+        };
+      } else if (marker === "__ahkswitch__") {
+        list[i] = n = foldSwitchNode(n);
+      } else if (marker === "__ahktry__") {
+        const catches = [];
+        let finallyBody = null,
+          elseBody = null,
+          j = i + 1;
+        while (j < list.length) {
+          const nx = list[j];
+          if (
+            nx?.k === "repeat" && nx.count?.k === "call" &&
+            callName(nx.count.target).toLowerCase() === "__ahkcatch__"
+          ) {
+            const a = nx.count.args ?? [];
+            catches.push({
+              varName: a[0]?.k === "literal" ? a[0].value : "",
+              classes: String(a[1]?.k === "literal" ? a[1].value : "Error").split("|"),
+              body: nx.body,
+              line: nx.line,
+            });
+            j++;
+            continue;
+          }
+          if (
+            nx?.k === "repeat" && nx.count?.k === "call" &&
+            callName(nx.count.target).toLowerCase() === "__ahkelse__"
+          ) {
+            elseBody = nx.body;
+            j++;
+            continue;
+          }
+          if (
+            nx?.k === "repeat" && nx.count?.k === "call" &&
+            callName(nx.count.target).toLowerCase() === "__ahkfinally__"
+          ) {
+            finallyBody = nx.body;
+            j++;
+          }
+          break;
+        }
+        list[i] = n = {
+          k: "ahkTry",
+          tryBody: n.body,
+          catches,
+          elseBody,
+          finallyBody,
+          line: n.line,
+          refs: elseBody ? ["Try", "Catch", "Else", "Finally"] : ["Try", "Catch", "Finally"],
+        };
+        if (j > i + 1) list.splice(i + 1, j - i - 1);
+      }
+    }
     if (
       n.k === "repeat" &&
       n.count?.k === "call" &&
@@ -1160,6 +1571,20 @@ function transformNodes(list) {
     }
     for (const key of ["body", "otherwise"])
       if (Array.isArray(n[key])) transformNodes(n[key]);
+    // ADV-B2 ゲート：専用ノードの子ブロックの再帰折り畳みも高度有効時
+    // のみ（未適用時は専用ノード自体が存在しない）。
+    if (advancedState.enabled && n.k === "ahkTry") {
+      if (Array.isArray(n.tryBody)) transformNodes(n.tryBody);
+      for (const c of n.catches ?? [])
+        if (Array.isArray(c.body)) transformNodes(c.body);
+      if (Array.isArray(n.elseBody)) transformNodes(n.elseBody);
+      if (Array.isArray(n.finallyBody)) transformNodes(n.finallyBody);
+    }
+    if (advancedState.enabled && n.k === "ahkSwitch") {
+      for (const c of n.cases ?? [])
+        if (Array.isArray(c.body)) transformNodes(c.body);
+      if (Array.isArray(n.defaultBody)) transformNodes(n.defaultBody);
+    }
   }
 }
 function parseProgram(source) {
@@ -1510,6 +1935,25 @@ export const definition = {
       function ahkDisplay(v) {
         if (isFloatVal(v)) return ahkFloatText(v.v);
         if (typeof v === "boolean") return v ? 1 : 0;
+        // ADV-B2：高度値（Map／Buffer／マッチオブジェクト）の内部表現
+        // （__ahkType や entries 等の実装都合のキー）を学習者向け表示に
+        // 漏らさない。中身が読める形に直してから整形する。
+        if (advancedState.enabled && isAhkMap(v)) {
+          const out = {};
+          for (const [k, val] of v.entries) {
+            const ku = isFloatVal(k) ? ahkFloatText(k.v) : k;
+            out[typeof ku === "string" || typeof ku === "number" ? String(ku) : "（オブジェクトのキー）"] = ahkDisplay(val);
+          }
+          return out;
+        }
+        if (advancedState.enabled && isAhkBuffer(v))
+          return { "Buffer（バイト列）": [...v.bytes] };
+        if (advancedState.enabled && isMatchInfo(v)) {
+          const out = {};
+          (v.__groups || []).forEach((g, i) => { out[String(i)] = ahkDisplay(g.value); });
+          out.Count = v.Count;
+          return out;
+        }
         if (Array.isArray(v)) return v.map(ahkDisplay);
         if (v && typeof v === "object" && !isUnknown(v) && v.kind === undefined && !v.__class)
           return Object.fromEntries(Object.entries(v).map(([k, x]) => [k, ahkDisplay(x)]));
@@ -1702,9 +2146,26 @@ export const definition = {
         }
         return done.concat(active);
       }
+      // ADV-B2：高度差分ハンドラへ渡す基礎ヘルパー一式。
+      const mkAdvH = (api) => ({
+        num: (v, node) => numeric(v, node, api),
+        str: ahkStringOf,
+        unf,
+        isFloat: isFloatVal,
+        float: floatVal,
+        numVal: ahkNumericValue,
+        fmt,
+        setVar: setVarCI,
+        truth: (v) => semantics.truth(v),
+      });
       const semantics = {
         dialect: "ahk",
         logicalOperands: true,
+        // RG-04 の差し替え口：共有実行器の表示も方言フォーマッタ
+        // （ahkDisplay 経由）を通す。高度値の内部表現（__ahkType 等）が
+        // トレースや最終状態の表示に漏れるのを防ぐ（基礎値の表示は
+        // ahkDisplay の従来変換どおりで変わらない）。
+        format: fmt,
         initialize(s, api) { for (const v of Object.values(s.vars)) if (typeof v === "number") numeric(v,{line:1},api); },
         read(a, s, api) {
           if (a.k === "literal" && typeof a.value === "number") {
@@ -1763,6 +2224,12 @@ export const definition = {
               if (Array.isArray(target)) {
                 let pos = ahkArrayPos(target.length, ahkIndex(idxRaw, a), a, api);
                 let v = target[pos - 1];
+                return { handled: true, value: typeof v === "boolean" ? (v ? 1 : 0) : v };
+              }
+              // ADV-B2 ゲート：Map の添字読みの高度委譲は高度有効時のみ。
+              // 未適用時は基礎どおり後段の汎用オブジェクト扱いへ落ちる。
+              if (advancedState.enabled && isAhkMap(target)) {
+                const v = advancedIndexRead({ target, idx: idxRaw, node: a, api, H: mkAdvH(api) });
                 return { handled: true, value: typeof v === "boolean" ? (v ? 1 : 0) : v };
               }
               if (typeof target === "string") unsupported("文字列への添字アクセス", a.line);
@@ -1871,6 +2338,10 @@ export const definition = {
               target[pos - 1] = v;
               return true;
             }
+            // ADV-B2 ゲート：Map の添字書きの高度委譲は高度有効時のみ。
+            // 未適用時は基礎どおり後段の汎用オブジェクト扱いへ落ちる。
+            if (advancedState.enabled && isAhkMap(target))
+              return advancedIndexWrite({ target, idx: idxRaw, value: v, H: mkAdvH(api) });
             if (target && typeof target === "object" && typeof idxRaw === "string") {
               let key =
                 Object.keys(target).find(
@@ -1898,6 +2369,23 @@ export const definition = {
               }
               api.fail("プロパティがありません：" + a.name, node);
             }
+            // ADV-B2：Map.CaseSense の代入は公式仕様どおりに扱う
+            // （Map が空でないときの代入は例外。値域は On／Off／Locale
+            // または真偽相当のみ）。汎用プロパティ代入で黙って保存して
+            // 参照側だけが大小区別を続ける、という不整合を防ぐ。
+            if (advancedState.enabled && isAhkMap(target) && lname === "casesense") {
+              if (target.entries.length > 0)
+                api.fail("CaseSense は Map が空のときだけ変更できます", node, "Error");
+              const raw = typeof v === "string" ? v.trim().toLowerCase() : v;
+              let canonical = null;
+              if (raw === "on" || raw === 1 || raw === true) canonical = "On";
+              else if (raw === "off" || raw === 0 || raw === false) canonical = "Off";
+              else if (raw === "locale") canonical = "Locale";
+              if (canonical === null)
+                api.fail("CaseSense には On／Off／Locale を指定してください", node, "ValueError");
+              target.CaseSense = canonical;
+              return true;
+            }
             if (target && typeof target === "object") {
               let key =
                 Object.keys(target).find(
@@ -1911,6 +2399,11 @@ export const definition = {
           return false;
         },
         step(n, s, api) {
+          // ADV-B2 ゲート：高度差分の文ノード（Try／Switch／Loop Parse）
+          // の semantics-advanced.js ハンドラへの委譲は高度有効時のみ。
+          // 未適用時は専用ノード自体が生成されず、基礎経路と一致する。
+          if (advancedState.enabled && ADVANCED_STEP_KINDS.has(n.k))
+            return advancedStep({ s, api, H: mkAdvH(api) }, n);
           // RG-33: Loop…Until nodes are executed here; RG-08 for loops
           // likewise; all other nodes fall through to the shared
           // executor.
@@ -2123,7 +2616,11 @@ export const definition = {
           // the function's absence.
           if (
             !["winexist", "winactive", "winactivate", "winclose", "settitlematchmode",
-              "sendtext", "send", "click", "mousemove", "sleep", "inputbox", "msgbox"].includes(n)
+              "sendtext", "send", "click", "mousemove", "sleep", "inputbox", "msgbox"].includes(n) &&
+            // ADV-B2 ゲート：高度側の名前主張（advancedClaimsCall）による
+            // 未対応停止の免除は高度有効時のみ。未適用時は基礎どおり、
+            // 基礎組込以外の全名が未対応として名前を挙げて停止する。
+            !(advancedState.enabled && advancedClaimsCall(name))
           ) {
             // M-N5: a name that already holds a value is not an
             // "unsupported function" — the value simply is not
@@ -2395,8 +2892,19 @@ export const definition = {
               });
               api.note(s, node, "メッセージを表示します");
               return unknown("MsgBoxのボタン");
-            default:
+            default: {
+              // ADV-B2 ゲート：高度差分の関数／メソッドの semantics-
+              // advanced.js ハンドラ表への委譲は高度有効時のみ。未適用時
+              // は基礎どおり名前を挙げて未対応として停止する。扱えない
+              // 名前も同様に停止する。
+              if (advancedState.enabled) {
+                const adv = dispatchAdvancedCall({
+                  name, args, node, s, api, vals, H: mkAdvH(api),
+                });
+                if (adv?.handled) return adv.value;
+              }
               api.fail("このAutoHotkey関数は未対応です：" + name, node);
+            }
           }
         },
         action(n, s, api) {

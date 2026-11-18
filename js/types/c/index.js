@@ -7,6 +7,12 @@ export const definition = createCFamily({
   language: "c",
 });
 
+// 高度モード（ブロックB6）：C 標準ライブラリの意味論拡張は、契約
+// （advanced-interface.md 第5章(e)）に従い advanced-engine.js の
+// applyAdvancedEngine フック経由で導入する。本ファイルへ高度差分を
+// 静的に取り込まない。高度差分カタログ（ref-*-advanced.js 等）は
+// advanced-manifest.js の宣言に従いモード機構のローダーが合成する。
+
 definition.templates.push(...additionalTemplates(definition.model.defaults));
 
 import { referenceDetails } from "./reference-details.js";

@@ -16,10 +16,8 @@
   </head>
   <body>
     <header class="site-header">
-      <a class="brand" href="./"
-        ><img src="icons/icon.svg" width="38" height="38" alt="" /><span
-          >プログラミング練習<small>コードとフローの動きを学ぶ。</small></span
-        ></a
+      <a class="brand" href="./" aria-label="トップへ戻る"
+        ><img src="icons/icon.svg" width="38" height="38" alt="" /></a
       ><span id="offline" class="status">ローカルで学習</span>
     </header>
     <nav class="main-nav" aria-label="メインメニュー">
@@ -39,8 +37,10 @@
         <div class="type-selector">
           <label for="macroType">言語・ツール</label
           ><select id="macroType"></select
+          ><div class="mode-toggle" role="group" aria-label="モード切替"><button type="button" id="modeSimple" aria-pressed="true">簡易</button><button type="button" id="modeAdvanced" aria-pressed="false">高度</button></div
           ><span id="syntaxName" class="badge"></span>
         </div>
+        <p id="modeNote" class="mode-note"></p>
         <div class="practice-heading">
           <label class="template-picker"
             >テンプレート<select id="template">
@@ -131,6 +131,7 @@
               </div>
               <div class="simulation-body">
                 <div id="resultStatus" role="status" aria-live="polite"></div>
+                <div id="resultNotes" class="result-notes" hidden></div>
                 <div id="pathNav" class="path-nav" hidden>
                   <div class="path-controls">
                     <button id="first" aria-label="先頭へ">|◀</button
@@ -214,6 +215,16 @@
             type="search"
             placeholder="名前・分類・説明から探す"
         /></label>
+        <p id="refStatusSummary"></p>
+        <label class="search"
+          ><span>状態</span
+          ><select id="refStatusFilter">
+            <option value="all">全て</option>
+            <option value="supported">対応のみ</option>
+            <option value="unsupported">未対応</option>
+            <option value="unverified">未検証</option>
+          </select></label
+        >
         <div id="fullReferences" class="reference-grid"></div>
       </section>
       <section id="templates" class="view" hidden>

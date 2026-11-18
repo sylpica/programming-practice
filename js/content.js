@@ -3205,12 +3205,34 @@ export const glossary = [
 // パス列挙後の後処理がトレース件数×参照数に比例して肥大する（実測では
 // エンジン本体より後処理が重かった）。参照表は不変なので一度だけ
 // 事前計算し、usedReferences は照合だけを行う。
-const REFERENCE_PIECES = [...reference]
+// A4-V-D06-1: 高度項目名は registerReferenceNames で後から登録できる
+// ようにするため、let で保持する（登録時だけ再構築する）。
+let REFERENCE_PIECES = [...reference]
   .sort((a, b) => b.name.length - a.name.length)
   .map((r) => ({
     name: r.name,
     pieces: r.name.toLowerCase().match(/[\w]+|\./g),
   }));
+// A4-V-D06-1: 基礎カタログ以外の項目名（高度差分の referenceAdvanced／
+// referenceOverrides の名前）を usedReferences の照合表へ追加登録する。
+// 従来は基礎338件だけが照合対象で、高度項目は使用中チップに一切解決
+// されなかった。登録は名前の重複を除き、最長一致のための長さ降順を
+// 維持する。実効カタログに無い名前は表示側（app.js の usedTraceNames／
+// resolveReferenceName）が落とすため、簡易モードの表示は変わらない。
+export function registerReferenceNames(names) {
+  const existing = new Set(REFERENCE_PIECES.map((r) => r.name));
+  let added = false;
+  for (const name of names || []) {
+    if (typeof name !== "string" || !name || existing.has(name)) continue;
+    const pieces = name.toLowerCase().match(/[\w]+|\./g);
+    if (!pieces) continue;
+    existing.add(name);
+    REFERENCE_PIECES.push({ name, pieces });
+    added = true;
+  }
+  if (added)
+    REFERENCE_PIECES.sort((a, b) => b.name.length - a.name.length);
+}
 export function usedReferences(tokens) {
   let found = [];
   // P-N4: トークンの小文字化も呼び出しごとに一度だけ行う（参照ごとに

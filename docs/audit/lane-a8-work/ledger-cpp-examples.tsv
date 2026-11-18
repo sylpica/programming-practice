@@ -1,0 +1,275 @@
+name	result_b8_method	recheck_extended_context	classification	error	example
+std::acos	tier1-ok		runnable as-is		double r = std::acos(0.5);
+std::asin	tier1-ok		runnable as-is		double r = std::asin(0.5);
+std::atan	tier1-ok		runnable as-is		double r = std::atan(0.5);
+std::atan2	tier1-ok		runnable as-is		double r = std::atan2(0.5, 0.25);
+std::cos	tier1-ok		runnable as-is		double r = std::cos(0.5);
+std::sin	tier1-ok		runnable as-is		double r = std::sin(0.5);
+std::tan	tier1-ok		runnable as-is		double r = std::tan(0.5);
+std::acosh	tier1-ok		runnable as-is		double r = std::acosh(0.5);
+std::asinh	tier1-ok		runnable as-is		double r = std::asinh(0.5);
+std::atanh	tier1-ok		runnable as-is		double r = std::atanh(0.5);
+std::cosh	tier1-ok		runnable as-is		double r = std::cosh(0.5);
+std::sinh	tier1-ok		runnable as-is		double r = std::sinh(0.5);
+std::tanh	tier1-ok		runnable as-is		double r = std::tanh(0.5);
+std::exp	tier1-ok		runnable as-is		double r = std::exp(0.5);
+std::exp2	tier1-ok		runnable as-is		double r = std::exp2(0.5);
+std::ilogb	tier1-ok		runnable as-is		int r = std::ilogb(0.5);
+std::ldexp	tier1-ok		runnable as-is		double r = std::ldexp(0.5, 2);
+std::log	tier1-ok		runnable as-is		double r = std::log(0.5);
+std::log10	tier1-ok		runnable as-is		double r = std::log10(0.5);
+std::log2	tier1-ok		runnable as-is		double r = std::log2(0.5);
+std::logb	tier1-ok		runnable as-is		double r = std::logb(0.5);
+std::scalbn	tier1-ok		runnable as-is		double r = std::scalbn(0.5, 2);
+std::scalbln	tier1-ok		runnable as-is		double r = std::scalbln(0.5, 2);
+std::cbrt	tier1-ok		runnable as-is		double r = std::cbrt(0.5);
+std::fabs	tier1-ok		runnable as-is		double r = std::fabs(0.5);
+std::hypot	tier1-ok		runnable as-is		double r = std::hypot(0.5, 0.25);
+std::pow	tier1-ok		runnable as-is		double r = std::pow(0.5, 2);
+std::sqrt	tier1-ok		runnable as-is		double r = std::sqrt(0.5);
+std::ceil	tier1-ok		runnable as-is		double r = std::ceil(0.5);
+std::floor	tier1-ok		runnable as-is		double r = std::floor(0.5);
+std::nearbyint	tier1-ok		runnable as-is		double r = std::nearbyint(0.5);
+std::rint	tier1-ok		runnable as-is		double r = std::rint(0.5);
+std::lrint	tier1-ok		runnable as-is		long r = std::lrint(0.5);
+std::llrint	tier1-ok		runnable as-is		long long r = std::llrint(0.5);
+std::round	tier1-ok		runnable as-is		double r = std::round(0.5);
+std::lround	tier1-ok		runnable as-is		long r = std::lround(0.5);
+std::llround	tier1-ok		runnable as-is		long long r = std::llround(0.5);
+std::trunc	tier1-ok		runnable as-is		double r = std::trunc(0.5);
+std::fmod	tier1-ok		runnable as-is		double r = std::fmod(0.5, 0.25);
+std::remainder	tier1-ok		runnable as-is		double r = std::remainder(0.5, 0.25);
+std::copysign	tier1-ok		runnable as-is		double r = std::copysign(0.5, 0.25);
+std::nan	tier1-ok		runnable as-is		double x = std::nan("1");
+std::nextafter	tier1-ok		runnable as-is		double r = std::nextafter(0.5, 0.25);
+std::nexttoward	tier1-ok		runnable as-is		float r = std::nexttoward(0.5, 2);
+std::fdim	tier1-ok		runnable as-is		double r = std::fdim(0.5, 0.25);
+std::fmax	tier1-ok		runnable as-is		double r = std::fmax(0.5, 0.25);
+std::fmin	tier1-ok		runnable as-is		double r = std::fmin(0.5, 0.25);
+std::fpclassify	tier1-ok		runnable as-is		int r = std::fpclassify(0.5);
+std::isfinite	tier1-ok		runnable as-is		bool r = std::isfinite(0.5);
+std::isinf	tier1-ok		runnable as-is		bool r = std::isinf(0.5);
+std::isnan	tier1-ok		runnable as-is		bool r = std::isnan(0.5);
+std::isnormal	tier1-ok		runnable as-is		bool r = std::isnormal(0.5);
+std::signbit	tier1-ok		runnable as-is		bool r = std::signbit(0.5);
+std::isgreater	tier1-ok		runnable as-is		bool r = std::isgreater(0.5, 0.25);
+std::isgreaterequal	tier1-ok		runnable as-is		bool r = std::isgreaterequal(0.5, 0.25);
+std::isless	tier1-ok		runnable as-is		bool r = std::isless(0.5, 0.25);
+std::islessequal	tier1-ok		runnable as-is		bool r = std::islessequal(0.5, 0.25);
+std::islessgreater	tier1-ok		runnable as-is		bool r = std::islessgreater(0.5, 0.25);
+std::isunordered	tier1-ok		runnable as-is		bool r = std::isunordered(0.5, 0.25);
+std::advance	tier2-ok(context)		runnable with B8 context (v/a/s/s1/x/word/text)		auto it = v.begin(); ⏎ std::advance(it, 2);
+std::distance	tier1-ok		runnable as-is		std::vector<int> v = {3, 1, 2}; ⏎ long n = std::distance(v.begin(), v.end());
+std::next	tier2-ok(context)		runnable with B8 context (v/a/s/s1/x/word/text)		auto it = std::next(v.begin(), 2);
+std::prev	tier2-ok(context)		runnable with B8 context (v/a/s/s1/x/word/text)		auto it = std::prev(v.end(), 1);
+std::strcmp	tier1-ok		runnable as-is		int r = std::strcmp("apple", "banana");
+std::strncmp	tier1-ok		runnable as-is		int r = std::strncmp("abcx", "abcy", 3);
+std::strchr	tier1-ok		runnable as-is		char word[] = "hello"; ⏎ char* p = std::strchr(word, 'l');
+std::strrchr	tier1-ok		runnable as-is		char path[] = "/home/user/hello.c"; ⏎ char* p = std::strrchr(path, '/');
+std::strstr	tier1-ok		runnable as-is		char text[] = "hello world"; ⏎ char* p = std::strstr(text, "world");
+std::strlen	tier1-ok		runnable as-is		unsigned long n = std::strlen("dog cat");
+std::swap	tier1-ok		runnable as-is		int a = 1, b = 2; ⏎ std::swap(a, b); // a=2, b=1
+std::exchange	tier2-ok(context)		runnable with B8 context (v/a/s/s1/x/word/text)		int old = std::exchange(x, 10);
+std::forward	FAIL	n/a	definition-form + caution disclosed (std::forward)	SyntaxError:; が必要です	template<class T> ⏎ void wrap(T&& arg) { use(std::forward<T>(arg)); }
+std::move	tier2-ok(context)		runnable with B8 context (v/a/s/s1/x/word/text)		std::string s2 = std::move(s1);
+std::as_const	tier1-ok		runnable as-is		std::vector<int> v = {1, 2}; ⏎ for (int e : std::as_const(v)) { std::cout << e; }
+std::make_pair	tier1-ok		runnable as-is		auto p = std::make_pair(1, "one");
+std::accumulate	tier2-ok(context)		runnable with B8 context (v/a/s/s1/x/word/text)		int sum = std::accumulate(v.begin(), v.end(), 0);
+std::inner_product	FAIL	ok	example-context-fragment (例が b/out の宣言を前提。拡張文脈で正常実行＝エンジン矛盾なし)	エラー:この関数は説明に対応していません：b.begin	int ip = std::inner_product(a.begin(), a.end(), b.begin(), 0);
+std::partial_sum	FAIL	ok	example-context-fragment (例が b/out の宣言を前提。拡張文脈で正常実行＝エンジン矛盾なし)	エラー:この関数は説明に対応していません：out.begin	std::partial_sum(v.begin(), v.end(), out.begin());
+std::adjacent_difference	FAIL	ok	example-context-fragment (例が b/out の宣言を前提。拡張文脈で正常実行＝エンジン矛盾なし)	エラー:この関数は説明に対応していません：out.begin	std::adjacent_difference(v.begin(), v.end(), out.begin());
+std::iota	tier2-ok(context)		runnable with B8 context (v/a/s/s1/x/word/text)		std::iota(v.begin(), v.end(), 1); // 1,2,3,...
+std::isalnum	tier1-ok		runnable as-is		bool b = std::isalnum('a') != 0;
+std::isalpha	tier1-ok		runnable as-is		bool b = std::isalpha('a') != 0;
+std::iscntrl	tier1-ok		runnable as-is		bool b = std::iscntrl('a') != 0;
+std::isdigit	tier1-ok		runnable as-is		bool b = std::isdigit('7') != 0; // true
+std::isgraph	tier1-ok		runnable as-is		bool b = std::isgraph('a') != 0;
+std::islower	tier1-ok		runnable as-is		bool b = std::islower('a') != 0;
+std::isprint	tier1-ok		runnable as-is		bool b = std::isprint('a') != 0;
+std::ispunct	tier1-ok		runnable as-is		bool b = std::ispunct('a') != 0;
+std::isspace	tier1-ok		runnable as-is		bool b = std::isspace('a') != 0;
+std::isupper	tier1-ok		runnable as-is		bool b = std::isupper('a') != 0;
+std::isxdigit	tier1-ok		runnable as-is		bool b = std::isxdigit('a') != 0;
+std::tolower	tier1-ok		runnable as-is		int c = std::tolower('A'); // 'a'
+std::toupper	tier1-ok		runnable as-is		int c = std::toupper('a'); // 'A'
+std::cin	tier1-ok		runnable as-is		int n; ⏎ std::cin >> n;
+std::cerr	tier1-ok		runnable as-is		std::cerr << "error\n";
+std::clog	tier1-ok		runnable as-is		std::clog << "log\n";
+std::find	tier2-ok(context)		runnable with B8 context (v/a/s/s1/x/word/text)		auto it = std::find(v.begin(), v.end(), 3);
+std::count	tier1-ok		runnable as-is		std::vector<int> v = {3, 1, 3}; ⏎ long n = std::count(v.begin(), v.end(), 3);
+std::mismatch	FAIL	ok	example-context-fragment (例が b/out の宣言を前提。拡張文脈で正常実行＝エンジン矛盾なし)	エラー:この関数は説明に対応していません：b.begin	auto p = std::mismatch(a.begin(), a.end(), b.begin());
+std::equal	FAIL	ok	example-context-fragment (例が b/out の宣言を前提。拡張文脈で正常実行＝エンジン矛盾なし)	エラー:この関数は説明に対応していません：b.begin	bool same = std::equal(a.begin(), a.end(), b.begin());
+std::copy	FAIL	ok	example-context-fragment (例が b/out の宣言を前提。拡張文脈で正常実行＝エンジン矛盾なし)	エラー:この関数は説明に対応していません：out.begin	std::copy(v.begin(), v.end(), out.begin());
+std::copy_n	FAIL	ok	example-context-fragment (例が b/out の宣言を前提。拡張文脈で正常実行＝エンジン矛盾なし)	エラー:この関数は説明に対応していません：out.begin	std::copy_n(v.begin(), 3, out.begin());
+std::iter_swap	tier2-ok(context)		runnable with B8 context (v/a/s/s1/x/word/text)		std::iter_swap(v.begin(), v.begin() + 1);
+std::replace	tier2-ok(context)		runnable with B8 context (v/a/s/s1/x/word/text)		std::replace(v.begin(), v.end(), 3, 99);
+std::fill	tier2-ok(context)		runnable with B8 context (v/a/s/s1/x/word/text)		std::fill(v.begin(), v.end(), 7);
+std::fill_n	tier2-ok(context)		runnable with B8 context (v/a/s/s1/x/word/text)		std::fill_n(v.begin(), 3, 7);
+std::remove	tier2-ok(context)		runnable with B8 context (v/a/s/s1/x/word/text)		auto last = std::remove(v.begin(), v.end(), 3);
+std::unique	tier2-ok(context)		runnable with B8 context (v/a/s/s1/x/word/text)		auto last = std::unique(v.begin(), v.end());
+std::reverse	tier2-ok(context)		runnable with B8 context (v/a/s/s1/x/word/text)		std::reverse(v.begin(), v.end());
+std::rotate	tier2-ok(context)		runnable with B8 context (v/a/s/s1/x/word/text)		std::rotate(v.begin(), v.begin() + 2, v.end());
+std::sort	tier2-ok(context)		runnable with B8 context (v/a/s/s1/x/word/text)		std::sort(v.begin(), v.end());
+std::stable_sort	tier2-ok(context)		runnable with B8 context (v/a/s/s1/x/word/text)		std::stable_sort(v.begin(), v.end());
+std::partial_sort	tier2-ok(context)		runnable with B8 context (v/a/s/s1/x/word/text)		std::partial_sort(v.begin(), v.begin() + 3, v.end());
+std::is_sorted	tier2-ok(context)		runnable with B8 context (v/a/s/s1/x/word/text)		bool s = std::is_sorted(v.begin(), v.end());
+std::nth_element	tier2-ok(context)		runnable with B8 context (v/a/s/s1/x/word/text)		std::nth_element(v.begin(), v.begin() + 2, v.end());
+std::lower_bound	tier2-ok(context)		runnable with B8 context (v/a/s/s1/x/word/text)		auto it = std::lower_bound(v.begin(), v.end(), 3);
+std::upper_bound	tier2-ok(context)		runnable with B8 context (v/a/s/s1/x/word/text)		auto it = std::upper_bound(v.begin(), v.end(), 3);
+std::equal_range	tier2-ok(context)		runnable with B8 context (v/a/s/s1/x/word/text)		auto p = std::equal_range(v.begin(), v.end(), 3);
+std::binary_search	tier2-ok(context)		runnable with B8 context (v/a/s/s1/x/word/text)		bool has = std::binary_search(v.begin(), v.end(), 3);
+std::min	tier1-ok		runnable as-is		int m = std::min(3, 7);
+std::max	tier1-ok		runnable as-is		int m = std::max(3, 7);
+std::minmax	tier1-ok		runnable as-is		auto p = std::minmax(3, 7);
+std::min_element	tier2-ok(context)		runnable with B8 context (v/a/s/s1/x/word/text)		auto it = std::min_element(v.begin(), v.end());
+std::max_element	tier2-ok(context)		runnable with B8 context (v/a/s/s1/x/word/text)		auto it = std::max_element(v.begin(), v.end());
+std::clamp	tier1-ok		runnable as-is		int c = std::clamp(15, 0, 10);
+std::lexicographical_compare	FAIL	ok	example-context-fragment (例が b/out の宣言を前提。拡張文脈で正常実行＝エンジン矛盾なし)	エラー:この関数は説明に対応していません：b.begin	bool less = std::lexicographical_compare(a.begin(), a.end(), b.begin(), b.end());
+std::next_permutation	tier2-ok(context)		runnable with B8 context (v/a/s/s1/x/word/text)		bool more = std::next_permutation(v.begin(), v.end());
+std::prev_permutation	tier2-ok(context)		runnable with B8 context (v/a/s/s1/x/word/text)		bool more = std::prev_permutation(v.begin(), v.end());
+std::atof	tier1-ok		runnable as-is		double d = std::atof("3.14");
+std::atoi	tier1-ok		runnable as-is		int n = std::atoi("42");
+std::atol	tier1-ok		runnable as-is		long n = std::atol("42");
+std::atoll	tier1-ok		runnable as-is		long long n = std::atoll("42");
+std::strtod	tier1-ok		runnable as-is		double d = std::strtod("3.14", nullptr);
+std::strtof	tier1-ok		runnable as-is		float f = std::strtof("3.14", nullptr);
+std::strtol	tier1-ok		runnable as-is		long n = std::strtol("42", nullptr, 10);
+std::strtoll	tier1-ok		runnable as-is		long long n = std::strtoll("42", nullptr, 10);
+std::strtoul	tier1-ok		runnable as-is		unsigned long n = std::strtoul("42", nullptr, 10);
+std::strtoull	tier1-ok		runnable as-is		unsigned long long n = std::strtoull("42", nullptr, 10);
+std::rand	tier1-ok		runnable as-is		int r = std::rand();
+std::srand	tier1-ok		runnable as-is		std::srand(42);
+std::labs	tier1-ok		runnable as-is		long a = std::labs(-5L);
+std::llabs	tier1-ok		runnable as-is		long long a = std::llabs(-5LL);
+std::ldiv	tier1-ok		runnable as-is		std::ldiv_t r = std::ldiv(10L, 3L); ⏎ long q = r.quot;
+std::lldiv	tier1-ok		runnable as-is		std::lldiv_t r = std::lldiv(10LL, 3LL); ⏎ long long q = r.quot;
+std::div	tier1-ok		runnable as-is		std::div_t r = std::div(10, 3); // r.quot は 3、r.rem は 1
+std::numbers::e	tier1-ok		runnable as-is		double x = std::numbers::e;
+std::numbers::log2e	tier1-ok		runnable as-is		double x = std::numbers::log2e;
+std::numbers::log10e	tier1-ok		runnable as-is		double x = std::numbers::log10e;
+std::numbers::pi	tier1-ok		runnable as-is		double x = std::numbers::pi;
+std::numbers::inv_pi	tier1-ok		runnable as-is		double x = std::numbers::inv_pi;
+std::numbers::inv_sqrtpi	tier1-ok		runnable as-is		double x = std::numbers::inv_sqrtpi;
+std::numbers::ln2	tier1-ok		runnable as-is		double x = std::numbers::ln2;
+std::numbers::ln10	tier1-ok		runnable as-is		double x = std::numbers::ln10;
+std::numbers::sqrt2	tier1-ok		runnable as-is		double x = std::numbers::sqrt2;
+std::numbers::sqrt3	tier1-ok		runnable as-is		double x = std::numbers::sqrt3;
+std::numbers::egamma	tier1-ok		runnable as-is		double x = std::numbers::egamma;
+std::numbers::phi	tier1-ok		runnable as-is		double x = std::numbers::phi;
+std::stoi	tier1-ok		runnable as-is		int n = std::stoi("42"); // 42
+std::stol	tier1-ok		runnable as-is		long n = std::stol("42"); // 42
+std::stoul	tier1-ok		runnable as-is		unsigned long n = std::stoul("42"); // 42
+std::stoll	tier1-ok		runnable as-is		long long n = std::stoll("42"); // 42
+std::stoull	tier1-ok		runnable as-is		unsigned long long n = std::stoull("42"); // 42
+std::stof	tier1-ok		runnable as-is		float x = std::stof("3.5"); // 3.5f
+std::stod	tier1-ok		runnable as-is		double x = std::stod("3.5"); // 3.5
+std::byteswap	tier1-ok		runnable as-is		unsigned short x = 0x1234; ⏎ unsigned short r = std::byteswap(x); // 0x3412
+std::has_single_bit	tier1-ok		runnable as-is		bool b = std::has_single_bit(8u); // true
+std::bit_ceil	tier1-ok		runnable as-is		unsigned int r = std::bit_ceil(5u); // 8
+std::bit_floor	tier1-ok		runnable as-is		unsigned int r = std::bit_floor(5u); // 4
+std::bit_width	tier1-ok		runnable as-is		int r = std::bit_width(5u); // 3
+std::rotl	tier1-ok		runnable as-is		unsigned char x = 0b10000001; ⏎ unsigned char r = std::rotl(x, 1); // 0b00000011
+std::rotr	tier1-ok		runnable as-is		unsigned char x = 0b10000001; ⏎ unsigned char r = std::rotr(x, 1); // 0b11000000
+std::countl_zero	tier1-ok		runnable as-is		unsigned char x = 5; ⏎ int r = std::countl_zero(x); // 5
+std::countl_one	tier1-ok		runnable as-is		unsigned char x = 0b11100000; ⏎ int r = std::countl_one(x); // 3
+std::countr_zero	tier1-ok		runnable as-is		int r = std::countr_zero(0b101000u); // 3
+std::countr_one	tier1-ok		runnable as-is		int r = std::countr_one(0b10111u); // 3
+std::popcount	tier1-ok		runnable as-is		int r = std::popcount(0b1011u); // 3
+std::array	tier1-ok		runnable as-is		std::array<int, 3> a{1, 2, 3};
+std::to_string	tier1-ok		runnable as-is		std::string s = std::to_string(42);
+std::string::npos	tier1-ok		runnable as-is		std::string s = "abc"; ⏎ bool found = s.find("x") != std::string::npos;
+std::string::append	tier1-ok		runnable as-is		std::string s = "abc"; ⏎ s.append("xy");
+std::string::assign	tier1-ok		runnable as-is		std::string s = "abc"; ⏎ s.assign("xy");
+std::string::at	tier1-ok		runnable as-is		std::string s = "abc"; ⏎ char x = s.at(0);
+std::string::back	tier1-ok		runnable as-is		std::string s = "abc"; ⏎ char x = s.back();
+std::string::string	tier1-ok		runnable as-is		std::string s = "abc";
+std::string::begin	tier1-ok		runnable as-is		std::string s = "abc"; ⏎ auto it = s.begin();
+std::string::cbegin	tier1-ok		runnable as-is		std::string s = "abc"; ⏎ auto it = s.cbegin();
+std::string::cend	tier1-ok		runnable as-is		std::string s = "abc"; ⏎ auto it = s.cend();
+std::string::clear	tier1-ok		runnable as-is		std::string s = "abc"; ⏎ s.clear();
+std::string::compare	tier1-ok		runnable as-is		std::string s = "abc"; ⏎ int r = s.compare("abc");
+std::string::contains	tier1-ok		runnable as-is		std::string s = "abc"; ⏎ bool b = s.contains("b");
+std::string::crbegin	tier1-ok		runnable as-is		std::string s = "abc"; ⏎ auto it = s.crbegin();
+std::string::crend	tier1-ok		runnable as-is		std::string s = "abc"; ⏎ auto it = s.crend();
+std::string::empty	tier1-ok		runnable as-is		std::string s = "abc"; ⏎ bool e = s.empty();
+std::string::end	tier1-ok		runnable as-is		std::string s = "abc"; ⏎ auto it = s.end();
+std::string::ends_with	tier1-ok		runnable as-is		std::string s = "abc"; ⏎ bool b = s.ends_with("bc");
+std::string::erase	tier1-ok		runnable as-is		std::string s = "abc"; ⏎ s.erase(1, 1);
+std::string::find	tier1-ok		runnable as-is		std::string s = "abc"; ⏎ unsigned long pos = s.find("b");
+std::string::find_first_not_of	tier1-ok		runnable as-is		std::string s = "abc"; ⏎ unsigned long pos = s.find_first_not_of("ab");
+std::string::find_first_of	tier1-ok		runnable as-is		std::string s = "abc"; ⏎ unsigned long pos = s.find_first_of("ab");
+std::string::find_last_not_of	tier1-ok		runnable as-is		std::string s = "abc"; ⏎ unsigned long pos = s.find_last_not_of("ab");
+std::string::find_last_of	tier1-ok		runnable as-is		std::string s = "abc"; ⏎ unsigned long pos = s.find_last_of("ab");
+std::string::front	tier1-ok		runnable as-is		std::string s = "abc"; ⏎ char x = s.front();
+std::string::insert	tier1-ok		runnable as-is		std::string s = "abc"; ⏎ s.insert(1, "xy");
+std::string::length	tier1-ok		runnable as-is		std::string s = "abc"; ⏎ unsigned long n = s.length();
+std::string::operator+=	tier1-ok		runnable as-is		std::string s = "abc"; ⏎ s += "xy";
+std::string::operator=	tier1-ok		runnable as-is		std::string s = "abc"; ⏎ std::string t = "xy"; ⏎ s = t;
+std::string::operator[]	tier1-ok		runnable as-is		std::string s = "abc"; ⏎ char x = s[0];
+std::string::pop_back	tier1-ok		runnable as-is		std::string s = "abc"; ⏎ s.pop_back();
+std::string::push_back	tier1-ok		runnable as-is		std::string s = "abc"; ⏎ s.push_back('x');
+std::string::rbegin	tier1-ok		runnable as-is		std::string s = "abc"; ⏎ auto it = s.rbegin();
+std::string::rend	tier1-ok		runnable as-is		std::string s = "abc"; ⏎ auto it = s.rend();
+std::string::replace	tier1-ok		runnable as-is		std::string s = "abc"; ⏎ s.replace(0, 1, "x");
+std::string::reserve	tier1-ok		runnable as-is		std::string s = "abc"; ⏎ s.reserve(10);
+std::string::resize	tier1-ok		runnable as-is		std::string s = "abc"; ⏎ s.resize(5);
+std::string::rfind	tier1-ok		runnable as-is		std::string s = "abc"; ⏎ unsigned long pos = s.rfind("b");
+std::string::shrink_to_fit	tier1-ok		runnable as-is		std::string s = "abc"; ⏎ s.shrink_to_fit();
+std::string::size	tier1-ok		runnable as-is		std::string s = "abc"; ⏎ unsigned long n = s.size();
+std::string::starts_with	tier1-ok		runnable as-is		std::string s = "abc"; ⏎ bool b = s.starts_with("ab");
+std::string::substr	tier1-ok		runnable as-is		std::string s = "abc"; ⏎ std::string sub = s.substr(1, 1);
+std::string::swap	tier1-ok		runnable as-is		std::string s = "abc"; ⏎ std::string t = "xy"; ⏎ s.swap(t);
+std::string::~string	tier1-ok		runnable as-is		{ ⏎   std::string s = "abc"; ⏎ } // スコープを抜けると自動で呼ばれる
+std::array::array	tier1-ok		runnable as-is		std::array<int, 3> a = {1, 2, 3};
+std::array::at	tier1-ok		runnable as-is		std::array<int, 3> a = {1, 2, 3}; ⏎ int x = a.at(0);
+std::array::back	tier1-ok		runnable as-is		std::array<int, 3> a = {1, 2, 3}; ⏎ int x = a.back();
+std::array::begin	tier1-ok		runnable as-is		std::array<int, 3> a = {1, 2, 3}; ⏎ auto it = a.begin();
+std::array::cbegin	tier1-ok		runnable as-is		std::array<int, 3> a = {1, 2, 3}; ⏎ auto it = a.cbegin();
+std::array::cend	tier1-ok		runnable as-is		std::array<int, 3> a = {1, 2, 3}; ⏎ auto it = a.cend();
+std::array::crbegin	tier1-ok		runnable as-is		std::array<int, 3> a = {1, 2, 3}; ⏎ auto it = a.crbegin();
+std::array::crend	tier1-ok		runnable as-is		std::array<int, 3> a = {1, 2, 3}; ⏎ auto it = a.crend();
+std::array::empty	tier1-ok		runnable as-is		std::array<int, 3> a = {1, 2, 3}; ⏎ bool e = a.empty();
+std::array::end	tier1-ok		runnable as-is		std::array<int, 3> a = {1, 2, 3}; ⏎ auto it = a.end();
+std::array::fill	tier1-ok		runnable as-is		std::array<int, 3> a = {1, 2, 3}; ⏎ a.fill(0);
+std::array::front	tier1-ok		runnable as-is		std::array<int, 3> a = {1, 2, 3}; ⏎ int x = a.front();
+std::array::max_size	tier1-ok		runnable as-is		std::array<int, 3> a = {1, 2, 3}; ⏎ unsigned long m = a.max_size();
+std::array::operator=	tier1-ok		runnable as-is		std::array<int, 3> a = {1, 2, 3}; ⏎ std::array<int, 3> b = {4, 5, 6}; ⏎ a = b;
+std::array::operator[]	tier1-ok		runnable as-is		std::array<int, 3> a = {1, 2, 3}; ⏎ int x = a[0];
+std::array::rbegin	tier1-ok		runnable as-is		std::array<int, 3> a = {1, 2, 3}; ⏎ auto it = a.rbegin();
+std::array::rend	tier1-ok		runnable as-is		std::array<int, 3> a = {1, 2, 3}; ⏎ auto it = a.rend();
+std::array::size	tier1-ok		runnable as-is		std::array<int, 3> a = {1, 2, 3}; ⏎ unsigned long n = a.size();
+std::array::swap	tier1-ok		runnable as-is		std::array<int, 3> a = {1, 2, 3}; ⏎ std::array<int, 3> b = {4, 5, 6}; ⏎ a.swap(b);
+std::vector::assign	tier1-ok		runnable as-is		std::vector<int> v = {1, 2, 3}; ⏎ v.assign(3, 7);
+std::vector::at	tier1-ok		runnable as-is		std::vector<int> v = {1, 2, 3}; ⏎ int x = v.at(0);
+std::vector::back	tier1-ok		runnable as-is		std::vector<int> v = {1, 2, 3}; ⏎ int x = v.back();
+std::vector::begin	tier1-ok		runnable as-is		std::vector<int> v = {1, 2, 3}; ⏎ auto it = v.begin();
+std::vector::cbegin	tier1-ok		runnable as-is		std::vector<int> v = {1, 2, 3}; ⏎ auto it = v.cbegin();
+std::vector::cend	tier1-ok		runnable as-is		std::vector<int> v = {1, 2, 3}; ⏎ auto it = v.cend();
+std::vector::clear	tier1-ok		runnable as-is		std::vector<int> v = {1, 2, 3}; ⏎ v.clear();
+std::vector::crbegin	tier1-ok		runnable as-is		std::vector<int> v = {1, 2, 3}; ⏎ auto it = v.crbegin();
+std::vector::crend	tier1-ok		runnable as-is		std::vector<int> v = {1, 2, 3}; ⏎ auto it = v.crend();
+std::vector::emplace	tier1-ok		runnable as-is		std::vector<int> v = {1, 2, 3}; ⏎ v.emplace(v.begin(), 9);
+std::vector::emplace_back	tier1-ok		runnable as-is		std::vector<int> v = {1, 2, 3}; ⏎ v.emplace_back(9);
+std::vector::empty	tier1-ok		runnable as-is		std::vector<int> v = {1, 2, 3}; ⏎ bool e = v.empty();
+std::vector::end	tier1-ok		runnable as-is		std::vector<int> v = {1, 2, 3}; ⏎ auto it = v.end();
+std::vector::erase	tier1-ok		runnable as-is		std::vector<int> v = {1, 2, 3}; ⏎ v.erase(v.begin());
+std::vector::front	tier1-ok		runnable as-is		std::vector<int> v = {1, 2, 3}; ⏎ int x = v.front();
+std::vector::insert	tier1-ok		runnable as-is		std::vector<int> v = {1, 2, 3}; ⏎ v.insert(v.begin(), 9);
+std::vector::operator=	tier1-ok		runnable as-is		std::vector<int> v = {1, 2, 3}; ⏎ std::vector<int> w = {4, 5}; ⏎ v = w;
+std::vector::operator[]	tier1-ok		runnable as-is		std::vector<int> v = {1, 2, 3}; ⏎ int x = v[0];
+std::vector::pop_back	tier1-ok		runnable as-is		std::vector<int> v = {1, 2, 3}; ⏎ v.pop_back();
+std::vector::push_back	tier1-ok		runnable as-is		std::vector<int> v = {1, 2, 3}; ⏎ v.push_back(9);
+std::vector::rbegin	tier1-ok		runnable as-is		std::vector<int> v = {1, 2, 3}; ⏎ auto it = v.rbegin();
+std::vector::rend	tier1-ok		runnable as-is		std::vector<int> v = {1, 2, 3}; ⏎ auto it = v.rend();
+std::vector::reserve	tier1-ok		runnable as-is		std::vector<int> v = {1, 2, 3}; ⏎ v.reserve(10);
+std::vector::resize	tier1-ok		runnable as-is		std::vector<int> v = {1, 2, 3}; ⏎ v.resize(5);
+std::vector::shrink_to_fit	tier1-ok		runnable as-is		std::vector<int> v = {1, 2, 3}; ⏎ v.shrink_to_fit();
+std::vector::size	tier1-ok		runnable as-is		std::vector<int> v = {1, 2, 3}; ⏎ unsigned long n = v.size();
+std::vector::swap	tier1-ok		runnable as-is		std::vector<int> v = {1, 2, 3}; ⏎ std::vector<int> w = {4, 5}; ⏎ v.swap(w);
+std::vector::vector	tier1-ok		runnable as-is		std::vector<int> v = {1, 2, 3};
+std::vector::~vector	tier1-ok		runnable as-is		{ ⏎   std::vector<int> v = {1, 2, 3}; ⏎ } // スコープを抜けると自動で呼ばれる
+std::pair::operator=	tier1-ok		runnable as-is		std::pair<int, int> a{1, 2}, b; ⏎ b = a;
+std::pair::pair	tier1-ok		runnable as-is		std::pair<int, std::string> p{1, "a"};
+std::pair::swap	tier1-ok		runnable as-is		std::pair<int, int> a{1, 2}, b{3, 4}; ⏎ a.swap(b);
+std::pair::first	tier1-ok		runnable as-is		std::pair<int, std::string> p{1, "a"}; ⏎ int x = p.first;
+std::pair::second	tier1-ok		runnable as-is		std::pair<int, std::string> p{1, "a"}; ⏎ std::string s = p.second;
