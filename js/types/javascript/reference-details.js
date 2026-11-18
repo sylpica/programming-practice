@@ -30,11 +30,15 @@ export const referenceDetails = {
   },
   "push": {
     "returns": "追加後の長さ",
-    "source": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/push"
+    "source": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/push",
+    // A5班監査: 高度ファイル冒頭の台帳が基礎収載とする正式名を
+    // 検索から到達可能にする（従来は正式名で検索しても出なかった）。
+    "inventoryNames": ["Array.prototype.push"]
   },
   "pop": {
     "returns": "削除した末尾の値。空配列はundefined",
-    "source": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/pop"
+    "source": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/pop",
+    "inventoryNames": ["Array.prototype.pop"]
   },
   "Number": {
     "returns": "数値、変換不能ならNaN",
@@ -50,7 +54,8 @@ export const referenceDetails = {
   },
   "parseInt": {
     "returns": "整数、読み取れなければNaN",
-    "source": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/parseInt"
+    "source": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/parseInt",
+    "inventoryNames": ["Number.parseInt"]
   },
   "Math.abs": {
     "returns": "非負の数値",
@@ -102,7 +107,8 @@ export const referenceDetails = {
   },
   "join": {
     "returns": "区切り文字列で連結した文字列",
-    "source": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/join"
+    "source": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/join",
+    "inventoryNames": ["Array.prototype.join", "Iterator.prototype.join", "%TypedArray%.prototype.join"]
   },
   "while": {
     "returns": "戻り値なし（宣言または制御文）",
@@ -150,7 +156,8 @@ export const referenceDetails = {
   },
   "NaN": {
     "returns": "数値NaNそのもの",
-    "source": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/NaN"
+    "source": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/NaN",
+    "inventoryNames": ["Number.NaN"]
   },
   "Infinity": {
     "returns": "数値Infinityそのもの",

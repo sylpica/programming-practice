@@ -117,7 +117,7 @@ export const definition = {
     description:
       "ImageJ学習アプリのマクロパーサ・評価器と教材を移植。画像・ROI・測定表を明示したモデル上で説明します。",
     support:
-      "実画像の粒子数・外部ファイル・ダイアログの入力値は未確定です。画像フィルター等はモデル上の近似として表示する項目があります。",
+      "実画像の粒子数・外部ファイル・ダイアログの入力値は未確定です。画像フィルタ等はモデル上の近似として表示する項目があります。",
     sources: [
       {
         title: "ImageJ公式マクロ関数",
@@ -131,9 +131,15 @@ export const definition = {
       .replace(/\/\*[\s\S]*?\*\//g, "")
       .replace(/\/\/[^\n]*/g, "")
       .replace(/"(?:\\.|[^"\\])*"/g, '""');
+    // FIX-SH（T5-D01 是正）: 名前照合は「いま有効なカタログ」に対して
+    // 行う。機構（app.js／worker.js）が合成カタログを
+    // definition.__catalogReference へ差し込んだ場合はそれを使い
+    // （高度専用項目も拾う）、未設定の環境では基礎カタログ
+    // （従来どおり）。cmd／Python の scan と同じ先例に従う。
+    const catalog = definition.__catalogReference || reference;
     for (let match of stripped.matchAll(/([A-Za-z_][\w.]*)\s*\(/g)) {
       if (
-        reference.some((r) => r.name === match[1]) &&
+        catalog.some((r) => r.name === match[1]) &&
         !found.includes(match[1])
       )
         found.push(match[1]);
@@ -221,8 +227,14 @@ export const definition = {
           line: s.line || 1,
           text: s.text,
           kind: /続く可能性|打ち切/.test(s.text) ? "limit" : "step",
+          // 収束第2回 A3: trace の refs 照合も scan（FIX-SH）と同様に
+          // 「いま有効なカタログ」に対して行う。基礎カタログだけで
+          // 照合すると、高度専用関数（Color.toString 等）が実際に
+          // 実行されても実行後チップ（表示中のパス）から黙って落ちる。
           refs: (s.used || []).filter((n) =>
-            reference.some((r) => r.name === n),
+            (definition.__catalogReference || reference).some(
+              (r) => r.name === n,
+            ),
           ),
         }));
         if (error)

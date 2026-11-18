@@ -7,6 +7,24 @@ import {
 } from "../../core/script.js";
 import { rows } from "../../core/data.js";
 import { formatModelValue as formatValue, unknown, isUnknown, LIMITS } from "../../core/contract.js";
+// 高度モード ブロックB5（JSエンジン班）：高度差分の意味論は
+// advanced-engine.js に分離し、このファイルからは委譲だけを行う。
+import {
+  advancedGlobalCall,
+  advancedMemberCall,
+  advancedGlobalProp,
+  toDisplayModel,
+  toJsonModel,
+  modelContainsBigInt,
+  modelToString,
+  advancedIndexRead,
+  advancedIndexWrite,
+  makeRawJsonToken,
+  classOf as advancedClassOf,
+  isModelValue,
+  ADVANCED_EAGER_NAMES,
+  TYPEOF_FUNCTION_NAMES,
+} from "./advanced-engine.js";
 const reference = rows([
   [
     "console.log",
@@ -278,6 +296,14 @@ const GLOBAL_OBJECTS = new Set([
   "RangeError", "SyntaxError", "ReferenceError", "Map", "Set", "WeakMap",
   "WeakSet", "Promise", "Reflect", "Proxy", "Intl", "globalThis",
   "window", "ArrayBuffer", "DataView",
+  // 高度モード B5：実在するグローバル名の追加分（未対応の場合も
+  // 「未定義の名前」という虚偽の理由にしないための JS-01 の拡張）。
+  "EvalError", "URIError", "AggregateError", "SuppressedError",
+  "Atomics", "Iterator", "WeakRef", "FinalizationRegistry",
+  "SharedArrayBuffer", "DisposableStack", "AsyncDisposableStack",
+  "Int8Array", "Uint8Array", "Uint8ClampedArray", "Int16Array",
+  "Uint16Array", "Int32Array", "Uint32Array", "Float32Array",
+  "Float64Array", "Float16Array", "BigInt64Array", "BigUint64Array",
 ]);
 const exampleSetup = {"console.log":"let total=3;",appendChild:'const p=document.createElement("p");',push:"const values=[1,2,3];",pop:"const values=[1,2,3]; let last;",join:"const values=[1,2,3];",if:"let score=2;",for:"let total=0;"};
 for (const r of reference) if (exampleSetup[r.name]) r.example = exampleSetup[r.name] + "\n" + r.example;
@@ -363,6 +389,8 @@ function containsBigInt(value, seen = new Set()) {
 function needsDisplayValue(value, seen = new Set()) {
   if (typeof value === "bigint") return true;
   if (!value || typeof value !== "object" || seen.has(value)) return false;
+  // 高度モード B5：モデル値（Date／Map 等）を含む値も表示変換の対象。
+  if (isModelValue(value)) return true;
   if (isRecordLikeArray(value)) return true;
   seen.add(value);
   return Object.values(value).some((v) => needsDisplayValue(v, seen));
@@ -371,6 +399,10 @@ function displayValue(value, seen = new Map()) {
   // BigInt values display with the trailing n of real JavaScript notation.
   // (JSON.stringify never reaches this: it rejects BigInt before converting.)
   if (typeof value === "bigint") return value.toString() + "n";
+  // 高度モード B5：モデル値（Date／RegExp／Error／TypedArray 等）は
+  // advanced-engine.js 側の表示形へ変換する。
+  const dm = toDisplayModel(value, displayValue);
+  if (dm.handled) return dm.value;
   if (!needsDisplayValue(value)) return value;
   if (!value || typeof value !== "object") return value;
   if (seen.has(value)) return seen.get(value);
@@ -400,6 +432,18 @@ function displayValue(value, seen = new Map()) {
 // モデル値（kind／__class を持つもの）は formatValue 側の表記に委ねる。
 const UNDEF_MARK = "\u0001undefined\u0001",
   NEGZERO_MARK = "\u0001-0\u0001";
+// JS-B5-06：メソッド値の読み取りがホスト関数（Object.prototype 等の
+// 実装）を解決した場合に返す未確定値。関数値はこの方言では表現できない
+// ため、ホスト関数のソース文字列を値として漏らす代わりに「実行時に
+// 決まる」値とする。valueType: "function" を付け、typeof だけは実
+// JavaScript どおり "function" と答えられるようにする（typeof 演算子の
+// 既存挙動への影響を最小化する裁定）。
+function methodValueUnknown(key) {
+  return {
+    ...unknown("メソッド " + String(key) + " の値（関数値）"),
+    valueType: "function",
+  };
+}
 function markForLog(v, seen = new Map()) {
   if (v === undefined) return UNDEF_MARK;
   if (typeof v === "number" && Object.is(v, -0)) return NEGZERO_MARK;
@@ -437,6 +481,8 @@ function findUnknown(value, seen = new Set()) {
 function jsStringValue(v) {
   if (typeof v === "string") return v;
   if (typeof v === "bigint") return v.toString();
+  // 高度モード B5：モデル値は実 JavaScript の文字列表現へ変換する。
+  if (isModelValue(v)) return modelToString(v, null).value;
   if (isRecordLikeArray(v)) return "[object Object]";
   if (Array.isArray(v))
     return v
@@ -446,6 +492,36 @@ function jsStringValue(v) {
       .join(",");
   if (v && typeof v === "object") return "[object Object]";
   return String(v);
+}
+// A5班監査: 計算済みメンバー呼び出しの表示名。コアの callName は
+// index ノードを描けないため、添字式がメンバー形（Symbol.iterator
+// 等）・リテラル・変数の場合に「受け手[キー]」形を組み立てる。
+// 受け手が描けない場合はキー部分だけでも返す（名指し欄を空にしない）。
+function indexCallName(target) {
+  if (!target || target.k !== "index" || !target.indexes?.length) return "";
+  const idx = target.indexes[0];
+  let key = null;
+  if (idx.k === "member") key = callName(idx); // 例: Symbol.iterator
+  else if (idx.k === "var") key = idx.name;
+  else if (idx.k === "literal")
+    key = typeof idx.value === "string" ? JSON.stringify(idx.value) : String(idx.value);
+  if (!key) return "";
+  const base = callName(target.target);
+  return base ? `${base}[${key}]` : `[${key}]`;
+}
+// B5-JS Date文字列化修正：文字列連結（+）で実際に文字列化される位置に
+// モデル値があるか。モデル値そのものと、配列の要素（入れ子を含む）だけ
+// が対象で、通常オブジェクトの中のモデル値は実 JavaScript でも
+// "[object Object]" の内側に隠れるため対象にしない。モデル値は素の
+// プレーンオブジェクトで表されるため、ホストの + にそのまま渡すと
+// Object.prototype.toString で "[object Object]" に化ける（Date なら
+// 本来は UTC 文字列、Map なら "[object Map]" 等）。該当する場合は
+// jsStringValue（String()／alert と同じモデルの文字列変換）で連結する。
+function modelInConcatPosition(value, seen = new Set()) {
+  if (isModelValue(value)) return true;
+  if (!Array.isArray(value) || seen.has(value)) return false;
+  seen.add(value);
+  return value.some((v) => modelInConcatPosition(v, seen));
 }
 function logText(x) {
   if (typeof x === "bigint") return x.toString() + "n";
@@ -459,7 +535,7 @@ function logText(x) {
 export const definition = {
   id: "javascript",
   name: "JavaScript",
-  extensions: [".js", ".txt"],
+  extensions: [".js", ".mjs", ".cjs", ".txt"],
   syntax: {
     name: "ブラウザJavaScript 部分集合",
     caseSensitive: true,
@@ -536,7 +612,12 @@ export const definition = {
       { title: "WHATWG DOM Standard", url: "https://dom.spec.whatwg.org/" },
     ],
   },
-  scan: (code) => scanScript(code, reference),
+  // A5班監査: 機構が差し込む有効カタログ（高度モードでは合成カタログ、
+  // 簡易モードでは基礎カタログ）を参照する（cmd／Python と同じ
+  // __catalogReference 方式）。従来は基礎カタログに閉じており、高度
+  // 項目が実行前チップに一切現れなかった。未設定の環境（単体テスト
+  // 等）では従来どおり基礎カタログで走査する。
+  scan: (code) => scanScript(code, definition.__catalogReference || reference),
   async simulate(code, model, limits) {
     // R31-N13：モデル形状の入口検証。モデル自体がオブジェクトでない
     // 場合や、必須項目（dom／dom.elements／dom.body）の欠落・型違いが
@@ -729,7 +810,32 @@ export const definition = {
           return { previous, next: previous + (node.op === "++" ? 1 : -1) };
         },
         binary(op, a, b, node, s, api) {
-          if (!isUnknown(a) && !isUnknown(b)) return baseBinary(op, a, b, "js");
+          if (!isUnknown(a) && !isUnknown(b)) {
+            // B5-JS Date文字列化修正：モデル値を含む + 連結はホストの
+            // +（素オブジェクトの "[object Object]" 化）に委ねず、
+            // モデルの文字列変換（Date は modelToString の UTC 形式、
+            // String()／alert と同一経路）で連結する。直接の Symbol
+            // モデル値は実 JavaScript どおり暗黙変換できないため
+            // TypeError で名指し停止する（String() の明示変換は従来
+            // どおり可能）。
+            if (
+              op === "+" &&
+              (modelInConcatPosition(a) || modelInConcatPosition(b))
+            ) {
+              for (const [v, other] of [[a, b], [b, a]])
+                if (advancedClassOf(v) === "Symbol")
+                  api.fail(
+                    typeof other === "string" ||
+                      (other !== null && typeof other === "object")
+                      ? "Symbolを文字列へ変換できません"
+                      : "Symbolを数値へ変換できません",
+                    node,
+                    "TypeError",
+                  );
+              return jsStringValue(a) + jsStringValue(b);
+            }
+            return baseBinary(op, a, b, "js");
+          }
           const comparison = ["==", "!=", "===", "!==", "<", ">", "<=", ">="].includes(op);
           const numeric = ["<", ">", "<=", ">="].includes(op) &&
             (typeof a === "number" || typeof b === "number" || a?.valueType === "number" || b?.valueType === "number");
@@ -763,13 +869,16 @@ export const definition = {
               // グローバル関数・コンストラクタは "function"、グローバル
               // オブジェクトは "object"（実 Node／ECMAScript 仕様どおり）。
               // ここに無い名前だけが「存在しない名前」として "undefined"。
-              if (["Number", "String", "Boolean", "parseInt", "parseFloat", "isNaN", "isFinite", "prompt", "alert", "BigInt", "Array", "Object", "Symbol", "Function", "Date", "RegExp", "Error", "TypeError", "RangeError", "SyntaxError", "ReferenceError", "Map", "Set", "WeakMap", "WeakSet", "Promise", "Proxy", "ArrayBuffer", "DataView", "console.log", "Math.abs", "Math.floor", "Math.round", "JSON.stringify", "document.getElementById", "document.querySelector", "document.createElement"].includes(name)) return { handled: true, value: "function" };
+              if (["Number", "String", "Boolean", "parseInt", "parseFloat", "isNaN", "isFinite", "prompt", "alert", "BigInt", "Array", "Object", "Symbol", "Function", "Date", "RegExp", "Error", "TypeError", "RangeError", "SyntaxError", "ReferenceError", "Map", "Set", "WeakMap", "WeakSet", "Promise", "Proxy", "ArrayBuffer", "DataView", "console.log", "Math.abs", "Math.floor", "Math.round", "JSON.stringify", "document.getElementById", "document.querySelector", "document.createElement", ...TYPEOF_FUNCTION_NAMES].includes(name)) return { handled: true, value: "function" };
               if (["console", "Math", "JSON", "document", "globalThis", "window", "Intl", "Reflect"].includes(name)) return { handled: true, value: "object" };
             }
             if (a.arg.k === "var" && !Object.hasOwn(s.vars, a.arg.name) && !["undefined", "NaN", "Infinity", "true", "false", "null"].includes(a.arg.name))
               return { handled: true, value: "undefined" };
             const value = api.read(a.arg, s);
-            return { handled: true, value: isUnknown(value) ? unknown("typeof の対象の型") : typeof value };
+            // 高度モード B5：タグ付きシンボルは typeof でも "symbol"。
+            // JS-B5-06：メソッド値の未確定値（valueType: "function"）は
+            // 実 JavaScript どおり "function" と答える。
+            return { handled: true, value: isUnknown(value) ? (value.valueType === "function" ? "function" : unknown("typeof の対象の型")) : advancedClassOf(value) === "Symbol" ? "symbol" : typeof value };
           }
           // RG-11 統合対応：基数リテラル（0x…等）の末尾の英字は型接尾辞ではない。
           if (a.k === "literal" && a.raw && /[LfF]$/.test(a.raw) && !/^0[xXbBoO]/.test(a.raw))
@@ -821,8 +930,30 @@ export const definition = {
               s.pendingRefs ??= [];
               if (!s.pendingRefs.includes(a.name)) s.pendingRefs.push(a.name);
             }
-            if (["__proto__","constructor","prototype"].includes(a.name))
-              api.fail("このプロパティはモデルでは未対応です", a, "未対応");
+            if (["__proto__","constructor","prototype"].includes(a.name)) {
+              // A5班監査: 停止自体は裁定済みのモデル境界だが、どの
+              // プロパティか名指しする（従来は一律の汎用文言だった）。
+              // callName が受け手まで描けない形（リテラル等）では
+              // メンバー名だけを挙げる。
+              const disp = callName(a);
+              api.fail(
+                "このプロパティはモデルでは未対応です：" +
+                  (disp && !disp.startsWith(".") ? disp : a.name),
+                a,
+                "未対応",
+              );
+            }
+            // 高度モード B5：Math.PI や Number.MAX_VALUE、Symbol.iterator
+            // 等の定数・値プロパティは advanced-engine.js の表で解決する
+            // （同名のローカル束縛がある場合はそちらが優先するため、
+            // 束縛が無い場合に限る）。
+            if (
+              a.target?.k === "var" &&
+              !Object.hasOwn(s.vars, a.target.name)
+            ) {
+              const gp = advancedGlobalProp(a.target.name, a.name);
+              if (gp.handled) return { handled: true, value: gp.value };
+            }
             // JS-01 兄弟表面：Math.PI のような実在グローバルのプロパティ
             // 参照も「未定義の名前」にしない（名前は存在し、プロパティが
             // モデル未対応であることが正しい理由）。
@@ -857,18 +988,55 @@ export const definition = {
               if (a.name === "id")
                 return { handled: true, value: value.id ?? "" };
             }
-            return { handled: true, value: value[a.name] };
+            // JS-B5-06：解決結果がホスト関数になる読み取り（メソッド値の
+            // 読み取り）は、ホスト関数のソース文字列を値として返さない。
+            // 利用者が同名の自分のプロパティを持つ場合はそちらが先に
+            // 解決され（typeof が function にならない）影響しない。
+            // メソッド呼び出しのディスパッチはこの経路を通らない。
+            const resolvedMember = value[a.name];
+            if (typeof resolvedMember === "function")
+              return { handled: true, value: methodValueUnknown(a.name) };
+            return { handled: true, value: resolvedMember };
           }
           if (a.k === "index") {
             if (a.indexes.length !== 1 || !a.indexes[0])
               api.fail("この添字式は未対応です", a, "未対応");
+            // JS-B5-03：Math／JSON はグローバルオブジェクトとして値が
+            // モデル化されないため、[Symbol.toStringTag] だけは対象名を
+            // タグとして先に解決する。その他の添字は従来どおり未確定値。
+            if (
+              a.target?.k === "var" &&
+              !Object.hasOwn(s.vars, a.target.name) &&
+              (a.target.name === "Math" || a.target.name === "JSON")
+            ) {
+              const globalIndex = api.read(a.indexes[0], s);
+              if (
+                advancedClassOf(globalIndex) === "Symbol" &&
+                globalIndex.wellKnown === "toStringTag"
+              )
+                return { handled: true, value: a.target.name };
+              return {
+                handled: true,
+                value: unknown("実行時の添字参照"),
+              };
+            }
             let value = api.read(a.target, s),
               index = api.read(a.indexes[0], s);
             if (value == null)
               api.fail("null / undefined の添字参照です", a, "TypeError");
             if (isUnknown(value) || isUnknown(index))
               return { handled: true, value: unknown("実行時の添字参照") };
-            return { handled: true, value: value[index] };
+            // 高度モード B5：TypedArray の要素アクセスは型変換を伴う
+            // ため advanced-engine.js 側で解決する。
+            // JS-B5-03：Symbol キー（[Symbol.toStringTag] 等）もここで解決する。
+            const air = advancedIndexRead(value, index);
+            if (air.handled) return { handled: true, value: air.value };
+            // JS-B5-06：文字列キーでホスト関数が解決される読み取り
+            // （m["toString"] 等）もメンバ読み取りと同じガードにかける。
+            const resolvedIndex = value[index];
+            if (typeof resolvedIndex === "function")
+              return { handled: true, value: methodValueUnknown(index) };
+            return { handled: true, value: resolvedIndex };
           }
           return null;
         },
@@ -886,6 +1054,30 @@ export const definition = {
               api.fail("プリミティブ値へは書き込めません", node, "TypeError");
             let key = a.k === "member" ? a.name : api.read(a.indexes[0], s);
             if (isUnknown(key)) api.fail("未確定の添字への書き込みは未確認です", node, "未確認");
+            // A5班監査: Symbol キーの代入が文字列キー "[object Object]"
+            // へ黙って変換され、通常キーとして現れる誤値を防ぐ。モデル
+            // は Symbol キーのプロパティを保持できないため、正直に
+            // 名指して停止する（Object.keys 等の表示も実 JS と一致する）。
+            if (advancedClassOf(key) === "Symbol")
+              api.fail("Symbol キーのプロパティはモデルでは未対応です", node, "未対応");
+            // 高度モード B5：Object.freeze／seal／preventExtensions の
+            // 印が付いたオブジェクトへの書き込みは、非 strict の実
+            // JavaScript どおり黙って無視する（freeze は全て、seal／
+            // preventExtensions は新しいプロパティの追加だけ）。
+            // TypedArray の要素書き込み等は advanced-engine.js へ委譲する。
+            if (obj.__jsFrozen) return true;
+            if (
+              (obj.__jsSealed || obj.__jsNoExt) &&
+              key !== "length" &&
+              !Object.hasOwn(obj, key)
+            )
+              return true;
+            if (
+              advancedIndexWrite(obj, key, v, {
+                fail: (message, category) => api.fail(message, node, category),
+              })
+            )
+              return true;
             // P-N1（配列の成長経路）: 巨大な添字への書き込みで疎な配列の
             // 実体（長さ）が爆発しないよう、要素数の上限で止める。
             // length への直接代入による拡張も同じ表面として塞ぐ。ただし
@@ -922,7 +1114,8 @@ export const definition = {
                 "RangeError",
               );
             if (["__proto__", "constructor", "prototype"].includes(key))
-              api.fail("このプロパティはモデルでは未対応です", node);
+              // A5班監査: 読み取り側と同じくプロパティ名を名指しする。
+              api.fail("このプロパティはモデルでは未対応です：" + key, node);
             // R7-186（修正バッチ13）：DOMプロパティは素のレコード項目
             // ではない。tagName は読み取り専用（非strictでは代入を黙って
             // 無視）、textContent は DOMString 変換（null は空文字列＝
@@ -946,6 +1139,11 @@ export const definition = {
           return false;
         },
         call(name, args, s, api, node) {
+          // A5班監査: 計算済みメンバー呼び出し（arr[Symbol.iterator]()
+          // 等）はコアの callName が名前を描けず、停止文言の名指し欄が
+          // 空欄になっていた。添字式から表示名を補う（描けない形は
+          // 従来どおり空欄にせず、対象自体を指す文言に倒す）。
+          const fnName = name || indexCallName(node.target);
           let evaluated = null;
           const values = () => {
             if (!evaluated) evaluated = args.map((a) => api.read(a, s));
@@ -969,7 +1167,25 @@ export const definition = {
             "document.createElement",
             "Number", "String", "Boolean", "parseInt",
             "Math.abs", "Math.floor", "Math.round", "JSON.stringify",
+            // 高度モード B5：高度側で実装する呼び出しも引数を先に評価する。
+            ...ADVANCED_EAGER_NAMES,
           ]);
+          // 高度モード B5：advanced-engine.js への委譲用コンテキスト。
+          const advCtx = () => ({
+            s,
+            api,
+            node,
+            fail: (message, category) => api.fail(message, node, category),
+            values,
+            argCount: args.length,
+            findUnknown,
+            containsUnknown,
+            isRecordLikeArray,
+            displayValue,
+            jsStringValue,
+            arrayContentSize,
+            isDomNode,
+          });
           if (EAGER.has(name)) values();
           // R7-180（修正バッチ13）：組み込みと同名のローカル束縛がある
           // 場合、その束縛が優先する。ローカル値は呼び出せないため、
@@ -986,6 +1202,17 @@ export const definition = {
               "ArrayBuffer", "DataView",
               "Math", "JSON", "console", "document", "globalThis",
               "window", "Intl", "Reflect",
+              // 高度モード B5：高度側で扱うグローバル名も同名のローカル
+              // 束縛が優先する（R7-180 の流儀の拡張）。
+              "encodeURI", "decodeURI", "encodeURIComponent",
+              "decodeURIComponent", "eval",
+              "EvalError", "URIError", "AggregateError", "SuppressedError",
+              "Atomics", "Iterator", "WeakRef", "FinalizationRegistry",
+              "SharedArrayBuffer", "DisposableStack", "AsyncDisposableStack",
+              "Int8Array", "Uint8Array", "Uint8ClampedArray", "Int16Array",
+              "Uint16Array", "Int32Array", "Uint32Array", "Float32Array",
+              "Float64Array", "Float16Array", "BigInt64Array",
+              "BigUint64Array",
             ]);
             if (
               SHADOWABLE.has(rootName) &&
@@ -1128,6 +1355,8 @@ export const definition = {
               // 未確定値へ倒す（ホスト Number へ流して NaN に固定しない）。
               const inner = findUnknown(v);
               if (inner) return convertedUnknown(inner, "Number");
+              // 高度モード B5：Date モデル値の数値変換は時刻値（実物どおり）。
+              if (advancedClassOf(v) === "Date") return v.time;
               return Number(isRecordLikeArray(v) ? displayValue(v) : v);
             }
             case "String": {
@@ -1173,7 +1402,7 @@ export const definition = {
               if (containsUnknown(v)) return unknown("JSON.stringifyの入力に未確定値があります");
               if (findUnknown(replacer) || findUnknown(space))
                 return unknown("JSON.stringifyの引数に未確定値があります");
-              if (containsBigInt(v))
+              if (containsBigInt(v) || modelContainsBigInt(v))
                 api.fail("BigIntはJSONへ変換できません", node, "TypeError");
               try {
                 const replacerArg = Array.isArray(replacer) ? replacer : null;
@@ -1183,7 +1412,19 @@ export const definition = {
                     : typeof space === "string"
                       ? space.slice(0, 10)
                       : 0;
-                const json = JSON.stringify(displayValue(v), replacerArg, spaceArg);
+                // 高度モード B5：モデル値（Date の toJSON、Map の {} 化、
+                // TypedArray の添字オブジェクト化等）は toJsonModel で
+                // 実 JavaScript の JSON 表現へ変換してから文字列化する。
+                // JS-B5-10：RawJSON はホストの JSON.rawJSON に依存せず、
+                // 呼び出しごとに一意なプレースホルダ文字列へ変換してから
+                // 文字列化後に生 JSON テキストへ置換する（ホスト不在でも
+                // 黙って undefined にならない）。
+                const rawSink = [];
+                const rawToken = makeRawJsonToken();
+                let json = JSON.stringify(displayValue(toJsonModel(v, new Set(), rawSink, rawToken)), replacerArg, spaceArg);
+                if (json !== undefined && rawSink.length)
+                  for (const { placeholder, raw } of rawSink)
+                    json = json.split(JSON.stringify(placeholder)).join(raw);
                 // P-N1: JSON 文字列も値サイズ上限の対象にする。
                 return json !== undefined && json.length > 200000
                   ? { ...unknown("とても長い文字列"), valueType: "string" }
@@ -1192,6 +1433,14 @@ export const definition = {
                 api.fail("循環参照はJSONへ変換できません", node, "TypeError");
               }
             }
+          }
+          // 高度モード B5：基礎スイッチで扱わないグローバル呼び出し
+          // （Math の全関数、Object／Array の静的メソッド、JSON.parse、
+          // Map／Set／Date 等のコンストラクタ、名指し停止に倒す
+          // Promise／Proxy／eval 等）は advanced-engine.js へ委譲する。
+          {
+            const advGlobal = advancedGlobalCall(name, advCtx());
+            if (advGlobal.handled) return advGlobal.value;
           }
           if (node.target.k === "member") {
             // JS-01：Math.max / JSON.parse 等、実在するグローバル
@@ -1204,7 +1453,7 @@ export const definition = {
               GLOBAL_OBJECTS.has(node.target.target.name)
             )
               api.fail(
-                "このJavaScript関数は説明に対応していません：" + name,
+                "このJavaScript関数は説明に対応していません：" + fnName,
                 node,
               );
             let object = api.read(node.target.target, s),
@@ -1243,7 +1492,14 @@ export const definition = {
                 }
                 // P-N1: join の結果長を要素ごとに見積もる（区切り文字を
                 // 含め、上限を超える場合は実体を作らず未確定値へ倒す）。
-                const sep = sepArg === undefined ? "," : String(sepArg);
+                // B5-JS Date文字列化修正：区切り・要素の長さ見積もりと
+                // 実変換はホストの String()／join（モデル値を
+                // "[object Object]" に化けさせる）ではなく、モデルの
+                // 文字列変換 jsStringValue で揃える（配列 toString が
+                // advanced-engine 側でモデル値を正しく文字列化するのと
+                // 同じ結果になる）。モデル値を含まない通常の配列は
+                // 従来どおりホスト join のまま。
+                const sep = sepArg === undefined ? "," : jsStringValue(sepArg);
                 let total = 0;
                 for (let i = 0; i < object.length; i++) {
                   const el = object[i];
@@ -1252,10 +1508,16 @@ export const definition = {
                       ? 0
                       : typeof el === "string"
                         ? el.length
-                        : String(el).length) + (i ? sep.length : 0);
+                        : jsStringValue(el).length) + (i ? sep.length : 0);
                   if (total > 200000)
                     return { ...unknown("とても長い文字列"), valueType: "string" };
                 }
+                if (modelInConcatPosition(object) || isModelValue(sepArg))
+                  return object
+                    .map((el) =>
+                      el === null || el === undefined ? "" : jsStringValue(el),
+                    )
+                    .join(sep);
                 return object.join(sepArg);
               }
             }
@@ -1283,8 +1545,18 @@ export const definition = {
               api.note(s, node, "モデルDOMの子要素に追加します");
               return child;
             }
+            // 高度モード B5：配列・文字列・数値等のレシーバへのメンバ
+            // 呼び出しと、モデル値（Map／Date／RegExp／TypedArray 等）
+            // のメソッドは advanced-engine.js へ委譲する。委譲側が
+            // 扱わない呼び出しは従来どおり関数名を挙げて停止する。
+            const advMember = advancedMemberCall({
+              ...advCtx(),
+              receiver: object,
+              method,
+            });
+            if (advMember.handled) return advMember.value;
           }
-          api.fail("このJavaScript関数は説明に対応していません：" + name, node);
+          api.fail("このJavaScript関数は説明に対応していません：" + fnName, node);
         },
         groups: (p) => [
           {

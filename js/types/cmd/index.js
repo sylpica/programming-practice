@@ -1,5 +1,6 @@
 import { simulateCmd } from "./engine.js";
 import { commandRefs } from "./parser.js";
+import { advancedCommandNames } from "./advanced-engine.js";
 import { sampleFiles } from "../shell/model.js";
 const base =
   "https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/";
@@ -47,8 +48,8 @@ const entries = [
   [
     "変数展開",
     "変数",
-    "%NAME% / !NAME!",
-    "%NAME%は論理コマンドの読み取り時に展開します。遅延展開が有効なとき、!NAME!は各実行時に展開します。%ERRORLEVEL%・%CD%・%RANDOM%・%DATE%・%TIME%はcmdが用意する動的変数で、詳しくは「動的変数」の項目を見てください。",
+    "%NAME% / !NAME! / %NAME:~開始,長さ% / %NAME:検索=置換%",
+    "%NAME%は論理コマンドの読み取り時に展開します。遅延展開が有効なとき、!NAME!は各実行時に展開します。部分文字列（%NAME:~0,3%の形。負の数は末尾から数えます）と置換（%NAME:検索=置換%の形。大文字小文字を区別せず全て置き換えます）の修飾も使え、!NAME!でも同じ修飾が使えます。%ERRORLEVEL%・%CD%・%RANDOM%・%DATE%・%TIME%はcmdが用意する動的変数で、詳しくは「動的変数」の項目を見てください。",
     "set NAME=Alice\necho %NAME%",
     "cmd",
   ],
@@ -366,7 +367,7 @@ export const definition = {
     description:
       "コマンド拡張有効・初期コマンド表示offのバッチをモデル化します。",
     support:
-      "echo、setと基本set /a、%VAR%／!VAR!（遅延展開の動的変数を含む）、%%エスケープ、setlocal/endlocal、if、for基本形／/L、goto、call :label、%1〜%9／%~1、exit、rem、pause、cd、dir /b（/s再帰を含む）、type、md/rd/del/ren/copy/move、cls、find、>／>>、基本パイプ。%0はモデルに無いため実行時に決まる値として扱う。未対応：外部プロセス、番号つき／複合リダイレクト、for /F、二重展開・展開修飾、複雑な算術代入、UNC／ドライブ相対パス。",
+      "echo、setと基本set /a、%VAR%／!VAR!（遅延展開の動的変数を含む）と展開修飾（部分文字列 ~開始,長さ／置換 検索=置換）、%%エスケープ、setlocal/endlocal、if、for基本形／/L、goto、call :label、%1〜%9／%~1、exit、rem、pause、cd、dir /b（/s再帰を含む）、type、md/rd/del/ren/copy/move、cls、find、>／>>、基本パイプ。%0はモデルに無いため実行時に決まる値として扱う。未対応：外部プロセス、番号つき／複合リダイレクト、for /F、二重展開、条件付き連結（&&／||）、複雑な算術代入、UNC／ドライブ相対パス。",
     sources: [
       { title: "Microsoft Windows commands", url: base },
       { title: "Microsoft cmd", url: base + "cmd" },
@@ -375,8 +376,96 @@ export const definition = {
   scan(code) {
     const names = new Set();
     try {
-      for (const line of code.split("\n"))
-        for (const ref of commandRefs(line.trim())) names.add(ref);
+      // 高度モード ブロックB1: 高度側の名前（別名・複合名を含む）も
+      // 解決する。名前集合は advanced-engine.js のテーブルから導出し、
+      // reference-advanced.js（遅延ロード対象）は import しない。
+      // 複合名を先に当てるため、語数の多い順に照合する。
+      // 統合第1弾（差異 D-3 の解消）: 機構が有効カタログ
+      // （definition.__catalogReference）を差し込んでいる場合は、その
+      // カタログに載っている高度名だけを解決する（簡易モードでは基礎
+      // カタログが差し込まれるため高度名は出ない）。未設定の環境
+      // （単体テスト等）では従来どおり全高度名を解決する。
+      // LANE-A1: カタログ照合は大小区別なしに行い、解決した名前は
+      // カタログ側の表記で返す。従来は大小区別ありの集合照合だった
+      // ため、索引表記が Evntcmd の項目だけがエンジン側の小文字名と
+      // 一致せず、scan で一切解決できなかった。
+      const catalogRef = definition.__catalogReference;
+      const catalogByLower = catalogRef
+        ? new Map(catalogRef.map((r) => [r.name.toLowerCase(), r.name]))
+        : null;
+      const advSorted = [
+        ...new Set(
+          [...advancedCommandNames]
+            .map((nm) =>
+              catalogByLower ? catalogByLower.get(nm.toLowerCase()) : nm,
+            )
+            .filter(Boolean),
+        ),
+      ].sort(
+        (a, b) =>
+          b.split(/\s+/).length - a.split(/\s+/).length ||
+          b.length - a.length,
+      );
+      // LANE-A1: パイプ／&／&&／|| で連結された後段のコマンドも名前
+      // 解決の対象にする（従来は行頭しか解決できず、同梱テンプレート
+      // cmd-pipe 自身の refs と scan が一致しなかった）。引用符と
+      // キャレットエスケープの内側は区切りとして扱わない。あわせて、
+      // 記号でしか書けない概念項目（リダイレクト／パイプ）を演算子
+      // から解決する（set /a 行の > は比較・シフト演算子なので除く）。
+      const segmentsOf = (line) => {
+        const segs = [];
+        let cur = "",
+          quote = false,
+          pipe = false,
+          redirect = false;
+        for (let i = 0; i < line.length; i++) {
+          const c = line[i];
+          if (c === "^" && !quote && i + 1 < line.length) {
+            cur += c + line[i + 1];
+            i++;
+            continue;
+          }
+          if (c === '"') {
+            quote = !quote;
+            cur += c;
+            continue;
+          }
+          if (!quote && (c === "|" || c === "&")) {
+            if (line[i + 1] === c) i++;
+            else if (c === "|") pipe = true;
+            segs.push(cur);
+            cur = "";
+            continue;
+          }
+          if (!quote && c === ">") redirect = true;
+          cur += c;
+        }
+        segs.push(cur);
+        return { segs, pipe, redirect };
+      };
+      for (const line of code.split("\n")) {
+        const { segs, pipe, redirect } = segmentsOf(line);
+        if (pipe) names.add("パイプ");
+        if (redirect && !/^\s*@?\s*set\s+\/a\b/i.test(line))
+          names.add("リダイレクト");
+        for (const seg of segs) {
+          for (const ref of commandRefs(seg.trim())) names.add(ref);
+          const t = seg
+            .trim()
+            .replace(/^@/, "")
+            .trim()
+            .toLowerCase()
+            .replace(/\s+/g, " ");
+          if (!t) continue;
+          for (const nm of advSorted) {
+            const key = nm.toLowerCase();
+            if (t === key || t.startsWith(key + " ")) {
+              names.add(nm);
+              break;
+            }
+          }
+        }
+      }
       if (/set\s+\/a/i.test(code)) names.add("set /a");
       if (/set\s+\/p/i.test(code)) names.add("set /p");
       if (/%(ERRORLEVEL|CD|RANDOM|DATE|TIME)%|!(ERRORLEVEL|CD|RANDOM|DATE|TIME)!/i.test(code))

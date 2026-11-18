@@ -28,6 +28,11 @@ import {
 } from "../shell/model.js";
 import { commands, block, commandRefs } from "./parser.js";
 import { arithmetic } from "./arithmetic.js";
+import {
+  advancedCommandHandlers,
+  advancedStops,
+  advancedAliasStops,
+} from "./advanced-engine.js";
 import { toLearnerError } from "../../core/script.js";
 function slot(value, s) {
   // Unknown values are always held behind a placeholder so structural
@@ -105,6 +110,59 @@ function dynamicValue(name, s, api) {
 // 繰り返し）。展開結果が値サイズ上限を超えたら、実体を作り続けず理由を
 // 明示して停止する（上限を引き上げても OOM しないための根治）。
 const CMD_VALUE_LIMIT = 200000;
+// LANE-A1: 展開修飾（部分文字列 %VAR:~開始,長さ%／置換 %VAR:検索=置換% と
+// 遅延展開の同形）の意味論。規則は Microsoft Learn／SS64 の記述に従う:
+// - ~n: 先頭から n 文字を除いた残り。n が負なら末尾から数える。
+// - ~n,m: n 文字目から m 文字。m が負なら末尾から |m| 文字を除いた位置まで。
+// - 検索=置換: 大小区別なしで全件置換。検索が * で始まる形は、SET の
+//   ヘルプ文の定義どおり「先頭から、残りの検索文字列の最初の一致まで」
+//   全体を1つの一致として置換文字列に置き換える（残りは走査しない）。
+//   一致が無ければ値は変わらない。検索が空なら値は変わらない。
+// 解釈できない修飾子は { ok: false } を返し、呼び出し側が名指しで止める。
+function applyExpansionModifier(value, modifier) {
+  if (modifier.startsWith("~")) {
+    const m = modifier.match(/^~(-?\d+)?(?:,(-?\d+)?)?$/);
+    if (!m) return { ok: false };
+    const len = value.length;
+    let start =
+      m[1] === undefined || m[1] === "" ? 0 : Number.parseInt(m[1], 10);
+    if (start < 0) start = Math.max(0, len + start);
+    if (m[2] === undefined) return { ok: true, value: value.slice(start) };
+    const count = Number.parseInt(m[2], 10);
+    const end = count >= 0 ? start + count : len + count;
+    return { ok: true, value: end <= start ? "" : value.slice(start, end) };
+  }
+  const eq = modifier.indexOf("=");
+  if (eq < 0) return { ok: false };
+  let search = modifier.slice(0, eq);
+  const replacement = modifier.slice(eq + 1);
+  if (search.startsWith("*")) {
+    search = search.slice(1);
+    if (!search) return { ok: false };
+    const idx = value.toLowerCase().indexOf(search.toLowerCase());
+    if (idx < 0) return { ok: true, value };
+    return {
+      ok: true,
+      value: replacement + value.slice(idx + search.length),
+    };
+  }
+  const rest = value;
+  if (!search) return { ok: true, value };
+  const lower = rest.toLowerCase(),
+    needle = search.toLowerCase();
+  let out = "",
+    pos = 0;
+  for (;;) {
+    const j = lower.indexOf(needle, pos);
+    if (j < 0) {
+      out += rest.slice(pos);
+      break;
+    }
+    out += rest.slice(pos, j) + replacement;
+    pos = j + needle.length;
+  }
+  return { ok: true, value: out };
+}
 function percent(text, s, api, node) {
   // R26-N22：set /a の式の中では単独の % は剰余演算子として読む（%名前% の
   // 変数参照だけを展開する）。%0〜%9 や %~ 形まで位置引数として展開すると、
@@ -132,6 +190,37 @@ function percent(text, s, api, node) {
       );
     if (text[i] !== "%") {
       out += text[i];
+      continue;
+    }
+    // LANE-A1: 展開修飾形（%名前:修飾子%）は set /a の剰余判定より前に
+    // 処理する（実 cmd でも展開は行全体の解析フェーズで先に効く）。
+    // カタログ項目「変数展開」は対応を宣言しており、修飾形だけが開示
+    // なく止まる不整合（宣言と挙動の食い違い）を解消する。
+    const modSpan = text
+      .slice(i)
+      .match(/^%([A-Za-z_][A-Za-z0-9_]*):([^%]*)%/);
+    if (modSpan) {
+      if (!expandable(modSpan[1])) {
+        // 未定義変数は R26-N23 の裁定どおりリテラルのまま残す。
+        out += slot(modSpan[0], s);
+        i += modSpan[0].length - 1;
+        continue;
+      }
+      const baseValue = dynamicValue(modSpan[1], s, api);
+      if (isUnknown(baseValue)) {
+        // 未確定値の部分文字列・置換結果は値を捏造せず未確定のまま残す。
+        out += slot(baseValue, s);
+        i += modSpan[0].length - 1;
+        continue;
+      }
+      const applied = applyExpansionModifier(
+        String(baseValue ?? ""),
+        modSpan[2],
+      );
+      if (!applied.ok)
+        fail("未対応：環境変数の部分文字列・置換展開", node.line);
+      out += insert(applied.value);
+      i += modSpan[0].length - 1;
       continue;
     }
     if (setA && text[i + 1] !== "%") {
@@ -231,9 +320,24 @@ function delayed(text, s, node, api) {
     // プレースホルダへ退避してから処理し、最後に ^! へ戻す（後段の
     // キャレット解除でリテラルの ! になる）。
     text = text.replace(/\^!/g, "\uE000");
-    text = text.replace(/!([^!]*)!/g, (_, name) =>
-      track(slot(dynamicValue(name, s, api), s)),
-    );
+    text = text.replace(/!([^!]*)!/g, (_, name) => {
+      // LANE-A1: 遅延展開の修飾形（!名前:~n,m!／!名前:検索=置換!）も
+      // % 形と同じ意味論で処理する。従来は名前全体を変数名として引いて
+      // 空文字に化け、黙って消えていた（% 形は名指し停止だったのと対照的）。
+      const ci = name.indexOf(":");
+      if (ci > 0) {
+        const baseValue = dynamicValue(name.slice(0, ci), s, api);
+        if (isUnknown(baseValue)) return track(slot(baseValue, s));
+        const applied = applyExpansionModifier(
+          String(baseValue ?? ""),
+          name.slice(ci + 1),
+        );
+        if (!applied.ok)
+          fail("未対応：環境変数の部分文字列・置換展開", node.line);
+        return track(slot(applied.value, s));
+      }
+      return track(slot(dynamicValue(name, s, api), s));
+    });
     text = text.replace(/!/g, "");
     text = text.replace(/\uE000/g, "^!");
   }
@@ -523,6 +627,45 @@ export function simulateCmd(source, model, limits) {
           delete s.cmd.stdin;
           return;
         }
+        if (n.k === "adv-cmd-restore") {
+          // 高度モード cmd /c 用: サブコマンド終了後に環境を復元する。
+          // ERRORLEVEL はサブコマンドの値を引き継ぐため触らない。
+          // exit /b 等で returning() が先に処理した場合は、積んだ
+          // ダミーフレームは既に消費されているので、残っている場合だけ外す。
+          const fi = n.frame ? s.cmd.calls.indexOf(n.frame) : -1;
+          if (fi >= 0) s.cmd.calls.splice(fi, 1);
+          s.cmd.locals.length = Math.min(
+            s.cmd.locals.length,
+            n.snapshot.localsLength,
+          );
+          s.vars = n.snapshot.vars;
+          s.model.cwd = n.snapshot.cwd;
+          s.cmd.delayed = n.snapshot.delayed;
+          s.cmd.echo = n.snapshot.echo;
+          // B1A-04: ディレクトリスタック・verify 状態・doskey マクロ・
+          // バッチ引数も復元対象に含める（子での変更が親へ漏れない）。
+          s.cmd.dirStack = n.snapshot.dirStack
+            ? [...n.snapshot.dirStack]
+            : n.snapshot.dirStack;
+          s.cmd.verifyState = n.snapshot.verifyState;
+          s.cmd.doskeyMacros = n.snapshot.doskeyMacros
+            ? { ...n.snapshot.doskeyMacros }
+            : n.snapshot.doskeyMacros;
+          s.cmd.args = [...n.snapshot.args];
+          // B1B-02: 色・プロンプト・ウィンドウタイトルもプロセス内
+          // 状態として復元する。保存時点で未設定（undefined）だった
+          // ものは、子が設定した値を残さずキーごと取り除く。
+          for (const key of ["colorValue", "promptText", "windowTitle"]) {
+            if (n.snapshot[key] === undefined) delete s.cmd[key];
+            else s.cmd[key] = n.snapshot[key];
+          }
+          api.note(
+            s,
+            { ...n, refs: ["cmd"] },
+            "cmd /c の環境を復元します（ERRORLEVELは引き継ぎます）",
+          );
+          return;
+        }
         if (n.k === "program-counter") {
           if (n.pc >= nodes.length) return returning(s, n);
           s.tasks.push(program(n.pc + 1), nodes[n.pc]);
@@ -777,12 +920,40 @@ export function simulateCmd(source, model, limits) {
             "実行エラー",
           );
         }
-        const m = raw.match(/^(echo\.|[\w]+)(?:\s+([\s\S]*))?$/i);
+        // 高度モード: attach-vdisk のようなハイフン付きコマンド名も
+        // 名前として切り出せるようにする（従来は構文エラーに落ちて
+        // 名指し停止へ届かなかった）。
+        const m = raw.match(/^(echo\.|[\w][\w-]*)(?:\s+([\s\S]*))?$/i);
         if (!m) fail("未対応：cmdの構文 " + raw, n.line);
         const name = m[1].toLowerCase(),
           arg = m[2] ?? "";
         if (hasBareSpecial(arg) && name !== "set")
           fail("未対応：パイプライン・リダイレクト", n.line);
+        // LANE-A1: 複合名の名指し停止が基礎コマンド名で始まる場合
+        // （現行では set shadow copy／set environmental variables の2件）、
+        // 基礎側の処理が先に誤帰属のエラーで止めてしまい、項目の停止に
+        // 届かない。基礎コマンドに一致する複合名停止だけを先に照合する。
+        // どちらの形も基礎 set では正常実行にならない（接頭辞検索／代入
+        // エラー）ため、正規の基礎呼び出しを奪うことはない。
+        {
+          const argWordsPre = arg
+            .trim()
+            .toLowerCase()
+            .split(/\s+/)
+            .filter(Boolean);
+          for (const st of advancedStops) {
+            const parts = st.name.toLowerCase().split(/\s+/);
+            if (
+              parts.length >= 2 &&
+              parts[0] === name &&
+              parts.slice(1).every((w, i) => argWordsPre[i] === w)
+            )
+              fail(
+                "未対応：" + st.name + "（" + st.reason + "）",
+                n.line,
+              );
+          }
+        }
         function output(v, raw = false) {
           s.outputs.push({
             channel: "stdout",
@@ -927,17 +1098,23 @@ export function simulateCmd(source, model, limits) {
             break;
           }
           case "goto": {
-            const label = arg.replace(/^:/, "").toLowerCase();
+            // LANE-A1: 移動先が未確定値を含む場合、内部プレースホルダ
+            // （__CMD_VALUE_n__）をラベル名として表示・照合せず、未確認で
+            // 止める（cd／md の未確定引数と同じ扱い）。
+            const resolvedArg = value(arg, s);
+            if (isUnknown(resolvedArg))
+              fail("未確認：移動先のラベル", n.line, "未確認");
+            const label = resolvedArg.replace(/^:/, "").toLowerCase();
             // M-N4(d): ラベル自体がない場合は「見つからない」ではなく不足。
-            if (!arg.trim() || !label)
+            if (!resolvedArg.trim() || !label)
               fail("gotoにはラベルが必要です", n.line, "SyntaxError");
-            api.note(s, n, "ラベル " + arg + " へ移動します");
+            api.note(s, n, "ラベル " + resolvedArg + " へ移動します");
             if (label === "eof") {
               returning(s, n);
               break;
             }
             if (!Object.hasOwn(labels, label))
-              fail("ラベルが見つかりません：" + arg, n.line, "実行エラー");
+              fail("ラベルが見つかりません：" + resolvedArg, n.line, "実行エラー");
             s.tasks = [program(labels[label])];
             break;
           }
@@ -952,9 +1129,14 @@ export function simulateCmd(source, model, limits) {
                 "未対応：外部バッチのcall（同一ファイルの :label のみ）",
                 n.line,
               );
-            const key = label.slice(1).toLowerCase();
+            // LANE-A1: goto と同根。呼び出し先が未確定値を含む場合は
+            // 内部プレースホルダをラベル名として表示・照合しない。
+            const resolvedLabel = value(label, s);
+            if (isUnknown(resolvedLabel))
+              fail("未確認：呼び出し先のラベル", n.line, "未確認");
+            const key = resolvedLabel.slice(1).toLowerCase();
             if (!Object.hasOwn(labels, key))
-              fail("call先ラベルがありません：" + label, n.line, "実行エラー");
+              fail("call先ラベルがありません：" + resolvedLabel, n.line, "実行エラー");
             if (s.cmd.calls.length >= api.limits.depth) {
               api.stop(s, n, "callの深さ上限");
               break;
@@ -966,7 +1148,7 @@ export function simulateCmd(source, model, limits) {
             });
             s.tasks = [program(labels[key])];
             s.cmd.args = args;
-            api.note(s, n, "サブルーチン " + label + " を呼び出します");
+            api.note(s, n, "サブルーチン " + resolvedLabel + " を呼び出します");
             break;
           }
           case "exit": {
@@ -1571,8 +1753,149 @@ export function simulateCmd(source, model, limits) {
             api.note(s, n, "文字列を含む行を選びます");
             break;
           }
-          default:
+          default: {
+            // 高度モード ブロックB1（CMD-ENG）: (1) 高度ハンドラ、
+            // (2) 高度停止一覧（複合名→単独名、長い名前優先）、
+            // (3) 従来文言 の順に解決する。
+            const advCtx = {
+              name,
+              arg,
+              raw,
+              n,
+              s,
+              api,
+              output,
+              value: (t) => value(t, s),
+              words: (t, ln) => words(t, ln ?? n.line),
+              windowsPath,
+              listFiles: (pattern, ln) => listFiles(s, pattern, ln ?? n.line),
+              fsEntry: (p, ln) => fsEntry(s, p, ln ?? n.line),
+              writeFile: (p, content, append = false) =>
+                writeFile(s, p, content, n.line, append),
+              makeDirectory: (p) => makeDirectory(s, p, n.line),
+              removeEntry: (p, recurse = false) =>
+                removeEntry(s, p, n.line, recurse),
+              copyEntry: (from, to, move = false, overwrite = false) =>
+                copyEntry(s, from, to, n.line, move, overwrite),
+              unquote,
+              ciGet: (k) => ciGet(s.vars, k),
+              ciSet: (k, v) => ciSet(s.vars, k, v),
+              fail,
+              isUnknown,
+              formatValue,
+              freshUnknown: (src) =>
+                api.freshUnknown ? api.freshUnknown(src, s) : unknown(src),
+              inputValue: (key, label) => inputValue(s, key, api, n, label),
+              snapshotEnv: () => ({
+                vars: structuredClone(s.vars),
+                cwd: s.model.cwd,
+                delayed: s.cmd.delayed,
+                echo: s.cmd.echo,
+                localsLength: s.cmd.locals.length,
+                // B1A-04: プロセス内状態も保存する。args は子での
+                // shift（破壊的変更）が漏れないよう複製する。
+                dirStack: s.cmd.dirStack ? [...s.cmd.dirStack] : s.cmd.dirStack,
+                verifyState: s.cmd.verifyState,
+                doskeyMacros: s.cmd.doskeyMacros
+                  ? { ...s.cmd.doskeyMacros }
+                  : s.cmd.doskeyMacros,
+                args: [...s.cmd.args],
+                // B1B-02: s.cmd のプロセス内状態の全数洗い出し。
+                // 復元対象: vars（環境変数）・cwd・delayed・echo・
+                // dirStack・verifyState・doskeyMacros・args に加え、
+                // colorValue・promptText・windowTitle（いずれも子
+                // プロセスの表示状態で、親へ漏らさない）。
+                // 復元対象外: errorlevel（引き継ぎが仕様）、calls／
+                // locals（呼び出し・setlocal の機構で localsLength と
+                // ダミーフレームにより処理）、loops／slots／stdin
+                // （for反復・未確定値スロット・パイプ入力の実行機構
+                // でありプロセス状態ではない）。ファイルシステム
+                // （model.files）は実物でも子の変更が残るため対象外。
+                colorValue: s.cmd.colorValue,
+                promptText: s.cmd.promptText,
+                windowTitle: s.cmd.windowTitle,
+              }),
+              enqueueCmdC: (sub, snapshot) => {
+                // exit /b や goto :eof がサブコマンド内で使われても
+                // 親バッチへ漏れないよう、call と同じ枠組みの
+                // ダミーフレームを積み、復帰先を復元ノードにする。
+                const restoreNode = {
+                  k: "adv-cmd-restore",
+                  snapshot,
+                  line: n.line,
+                };
+                const frame = {
+                  tasks: [...s.tasks, restoreNode],
+                  // B1A-04: 参照のまま渡すと子での shift がこの配列を
+                  // 破壊的に変え、復帰時に親の引数までずれる。複製する。
+                  args: [...s.cmd.args],
+                  localDepth: s.cmd.locals.length,
+                };
+                restoreNode.frame = frame;
+                s.cmd.calls.push(frame);
+                s.tasks.push(restoreNode);
+                pushNodes(s, commands(sub, n.line, true));
+              },
+              getStdin: () => s.cmd.stdin,
+            };
+            const firstToken = raw.trim().split(/\s+/)[0].toLowerCase();
+            const handler =
+              advancedCommandHandlers[name] ||
+              advancedCommandHandlers[firstToken];
+            if (handler) return handler(advCtx);
+            const argWords = arg
+              .trim()
+              .toLowerCase()
+              .split(/\s+/)
+              .filter(Boolean);
+            // LANE-A1: 実コマンド名がハイフン／アンダースコア形の場合
+            // （manage-bde／powershell_ise）と、複合名の第2語が拡張子・
+            // 引数つきで打たれる場合（rundll32 printui.dll,PrintUIEntry）
+            // も、空白形の複合名停止へ届くよう、正規化した語列でも照合
+            // する。従来はどちらも「未対応のcmdコマンド」という理由の
+            // ない未知コマンド扱いに落ちていた。
+            const normWords = raw
+              .trim()
+              .toLowerCase()
+              .split(/[\s\-_]+/)
+              .filter(Boolean)
+              .map((w) => w.split(/[.,]/)[0]);
+            let bestStop = null;
+            // B1A-19: 別名停止（import／route）も本体の停止一覧と
+            // 同じ照合で届くようにする（本体の件数は変えない）。
+            for (const st of [...advancedStops, ...advancedAliasStops]) {
+              const parts = st.name.toLowerCase().split(/\s+/);
+              const matches =
+                parts.length === 1
+                  ? parts[0] === name || parts[0] === firstToken
+                  : ((parts[0] === name || parts[0] === firstToken) &&
+                      parts
+                        .slice(1)
+                        .every((w, i) => argWords[i] === w)) ||
+                    parts.every((w, i) => normWords[i] === w);
+              if (
+                matches &&
+                (!bestStop ||
+                  parts.length > bestStop.name.split(/\s+/).length)
+              )
+                bestStop = st;
+            }
+            if (bestStop) {
+              if (bestStop.status === "unverified")
+                fail(
+                  "未検証：" +
+                    bestStop.name +
+                    " は意味論を一次情報で確定できていないため、このモデルでは扱いません",
+                  n.line,
+                  "未確認",
+                );
+              fail(
+                "未対応：" + bestStop.name + "（" + bestStop.reason + "）",
+                n.line,
+              );
+            }
             fail("未対応のcmdコマンド：" + name, n.line);
+          }
         }
     };
     // P-N3 受け皿：shellRuntime 内の受け皿は例外の message をそのまま

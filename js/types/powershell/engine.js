@@ -6,6 +6,17 @@ import {
 } from "../../core/contract.js";
 import { shellRuntime } from "../shell/runtime.js";
 import {
+  advancedCmdlet,
+  advancedAutovar,
+  advancedActive,
+} from "./engine-advanced.js";
+import {
+  advBinary,
+  advUnary,
+  advTypeOp,
+  ADV_BINARY_OPS,
+} from "./engine-advanced-ops.js";
+import {
   fail,
   ciGet,
   ciKey,
@@ -450,6 +461,17 @@ export function simulatePowerShell(source, model, limits) {
           valueType: "string",
         };
       }
+      // 高度モード差分（ブロックB3）: 基礎で扱わない自動変数は高度
+      // レジストリ（engine-advanced.js）に委譲する。有効化前は
+      // advancedAutovar が undefined を返すため基礎の挙動は不変。
+      // 利用者が同名へ代入した場合はその値を優先する。
+      {
+        const advAssigned = ciGet(s.vars, name);
+        if (advAssigned === undefined) {
+          const advVar = advancedAutovar(lower, s, { unknown, hash, object });
+          if (advVar !== undefined) return advVar;
+        }
+      }
       return ciGet(s.vars, name) ?? null;
     }
     // R28-N5: 実行時に決まるメンバー名（引用符の展開・変数・括弧式）を
@@ -621,7 +643,18 @@ export function simulatePowerShell(source, model, limits) {
     function binary(op, a, b, s, n, api, floatCtx = false, inFilter = false) {
       // SH-P3: -f（書式演算子）は宣言どおり未対応だが、括弧不足など
       // 無関係な原因ではなく演算子を名指して止める。
-      if (op === "-f") fail("未対応：書式演算子 -f", n.line);
+      // 高度モード差分（ブロックB3）: 高度モードでは -f と高度二項
+      // 演算子を engine-advanced-ops.js へ委譲する。簡易モードでは
+      // -f は従来どおり名指し停止し、それ以外はパーサが受理しない。
+      if (op === "-f" || ADV_BINARY_OPS.has(op)) {
+        if (!advancedActive()) {
+          if (op === "-f") fail("未対応：書式演算子 -f", n.line);
+          fail("未対応または不正なPowerShellの式：" + op, n.line, "SyntaxError");
+        }
+        return advBinary(op, a, b, {
+          s, n, api, fail, text, enumerate, scalar, isUnknown, unknown, truth,
+        });
+      }
       // SH-P3: 包含演算子 -contains／-notcontains／-in／-notin（-c／-i 変種を含む）。
       // 要素ごとの -eq（-c のとき -ceq）で判定する（about_Comparison_Operators）。
       const containsMatch = op.match(/^-(c|i)?(not)?(contains|in)$/);
@@ -1219,7 +1252,7 @@ export function simulatePowerShell(source, model, limits) {
           if (c === "$") {
             const m = a.value
               .slice(i)
-              .match(/^\$(?:\{([^}]+)\}|([\p{L}_][\p{L}\p{N}_]*|\?))/u);
+              .match(/^\$(?:\{([^}]+)\}|([\p{L}_][\p{L}\p{N}_]*|\?|\$|\^))/u);
             if (m) {
               const v = text(get(s, m[1] || m[2]), a);
               if (isUnknown(v)) {
@@ -1484,6 +1517,16 @@ export function simulatePowerShell(source, model, limits) {
             ? { ...unknown("条件の否定"), op: "!", a: truth(v) }
             : !truth(v);
         if (isUnknown(v)) return { ...unknown("単項演算"), op: a.op, a: v };
+        // 高度モード差分（ブロックB3）: 高度単項演算子（-bnot／
+        // -split／-join）は engine-advanced-ops.js へ委譲する。
+        // パーサは高度モード時のみ受理するため簡易モードでは到達しない。
+        if (["-bnot", "-split", "-join"].includes(a.op)) {
+          if (!advancedActive())
+            fail("未対応または不正なPowerShellの式：" + a.op, a.line, "SyntaxError");
+          return advUnary(a.op, v, {
+            s, n: a, api, fail, text, enumerate, scalar, isUnknown, unknown,
+          });
+        }
         return a.op === "-" ? -numeric(v, a) : numeric(v, a);
       }
       if (a.k === "post") {
@@ -1538,6 +1581,22 @@ export function simulatePowerShell(source, model, limits) {
         }
         if (a.op === "-and" && truth(x) === false) return false;
         if (a.op === "-or" && truth(x) === true) return true;
+        // 高度モード差分（ブロックB3）: ?? は左辺が $null のときだけ
+        // 右辺を評価する（短絡）。型演算子は右辺ノード（型名）を必要と
+        // するため、値へ潰す前にここで委譲する。
+        if (a.op === "??") {
+          if (isUnknown(x)) return unknown("?? の左辺（実行時に決まる値）");
+          if (x !== null && x !== undefined) return x;
+          return read(a.b, s, api);
+        }
+        if (["-is", "-isnot", "-as"].includes(a.op)) {
+          if (!advancedActive())
+            fail("未対応または不正なPowerShellの式：" + a.op, a.line, "SyntaxError");
+          return advTypeOp(a.op, x, a.b, {
+            s, n: a, api, fail, text, isUnknown, unknown,
+            read: (node) => read(node, s, api),
+          });
+        }
         // R28-N3: 小数の由来は右辺の評価（副作用）より前に、現在の
         // 状態で判定する。
         const floatCtx = exprIsDouble(a.a, s) || exprIsDouble(a.b, s);
@@ -1694,12 +1753,17 @@ export function simulatePowerShell(source, model, limits) {
         "copy-item": ["path", "destination", "force"],
         "move-item": ["path", "destination", "force"],
       };
-      const fn = ciGet(s.ps.functions, canonical);
-      if (!fn && !Object.hasOwn(known, name))
+      const fn = ciGet(s.ps.functions, canonical),
+        advKnown = fn ? undefined : advancedCmdlet(canonical);
+      if (!fn && !Object.hasOwn(known, name) && !advKnown)
         fail("未対応のPowerShellコマンドレット／関数：" + c.name, c.line);
-      if (!fn)
+      if (!fn && Object.hasOwn(known, name))
         for (const key of Object.keys(params))
           if (!known[name].includes(key))
+            fail("未対応のパラメータ：" + canonical + " -" + key, c.line);
+      if (!fn && advKnown && !Object.hasOwn(known, name))
+        for (const key of Object.keys(params))
+          if (!advKnown.params.includes(key))
             fail("未対応のパラメータ：" + canonical + " -" + key, c.line);
       const maxArgs = {
         "get-location": 0,
@@ -2087,6 +2151,66 @@ export function simulatePowerShell(source, model, limits) {
           r.s.ps.functions = frame.functions;
           if (frame.dbl !== undefined) r.s.ps.dbl = frame.dbl;
           return { s: r.s, values: r.values, valuesDbl };
+        });
+      }
+      /* 高度モード差分（ブロックB3）: 基礎の known 表にもユーザー定義
+         関数にも無いコマンドは高度レジストリ（engine-advanced.js）に
+         委譲する。有効化前は advancedCmdlet が undefined を返すため
+         基礎の挙動は不変。 */
+      if (advKnown) {
+        if (advKnown.unsupported)
+          fail(
+            "未対応：" + canonical + " はモデルで未対応です（" + advKnown.unsupported + "）",
+            c.line,
+          );
+        if (advKnown.unverified)
+          fail(
+            "未検証：" + canonical + " は意味論を一次情報で確定できていないため停止します（" + advKnown.unverified + "）",
+            c.line,
+          );
+        // FIX-PS-B（Measure-Command 格上げ）: 高度コマンドレットが
+        // スクリプトブロックを現在のスコープで実行するための委譲口。
+        // opt.item を与えると $_／$PSItem を積んで実行し（結果状態側で
+        // 戻す）、opt.args を与えると $args を一時的に差し替える。
+        const execBlock = (block, st, opt = {}) => {
+          const hasItem = Object.hasOwn(opt, "item");
+          if (hasItem) {
+            st.ps.items.push(opt.item);
+            (st.ps.itemDbl ??= []).push(false);
+          }
+          let hadArgs = false,
+            savedArgs;
+          if (opt.args !== undefined) {
+            const k = Object.keys(st.vars).find(
+              (x) => x.toLowerCase() === "args",
+            );
+            hadArgs = k !== undefined;
+            savedArgs = k !== undefined ? st.vars[k] : undefined;
+            ciSet(st.vars, "args", opt.args);
+          }
+          const results = capture(block.body, st, api);
+          return results.map((r) => {
+            if (hasItem) {
+              r.s.ps.items.pop();
+              r.s.ps.itemDbl?.pop();
+            }
+            if (opt.args !== undefined) {
+              if (hadArgs) ciSet(r.s.vars, "args", savedArgs);
+              else {
+                const k = Object.keys(r.s.vars).find(
+                  (x) => x.toLowerCase() === "args",
+                );
+                if (k) delete r.s.vars[k];
+              }
+            }
+            return r;
+          });
+        };
+        return advKnown.run({
+          c, s, api, input, hasInput, args, params, p, fail, text,
+          enumerate, scalar, object, hash, isUnknown, unknown,
+          fsEntry, listFiles, writeFile, makeDirectory, removeEntry,
+          copyEntry, windowsPath, resolvedPath, inputValue, execBlock,
         });
       }
       if (name === "write-output") {

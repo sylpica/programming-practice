@@ -276,6 +276,7 @@ const constructs = [
     "二重引用符では変数と部分式を展開し、単一引用符では展開しません。バッククォートでエスケープします。",
     "$x=3\n\"value=$x; next=$($x+1)\"\n'$x'",
     "about_quoting_rules",
+    { inventoryNames: ["$( )"] },
   ],
   [
     "配列",
@@ -283,6 +284,7 @@ const constructs = [
     "配列を作成し、成功ストリームへ出すと項目が列挙されます。",
     "$a=@(2,4,6)\n$a[1]\n$a.Count",
     "about_arrays",
+    { inventoryNames: ["@( )", "[ ]"] },
   ],
   [
     "ハッシュテーブル",
@@ -290,6 +292,7 @@ const constructs = [
     "キーと値を対応づけます。ハッシュテーブル自体は1つのオブジェクトです。",
     '$h=@{Name="Alice"; Score=80}\n$h["Name"]',
     "about_hash_tables",
+    { inventoryNames: ["@{}"] },
   ],
   [
     "プロパティ",
@@ -395,6 +398,10 @@ const constructs = [
     "真偽値を組み合わせます。-andは両方が真のとき真、-orは少なくとも一方が真のとき真です。-notと!は同じ意味で、真偽を反転します。",
     "$true -and $false\n$true -or $false\n-not $true\n!$false",
     "about_logical_operators",
+    {
+      caution:
+        "未対応の形式は名称・行を示して停止します。モデルでは -and が -or／-xor より強く結合します（実 PowerShell では -and／-or／-xor は同格で左結合です）。",
+    },
   ],
   [
     "三項演算子",
@@ -402,6 +409,7 @@ const constructs = [
     "三項演算子（条件演算子）?: です。条件が真のときは ? の後の値を、偽のときは : の後の値を返します。選ばれた側だけを評価します（短絡）。優先順位は二項演算子より低く、右結合です。PowerShell 7 以降で使えます。",
     '$x = 5\nWrite-Output ($x -gt 3 ? "big" : "small")',
     "about_operators",
+    { inventoryNames: ["? :"] },
   ],
   [
     "算術・代入演算子",
@@ -409,12 +417,13 @@ const constructs = [
     "加算+、減算-、乗算*、除算/、剰余%で計算します。+=・-=・*=・/=・%=は計算結果を変数へ代入する複合代入です。++は変数を1増やし、--は1減らします（前置形式 ++$x・--$x と後置形式 $x++・$x-- の両方に対応します。前置形式では増減後の値、後置形式では増減前の値が式の値になります）。数値リテラルには、16進形式（0x1F＝31）や、単位接尾辞KB／MB／GB／TB／PBを付けた形式（1KB＝1024、2MB＝2097152）も書けます。",
     "$x=10\n$x += 5\n$x\n$x++\n$x\n0x1F\n1KB",
     "about_arithmetic_operators",
+    { inventoryNames: ["( )"] },
   ],
 ];
 export const definition = {
   id: "powershell",
   name: "PowerShell",
-  extensions: [".ps1"],
+  extensions: [".ps1", ".psm1"],
   syntax: {
     name: "PowerShell 7 のWindowsモデル",
     caseSensitive: false,
@@ -435,7 +444,7 @@ export const definition = {
         supported: true,
       }),
     ),
-    ...constructs.map(([name, syntax, description, example, page]) => ({
+    ...constructs.map(([name, syntax, description, example, page, extra]) => ({
       name,
       category: "構文・用語",
       syntax,
@@ -443,8 +452,13 @@ export const definition = {
       example,
       source: about + page + "?view=powershell-7.4",
       returns: "構文に従って変数・制御・成功ストリームを更新",
-      caution: "未対応の形式は名称・行を示して停止します。",
+      caution: extra?.caution ?? "未対応の形式は名称・行を示して停止します。",
       supported: true,
+      // FIX-PS-B（T4-D11）: 棚卸し名の正式な綴りでの検索到達性。
+      // app.js の refSearchText が inventoryNames を索引に含める。
+      ...(extra?.inventoryNames
+        ? { inventoryNames: extra.inventoryNames }
+        : {}),
     })),
   ],
   templates: [
@@ -595,7 +609,12 @@ export const definition = {
       for (const t of tokens) {
         if (t.k === "var") names.add("変数");
         if (t.k === "string") names.add("文字列");
-        const canonical = definition.reference.find(
+        // FIX-SH（T5-D01 是正）: 照合先は「いま有効なカタログ」。
+        // 機構が合成カタログ（definition.__catalogReference）を差し込んだ
+        // 場合はそれを使い（高度専用コマンドレットも拾う）、未設定の
+        // 環境では基礎カタログ（従来どおり）。cmd／Python の先例に従う。
+        const catalog = definition.__catalogReference || definition.reference;
+        const canonical = catalog.find(
           (r) => r.name.toLowerCase() === t.v.toLowerCase(),
         );
         if (canonical) names.add(canonical.name);

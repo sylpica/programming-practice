@@ -1,4 +1,10 @@
 import { additionalTemplates } from "./additional-templates.js";
+// R-2 の「最低限の配線」：本ファイルに残る高度関連の配線は、高度ハンドラ
+// への委譲可否の最小チェック（advancedState.enabled の参照）のみである。
+// モード判定（localStorage・getMode 等）は一切書かない。有効化は機構の
+// advanced-loader が advanced-engine.js の applyAdvancedEngine を呼ぶ
+// 経路でのみ行われる。
+import { advancedFunctions, advancedState } from "./semantics-advanced.js";
 import {
   ScriptParser,
   executeProgram,
@@ -391,6 +397,16 @@ function fxTruth(v, line) {
     );
   }
   return Boolean(v);
+}
+// PFX-D2（高度A2監査）: Power Fx のテキスト比較は大文字と小文字を区別
+// しない（Microsoft Learn の等値演算子の規則。in が大小不区別である
+// ことと同根で、Find／Search／StartsWith 等の既存実装とも揃う）。
+// 比較対象が文字列同士の場合だけ大小を折り畳み、それ以外は従来どおり
+// 厳密に比較する（"5" = 5 は型が違うため不一致のまま）。
+function fxEqual(a, b) {
+  if (typeof a === "string" && typeof b === "string")
+    return a.toLowerCase() === b.toLowerCase();
+  return a === b;
 }
 // R31-N13: モデル形状の入口検証。モデル自体がオブジェクトでない場合と、
 // defaults の実項目（screens／controls／variables／collections／
@@ -1039,11 +1055,11 @@ export const definition = {
           if (op === "=")
             return isUnknown(a) || isUnknown(b)
               ? baseBinary(op, a, b)
-              : a === b;
+              : fxEqual(a, b);
           if (op === "<>")
             return isUnknown(a) || isUnknown(b)
               ? baseBinary(op, a, b)
-              : a !== b;
+              : !fxEqual(a, b);
           if (op === "&")
             return isUnknown(a) || isUnknown(b)
               ? baseBinary(op, a, b, "fx")
@@ -1242,7 +1258,7 @@ export const definition = {
                 // R7-216（バッチ13）: 一致値の型が比較値と異なれば型エラー。
                 let match = get(i);
                 checkSwitchType(value, match, node, api);
-                if (value === match) return get(i + 1);
+                if (fxEqual(value, match)) return get(i + 1);
               }
               return args.length % 2 === 0 ? get(args.length - 1) : null;
             }
@@ -1424,9 +1440,14 @@ export const definition = {
                 let seen = false,
                   total = 0;
                 for (let b of values) {
-                  if (b === null || b === undefined) continue;
+                  // PFX-D1（高度A2監査）: Learn（function-aggregates）の
+                  // 規則どおり、数値でない値（文字列・レコード等）は変換
+                  // せず無視する。Number() で強制変換すると "text" が
+                  // NaN になり合計全体が NaN 化していた。Blank も数え
+                  // ないため、数値が1つも無ければ結果は Blank。
+                  if (typeof b !== "number") continue;
                   seen = true;
-                  total += Number(b);
+                  total += b;
                 }
                 return seen ? total : null;
               }
@@ -1461,12 +1482,11 @@ export const definition = {
               for (let i = 0; i < args.length; i++) {
                 let v = i === 0 ? first : get(i);
                 if (isUnknown(v)) return v;
-                if (v === null) continue;
-                if (typeof v !== "number")
-                  api.fail(
-                    "Sum の数値形式の引数は数値である必要があります",
-                    node,
-                  );
+                // PFX-D1（高度A2監査）: テーブル形と揃え、Learn
+                // （function-aggregates）の規則どおり数値でない引数は
+                // 変換せず無視する（Blank も数えない）。数値が1つも
+                // 無ければ結果は Blank。
+                if (typeof v !== "number") continue;
                 seenNum = true;
                 total += v;
               }
@@ -1801,11 +1821,38 @@ export const definition = {
                 api.fail("Value：数値へ変換できません", node);
               return percent ? Number(numericPart) / 100 : Number(numericPart);
             }
-            default:
+            default: {
+              // 高度モード（ブロックB2）委譲: 基礎で扱えない関数は、高度
+              // 意味論が有効化されている場合に限り、高度側ハンドラが登録
+              // されていればそちらへ委譲する（R-2 の最低限の配線としての
+              // 委譲可否チェックのみ。モード判定はここに書かない）。未適用
+              // 時、および登録が無い関数（未対応・未検証）は従来どおり
+              // 名前を挙げて停止する。基礎の各ケースには一切触れない。
+              const advanced = advancedState.enabled
+                ? advancedFunctions[fn]
+                : undefined;
+              if (advanced)
+                return advanced({
+                  name,
+                  fn,
+                  args,
+                  get,
+                  key,
+                  node,
+                  api,
+                  s,
+                  rowEval,
+                  recalc,
+                  ciKey,
+                  ciDropDuplicates,
+                  fxTruth,
+                  textOf: fxTextOf,
+                });
               api.fail(
                 "このPower Fx関数は説明に対応していません：" + name,
                 node,
               );
+            }
           }
         },
         groups: (p) => [
