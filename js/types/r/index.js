@@ -9,11 +9,17 @@ import {
 } from "../../core/script.js";
 import { rows } from "../../core/data.js";
 import { unknown, isUnknown, LIMITS, formatModelValue as formatValue } from "../../core/contract.js";
+import { advancedBuiltins, advancedNames } from "./functions-advanced.js";
+import { referenceAdvancedNames } from "./reference-advanced-names.js";
 // R15-N15 / RG-14: names that really are R functions. Used only when the name
 // is not bound as a variable, to stop honestly instead of "undefined name".
 const FUNCTION_NAMES = new Set(
   "c sum mean median sd length seq seq_len rep data.frame nrow ncol names is.na as.numeric as.character print cat readline read.csv rnorm runif sample sqrt abs log log10 log2 exp sin cos tan asin acos atan atan2 round floor ceiling trunc min max range sort rev order unique paste paste0 sprintf substr nchar toupper tolower sapply lapply apply mapply tapply vapply replicate list factor matrix array dim rownames colnames head tail summary plot".split(" "),
 );
+// 高度モード B4：高度カタログの名前を実在関数名へ統合する
+// （docs/audit/ADV-B4-SPEC.md 第4章）。未実装の実在名が「未定義の名前」で
+// なく名指しの正直な停止になるようにするための統合である。
+for (const n of advancedNames) FUNCTION_NAMES.add(n);
 const NA = { kind: "NA" },
   // R26-N6：?Reserved に列挙される定数語は代入先にできない（実 R は
   // "invalid (do_set) left-hand side to assignment"）。TRUE／FALSE／NULL は
@@ -111,6 +117,14 @@ const stableMean = (nums) => {
   }
   return total / nums.length;
 };
+// RG-634：ベクトルの名前エントリの表示用プレフィックス。名前は文字列の
+// ときだけ「名前 = 」を付ける。NA 名は基礎層では null で保持され（プレ
+// フィックスなしが既存規約）、高度層 setNames が詰める NA センチネルも
+// 同じ見た目に揃える。従来は NA センチネルが truthy なため文字列化され、
+// "[object Object] = " と表示される artifact があった。names() の意味論
+// （NA 名は NA として返る）はここでは変えない。
+const namePrefix = (nm) =>
+  typeof nm === "string" && nm ? nm + " = " : "";
 // B13-R（R7-249）：print の digits／quote を適用した表示。指定が無ければ
 // 通常の show と同一。digits は有効桁数、quote=FALSE は文字列の引用符を
 // 外す（print.default の規則）。
@@ -125,7 +139,7 @@ const showFormatted = (v, opts) => {
       v
         .map((el, i) => {
           const nm = v.names?.[i];
-          return (nm ? nm + " = " : "") + showFormatted(el, opts);
+          return namePrefix(nm) + showFormatted(el, opts);
         })
         .join(", ") +
       ")"
@@ -160,7 +174,7 @@ const show = (v) =>
           v
             .map((el, i) => {
               const nm = v.names?.[i];
-              return (nm ? nm + " = " : "") + show(el);
+              return namePrefix(nm) + show(el);
             })
             .join(", ") +
           ")"
@@ -721,6 +735,21 @@ for (const r of reference) {
   if (["print","cat","if"].includes(r.name)) r.example = "x <- c(2,4,6)\n" + r.example;
   if (r.name === "while") r.example = "x <- 0\n" + r.example;
 }
+// A4-R-D06-1：scan の照合対象（実効カタログ＝基礎＋高度差分）と、
+// 1トークンで照合すべきドット付き項目名の一覧。
+// 収束ラウンド横断班 SP-21 修正：scanScript は項目の name しか使わないため、
+// 高度分は項目データ本体（reference-advanced.js、ローダーの遅延読み込み対象）
+// ではなく名前だけの照合表（reference-advanced-names.js）から { name } の形で
+// 取り込む（契約 7.1：簡易モードで高度データを静的取得しない）。
+const SCAN_REFS_R = [
+  ...reference,
+  ...referenceAdvancedNames.map((name) => ({ name })),
+];
+const SCAN_DOTTED_R = [
+  ...new Set(
+    SCAN_REFS_R.map((r) => r.name).filter((n) => n && n.includes(".")),
+  ),
+];
 function coerce(values) {
   if (values.some((v) => typeof v === "string"))
     return values.map((v) =>
@@ -902,6 +931,11 @@ const targetName = (a) => {
   }
   return "";
 };
+// 高度モード B4：高度差分ハンドラへ渡す道具一式（SPEC 第4章の H）。
+const H = {
+  vec, flat, isNA, isNaNVal, isMissing, withNames, namesOf, coerce, show,
+  unknown, isUnknown, formatRNum, dfNrow, NA, truth, subset,
+};
 export const definition = {
   id: "r",
   name: "R",
@@ -986,17 +1020,55 @@ export const definition = {
   // 演算子・添字の参照項目（%%／%/%／:／[／[[／$／%in%）が「使用中の
   // 項目」に解決されなかった。R 側でトークンを補完する（演算子トークン
   // は k を持たず、文字列リテラル中の同形文字列と区別できる）。
+  // A4-R-D06-1：照合対象を実効カタログ（基礎＋高度差分 part1〜part10）に
+  // 広げる。あわせて、scanScript が名前を "." で分割して照合する方式では
+  // トークナイザが1トークンで返すドット付き名前（data.frame／is.na 等）が
+  // 永遠に一致しないため、ドット付き項目名は id トークンとの完全一致でも
+  // 照合する。高度演算子（*／+／<- 等）もトークンで補完し、$<-／[<- は
+  // 同一行に $／[ と <- が現れる形で検出する（トークナイザは $<- を
+  // 1トークンにしない）。返した名前のうち実効カタログに無いものは
+  // app.js 側の解決で落ちるため、簡易モードで高度名が残ることはない。
   scan: (code) => {
-    const found = scanScript(code, reference, "r");
+    const found = scanScript(code, SCAN_REFS_R, "r");
     try {
-      const OPS = ["%%", "%/%", "%in%", ":", "[[", "[", "$"];
-      const present = new Set(
-        tokenize(code, "r")
-          .filter((t) => !t.k && OPS.includes(t.v))
-          .map((t) => t.v),
+      const toks = tokenize(code, "r");
+      const idTokens = new Set(
+        toks.filter((t) => t.k === "id").map((t) => t.v),
       );
+      for (const name of SCAN_DOTTED_R)
+        if (idTokens.has(name) && !found.includes(name)) found.push(name);
+      const OPS = [
+        "%%", "%/%", "%in%", ":", "[[", "[", "$",
+        "*", "+", "-", "/", "^", "<", "<=", "==", ">", ">=", "!=",
+        "!", "&", "&&", "|", "||", "<-", "(",
+      ];
+      const present = new Set(
+        toks.filter((t) => !t.k && OPS.includes(t.v)).map((t) => t.v),
+      );
+      // "=" は名前付き引数（呼出の括弧内）でも現れるため、代入として
+      // 現れる括弧深度0のものだけを "=" 項目の使用として数える。
+      let depth = 0;
+      for (const t of toks) {
+        if (t.k) continue;
+        if (t.v === "(") depth++;
+        else if (t.v === ")") depth--;
+        else if (t.v === "=" && depth === 0) present.add("=");
+      }
+      if (present.has("=") && !found.includes("=")) found.push("=");
       for (const op of OPS)
         if (present.has(op) && !found.includes(op)) found.push(op);
+      const byLine = new Map();
+      for (const t of toks) {
+        if (t.k) continue;
+        if (!byLine.has(t.line)) byLine.set(t.line, new Set());
+        byLine.get(t.line).add(t.v);
+      }
+      for (const lineToks of byLine.values()) {
+        if (lineToks.has("<-") && lineToks.has("$") && !found.includes("$<-"))
+          found.push("$<-");
+        if (lineToks.has("<-") && lineToks.has("[") && !found.includes("[<-"))
+          found.push("[<-");
+      }
     } catch {
       // トークナイズできないコードでは scanScript の結果をそのまま返す。
     }
@@ -1099,6 +1171,19 @@ export const definition = {
           // RG-14: a function definition is unsupported, by that name.
           if (a.k === "call" && a.target?.k === "var" && a.target.name === "function")
             unsupported("ユーザ関数定義（function）", a.line);
+          // A4-R-D06-2：定数（TRUE／FALSE／NULL／T／F／NA／NaN／Inf）の
+          // 裸の参照も参照項目として trace refs へ登録する。TRUE 等は
+          // 共有基盤の constants で解決され従来は refs に残らなかった。
+          // T／F は利用者変数として束縛されている場合は定数参照ではない
+          // ため、変数として存在する名前は対象にしない。
+          if (
+            a.k === "var" &&
+            ["TRUE", "FALSE", "NULL", "T", "F", "NA", "NaN", "Inf"].includes(
+              a.name,
+            ) &&
+            !Object.hasOwn(s.vars, a.name)
+          )
+            (s.pendingRefs ??= []).push(a.name);
           if (
             a.k === "var" &&
             FUNCTION_NAMES.has(a.name) &&
@@ -1109,6 +1194,8 @@ export const definition = {
               a.line,
             );
           if (a.k === "unary" && ["-", "+", "!"].includes(a.op)) {
+            // A4-R-D06-2：単項演算子も参照項目として登録する。
+            (s.pendingRefs ??= []).push(a.op);
             let x = api.read(a.arg, s);
             if (isUnknown(x)) return { handled: true, value: x };
             if (vec(x).some((v) => typeof v === "string"))
@@ -1135,6 +1222,9 @@ export const definition = {
             };
           }
           if (a.k === "binary" && (a.op === "&&" || a.op === "||")) {
+            // A4-R-D06-2：&& / || も参照項目として登録する（binary フックを
+            // 通らない経路のため、ここで登録する）。
+            (s.pendingRefs ??= []).push(a.op);
             // R-01 兄弟表面の分離：&& / || は ?Logic により数値を論理値へ
             // 強制する（条件の truth とは別扱い）。共有基盤の短絡評価は
             // semantics.truth（条件用）を使うため、ここで先に評価する。
@@ -1411,6 +1501,24 @@ export const definition = {
           return null;
         },
         write(a, v, s, api, node) {
+          // A4-R-D06-2：代入演算子（<-／=）と置換形（$<-／[<-）も参照項目
+          // として trace refs へ登録する。
+          if (node?.op === "<-" || node?.op === "=")
+            (s.pendingRefs ??= []).push(node.op);
+          if (a.k === "member") (s.pendingRefs ??= []).push("$<-");
+          if (a.k === "index") (s.pendingRefs ??= []).push("[<-");
+          // A4-R-挙動2：$<-／[<- の代入先の基底名が未定義のときは、未定義名
+          // として停止する。従来は対象の読み取りが先に走り、基底名が関数名
+          // と同名（例 df）だと「関数名 df を値として使う形」という真因と
+          // 異なる案内になっていた。代入先は値位置ではないため、基底名が
+          // 変数として存在しないことは未定義名が真因である。
+          if (a.k === "member" || a.k === "index") {
+            let base = a;
+            while (base && (base.k === "member" || base.k === "index"))
+              base = base.target;
+            if (base?.k === "var" && !Object.hasOwn(s.vars, base.name))
+              api.fail(`未定義の名前：${base.name}`, node);
+          }
           if (a.k === "member") {
             let target = api.read(a.target, s);
             if (target?.kind === "data.frame") {
@@ -1605,7 +1713,17 @@ export const definition = {
         },
         binary(op, a, b, node, s, api) {
           // B13-R（R7-247）：演算子も参照項目として trace refs へ登録する。
-          if (["%%", "%/%", ":", "%in%"].includes(op))
+          // A4-R-D06-2：基礎演算子（%% 等）だけが登録され、高度演算子
+          // （*／+／^／比較／&／| 等）が登録されない非対称を解消し、
+          // 参照項目のある二項演算子は全て登録する。
+          if (
+            [
+              "%%", "%/%", ":", "%in%",
+              "*", "+", "-", "/", "^",
+              "<", "<=", "==", ">", ">=", "!=",
+              "&", "|",
+            ].includes(op)
+          )
             (s.pendingRefs ??= []).push(op);
           if (isUnknown(a) || isUnknown(b)) return baseBinary(op, a, b, "r");
           // RG-70（R19-N6）：データフレームへの二項演算は列ごとの要素演算として
@@ -2069,6 +2187,17 @@ export const definition = {
             "cat", "sum", "mean", "median", "sd", "data.frame", "nrow",
             "ncol", "names", "seq_len", "seq", "rep", "read.csv",
           ]);
+          // 高度モード B4：高度差分の組み込み関数（SPEC 第4章）。未知値は
+          // 原則として汎用伝播させ、acceptsUnknown を付けたハンドラに
+          // だけ評価済みの値をそのまま渡す。
+          if (!IMPLEMENTED.has(name) && advancedBuiltins.has(name)) {
+            const handler = advancedBuiltins.get(name);
+            if (!handler.acceptsUnknown && vals.some(isUnknown))
+              return unknown(name + "の引数による");
+            return handler({
+              name, args, vals, named, pos, api, s, node, matchArgs, H,
+            });
+          }
           if (!IMPLEMENTED.has(name))
             api.fail("このR関数は説明に対応していません：" + name, node);
           // RG-80（R21-N4）: 出力系（print／cat）は未知値でも行自体を消さない。
@@ -2443,6 +2572,37 @@ export const definition = {
                   : vec(xVal13);
               if (name === "sum" && a.some(isUnknown))
                 return unknown("sumの引数による");
+              // A4-R是正（sd の文字列強制）：実 R の sd は var 経由で
+              // as.double の強制を行うため、数値文字列は数値に、変換
+              // できない文字列は警告「NAs introduced by coercion」と
+              // ともに NA になる（実 R 4.3.3 実測：sd(c("a","b")) は
+              // エラーではなく NA＋警告、sd(c("a","1","2"), na.rm=TRUE)
+              // は 0.7071）。従来は変換できない文字列を型エラーにして
+              // いた（バッチ13 R7-158 の期待値は実 R と異なるため是正）。
+              // 強制は na.rm の除去より前に行う（実 R の var の順序）。
+              if (name === "sd") {
+                let coercedNA = false;
+                a = a.map((v) => {
+                  if (typeof v !== "string") return v;
+                  const t = v.trim();
+                  if (t === "NaN") return NaN;
+                  if (t === "Inf" || t === "Infinity") return Infinity;
+                  if (t === "-Inf" || t === "-Infinity") return -Infinity;
+                  const n = t === "" ? NaN : Number(t);
+                  if (Number.isNaN(n)) {
+                    coercedNA = true;
+                    return NA;
+                  }
+                  return n;
+                });
+                if (coercedNA)
+                  api.note(
+                    s,
+                    node,
+                    "強制変換でNAが生成されました（NAs introduced by coercion）",
+                    "warning",
+                  );
+              }
               // B13-R（R7-23）：mean(NULL) は NaN ではなく NA＋警告
               // （NULL は numeric(0) とは別物。公式 ?mean の
               // "argument is not numeric or logical: returning NA"）。
@@ -2599,8 +2759,21 @@ export const definition = {
                 if (!nd || typeof nd !== "object") return "";
                 switch (nd.k) {
                   case "literal":
+                    // A4-R deparse是正（文字列リテラル）：実 R の deparse は
+                    // 文字列リテラルを二重引用符つきで出力する（deparse
+                    // ("a") は "\"a\""）。従来は値をそのまま返していたため、
+                    // data.frame("a") の列名が実 R の "X.a." でなく "a" に
+                    // なり、paste("a") 等の呼出内でも引用符の分の "." が
+                    // 欠けていた。エスケープは実 R の deparse に倣う。
                     return typeof nd.value === "string"
-                      ? nd.value
+                      ? '"' +
+                          nd.value
+                            .replace(/\\/g, "\\\\")
+                            .replace(/"/g, '\\"')
+                            .replace(/\n/g, "\\n")
+                            .replace(/\r/g, "\\r")
+                            .replace(/\t/g, "\\t") +
+                          '"'
                       : (nd.raw ?? String(nd.value));
                   case "var":
                     return nd.name;
@@ -2632,7 +2805,16 @@ export const definition = {
                         : s;
                     };
                     const l = operand(nd.a, rightAssoc);
-                    const r = operand(nd.b, !rightAssoc);
+                    // A4-R deparse是正（^ の右辺）：実 R の deparse は二項
+                    // 演算子の右辺にある単項演算子（-／+／!）に括弧を付け
+                    // ない（"2^-1"／"2^!TRUE"／"1/!TRUE" が実測）。従来は
+                    // 優先順位だけで判定し "2^(-1)" と再構成していたため、
+                    // 列名が実 R と食い違っていた。単項演算子自身の被演算子
+                    // への括弧は unary 側の再構成が担う（"2^-(1 + 1)"）。
+                    const r =
+                      nd.b?.k === "unary"
+                        ? deparseArg(nd.b)
+                        : operand(nd.b, !rightAssoc);
                     return NO_SPACE_OPS13.has(nd.op)
                       ? l + nd.op + r
                       : l + " " + nd.op + " " + r;
@@ -2673,9 +2855,28 @@ export const definition = {
                 }
               };
               const makeNameR = (name, seen) => {
-                let out = String(name).replace(/[^\p{L}\p{N}._]/gu, ".");
+                // A4-R deparse是正（X 接頭辞）：実 R の make.names は、変換
+                // 後の文字列ではなく元の名前の先頭文字で X 接頭辞の要否を
+                // 決める（?make.names：名前は文字で始まるか、数字が続か
+                // ない "." で始まらなければならない。先頭が記号・数字・
+                // "_" 等なら X を付ける）。従来は変換後の先頭（数字または
+                // ".＋数字"）だけで判定していたため、"-(1 + 1)" →
+                // "..1...1."（実 R は "X..1...1."）、"!TRUE" → ".TRUE"
+                // （実 R は "X.TRUE"）のように X が欠けていた。関数版
+                // make.names（functions-advanced-char の makeNameOne）と
+                // 同じ規則に揃える。
+                const rawName = String(name);
+                let out = rawName.replace(/[^\p{L}\p{N}._]/gu, ".");
                 if (out === "") out = "X";
-                if (/^[0-9]/.test(out) || /^\.[0-9]/.test(out)) out = "X" + out;
+                else {
+                  const cps = [...rawName];
+                  const needX =
+                    (!/\p{L}/u.test(cps[0]) && cps[0] !== ".") ||
+                    (cps[0] === "." &&
+                      cps.length > 1 &&
+                      /\p{Nd}/u.test(cps[1]));
+                  if (needX) out = "X" + out;
+                }
                 if (
                   ["if", "else", "repeat", "while", "function", "for", "in", "next", "break", "TRUE", "FALSE", "NULL", "Inf", "NaN", "NA"].includes(out)
                 )

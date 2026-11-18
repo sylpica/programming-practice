@@ -86,7 +86,11 @@ for (const [code, pattern] of [
   ['set /a "N=09"', "8進"],
   ['set /a "N=1/0"', "0除算"],
   ["if 1==1 (\necho x", "閉|対応"],
-  ["echo %X:~1%", "部分文字列"],
+  // LANE-A1: 部分文字列・置換展開はカタログ項目「変数展開」の対応宣言
+  // どおり実装されたため（CMD-10/11/12）、未定義変数の形は R26-N23 の
+  // 裁定でリテラルのまま残る。ここでは定義済み変数に対する不正な修飾子
+  // が名指しで拒否されることを固定する。
+  ["set X=abc\necho %X:~x%", "部分文字列"],
 ])
   test("cmd rejects unsupported or invalid " + code, () => {
     const r = run(code);

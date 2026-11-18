@@ -8,7 +8,19 @@ import {
 import { rows, sourceFailure } from "../../core/data.js";
 import { actionProgram, interpolate, resolveVarKey, uiCondition } from "../../core/actions.js";
 import { createActionEditor } from "../../core/action-editor.js";
-import { formatModelValue as formatValue, isUnknown, unknown } from "../../core/contract.js";
+import { formatModelValue as formatValue, isUnknown, unknown, LIMITS } from "../../core/contract.js";
+import { advancedActionHandlers, advancedStops } from "./advanced-engine.js";
+// 高度コマンド名の解決は製品仕様どおり大文字小文字を区別しない
+// （高度テーブルに対してのみ。基礎コマンドの照合は従来どおり）。
+const advancedByLower = new Map();
+for (const name of [
+  ...Object.keys(advancedActionHandlers),
+  ...Object.keys(advancedStops),
+  "do",
+  "repeatIf",
+  "forEach",
+])
+  advancedByLower.set(name.toLowerCase(), name);
 const samples = [
   ["open", "https://example.test/form", ""],
   ["click", "id=submit", ""],
@@ -248,9 +260,19 @@ function validateUiModel(model) {
   if (!("clicks" in model)) fail("モデルにclicksがありません");
   if (!Array.isArray(model.clicks))
     fail("モデルclicksは配列で指定してください");
+  // 高度モードの任意フィールド（csvs）。欠落時は検証対象にしない。
+  if (model.csvs !== undefined) {
+    if (!isUiModelObject(model.csvs))
+      fail("モデルcsvsはオブジェクトで指定してください");
+    for (const [name, text] of Object.entries(model.csvs))
+      if (typeof text !== "string")
+        fail(`モデルcsvs.${name}は文字列で指定してください`);
+  }
   for (const [url, page] of Object.entries(model.pages)) {
     if (!isUiModelObject(page))
       fail(`モデルpages.${url}はオブジェクトで指定してください`);
+    if (page.title !== undefined && typeof page.title !== "string")
+      fail(`モデルpages.${url}.titleは文字列で指定してください`);
     if (page.elements !== undefined) {
       if (!isUiModelObject(page.elements))
         fail(`モデルpages.${url}.elementsはオブジェクトで指定してください`);
@@ -273,6 +295,33 @@ function sanitizeUiEof(e) {
       e.category || "エラー",
     );
   return e;
+}
+// LANE-A1: storedVars は式の語彙として提供していない（高度項目の caution
+// が「未対応として停止」と予告する）。式評価器の「未定義の名前」という
+// 誤った特徴づけに落とさず、予告どおりの文面で止める。文字列リテラルの
+// 内側は対象にしない。高度側（advanced-engine.js の evalReturnExpr）にも
+// 同じ検査がある。
+function assertExprVocabulary(expr, api, node) {
+  let quote = null;
+  let cleaned = "";
+  const text = String(expr ?? "");
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (quote) {
+      if (c === "\\") i++;
+      else if (c === quote) quote = null;
+      cleaned += " ";
+      continue;
+    }
+    if (c === '"' || c === "'") {
+      quote = c;
+      cleaned += " ";
+      continue;
+    }
+    cleaned += c;
+  }
+  if (/(?<![\w$.])storedVars(?![\w$])/i.test(cleaned))
+    api.fail("未対応：storedVars（式の語彙として提供していません）", node);
 }
 export const definition = {
   id: "uivision",
@@ -376,7 +425,7 @@ export const definition = {
     description:
       "UI.Vision ClassicのCommands配列をASTに変換し、モデルURL・要素・入力値の変化を説明します。",
     support:
-      "id= / css= / xpath=等はモデルのキーとの完全一致で解決します。実DOMの探索、画像認識、任意JS、外部ナビゲーション、非同期イベントは未対応です。",
+      "id= / css= / xpath=等はモデルのキーとの完全一致で解決します。実DOMの探索、画像認識、任意JS、外部ナビゲーション、非同期イベントは未対応です。高度コマンドの executeScript／storeEval は executeScript_Sandbox と同じ return 式の部分集合のみ対応し、ページのDOMやwindowにはアクセスできません。CSVはモデルの csvs（ファイル名→テキスト）で表し、ページのタイトルや要素の checked／options／visible 等はモデルに定義した値だけを扱います。",
     sources: [
       {
         title: "UI.Vision公式 Classicコマンド",
@@ -396,12 +445,40 @@ export const definition = {
     try {
       return [
         ...new Set(
-          JSON.parse(code).Commands.map((c) =>
+          JSON.parse(code).Commands.map((c) => {
             // D-5: 製品綴り elseIf は項目名 elseif として数える。
-            c.Command === "elseIf" ? "elseif" : c.Command,
-          ),
+            if (c.Command === "elseIf") return "elseif";
+            // B1C-01: 閉じコマンドは classify と同じく大文字小文字を
+            // 区別せず正規名へ寄せる（実行できるマクロで end が
+            // 使用中解決から漏れないようにする）。
+            const lowerCmd = String(c.Command).toLowerCase();
+            if (lowerCmd === "end") return "end";
+            if (lowerCmd === "endif") return "endIf";
+            if (lowerCmd === "endwhile") return "endWhile";
+            if (reference.some((r) => r.name === c.Command)) return c.Command;
+            // 高度コマンドは大文字小文字を区別せず正規名へ寄せる
+            // （advanced-engine.js のテーブルから導出。遅延ロード対象の
+            // reference-advanced.js は import しない）。
+            return advancedByLower.get(String(c.Command).toLowerCase()) ?? c.Command;
+          }),
         ),
-      ].filter((n) => reference.some((r) => r.name === n));
+      ].filter((n) => {
+        if (reference.some((r) => r.name === n)) return true;
+        // 統合第1弾（差異 D-3 の解消）: 高度名は、機構が差し込んだ有効
+        // カタログ（definition.__catalogReference）に載っている場合だけ
+        // 通す（簡易モードでは基礎カタログのため高度名は出ない）。
+        // 未設定の環境（単体テスト等）では従来どおり通す。
+        if (
+          !(
+            advancedByLower.has(n.toLowerCase()) &&
+            advancedByLower.get(n.toLowerCase()) === n
+          )
+        )
+          return false;
+        const catalogRef = definition.__catalogReference;
+        if (!catalogRef) return true;
+        return catalogRef.some((r) => r.name === n);
+      });
     } catch {
       return [];
     }
@@ -413,31 +490,60 @@ export const definition = {
       let { nodes } = actionProgram(code, {
         key: "Commands",
         command: "Command",
-        classify: (n) =>
-          ({
-            if: "if",
-            elseif: "elseif",
-            // D-5: 製品の正綴りは elseIf（公式ドキュメント／コマンド
-            // 一覧）。elseif だけを通すと elseIf は通常コマンド扱いに
-            // 落ち、if の本体に紛れて黙って無視されていた。分岐として
-            // 受理し、項目名は elseif に寄せる。
-            elseIf: "elseif",
-            else: "else",
-            end: "end",
-            endIf: "end",
-            endWhile: "end",
-            while: "while",
-            times: "loop",
-            forEach: "unsupported-block",
-          })[n] || "action",
+        classify: (n) => {
+          // B1A-03: 高度構造コマンド forEach／do／repeatIf は完全な
+          // 大文字小文字無視で解決する（FOREACH／Foreach／DO／
+          // REPEATIF 等あらゆる大小形）。scan 側の大小無視解決と
+          // 実行側を一致させる。
+          const lower = String(n).toLowerCase();
+          if (lower === "foreach") return "each";
+          if (lower === "do") return "do";
+          if (lower === "repeatif") return "repeatIf";
+          // B1B-01: 閉じコマンド end／endIf／endWhile は大文字小文字を
+          // 区別せず "end" へ解決する（End／END／EndIf／ENDIF／
+          // EndWhile 等）。forEach の開始側が大小無視なのに閉じ側だけ
+          // 大小区別で、存在する End を「ありません」と虚偽帰属して
+          // いた残部。開始コマンド（if／while／else／elseif／times 等）
+          // の大小区別は従来どおり変えない。classify は基礎ブロックと
+          // 共有のため、この受理拡大は if／while／times の閉じにも
+          // 及ぶ（閉じ専用であり、開始側の規則は変わらない）。
+          if (lower === "end" || lower === "endif" || lower === "endwhile")
+            return "end";
+          return (
+            {
+              if: "if",
+              elseif: "elseif",
+              // D-5: 製品の正綴りは elseIf（公式ドキュメント／コマンド
+              // 一覧）。elseif だけを通すと elseIf は通常コマンド扱いに
+              // 落ち、if の本体に紛れて黙って無視されていた。分岐として
+              // 受理し、項目名は elseif に寄せる。
+              elseIf: "elseif",
+              else: "else",
+              end: "end",
+              endIf: "end",
+              endWhile: "end",
+              while: "while",
+              times: "loop",
+            }[n] || "action"
+          );
+        },
       });
       // D-5（refs 側）: 分岐ノードの refs は実際のコマンド名（elseIf）
       // のまま付くため、リファレンス項目名（elseif）に寄せてから実行
       // する（リンク・チップ解決が綴り違いで外れないように）。
+      // CONV2-A1-01（収束判定ラウンド第2回）: 高度コマンド名は実行
+      // （ハンドラ照合・停止照合・classify）と scan のどちらでも大文字
+      // 小文字を区別せず正規名へ寄せるのに、refs だけが原文綴りのまま
+      // 残り、実行後チップの照合（大小区別）から落ちていた。高度名に
+      // ついても refs を正規名へ寄せ、表面間の一致を保つ（D-5 と同型の
+      // 是正。基礎名は advancedByLower に無いため従来どおり不変）。
       (function normalizeElseIfRefs(list) {
         for (let n of list || []) {
           if (Array.isArray(n.refs))
-            n.refs = n.refs.map((r) => (r === "elseIf" ? "elseif" : r));
+            n.refs = n.refs.map((r) => {
+              if (r === "elseIf") return "elseif";
+              return advancedByLower.get(String(r).toLowerCase()) ?? r;
+            });
           normalizeElseIfRefs(n.body);
           normalizeElseIfRefs(n.otherwise);
         }
@@ -551,6 +657,7 @@ export const definition = {
         },
         step(n, s, api) {
           if (n.k === "action-if") {
+            assertExprVocabulary(n.test, api, n);
             let value = uiCondition(n.test, s, api, { caseInsensitive: true }),
               done = [];
             for (let r of api.choose(s, value, n)) {
@@ -586,6 +693,136 @@ export const definition = {
                 [{ ...n, k: "while", test: parseExpression(test) }],
                 [s],
               );
+            }
+            if (n.mode === "each") {
+              // 高度モード forEach: Target は配列変数の名前（${} なし）、
+              // Value は反復変数の名前。公式ドキュメント（foreach）どおり
+              // 変数そのものを対象にするため補間はしない。
+              const arrName = String(n.item.Target ?? "")
+                .trim()
+                .replace(/^\$\{/, "")
+                .replace(/\}$/, "")
+                .trim();
+              const iterName = String(n.item.Value ?? "").trim();
+              if (!iterName) api.fail("forEach：反復変数の名前が空です", n);
+              if (iterName.toUpperCase() === "!TIMES")
+                api.fail(
+                  "!times は読み取り専用の組み込み変数のため保存できません",
+                  n,
+                );
+              const arrKey = varKeyCI(s.vars, arrName);
+              if (arrKey === undefined)
+                api.fail("変数がありません：" + arrName, n);
+              const arr = s.vars[arrKey];
+              if (isUnknown(arr))
+                api.fail(
+                  "forEach：配列の内容は実行時に決まるため未確認です",
+                  n,
+                );
+              if (!Array.isArray(arr))
+                api.fail("forEach：対象は配列ではありません：" + arrName, n);
+              let current = [s],
+                done = [];
+              for (let idx = 0; idx < arr.length; idx++) {
+                if (!current.length) break;
+                if (idx >= LIMITS.iterations) {
+                  for (let st of current) {
+                    api.note(st, n, "ループ上限で説明を停止しました", "limit");
+                    st.halt = true;
+                    done.push(st);
+                  }
+                  current = [];
+                  break;
+                }
+                let next = [];
+                for (let st of current) {
+                  if (st.halt || st.signal) {
+                    done.push(st);
+                    continue;
+                  }
+                  setVarCI(st.vars, iterName, arr[idx]);
+                  api.note(
+                    st,
+                    n,
+                    `繰り返し ${idx + 1}回目：${iterName} に ${formatValue(arr[idx])} を保存します`,
+                  );
+                  st.loopDepth = (st.loopDepth || 0) + 1;
+                  let outs = api.run(n.body, [st]);
+                  for (let out of outs) {
+                    out.loopDepth--;
+                    if (out.signal === "break") {
+                      out.signal = null;
+                      out.__eachBreak = true;
+                    } else if (out.signal === "continue") out.signal = null;
+                    next.push(out);
+                  }
+                }
+                current = [];
+                for (let out of next) {
+                  if (out.__eachBreak) {
+                    delete out.__eachBreak;
+                    done.push(out);
+                  } else current.push(out);
+                }
+              }
+              return [...done, ...current];
+            }
+            if (n.mode === "do") {
+              // 高度モード do...repeatIf: 本体を1回実行してから repeatIf
+              // の条件（n.test）を評価し、真の間繰り返す後判定ループ。
+              let current = [s],
+                done = [],
+                iter = 0;
+              while (current.length) {
+                let next = [];
+                for (let st of current) {
+                  if (st.halt || st.signal) {
+                    done.push(st);
+                    continue;
+                  }
+                  st.loopDepth = (st.loopDepth || 0) + 1;
+                  let outs = api.run(n.body, [st]);
+                  for (let out of outs) {
+                    out.loopDepth--;
+                    if (out.signal === "break") {
+                      out.signal = null;
+                      done.push(out);
+                      continue;
+                    }
+                    if (out.signal === "continue") out.signal = null;
+                    if (out.halt || out.signal) {
+                      done.push(out);
+                      continue;
+                    }
+                    assertExprVocabulary(n.test, api, n);
+                    let value = uiCondition(n.test, out, api, {
+                      caseInsensitive: true,
+                    });
+                    for (let r of api.choose(out, value, n)) {
+                      if (!r.yes) {
+                        api.note(
+                          r.s,
+                          n,
+                          "repeatIfの条件が成立しないためループを終了します",
+                        );
+                        done.push(r.s);
+                      } else if (iter >= LIMITS.iterations) {
+                        api.note(
+                          r.s,
+                          n,
+                          "ループ上限で説明を停止しました",
+                          "limit",
+                        );
+                        r.s.halt = true;
+                        done.push(r.s);
+                      } else next.push(r.s);
+                    }
+                  }
+                }
+                current = next;
+                iter++;
+              }
+              return done;
             }
             let count = Number(interpolate(n.item.Target, s, { caseInsensitive: true }));
             if (!Number.isInteger(count) || count < 0)
@@ -628,20 +865,61 @@ export const definition = {
           }
           // D-6: エラーで止まらない失敗（#LNF）を記録するフラグ。
           let softFail = false;
+          // 高度ハンドラへ渡す ctx の部品（契約 adv-b1）。
+          const markSoftFail = () => {
+            softFail = true;
+          };
+          const getVar = (k) => getVarCI(s.vars, k);
+          const setVar = (k, v) => setVarCI(s.vars, k, v);
           try {
+            // B1A-15: 高度側の停止テーブル照合（大文字小文字無視）を
+            // 変数展開より前に行う。XType の ${KEY_ENTER} や gotoIf の
+            // 未定義変数のように、Target／Value に展開できない式を
+            // 含む通常形でも、展開エラーに遮られず自項目の名前つき
+            // 停止へ到達できるようにする。停止対象でないコマンド
+            // （ハンドラ対象・基礎コマンド）の挙動は変えない。
+            {
+              const canonPre = advancedByLower.get(
+                String(n.action).toLowerCase(),
+              );
+              if (canonPre && advancedStops[canonPre]) {
+                const stPre = advancedStops[canonPre];
+                if (stPre.status === "unverified")
+                  api.fail(
+                    `未検証：${canonPre} は意味論を一次情報で確定できていないため、このモデルでは扱いません（${stPre.reason}）`,
+                    n,
+                  );
+                api.fail(`未対応：${canonPre}（${stPre.reason}）`, n);
+              }
+            }
             // R7-222: Target／Value の変数展開も try の内側で行う。展開は
             // コマンド実行の一部であり、展開で発生したエラーだけが
             // !errorIgnore の継続処理を迂回してマクロを止める理由はない
             // （対照の click 失敗は継続するのに展開失敗は止まっていた）。
             // R7-121: 展開の変数解決は大小文字を区別しない。
             target = interpolate(n.item.Target ?? "", s, { caseInsensitive: true });
-            value = interpolate(n.item.Value ?? "", s, { caseInsensitive: true });
+            // sendKeys の特殊キー表記 ${KEY_...} は変数展開の対象ではない
+            // ため、展開前に退避してから復元する（高度コマンドのみ）。
+            const protectKeys =
+              advancedByLower.get(String(n.action).toLowerCase()) ===
+              "sendKeys";
+            const rawValue = String(n.item.Value ?? "");
+            value = interpolate(
+              protectKeys
+                ? rawValue.replace(/\$\{(KEY_[A-Z0-9_]+)\}/g, "$1")
+                : rawValue,
+              s,
+              { caseInsensitive: true },
+            );
+            if (protectKeys && typeof value === "string")
+              value = value.replace(/(KEY_[A-Z0-9_]+)/g, "${$1}");
             switch (n.action) {
               case "open":
                 if (isUnknown(target)) api.fail("URLが未確定です", n);
                 if (!s.model.pages?.[target])
                   api.fail("モデルにページがありません：" + target, n);
                 s.model.url = target;
+                delete s.model.dialog;
                 api.note(s, n, "モデルページを開きます：" + target);
                 break;
               case "type": {
@@ -699,6 +977,38 @@ export const definition = {
                   }
                   effects.push("モデルに定義された効果を反映します");
                 }
+                // 高度モードのモデル拡張: onClick の alert／confirm／
+                // prompt はダイアログとして記録する。confirm の結果は
+                // 製品の組み込み動作どおり受理（true）。prompt の回答は
+                // answerOnNextPrompt の予約値、無ければ未確定値。
+                if (
+                  e.onClick?.alert !== undefined ||
+                  e.onClick?.confirm !== undefined ||
+                  e.onClick?.prompt !== undefined
+                ) {
+                  if (e.onClick.alert !== undefined)
+                    s.model.dialog = {
+                      type: "alert",
+                      text: String(e.onClick.alert),
+                    };
+                  else if (e.onClick.confirm !== undefined)
+                    s.model.dialog = {
+                      type: "confirm",
+                      text: String(e.onClick.confirm),
+                      answer: true,
+                    };
+                  else {
+                    s.model.dialog = {
+                      type: "prompt",
+                      text: String(e.onClick.prompt),
+                      answer:
+                        s.model.promptAnswer ??
+                        unknown("プロンプトへの入力", "prompt"),
+                    };
+                    delete s.model.promptAnswer;
+                  }
+                  effects.push("ダイアログを表示します");
+                }
                 if (e.href) {
                   if (!s.model.pages[e.href])
                     api.fail("リンク先がモデルにありません", n);
@@ -716,6 +1026,30 @@ export const definition = {
               }
               case "store":
                 assertWritableVar(value);
+                // 高度モード: !csvLine への store は csvsave 用の行へ
+                // 追記する（公式内部変数の意味論）。"NULL" の保存は行の
+                // 上書き（クリア）。基礎の変数には影響しない新規変数。
+                if (String(value).toUpperCase() === "!CSVLINE") {
+                  if (String(target) === "NULL") {
+                    setVarCI(s.vars, "!csvLine", []);
+                    api.note(s, n, "!csvLine を空にします");
+                  } else {
+                    const cur = getVarCI(s.vars, "!csvLine");
+                    const arr = Array.isArray(cur)
+                      ? cur
+                      : cur === undefined
+                        ? []
+                        : [cur];
+                    arr.push(target);
+                    setVarCI(s.vars, "!csvLine", arr);
+                    api.note(
+                      s,
+                      n,
+                      `!csvLine に ${formatValue(target)} を列として追加します`,
+                    );
+                  }
+                  break;
+                }
                 setVarCI(s.vars, String(value), target);
                 api.note(
                   s,
@@ -727,7 +1061,17 @@ export const definition = {
               case "storeValue": {
                 assertWritableVar(value);
                 const e = element(true);
-                setVarCI(s.vars, String(value), !e ? "#LNF" : n.action === "storeValue" ? (e.value ?? "") : ["input", "select", "textarea"].includes(e.tag?.toLowerCase()) ? "" : (e.text ?? ""));
+                const stored = !e ? "#LNF" : n.action === "storeValue" ? (e.value ?? "") : ["input", "select", "textarea"].includes(e.tag?.toLowerCase()) ? "" : (e.text ?? "");
+                if (String(value).toUpperCase() === "!CSVLINE") {
+                  const cur = getVarCI(s.vars, "!csvLine");
+                  const arr = Array.isArray(cur)
+                    ? cur
+                    : cur === undefined
+                      ? []
+                      : [cur];
+                  arr.push(stored);
+                  setVarCI(s.vars, "!csvLine", arr);
+                } else setVarCI(s.vars, String(value), stored);
                 // D-6: ロケーター不一致（#LNF）はエラーで止まらないが、
                 // !statusOK は false になる（公式ドキュメント／Changelog
                 // V5.3.17）。成功扱いのまま true を返すと、後続の状態
@@ -750,6 +1094,7 @@ export const definition = {
                 if (!/^return\s/.test(expr))
                   api.fail("return 式 のみ対応しています", n);
                 expr = expr.replace(/^return\s+/, "").replace(/;\s*$/, "");
+                assertExprVocabulary(expr, api, n);
                 setVarCI(
                   s.vars,
                   String(value),
@@ -791,11 +1136,42 @@ export const definition = {
                 api.note(s, n, "テキストがパターンと一致します");
                 break;
               }
-              default:
+              default: {
+                // 高度モード: 高度テーブルに対してのみ大文字小文字を
+                // 区別しない照合を行い、handler→stops→従来文言の順に
+                // 解決する。
+                const canon = advancedByLower.get(
+                  String(n.action).toLowerCase(),
+                );
+                if (canon && advancedActionHandlers[canon]) {
+                  advancedActionHandlers[canon]({
+                    n,
+                    s,
+                    api,
+                    target,
+                    value,
+                    element,
+                    assertWritableVar,
+                    markSoftFail,
+                    getVar,
+                    setVar,
+                  });
+                  break;
+                }
+                if (canon && advancedStops[canon]) {
+                  const st = advancedStops[canon];
+                  if (st.status === "unverified")
+                    api.fail(
+                      `未検証：${canon} は意味論を一次情報で確定できていないため、このモデルでは扱いません（${st.reason}）`,
+                      n,
+                    );
+                  api.fail(`未対応：${canon}（${st.reason}）`, n);
+                }
                 api.fail(
                   "このコマンドは説明に対応していません：" + n.action,
                   n,
                 );
+              }
             }
             // D-6: #LNF のときは false。あわせて公式ドキュメントの
             // とおり、false は成功したコマンドでは自動では true に
@@ -828,23 +1204,35 @@ export const definition = {
           }
           return [s];
         },
-        groups: (p) => [
-          {
-            title: "変数",
-            entries: Object.entries(p.vars).map(([k, v]) => [
-              k,
-              formatValue(v),
-            ]),
-          },
-          {
-            title: "モデルページ・入力値",
-            entries: [
-              ["URL", formatValue(p.model.url)],
-              ["要素", formatValue(p.model.pages[p.model.url]?.elements)],
-              ["クリック履歴", formatValue(p.model.clicks)],
-            ],
-          },
-        ],
+        groups: (p) => {
+          const groups = [
+            {
+              title: "変数",
+              entries: Object.entries(p.vars).map(([k, v]) => [
+                k,
+                formatValue(v),
+              ]),
+            },
+            {
+              title: "モデルページ・入力値",
+              entries: [
+                ["URL", formatValue(p.model.url)],
+                ["要素", formatValue(p.model.pages[p.model.url]?.elements)],
+                ["クリック履歴", formatValue(p.model.clicks)],
+              ],
+            },
+          ];
+          // 高度モード: dialog／viewport が存在するときだけ項目を追加
+          // する（不在時は基礎層の出力と完全一致させる）。
+          const extra = [];
+          if (p.model.dialog !== undefined)
+            extra.push(["ダイアログ", formatValue(p.model.dialog)]);
+          if (p.model.viewport !== undefined)
+            extra.push(["ウィンドウサイズ", formatValue(p.model.viewport)]);
+          if (extra.length)
+            groups.push({ title: "ダイアログ・表示", entries: extra });
+          return groups;
+        },
       };
       let result = executeProgram(nodes, model, semantics, limits);
       // R26-N18: 最終状態（paths[].vars）は JSON として直列化される
@@ -860,6 +1248,20 @@ export const definition = {
         p.vars = finiteSafeSnapshot(p.vars);
         if (p.error?.message?.includes("<eof>"))
           p.error.message = "式を解釈できません（式が途中で終わっています）";
+        // LANE-A1: 条件位置のエラー（if／while の条件式の失敗）はコマンド
+        // ディスパッチャを経由しないため、!statusOK が true のまま残り、
+        // 項目自身の説明（エラーになった場合 false になる）と公式仕様に
+        // 矛盾していた。エラーで終わったパスでは false に是正する。
+        // 最終状態グループは実行時に確定済みのため、併せて再生成する。
+        if (p.error) {
+          const key = Object.keys(p.vars || {}).find(
+            (k) => k.toLowerCase() === "!statusok",
+          );
+          if (key && p.vars[key] !== false) {
+            p.vars[key] = false;
+            p.groups = semantics.groups(p);
+          }
+        }
       }
       return result;
     } catch (e) {

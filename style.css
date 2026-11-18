@@ -119,8 +119,13 @@ select {
 [hidden] {
   display: none !important;
 }
+/* 統合第1弾・追加UI変更（ユーザー指示 2026-11-17）: ヘッダのタイトル
+   文（プログラミング練習／コードとフローの動きを学ぶ。）は削除済み。
+   ヘッダはアイコンと状態表示だけとし、高さも内容に合わせて縮めた
+   （83px → 62px）。空いた分は作業域（.workspace の dvh オフセット）と
+   コード入力欄の拡大に回す。 */
 .site-header {
-  height: 83px;
+  height: 62px;
   max-width: 1440px;
   margin: auto;
   display: flex;
@@ -132,23 +137,10 @@ select {
 .brand {
   display: flex;
   align-items: center;
-  gap: 12px;
-  font-size: 20px;
-  font-weight: 750;
-  color: var(--deep);
   text-decoration: none;
-  line-height: 1.4;
 }
 .brand img {
   flex-shrink: 0;
-}
-.brand small {
-  display: block;
-  font-size: 11px;
-  font-weight: 400;
-  letter-spacing: 0.07em;
-  color: var(--muted);
-  margin-top: 4px;
 }
 .status {
   font-size: 11px;
@@ -280,7 +272,10 @@ main {
 }
 .editor-wrap {
   display: flex;
-  height: 330px;
+  /* 追加UI変更（2026-11-17、緩和条件つき）: 330px → 400px に拡大。
+     コード入力欄については「一画面に収める」を例外的に緩め、少しだけ
+     画面からはみ出す配分を許容する（ユーザー指示 2026-11-17 12:24）。 */
+  height: 400px;
   background: #fbfcfa;
   overflow: hidden;
 }
@@ -584,6 +579,12 @@ main {
   background: #fff2df;
   color: #916322;
 }
+/* 高度モード基盤: 未検証バッジ。未対応（橙系）と文言・配色の両方で
+   区別する。文字 #2f4d7a／背景 #e3ecf7 はコントラスト比 7.0 以上。 */
+.badge.unverified {
+  background: #e3ecf7;
+  color: #2f4d7a;
+}
 /* R29-N5（U-45）: コード練習ビューのリファレンス一覧ボタンと使用中チップでも
    参照専用（未対応）を判別できるようにする。配色はバッジ
    （.badge.unsupported）と同一（文字 #916322／背景 #fff2df、コントラスト
@@ -592,6 +593,13 @@ main {
 .chip.unsupported {
   background: #fff2df;
   color: #916322;
+}
+/* 高度モード基盤: 未検証の一覧ボタン／チップは未対応と文言・配色の
+   両方で区別する（バッジ .badge.unverified と同一配色）。 */
+.ref-list button.unverified,
+.chip.unverified {
+  background: #e3ecf7;
+  color: #2f4d7a;
 }
 .unsupported-tag {
   display: inline-block;
@@ -818,10 +826,8 @@ footer p {
     min-width: 0;
   }
   .site-header {
-    height: 76px;
-  }
-  .brand {
-    font-size: 18px;
+    /* 追加UI変更（2026-11-17）: タイトル文削除に合わせて 76px → 58px。 */
+    height: 58px;
   }
   .status {
     font-size: 10px;
@@ -837,7 +843,8 @@ footer p {
     max-height: none;
   }
   .editor-wrap {
-    height: 320px;
+    /* 追加UI変更（2026-11-17、緩和条件つき）: 320px → 390px に拡大。 */
+    height: 390px;
   }
 }
 @media (max-width: 480px) {
@@ -847,12 +854,8 @@ footer p {
   .site-header {
     padding-inline: 14px;
   }
-  .brand small {
-    font-size: 9px;
-  }
   .brand {
     gap: 8px;
-    font-size: 17px;
   }
   .brand img {
     width: 31px;
@@ -976,6 +979,60 @@ footer p {
   flex-wrap: wrap;
   margin-bottom: 20px;
 }
+/* 高度モード基盤: モード切替セグメントトグル。ボタン文言は折り返さず、
+   狭幅ではトグルごと次行へ回る（実質縦書き崩れを作らない）。 */
+.mode-toggle {
+  display: inline-flex;
+  flex-shrink: 0;
+  border: 1px solid var(--border-strong);
+  border-radius: 7px;
+  overflow: hidden;
+  background: #fff;
+}
+.mode-toggle button {
+  border: 0;
+  border-radius: 0;
+  padding: 6px 14px;
+  background: #fff;
+  color: var(--ink);
+  white-space: nowrap;
+  line-height: 1.6;
+}
+.mode-toggle button + button {
+  border-left: 1px solid var(--border-strong);
+}
+.mode-toggle button[aria-pressed="true"] {
+  background: var(--green);
+  color: #fff;
+}
+.mode-toggle button[aria-pressed="false"]:hover {
+  background: var(--pale);
+}
+/* モード開示文: 1行程度の小さな注記として置き、本題を押し下げない。 */
+.mode-note {
+  font-size: 11px;
+  line-height: 1.6;
+  color: var(--muted);
+  margin: -12px 0 14px;
+  overflow-wrap: anywhere;
+}
+#refStatusSummary {
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+/* 統合第1弾: 高度エンジンフックの注記（CFN の台帳外タイプ注記等）。
+   結果の成否には影響しない告知であり、ステータスの下に小さく置く。 */
+.result-notes {
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--muted);
+  margin: 4px 0 8px;
+  overflow-wrap: anywhere;
+}
+.result-notes p {
+  margin: 0;
+}
 .type-selector label {
   flex-shrink: 0;
   font-weight: 600;
@@ -1074,11 +1131,15 @@ footer p {
 .trace button > span:last-child { min-width: 0; }
 #templateExplanation { margin-top: 18px; max-height: 280px; overflow: auto; }
 @media (min-width: 761px) {
-  .workspace { height: max(600px, calc(100dvh - 278px)); }
+  /* 追加UI変更（2026-11-17）: ヘッダ縮小（83px → 62px）で空いた 21px を
+     作業域へ回し、オフセットを 278px → 257px とした。床 600px は不変。 */
+  .workspace { height: max(600px, calc(100dvh - 257px)); }
   .left-column {
     height: 100%;
     display: grid;
-    grid-template-rows: minmax(0, 1fr) minmax(0, 1fr) minmax(0, .65fr);
+    /* 追加UI変更（2026-11-17）: コード入力欄を主役にするため先頭行の
+       配分を 1fr → 1.3fr に拡大（作業域の総高は不変）。 */
+    grid-template-rows: minmax(0, 1.3fr) minmax(0, 1fr) minmax(0, .65fr);
     gap: 12px;
   }
   .right-column {
@@ -1109,8 +1170,8 @@ footer p {
 .side-glossary dd { margin: 3px 0 0; font-size: 12px; overflow-wrap: anywhere; }
 #templateExplanation { max-height: none; overflow: visible; }
 @media (min-width: 761px) {
-  .left-column { grid-template-rows: minmax(0, 1fr) auto minmax(0, 1fr) minmax(0, .65fr); }
-  .left-column:has(.model-panel[open]) { grid-template-rows: minmax(0, 1fr) minmax(125px, .8fr) minmax(0, 1fr) minmax(0, .65fr); }
+  .left-column { grid-template-rows: minmax(0, 1.3fr) auto minmax(0, 1fr) minmax(0, .65fr); }
+  .left-column:has(.model-panel[open]) { grid-template-rows: minmax(0, 1.3fr) minmax(125px, .8fr) minmax(0, 1fr) minmax(0, .65fr); }
   .right-column { grid-template-rows: auto minmax(0, 1fr) minmax(0, .55fr); }
   #templateExplanation { width: calc(100% - 368px); }
 }
@@ -1121,10 +1182,11 @@ footer p {
   .glossary-panel { order: 7; }
 }
 @media (max-width: 760px) {
-  .practice-heading > div, #syntaxName, .brand small { display: none; }
+  .practice-heading > div, #syntaxName { display: none; }
   .type-selector { margin-bottom: 12px; }
   .practice-heading { margin-bottom: 12px; }
-  .editor-wrap { height: 265px; }
+  /* 追加UI変更（2026-11-17、緩和条件つき）: 265px → 320px に拡大。 */
+  .editor-wrap { height: 320px; }
 }
 @media (min-width: 761px) {
   .workspace { grid-template-rows: minmax(0, 1fr); }

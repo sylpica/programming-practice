@@ -14,6 +14,7 @@ import { definition as cpp } from "./cpp/index.js";
 import { definition as csharp } from "./csharp/index.js";
 import { definition as javascript } from "./javascript/index.js";
 import { pseudoDefinition as pseudo } from "./pseudo/index.js";
+import { definition as powerautomatecloud } from "./powerautomatecloud/index.js";
 export const definitions = [
   vba,
   imagej,
@@ -32,8 +33,19 @@ export const definitions = [
   powershell,
   pseudo,
 ];
+// 高度モードでのみ現れる種別（U-47：Power Automate（クラウド））。
+// 簡易モードの種別集合（definitions）には含めない：definitions の件数や
+// 基礎カタログ集計（全種別の項目数ピン等）は簡易モードの集合に対する
+// ものとして従来どおりに保ち、表示可否は app.js がモードで振り分ける。
+// getDefinition は両集合から引く（Worker が高度モードの実行で必要）。
+powerautomatecloud.advancedOnly = true;
+export const advancedOnlyDefinitions = [powerautomatecloud];
 export function getDefinition(id) {
-  return definitions.find((d) => d.id === id) || definitions[0];
+  return (
+    definitions.find((d) => d.id === id) ||
+    advancedOnlyDefinitions.find((d) => d.id === id) ||
+    definitions[0]
+  );
 }
 export function validateDefinition(d) {
   for (let key of [
@@ -102,7 +114,7 @@ export function validateDefinition(d) {
   return d;
 }
 const ids = new Set();
-for (let d of definitions) {
+for (let d of [...definitions, ...advancedOnlyDefinitions]) {
   validateDefinition(d);
   d.templates.forEach((t, i) => {
     t.level = t.level === "入門" ? "基礎" : (t.level || ["基礎", "実践", "応用"][i % 3]);

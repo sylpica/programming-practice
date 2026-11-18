@@ -365,11 +365,11 @@
   },
   {
     "kind": "uivision",
-    "name": "unsupported DOM script",
+    "name": "DOM script window is not modeled",
     "code": "{\"Commands\": [{\"Command\": \"executeScript\", \"Target\": \"return window.secret;\", \"Value\": \"X\"}]}",
     "outputs": null,
     "paths": 1,
-    "error": "対応|executeScript",
+    "error": "未定義の名前：window",
     "model": null
   },
   {

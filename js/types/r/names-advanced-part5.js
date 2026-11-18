@@ -1,0 +1,45 @@
+// 高度モード B4S：R 高度カタログ名前一覧 part5（stats 検定・検出力：stest 班）。
+// FUNCTION_NAMES へ統合されるため、実在する「関数名」だけを収録する。
+// 除外：p.adjust.methods（データオブジェクト＝文字列ベクトルの定数であり
+// 関数ではない。項目は reference-advanced-part5.js に未対応として作るが、
+// 定数名を FUNCTION_NAMES に入れると値としての読みが壊れるため入れない。
+// 根拠は報告書 docs/audit/ADV-B4S-stest.md）。
+export const names = [
+  "ansari.test",
+  "bartlett.test",
+  "binom.test",
+  "Box.test",
+  "TukeyHSD",
+  "chisq.test",
+  "cor.test",
+  "fisher.test",
+  "fligner.test",
+  "friedman.test",
+  "kruskal.test",
+  "ks.test",
+  "mantelhaen.test",
+  "mauchly.test",
+  "mcnemar.test",
+  "mood.test",
+  "oneway.test",
+  "poisson.test",
+  "PP.test",
+  "prop.test",
+  "prop.trend.test",
+  "quade.test",
+  "shapiro.test",
+  "t.test",
+  "var.test",
+  "wilcox.test",
+  "pairwise.prop.test",
+  "pairwise.t.test",
+  "pairwise.wilcox.test",
+  "pairwise.table",
+  "p.adjust",
+  "power",
+  "power.anova.test",
+  "power.prop.test",
+  "power.t.test",
+  "print.htest",
+  "print.power.htest",
+];
