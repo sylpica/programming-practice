@@ -712,13 +712,13 @@ export const REFERENCE = [
   "category": "構文",
   "importance": "重要",
   "level": "基礎",
-  "summary": "リソースの後始末（ファイルのクローズ等）を自動化する構文。本アプリでは本文を実行する部分対応で、後始末そのものは再現しない。",
+  "summary": "リソースの後始末（ファイルのクローズ等）を自動化する構文。__enter__／__exit__ を定義したオブジェクトでは、本アプリでもその処理を含めて再現する。",
   "syntax": "with 式 as 変数:\n    処理",
   "args": "—",
   "returns": "—（構文のため戻り値なし）",
   "example": "class Ctx:\n    def __enter__(self):\n        return self\n    def __exit__(self, *args):\n        return False\nwith Ctx() as c:\n    print(\"本文を実行\")",
   "expected": "本文を実行",
-  "pitfalls": "ブロックを抜けると例外時でも __exit__ が呼ばれ後始末される（実際の Python）。対象はコンテキストマネージャ対応オブジェクトに限る。本アプリでは部分対応である：本文は実行されるが、__enter__／__exit__ の実際の処理や後始末は再現されず、as 変数には未確定値が入る。open() と組み合わせた場合は open 自体が未対応のため停止する。",
+  "pitfalls": "__enter__／__exit__ を定義したオブジェクトでは、その処理も含めて実際の Python と同じに再現する。ブロックを抜けると、例外時でも __exit__ が呼ばれ、__exit__ が True を返すと起きた例外は抑えられる。as 変数には __enter__ の戻り値が入る。定義していないオブジェクトに使う場合は部分対応である：本文は実行されるが、as 変数には未確定値が入り、後始末は再現されない。open() と組み合わせた場合は open 自体が未対応のため停止する。",
   "related": [
    "open",
    "try"
