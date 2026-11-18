@@ -1,0 +1,57 @@
+mother namespace: 3182 members: 1733
+mother union: 4915 intersection ns∩mem: 0
+loaded: ["advanced-manifest.js","reference-advanced-part1.js","reference-advanced-part2.js","reference-advanced-part3.js","reference-advanced-part4.js","reference-advanced-part5.js","reference-advanced-part6.js","reference-advanced-part7.js","reference-advanced-part8.js","templates-advanced.js","glossary-advanced.js"] missing: [] failed: []
+base reference: 33 {"total":33,"supported":33,"unsupported":0,"unverified":0}
+referenceAdvanced: 4915 {"total":4915,"supported":288,"unsupported":4627,"unverified":0}
+merged: 4948 {"total":4948,"supported":321,"unsupported":4627,"unverified":0} problems: 0
+merged templates: 14 glossary: 18
+adv unique: 4915 dup: 0
+catalog∩motherNs: 3180 {"total":3180,"supported":180,"unsupported":3000,"unverified":0}
+catalog∩motherMem: 1714 {"total":1714,"supported":106,"unsupported":1608,"unverified":0}
+
+=== set diff ===
+motherOnly: 21 ["std::operator","std::operator\\","std::string::basic_string","std::string::~basic_string","std::string_view::basic_string_view","std::istream::basic_istream","std::istream::~basic_istream","std::ostream::basic_ostream","std::ostream::~basic_ostream","std::iostream::basic_iostream","std::iostream::~basic_iostream","std::streambuf::basic_streambuf","std::streambuf::~basic_streambuf","std::stringstream::basic_stringstream","std::istringstream::basic_istringstream","std::ostringstream::basic_ostringstream","std::ifstream::basic_ifstream","std::ofstream::basic_ofstream","std::fstream::basic_fstream","std::regex::basic_regex","std::regex::~basic_regex"]
+catalogOnly: 21 ["std::operator|=","std::operator|","std::string::string","std::string::~string","std::string_view::string_view","std::istream::istream","std::istream::~istream","std::ostream::ostream","std::ostream::~ostream","std::iostream::iostream","std::iostream::~iostream","std::streambuf::streambuf","std::streambuf::~streambuf","std::stringstream::stringstream","std::istringstream::istringstream","std::ostringstream::ostringstream","std::ifstream::ifstream","std::ofstream::ofstream","std::fstream::fstream","std::regex::regex","std::regex::~regex"]
+adv items without explicit valid status: 0
+
+=== F-02 search ===
+self-name reachability: 4948 / 4948 fail: []
+syntax spellings: 1848 fail: 0 []
+mother self-reach: 4894 other-only: ["std::operator"] none: 20 ["std::operator\\","std::string::basic_string","std::string::~basic_string","std::string_view::basic_string_view","std::istream::basic_istream","std::istream::~basic_istream","std::ostream::basic_ostream","std::ostream::~basic_ostream","std::iostream::basic_iostream","std::iostream::~basic_iostream","std::streambuf::basic_streambuf","std::streambuf::~basic_streambuf","std::stringstream::basic_stringstream","std::istringstream::basic_istringstream","std::ostringstream::basic_ostringstream","std::ifstream::basic_ifstream","std::ofstream::basic_ofstream","std::fstream::basic_fstream","std::regex::basic_regex","std::regex::~basic_regex"]
+adv items with inventoryNames: 0 with scan string: 0
+
+=== scan ===
+scan reached (merged, all items): 4707
+advanced supported: 288 scan-unreached supported: 10 ["std::string::operator+=","std::string::operator=","std::string::operator[]","std::string::~string","std::array::operator=","std::array::operator[]","std::vector::operator=","std::vector::operator[]","std::vector::~vector","std::pair::operator="]
+advanced all unreached: 236
+advanced unreached with identifier-only names: 0 []
+advanced non-identifier names total: 236
+cpp-adv-sort-search scan: ["std::vector::push_back","std::vector::begin","std::vector::end","std::vector::front","std::vector::back","std::vector","std::distance","std::sort","std::lower_bound","std::binary_search"]
+cpp-adv-sort-search refs: ["std::vector::push_back","std::vector::begin","std::vector::end","std::vector::front","std::vector::back","std::sort","std::binary_search","std::lower_bound","std::distance"] refs⊆scan∪{?}: []
+
+=== REG-06 base-only ===
+advanced names appearing in base search text: 5 ["std::end","std::cin","std::nullptr_t","std::NULL","std::get"]
+advanced names resolved by base-only scan: 0 []
+  std::sort: baseHit=false mergedSelfHit=true mergedStatus=supported
+  std::accumulate: baseHit=false mergedSelfHit=true mergedStatus=supported
+  std::binary_search: baseHit=false mergedSelfHit=true mergedStatus=supported
+  std::numbers::pi: baseHit=false mergedSelfHit=true mergedStatus=supported
+  std::string::npos: baseHit=false mergedSelfHit=true mergedStatus=supported
+  std::vector::push_back: baseHit=false mergedSelfHit=true mergedStatus=supported
+  std::popcount: baseHit=false mergedSelfHit=true mergedStatus=supported
+  std::clamp: baseHit=false mergedSelfHit=true mergedStatus=supported
+  std::stoi: baseHit=false mergedSelfHit=true mergedStatus=supported
+
+=== cpp template refs ===
+cpp-adv-sort-search: refs=9
+cpp-adv-numeric-accumulate: refs=11
+cpp-adv-string-search: refs=6
+cpp-adv-string-edit: refs=6
+cpp-adv-math-numbers: refs=7
+cpp-adv-convert: refs=4
+cpp-adv-cstring-cctype: refs=6
+cpp-adv-bit-pair: refs=8
+total refs: 57 dangling: 0 non-supported targets: 0
+ledger written: ledger-conv-cpp-names.tsv
+
+DONE CPP

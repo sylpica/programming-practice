@@ -1,0 +1,3052 @@
+[
+ {
+  "item": "std::string::append_range",
+  "stratum": "A-supported-class-member",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "エラー:この関数は説明に対応していません：s.append_range",
+  "outputs": "",
+  "probe": "std::string s = \"abc\"; s.append_range(s); std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::string::assign_range",
+  "stratum": "A-supported-class-member",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "エラー:この関数は説明に対応していません：s.assign_range",
+  "outputs": "",
+  "probe": "std::string s = \"abc\"; s.assign_range(s); std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::string::c_str",
+  "stratum": "A-supported-class-member",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "エラー:この関数は説明に対応していません：s.c_str",
+  "outputs": "",
+  "probe": "std::string s = \"abc\"; s.c_str(); std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::string::capacity",
+  "stratum": "A-supported-class-member",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "エラー:この関数は説明に対応していません：s.capacity",
+  "outputs": "",
+  "probe": "std::string s = \"abc\"; s.capacity(); std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::string::copy",
+  "stratum": "A-supported-class-member",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "エラー:この関数は説明に対応していません：s.copy",
+  "outputs": "",
+  "probe": "std::string s = \"abc\"; char buf[8] = {}; s.copy(buf, 2); std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::string::data",
+  "stratum": "A-supported-class-member",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "エラー:この関数は説明に対応していません：s.data",
+  "outputs": "",
+  "probe": "std::string s = \"abc\"; s.data(); std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::string::get_allocator",
+  "stratum": "A-supported-class-member",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "エラー:この関数は説明に対応していません：s.get_allocator",
+  "outputs": "",
+  "probe": "std::string s = \"abc\"; s.get_allocator(); std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::string::insert_range",
+  "stratum": "A-supported-class-member",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "エラー:この関数は説明に対応していません：s.insert_range",
+  "outputs": "",
+  "probe": "std::string s = \"abc\"; s.insert_range(s.begin(), s); std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::string::max_size",
+  "stratum": "A-supported-class-member",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "エラー:この関数は説明に対応していません：s.max_size",
+  "outputs": "",
+  "probe": "std::string s = \"abc\"; s.max_size(); std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::string::replace_with_range",
+  "stratum": "A-supported-class-member",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "エラー:この関数は説明に対応していません：s.replace_with_range",
+  "outputs": "",
+  "probe": "std::string s = \"abc\"; s.replace_with_range(s.begin(), s.end(), s); std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::string::resize_and_overwrite",
+  "stratum": "A-supported-class-member",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "エラー:この関数は説明に対応していません：s.resize_and_overwrite",
+  "outputs": "",
+  "probe": "std::string s = \"abc\"; s.resize_and_overwrite(); std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::string::allocator_type",
+  "stratum": "A-supported-class-member",
+  "prev": "unnamed-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：std::string::allocator_type は未対応です",
+  "outputs": "",
+  "probe": "std::string::allocator_type probeVar; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::string::const_iterator",
+  "stratum": "A-supported-class-member",
+  "prev": "silent-success",
+  "now": "silent-success",
+  "nowStatus": "supported",
+  "error": "",
+  "outputs": "a",
+  "probe": "std::string s = \"abc\"; std::string::const_iterator it = s.cbegin(); std::cout << *it;  return 0; }"
+ },
+ {
+  "item": "std::string::const_pointer",
+  "stratum": "A-supported-class-member",
+  "prev": "unnamed-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：std::string::const_pointer は未対応です",
+  "outputs": "",
+  "probe": "std::string::const_pointer probeVar; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::string::const_reference",
+  "stratum": "A-supported-class-member",
+  "prev": "unnamed-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：std::string::const_reference は未対応です",
+  "outputs": "",
+  "probe": "std::string::const_reference probeVar; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::string::const_reverse_iterator",
+  "stratum": "A-supported-class-member",
+  "prev": "silent-success",
+  "now": "silent-success",
+  "nowStatus": "supported",
+  "error": "",
+  "outputs": "c",
+  "probe": "std::string s = \"abc\"; std::string::const_reverse_iterator it = s.rbegin(); std::cout << *it;  return 0; }"
+ },
+ {
+  "item": "std::string::difference_type",
+  "stratum": "A-supported-class-member",
+  "prev": "unnamed-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：std::string::difference_type は未対応です",
+  "outputs": "",
+  "probe": "std::string::difference_type probeVar; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::string::iterator",
+  "stratum": "A-supported-class-member",
+  "prev": "silent-success",
+  "now": "silent-success",
+  "nowStatus": "supported",
+  "error": "",
+  "outputs": "a",
+  "probe": "std::string s = \"abc\"; std::string::iterator it = s.begin(); std::cout << *it;  return 0; }"
+ },
+ {
+  "item": "std::string::pointer",
+  "stratum": "A-supported-class-member",
+  "prev": "unnamed-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：std::string::pointer は未対応です",
+  "outputs": "",
+  "probe": "std::string::pointer probeVar; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::string::reference",
+  "stratum": "A-supported-class-member",
+  "prev": "unnamed-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：std::string::reference は未対応です",
+  "outputs": "",
+  "probe": "std::string::reference probeVar; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::string::reverse_iterator",
+  "stratum": "A-supported-class-member",
+  "prev": "silent-success",
+  "now": "silent-success",
+  "nowStatus": "supported",
+  "error": "",
+  "outputs": "c",
+  "probe": "std::string s = \"abc\"; std::string::reverse_iterator it = s.rbegin(); std::cout << *it;  return 0; }"
+ },
+ {
+  "item": "std::string::size_type",
+  "stratum": "A-supported-class-member",
+  "prev": "unnamed-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：std::string::size_type は未対応です",
+  "outputs": "",
+  "probe": "std::string::size_type probeVar; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::string::traits_type",
+  "stratum": "A-supported-class-member",
+  "prev": "unnamed-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：std::string::traits_type は未対応です",
+  "outputs": "",
+  "probe": "std::string::traits_type probeVar; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::string::value_type",
+  "stratum": "A-supported-class-member",
+  "prev": "unnamed-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：std::string::value_type は未対応です",
+  "outputs": "",
+  "probe": "std::string::value_type probeVar; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::array::data",
+  "stratum": "A-supported-class-member",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "エラー:この関数は説明に対応していません：a.data",
+  "outputs": "",
+  "probe": "std::array<int, 3> a = {7, 8, 9}; a.data(); std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::array::const_iterator",
+  "stratum": "A-supported-class-member",
+  "prev": "silent-success",
+  "now": "unnamed-stop",
+  "nowStatus": "supported",
+  "error": "未対応:この構文は説明に対応していません：キャストのこの形式は未対応です（独自型・ポインタ型）",
+  "outputs": "",
+  "probe": "(補正形で再実行) std::array<int, 3>::const_iterator::const_iterator it = obj.begin/rbegin/cbegin; std::cout << *it;"
+ },
+ {
+  "item": "std::array::const_pointer",
+  "stratum": "A-supported-class-member",
+  "prev": "unnamed-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：std::array::const_pointer は未対応です",
+  "outputs": "",
+  "probe": "(補正形で再実行) std::array::const_pointer probeVar; std::cout << 7;"
+ },
+ {
+  "item": "std::array::const_reference",
+  "stratum": "A-supported-class-member",
+  "prev": "unnamed-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：std::array::const_reference は未対応です",
+  "outputs": "",
+  "probe": "(補正形で再実行) std::array::const_reference probeVar; std::cout << 7;"
+ },
+ {
+  "item": "std::array::const_reverse_iterator",
+  "stratum": "A-supported-class-member",
+  "prev": "silent-success",
+  "now": "unnamed-stop",
+  "nowStatus": "supported",
+  "error": "未対応:この構文は説明に対応していません：キャストのこの形式は未対応です（独自型・ポインタ型）",
+  "outputs": "",
+  "probe": "(補正形で再実行) std::array<int, 3>::const_reverse_iterator::const_reverse_iterator it = obj.begin/rbegin/cbegin; std::cout << *it;"
+ },
+ {
+  "item": "std::array::difference_type",
+  "stratum": "A-supported-class-member",
+  "prev": "unnamed-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：std::array::difference_type は未対応です",
+  "outputs": "",
+  "probe": "(補正形で再実行) std::array::difference_type probeVar; std::cout << 7;"
+ },
+ {
+  "item": "std::array::iterator",
+  "stratum": "A-supported-class-member",
+  "prev": "silent-success",
+  "now": "unnamed-stop",
+  "nowStatus": "supported",
+  "error": "未対応:この構文は説明に対応していません：キャストのこの形式は未対応です（独自型・ポインタ型）",
+  "outputs": "",
+  "probe": "(補正形で再実行) std::array<int, 3>::iterator it = obj.begin/rbegin/cbegin; std::cout << *it;"
+ },
+ {
+  "item": "std::array::pointer",
+  "stratum": "A-supported-class-member",
+  "prev": "unnamed-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：std::array::pointer は未対応です",
+  "outputs": "",
+  "probe": "(補正形で再実行) std::array::pointer probeVar; std::cout << 7;"
+ },
+ {
+  "item": "std::array::reference",
+  "stratum": "A-supported-class-member",
+  "prev": "unnamed-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：std::array::reference は未対応です",
+  "outputs": "",
+  "probe": "(補正形で再実行) std::array::reference probeVar; std::cout << 7;"
+ },
+ {
+  "item": "std::array::reverse_iterator",
+  "stratum": "A-supported-class-member",
+  "prev": "silent-success",
+  "now": "unnamed-stop",
+  "nowStatus": "supported",
+  "error": "未対応:この構文は説明に対応していません：キャストのこの形式は未対応です（独自型・ポインタ型）",
+  "outputs": "",
+  "probe": "(補正形で再実行) std::array<int, 3>::reverse_iterator::reverse_iterator it = obj.begin/rbegin/cbegin; std::cout << *it;"
+ },
+ {
+  "item": "std::array::size_type",
+  "stratum": "A-supported-class-member",
+  "prev": "unnamed-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：std::array::size_type は未対応です",
+  "outputs": "",
+  "probe": "(補正形で再実行) std::array::size_type probeVar; std::cout << 7;"
+ },
+ {
+  "item": "std::array::value_type",
+  "stratum": "A-supported-class-member",
+  "prev": "unnamed-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：std::array::value_type は未対応です",
+  "outputs": "",
+  "probe": "(補正形で再実行) std::array::value_type probeVar; std::cout << 7;"
+ },
+ {
+  "item": "std::vector::append_range",
+  "stratum": "A-supported-class-member",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "エラー:この関数は説明に対応していません：v.append_range",
+  "outputs": "",
+  "probe": "std::vector<int> v = {10, 20, 30}; v.append_range(v); std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::vector::assign_range",
+  "stratum": "A-supported-class-member",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "エラー:この関数は説明に対応していません：v.assign_range",
+  "outputs": "",
+  "probe": "std::vector<int> v = {10, 20, 30}; v.assign_range(v); std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::vector::capacity",
+  "stratum": "A-supported-class-member",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "エラー:この関数は説明に対応していません：v.capacity",
+  "outputs": "",
+  "probe": "std::vector<int> v = {10, 20, 30}; v.capacity(); std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::vector::data",
+  "stratum": "A-supported-class-member",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "エラー:この関数は説明に対応していません：v.data",
+  "outputs": "",
+  "probe": "std::vector<int> v = {10, 20, 30}; v.data(); std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::vector::get_allocator",
+  "stratum": "A-supported-class-member",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "エラー:この関数は説明に対応していません：v.get_allocator",
+  "outputs": "",
+  "probe": "std::vector<int> v = {10, 20, 30}; v.get_allocator(); std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::vector::insert_range",
+  "stratum": "A-supported-class-member",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "エラー:この関数は説明に対応していません：v.insert_range",
+  "outputs": "",
+  "probe": "std::vector<int> v = {10, 20, 30}; v.insert_range(v.begin(), v); std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::vector::max_size",
+  "stratum": "A-supported-class-member",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "エラー:この関数は説明に対応していません：v.max_size",
+  "outputs": "",
+  "probe": "std::vector<int> v = {10, 20, 30}; v.max_size(); std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::vector::allocator_type",
+  "stratum": "A-supported-class-member",
+  "prev": "unnamed-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：std::vector::allocator_type は未対応です",
+  "outputs": "",
+  "probe": "(補正形で再実行) std::vector::allocator_type probeVar; std::cout << 7;"
+ },
+ {
+  "item": "std::vector::const_iterator",
+  "stratum": "A-supported-class-member",
+  "prev": "silent-success",
+  "now": "unnamed-stop",
+  "nowStatus": "supported",
+  "error": "未対応:この構文は説明に対応していません：キャストのこの形式は未対応です（独自型・ポインタ型）",
+  "outputs": "",
+  "probe": "(補正形で再実行) std::vector<int>::const_iterator::const_iterator it = obj.begin/rbegin/cbegin; std::cout << *it;"
+ },
+ {
+  "item": "std::vector::const_pointer",
+  "stratum": "A-supported-class-member",
+  "prev": "unnamed-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：std::vector::const_pointer は未対応です",
+  "outputs": "",
+  "probe": "(補正形で再実行) std::vector::const_pointer probeVar; std::cout << 7;"
+ },
+ {
+  "item": "std::vector::const_reference",
+  "stratum": "A-supported-class-member",
+  "prev": "unnamed-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：std::vector::const_reference は未対応です",
+  "outputs": "",
+  "probe": "(補正形で再実行) std::vector::const_reference probeVar; std::cout << 7;"
+ },
+ {
+  "item": "std::vector::const_reverse_iterator",
+  "stratum": "A-supported-class-member",
+  "prev": "silent-success",
+  "now": "unnamed-stop",
+  "nowStatus": "supported",
+  "error": "未対応:この構文は説明に対応していません：キャストのこの形式は未対応です（独自型・ポインタ型）",
+  "outputs": "",
+  "probe": "(補正形で再実行) std::vector<int>::const_reverse_iterator::const_reverse_iterator it = obj.begin/rbegin/cbegin; std::cout << *it;"
+ },
+ {
+  "item": "std::vector::difference_type",
+  "stratum": "A-supported-class-member",
+  "prev": "unnamed-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：std::vector::difference_type は未対応です",
+  "outputs": "",
+  "probe": "(補正形で再実行) std::vector::difference_type probeVar; std::cout << 7;"
+ },
+ {
+  "item": "std::vector::iterator",
+  "stratum": "A-supported-class-member",
+  "prev": "silent-success",
+  "now": "unnamed-stop",
+  "nowStatus": "supported",
+  "error": "未対応:この構文は説明に対応していません：キャストのこの形式は未対応です（独自型・ポインタ型）",
+  "outputs": "",
+  "probe": "(補正形で再実行) std::vector<int>::iterator it = obj.begin/rbegin/cbegin; std::cout << *it;"
+ },
+ {
+  "item": "std::vector::pointer",
+  "stratum": "A-supported-class-member",
+  "prev": "unnamed-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：std::vector::pointer は未対応です",
+  "outputs": "",
+  "probe": "(補正形で再実行) std::vector::pointer probeVar; std::cout << 7;"
+ },
+ {
+  "item": "std::vector::reference",
+  "stratum": "A-supported-class-member",
+  "prev": "unnamed-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：std::vector::reference は未対応です",
+  "outputs": "",
+  "probe": "(補正形で再実行) std::vector::reference probeVar; std::cout << 7;"
+ },
+ {
+  "item": "std::vector::reverse_iterator",
+  "stratum": "A-supported-class-member",
+  "prev": "silent-success",
+  "now": "unnamed-stop",
+  "nowStatus": "supported",
+  "error": "未対応:この構文は説明に対応していません：キャストのこの形式は未対応です（独自型・ポインタ型）",
+  "outputs": "",
+  "probe": "(補正形で再実行) std::vector<int>::reverse_iterator::reverse_iterator it = obj.begin/rbegin/cbegin; std::cout << *it;"
+ },
+ {
+  "item": "std::vector::size_type",
+  "stratum": "A-supported-class-member",
+  "prev": "unnamed-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：std::vector::size_type は未対応です",
+  "outputs": "",
+  "probe": "(補正形で再実行) std::vector::size_type probeVar; std::cout << 7;"
+ },
+ {
+  "item": "std::vector::value_type",
+  "stratum": "A-supported-class-member",
+  "prev": "unnamed-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：std::vector::value_type は未対応です",
+  "outputs": "",
+  "probe": "(補正形で再実行) std::vector::value_type probeVar; std::cout << 7;"
+ },
+ {
+  "item": "std::string::operator basic_string_view",
+  "stratum": "A-supported-class-member",
+  "prev": "probe-inapplicable",
+  "now": "probe-inapplicable",
+  "nowStatus": "unsupported",
+  "error": "",
+  "outputs": "",
+  "probe": ""
+ },
+ {
+  "item": "std::pair::first_type",
+  "stratum": "A-supported-class-member",
+  "prev": "unnamed-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：std::pair::first_type は未対応です",
+  "outputs": "",
+  "probe": "(補正形で再実行) std::pair::first_type probeVar; std::cout << 7;"
+ },
+ {
+  "item": "std::pair::second_type",
+  "stratum": "A-supported-class-member",
+  "prev": "unnamed-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：std::pair::second_type は未対応です",
+  "outputs": "",
+  "probe": "(補正形で再実行) std::pair::second_type probeVar; std::cout << 7;"
+ },
+ {
+  "item": "std::ranges::swap",
+  "stratum": "B-homonym",
+  "prev": "unnamed-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：std::ranges::swap は未対応です",
+  "outputs": "",
+  "probe": "std::ranges::swap probeVar; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::vector",
+  "stratum": "B-homonym",
+  "prev": "silent-success",
+  "now": "unnamed-stop",
+  "nowStatus": "supported",
+  "error": "未対応:この構文は説明に対応していません：キャストのこの形式は未対応です（独自型・ポインタ型）",
+  "outputs": "",
+  "probe": "(補正形で再実行) std::vector<int> probeObj; std::cout << 7;"
+ },
+ {
+  "item": "std::begin",
+  "stratum": "B-homonym",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "NameError:未定義の名前：begin",
+  "outputs": "",
+  "probe": "std::begin<int> probeObj; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::end",
+  "stratum": "B-homonym",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "NameError:未定義の名前：end",
+  "outputs": "",
+  "probe": "std::end<int> probeObj; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::ranges::iter_swap",
+  "stratum": "B-homonym",
+  "prev": "unnamed-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：std::ranges::iter_swap は未対応です",
+  "outputs": "",
+  "probe": "std::vector<int> v = {3, 1, 2}; std::ranges::iter_swap(v); std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::ranges::advance",
+  "stratum": "B-homonym",
+  "prev": "unnamed-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：std::ranges::advance は未対応です",
+  "outputs": "",
+  "probe": "std::ranges::advance probeVar; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::ranges::distance",
+  "stratum": "B-homonym",
+  "prev": "unnamed-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：std::ranges::distance は未対応です",
+  "outputs": "",
+  "probe": "std::ranges::distance probeVar; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::ranges::next",
+  "stratum": "B-homonym",
+  "prev": "unnamed-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：std::ranges::next は未対応です",
+  "outputs": "",
+  "probe": "std::ranges::next probeVar; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::ranges::prev",
+  "stratum": "B-homonym",
+  "prev": "unnamed-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：std::ranges::prev は未対応です",
+  "outputs": "",
+  "probe": "std::ranges::prev probeVar; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::cbegin",
+  "stratum": "B-homonym",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "NameError:未定義の名前：cbegin",
+  "outputs": "",
+  "probe": "std::cbegin<int> probeObj; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::cend",
+  "stratum": "B-homonym",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "NameError:未定義の名前：cend",
+  "outputs": "",
+  "probe": "std::cend<int> probeObj; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::rbegin",
+  "stratum": "B-homonym",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "NameError:未定義の名前：rbegin",
+  "outputs": "",
+  "probe": "std::rbegin<int> probeObj; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::rend",
+  "stratum": "B-homonym",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "NameError:未定義の名前：rend",
+  "outputs": "",
+  "probe": "std::rend<int> probeObj; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::crbegin",
+  "stratum": "B-homonym",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "NameError:未定義の名前：crbegin",
+  "outputs": "",
+  "probe": "std::crbegin<int> probeObj; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::crend",
+  "stratum": "B-homonym",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "NameError:未定義の名前：crend",
+  "outputs": "",
+  "probe": "std::crend<int> probeObj; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::size",
+  "stratum": "B-homonym",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "NameError:未定義の名前：size",
+  "outputs": "",
+  "probe": "std::size<int> probeObj; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::empty",
+  "stratum": "B-homonym",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "NameError:未定義の名前：empty",
+  "outputs": "",
+  "probe": "std::empty<int> probeObj; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::pair",
+  "stratum": "B-homonym",
+  "prev": "silent-success",
+  "now": "silent-success",
+  "nowStatus": "supported",
+  "error": "",
+  "outputs": "7",
+  "probe": "std::pair<int, int> probeObj; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::ranges::iota",
+  "stratum": "B-homonym",
+  "prev": "unnamed-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：std::ranges::iota は未対応です",
+  "outputs": "",
+  "probe": "std::ranges::iota probeVar; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::erase",
+  "stratum": "B-homonym",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "NameError:未定義の名前：erase",
+  "outputs": "",
+  "probe": "std::erase<int, int> probeObj; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::ranges::contains",
+  "stratum": "B-homonym",
+  "prev": "unnamed-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：std::ranges::contains は未対応です",
+  "outputs": "",
+  "probe": "std::vector<int> v = {3, 1, 2}; std::ranges::contains(v); std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::ranges::find",
+  "stratum": "B-homonym",
+  "prev": "unnamed-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：std::ranges::find は未対応です",
+  "outputs": "",
+  "probe": "std::vector<int> v = {3, 1, 2}; std::ranges::find(v); std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::find_first_of",
+  "stratum": "B-homonym",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "NameError:未定義の名前：find_first_of",
+  "outputs": "",
+  "probe": "std::find_first_of<int, int> probeObj; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::ranges::find_first_of",
+  "stratum": "B-homonym",
+  "prev": "unnamed-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：std::ranges::find_first_of は未対応です",
+  "outputs": "",
+  "probe": "std::vector<int> v = {3, 1, 2}; std::ranges::find_first_of(v); std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::ranges::count",
+  "stratum": "B-homonym",
+  "prev": "unnamed-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：std::ranges::count は未対応です",
+  "outputs": "",
+  "probe": "std::vector<int> v = {3, 1, 2}; std::ranges::count(v); std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::ranges::mismatch",
+  "stratum": "B-homonym",
+  "prev": "unnamed-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：std::ranges::mismatch は未対応です",
+  "outputs": "",
+  "probe": "std::vector<int> v = {3, 1, 2}; std::ranges::mismatch(v); std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::ranges::equal",
+  "stratum": "B-homonym",
+  "prev": "unnamed-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：std::ranges::equal は未対応です",
+  "outputs": "",
+  "probe": "std::vector<int> v = {3, 1, 2}; std::ranges::equal(v); std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::ranges::starts_with",
+  "stratum": "B-homonym",
+  "prev": "unnamed-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：std::ranges::starts_with は未対応です",
+  "outputs": "",
+  "probe": "std::vector<int> v = {3, 1, 2}; std::ranges::starts_with(v); std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::ranges::copy",
+  "stratum": "B-homonym",
+  "prev": "unnamed-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：std::ranges::copy は未対応です",
+  "outputs": "",
+  "probe": "std::vector<int> v = {3, 1, 2}; std::ranges::copy(v); std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::ranges::copy_n",
+  "stratum": "B-homonym",
+  "prev": "unnamed-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：std::ranges::copy_n は未対応です",
+  "outputs": "",
+  "probe": "std::vector<int> v = {3, 1, 2}; std::ranges::copy_n(v); std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::ranges::move",
+  "stratum": "B-homonym",
+  "prev": "unnamed-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：std::ranges::move は未対応です",
+  "outputs": "",
+  "probe": "std::vector<int> v = {3, 1, 2}; std::ranges::move(v); std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::ranges::replace",
+  "stratum": "B-homonym",
+  "prev": "unnamed-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：std::ranges::replace は未対応です",
+  "outputs": "",
+  "probe": "std::vector<int> v = {3, 1, 2}; std::ranges::replace(v); std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::ranges::fill",
+  "stratum": "B-homonym",
+  "prev": "unnamed-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：std::ranges::fill は未対応です",
+  "outputs": "",
+  "probe": "std::ranges::fill probeVar; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::ranges::fill_n",
+  "stratum": "B-homonym",
+  "prev": "unnamed-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：std::ranges::fill_n は未対応です",
+  "outputs": "",
+  "probe": "std::ranges::fill_n probeVar; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::ranges::remove",
+  "stratum": "B-homonym",
+  "prev": "unnamed-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：std::ranges::remove は未対応です",
+  "outputs": "",
+  "probe": "std::vector<int> v = {3, 1, 2}; std::ranges::remove(v); std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::ranges::unique",
+  "stratum": "B-homonym",
+  "prev": "unnamed-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：std::ranges::unique は未対応です",
+  "outputs": "",
+  "probe": "std::vector<int> v = {3, 1, 2}; std::ranges::unique(v); std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::ranges::reverse",
+  "stratum": "B-homonym",
+  "prev": "unnamed-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：std::ranges::reverse は未対応です",
+  "outputs": "",
+  "probe": "std::vector<int> v = {3, 1, 2}; std::ranges::reverse(v); std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::ranges::rotate",
+  "stratum": "B-homonym",
+  "prev": "unnamed-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：std::ranges::rotate は未対応です",
+  "outputs": "",
+  "probe": "std::vector<int> v = {3, 1, 2}; std::ranges::rotate(v); std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::ranges::sort",
+  "stratum": "B-homonym",
+  "prev": "unnamed-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：std::ranges::sort は未対応です",
+  "outputs": "",
+  "probe": "std::vector<int> v = {3, 1, 2}; std::ranges::sort(v); std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::ranges::stable_sort",
+  "stratum": "B-homonym",
+  "prev": "unnamed-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：std::ranges::stable_sort は未対応です",
+  "outputs": "",
+  "probe": "std::vector<int> v = {3, 1, 2}; std::ranges::stable_sort(v); std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::ranges::partial_sort",
+  "stratum": "B-homonym",
+  "prev": "unnamed-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：std::ranges::partial_sort は未対応です",
+  "outputs": "",
+  "probe": "std::vector<int> v = {3, 1, 2}; std::ranges::partial_sort(v); std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::ranges::is_sorted",
+  "stratum": "B-homonym",
+  "prev": "unnamed-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：std::ranges::is_sorted は未対応です",
+  "outputs": "",
+  "probe": "std::vector<int> v = {3, 1, 2}; std::ranges::is_sorted(v); std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::ranges::nth_element",
+  "stratum": "B-homonym",
+  "prev": "unnamed-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：std::ranges::nth_element は未対応です",
+  "outputs": "",
+  "probe": "std::vector<int> v = {3, 1, 2}; std::ranges::nth_element(v); std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::ranges::lower_bound",
+  "stratum": "B-homonym",
+  "prev": "unnamed-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：std::ranges::lower_bound は未対応です",
+  "outputs": "",
+  "probe": "std::vector<int> v = {3, 1, 2}; std::ranges::lower_bound(v); std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::ranges::upper_bound",
+  "stratum": "B-homonym",
+  "prev": "unnamed-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：std::ranges::upper_bound は未対応です",
+  "outputs": "",
+  "probe": "std::vector<int> v = {3, 1, 2}; std::ranges::upper_bound(v); std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::ranges::equal_range",
+  "stratum": "B-homonym",
+  "prev": "unnamed-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：std::ranges::equal_range は未対応です",
+  "outputs": "",
+  "probe": "std::vector<int> v = {3, 1, 2}; std::ranges::equal_range(v); std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::ranges::binary_search",
+  "stratum": "B-homonym",
+  "prev": "unnamed-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：std::ranges::binary_search は未対応です",
+  "outputs": "",
+  "probe": "std::vector<int> v = {3, 1, 2}; std::ranges::binary_search(v); std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::ranges::min",
+  "stratum": "B-homonym",
+  "prev": "unnamed-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：std::ranges::min は未対応です",
+  "outputs": "",
+  "probe": "std::vector<int> v = {3, 1, 2}; std::ranges::min(v); std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::ranges::max",
+  "stratum": "B-homonym",
+  "prev": "unnamed-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：std::ranges::max は未対応です",
+  "outputs": "",
+  "probe": "std::vector<int> v = {3, 1, 2}; std::ranges::max(v); std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::ranges::minmax",
+  "stratum": "B-homonym",
+  "prev": "unnamed-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：std::ranges::minmax は未対応です",
+  "outputs": "",
+  "probe": "std::vector<int> v = {3, 1, 2}; std::ranges::minmax(v); std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::ranges::min_element",
+  "stratum": "B-homonym",
+  "prev": "unnamed-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：std::ranges::min_element は未対応です",
+  "outputs": "",
+  "probe": "std::vector<int> v = {3, 1, 2}; std::ranges::min_element(v); std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::ranges::max_element",
+  "stratum": "B-homonym",
+  "prev": "unnamed-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：std::ranges::max_element は未対応です",
+  "outputs": "",
+  "probe": "std::vector<int> v = {3, 1, 2}; std::ranges::max_element(v); std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::ranges::clamp",
+  "stratum": "B-homonym",
+  "prev": "unnamed-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：std::ranges::clamp は未対応です",
+  "outputs": "",
+  "probe": "std::vector<int> v = {3, 1, 2}; std::ranges::clamp(v); std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::ranges::lexicographical_compare",
+  "stratum": "B-homonym",
+  "prev": "unnamed-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：std::ranges::lexicographical_compare は未対応です",
+  "outputs": "",
+  "probe": "std::vector<int> v = {3, 1, 2}; std::ranges::lexicographical_compare(v); std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::ranges::next_permutation",
+  "stratum": "B-homonym",
+  "prev": "unnamed-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：std::ranges::next_permutation は未対応です",
+  "outputs": "",
+  "probe": "std::vector<int> v = {3, 1, 2}; std::ranges::next_permutation(v); std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::ranges::prev_permutation",
+  "stratum": "B-homonym",
+  "prev": "unnamed-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：std::ranges::prev_permutation は未対応です",
+  "outputs": "",
+  "probe": "std::vector<int> v = {3, 1, 2}; std::ranges::prev_permutation(v); std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::ranges::begin",
+  "stratum": "B-homonym",
+  "prev": "unnamed-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：std::ranges::begin は未対応です",
+  "outputs": "",
+  "probe": "std::vector<int> v = {3, 1, 2}; std::ranges::begin(v); std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::ranges::end",
+  "stratum": "B-homonym",
+  "prev": "unnamed-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：std::ranges::end は未対応です",
+  "outputs": "",
+  "probe": "std::vector<int> v = {3, 1, 2}; std::ranges::end(v); std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::ranges::cbegin",
+  "stratum": "B-homonym",
+  "prev": "unnamed-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：std::ranges::cbegin は未対応です",
+  "outputs": "",
+  "probe": "std::vector<int> v = {3, 1, 2}; std::ranges::cbegin(v); std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::ranges::cend",
+  "stratum": "B-homonym",
+  "prev": "unnamed-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：std::ranges::cend は未対応です",
+  "outputs": "",
+  "probe": "std::vector<int> v = {3, 1, 2}; std::ranges::cend(v); std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::ranges::rbegin",
+  "stratum": "B-homonym",
+  "prev": "unnamed-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：std::ranges::rbegin は未対応です",
+  "outputs": "",
+  "probe": "std::vector<int> v = {3, 1, 2}; std::ranges::rbegin(v); std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::ranges::rend",
+  "stratum": "B-homonym",
+  "prev": "unnamed-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：std::ranges::rend は未対応です",
+  "outputs": "",
+  "probe": "std::vector<int> v = {3, 1, 2}; std::ranges::rend(v); std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::ranges::crbegin",
+  "stratum": "B-homonym",
+  "prev": "unnamed-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：std::ranges::crbegin は未対応です",
+  "outputs": "",
+  "probe": "std::vector<int> v = {3, 1, 2}; std::ranges::crbegin(v); std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::ranges::crend",
+  "stratum": "B-homonym",
+  "prev": "unnamed-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：std::ranges::crend は未対応です",
+  "outputs": "",
+  "probe": "std::vector<int> v = {3, 1, 2}; std::ranges::crend(v); std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::ranges::size",
+  "stratum": "B-homonym",
+  "prev": "unnamed-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：std::ranges::size は未対応です",
+  "outputs": "",
+  "probe": "std::vector<int> v = {3, 1, 2}; std::ranges::size(v); std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::ranges::empty",
+  "stratum": "B-homonym",
+  "prev": "unnamed-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：std::ranges::empty は未対応です",
+  "outputs": "",
+  "probe": "std::vector<int> v = {3, 1, 2}; std::ranges::empty(v); std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::ranges::views::empty",
+  "stratum": "B-homonym",
+  "prev": "unnamed-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：std::ranges::views::empty は未対応です",
+  "outputs": "",
+  "probe": "std::vector<int> v = {3, 1, 2}; std::ranges::views::empty(v); std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::ranges::views::iota",
+  "stratum": "B-homonym",
+  "prev": "unnamed-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：std::ranges::views::iota は未対応です",
+  "outputs": "",
+  "probe": "std::vector<int> v = {3, 1, 2}; std::ranges::views::iota(v); std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::ranges::views::reverse",
+  "stratum": "B-homonym",
+  "prev": "unnamed-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：std::ranges::views::reverse は未対応です",
+  "outputs": "",
+  "probe": "std::vector<int> v = {3, 1, 2}; std::ranges::views::reverse(v); std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::ranges::views::as_const",
+  "stratum": "B-homonym",
+  "prev": "unnamed-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：std::ranges::views::as_const は未対応です",
+  "outputs": "",
+  "probe": "std::vector<int> v = {3, 1, 2}; std::ranges::views::as_const(v); std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::NULL",
+  "stratum": "B-homonym",
+  "prev": "silent-success",
+  "now": "silent-success",
+  "nowStatus": "unsupported",
+  "error": "",
+  "outputs": "null",
+  "probe": "std::cout << std::NULL;  return 0; }"
+ },
+ {
+  "item": "std::transform",
+  "stratum": "C-frequent",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "NameError:未定義の名前：transform",
+  "outputs": "",
+  "probe": "std::transform<int, int> probeObj; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::find_if",
+  "stratum": "C-frequent",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "NameError:未定義の名前：find_if",
+  "outputs": "",
+  "probe": "std::find_if<int, int> probeObj; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::count_if",
+  "stratum": "C-frequent",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "NameError:未定義の名前：count_if",
+  "outputs": "",
+  "probe": "std::count_if<int, int> probeObj; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::all_of",
+  "stratum": "C-frequent",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "NameError:未定義の名前：all_of",
+  "outputs": "",
+  "probe": "std::all_of<int, int> probeObj; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::any_of",
+  "stratum": "C-frequent",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "NameError:未定義の名前：any_of",
+  "outputs": "",
+  "probe": "std::any_of<int, int> probeObj; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::none_of",
+  "stratum": "C-frequent",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "NameError:未定義の名前：none_of",
+  "outputs": "",
+  "probe": "std::none_of<int, int> probeObj; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::for_each",
+  "stratum": "C-frequent",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "NameError:未定義の名前：for_each",
+  "outputs": "",
+  "probe": "std::for_each<int, int> probeObj; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::generate",
+  "stratum": "C-frequent",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "NameError:未定義の名前：generate",
+  "outputs": "",
+  "probe": "std::generate<int, int> probeObj; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::shuffle",
+  "stratum": "C-frequent",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "NameError:未定義の名前：shuffle",
+  "outputs": "",
+  "probe": "std::shuffle<int, int> probeObj; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::map",
+  "stratum": "C-frequent",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：ジェネリック型 map<...> の宣言は未対応です",
+  "outputs": "",
+  "probe": "std::map<int, int> probeObj; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::unordered_map",
+  "stratum": "C-frequent",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：ジェネリック型 unordered_map<...> の宣言は未対応です",
+  "outputs": "",
+  "probe": "std::unordered_map<int, int> probeObj; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::multimap",
+  "stratum": "C-frequent",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：ジェネリック型 multimap<...> の宣言は未対応です",
+  "outputs": "",
+  "probe": "std::multimap<int, int> probeObj; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::set",
+  "stratum": "C-frequent",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：ジェネリック型 set<...> の宣言は未対応です",
+  "outputs": "",
+  "probe": "std::set<int, int> probeObj; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::unordered_set",
+  "stratum": "C-frequent",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：ジェネリック型 unordered_set<...> の宣言は未対応です",
+  "outputs": "",
+  "probe": "std::unordered_set<int, int> probeObj; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::multiset",
+  "stratum": "C-frequent",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：ジェネリック型 multiset<...> の宣言は未対応です",
+  "outputs": "",
+  "probe": "std::multiset<int, int> probeObj; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::deque",
+  "stratum": "C-frequent",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：ジェネリック型 deque<...> の宣言は未対応です",
+  "outputs": "",
+  "probe": "std::deque<int, int> probeObj; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::list",
+  "stratum": "C-frequent",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：ジェネリック型 list<...> の宣言は未対応です",
+  "outputs": "",
+  "probe": "std::list<int, int> probeObj; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::forward_list",
+  "stratum": "C-frequent",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：ジェネリック型 forward_list<...> の宣言は未対応です",
+  "outputs": "",
+  "probe": "std::forward_list<int, int> probeObj; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::stack",
+  "stratum": "C-frequent",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：ジェネリック型 stack<...> の宣言は未対応です",
+  "outputs": "",
+  "probe": "std::stack<int, int> probeObj; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::queue",
+  "stratum": "C-frequent",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：ジェネリック型 queue<...> の宣言は未対応です",
+  "outputs": "",
+  "probe": "std::queue<int, int> probeObj; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::priority_queue",
+  "stratum": "C-frequent",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：ジェネリック型 priority_queue<...> の宣言は未対応です",
+  "outputs": "",
+  "probe": "std::priority_queue<int, int> probeObj; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::optional",
+  "stratum": "C-frequent",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：ジェネリック型 optional<...> の宣言は未対応です",
+  "outputs": "",
+  "probe": "std::optional<int> probeObj; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::variant",
+  "stratum": "C-frequent",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：ジェネリック型 variant<...> の宣言は未対応です",
+  "outputs": "",
+  "probe": "std::variant<int> probeObj; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::tuple",
+  "stratum": "C-frequent",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：ジェネリック型 tuple<...> の宣言は未対応です",
+  "outputs": "",
+  "probe": "std::tuple<int> probeObj; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::any",
+  "stratum": "C-frequent",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：型 any の宣言は未対応です",
+  "outputs": "",
+  "probe": "std::any probeObj; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::expected",
+  "stratum": "C-frequent",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：ジェネリック型 expected<...> の宣言は未対応です",
+  "outputs": "",
+  "probe": "std::expected<int, int> probeObj; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::span",
+  "stratum": "C-frequent",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：ジェネリック型 span<...> の宣言は未対応です",
+  "outputs": "",
+  "probe": "std::span<int, int> probeObj; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::bitset",
+  "stratum": "C-frequent",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：ジェネリック型 bitset<...> の宣言は未対応です",
+  "outputs": "",
+  "probe": "std::bitset<int> probeObj; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::complex",
+  "stratum": "C-frequent",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：ジェネリック型 complex<...> の宣言は未対応です",
+  "outputs": "",
+  "probe": "std::complex<int> probeObj; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::valarray",
+  "stratum": "C-frequent",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：ジェネリック型 valarray<...> の宣言は未対応です",
+  "outputs": "",
+  "probe": "std::valarray<int> probeObj; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::thread",
+  "stratum": "C-frequent",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：型 thread の宣言は未対応です",
+  "outputs": "",
+  "probe": "std::thread probeObj; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::mutex",
+  "stratum": "C-frequent",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：型 mutex の宣言は未対応です",
+  "outputs": "",
+  "probe": "std::mutex probeObj; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::lock_guard",
+  "stratum": "C-frequent",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：ジェネリック型 lock_guard<...> の宣言は未対応です",
+  "outputs": "",
+  "probe": "std::lock_guard<int> probeObj; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::regex",
+  "stratum": "C-frequent",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：型 regex の宣言は未対応です",
+  "outputs": "",
+  "probe": "std::regex probeObj; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::regex_match",
+  "stratum": "C-frequent",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "NameError:未定義の名前：regex_match",
+  "outputs": "",
+  "probe": "std::regex_match<int, int> probeObj; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::regex_search",
+  "stratum": "C-frequent",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "NameError:未定義の名前：regex_search",
+  "outputs": "",
+  "probe": "std::regex_search<int, int> probeObj; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::format",
+  "stratum": "C-frequent",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "エラー:この関数は説明に対応していません：format",
+  "outputs": "",
+  "probe": "std::format(); std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::print",
+  "stratum": "C-frequent",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "エラー:この関数は説明に対応していません：print",
+  "outputs": "",
+  "probe": "std::print(); std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::println",
+  "stratum": "C-frequent",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "エラー:この関数は説明に対応していません：println",
+  "outputs": "",
+  "probe": "std::println(); std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::execution::par",
+  "stratum": "C-frequent",
+  "prev": "unnamed-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：std::execution::par は未対応です",
+  "outputs": "",
+  "probe": "std::cout << std::execution::par;  return 0; }"
+ },
+ {
+  "item": "std::execution::seq",
+  "stratum": "C-frequent",
+  "prev": "unnamed-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：std::execution::seq は未対応です",
+  "outputs": "",
+  "probe": "std::cout << std::execution::seq;  return 0; }"
+ },
+ {
+  "item": "std::execution::par_unseq",
+  "stratum": "C-frequent",
+  "prev": "unnamed-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：std::execution::par_unseq は未対応です",
+  "outputs": "",
+  "probe": "std::cout << std::execution::par_unseq;  return 0; }"
+ },
+ {
+  "item": "std::filesystem::path",
+  "stratum": "C-frequent",
+  "prev": "unnamed-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：std::filesystem::path は未対応です",
+  "outputs": "",
+  "probe": "std::filesystem::path probeVar; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::string_view",
+  "stratum": "C-frequent",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：型 string_view の宣言は未対応です",
+  "outputs": "",
+  "probe": "std::string_view probeObj; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::getenv",
+  "stratum": "C-frequent",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "エラー:この関数は説明に対応していません：getenv",
+  "outputs": "",
+  "probe": "std::getenv(); std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::system",
+  "stratum": "C-frequent",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "エラー:この関数は説明に対応していません：system",
+  "outputs": "",
+  "probe": "std::system(); std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::exit",
+  "stratum": "C-frequent",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "エラー:この関数は説明に対応していません：exit",
+  "outputs": "",
+  "probe": "std::exit(); std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::abort",
+  "stratum": "C-frequent",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "エラー:この関数は説明に対応していません：abort",
+  "outputs": "",
+  "probe": "std::abort(); std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::malloc",
+  "stratum": "C-frequent",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "エラー:この関数は説明に対応していません：malloc",
+  "outputs": "",
+  "probe": "std::malloc(); std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::free",
+  "stratum": "C-frequent",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "エラー:この関数は説明に対応していません：free",
+  "outputs": "",
+  "probe": "std::free(); std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::expm1",
+  "stratum": "C-frequent",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "エラー:この関数は説明に対応していません：expm1",
+  "outputs": "",
+  "probe": "std::expm1(); std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::log1p",
+  "stratum": "C-frequent",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "エラー:この関数は説明に対応していません：log1p",
+  "outputs": "",
+  "probe": "std::log1p(); std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::erf",
+  "stratum": "C-frequent",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "エラー:この関数は説明に対応していません：erf",
+  "outputs": "",
+  "probe": "std::erf(); std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::tgamma",
+  "stratum": "C-frequent",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "エラー:この関数は説明に対応していません：tgamma",
+  "outputs": "",
+  "probe": "std::tgamma(); std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::chrono::seconds",
+  "stratum": "C-frequent",
+  "prev": "unnamed-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：std::chrono::seconds は未対応です",
+  "outputs": "",
+  "probe": "std::chrono::seconds probeVar; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::chrono::system_clock",
+  "stratum": "C-frequent",
+  "prev": "unnamed-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：std::chrono::system_clock は未対応です",
+  "outputs": "",
+  "probe": "std::chrono::system_clock probeVar; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::atomic",
+  "stratum": "C-frequent",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：ジェネリック型 atomic<...> の宣言は未対応です",
+  "outputs": "",
+  "probe": "std::atomic<int> probeObj; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::function",
+  "stratum": "C-frequent",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：ジェネリック型 function<...> の宣言は未対応です",
+  "outputs": "",
+  "probe": "std::function<int> probeObj; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::bind",
+  "stratum": "C-frequent",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "NameError:未定義の名前：bind",
+  "outputs": "",
+  "probe": "std::bind<int, int> probeObj; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::move_if_noexcept",
+  "stratum": "C-frequent",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "NameError:未定義の名前：move_if_noexcept",
+  "outputs": "",
+  "probe": "std::move_if_noexcept<int> probeObj; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::launder",
+  "stratum": "C-frequent",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "NameError:未定義の名前：launder",
+  "outputs": "",
+  "probe": "std::launder<int> probeObj; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::byte",
+  "stratum": "C-frequent",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：型 byte の宣言は未対応です",
+  "outputs": "",
+  "probe": "std::byte probeObj; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::source_location",
+  "stratum": "C-frequent",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "NameError:未定義の名前：source_location",
+  "outputs": "",
+  "probe": "std::cout << std::source_location;  return 0; }"
+ },
+ {
+  "item": "std::jthread",
+  "stratum": "C-frequent",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：型 jthread の宣言は未対応です",
+  "outputs": "",
+  "probe": "std::jthread probeObj; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::barrier",
+  "stratum": "C-frequent",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：ジェネリック型 barrier<...> の宣言は未対応です",
+  "outputs": "",
+  "probe": "std::barrier<int> probeObj; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::latch",
+  "stratum": "C-frequent",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：型 latch の宣言は未対応です",
+  "outputs": "",
+  "probe": "std::latch probeObj; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::fstream",
+  "stratum": "C-frequent",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "NameError:未定義の名前：fstream",
+  "outputs": "",
+  "probe": "std::fstream<int, int> probeObj; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::ifstream",
+  "stratum": "C-frequent",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "NameError:未定義の名前：ifstream",
+  "outputs": "",
+  "probe": "std::ifstream<int, int> probeObj; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::ofstream",
+  "stratum": "C-frequent",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "NameError:未定義の名前：ofstream",
+  "outputs": "",
+  "probe": "std::ofstream<int, int> probeObj; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::stringstream",
+  "stratum": "C-frequent",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：型 stringstream の宣言は未対応です",
+  "outputs": "",
+  "probe": "std::stringstream probeObj; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::weak_ptr",
+  "stratum": "C-frequent",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：ジェネリック型 weak_ptr<...> の宣言は未対応です",
+  "outputs": "",
+  "probe": "std::weak_ptr<int> probeObj; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::shared_ptr",
+  "stratum": "C-frequent",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：ジェネリック型 shared_ptr<...> の宣言は未対応です",
+  "outputs": "",
+  "probe": "std::shared_ptr<int> probeObj; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::unique_ptr",
+  "stratum": "C-frequent",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：ジェネリック型 unique_ptr<...> の宣言は未対応です",
+  "outputs": "",
+  "probe": "std::unique_ptr<int, int> probeObj; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::make_unique",
+  "stratum": "C-frequent",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "NameError:未定義の名前：make_unique",
+  "outputs": "",
+  "probe": "std::make_unique<int> probeObj; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::make_shared",
+  "stratum": "C-frequent",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "NameError:未定義の名前：make_shared",
+  "outputs": "",
+  "probe": "std::make_shared<int> probeObj; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::hash",
+  "stratum": "C-frequent",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "NameError:未定義の名前：hash",
+  "outputs": "",
+  "probe": "std::hash<int> probeObj; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::less",
+  "stratum": "C-frequent",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "NameError:未定義の名前：less",
+  "outputs": "",
+  "probe": "std::less<int> probeObj; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::greater",
+  "stratum": "C-frequent",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "NameError:未定義の名前：greater",
+  "outputs": "",
+  "probe": "std::greater<int> probeObj; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::plus",
+  "stratum": "C-frequent",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "NameError:未定義の名前：plus",
+  "outputs": "",
+  "probe": "std::plus<int> probeObj; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::minus",
+  "stratum": "C-frequent",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "NameError:未定義の名前：minus",
+  "outputs": "",
+  "probe": "std::minus<int> probeObj; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::multiplies",
+  "stratum": "C-frequent",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "NameError:未定義の名前：multiplies",
+  "outputs": "",
+  "probe": "std::multiplies<int> probeObj; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::divides",
+  "stratum": "C-frequent",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "NameError:未定義の名前：divides",
+  "outputs": "",
+  "probe": "std::divides<int> probeObj; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::modulus",
+  "stratum": "C-frequent",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "NameError:未定義の名前：modulus",
+  "outputs": "",
+  "probe": "std::modulus<int> probeObj; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::negate",
+  "stratum": "C-frequent",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "NameError:未定義の名前：negate",
+  "outputs": "",
+  "probe": "std::negate<int> probeObj; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::equal_to",
+  "stratum": "C-frequent",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "NameError:未定義の名前：equal_to",
+  "outputs": "",
+  "probe": "std::equal_to<int> probeObj; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::not_equal_to",
+  "stratum": "C-frequent",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "NameError:未定義の名前：not_equal_to",
+  "outputs": "",
+  "probe": "std::not_equal_to<int> probeObj; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::logical_and",
+  "stratum": "C-frequent",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "NameError:未定義の名前：logical_and",
+  "outputs": "",
+  "probe": "std::logical_and<int> probeObj; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::logical_or",
+  "stratum": "C-frequent",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "NameError:未定義の名前：logical_or",
+  "outputs": "",
+  "probe": "std::logical_or<int> probeObj; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::logical_not",
+  "stratum": "C-frequent",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "NameError:未定義の名前：logical_not",
+  "outputs": "",
+  "probe": "std::logical_not<int> probeObj; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::bit_and",
+  "stratum": "C-frequent",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "NameError:未定義の名前：bit_and",
+  "outputs": "",
+  "probe": "std::bit_and<int> probeObj; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::bit_or",
+  "stratum": "C-frequent",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "NameError:未定義の名前：bit_or",
+  "outputs": "",
+  "probe": "std::bit_or<int> probeObj; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::bit_xor",
+  "stratum": "C-frequent",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "NameError:未定義の名前：bit_xor",
+  "outputs": "",
+  "probe": "std::bit_xor<int> probeObj; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::bit_not",
+  "stratum": "C-frequent",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "NameError:未定義の名前：bit_not",
+  "outputs": "",
+  "probe": "std::bit_not<int> probeObj; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::reference_wrapper",
+  "stratum": "C-frequent",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "NameError:未定義の名前：reference_wrapper",
+  "outputs": "",
+  "probe": "std::reference_wrapper<int> probeObj; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::ref",
+  "stratum": "C-frequent",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "NameError:未定義の名前：ref",
+  "outputs": "",
+  "probe": "std::ref<int> probeObj; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::cref",
+  "stratum": "C-frequent",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "NameError:未定義の名前：cref",
+  "outputs": "",
+  "probe": "std::cref<int> probeObj; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::invoke",
+  "stratum": "C-frequent",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "NameError:未定義の名前：invoke",
+  "outputs": "",
+  "probe": "std::invoke<int, int> probeObj; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::make_from_tuple",
+  "stratum": "C-frequent",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "NameError:未定義の名前：make_from_tuple",
+  "outputs": "",
+  "probe": "std::make_from_tuple<int, int> probeObj; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::tie",
+  "stratum": "C-frequent",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "エラー:この関数は説明に対応していません：tie",
+  "outputs": "",
+  "probe": "std::tie(); std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::ignore",
+  "stratum": "C-frequent",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "NameError:未定義の名前：ignore",
+  "outputs": "",
+  "probe": "std::cout << std::ignore;  return 0; }"
+ },
+ {
+  "item": "std::forward_as_tuple",
+  "stratum": "C-frequent",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "エラー:この関数は説明に対応していません：forward_as_tuple",
+  "outputs": "",
+  "probe": "std::forward_as_tuple(); std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::piecewise_construct",
+  "stratum": "C-frequent",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "NameError:未定義の名前：piecewise_construct",
+  "outputs": "",
+  "probe": "std::cout << std::piecewise_construct;  return 0; }"
+ },
+ {
+  "item": "std::in_place",
+  "stratum": "C-frequent",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "NameError:未定義の名前：in_place",
+  "outputs": "",
+  "probe": "std::cout << std::in_place;  return 0; }"
+ },
+ {
+  "item": "std::nullopt",
+  "stratum": "C-frequent",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "NameError:未定義の名前：nullopt",
+  "outputs": "",
+  "probe": "std::cout << std::nullopt;  return 0; }"
+ },
+ {
+  "item": "std::bad_optional_access",
+  "stratum": "C-frequent",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：型 bad_optional_access の宣言は未対応です",
+  "outputs": "",
+  "probe": "std::bad_optional_access probeObj; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::monostate",
+  "stratum": "C-frequent",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "NameError:未定義の名前：monostate",
+  "outputs": "",
+  "probe": "std::cout << std::monostate;  return 0; }"
+ },
+ {
+  "item": "std::visit",
+  "stratum": "C-frequent",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "NameError:未定義の名前：visit",
+  "outputs": "",
+  "probe": "std::visit<int, int> probeObj; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::holds_alternative",
+  "stratum": "C-frequent",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "NameError:未定義の名前：holds_alternative",
+  "outputs": "",
+  "probe": "std::holds_alternative<int, int> probeObj; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::get",
+  "stratum": "C-frequent",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "エラー:この関数は説明に対応していません：get",
+  "outputs": "",
+  "probe": "std::get(); std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::get_if",
+  "stratum": "C-frequent",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "エラー:この関数は説明に対応していません：get_if",
+  "outputs": "",
+  "probe": "std::get_if(); std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::make_tuple",
+  "stratum": "C-frequent",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "エラー:この関数は説明に対応していません：make_tuple",
+  "outputs": "",
+  "probe": "std::make_tuple(); std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::tuple_size",
+  "stratum": "C-frequent",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "NameError:未定義の名前：tuple_size",
+  "outputs": "",
+  "probe": "std::tuple_size<int> probeObj; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::tuple_element",
+  "stratum": "C-frequent",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "NameError:未定義の名前：tuple_element",
+  "outputs": "",
+  "probe": "std::tuple_element<int, int> probeObj; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::dec",
+  "stratum": "C-frequent",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "エラー:この関数は説明に対応していません：dec",
+  "outputs": "",
+  "probe": "std::dec(); std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::hex",
+  "stratum": "C-frequent",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "エラー:この関数は説明に対応していません：hex",
+  "outputs": "",
+  "probe": "std::hex(); std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::oct",
+  "stratum": "C-frequent",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "エラー:この関数は説明に対応していません：oct",
+  "outputs": "",
+  "probe": "std::oct(); std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::flush",
+  "stratum": "C-frequent",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "NameError:未定義の名前：flush",
+  "outputs": "",
+  "probe": "std::flush<int, int> probeObj; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::setw",
+  "stratum": "C-frequent",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "エラー:この関数は説明に対応していません：setw",
+  "outputs": "",
+  "probe": "std::setw(); std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::setprecision",
+  "stratum": "C-frequent",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "エラー:この関数は説明に対応していません：setprecision",
+  "outputs": "",
+  "probe": "std::setprecision(); std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::fixed",
+  "stratum": "C-frequent",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "エラー:この関数は説明に対応していません：fixed",
+  "outputs": "",
+  "probe": "std::fixed(); std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::scientific",
+  "stratum": "C-frequent",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "エラー:この関数は説明に対応していません：scientific",
+  "outputs": "",
+  "probe": "std::scientific(); std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::left",
+  "stratum": "C-frequent",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "エラー:この関数は説明に対応していません：left",
+  "outputs": "",
+  "probe": "std::left(); std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::right",
+  "stratum": "C-frequent",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "エラー:この関数は説明に対応していません：right",
+  "outputs": "",
+  "probe": "std::right(); std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::boolalpha",
+  "stratum": "C-frequent",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "エラー:この関数は説明に対応していません：boolalpha",
+  "outputs": "",
+  "probe": "std::boolalpha(); std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::ws",
+  "stratum": "C-frequent",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "NameError:未定義の名前：ws",
+  "outputs": "",
+  "probe": "std::ws<int, int> probeObj; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::ends",
+  "stratum": "C-frequent",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "NameError:未定義の名前：ends",
+  "outputs": "",
+  "probe": "std::ends<int, int> probeObj; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::quoted",
+  "stratum": "C-frequent",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "NameError:未定義の名前：quoted",
+  "outputs": "",
+  "probe": "std::quoted<int> probeObj; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::get_money",
+  "stratum": "C-frequent",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "NameError:未定義の名前：get_money",
+  "outputs": "",
+  "probe": "std::get_money<int> probeObj; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::put_money",
+  "stratum": "C-frequent",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "NameError:未定義の名前：put_money",
+  "outputs": "",
+  "probe": "std::put_money<int> probeObj; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::get_time",
+  "stratum": "C-frequent",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "NameError:未定義の名前：get_time",
+  "outputs": "",
+  "probe": "std::get_time<int> probeObj; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::put_time",
+  "stratum": "C-frequent",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "NameError:未定義の名前：put_time",
+  "outputs": "",
+  "probe": "std::put_time<int> probeObj; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::adjacent_find",
+  "stratum": "D-systematic",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "NameError:未定義の名前：adjacent_find",
+  "outputs": "",
+  "probe": "std::adjacent_find<int> probeObj; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::ranges::remove_copy_result",
+  "stratum": "D-systematic",
+  "prev": "unnamed-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：std::ranges::remove_copy_result は未対応です",
+  "outputs": "",
+  "probe": "std::ranges::remove_copy_result probeVar; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::atomic_flag_test_explicit",
+  "stratum": "D-systematic",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "エラー:この関数は説明に対応していません：atomic_flag_test_explicit",
+  "outputs": "",
+  "probe": "std::atomic_flag_test_explicit(); std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::ECONNRESET",
+  "stratum": "D-systematic",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "NameError:未定義の名前：ECONNRESET",
+  "outputs": "",
+  "probe": "std::cout << std::ECONNRESET;  return 0; }"
+ },
+ {
+  "item": "std::DECIMAL_DIG",
+  "stratum": "D-systematic",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "エラー:この関数は説明に対応していません：DECIMAL_DIG",
+  "outputs": "",
+  "probe": "std::DECIMAL_DIG(); std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::chrono::November",
+  "stratum": "D-systematic",
+  "prev": "unnamed-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：std::chrono::November は未対応です",
+  "outputs": "",
+  "probe": "std::vector<int> v = {3, 1, 2}; std::chrono::November(v); std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::PRIXN",
+  "stratum": "D-systematic",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "NameError:未定義の名前：PRIXN",
+  "outputs": "",
+  "probe": "std::cout << std::PRIXN;  return 0; }"
+ },
+ {
+  "item": "std::copysignl",
+  "stratum": "D-systematic",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "エラー:この関数は説明に対応していません：copysignl",
+  "outputs": "",
+  "probe": "std::copysignl(); std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::log10f",
+  "stratum": "D-systematic",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "エラー:この関数は説明に対応していません：log10f",
+  "outputs": "",
+  "probe": "std::log10f(); std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::conj",
+  "stratum": "D-systematic",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "NameError:未定義の名前：conj",
+  "outputs": "",
+  "probe": "std::conj<int> probeObj; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::int_fast64_t",
+  "stratum": "D-systematic",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：型 int_fast64_t の宣言は未対応です",
+  "outputs": "",
+  "probe": "std::int_fast64_t probeObj; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::scanf",
+  "stratum": "D-systematic",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "エラー:この関数は説明に対応していません：scanf",
+  "outputs": "",
+  "probe": "std::scanf(); std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::mbsrtowcs",
+  "stratum": "D-systematic",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "エラー:この関数は説明に対応していません：mbsrtowcs",
+  "outputs": "",
+  "probe": "std::mbsrtowcs(); std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::execution::empty_env",
+  "stratum": "D-systematic",
+  "prev": "unnamed-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：std::execution::empty_env は未対応です",
+  "outputs": "",
+  "probe": "std::vector<int> v = {3, 1, 2}; std::execution::empty_env(v); std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::is_execution_policy_v",
+  "stratum": "D-systematic",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "NameError:未定義の名前：is_execution_policy_v",
+  "outputs": "",
+  "probe": "std::is_execution_policy_v<int> probeObj; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::vformat",
+  "stratum": "D-systematic",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "エラー:この関数は説明に対応していません：vformat",
+  "outputs": "",
+  "probe": "std::vformat(); std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::uppercase",
+  "stratum": "D-systematic",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "エラー:この関数は説明に対応していません：uppercase",
+  "outputs": "",
+  "probe": "std::uppercase(); std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::input_or_output_iterator",
+  "stratum": "D-systematic",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "NameError:未定義の名前：input_or_output_iterator",
+  "outputs": "",
+  "probe": "std::input_or_output_iterator<int> probeObj; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::linalg::vector_sum_of_squares",
+  "stratum": "D-systematic",
+  "prev": "unnamed-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：std::linalg::vector_sum_of_squares は未対応です",
+  "outputs": "",
+  "probe": "std::vector<int> v = {3, 1, 2}; std::linalg::vector_sum_of_squares(v); std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::ranges::uninitialized_copy_result",
+  "stratum": "D-systematic",
+  "prev": "unnamed-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：std::ranges::uninitialized_copy_result は未対応です",
+  "outputs": "",
+  "probe": "std::ranges::uninitialized_copy_result probeVar; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::meta::is_bounded_array_type",
+  "stratum": "D-systematic",
+  "prev": "unnamed-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：std::meta::is_bounded_array_type は未対応です",
+  "outputs": "",
+  "probe": "std::vector<int> v = {3, 1, 2}; std::meta::is_bounded_array_type(v); std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::meta::is_special_member_function",
+  "stratum": "D-systematic",
+  "prev": "unnamed-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：std::meta::is_special_member_function は未対応です",
+  "outputs": "",
+  "probe": "std::vector<int> v = {3, 1, 2}; std::meta::is_special_member_function(v); std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::unique_lock",
+  "stratum": "D-systematic",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：ジェネリック型 unique_lock<...> の宣言は未対応です",
+  "outputs": "",
+  "probe": "std::unique_lock<int> probeObj; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::uniform_random_bit_generator",
+  "stratum": "D-systematic",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "NameError:未定義の名前：uniform_random_bit_generator",
+  "outputs": "",
+  "probe": "std::uniform_random_bit_generator<int> probeObj; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::ranges::views::lazy_split",
+  "stratum": "D-systematic",
+  "prev": "unnamed-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：std::ranges::views::lazy_split は未対応です",
+  "outputs": "",
+  "probe": "std::vector<int> v = {3, 1, 2}; std::ranges::views::lazy_split(v); std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::shared_lock",
+  "stratum": "D-systematic",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：ジェネリック型 shared_lock<...> の宣言は未対応です",
+  "outputs": "",
+  "probe": "std::shared_lock<int> probeObj; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::tuple_size_v",
+  "stratum": "D-systematic",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "NameError:未定義の名前：tuple_size_v",
+  "outputs": "",
+  "probe": "std::tuple_size_v<int> probeObj; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::is_member_object_pointer",
+  "stratum": "D-systematic",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "NameError:未定義の名前：is_member_object_pointer",
+  "outputs": "",
+  "probe": "std::is_member_object_pointer<int> probeObj; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::make_signed_t",
+  "stratum": "D-systematic",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "NameError:未定義の名前：make_signed_t",
+  "outputs": "",
+  "probe": "std::make_signed_t<int> probeObj; std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::atomic::atomic",
+  "stratum": "D-systematic",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：ジェネリック型 atomic<...> の宣言は未対応です",
+  "outputs": "",
+  "probe": "std::atomic<int> oprobe; oprobe.atomic(); std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::chrono::time_point::operator-=",
+  "stratum": "D-systematic",
+  "prev": "probe-inapplicable",
+  "now": "probe-inapplicable",
+  "nowStatus": "unsupported",
+  "error": "",
+  "outputs": "",
+  "probe": ""
+ },
+ {
+  "item": "std::filesystem::path::clear",
+  "stratum": "D-systematic",
+  "prev": "unnamed-stop",
+  "now": "owner-named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：std::filesystem::path は未対応です",
+  "outputs": "",
+  "probe": "std::filesystem::path oprobe; oprobe.clear(); std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::flat_map::value_comp",
+  "stratum": "D-systematic",
+  "prev": "owner-named-stop",
+  "now": "unnamed-stop",
+  "nowStatus": "unsupported",
+  "error": "NameError:未定義の名前：flat_map",
+  "outputs": "",
+  "probe": "std::flat_map<int, int> oprobe; oprobe.value_comp(); std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::flat_set::key_compare",
+  "stratum": "D-systematic",
+  "prev": "owner-named-stop",
+  "now": "unnamed-stop",
+  "nowStatus": "unsupported",
+  "error": "NameError:未定義の名前：flat_set",
+  "outputs": "",
+  "probe": "std::flat_set<int, int> oprobe; oprobe.key_compare(); std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::function::second_argument_type",
+  "stratum": "D-systematic",
+  "prev": "owner-named-stop",
+  "now": "unnamed-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：ジェネリック型 function<...> の宣言は未対応です",
+  "outputs": "",
+  "probe": "std::function<int> oprobe; oprobe.second_argument_type(); std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::inplace_vector::assign_range",
+  "stratum": "D-systematic",
+  "prev": "owner-named-stop",
+  "now": "unnamed-stop",
+  "nowStatus": "unsupported",
+  "error": "NameError:未定義の名前：inplace_vector",
+  "outputs": "",
+  "probe": "std::inplace_vector<int, int> oprobe; oprobe.assign_range(); std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::list::back",
+  "stratum": "D-systematic",
+  "prev": "owner-named-stop",
+  "now": "unnamed-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：ジェネリック型 list<...> の宣言は未対応です",
+  "outputs": "",
+  "probe": "std::list<int, int> oprobe; oprobe.back(); std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::match_results::reference",
+  "stratum": "D-systematic",
+  "prev": "owner-named-stop",
+  "now": "unnamed-stop",
+  "nowStatus": "unsupported",
+  "error": "NameError:未定義の名前：match_results",
+  "outputs": "",
+  "probe": "std::match_results<int, int> oprobe; oprobe.reference(); std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::multimap::operator=",
+  "stratum": "D-systematic",
+  "prev": "probe-inapplicable",
+  "now": "probe-inapplicable",
+  "nowStatus": "unsupported",
+  "error": "",
+  "outputs": "",
+  "probe": ""
+ },
+ {
+  "item": "std::ostream::operator<<",
+  "stratum": "D-systematic",
+  "prev": "probe-inapplicable",
+  "now": "probe-inapplicable",
+  "nowStatus": "unsupported",
+  "error": "",
+  "outputs": "",
+  "probe": ""
+ },
+ {
+  "item": "std::set::value_type",
+  "stratum": "D-systematic",
+  "prev": "owner-named-stop",
+  "now": "unnamed-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：ジェネリック型 set<...> の宣言は未対応です",
+  "outputs": "",
+  "probe": "std::set<int, int> oprobe; oprobe.value_type(); std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::stack::stack",
+  "stratum": "D-systematic",
+  "prev": "named-stop",
+  "now": "named-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：ジェネリック型 stack<...> の宣言は未対応です",
+  "outputs": "",
+  "probe": "std::stack<int, int> oprobe; oprobe.stack(); std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::stringstream::char_type",
+  "stratum": "D-systematic",
+  "prev": "owner-named-stop",
+  "now": "unnamed-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：型 stringstream の宣言は未対応です",
+  "outputs": "",
+  "probe": "std::stringstream oprobe; oprobe.char_type(); std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::unordered_map::max_load_factor",
+  "stratum": "D-systematic",
+  "prev": "owner-named-stop",
+  "now": "unnamed-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：ジェネリック型 unordered_map<...> の宣言は未対応です",
+  "outputs": "",
+  "probe": "std::unordered_map<int, int> oprobe; oprobe.max_load_factor(); std::cout << 7;  return 0; }"
+ },
+ {
+  "item": "std::unordered_multiset::hash_function",
+  "stratum": "D-systematic",
+  "prev": "owner-named-stop",
+  "now": "unnamed-stop",
+  "nowStatus": "unsupported",
+  "error": "未対応:この構文は説明に対応していません：ジェネリック型 unordered_multiset<...> の宣言は未対応です",
+  "outputs": "",
+  "probe": "std::unordered_multiset<int, int> oprobe; oprobe.hash_function(); std::cout << 7;  return 0; }"
+ }
+]

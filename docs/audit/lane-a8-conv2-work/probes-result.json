@@ -1,0 +1,2956 @@
+[
+ {
+  "id": "CPP-01",
+  "body": "std::vector<int> v = {5,2,8,1,9,3}; std::sort(v.begin(), v.end()); for (int x: v) std::cout << x << \" \"; std::cout << \"|\" << std::binary_search(v.begin(), v.end(), 8) << std::binary_search(v.begin(), v.end(), 4);",
+  "note": "",
+  "errors": [],
+  "outputs": "1 2 3 5 8 9 |10",
+  "channels": [
+   [
+    "cout",
+    "cout",
+    "cout",
+    "cout",
+    "cout",
+    "cout",
+    "cout"
+   ]
+  ],
+  "vars": [
+   {
+    "v": [
+     1,
+     2,
+     3,
+     5,
+     8,
+     9
+    ]
+   }
+  ],
+  "traceHeads": [
+   [
+    "v を vector<int> として用意します：[\n  5,\n  2,\n  8,\n  1,\n  9,\n  3\n]",
+    "処理を実行します（表示する戻り値はありません）",
+    "繰り返し 1回目"
+   ]
+  ]
+ },
+ {
+  "id": "CPP-02",
+  "body": "std::vector<int> a = {1,2,3,4}; std::vector<int> b = {4,5,6}; std::vector<int> c = {1,2,3}; std::cout << std::accumulate(a.begin(), a.end(), 100) << \" \" << std::inner_product(c.begin(), c.end(), b.begin(), 0);",
+  "note": "",
+  "errors": [],
+  "outputs": "110 32",
+  "channels": [
+   [
+    "cout"
+   ]
+  ],
+  "vars": [
+   {
+    "a": [
+     1,
+     2,
+     3,
+     4
+    ],
+    "b": [
+     4,
+     5,
+     6
+    ],
+    "c": [
+     1,
+     2,
+     3
+    ]
+   }
+  ],
+  "traceHeads": [
+   [
+    "a を vector<int> として用意します：[\n  1,\n  2,\n  3,\n  4\n]",
+    "b を vector<int> として用意します：[\n  4,\n  5,\n  6\n]",
+    "c を vector<int> として用意します：[\n  1,\n  2,\n  3\n]"
+   ]
+  ]
+ },
+ {
+  "id": "CPP-03",
+  "body": "std::vector<int> a = {1,2,3,4}; std::vector<int> ps(4); std::vector<int> ad(4); std::partial_sum(a.begin(), a.end(), ps.begin()); std::adjacent_difference(a.begin(), a.end(), ad.begin()); for (int x: ps) std::cout << x << \" \"; std::cout << \"|\"; for (int x: ad) std::cout << x << \" \"; std::cout << \"|\"; std::vector<int> io(4); std::iota(io.begin(), io.end(), 5); for (int x: io) std::cout << x << \" \";",
+  "note": "",
+  "errors": [],
+  "outputs": "1 3 6 10 |1 1 1 1 |5 6 7 8 ",
+  "channels": [
+   [
+    "cout",
+    "cout",
+    "cout",
+    "cout",
+    "cout",
+    "cout",
+    "cout",
+    "cout",
+    "cout",
+    "cout",
+    "cout",
+    "cout",
+    "cout",
+    "cout"
+   ]
+  ],
+  "vars": [
+   {
+    "a": [
+     1,
+     2,
+     3,
+     4
+    ],
+    "ps": [
+     1,
+     3,
+     6,
+     10
+    ],
+    "ad": [
+     1,
+     1,
+     1,
+     1
+    ],
+    "io": [
+     5,
+     6,
+     7,
+     8
+    ]
+   }
+  ],
+  "traceHeads": [
+   [
+    "a を vector<int> として用意します：[\n  1,\n  2,\n  3,\n  4\n]",
+    "ps を vector<int> として用意します：[\n  0,\n  0,\n  0,\n  0\n]",
+    "ad を vector<int> として用意します：[\n  0,\n  0,\n  0,\n  0\n]"
+   ]
+  ]
+ },
+ {
+  "id": "CPP-04",
+  "body": "std::string s = \"banana\"; std::cout << s.find(\"na\") << \" \" << s.rfind(\"na\") << \" \" << s.substr(1,3) << \" \" << (s.find(\"q\") == std::string::npos);",
+  "note": "",
+  "errors": [],
+  "outputs": "2 4 ana 1",
+  "channels": [
+   [
+    "cout"
+   ]
+  ],
+  "vars": [
+   {
+    "s": "banana"
+   }
+  ],
+  "traceHeads": [
+   [
+    "s を string として用意します：banana",
+    "標準出力へ出します：2 4 ana 1",
+    "値を返して終了します：0"
+   ]
+  ]
+ },
+ {
+  "id": "CPP-05a",
+  "body": "std::string s = \"hello\"; s.replace(0,1,\"J\"); std::cout << s;",
+  "note": "",
+  "errors": [],
+  "outputs": "Jello",
+  "channels": [
+   [
+    "cout"
+   ]
+  ],
+  "vars": [
+   {
+    "s": "Jello"
+   }
+  ],
+  "traceHeads": [
+   [
+    "s を string として用意します：hello",
+    "式を評価します：Jello",
+    "標準出力へ出します：Jello"
+   ]
+  ]
+ },
+ {
+  "id": "CPP-05b",
+  "body": "std::string s = \"abcd\"; s.erase(1,2); s.insert(1,\"XY\"); std::cout << s;",
+  "note": "",
+  "errors": [],
+  "outputs": "aXYd",
+  "channels": [
+   [
+    "cout"
+   ]
+  ],
+  "vars": [
+   {
+    "s": "aXYd"
+   }
+  ],
+  "traceHeads": [
+   [
+    "s を string として用意します：abcd",
+    "式を評価します：ad",
+    "式を評価します：aXYd"
+   ]
+  ]
+ },
+ {
+  "id": "CPP-05c",
+  "body": "std::string s = \"ab\"; s.push_back('c'); s.pop_back(); std::cout << s;",
+  "note": "",
+  "errors": [],
+  "outputs": "ab",
+  "channels": [
+   [
+    "cout"
+   ]
+  ],
+  "vars": [
+   {
+    "s": "ab"
+   }
+  ],
+  "traceHeads": [
+   [
+    "s を string として用意します：ab",
+    "処理を実行します（表示する戻り値はありません）",
+    "処理を実行します（表示する戻り値はありません）"
+   ]
+  ]
+ },
+ {
+  "id": "CPP-06a",
+  "body": "std::vector<int> v = {10,20,30}; std::cout << v.at(2);",
+  "note": "",
+  "errors": [],
+  "outputs": "30",
+  "channels": [
+   [
+    "cout"
+   ]
+  ],
+  "vars": [
+   {
+    "v": [
+     10,
+     20,
+     30
+    ]
+   }
+  ],
+  "traceHeads": [
+   [
+    "v を vector<int> として用意します：[\n  10,\n  20,\n  30\n]",
+    "標準出力へ出します：30",
+    "値を返して終了します：0"
+   ]
+  ]
+ },
+ {
+  "id": "CPP-06b",
+  "body": "std::vector<int> v = {10,20,30}; std::cout << v.at(3);",
+  "note": "",
+  "errors": [
+   "例外:範囲外の添字です（std::out_of_range が送出されます）"
+  ],
+  "outputs": "",
+  "channels": [
+   []
+  ],
+  "vars": [
+   {
+    "v": [
+     10,
+     20,
+     30
+    ]
+   }
+  ],
+  "traceHeads": [
+   [
+    "v を vector<int> として用意します：[\n  10,\n  20,\n  30\n]",
+    "範囲外の添字です（std::out_of_range が送出されます）"
+   ]
+  ]
+ },
+ {
+  "id": "CPP-07",
+  "body": "auto mm = std::minmax(3,7); std::vector<int> v = {4,1,9,2}; std::cout << std::clamp(15,0,10) << \" \" << std::clamp(-3,0,10) << \" \" << std::clamp(5,0,10) << \" \" << mm.first << \" \" << mm.second << \" \" << *std::min_element(v.begin(), v.end()) << \" \" << *std::max_element(v.begin(), v.end());",
+  "note": "",
+  "errors": [],
+  "outputs": "10 0 5 3 7 1 9",
+  "channels": [
+   [
+    "cout"
+   ]
+  ],
+  "vars": [
+   {
+    "mm": {
+     "__pair": true,
+     "t1": "int",
+     "t2": "int",
+     "first": 3,
+     "second": 7
+    },
+    "v": [
+     4,
+     1,
+     9,
+     2
+    ]
+   }
+  ],
+  "traceHeads": [
+   [
+    "mm を pair<int,int> として用意します：{\n  \"first\": 3,\n  \"second\": 7\n}",
+    "v を vector<int> として用意します：[\n  4,\n  1,\n  9,\n  2\n]",
+    "標準出力へ出します：10 0 5 3 7 1 9"
+   ]
+  ]
+ },
+ {
+  "id": "CPP-08",
+  "body": "double a = std::pow(2.0,10.0); double b = std::sqrt(2.0); double c = std::hypot(3.0,4.0); double e = std::fmod(10.5,3.0); double f = std::remainder(10.5,3.0); std::cout << (a==1024.0) << (b>1.4142135623730950 && b<1.4142135623730952) << (c==5.0) << (e==1.5) << (f==-1.5) << \" \" << a << \" \" << b << \" \" << c << \" \" << e << \" \" << f;",
+  "note": "",
+  "errors": [],
+  "outputs": "10111 1024 1.41421 5 1.5 -1.5",
+  "channels": [
+   [
+    "cout"
+   ]
+  ],
+  "vars": [
+   {
+    "a": 1024,
+    "b": 1.4142135623730951,
+    "c": 5,
+    "e": 1.5,
+    "f": -1.5
+   }
+  ],
+  "traceHeads": [
+   [
+    "a を double として用意します：1024",
+    "b を double として用意します：1.41421",
+    "c を double として用意します：5"
+   ]
+  ]
+ },
+ {
+  "id": "CPP-09",
+  "body": "std::cout << std::round(2.5) << \" \" << std::round(-2.5) << \" \" << std::round(1.5) << \" \" << std::nearbyint(2.5) << \" \" << std::nearbyint(3.5) << \" \" << std::rint(2.5);",
+  "note": "",
+  "errors": [],
+  "outputs": "3 -3 2 2 4 2",
+  "channels": [
+   [
+    "cout"
+   ]
+  ],
+  "vars": [
+   {}
+  ],
+  "traceHeads": [
+   [
+    "標準出力へ出します：3 -3 2 2 4 2",
+    "値を返して終了します：0"
+   ]
+  ]
+ },
+ {
+  "id": "CPP-10",
+  "body": "std::div_t d1 = std::div(-7,2); std::div_t d2 = std::div(7,-2); std::ldiv_t d3 = std::ldiv(10L,3L); std::cout << d1.quot << \",\" << d1.rem << \" \" << d2.quot << \",\" << d2.rem << \" \" << d3.quot << \",\" << d3.rem;",
+  "note": "",
+  "errors": [],
+  "outputs": "-3,-1 -3,1 3,1",
+  "channels": [
+   [
+    "cout"
+   ]
+  ],
+  "vars": [
+   {
+    "d1": {
+     "quot": -3,
+     "rem": -1
+    },
+    "d2": {
+     "quot": -3,
+     "rem": 1
+    },
+    "d3": {
+     "quot": 3,
+     "rem": 1
+    }
+   }
+  ],
+  "traceHeads": [
+   [
+    "d1 を div_t として用意します：{\n  \"quot\": -3,\n  \"rem\": -1\n}",
+    "d2 を div_t として用意します：{\n  \"quot\": -3,\n  \"rem\": 1\n}",
+    "d3 を ldiv_t として用意します：{\n  \"quot\": 3,\n  \"rem\": 1\n}"
+   ]
+  ]
+ },
+ {
+  "id": "CPP-11a",
+  "body": "std::cout << std::stoi(\"42abc\") << \" \" << std::stoi(\"  -17\") << \" \" << std::stod(\"2.5x\") << \" \" << std::to_string(3.5) << \" \" << std::to_string(42);",
+  "note": "",
+  "errors": [],
+  "outputs": "42 -17 2.5 3.500000 42",
+  "channels": [
+   [
+    "cout"
+   ]
+  ],
+  "vars": [
+   {}
+  ],
+  "traceHeads": [
+   [
+    "標準出力へ出します：42 -17 2.5 3.500000 42",
+    "値を返して終了します：0"
+   ]
+  ]
+ },
+ {
+  "id": "CPP-11b",
+  "body": "std::cout << std::stoi(\"abc\");",
+  "note": "",
+  "errors": [
+   "std::invalid_argument:変換できる数値がありません（std::invalid_argument）"
+  ],
+  "outputs": "",
+  "channels": [
+   []
+  ],
+  "vars": [
+   {}
+  ],
+  "traceHeads": [
+   [
+    "変換できる数値がありません（std::invalid_argument）"
+   ]
+  ]
+ },
+ {
+  "id": "CPP-12",
+  "body": "std::cout << (std::isalpha('A') != 0) << (std::isalpha('7') != 0) << (std::isdigit('7') != 0) << (std::isspace('\\t') != 0) << (std::isupper('a') != 0) << \" \" << (char)std::toupper('q') << (char)std::tolower('Q');",
+  "note": "",
+  "errors": [],
+  "outputs": "10110 Qq",
+  "channels": [
+   [
+    "cout"
+   ]
+  ],
+  "vars": [
+   {}
+  ],
+  "traceHeads": [
+   [
+    "標準出力へ出します：10110 Qq",
+    "値を返して終了します：0"
+   ]
+  ]
+ },
+ {
+  "id": "CPP-13a",
+  "body": "std::cout << std::strlen(\"hello\") << \" \" << std::strlen(\"\") << \" \" << (std::strcmp(\"abc\",\"abd\") < 0) << (std::strcmp(\"abc\",\"abd\") == 0) << \" \" << std::strcmp(\"abc\",\"abc\");",
+  "note": "",
+  "errors": [],
+  "outputs": "5 0 10 0",
+  "channels": [
+   [
+    "cout"
+   ]
+  ],
+  "vars": [
+   {}
+  ],
+  "traceHeads": [
+   [
+    "標準出力へ出します：5 0 10 0",
+    "値を返して終了します：0"
+   ]
+  ]
+ },
+ {
+  "id": "CPP-13b",
+  "body": "char buf[] = \"hello\"; std::cout << std::strchr(buf, 'l') << \" \" << std::strrchr(buf, 'l') << \" \" << std::strstr(buf, \"ell\");",
+  "note": "",
+  "errors": [],
+  "outputs": "llo lo ello",
+  "channels": [
+   [
+    "cout"
+   ]
+  ],
+  "vars": [
+   {
+    "buf": {
+     "kind": "pointer",
+     "object": "object-1",
+     "offset": 0
+    }
+   }
+  ],
+  "traceHeads": [
+   [
+    "buf を char[] として用意します：モデル上の参照先 object-1・要素位置 0（実アドレスではありません）",
+    "標準出力へ出します：llo lo ello",
+    "値を返して終了します：0"
+   ]
+  ]
+ },
+ {
+  "id": "CPP-13c",
+  "body": "char buf[] = \"hello\"; std::cout << (std::strstr(buf, \"z\") == nullptr) << (std::strchr(buf, 'x') == nullptr);",
+  "note": "",
+  "errors": [],
+  "outputs": "11",
+  "channels": [
+   [
+    "cout"
+   ]
+  ],
+  "vars": [
+   {
+    "buf": {
+     "kind": "pointer",
+     "object": "object-1",
+     "offset": 0
+    }
+   }
+  ],
+  "traceHeads": [
+   [
+    "buf を char[] として用意します：モデル上の参照先 object-1・要素位置 0（実アドレスではありません）",
+    "標準出力へ出します：11",
+    "値を返して終了します：0"
+   ]
+  ]
+ },
+ {
+  "id": "CPP-13d-pointerdiff",
+  "body": "char buf[] = \"hello\"; std::cout << (std::strchr(buf, 'l') - buf);",
+  "note": "前回は名指し停止（未対応のポインタ演算）だった形",
+  "errors": [
+   "エラー:未対応のポインタ演算です"
+  ],
+  "outputs": "",
+  "channels": [
+   []
+  ],
+  "vars": [
+   {
+    "buf": {
+     "kind": "pointer",
+     "object": "object-1",
+     "offset": 0
+    }
+   }
+  ],
+  "traceHeads": [
+   [
+    "buf を char[] として用意します：モデル上の参照先 object-1・要素位置 0（実アドレスではありません）",
+    "未対応のポインタ演算です"
+   ]
+  ]
+ },
+ {
+  "id": "CPP-14",
+  "body": "std::cout << std::popcount(0xFFu) << \" \" << std::popcount(0u) << \" \" << std::bit_width(5u) << \" \" << std::bit_width(0u) << \" \" << std::bit_floor(9u) << \" \" << std::bit_floor(0u) << \" \" << std::bit_ceil(1u) << \" \" << std::bit_ceil(9u) << \" \" << std::has_single_bit(0u) << \" \" << std::has_single_bit(16u) << \" \" << std::countr_zero(8u) << \" \" << std::rotl(0x80000000u, 1) << \" \" << std::rotr(1u, 1);",
+  "note": "",
+  "errors": [],
+  "outputs": "8 0 3 0 8 0 1 16 0 1 3 1 2147483648",
+  "channels": [
+   [
+    "cout"
+   ]
+  ],
+  "vars": [
+   {}
+  ],
+  "traceHeads": [
+   [
+    "標準出力へ出します：8 0 3 0 8 0 1 16 0 1 3 1 2147483648",
+    "値を返して終了します：0"
+   ]
+  ]
+ },
+ {
+  "id": "CPP-15",
+  "body": "double pi = std::numbers::pi; double e = std::numbers::e; double s2 = std::numbers::sqrt2; double phi = std::numbers::phi; double ln2 = std::numbers::ln2; std::cout << (pi>3.141592653589792 && pi<3.141592653589794) << (e>2.718281828459044 && e<2.718281828459046) << (s2>1.4142135623730950 && s2<1.4142135623730952) << (phi>1.618033988749894 && phi<1.618033988749896) << (ln2>0.6931471805599452 && ln2<0.6931471805599454) << \" \" << pi << \" \" << e << \" \" << s2 << \" \" << phi << \" \" << ln2;",
+  "note": "",
+  "errors": [],
+  "outputs": "11011 3.14159 2.71828 1.41421 1.61803 0.693147",
+  "channels": [
+   [
+    "cout"
+   ]
+  ],
+  "vars": [
+   {
+    "pi": 3.141592653589793,
+    "e": 2.718281828459045,
+    "s2": 1.4142135623730951,
+    "phi": 1.618033988749895,
+    "ln2": 0.6931471805599453
+   }
+  ],
+  "traceHeads": [
+   [
+    "pi を double として用意します：3.14159",
+    "e を double として用意します：2.71828",
+    "s2 を double として用意します：1.41421"
+   ]
+  ]
+ },
+ {
+  "id": "CPP-16a-castform",
+  "body": "int a=1; int b=2; std::swap(a,b); int x=5; int old = std::exchange(x, 9); auto p = std::make_pair(7, std::string(\"x\")); std::cout << a << \" \" << b;",
+  "note": "前回は関数形式キャストで名指し停止した形",
+  "errors": [
+   "未対応:キャストのこの形式は未対応です（関数形式ではなく (型)式 を使用してください）"
+  ],
+  "outputs": "",
+  "channels": [
+   []
+  ],
+  "vars": [
+   {
+    "a": 2,
+    "b": 1,
+    "x": 9,
+    "old": 5,
+    "p": {
+     "kind": "uninitialized"
+    }
+   }
+  ],
+  "traceHeads": [
+   [
+    "a を int として用意します：1",
+    "b を int として用意します：2",
+    "処理を実行します（表示する戻り値はありません）"
+   ]
+  ]
+ },
+ {
+  "id": "CPP-16b",
+  "body": "int a=1; int b=2; std::swap(a,b); int x=5; int old = std::exchange(x, 9); std::string xs = \"x\"; auto p = std::make_pair(7, xs); std::pair<int,int> q = {1,2}; std::pair<int,int> w = {3,4}; q.swap(w); std::cout << a << \" \" << b << \" \" << old << \" \" << x << \" \" << p.first << \" \" << p.second << \" \" << q.first << \",\" << q.second << \" \" << w.first << \",\" << w.second;",
+  "note": "",
+  "errors": [],
+  "outputs": "2 1 5 9 7 x 3,4 1,2",
+  "channels": [
+   [
+    "cout"
+   ]
+  ],
+  "vars": [
+   {
+    "a": 2,
+    "b": 1,
+    "x": 9,
+    "old": 5,
+    "xs": "x",
+    "p": {
+     "__pair": true,
+     "t1": "int",
+     "t2": "string",
+     "first": 7,
+     "second": "x"
+    },
+    "q": {
+     "__pair": true,
+     "t1": "int",
+     "t2": "int",
+     "first": 3,
+     "second": 4
+    },
+    "w": {
+     "__pair": true,
+     "t1": "int",
+     "t2": "int",
+     "first": 1,
+     "second": 2
+    }
+   }
+  ],
+  "traceHeads": [
+   [
+    "a を int として用意します：1",
+    "b を int として用意します：2",
+    "処理を実行します（表示する戻り値はありません）"
+   ]
+  ]
+ },
+ {
+  "id": "CPP-16c",
+  "body": "auto p = std::make_pair(7, \"x\"); std::cout << p.first << \" \" << p.second;",
+  "note": "",
+  "errors": [],
+  "outputs": "7 x",
+  "channels": [
+   [
+    "cout"
+   ]
+  ],
+  "vars": [
+   {
+    "p": {
+     "__pair": true,
+     "t1": "int",
+     "t2": "string",
+     "first": 7,
+     "second": "x"
+    }
+   }
+  ],
+  "traceHeads": [
+   [
+    "p を pair<int,string> として用意します：{\n  \"first\": 7,\n  \"second\": \"x\"\n}",
+    "標準出力へ出します：7 x",
+    "値を返して終了します：0"
+   ]
+  ]
+ },
+ {
+  "id": "CPP-17",
+  "body": "std::vector<int> v = {10,20,30,40}; auto it = v.begin(); std::advance(it, 3); std::cout << *std::next(v.begin(), 2) << \" \" << *std::prev(v.end()) << \" \" << std::distance(v.begin(), v.end()) << \" \" << *it;",
+  "note": "",
+  "errors": [],
+  "outputs": "30 40 4 40",
+  "channels": [
+   [
+    "cout"
+   ]
+  ],
+  "vars": [
+   {
+    "v": [
+     10,
+     20,
+     30,
+     40
+    ],
+    "it": {
+     "kind": "cpp-iterator",
+     "arr": [
+      10,
+      20,
+      30,
+      40
+     ],
+     "pos": 3,
+     "elem": "int",
+     "rev": false,
+     "constIt": false,
+     "itype": "vector<int>::iterator"
+    }
+   }
+  ],
+  "traceHeads": [
+   [
+    "v を vector<int> として用意します：[\n  10,\n  20,\n  30,\n  40\n]",
+    "it を vector<int>::iterator として用意します：イテレータ（位置 0）",
+    "処理を実行します（表示する戻り値はありません）"
+   ]
+  ]
+ },
+ {
+  "id": "CPP-18",
+  "body": "std::vector<int> a = {1,2,2,3,2}; std::vector<int> b = {1,2,3}; std::vector<int> c = {1,2,4}; auto m = std::mismatch(b.begin(), b.end(), c.begin()); std::cout << std::count(a.begin(), a.end(), 2) << \" \" << (std::find(a.begin(), a.end(), 3) - a.begin()) << \" \" << std::equal(b.begin(), b.end(), b.begin()) << \" \" << (m.first - b.begin()) << \" \" << *m.first << \" \" << *m.second;",
+  "note": "",
+  "errors": [],
+  "outputs": "3 3 1 2 3 4",
+  "channels": [
+   [
+    "cout"
+   ]
+  ],
+  "vars": [
+   {
+    "a": [
+     1,
+     2,
+     2,
+     3,
+     2
+    ],
+    "b": [
+     1,
+     2,
+     3
+    ],
+    "c": [
+     1,
+     2,
+     4
+    ],
+    "m": {
+     "__pair": true,
+     "t1": "vector<int>::iterator",
+     "t2": "vector<int>::iterator",
+     "first": {
+      "kind": "cpp-iterator",
+      "arr": [
+       1,
+       2,
+       3
+      ],
+      "pos": 2,
+      "elem": "int",
+      "rev": false,
+      "constIt": false,
+      "itype": "vector<int>::iterator"
+     },
+     "second": {
+      "kind": "cpp-iterator",
+      "arr": [
+       1,
+       2,
+       4
+      ],
+      "pos": 2,
+      "elem": "int",
+      "rev": false,
+      "constIt": false,
+      "itype": "vector<int>::iterator"
+     }
+    }
+   }
+  ],
+  "traceHeads": [
+   [
+    "a を vector<int> として用意します：[\n  1,\n  2,\n  2,\n  3,\n  2\n]",
+    "b を vector<int> として用意します：[\n  1,\n  2,\n  3\n]",
+    "c を vector<int> として用意します：[\n  1,\n  2,\n  4\n]"
+   ]
+  ]
+ },
+ {
+  "id": "CPP-19a",
+  "body": "std::vector<int> v = {1,2,3}; std::cout << std::next_permutation(v.begin(), v.end()); for (int x: v) std::cout << x;",
+  "note": "",
+  "errors": [],
+  "outputs": "1132",
+  "channels": [
+   [
+    "cout",
+    "cout",
+    "cout",
+    "cout"
+   ]
+  ],
+  "vars": [
+   {
+    "v": [
+     1,
+     3,
+     2
+    ]
+   }
+  ],
+  "traceHeads": [
+   [
+    "v を vector<int> として用意します：[\n  1,\n  2,\n  3\n]",
+    "標準出力へ出します：1",
+    "繰り返し 1回目"
+   ]
+  ]
+ },
+ {
+  "id": "CPP-19b",
+  "body": "std::vector<int> v = {3,2,1}; std::cout << std::next_permutation(v.begin(), v.end()); for (int x: v) std::cout << x;",
+  "note": "",
+  "errors": [],
+  "outputs": "0123",
+  "channels": [
+   [
+    "cout",
+    "cout",
+    "cout",
+    "cout"
+   ]
+  ],
+  "vars": [
+   {
+    "v": [
+     1,
+     2,
+     3
+    ]
+   }
+  ],
+  "traceHeads": [
+   [
+    "v を vector<int> として用意します：[\n  3,\n  2,\n  1\n]",
+    "標準出力へ出します：0",
+    "繰り返し 1回目"
+   ]
+  ]
+ },
+ {
+  "id": "CPP-19c",
+  "body": "std::vector<int> v = {1,3,2}; std::cout << std::prev_permutation(v.begin(), v.end()); for (int x: v) std::cout << x;",
+  "note": "",
+  "errors": [],
+  "outputs": "1123",
+  "channels": [
+   [
+    "cout",
+    "cout",
+    "cout",
+    "cout"
+   ]
+  ],
+  "vars": [
+   {
+    "v": [
+     1,
+     2,
+     3
+    ]
+   }
+  ],
+  "traceHeads": [
+   [
+    "v を vector<int> として用意します：[\n  1,\n  3,\n  2\n]",
+    "標準出力へ出します：1",
+    "繰り返し 1回目"
+   ]
+  ]
+ },
+ {
+  "id": "CPP-20a",
+  "body": "std::vector<int> v = {1,3,4,7,9}; auto er = std::equal_range(v.begin(), v.end(), 5); std::cout << (std::lower_bound(v.begin(), v.end(), 4) - v.begin()) << \" \" << (std::upper_bound(v.begin(), v.end(), 4) - v.begin()) << \" \" << (er.first - v.begin()) << \" \" << (er.second - v.begin()) << \" \" << std::binary_search(v.begin(), v.end(), 7);",
+  "note": "",
+  "errors": [],
+  "outputs": "2 3 3 3 1",
+  "channels": [
+   [
+    "cout"
+   ]
+  ],
+  "vars": [
+   {
+    "v": [
+     1,
+     3,
+     4,
+     7,
+     9
+    ],
+    "er": {
+     "__pair": true,
+     "t1": "vector<int>::iterator",
+     "t2": "vector<int>::iterator",
+     "first": {
+      "kind": "cpp-iterator",
+      "arr": [
+       1,
+       3,
+       4,
+       7,
+       9
+      ],
+      "pos": 3,
+      "elem": "int",
+      "rev": false,
+      "constIt": false,
+      "itype": "vector<int>::iterator"
+     },
+     "second": {
+      "kind": "cpp-iterator",
+      "arr": [
+       1,
+       3,
+       4,
+       7,
+       9
+      ],
+      "pos": 3,
+      "elem": "int",
+      "rev": false,
+      "constIt": false,
+      "itype": "vector<int>::iterator"
+     }
+    }
+   }
+  ],
+  "traceHeads": [
+   [
+    "v を vector<int> として用意します：[\n  1,\n  3,\n  4,\n  7,\n  9\n]",
+    "er を pair<vector<int>::iterator,vector<int>::iterator> として用意します：{\n  \"first\": \"イテレータ（位置 3）\",\n  \"second\": \"イテレータ（位置 3）\"\n}",
+    "標準出力へ出します：2 3 3 3 1"
+   ]
+  ]
+ },
+ {
+  "id": "CPP-20b",
+  "body": "std::vector<int> v = {7,1,4,9,3}; std::cout << std::is_sorted(v.begin(), v.end()) << \" \"; std::nth_element(v.begin(), v.begin()+2, v.end()); std::cout << v[2] << \" \"; std::sort(v.begin(), v.end()); std::cout << std::is_sorted(v.begin(), v.end());",
+  "note": "",
+  "errors": [],
+  "outputs": "0 4 1",
+  "channels": [
+   [
+    "cout",
+    "cout",
+    "cout"
+   ]
+  ],
+  "vars": [
+   {
+    "v": [
+     1,
+     3,
+     4,
+     7,
+     9
+    ]
+   }
+  ],
+  "traceHeads": [
+   [
+    "v を vector<int> として用意します：[\n  7,\n  1,\n  4,\n  9,\n  3\n]",
+    "標準出力へ出します：0 ",
+    "処理を実行します（表示する戻り値はありません）"
+   ]
+  ]
+ },
+ {
+  "id": "CPP-21a",
+  "body": "std::vector<int> v = {1,2,3,2,4}; auto e = std::remove(v.begin(), v.end(), 2); std::cout << (e - v.begin()) << \" \" << v[0] << v[1] << v[2] << \" \" << v.size();",
+  "note": "",
+  "errors": [],
+  "outputs": "3 134 5",
+  "channels": [
+   [
+    "cout"
+   ]
+  ],
+  "vars": [
+   {
+    "v": [
+     1,
+     3,
+     4,
+     2,
+     4
+    ],
+    "e": {
+     "kind": "cpp-iterator",
+     "arr": [
+      1,
+      3,
+      4,
+      2,
+      4
+     ],
+     "pos": 3,
+     "elem": "int",
+     "rev": false,
+     "constIt": false,
+     "itype": "vector<int>::iterator"
+    }
+   }
+  ],
+  "traceHeads": [
+   [
+    "v を vector<int> として用意します：[\n  1,\n  2,\n  3,\n  2,\n  4\n]",
+    "e を vector<int>::iterator として用意します：イテレータ（位置 3）",
+    "標準出力へ出します：3 134 5"
+   ]
+  ]
+ },
+ {
+  "id": "CPP-21b",
+  "body": "std::vector<int> v = {1,1,2,2,3}; auto e = std::unique(v.begin(), v.end()); std::cout << (e - v.begin()) << \" \" << v[0] << v[1] << v[2] << \" \" << v.size();",
+  "note": "",
+  "errors": [],
+  "outputs": "3 123 5",
+  "channels": [
+   [
+    "cout"
+   ]
+  ],
+  "vars": [
+   {
+    "v": [
+     1,
+     2,
+     3,
+     2,
+     3
+    ],
+    "e": {
+     "kind": "cpp-iterator",
+     "arr": [
+      1,
+      2,
+      3,
+      2,
+      3
+     ],
+     "pos": 3,
+     "elem": "int",
+     "rev": false,
+     "constIt": false,
+     "itype": "vector<int>::iterator"
+    }
+   }
+  ],
+  "traceHeads": [
+   [
+    "v を vector<int> として用意します：[\n  1,\n  1,\n  2,\n  2,\n  3\n]",
+    "e を vector<int>::iterator として用意します：イテレータ（位置 3）",
+    "標準出力へ出します：3 123 5"
+   ]
+  ]
+ },
+ {
+  "id": "CPP-22a",
+  "body": "std::vector<std::pair<int,int>> v = {{2,1},{1,9},{1,3}}; std::sort(v.begin(), v.end()); for (auto& pr: v) std::cout << pr.first << \",\" << pr.second << \" \";",
+  "note": "",
+  "errors": [],
+  "outputs": "1,3 1,9 2,1 ",
+  "channels": [
+   [
+    "cout",
+    "cout",
+    "cout"
+   ]
+  ],
+  "vars": [
+   {
+    "v": [
+     {
+      "__pair": true,
+      "t1": "int",
+      "t2": "int",
+      "first": 1,
+      "second": 3
+     },
+     {
+      "__pair": true,
+      "t1": "int",
+      "t2": "int",
+      "first": 1,
+      "second": 9
+     },
+     {
+      "__pair": true,
+      "t1": "int",
+      "t2": "int",
+      "first": 2,
+      "second": 1
+     }
+    ]
+   }
+  ],
+  "traceHeads": [
+   [
+    "v を vector<pair<int,int>> として用意します：[\n  {\n    \"first\": 2,\n    \"second\": 1\n  },\n  {\n    \"first\": 1,\n    \"second\": 9\n  },\n  {\n    \"first\": 1,\n    \"second\": 3\n  }\n]",
+    "処理を実行します（表示する戻り値はありません）",
+    "繰り返し 1回目"
+   ]
+  ]
+ },
+ {
+  "id": "CPP-22b-lambda",
+  "body": "std::vector<std::pair<int,int>> v = {{2,1},{1,9},{1,3}}; std::stable_sort(v.begin(), v.end(), [](const std::pair<int,int>& x, const std::pair<int,int>& y){ return x.first < y.first; }); for (auto& pr: v) std::cout << pr.first << \",\" << pr.second << \" \";",
+  "note": "前回は汎用エラーで停止したラムダ形（修正対象）",
+  "errors": [
+   "未対応:この構文は説明に対応していません：stable_sort へ渡すラムダ式は未対応です"
+  ],
+  "outputs": "",
+  "channels": [],
+  "vars": [],
+  "traceHeads": []
+ },
+ {
+  "id": "CPP-22c",
+  "body": "std::vector<std::pair<int,int>> v = {{2,1},{1,9},{1,3}}; std::stable_sort(v.begin(), v.end()); for (auto& pr: v) std::cout << pr.first << \",\" << pr.second << \" \";",
+  "note": "",
+  "errors": [],
+  "outputs": "1,3 1,9 2,1 ",
+  "channels": [
+   [
+    "cout",
+    "cout",
+    "cout"
+   ]
+  ],
+  "vars": [
+   {
+    "v": [
+     {
+      "__pair": true,
+      "t1": "int",
+      "t2": "int",
+      "first": 1,
+      "second": 3
+     },
+     {
+      "__pair": true,
+      "t1": "int",
+      "t2": "int",
+      "first": 1,
+      "second": 9
+     },
+     {
+      "__pair": true,
+      "t1": "int",
+      "t2": "int",
+      "first": 2,
+      "second": 1
+     }
+    ]
+   }
+  ],
+  "traceHeads": [
+   [
+    "v を vector<pair<int,int>> として用意します：[\n  {\n    \"first\": 2,\n    \"second\": 1\n  },\n  {\n    \"first\": 1,\n    \"second\": 9\n  },\n  {\n    \"first\": 1,\n    \"second\": 3\n  }\n]",
+    "処理を実行します（表示する戻り値はありません）",
+    "繰り返し 1回目"
+   ]
+  ]
+ },
+ {
+  "id": "CPP-23a",
+  "body": "std::cerr << \"E1\"; std::clog << \"L1\"; std::cout << \"O1\";",
+  "note": "",
+  "errors": [],
+  "outputs": "E1L1O1",
+  "channels": [
+   [
+    "cerr",
+    "clog",
+    "cout"
+   ]
+  ],
+  "vars": [
+   {}
+  ],
+  "traceHeads": [
+   [
+    "標準出力へ出します：E1",
+    "標準出力へ出します：L1",
+    "標準出力へ出します：O1"
+   ]
+  ]
+ },
+ {
+  "id": "CPP-23b",
+  "body": "int n; std::cin >> n; if (n > 0) { std::cout << \"pos\"; } else { std::cout << \"nonpos\"; }",
+  "note": "",
+  "errors": [],
+  "outputs": "pos || nonpos",
+  "channels": [
+   [
+    "cout"
+   ],
+   [
+    "cout"
+   ]
+  ],
+  "vars": [
+   {
+    "n": {
+     "kind": "unknown",
+     "source": "標準入力",
+     "id": "標準入力-1"
+    }
+   },
+   {
+    "n": {
+     "kind": "unknown",
+     "source": "標準入力",
+     "id": "標準入力-1"
+    }
+   }
+  ],
+  "traceHeads": [
+   [
+    "n を int として用意します：未初期化",
+    "式を評価します：実行時に決まる：標準入力ストリーム",
+    "条件が成立する場合（実行時の値による）"
+   ],
+   [
+    "n を int として用意します：未初期化",
+    "式を評価します：実行時に決まる：標準入力ストリーム",
+    "条件が成立しない場合（実行時の値による）"
+   ]
+  ]
+ },
+ {
+  "id": "CPP-24",
+  "body": "std::vector<int> v = {4,1,3,2}; std::sort(v.begin(), v.end()); std::vector<int> ps(4); std::partial_sum(v.begin(), v.end(), ps.begin()); for (int x: ps) std::cout << x << \" \"; int mx = *std::max_element(ps.begin(), ps.end()); std::string s = std::to_string(mx); s.append(\" items\"); std::cout << mx << \" \" << s << \" \" << (s.find(\"10\") == 0) << \" \" << s.find(\"items\");",
+  "note": "",
+  "errors": [],
+  "outputs": "1 3 6 10 10 10 items 1 3",
+  "channels": [
+   [
+    "cout",
+    "cout",
+    "cout",
+    "cout",
+    "cout"
+   ]
+  ],
+  "vars": [
+   {
+    "v": [
+     1,
+     2,
+     3,
+     4
+    ],
+    "ps": [
+     1,
+     3,
+     6,
+     10
+    ],
+    "mx": 10,
+    "s": "10 items"
+   }
+  ],
+  "traceHeads": [
+   [
+    "v を vector<int> として用意します：[\n  4,\n  1,\n  3,\n  2\n]",
+    "処理を実行します（表示する戻り値はありません）",
+    "ps を vector<int> として用意します：[\n  0,\n  0,\n  0,\n  0\n]"
+   ]
+  ]
+ },
+ {
+  "id": "CPP-B1a",
+  "body": "std::string s = \"abc\"; std::cout << s.at(3);",
+  "note": "",
+  "errors": [
+   "std::out_of_range:添字／位置が文字列の範囲外です（std::out_of_range）"
+  ],
+  "outputs": "",
+  "channels": [
+   []
+  ],
+  "vars": [
+   {
+    "s": "abc"
+   }
+  ],
+  "traceHeads": [
+   [
+    "s を string として用意します：abc",
+    "添字／位置が文字列の範囲外です（std::out_of_range）"
+   ]
+  ]
+ },
+ {
+  "id": "CPP-B1b",
+  "body": "std::string s = \"abc\"; std::cout << s[10];",
+  "note": "",
+  "errors": [
+   "未定義動作:文字列の有効範囲外の添字です"
+  ],
+  "outputs": "",
+  "channels": [
+   []
+  ],
+  "vars": [
+   {
+    "s": "abc"
+   }
+  ],
+  "traceHeads": [
+   [
+    "s を string として用意します：abc",
+    "文字列の有効範囲外の添字です"
+   ]
+  ]
+ },
+ {
+  "id": "CPP-B1c",
+  "body": "std::vector<int> v = {1,2,3}; std::cout << v[10];",
+  "note": "",
+  "errors": [
+   "未定義動作:範囲外の添字です"
+  ],
+  "outputs": "",
+  "channels": [
+   []
+  ],
+  "vars": [
+   {
+    "v": [
+     1,
+     2,
+     3
+    ]
+   }
+  ],
+  "traceHeads": [
+   [
+    "v を vector<int> として用意します：[\n  1,\n  2,\n  3\n]",
+    "範囲外の添字です"
+   ]
+  ]
+ },
+ {
+  "id": "CPP-B2a",
+  "body": "std::vector<int> v; std::cout << std::accumulate(v.begin(), v.end(), 7) << \" \"; std::sort(v.begin(), v.end()); std::cout << v.empty();",
+  "note": "",
+  "errors": [],
+  "outputs": "7 1",
+  "channels": [
+   [
+    "cout",
+    "cout"
+   ]
+  ],
+  "vars": [
+   {
+    "v": []
+   }
+  ],
+  "traceHeads": [
+   [
+    "v を vector<int> として用意します：[]",
+    "標準出力へ出します：7 ",
+    "処理を実行します（表示する戻り値はありません）"
+   ]
+  ]
+ },
+ {
+  "id": "CPP-B2b",
+  "body": "std::vector<int> v; std::cout << *std::max_element(v.begin(), v.end());",
+  "note": "",
+  "errors": [
+   "未定義動作:イテレータの指す先がありません（範囲外の参照）"
+  ],
+  "outputs": "",
+  "channels": [
+   []
+  ],
+  "vars": [
+   {
+    "v": []
+   }
+  ],
+  "traceHeads": [
+   [
+    "v を vector<int> として用意します：[]",
+    "イテレータの指す先がありません（範囲外の参照）"
+   ]
+  ]
+ },
+ {
+  "id": "CPP-B2c",
+  "body": "std::string s = \"\"; std::cout << \"[\" << s.substr(0,0) << \"]\";",
+  "note": "",
+  "errors": [],
+  "outputs": "[]",
+  "channels": [
+   [
+    "cout"
+   ]
+  ],
+  "vars": [
+   {
+    "s": ""
+   }
+  ],
+  "traceHeads": [
+   [
+    "s を string として用意します：",
+    "標準出力へ出します：[]",
+    "値を返して終了します：0"
+   ]
+  ]
+ },
+ {
+  "id": "CPP-B2d",
+  "body": "std::string s = \"\"; std::cout << s.substr(1);",
+  "note": "",
+  "errors": [
+   "std::out_of_range:添字／位置が文字列の範囲外です（std::out_of_range）"
+  ],
+  "outputs": "",
+  "channels": [
+   []
+  ],
+  "vars": [
+   {
+    "s": ""
+   }
+  ],
+  "traceHeads": [
+   [
+    "s を string として用意します：",
+    "添字／位置が文字列の範囲外です（std::out_of_range）"
+   ]
+  ]
+ },
+ {
+  "id": "CPP-B3a",
+  "body": "std::cout << std::stoi(\"99999999999999999999999999\");",
+  "note": "",
+  "errors": [
+   "std::out_of_range:変換結果が int の範囲外です（std::out_of_range）"
+  ],
+  "outputs": "",
+  "channels": [
+   []
+  ],
+  "vars": [
+   {}
+  ],
+  "traceHeads": [
+   [
+    "変換結果が int の範囲外です（std::out_of_range）"
+   ]
+  ]
+ },
+ {
+  "id": "CPP-B3b",
+  "body": "std::cout << std::stod(\"1e999\");",
+  "note": "",
+  "errors": [
+   "std::out_of_range:変換結果が範囲外です（std::out_of_range）"
+  ],
+  "outputs": "",
+  "channels": [
+   []
+  ],
+  "vars": [
+   {}
+  ],
+  "traceHeads": [
+   [
+    "変換結果が範囲外です（std::out_of_range）"
+   ]
+  ]
+ },
+ {
+  "id": "CPP-B4a",
+  "body": "std::cout << std::div(1,0).quot;",
+  "note": "",
+  "errors": [
+   "未定義動作:0 で割る除算です"
+  ],
+  "outputs": "",
+  "channels": [
+   []
+  ],
+  "vars": [
+   {}
+  ],
+  "traceHeads": [
+   [
+    "0 で割る除算です"
+   ]
+  ]
+ },
+ {
+  "id": "CPP-B4b",
+  "body": "std::cout << 5/0;",
+  "note": "",
+  "errors": [
+   "未定義動作:整数の0除算です"
+  ],
+  "outputs": "",
+  "channels": [
+   []
+  ],
+  "vars": [
+   {}
+  ],
+  "traceHeads": [
+   [
+    "整数の0除算です"
+   ]
+  ]
+ },
+ {
+  "id": "CPP-B4c",
+  "body": "std::cout << 5%0;",
+  "note": "",
+  "errors": [
+   "未定義動作:整数の0除算です"
+  ],
+  "outputs": "",
+  "channels": [
+   []
+  ],
+  "vars": [
+   {}
+  ],
+  "traceHeads": [
+   [
+    "整数の0除算です"
+   ]
+  ]
+ },
+ {
+  "id": "CPP-B4d",
+  "body": "double z = 1.0/0.0; std::cout << std::isinf(z) << \" \" << z;",
+  "note": "",
+  "errors": [],
+  "outputs": "1 inf",
+  "channels": [
+   [
+    "cout"
+   ]
+  ],
+  "vars": [
+   {
+    "z": "inf"
+   }
+  ],
+  "traceHeads": [
+   [
+    "z を double として用意します：inf",
+    "標準出力へ出します：1 inf",
+    "値を返して終了します：0"
+   ]
+  ]
+ },
+ {
+  "id": "CPP-B5",
+  "body": "double n = std::sqrt(-1.0); double p = std::pow(0.0,-1.0); std::cout << std::isnan(n) << \" \" << std::isinf(p) << \" \" << (p > 0) << \" \" << std::isunordered(n, 1.0) << \" \" << std::isless(n, 1.0) << \" \" << n << \" \" << p;",
+  "note": "",
+  "errors": [],
+  "outputs": "1 1 1 1 0 nan inf",
+  "channels": [
+   [
+    "cout"
+   ]
+  ],
+  "vars": [
+   {
+    "n": "nan",
+    "p": "inf"
+   }
+  ],
+  "traceHeads": [
+   [
+    "n を double として用意します：nan",
+    "p を double として用意します：inf",
+    "標準出力へ出します：1 1 1 1 0 nan inf"
+   ]
+  ]
+ },
+ {
+  "id": "CPP-B6",
+  "body": "std::vector<int> v = {10,20,30}; auto it = v.erase(v.begin()); std::cout << *it << \" \"; auto it2 = v.insert(v.begin(), 5); std::cout << *it2;",
+  "note": "",
+  "errors": [],
+  "outputs": "20 5",
+  "channels": [
+   [
+    "cout",
+    "cout"
+   ]
+  ],
+  "vars": [
+   {
+    "v": [
+     5,
+     20,
+     30
+    ],
+    "it": {
+     "kind": "cpp-iterator",
+     "arr": [
+      5,
+      20,
+      30
+     ],
+     "pos": 0,
+     "elem": "int",
+     "rev": false,
+     "constIt": false,
+     "itype": "vector<int>::iterator"
+    },
+    "it2": {
+     "kind": "cpp-iterator",
+     "arr": [
+      5,
+      20,
+      30
+     ],
+     "pos": 0,
+     "elem": "int",
+     "rev": false,
+     "constIt": false,
+     "itype": "vector<int>::iterator"
+    }
+   }
+  ],
+  "traceHeads": [
+   [
+    "v を vector<int> として用意します：[\n  10,\n  20,\n  30\n]",
+    "it を vector<int>::iterator として用意します：イテレータ（位置 0）",
+    "標準出力へ出します：20 "
+   ]
+  ]
+ },
+ {
+  "id": "CPP-B7a",
+  "body": "auto p = std::make_pair<int, int>(1, 2); std::cout << p.first << \" \" << p.second;",
+  "note": "",
+  "errors": [
+   "未対応:この構文は説明に対応していません：明示的なテンプレート引数（make_pair<...>）は未対応です"
+  ],
+  "outputs": "",
+  "channels": [],
+  "vars": [],
+  "traceHeads": []
+ },
+ {
+  "id": "CPP-B7b",
+  "body": "std::pair<int,int> p = std::make_pair<int,int>(1, 2); std::cout << p.first;",
+  "note": "",
+  "errors": [
+   "未対応:この構文は説明に対応していません：明示的なテンプレート引数（make_pair<...>）は未対応です"
+  ],
+  "outputs": "",
+  "channels": [],
+  "vars": [],
+  "traceHeads": []
+ },
+ {
+  "id": "CPP-B8a",
+  "body": "std::size_t n = 3; std::cout << n;",
+  "note": "",
+  "errors": [
+   "未対応:この構文は説明に対応していません：型 size_t の宣言は未対応です"
+  ],
+  "outputs": "",
+  "channels": [],
+  "vars": [],
+  "traceHeads": []
+ },
+ {
+  "id": "CPP-B8b",
+  "body": "size_t n = 3; std::cout << n;",
+  "note": "",
+  "errors": [
+   "未対応:この構文は説明に対応していません：型 size_t の宣言は未対応です"
+  ],
+  "outputs": "",
+  "channels": [],
+  "vars": [],
+  "traceHeads": []
+ },
+ {
+  "id": "CPP-B9",
+  "body": "std::string s = \"abc\"; std::cout << s.find(\"q\") << \" \" << (s.find(\"q\") == std::string::npos) << \" \"; if (s.find(\"q\") == std::string::npos) { std::cout << \"guarded\"; }",
+  "note": "",
+  "errors": [],
+  "outputs": "-1 1 guarded",
+  "channels": [
+   [
+    "cout",
+    "cout"
+   ]
+  ],
+  "vars": [
+   {
+    "s": "abc"
+   }
+  ],
+  "traceHeads": [
+   [
+    "s を string として用意します：abc",
+    "標準出力へ出します：-1 1 ",
+    "条件が成立します"
+   ]
+  ]
+ },
+ {
+  "id": "CPP-B10a",
+  "body": "std::cout << std::llabs(LLONG_MIN);",
+  "note": "",
+  "errors": [
+   "NameError:未定義の名前：LLONG_MIN"
+  ],
+  "outputs": "",
+  "channels": [
+   []
+  ],
+  "vars": [
+   {}
+  ],
+  "traceHeads": [
+   [
+    "未定義の名前：LLONG_MIN"
+   ]
+  ]
+ },
+ {
+  "id": "CPP-B10a2",
+  "body": "long long m = -9223372036854775807LL - 1; std::cout << std::llabs(m);",
+  "note": "",
+  "errors": [
+   "未確認:この整数リテラルは安全に計算できる範囲外です"
+  ],
+  "outputs": "",
+  "channels": [
+   []
+  ],
+  "vars": [
+   {
+    "m": {
+     "kind": "uninitialized"
+    }
+   }
+  ],
+  "traceHeads": [
+   [
+    "この整数リテラルは安全に計算できる範囲外です"
+   ]
+  ]
+ },
+ {
+  "id": "CPP-B10b",
+  "body": "unsigned int u = 0; std::cout << (u - 1) << \" \" << std::bit_width(u - 1);",
+  "note": "",
+  "errors": [],
+  "outputs": "4294967295 32",
+  "channels": [
+   [
+    "cout"
+   ]
+  ],
+  "vars": [
+   {
+    "u": 0
+   }
+  ],
+  "traceHeads": [
+   [
+    "u を unsigned int として用意します：0",
+    "標準出力へ出します：4294967295 32",
+    "値を返して終了します：0"
+   ]
+  ]
+ },
+ {
+  "id": "CPP-25-lambda",
+  "body": "std::vector<int> v = {1,2,3}; std::vector<int> w(3); std::transform(v.begin(), v.end(), w.begin(), [](int x){ return x*2; });",
+  "note": "",
+  "errors": [
+   "未対応:この構文は説明に対応していません：transform へ渡すラムダ式は未対応です"
+  ],
+  "outputs": "",
+  "channels": [],
+  "vars": [],
+  "traceHeads": []
+ },
+ {
+  "id": "CPP-25-negate",
+  "body": "std::vector<int> v = {1,2,3}; std::vector<int> w(3); std::transform(v.begin(), v.end(), w.begin(), std::negate<int>());",
+  "note": "",
+  "errors": [
+   "未対応:この構文は説明に対応していません：比較関数や演算を指定する形式（関数オブジェクト）は未対応です"
+  ],
+  "outputs": "",
+  "channels": [],
+  "vars": [],
+  "traceHeads": []
+ },
+ {
+  "id": "CPP-25-nullptr",
+  "body": "std::transform();",
+  "note": "",
+  "errors": [
+   "エラー:この関数は説明に対応していません：transform"
+  ],
+  "outputs": "",
+  "channels": [
+   []
+  ],
+  "vars": [
+   {}
+  ],
+  "traceHeads": [
+   [
+    "この関数は説明に対応していません：transform"
+   ]
+  ]
+ },
+ {
+  "id": "CPP-26-userdef",
+  "body": "bool isBig(int x) { return x > 2; } std::vector<int> v = {1,2,3}; std::cout << (std::find_if(v.begin(), v.end(), isBig) - v.begin());",
+  "note": "注: 関数定義は main 外が正形だが前回所見の指定形は定義を含む形。main内定義は不可のため定義を main 直前に置く変形も併記する（26-userdef2）",
+  "errors": [
+   "未対応:この構文は説明に対応していません：ユーザ定義関数 isBig の定義は未対応です"
+  ],
+  "outputs": "",
+  "channels": [],
+  "vars": [],
+  "traceHeads": []
+ },
+ {
+  "id": "CPP-26-userdef-count",
+  "body": "bool isBig(int x) { return x > 2; } std::vector<int> v = {1,2,3}; std::cout << std::count_if(v.begin(), v.end(), isBig);",
+  "note": "",
+  "errors": [
+   "未対応:この構文は説明に対応していません：ユーザ定義関数 isBig の定義は未対応です"
+  ],
+  "outputs": "",
+  "channels": [],
+  "vars": [],
+  "traceHeads": []
+ },
+ {
+  "id": "CPP-26-lambda-find",
+  "body": "std::vector<int> v = {1,2,3}; std::cout << (std::find_if(v.begin(), v.end(), [](int x){ return x > 2; }) - v.begin());",
+  "note": "",
+  "errors": [
+   "未対応:この構文は説明に対応していません：find_if へ渡すラムダ式は未対応です"
+  ],
+  "outputs": "",
+  "channels": [],
+  "vars": [],
+  "traceHeads": []
+ },
+ {
+  "id": "CPP-26-lambda-count",
+  "body": "std::vector<int> v = {1,2,3}; std::cout << std::count_if(v.begin(), v.end(), [](int x){ return x > 2; });",
+  "note": "",
+  "errors": [
+   "未対応:この構文は説明に対応していません：count_if へ渡すラムダ式は未対応です"
+  ],
+  "outputs": "",
+  "channels": [],
+  "vars": [],
+  "traceHeads": []
+ },
+ {
+  "id": "CPP-26-nullptr-find",
+  "body": "std::vector<int> v = {1,2,3}; std::cout << (std::find_if(v.begin(), v.end(), nullptr) - v.begin());",
+  "note": "",
+  "errors": [
+   "エラー:この関数は説明に対応していません：find_if"
+  ],
+  "outputs": "",
+  "channels": [
+   []
+  ],
+  "vars": [
+   {
+    "v": [
+     1,
+     2,
+     3
+    ]
+   }
+  ],
+  "traceHeads": [
+   [
+    "v を vector<int> として用意します：[\n  1,\n  2,\n  3\n]",
+    "この関数は説明に対応していません：find_if"
+   ]
+  ]
+ },
+ {
+  "id": "CPP-26-nullptr-count",
+  "body": "std::vector<int> v = {1,2,3}; std::cout << std::count_if(v.begin(), v.end(), nullptr);",
+  "note": "",
+  "errors": [
+   "エラー:この関数は説明に対応していません：count_if"
+  ],
+  "outputs": "",
+  "channels": [
+   []
+  ],
+  "vars": [
+   {
+    "v": [
+     1,
+     2,
+     3
+    ]
+   }
+  ],
+  "traceHeads": [
+   [
+    "v を vector<int> として用意します：[\n  1,\n  2,\n  3\n]",
+    "この関数は説明に対応していません：count_if"
+   ]
+  ]
+ },
+ {
+  "id": "CPP-27a",
+  "body": "std::vector<int> v = {3,1,2}; std::ranges::sort(v);",
+  "note": "",
+  "errors": [
+   "未対応:この構文は説明に対応していません：std::ranges::sort は未対応です"
+  ],
+  "outputs": "",
+  "channels": [],
+  "vars": [],
+  "traceHeads": []
+ },
+ {
+  "id": "CPP-27b",
+  "body": "std::vector<int> v = {3,1,2}; std::ranges::sort(v.begin(), v.end());",
+  "note": "",
+  "errors": [
+   "未対応:この構文は説明に対応していません：std::ranges::sort は未対応です"
+  ],
+  "outputs": "",
+  "channels": [],
+  "vars": [],
+  "traceHeads": []
+ },
+ {
+  "id": "CPP-27c",
+  "body": "auto f = std::ranges::sort;",
+  "note": "",
+  "errors": [
+   "未対応:この構文は説明に対応していません：std::ranges::sort は未対応です"
+  ],
+  "outputs": "",
+  "channels": [],
+  "vars": [],
+  "traceHeads": []
+ },
+ {
+  "id": "CPP-28a",
+  "body": "std::cout << std::format(\"{} {}\", 1, 2);",
+  "note": "",
+  "errors": [
+   "エラー:この関数は説明に対応していません：format"
+  ],
+  "outputs": "",
+  "channels": [
+   []
+  ],
+  "vars": [
+   {}
+  ],
+  "traceHeads": [
+   [
+    "この関数は説明に対応していません：format"
+   ]
+  ]
+ },
+ {
+  "id": "CPP-28b",
+  "body": "std::print(\"hi\");",
+  "note": "",
+  "errors": [
+   "エラー:この関数は説明に対応していません：print"
+  ],
+  "outputs": "",
+  "channels": [
+   []
+  ],
+  "vars": [
+   {}
+  ],
+  "traceHeads": [
+   [
+    "この関数は説明に対応していません：print"
+   ]
+  ]
+ },
+ {
+  "id": "CPP-28c",
+  "body": "std::println(\"hi\");",
+  "note": "",
+  "errors": [
+   "エラー:この関数は説明に対応していません：println"
+  ],
+  "outputs": "",
+  "channels": [
+   []
+  ],
+  "vars": [
+   {}
+  ],
+  "traceHeads": [
+   [
+    "この関数は説明に対応していません：println"
+   ]
+  ]
+ },
+ {
+  "id": "CPP-29-map",
+  "body": "std::map<int, int> m; m[1] = 2; std::cout << m.at(1);",
+  "note": "",
+  "errors": [
+   "未対応:この構文は説明に対応していません：ジェネリック型 map<...> の宣言は未対応です"
+  ],
+  "outputs": "",
+  "channels": [],
+  "vars": [],
+  "traceHeads": []
+ },
+ {
+  "id": "CPP-29-deque",
+  "body": "std::deque<int> q; q.push_back(1);",
+  "note": "",
+  "errors": [
+   "未対応:この構文は説明に対応していません：ジェネリック型 deque<...> の宣言は未対応です"
+  ],
+  "outputs": "",
+  "channels": [],
+  "vars": [],
+  "traceHeads": []
+ },
+ {
+  "id": "CPP-29-set",
+  "body": "std::set<int> s = {1,2}; std::cout << s.contains(1);",
+  "note": "",
+  "errors": [
+   "未対応:この構文は説明に対応していません：ジェネリック型 set<...> の宣言は未対応です"
+  ],
+  "outputs": "",
+  "channels": [],
+  "vars": [],
+  "traceHeads": []
+ },
+ {
+  "id": "CPP-29-optional-decl",
+  "body": "std::optional<int> o;",
+  "note": "",
+  "errors": [
+   "未対応:この構文は説明に対応していません：ジェネリック型 optional<...> の宣言は未対応です"
+  ],
+  "outputs": "",
+  "channels": [],
+  "vars": [],
+  "traceHeads": []
+ },
+ {
+  "id": "CPP-29-optional-init",
+  "body": "std::optional<int> o = 5;",
+  "note": "",
+  "errors": [
+   "未対応:この構文は説明に対応していません：ジェネリック型 optional<...> の宣言は未対応です"
+  ],
+  "outputs": "",
+  "channels": [],
+  "vars": [],
+  "traceHeads": []
+ },
+ {
+  "id": "CPP-29-optional-nullopt",
+  "body": "std::optional<int> o = std::nullopt;",
+  "note": "",
+  "errors": [
+   "未対応:この構文は説明に対応していません：ジェネリック型 optional<...> の宣言は未対応です"
+  ],
+  "outputs": "",
+  "channels": [],
+  "vars": [],
+  "traceHeads": []
+ },
+ {
+  "id": "CPP-29-string-data",
+  "body": "std::string s = \"abc\"; char* p = s.data();",
+  "note": "",
+  "errors": [
+   "エラー:この関数は説明に対応していません：s.data"
+  ],
+  "outputs": "",
+  "channels": [
+   []
+  ],
+  "vars": [
+   {
+    "s": "abc",
+    "p": {
+     "kind": "uninitialized"
+    }
+   }
+  ],
+  "traceHeads": [
+   [
+    "s を string として用意します：abc",
+    "この関数は説明に対応していません：s.data"
+   ]
+  ]
+ },
+ {
+  "id": "CPP-29-string-cstr",
+  "body": "std::string s = \"abc\"; std::cout << s.c_str();",
+  "note": "",
+  "errors": [
+   "エラー:この関数は説明に対応していません：s.c_str"
+  ],
+  "outputs": "",
+  "channels": [
+   []
+  ],
+  "vars": [
+   {
+    "s": "abc"
+   }
+  ],
+  "traceHeads": [
+   [
+    "s を string として用意します：abc",
+    "この関数は説明に対応していません：s.c_str"
+   ]
+  ]
+ },
+ {
+  "id": "CPP-29-vector-data",
+  "body": "std::vector<int> v = {1,2,3}; std::cout << v.data();",
+  "note": "",
+  "errors": [
+   "エラー:この関数は説明に対応していません：v.data"
+  ],
+  "outputs": "",
+  "channels": [
+   []
+  ],
+  "vars": [
+   {
+    "v": [
+     1,
+     2,
+     3
+    ]
+   }
+  ],
+  "traceHeads": [
+   [
+    "v を vector<int> として用意します：[\n  1,\n  2,\n  3\n]",
+    "この関数は説明に対応していません：v.data"
+   ]
+  ]
+ },
+ {
+  "id": "CPP-30-par",
+  "body": "std::vector<int> v = {3,1,2}; std::sort(std::execution::par, v.begin(), v.end());",
+  "note": "",
+  "errors": [
+   "未対応:この構文は説明に対応していません：std::execution::par は未対応です"
+  ],
+  "outputs": "",
+  "channels": [],
+  "vars": [],
+  "traceHeads": []
+ },
+ {
+  "id": "CPP-30-seq",
+  "body": "std::vector<int> v = {3,1,2}; std::sort(std::execution::seq, v.begin(), v.end());",
+  "note": "",
+  "errors": [
+   "未対応:この構文は説明に対応していません：std::execution::seq は未対応です"
+  ],
+  "outputs": "",
+  "channels": [],
+  "vars": [],
+  "traceHeads": []
+ },
+ {
+  "id": "CPP-30-ref",
+  "body": "auto pol = std::execution::par;",
+  "note": "",
+  "errors": [
+   "未対応:この構文は説明に対応していません：std::execution::par は未対応です"
+  ],
+  "outputs": "",
+  "channels": [],
+  "vars": [],
+  "traceHeads": []
+ },
+ {
+  "id": "CPP-31-thread",
+  "body": "std::thread t;",
+  "note": "",
+  "errors": [
+   "未対応:この構文は説明に対応していません：型 thread の宣言は未対応です"
+  ],
+  "outputs": "",
+  "channels": [],
+  "vars": [],
+  "traceHeads": []
+ },
+ {
+  "id": "CPP-31-regex-a",
+  "body": "std::string s = \"abc\"; std::regex re(\"a.*\"); std::cout << std::regex_match(s, re);",
+  "note": "",
+  "errors": [
+   "未対応:この構文は説明に対応していません：型 regex の宣言は未対応です"
+  ],
+  "outputs": "",
+  "channels": [],
+  "vars": [],
+  "traceHeads": []
+ },
+ {
+  "id": "CPP-31-regex-b",
+  "body": "std::cout << std::regex_match(\"abc\", \"a.*\");",
+  "note": "",
+  "errors": [
+   "エラー:この関数は説明に対応していません：regex_match"
+  ],
+  "outputs": "",
+  "channels": [
+   []
+  ],
+  "vars": [
+   {}
+  ],
+  "traceHeads": [
+   [
+    "この関数は説明に対応していません：regex_match"
+   ]
+  ]
+ },
+ {
+  "id": "CPP-31-fs",
+  "body": "std::filesystem::path p = \"/a/b.txt\"; std::cout << p.filename();",
+  "note": "",
+  "errors": [
+   "未対応:この構文は説明に対応していません：std::filesystem::path は未対応です"
+  ],
+  "outputs": "",
+  "channels": [],
+  "vars": [],
+  "traceHeads": []
+ },
+ {
+  "id": "CPP-31-fs-decl",
+  "body": "std::filesystem::path p;",
+  "note": "",
+  "errors": [
+   "未対応:この構文は説明に対応していません：std::filesystem::path は未対応です"
+  ],
+  "outputs": "",
+  "channels": [],
+  "vars": [],
+  "traceHeads": []
+ },
+ {
+  "id": "CPP-31-fs-paren",
+  "body": "std::filesystem::path p(\"/a/b.txt\");",
+  "note": "",
+  "errors": [
+   "未対応:この構文は説明に対応していません：std::filesystem::path は未対応です"
+  ],
+  "outputs": "",
+  "channels": [],
+  "vars": [],
+  "traceHeads": []
+ },
+ {
+  "id": "CPP-31-chrono-sec",
+  "body": "std::chrono::seconds sec(5); std::cout << sec.count();",
+  "note": "",
+  "errors": [
+   "未対応:この構文は説明に対応していません：std::chrono::seconds は未対応です"
+  ],
+  "outputs": "",
+  "channels": [],
+  "vars": [],
+  "traceHeads": []
+ },
+ {
+  "id": "CPP-31-chrono-clock",
+  "body": "auto now = std::chrono::system_clock::now();",
+  "note": "",
+  "errors": [
+   "未対応:この構文は説明に対応していません：std::chrono::system_clock::now は未対応です"
+  ],
+  "outputs": "",
+  "channels": [],
+  "vars": [],
+  "traceHeads": []
+ },
+ {
+  "id": "CPP-31-membertype-sizetype",
+  "body": "std::string s = \"abc\"; std::string::size_type n = s.size(); std::cout << n;",
+  "note": "",
+  "errors": [
+   "未対応:この構文は説明に対応していません：std::string::size_type は未対応です"
+  ],
+  "outputs": "",
+  "channels": [],
+  "vars": [],
+  "traceHeads": []
+ },
+ {
+  "id": "CPP-31-membertype-vec",
+  "body": "std::vector<int> v = {1,2,3}; std::vector<int>::size_type n = v.size(); std::cout << n;",
+  "note": "",
+  "errors": [
+   "未対応:この構文は説明に対応していません：std::vector::size_type は未対応です"
+  ],
+  "outputs": "",
+  "channels": [],
+  "vars": [],
+  "traceHeads": []
+ },
+ {
+  "id": "REG04-01-forloop",
+  "body": "std::string s = \"abc\"; int n = 0; for (std::string::iterator it = s.begin(); it != s.end(); ++it) n++; std::cout << n;",
+  "note": "",
+  "errors": [],
+  "outputs": "3",
+  "channels": [
+   [
+    "cout"
+   ]
+  ],
+  "vars": [
+   {
+    "s": "abc",
+    "n": 3
+   }
+  ],
+  "traceHeads": [
+   [
+    "s を string として用意します：abc",
+    "n を int として用意します：0",
+    "it を string::iterator として用意します：イテレータ（位置 0）"
+   ]
+  ]
+ },
+ {
+  "id": "REG04-02-decl",
+  "body": "std::string s = \"abc\"; std::string::iterator it = s.begin(); std::cout << *it;",
+  "note": "",
+  "errors": [],
+  "outputs": "a",
+  "channels": [
+   [
+    "cout"
+   ]
+  ],
+  "vars": [
+   {
+    "s": "abc",
+    "it": {
+     "kind": "cpp-iterator",
+     "strVar": "s",
+     "pos": 0,
+     "elem": "char",
+     "rev": false,
+     "constIt": false,
+     "itype": "string::iterator"
+    }
+   }
+  ],
+  "traceHeads": [
+   [
+    "s を string として用意します：abc",
+    "it を string::iterator として用意します：イテレータ（位置 0）",
+    "標準出力へ出します：a"
+   ]
+  ]
+ },
+ {
+  "id": "REG04-03-assign",
+  "body": "std::string s = \"abc\"; std::string::iterator it; it = s.begin(); ++it; std::cout << *it;",
+  "note": "",
+  "errors": [],
+  "outputs": "b",
+  "channels": [
+   [
+    "cout"
+   ]
+  ],
+  "vars": [
+   {
+    "s": "abc",
+    "it": {
+     "kind": "cpp-iterator",
+     "strVar": "s",
+     "pos": 1,
+     "elem": "char",
+     "rev": false,
+     "constIt": false,
+     "itype": "string::iterator"
+    }
+   }
+  ],
+  "traceHeads": [
+   [
+    "s を string として用意します：abc",
+    "it を string::iterator として用意します：イテレータ（未初期化）",
+    "式を評価します：種類: cpp-iterator\nstrVar: s\npos: 0\nelem: char\nrev: false\nconstIt: false\nitype: string::iterator"
+   ]
+  ]
+ },
+ {
+  "id": "REG04-04-constiter",
+  "body": "std::string s = \"abc\"; std::string::const_iterator it = s.cbegin(); std::cout << *it;",
+  "note": "",
+  "errors": [],
+  "outputs": "a",
+  "channels": [
+   [
+    "cout"
+   ]
+  ],
+  "vars": [
+   {
+    "s": "abc",
+    "it": {
+     "kind": "cpp-iterator",
+     "strVar": "s",
+     "pos": 0,
+     "elem": "char",
+     "rev": false,
+     "constIt": true,
+     "itype": "string::const_iterator"
+    }
+   }
+  ],
+  "traceHeads": [
+   [
+    "s を string として用意します：abc",
+    "it を string::const_iterator として用意します：イテレータ（位置 0）",
+    "標準出力へ出します：a"
+   ]
+  ]
+ },
+ {
+  "id": "REG04-05-reviter",
+  "body": "std::string s = \"abc\"; std::string::reverse_iterator it = s.rbegin(); std::cout << *it;",
+  "note": "",
+  "errors": [],
+  "outputs": "c",
+  "channels": [
+   [
+    "cout"
+   ]
+  ],
+  "vars": [
+   {
+    "s": "abc",
+    "it": {
+     "kind": "cpp-iterator",
+     "strVar": "s",
+     "pos": 0,
+     "elem": "char",
+     "rev": true,
+     "constIt": false,
+     "itype": "string::reverse_iterator"
+    }
+   }
+  ],
+  "traceHeads": [
+   [
+    "s を string として用意します：abc",
+    "it を string::reverse_iterator として用意します：イテレータ（位置 0）",
+    "標準出力へ出します：c"
+   ]
+  ]
+ },
+ {
+  "id": "REG04-06-veciter",
+  "body": "std::vector<int> v = {10,20,30}; std::vector<int>::iterator it = v.begin(); std::cout << *it;",
+  "note": "",
+  "errors": [],
+  "outputs": "10",
+  "channels": [
+   [
+    "cout"
+   ]
+  ],
+  "vars": [
+   {
+    "v": [
+     10,
+     20,
+     30
+    ],
+    "it": {
+     "kind": "cpp-iterator",
+     "arr": [
+      10,
+      20,
+      30
+     ],
+     "pos": 0,
+     "elem": "int",
+     "rev": false,
+     "constIt": false,
+     "itype": "vector<int>::iterator"
+    }
+   }
+  ],
+  "traceHeads": [
+   [
+    "v を vector<int> として用意します：[\n  10,\n  20,\n  30\n]",
+    "it を vector<int>::iterator として用意します：イテレータ（位置 0）",
+    "標準出力へ出します：10"
+   ]
+  ]
+ },
+ {
+  "id": "REG04-07-vecconstiter",
+  "body": "std::vector<int> v = {10,20,30}; std::vector<int>::const_iterator it = v.cbegin(); std::cout << *it;",
+  "note": "",
+  "errors": [],
+  "outputs": "10",
+  "channels": [
+   [
+    "cout"
+   ]
+  ],
+  "vars": [
+   {
+    "v": [
+     10,
+     20,
+     30
+    ],
+    "it": {
+     "kind": "cpp-iterator",
+     "arr": [
+      10,
+      20,
+      30
+     ],
+     "pos": 0,
+     "elem": "int",
+     "rev": false,
+     "constIt": true,
+     "itype": "vector<int>::const_iterator"
+    }
+   }
+  ],
+  "traceHeads": [
+   [
+    "v を vector<int> として用意します：[\n  10,\n  20,\n  30\n]",
+    "it を vector<int>::const_iterator として用意します：イテレータ（位置 0）",
+    "標準出力へ出します：10"
+   ]
+  ]
+ },
+ {
+  "id": "REG04-08-arriter",
+  "body": "std::array<int, 3> a = {7,8,9}; std::array<int, 3>::iterator it = a.begin(); std::cout << *it;",
+  "note": "",
+  "errors": [],
+  "outputs": "7",
+  "channels": [
+   [
+    "cout"
+   ]
+  ],
+  "vars": [
+   {
+    "a": [
+     7,
+     8,
+     9
+    ],
+    "it": {
+     "kind": "cpp-iterator",
+     "arr": [
+      7,
+      8,
+      9
+     ],
+     "pos": 0,
+     "elem": "int",
+     "rev": false,
+     "constIt": false,
+     "itype": "array<int,3>::iterator"
+    }
+   }
+  ],
+  "traceHeads": [
+   [
+    "a を array<int,3> として用意します：[\n  7,\n  8,\n  9\n]",
+    "it を array<int,3>::iterator として用意します：イテレータ（位置 0）",
+    "標準出力へ出します：7"
+   ]
+  ]
+ },
+ {
+  "id": "REG04-09-vecstriter",
+  "body": "std::vector<std::string> v = {\"a\",\"b\"}; std::vector<std::string>::iterator it = v.begin(); std::cout << *it;",
+  "note": "",
+  "errors": [],
+  "outputs": "a",
+  "channels": [
+   [
+    "cout"
+   ]
+  ],
+  "vars": [
+   {
+    "v": [
+     "a",
+     "b"
+    ],
+    "it": {
+     "kind": "cpp-iterator",
+     "arr": [
+      "a",
+      "b"
+     ],
+     "pos": 0,
+     "elem": "string",
+     "rev": false,
+     "constIt": false,
+     "itype": "vector<string>::iterator"
+    }
+   }
+  ],
+  "traceHeads": [
+   [
+    "v を vector<string> として用意します：[\n  \"a\",\n  \"b\"\n]",
+    "it を vector<string>::iterator として用意します：イテレータ（位置 0）",
+    "標準出力へ出します：a"
+   ]
+  ]
+ },
+ {
+  "id": "REG04-10-distance",
+  "body": "std::string s = \"abc\"; std::cout << std::distance(s.begin(), s.end());",
+  "note": "",
+  "errors": [],
+  "outputs": "3",
+  "channels": [
+   [
+    "cout"
+   ]
+  ],
+  "vars": [
+   {
+    "s": "abc"
+   }
+  ],
+  "traceHeads": [
+   [
+    "s を string として用意します：abc",
+    "標準出力へ出します：3",
+    "値を返して終了します：0"
+   ]
+  ]
+ },
+ {
+  "id": "REG04-11-multidecl",
+  "body": "std::string s = \"abc\"; std::string::iterator it = s.begin(), jt = s.end(); std::cout << (it != jt);",
+  "note": "",
+  "errors": [],
+  "outputs": "1",
+  "channels": [
+   [
+    "cout"
+   ]
+  ],
+  "vars": [
+   {
+    "s": "abc",
+    "it": {
+     "kind": "cpp-iterator",
+     "strVar": "s",
+     "pos": 0,
+     "elem": "char",
+     "rev": false,
+     "constIt": false,
+     "itype": "string::iterator"
+    },
+    "jt": {
+     "kind": "cpp-iterator",
+     "strVar": "s",
+     "pos": 3,
+     "elem": "char",
+     "rev": false,
+     "constIt": false,
+     "itype": "string::iterator"
+    }
+   }
+  ],
+  "traceHeads": [
+   [
+    "s を string として用意します：abc",
+    "it を string::iterator として用意します：イテレータ（位置 0）",
+    "jt を string::iterator として用意します：イテレータ（位置 3）"
+   ]
+  ]
+ },
+ {
+  "id": "REG04-12-npos-mix1",
+  "body": "std::string s = \"abc\"; std::cout << (s.find(\"q\") == std::string::npos); std::string::iterator it = s.begin(); std::cout << *it;",
+  "note": "",
+  "errors": [],
+  "outputs": "1a",
+  "channels": [
+   [
+    "cout",
+    "cout"
+   ]
+  ],
+  "vars": [
+   {
+    "s": "abc",
+    "it": {
+     "kind": "cpp-iterator",
+     "strVar": "s",
+     "pos": 0,
+     "elem": "char",
+     "rev": false,
+     "constIt": false,
+     "itype": "string::iterator"
+    }
+   }
+  ],
+  "traceHeads": [
+   [
+    "s を string として用意します：abc",
+    "標準出力へ出します：1",
+    "it を string::iterator として用意します：イテレータ（位置 0）"
+   ]
+  ]
+ },
+ {
+  "id": "REG04-13-npos-mix2",
+  "body": "std::string s = \"abc\"; std::string::iterator it = s.begin(); std::cout << *it; std::cout << (s.find(\"q\") == std::string::npos);",
+  "note": "",
+  "errors": [],
+  "outputs": "a1",
+  "channels": [
+   [
+    "cout",
+    "cout"
+   ]
+  ],
+  "vars": [
+   {
+    "s": "abc",
+    "it": {
+     "kind": "cpp-iterator",
+     "strVar": "s",
+     "pos": 0,
+     "elem": "char",
+     "rev": false,
+     "constIt": false,
+     "itype": "string::iterator"
+    }
+   }
+  ],
+  "traceHeads": [
+   [
+    "s を string として用意します：abc",
+    "it を string::iterator として用意します：イテレータ（位置 0）",
+    "標準出力へ出します：a"
+   ]
+  ]
+ },
+ {
+  "id": "REG04-14-iterptr",
+  "body": "std::string s = \"abc\"; std::string::iterator* p;",
+  "note": "",
+  "errors": [
+   "未対応:この構文は説明に対応していません：イテレータへのポインタは未対応です"
+  ],
+  "outputs": "",
+  "channels": [],
+  "vars": [],
+  "traceHeads": []
+ },
+ {
+  "id": "REG04-15-basicstring",
+  "body": "std::basic_string<char>::iterator it;",
+  "note": "",
+  "errors": [
+   "未対応:この構文は説明に対応していません：std::basic_string::iterator は未対応です"
+  ],
+  "outputs": "",
+  "channels": [],
+  "vars": [],
+  "traceHeads": []
+ },
+ {
+  "id": "REG04-16-mapiter",
+  "body": "std::map<int,int>::iterator it;",
+  "note": "",
+  "errors": [
+   "未対応:この構文は説明に対応していません：std::map::iterator は未対応です"
+  ],
+  "outputs": "",
+  "channels": [],
+  "vars": [],
+  "traceHeads": []
+ },
+ {
+  "id": "REG04-17-npos-out",
+  "body": "std::cout << std::string::npos;",
+  "note": "",
+  "errors": [],
+  "outputs": "-1",
+  "channels": [
+   [
+    "cout"
+   ]
+  ],
+  "vars": [
+   {}
+  ],
+  "traceHeads": [
+   [
+    "標準出力へ出します：-1",
+    "値を返して終了します：0"
+   ]
+  ]
+ },
+ {
+  "id": "REG04-18-npos-guard",
+  "body": "std::string s = \"banana\"; if (s.find(\"na\") != std::string::npos) { std::cout << s.substr(2, 2); }",
+  "note": "",
+  "errors": [],
+  "outputs": "na",
+  "channels": [
+   [
+    "cout"
+   ]
+  ],
+  "vars": [
+   {
+    "s": "banana"
+   }
+  ],
+  "traceHeads": [
+   [
+    "s を string として用意します：banana",
+    "条件が成立します",
+    "標準出力へ出します：na"
+   ]
+  ]
+ },
+ {
+  "id": "CPP-26-userdef-outside",
+  "body": "#include <iostream>\n#include <string>\n#include <vector>\n#include <algorithm>\nbool isBig(int x) { return x > 2; }\nint main() {\nstd::vector<int> v = {1,2,3}; std::cout << (std::find_if(v.begin(), v.end(), isBig) - v.begin()) << \" \" << std::count_if(v.begin(), v.end(), isBig);\n return 0;\n}",
+  "note": "関数定義を main 外に置く正形",
+  "errors": [
+   "未対応:この構文は説明に対応していません：ユーザ定義関数 isBig の定義は未対応です"
+  ],
+  "outputs": "",
+  "channels": [],
+  "vars": [],
+  "traceHeads": []
+ }
+]

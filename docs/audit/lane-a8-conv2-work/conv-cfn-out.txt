@@ -1,0 +1,119 @@
+spec version: 272.0.0
+spec ResourceTypes: 2111
+loaded: ["advanced-manifest.js","reference-advanced-part1.js","reference-advanced-part2.js","reference-advanced-part3.js","templates-advanced.js","glossary-advanced.js","advanced-engine.js"] missing: [] failed: []
+referenceAdvanced: 1798 {"total":1798,"supported":1798,"unsupported":0,"unverified":0}
+templatesAdvanced: 4 glossaryAdvanced: 6
+merged.reference: 2024 {"total":2024,"supported":2016,"unsupported":8,"unverified":0} problems: 0
+catalog AWS/Alexa count: 1798
+base AWS/Alexa count: 0
+
+=== CFN-01 ===
+total: 1798 unique: 1798 dup: 0
+inSpec: 1786 notInSpec: 12
+notInSpec == docsOnly set? true
+notInSpec list: ["AWS::DeviceFarm::DevicePool","AWS::DeviceFarm::InstanceProfile","AWS::DeviceFarm::NetworkProfile","AWS::DeviceFarm::Project","AWS::DeviceFarm::TestGridProject","AWS::DeviceFarm::VPCEConfiguration","AWS::IoTManagedIntegrations::CredentialLocker","AWS::IoTManagedIntegrations::ManagedThing","AWS::IoTManagedIntegrations::ProvisioningProfile","AWS::SageMaker::ExperimentTrialComponent","AWS::GameLiftStreams::Application","AWS::GameLiftStreams::StreamGroup"]
+Alexa: ["Alexa::ASK::Skill"]
+spec->catalog missing (reverse diff): 325
+ledger written: ledger-conv-cfn-names.tsv
+
+=== CFN-02 ===
+sample size: 31 (30 equidistant + EIP)
+OK AWS::EC2::ApplicationStatusCheck [A] total=15 listed=6 nado=true
+OK AWS::EC2::RouteServer [A] total=5 listed=5 nado=false
+OK AWS::EC2::VPNGatewayRoutePropagation [A] total=2 listed=2 nado=false
+OK AWS::Lambda::Version [A] total=6 listed=6 nado=false
+OK AWS::MediaLive::InputSecurityGroup [A] total=2 listed=2 nado=false
+OK AWS::CustomerProfiles::EventStream [A] total=4 listed=4 nado=false
+OK AWS::OpenSearchServerless::CollectionGroup [A] total=6 listed=6 nado=false
+OK AWS::WAF::IPSet [A] total=2 listed=2 nado=false
+OK AWS::S3Tables::Table [A] total=10 listed=6 nado=true
+OK AWS::DevOpsGuru::LogAnomalyDetectionIntegration [zero-standard] total=0 listed=0 nado=false
+OK Alexa::ASK::Skill [A] total=3 listed=3 nado=false
+OK AWS::Glue::IdentityCenterConfiguration [B] total=3 listed=3 nado=false
+OK AWS::ApiGateway::RestApi [A] total=18 listed=6 nado=true
+OK AWS::DataZone::ProjectProfile [B] total=10 listed=6 nado=true
+OK AWS::VpcLattice::Service [A] total=7 listed=6 nado=true
+OK AWS::DMS::Endpoint [B] total=31 listed=6 nado=true
+OK AWS::Personalize::Dataset [B] total=6 listed=6 nado=false
+OK AWS::AutoScaling::AutoScalingGroup [B] total=37 listed=6 nado=true
+OK AWS::ServiceDiscovery::HttpNamespace [B] total=3 listed=3 nado=false
+OK AWS::DAX::SubnetGroup [B] total=3 listed=3 nado=false
+OK AWS::VoiceID::Domain [B] total=4 listed=4 nado=false
+OK AWS::IoT::ResourceSpecificLogging [A] total=3 listed=3 nado=false
+OK AWS::Bedrock::ResourcePolicy [A] total=2 listed=2 nado=false
+OK AWS::Cognito::UserPoolUICustomizationAttachment [A] total=3 listed=3 nado=false
+OK AWS::MediaConnect::FlowVpcInterface [A] total=6 listed=6 nado=false
+OK AWS::Config::ConformancePack [A] total=8 listed=6 nado=true
+OK AWS::Omics::RunCache [A] total=6 listed=6 nado=false
+OK AWS::Route53GlobalResolver::DnsView [A] total=8 listed=6 nado=true
+OK AWS::VerifiedPermissions::Policy [A] total=3 listed=3 nado=false
+OK AWS::Detective::MemberInvitation [A] total=5 listed=5 nado=false
+OK AWS::EC2::EIP [A] total=8 listed=6 nado=true
+sample problems: 0
+EIP parsed: {"kind":"A","listed":["Address","Domain","InstanceId","IpamPoolId","NetworkBorderGroup","PublicIpv4Pool"],"required":[],"total":8,"nado":true}
+EIP spec props: ["Address","InstanceId","IpamPoolId","PublicIpv4Pool","TransferAddress","Domain","Tags","NetworkBorderGroup"]
+dialect counts (spec items): {"A":1275,"zero-standard":4,"B":507}
+full-catalog desc problems: 0
+
+=== CFN-03 ===
+AWS::CloudFormation::WaitConditionHandle: stdText=true specProps=0 exampleProps=[] exErr=null
+  desc: AWS::CloudFormation::WaitConditionHandle を作成するリソースタイプです。このリソースタイプにはプロパティがありません。
+  example: "WaitConditionHandle:\n  Type: AWS::CloudFormation::WaitConditionHandle"
+AWS::Route53::DelegationSet: stdText=true specProps=0 exampleProps=[] exErr=null
+  desc: AWS::Route53::DelegationSet を作成するリソースタイプです。このリソースタイプにはプロパティがありません。
+  example: "DelegationSet:\n  Type: AWS::Route53::DelegationSet"
+AWS::DevOpsGuru::LogAnomalyDetectionIntegration: stdText=true specProps=0 exampleProps=[] exErr=null
+  desc: AWS::DevOpsGuru::LogAnomalyDetectionIntegration を作成するリソースタイプです。このリソースタイプにはプロパティがありません。
+  example: "LogAnomalyDetectionIntegration:\n  Type: AWS::DevOpsGuru::LogAnomalyDetectionIntegration"
+AWS::ApplicationSignals::Discovery: stdText=true specProps=0 exampleProps=[] exErr=null
+  desc: AWS::ApplicationSignals::Discovery を作成するリソースタイプです。このリソースタイプにはプロパティがありません。
+  example: "Discovery:\n  Type: AWS::ApplicationSignals::Discovery"
+spec-zero catalog items: ["AWS::CloudFormation::WaitConditionHandle","AWS::Route53::DelegationSet","AWS::DevOpsGuru::LogAnomalyDetectionIntegration","AWS::ApplicationSignals::Discovery"]
+standard-zero-text items: ["AWS::CloudFormation::WaitConditionHandle","AWS::Route53::DelegationSet","AWS::DevOpsGuru::LogAnomalyDetectionIntegration","AWS::ApplicationSignals::Discovery"]
+
+=== CFN-06 ===
+picks: 25 ["Alexa::ASK::Skill","AWS::DeviceFarm::Project","AWS::SageMaker::ExperimentTrialComponent","AWS::Notifications::ManagedNotificationAdditionalChannelAssociation","AWS::EC2::LocalGatewayRouteTableVirtualInterfaceGroupAssociation","AWS::Notifications::ManagedNotificationAccountContactAssociation","AWS::Route53Resolver::ResolverQueryLoggingConfigAssociation","AWS::KinesisAnalyticsV2::ApplicationCloudWatchLoggingOption","AWS::EC2::ApplicationStatusCheck","AWS::EC2::LocalGatewayVirtualInterfaceGroup","AWS::EC2::TransitGatewayMeteringPolicyEntry","AWS::CloudFormation::Macro","AWS::Lambda::Version","AWS::Redshift::QEV2IdcApplication","AWS::Deadline::QueueLimitAssociation","AWS::GuardDuty::PublishingDestination","AWS::OpenSearchServerless::CollectionGroup","AWS::MemoryDB::ACL","AWS::AppRunner::ObservabilityConfiguration","AWS::ElasticBeanstalk::ConfigurationTemplate","AWS::DevOpsGuru::LogAnomalyDetectionIntegration","AWS::BCMDataExports::Export","AWS::SageMaker::ModelBiasJobDefinition","AWS::Glue::UsageProfile","AWS::ApiGateway::RestApi"]
+CFN-06 unreachable in 25: 0
+CFN-06 full-catalog unreachable: 0 / 1798
+
+=== CFN-07 ===
+sample50 problems: 0 names: ["AWS::EC2::ApplicationStatusCheck","AWS::EC2::IpamExternalResourceVerificationToken","AWS::EC2::SnapshotBlockPublicAccess","AWS::EC2::VPCDHCPOptionsAssociation","AWS::CloudFormation::TypeActivation","AWS::Lambda::Version","AWS::Redshift::Cluster","AWS::AppSync::DomainName","AWS::Route53Resolver::FirewallRuleGroupAssociation","AWS::Route53::KeySigningKey","AWS::OpenSearchServerless::CollectionGroup","AWS::ElasticLoadBalancingV2::TrustStore","AWS::LicenseManager::Grant","AWS::KinesisAnalyticsV2::Snapshot","AWS::Lex::ResourcePolicy","AWS::DevOpsGuru::LogAnomalyDetectionIntegration","AWS::Oam::Sink","AWS::SageMaker::DataQualityJobDefinition","AWS::SageMaker::Workteam","AWS::QuickSight::CustomPermissions","AWS::ApiGateway::RestApi","AWS::Pinpoint::EmailChannel","AWS::Lightsail::Distribution","AWS::ServiceCatalog::ServiceActionAssociation","AWS::IoTSiteWise::ComputationModel","AWS::DMS::Endpoint","AWS::WorkSpacesWeb::Portal","AWS::DirectConnect::PrivateVirtualInterface","AWS::Neptune::DBInstance","AWS::Timestream::Database","AWS::ServiceDiscovery::HttpNamespace","AWS::S3Files::MountTarget","AWS::PCS::Queue","AWS::CodeGuruReviewer::RepositoryAssociation","AWS::Connect::QuickConnect","AWS::IoT::ResourceSpecificLogging","AWS::BedrockAgentCore::ResourcePolicy","AWS::CloudFront::FieldLevelEncryptionProfile","AWS::Cognito::LogDeliveryConfiguration","AWS::NetworkManager::CustomerGatewayAssociation","AWS::MediaConnect::FlowVpcInterface","AWS::SSM::MaintenanceWindow","AWS::GameLift::GameServerGroup","AWS::ImageBuilder::Component","AWS::AppMesh::Mesh","AWS::Route53GlobalResolver::DnsView","AWS::EntityResolution::MatchingWorkflow","AWS::EMRContainers::Endpoint","AWS::AppFlow::ConnectorProfile","AWS::Budgets::Budget"]
+--- templates-advanced (CFN) ---
+template cfn-adv-multi-resource: types=["AWS::S3::Bucket","AWS::SQS::Queue","AWS::SNS::Topic"] refs=["Transform","AWS::S3::Bucket","AWS::SQS::Queue","AWS::SNS::Topic"]
+  AWS::S3::Bucket: inCatalog=true inSpec=true
+  AWS::SQS::Queue: inCatalog=true inSpec=true
+  AWS::SNS::Topic: inCatalog=true inSpec=true
+  resource AWS::S3::Bucket: props=["BucketName"] bad=[]
+  resource AWS::SQS::Queue: props=["QueueName","DelaySeconds"] bad=[]
+  resource AWS::SNS::Topic: props=["DisplayName","TopicName"] bad=[]
+  ref Transform: resolves=true
+  ref AWS::S3::Bucket: resolves=true
+  ref AWS::SQS::Queue: resolves=true
+  ref AWS::SNS::Topic: resolves=true
+template cfn-adv-fn-transform-loggroup: types=["AWS::Logs::LogGroup","AWS::SQS::Queue"] refs=["Fn::Transform","params","AWS::Logs::LogGroup","AWS::SQS::Queue"]
+  AWS::Logs::LogGroup: inCatalog=true inSpec=true
+  AWS::SQS::Queue: inCatalog=true inSpec=true
+  resource AWS::Logs::LogGroup: props=["LogGroupName","RetentionInDays"] bad=[]
+  resource AWS::SQS::Queue: props=["QueueName"] bad=[]
+  ref Fn::Transform: resolves=true
+  ref params: resolves=true
+  ref AWS::Logs::LogGroup: resolves=true
+  ref AWS::SQS::Queue: resolves=true
+template cfn-adv-handler-type-count: types=["AWS::S3::Bucket"] refs=["fragment","requestId","status","AWS::S3::Bucket"]
+  AWS::S3::Bucket: inCatalog=true inSpec=true
+  (non-JSON template; type-name check only)
+  ref fragment: resolves=true
+  ref requestId: resolves=true
+  ref status: resolves=true
+  ref AWS::S3::Bucket: resolves=true
+template cfn-adv-handler-params-stage: types=[] refs=["fragment","params","transformId","requestId","status"]
+  (non-JSON template; type-name check only)
+  ref fragment: resolves=true
+  ref params: resolves=true
+  ref transformId: resolves=true
+  ref requestId: resolves=true
+  ref status: resolves=true
+full-catalog example problems: 0
+ledger written: ledger-conv-cfn-examples.tsv
+
+DONE CFN

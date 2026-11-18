@@ -1,0 +1,308 @@
+ledger rows: 305 cols: item,stratum,shape,result,error,outputs,probe
+catalog total: 4948 problems: []
+std::string::append_range	prev=named-stop	now=named-stop	status=unsupported	エラー:この関数は説明に対応していません：s.append_range
+std::string::assign_range	prev=named-stop	now=named-stop	status=unsupported	エラー:この関数は説明に対応していません：s.assign_range
+std::string::c_str	prev=named-stop	now=named-stop	status=unsupported	エラー:この関数は説明に対応していません：s.c_str
+std::string::capacity	prev=named-stop	now=named-stop	status=unsupported	エラー:この関数は説明に対応していません：s.capacity
+std::string::copy	prev=named-stop	now=named-stop	status=unsupported	エラー:この関数は説明に対応していません：s.copy
+std::string::data	prev=named-stop	now=named-stop	status=unsupported	エラー:この関数は説明に対応していません：s.data
+std::string::get_allocator	prev=named-stop	now=named-stop	status=unsupported	エラー:この関数は説明に対応していません：s.get_allocator
+std::string::insert_range	prev=named-stop	now=named-stop	status=unsupported	エラー:この関数は説明に対応していません：s.insert_range
+std::string::max_size	prev=named-stop	now=named-stop	status=unsupported	エラー:この関数は説明に対応していません：s.max_size
+std::string::replace_with_range	prev=named-stop	now=named-stop	status=unsupported	エラー:この関数は説明に対応していません：s.replace_with_range
+std::string::resize_and_overwrite	prev=named-stop	now=named-stop	status=unsupported	エラー:この関数は説明に対応していません：s.resize_and_overwrite
+std::string::allocator_type	prev=unnamed-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：std::string::allocator_type は未対応です
+std::string::const_iterator	prev=silent-success	now=silent-success	status=supported	
+std::string::const_pointer	prev=unnamed-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：std::string::const_pointer は未対応です
+std::string::const_reference	prev=unnamed-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：std::string::const_reference は未対応です
+std::string::const_reverse_iterator	prev=silent-success	now=silent-success	status=supported	
+std::string::difference_type	prev=unnamed-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：std::string::difference_type は未対応です
+std::string::iterator	prev=silent-success	now=silent-success	status=supported	
+std::string::pointer	prev=unnamed-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：std::string::pointer は未対応です
+std::string::reference	prev=unnamed-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：std::string::reference は未対応です
+std::string::reverse_iterator	prev=silent-success	now=silent-success	status=supported	
+std::string::size_type	prev=unnamed-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：std::string::size_type は未対応です
+std::string::traits_type	prev=unnamed-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：std::string::traits_type は未対応です
+std::string::value_type	prev=unnamed-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：std::string::value_type は未対応です
+std::array::data	prev=named-stop	now=named-stop	status=unsupported	エラー:この関数は説明に対応していません：a.data
+std::array::const_iterator	prev=silent-success	now=unnamed-stop	status=supported	未対応:この構文は説明に対応していません：キャストのこの形式は未対応です（独自型・ポインタ型）
+std::array::const_pointer	prev=unnamed-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：std::array::const_pointer は未対応です
+std::array::const_reference	prev=unnamed-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：std::array::const_reference は未対応です
+std::array::const_reverse_iterator	prev=silent-success	now=unnamed-stop	status=supported	未対応:この構文は説明に対応していません：キャストのこの形式は未対応です（独自型・ポインタ型）
+std::array::difference_type	prev=unnamed-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：std::array::difference_type は未対応です
+std::array::iterator	prev=silent-success	now=unnamed-stop	status=supported	未対応:この構文は説明に対応していません：キャストのこの形式は未対応です（独自型・ポインタ型）
+std::array::pointer	prev=unnamed-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：std::array::pointer は未対応です
+std::array::reference	prev=unnamed-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：std::array::reference は未対応です
+std::array::reverse_iterator	prev=silent-success	now=unnamed-stop	status=supported	未対応:この構文は説明に対応していません：キャストのこの形式は未対応です（独自型・ポインタ型）
+std::array::size_type	prev=unnamed-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：std::array::size_type は未対応です
+std::array::value_type	prev=unnamed-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：std::array::value_type は未対応です
+std::vector::append_range	prev=named-stop	now=named-stop	status=unsupported	エラー:この関数は説明に対応していません：v.append_range
+std::vector::assign_range	prev=named-stop	now=named-stop	status=unsupported	エラー:この関数は説明に対応していません：v.assign_range
+std::vector::capacity	prev=named-stop	now=named-stop	status=unsupported	エラー:この関数は説明に対応していません：v.capacity
+std::vector::data	prev=named-stop	now=named-stop	status=unsupported	エラー:この関数は説明に対応していません：v.data
+std::vector::get_allocator	prev=named-stop	now=named-stop	status=unsupported	エラー:この関数は説明に対応していません：v.get_allocator
+std::vector::insert_range	prev=named-stop	now=named-stop	status=unsupported	エラー:この関数は説明に対応していません：v.insert_range
+std::vector::max_size	prev=named-stop	now=named-stop	status=unsupported	エラー:この関数は説明に対応していません：v.max_size
+std::vector::allocator_type	prev=unnamed-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：std::vector::allocator_type は未対応です
+std::vector::const_iterator	prev=silent-success	now=unnamed-stop	status=supported	未対応:この構文は説明に対応していません：キャストのこの形式は未対応です（独自型・ポインタ型）
+std::vector::const_pointer	prev=unnamed-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：std::vector::const_pointer は未対応です
+std::vector::const_reference	prev=unnamed-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：std::vector::const_reference は未対応です
+std::vector::const_reverse_iterator	prev=silent-success	now=unnamed-stop	status=supported	未対応:この構文は説明に対応していません：キャストのこの形式は未対応です（独自型・ポインタ型）
+std::vector::difference_type	prev=unnamed-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：std::vector::difference_type は未対応です
+std::vector::iterator	prev=silent-success	now=unnamed-stop	status=supported	未対応:この構文は説明に対応していません：キャストのこの形式は未対応です（独自型・ポインタ型）
+std::vector::pointer	prev=unnamed-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：std::vector::pointer は未対応です
+std::vector::reference	prev=unnamed-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：std::vector::reference は未対応です
+std::vector::reverse_iterator	prev=silent-success	now=unnamed-stop	status=supported	未対応:この構文は説明に対応していません：キャストのこの形式は未対応です（独自型・ポインタ型）
+std::vector::size_type	prev=unnamed-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：std::vector::size_type は未対応です
+std::vector::value_type	prev=unnamed-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：std::vector::value_type は未対応です
+std::string::operator basic_string_view	prev=probe-inapplicable	now=probe-inapplicable	status=unsupported	
+std::pair::first_type	prev=unnamed-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：std::pair::first_type は未対応です
+std::pair::second_type	prev=unnamed-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：std::pair::second_type は未対応です
+std::ranges::swap	prev=unnamed-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：std::ranges::swap は未対応です
+std::vector	prev=silent-success	now=unnamed-stop	status=supported	未対応:この構文は説明に対応していません：キャストのこの形式は未対応です（独自型・ポインタ型）
+std::begin	prev=named-stop	now=named-stop	status=unsupported	NameError:未定義の名前：begin
+std::end	prev=named-stop	now=named-stop	status=unsupported	NameError:未定義の名前：end
+std::ranges::iter_swap	prev=unnamed-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：std::ranges::iter_swap は未対応です
+std::ranges::advance	prev=unnamed-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：std::ranges::advance は未対応です
+std::ranges::distance	prev=unnamed-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：std::ranges::distance は未対応です
+std::ranges::next	prev=unnamed-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：std::ranges::next は未対応です
+std::ranges::prev	prev=unnamed-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：std::ranges::prev は未対応です
+std::cbegin	prev=named-stop	now=named-stop	status=unsupported	NameError:未定義の名前：cbegin
+std::cend	prev=named-stop	now=named-stop	status=unsupported	NameError:未定義の名前：cend
+std::rbegin	prev=named-stop	now=named-stop	status=unsupported	NameError:未定義の名前：rbegin
+std::rend	prev=named-stop	now=named-stop	status=unsupported	NameError:未定義の名前：rend
+std::crbegin	prev=named-stop	now=named-stop	status=unsupported	NameError:未定義の名前：crbegin
+std::crend	prev=named-stop	now=named-stop	status=unsupported	NameError:未定義の名前：crend
+std::size	prev=named-stop	now=named-stop	status=unsupported	NameError:未定義の名前：size
+std::empty	prev=named-stop	now=named-stop	status=unsupported	NameError:未定義の名前：empty
+std::pair	prev=silent-success	now=silent-success	status=supported	
+std::ranges::iota	prev=unnamed-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：std::ranges::iota は未対応です
+std::erase	prev=named-stop	now=named-stop	status=unsupported	NameError:未定義の名前：erase
+std::ranges::contains	prev=unnamed-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：std::ranges::contains は未対応です
+std::ranges::find	prev=unnamed-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：std::ranges::find は未対応です
+std::find_first_of	prev=named-stop	now=named-stop	status=unsupported	NameError:未定義の名前：find_first_of
+std::ranges::find_first_of	prev=unnamed-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：std::ranges::find_first_of は未対応です
+std::ranges::count	prev=unnamed-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：std::ranges::count は未対応です
+std::ranges::mismatch	prev=unnamed-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：std::ranges::mismatch は未対応です
+std::ranges::equal	prev=unnamed-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：std::ranges::equal は未対応です
+std::ranges::starts_with	prev=unnamed-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：std::ranges::starts_with は未対応です
+std::ranges::copy	prev=unnamed-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：std::ranges::copy は未対応です
+std::ranges::copy_n	prev=unnamed-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：std::ranges::copy_n は未対応です
+std::ranges::move	prev=unnamed-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：std::ranges::move は未対応です
+std::ranges::replace	prev=unnamed-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：std::ranges::replace は未対応です
+std::ranges::fill	prev=unnamed-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：std::ranges::fill は未対応です
+std::ranges::fill_n	prev=unnamed-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：std::ranges::fill_n は未対応です
+std::ranges::remove	prev=unnamed-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：std::ranges::remove は未対応です
+std::ranges::unique	prev=unnamed-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：std::ranges::unique は未対応です
+std::ranges::reverse	prev=unnamed-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：std::ranges::reverse は未対応です
+std::ranges::rotate	prev=unnamed-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：std::ranges::rotate は未対応です
+std::ranges::sort	prev=unnamed-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：std::ranges::sort は未対応です
+std::ranges::stable_sort	prev=unnamed-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：std::ranges::stable_sort は未対応です
+std::ranges::partial_sort	prev=unnamed-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：std::ranges::partial_sort は未対応です
+std::ranges::is_sorted	prev=unnamed-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：std::ranges::is_sorted は未対応です
+std::ranges::nth_element	prev=unnamed-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：std::ranges::nth_element は未対応です
+std::ranges::lower_bound	prev=unnamed-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：std::ranges::lower_bound は未対応です
+std::ranges::upper_bound	prev=unnamed-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：std::ranges::upper_bound は未対応です
+std::ranges::equal_range	prev=unnamed-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：std::ranges::equal_range は未対応です
+std::ranges::binary_search	prev=unnamed-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：std::ranges::binary_search は未対応です
+std::ranges::min	prev=unnamed-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：std::ranges::min は未対応です
+std::ranges::max	prev=unnamed-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：std::ranges::max は未対応です
+std::ranges::minmax	prev=unnamed-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：std::ranges::minmax は未対応です
+std::ranges::min_element	prev=unnamed-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：std::ranges::min_element は未対応です
+std::ranges::max_element	prev=unnamed-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：std::ranges::max_element は未対応です
+std::ranges::clamp	prev=unnamed-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：std::ranges::clamp は未対応です
+std::ranges::lexicographical_compare	prev=unnamed-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：std::ranges::lexicographical_compare は未対応です
+std::ranges::next_permutation	prev=unnamed-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：std::ranges::next_permutation は未対応です
+std::ranges::prev_permutation	prev=unnamed-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：std::ranges::prev_permutation は未対応です
+std::ranges::begin	prev=unnamed-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：std::ranges::begin は未対応です
+std::ranges::end	prev=unnamed-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：std::ranges::end は未対応です
+std::ranges::cbegin	prev=unnamed-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：std::ranges::cbegin は未対応です
+std::ranges::cend	prev=unnamed-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：std::ranges::cend は未対応です
+std::ranges::rbegin	prev=unnamed-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：std::ranges::rbegin は未対応です
+std::ranges::rend	prev=unnamed-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：std::ranges::rend は未対応です
+std::ranges::crbegin	prev=unnamed-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：std::ranges::crbegin は未対応です
+std::ranges::crend	prev=unnamed-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：std::ranges::crend は未対応です
+std::ranges::size	prev=unnamed-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：std::ranges::size は未対応です
+std::ranges::empty	prev=unnamed-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：std::ranges::empty は未対応です
+std::ranges::views::empty	prev=unnamed-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：std::ranges::views::empty は未対応です
+std::ranges::views::iota	prev=unnamed-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：std::ranges::views::iota は未対応です
+std::ranges::views::reverse	prev=unnamed-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：std::ranges::views::reverse は未対応です
+std::ranges::views::as_const	prev=unnamed-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：std::ranges::views::as_const は未対応です
+std::NULL	prev=silent-success	now=silent-success	status=unsupported	
+std::transform	prev=named-stop	now=named-stop	status=unsupported	NameError:未定義の名前：transform
+std::find_if	prev=named-stop	now=named-stop	status=unsupported	NameError:未定義の名前：find_if
+std::count_if	prev=named-stop	now=named-stop	status=unsupported	NameError:未定義の名前：count_if
+std::all_of	prev=named-stop	now=named-stop	status=unsupported	NameError:未定義の名前：all_of
+std::any_of	prev=named-stop	now=named-stop	status=unsupported	NameError:未定義の名前：any_of
+std::none_of	prev=named-stop	now=named-stop	status=unsupported	NameError:未定義の名前：none_of
+std::for_each	prev=named-stop	now=named-stop	status=unsupported	NameError:未定義の名前：for_each
+std::generate	prev=named-stop	now=named-stop	status=unsupported	NameError:未定義の名前：generate
+std::shuffle	prev=named-stop	now=named-stop	status=unsupported	NameError:未定義の名前：shuffle
+std::map	prev=named-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：ジェネリック型 map<...> の宣言は未対応です
+std::unordered_map	prev=named-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：ジェネリック型 unordered_map<...> の宣言は未対応です
+std::multimap	prev=named-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：ジェネリック型 multimap<...> の宣言は未対応です
+std::set	prev=named-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：ジェネリック型 set<...> の宣言は未対応です
+std::unordered_set	prev=named-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：ジェネリック型 unordered_set<...> の宣言は未対応です
+std::multiset	prev=named-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：ジェネリック型 multiset<...> の宣言は未対応です
+std::deque	prev=named-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：ジェネリック型 deque<...> の宣言は未対応です
+std::list	prev=named-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：ジェネリック型 list<...> の宣言は未対応です
+std::forward_list	prev=named-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：ジェネリック型 forward_list<...> の宣言は未対応です
+std::stack	prev=named-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：ジェネリック型 stack<...> の宣言は未対応です
+std::queue	prev=named-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：ジェネリック型 queue<...> の宣言は未対応です
+std::priority_queue	prev=named-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：ジェネリック型 priority_queue<...> の宣言は未対応です
+std::optional	prev=named-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：ジェネリック型 optional<...> の宣言は未対応です
+std::variant	prev=named-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：ジェネリック型 variant<...> の宣言は未対応です
+std::tuple	prev=named-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：ジェネリック型 tuple<...> の宣言は未対応です
+std::any	prev=named-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：型 any の宣言は未対応です
+std::expected	prev=named-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：ジェネリック型 expected<...> の宣言は未対応です
+std::span	prev=named-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：ジェネリック型 span<...> の宣言は未対応です
+std::bitset	prev=named-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：ジェネリック型 bitset<...> の宣言は未対応です
+std::complex	prev=named-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：ジェネリック型 complex<...> の宣言は未対応です
+std::valarray	prev=named-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：ジェネリック型 valarray<...> の宣言は未対応です
+std::thread	prev=named-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：型 thread の宣言は未対応です
+std::mutex	prev=named-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：型 mutex の宣言は未対応です
+std::lock_guard	prev=named-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：ジェネリック型 lock_guard<...> の宣言は未対応です
+std::regex	prev=named-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：型 regex の宣言は未対応です
+std::regex_match	prev=named-stop	now=named-stop	status=unsupported	NameError:未定義の名前：regex_match
+std::regex_search	prev=named-stop	now=named-stop	status=unsupported	NameError:未定義の名前：regex_search
+std::format	prev=named-stop	now=named-stop	status=unsupported	エラー:この関数は説明に対応していません：format
+std::print	prev=named-stop	now=named-stop	status=unsupported	エラー:この関数は説明に対応していません：print
+std::println	prev=named-stop	now=named-stop	status=unsupported	エラー:この関数は説明に対応していません：println
+std::execution::par	prev=unnamed-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：std::execution::par は未対応です
+std::execution::seq	prev=unnamed-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：std::execution::seq は未対応です
+std::execution::par_unseq	prev=unnamed-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：std::execution::par_unseq は未対応です
+std::filesystem::path	prev=unnamed-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：std::filesystem::path は未対応です
+std::string_view	prev=named-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：型 string_view の宣言は未対応です
+std::getenv	prev=named-stop	now=named-stop	status=unsupported	エラー:この関数は説明に対応していません：getenv
+std::system	prev=named-stop	now=named-stop	status=unsupported	エラー:この関数は説明に対応していません：system
+std::exit	prev=named-stop	now=named-stop	status=unsupported	エラー:この関数は説明に対応していません：exit
+std::abort	prev=named-stop	now=named-stop	status=unsupported	エラー:この関数は説明に対応していません：abort
+std::malloc	prev=named-stop	now=named-stop	status=unsupported	エラー:この関数は説明に対応していません：malloc
+std::free	prev=named-stop	now=named-stop	status=unsupported	エラー:この関数は説明に対応していません：free
+std::expm1	prev=named-stop	now=named-stop	status=unsupported	エラー:この関数は説明に対応していません：expm1
+std::log1p	prev=named-stop	now=named-stop	status=unsupported	エラー:この関数は説明に対応していません：log1p
+std::erf	prev=named-stop	now=named-stop	status=unsupported	エラー:この関数は説明に対応していません：erf
+std::tgamma	prev=named-stop	now=named-stop	status=unsupported	エラー:この関数は説明に対応していません：tgamma
+std::chrono::seconds	prev=unnamed-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：std::chrono::seconds は未対応です
+std::chrono::system_clock	prev=unnamed-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：std::chrono::system_clock は未対応です
+std::atomic	prev=named-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：ジェネリック型 atomic<...> の宣言は未対応です
+std::function	prev=named-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：ジェネリック型 function<...> の宣言は未対応です
+std::bind	prev=named-stop	now=named-stop	status=unsupported	NameError:未定義の名前：bind
+std::move_if_noexcept	prev=named-stop	now=named-stop	status=unsupported	NameError:未定義の名前：move_if_noexcept
+std::launder	prev=named-stop	now=named-stop	status=unsupported	NameError:未定義の名前：launder
+std::byte	prev=named-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：型 byte の宣言は未対応です
+std::source_location	prev=named-stop	now=named-stop	status=unsupported	NameError:未定義の名前：source_location
+std::jthread	prev=named-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：型 jthread の宣言は未対応です
+std::barrier	prev=named-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：ジェネリック型 barrier<...> の宣言は未対応です
+std::latch	prev=named-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：型 latch の宣言は未対応です
+std::fstream	prev=named-stop	now=named-stop	status=unsupported	NameError:未定義の名前：fstream
+std::ifstream	prev=named-stop	now=named-stop	status=unsupported	NameError:未定義の名前：ifstream
+std::ofstream	prev=named-stop	now=named-stop	status=unsupported	NameError:未定義の名前：ofstream
+std::stringstream	prev=named-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：型 stringstream の宣言は未対応です
+std::weak_ptr	prev=named-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：ジェネリック型 weak_ptr<...> の宣言は未対応です
+std::shared_ptr	prev=named-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：ジェネリック型 shared_ptr<...> の宣言は未対応です
+std::unique_ptr	prev=named-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：ジェネリック型 unique_ptr<...> の宣言は未対応です
+std::make_unique	prev=named-stop	now=named-stop	status=unsupported	NameError:未定義の名前：make_unique
+std::make_shared	prev=named-stop	now=named-stop	status=unsupported	NameError:未定義の名前：make_shared
+std::hash	prev=named-stop	now=named-stop	status=unsupported	NameError:未定義の名前：hash
+std::less	prev=named-stop	now=named-stop	status=unsupported	NameError:未定義の名前：less
+std::greater	prev=named-stop	now=named-stop	status=unsupported	NameError:未定義の名前：greater
+std::plus	prev=named-stop	now=named-stop	status=unsupported	NameError:未定義の名前：plus
+std::minus	prev=named-stop	now=named-stop	status=unsupported	NameError:未定義の名前：minus
+std::multiplies	prev=named-stop	now=named-stop	status=unsupported	NameError:未定義の名前：multiplies
+std::divides	prev=named-stop	now=named-stop	status=unsupported	NameError:未定義の名前：divides
+std::modulus	prev=named-stop	now=named-stop	status=unsupported	NameError:未定義の名前：modulus
+std::negate	prev=named-stop	now=named-stop	status=unsupported	NameError:未定義の名前：negate
+std::equal_to	prev=named-stop	now=named-stop	status=unsupported	NameError:未定義の名前：equal_to
+std::not_equal_to	prev=named-stop	now=named-stop	status=unsupported	NameError:未定義の名前：not_equal_to
+std::logical_and	prev=named-stop	now=named-stop	status=unsupported	NameError:未定義の名前：logical_and
+std::logical_or	prev=named-stop	now=named-stop	status=unsupported	NameError:未定義の名前：logical_or
+std::logical_not	prev=named-stop	now=named-stop	status=unsupported	NameError:未定義の名前：logical_not
+std::bit_and	prev=named-stop	now=named-stop	status=unsupported	NameError:未定義の名前：bit_and
+std::bit_or	prev=named-stop	now=named-stop	status=unsupported	NameError:未定義の名前：bit_or
+std::bit_xor	prev=named-stop	now=named-stop	status=unsupported	NameError:未定義の名前：bit_xor
+std::bit_not	prev=named-stop	now=named-stop	status=unsupported	NameError:未定義の名前：bit_not
+std::reference_wrapper	prev=named-stop	now=named-stop	status=unsupported	NameError:未定義の名前：reference_wrapper
+std::ref	prev=named-stop	now=named-stop	status=unsupported	NameError:未定義の名前：ref
+std::cref	prev=named-stop	now=named-stop	status=unsupported	NameError:未定義の名前：cref
+std::invoke	prev=named-stop	now=named-stop	status=unsupported	NameError:未定義の名前：invoke
+std::make_from_tuple	prev=named-stop	now=named-stop	status=unsupported	NameError:未定義の名前：make_from_tuple
+std::tie	prev=named-stop	now=named-stop	status=unsupported	エラー:この関数は説明に対応していません：tie
+std::ignore	prev=named-stop	now=named-stop	status=unsupported	NameError:未定義の名前：ignore
+std::forward_as_tuple	prev=named-stop	now=named-stop	status=unsupported	エラー:この関数は説明に対応していません：forward_as_tuple
+std::piecewise_construct	prev=named-stop	now=named-stop	status=unsupported	NameError:未定義の名前：piecewise_construct
+std::in_place	prev=named-stop	now=named-stop	status=unsupported	NameError:未定義の名前：in_place
+std::nullopt	prev=named-stop	now=named-stop	status=unsupported	NameError:未定義の名前：nullopt
+std::bad_optional_access	prev=named-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：型 bad_optional_access の宣言は未対応です
+std::monostate	prev=named-stop	now=named-stop	status=unsupported	NameError:未定義の名前：monostate
+std::visit	prev=named-stop	now=named-stop	status=unsupported	NameError:未定義の名前：visit
+std::holds_alternative	prev=named-stop	now=named-stop	status=unsupported	NameError:未定義の名前：holds_alternative
+std::get	prev=named-stop	now=named-stop	status=unsupported	エラー:この関数は説明に対応していません：get
+std::get_if	prev=named-stop	now=named-stop	status=unsupported	エラー:この関数は説明に対応していません：get_if
+std::make_tuple	prev=named-stop	now=named-stop	status=unsupported	エラー:この関数は説明に対応していません：make_tuple
+std::tuple_size	prev=named-stop	now=named-stop	status=unsupported	NameError:未定義の名前：tuple_size
+std::tuple_element	prev=named-stop	now=named-stop	status=unsupported	NameError:未定義の名前：tuple_element
+std::dec	prev=named-stop	now=named-stop	status=unsupported	エラー:この関数は説明に対応していません：dec
+std::hex	prev=named-stop	now=named-stop	status=unsupported	エラー:この関数は説明に対応していません：hex
+std::oct	prev=named-stop	now=named-stop	status=unsupported	エラー:この関数は説明に対応していません：oct
+std::flush	prev=named-stop	now=named-stop	status=unsupported	NameError:未定義の名前：flush
+std::setw	prev=named-stop	now=named-stop	status=unsupported	エラー:この関数は説明に対応していません：setw
+std::setprecision	prev=named-stop	now=named-stop	status=unsupported	エラー:この関数は説明に対応していません：setprecision
+std::fixed	prev=named-stop	now=named-stop	status=unsupported	エラー:この関数は説明に対応していません：fixed
+std::scientific	prev=named-stop	now=named-stop	status=unsupported	エラー:この関数は説明に対応していません：scientific
+std::left	prev=named-stop	now=named-stop	status=unsupported	エラー:この関数は説明に対応していません：left
+std::right	prev=named-stop	now=named-stop	status=unsupported	エラー:この関数は説明に対応していません：right
+std::boolalpha	prev=named-stop	now=named-stop	status=unsupported	エラー:この関数は説明に対応していません：boolalpha
+std::ws	prev=named-stop	now=named-stop	status=unsupported	NameError:未定義の名前：ws
+std::ends	prev=named-stop	now=named-stop	status=unsupported	NameError:未定義の名前：ends
+std::quoted	prev=named-stop	now=named-stop	status=unsupported	NameError:未定義の名前：quoted
+std::get_money	prev=named-stop	now=named-stop	status=unsupported	NameError:未定義の名前：get_money
+std::put_money	prev=named-stop	now=named-stop	status=unsupported	NameError:未定義の名前：put_money
+std::get_time	prev=named-stop	now=named-stop	status=unsupported	NameError:未定義の名前：get_time
+std::put_time	prev=named-stop	now=named-stop	status=unsupported	NameError:未定義の名前：put_time
+std::adjacent_find	prev=named-stop	now=named-stop	status=unsupported	NameError:未定義の名前：adjacent_find
+std::ranges::remove_copy_result	prev=unnamed-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：std::ranges::remove_copy_result は未対応です
+std::atomic_flag_test_explicit	prev=named-stop	now=named-stop	status=unsupported	エラー:この関数は説明に対応していません：atomic_flag_test_explicit
+std::ECONNRESET	prev=named-stop	now=named-stop	status=unsupported	NameError:未定義の名前：ECONNRESET
+std::DECIMAL_DIG	prev=named-stop	now=named-stop	status=unsupported	エラー:この関数は説明に対応していません：DECIMAL_DIG
+std::chrono::November	prev=unnamed-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：std::chrono::November は未対応です
+std::PRIXN	prev=named-stop	now=named-stop	status=unsupported	NameError:未定義の名前：PRIXN
+std::copysignl	prev=named-stop	now=named-stop	status=unsupported	エラー:この関数は説明に対応していません：copysignl
+std::log10f	prev=named-stop	now=named-stop	status=unsupported	エラー:この関数は説明に対応していません：log10f
+std::conj	prev=named-stop	now=named-stop	status=unsupported	NameError:未定義の名前：conj
+std::int_fast64_t	prev=named-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：型 int_fast64_t の宣言は未対応です
+std::scanf	prev=named-stop	now=named-stop	status=unsupported	エラー:この関数は説明に対応していません：scanf
+std::mbsrtowcs	prev=named-stop	now=named-stop	status=unsupported	エラー:この関数は説明に対応していません：mbsrtowcs
+std::execution::empty_env	prev=unnamed-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：std::execution::empty_env は未対応です
+std::is_execution_policy_v	prev=named-stop	now=named-stop	status=unsupported	NameError:未定義の名前：is_execution_policy_v
+std::vformat	prev=named-stop	now=named-stop	status=unsupported	エラー:この関数は説明に対応していません：vformat
+std::uppercase	prev=named-stop	now=named-stop	status=unsupported	エラー:この関数は説明に対応していません：uppercase
+std::input_or_output_iterator	prev=named-stop	now=named-stop	status=unsupported	NameError:未定義の名前：input_or_output_iterator
+std::linalg::vector_sum_of_squares	prev=unnamed-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：std::linalg::vector_sum_of_squares は未対応です
+std::ranges::uninitialized_copy_result	prev=unnamed-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：std::ranges::uninitialized_copy_result は未対応です
+std::meta::is_bounded_array_type	prev=unnamed-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：std::meta::is_bounded_array_type は未対応です
+std::meta::is_special_member_function	prev=unnamed-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：std::meta::is_special_member_function は未対応です
+std::unique_lock	prev=named-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：ジェネリック型 unique_lock<...> の宣言は未対応です
+std::uniform_random_bit_generator	prev=named-stop	now=named-stop	status=unsupported	NameError:未定義の名前：uniform_random_bit_generator
+std::ranges::views::lazy_split	prev=unnamed-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：std::ranges::views::lazy_split は未対応です
+std::shared_lock	prev=named-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：ジェネリック型 shared_lock<...> の宣言は未対応です
+std::tuple_size_v	prev=named-stop	now=named-stop	status=unsupported	NameError:未定義の名前：tuple_size_v
+std::is_member_object_pointer	prev=named-stop	now=named-stop	status=unsupported	NameError:未定義の名前：is_member_object_pointer
+std::make_signed_t	prev=named-stop	now=named-stop	status=unsupported	NameError:未定義の名前：make_signed_t
+std::atomic::atomic	prev=named-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：ジェネリック型 atomic<...> の宣言は未対応です
+std::chrono::time_point::operator-=	prev=probe-inapplicable	now=probe-inapplicable	status=unsupported	
+std::filesystem::path::clear	prev=unnamed-stop	now=owner-named-stop	status=unsupported	未対応:この構文は説明に対応していません：std::filesystem::path は未対応です
+std::flat_map::value_comp	prev=owner-named-stop	now=unnamed-stop	status=unsupported	NameError:未定義の名前：flat_map
+std::flat_set::key_compare	prev=owner-named-stop	now=unnamed-stop	status=unsupported	NameError:未定義の名前：flat_set
+std::function::second_argument_type	prev=owner-named-stop	now=unnamed-stop	status=unsupported	未対応:この構文は説明に対応していません：ジェネリック型 function<...> の宣言は未対応です
+std::inplace_vector::assign_range	prev=owner-named-stop	now=unnamed-stop	status=unsupported	NameError:未定義の名前：inplace_vector
+std::list::back	prev=owner-named-stop	now=unnamed-stop	status=unsupported	未対応:この構文は説明に対応していません：ジェネリック型 list<...> の宣言は未対応です
+std::match_results::reference	prev=owner-named-stop	now=unnamed-stop	status=unsupported	NameError:未定義の名前：match_results
+std::multimap::operator=	prev=probe-inapplicable	now=probe-inapplicable	status=unsupported	
+std::ostream::operator<<	prev=probe-inapplicable	now=probe-inapplicable	status=unsupported	
+std::set::value_type	prev=owner-named-stop	now=unnamed-stop	status=unsupported	未対応:この構文は説明に対応していません：ジェネリック型 set<...> の宣言は未対応です
+std::stack::stack	prev=named-stop	now=named-stop	status=unsupported	未対応:この構文は説明に対応していません：ジェネリック型 stack<...> の宣言は未対応です
+std::stringstream::char_type	prev=owner-named-stop	now=unnamed-stop	status=unsupported	未対応:この構文は説明に対応していません：型 stringstream の宣言は未対応です
+std::unordered_map::max_load_factor	prev=owner-named-stop	now=unnamed-stop	status=unsupported	未対応:この構文は説明に対応していません：ジェネリック型 unordered_map<...> の宣言は未対応です
+std::unordered_multiset::hash_function	prev=owner-named-stop	now=unnamed-stop	status=unsupported	未対応:この構文は説明に対応していません：ジェネリック型 unordered_multiset<...> の宣言は未対応です
+COUNTS {"named-stop":275,"silent-success":6,"unnamed-stop":19,"probe-inapplicable":4,"owner-named-stop":1}

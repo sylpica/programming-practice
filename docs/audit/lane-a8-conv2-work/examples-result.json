@@ -1,0 +1,68 @@
+{
+ "total": 288,
+ "tier1": 250,
+ "tier2": 29,
+ "fails": [
+  {
+   "name": "std::forward",
+   "error": "未対応:この構文は説明に対応していません：明示的なテンプレート引数（forward<...>）は未対応です",
+   "example": "template<class T> ⏎ void wrap(T&& arg) { use(std::forward<T>(arg)); }"
+  },
+  {
+   "name": "std::inner_product",
+   "error": "エラー:この関数は説明に対応していません：b.begin",
+   "example": "int ip = std::inner_product(a.begin(), a.end(), b.begin(), 0);"
+  },
+  {
+   "name": "std::partial_sum",
+   "error": "エラー:この関数は説明に対応していません：out.begin",
+   "example": "std::partial_sum(v.begin(), v.end(), out.begin());"
+  },
+  {
+   "name": "std::adjacent_difference",
+   "error": "エラー:この関数は説明に対応していません：out.begin",
+   "example": "std::adjacent_difference(v.begin(), v.end(), out.begin());"
+  },
+  {
+   "name": "std::mismatch",
+   "error": "エラー:この関数は説明に対応していません：b.begin",
+   "example": "auto p = std::mismatch(a.begin(), a.end(), b.begin());"
+  },
+  {
+   "name": "std::equal",
+   "error": "エラー:この関数は説明に対応していません：b.begin",
+   "example": "bool same = std::equal(a.begin(), a.end(), b.begin());"
+  },
+  {
+   "name": "std::copy",
+   "error": "エラー:この関数は説明に対応していません：out.begin",
+   "example": "std::copy(v.begin(), v.end(), out.begin());"
+  },
+  {
+   "name": "std::copy_n",
+   "error": "エラー:この関数は説明に対応していません：out.begin",
+   "example": "std::copy_n(v.begin(), 3, out.begin());"
+  },
+  {
+   "name": "std::lexicographical_compare",
+   "error": "エラー:この関数は説明に対応していません：b.begin",
+   "example": "bool less = std::lexicographical_compare(a.begin(), a.end(), b.begin(), b.end());"
+  }
+ ],
+ "newSupported": [
+  "std::vector",
+  "std::pair",
+  "std::string::const_iterator",
+  "std::string::const_reverse_iterator",
+  "std::string::iterator",
+  "std::string::reverse_iterator",
+  "std::array::const_iterator",
+  "std::array::const_reverse_iterator",
+  "std::array::iterator",
+  "std::array::reverse_iterator",
+  "std::vector::const_iterator",
+  "std::vector::const_reverse_iterator",
+  "std::vector::iterator",
+  "std::vector::reverse_iterator"
+ ]
+}

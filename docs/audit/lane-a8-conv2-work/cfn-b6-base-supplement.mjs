@@ -1,0 +1,20 @@
+import { pathToFileURL } from "node:url";
+const root = process.argv[2];
+const imp = (p) => import(pathToFileURL(root + p).href);
+const { definition } = await imp("/js/types/cloudformation/index.js");
+const { loadAdvanced } = await imp("/js/core/advanced-loader.js");
+const { mergeCatalog } = await imp("/js/core/catalog.js");
+const eng = await imp("/js/types/cloudformation/advanced-engine.js");
+const adv = await loadAdvanced(definition); const merged = mergeCatalog(definition, adv);
+const mk = () => { const m = structuredClone(definition.model.defaults); const frag = { Resources: { New: { Type: "AWS::FakeService::Thing" } } }; frag.self = frag; m.event.fragment = frag; return m; };
+const handler = "def handler(event, context):\n    return {\"requestId\": event[\"requestId\"], \"status\": \"success\", \"fragment\": event[\"fragment\"]}";
+const base = await definition.simulate(handler, mk());
+console.log("BASE keys", Object.keys(base), "error", JSON.stringify(base.error), "paths", base.paths?.length, "notes", base.notes ?? null, "reasons", JSON.stringify(base.reasons));
+// handler template response fragment structure for CFN-18
+const t18 = merged.templates.find(t=>t.id==="cfn-adv-handler-type-count");
+const r = await definition.simulate(t18.code, structuredClone(definition.model.defaults));
+console.log("18a path keys", Object.keys(r.paths[0]));
+console.log("18a response", JSON.stringify(r.paths[0].response ?? null).slice(0,800));
+const t18b = merged.templates.find(t=>t.id==="cfn-adv-handler-params-stage");
+const rb = await definition.simulate(t18b.code, structuredClone(definition.model.defaults));
+console.log("18b response", JSON.stringify(rb.paths[0].response ?? null).slice(0,800));

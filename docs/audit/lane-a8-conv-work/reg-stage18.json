@@ -1,0 +1,2506 @@
+{
+ "reg01": {
+  "d-single": {
+   "topError": null,
+   "notes": null,
+   "truncated": false,
+   "reasons": [],
+   "operations": 9,
+   "paths": [
+    {
+     "outputs": [
+      {
+       "text": "42",
+       "channel": "printf"
+      }
+     ],
+     "trace": [
+      {
+       "line": 6,
+       "text": "標準出力へ出します：42",
+       "category": null,
+       "kind": "step"
+      },
+      {
+       "line": 7,
+       "text": "値を返して終了します：0",
+       "category": null,
+       "kind": "step"
+      }
+     ],
+     "error": null,
+     "halt": false,
+     "signal": "return",
+     "vars": {},
+     "modelVariables": {},
+     "groups": [
+      {
+       "title": "変数・参照",
+       "entries": []
+      },
+      {
+       "title": "モデルメモリ（実アドレスではありません）",
+       "entries": []
+      }
+     ],
+     "facts": [],
+     "response": null,
+     "fragment": null
+    }
+   ]
+  },
+  "d-neg-nl": {
+   "topError": null,
+   "notes": null,
+   "truncated": false,
+   "reasons": [],
+   "operations": 10,
+   "paths": [
+    {
+     "outputs": [
+      {
+       "text": "-7\n",
+       "channel": "printf"
+      }
+     ],
+     "trace": [
+      {
+       "line": 6,
+       "text": "標準出力へ出します：-7\n",
+       "category": null,
+       "kind": "step"
+      },
+      {
+       "line": 7,
+       "text": "値を返して終了します：0",
+       "category": null,
+       "kind": "step"
+      }
+     ],
+     "error": null,
+     "halt": false,
+     "signal": "return",
+     "vars": {},
+     "modelVariables": {},
+     "groups": [
+      {
+       "title": "変数・参照",
+       "entries": []
+      },
+      {
+       "title": "モデルメモリ（実アドレスではありません）",
+       "entries": []
+      }
+     ],
+     "facts": [],
+     "response": null,
+     "fragment": null
+    }
+   ]
+  },
+  "s-basic": {
+   "topError": null,
+   "notes": null,
+   "truncated": false,
+   "reasons": [],
+   "operations": 9,
+   "paths": [
+    {
+     "outputs": [
+      {
+       "text": "hello",
+       "channel": "printf"
+      }
+     ],
+     "trace": [
+      {
+       "line": 6,
+       "text": "標準出力へ出します：hello",
+       "category": null,
+       "kind": "step"
+      },
+      {
+       "line": 7,
+       "text": "値を返して終了します：0",
+       "category": null,
+       "kind": "step"
+      }
+     ],
+     "error": null,
+     "halt": false,
+     "signal": "return",
+     "vars": {},
+     "modelVariables": {},
+     "groups": [
+      {
+       "title": "変数・参照",
+       "entries": []
+      },
+      {
+       "title": "モデルメモリ（実アドレスではありません）",
+       "entries": []
+      }
+     ],
+     "facts": [],
+     "response": null,
+     "fragment": null
+    }
+   ]
+  },
+  "multi-nl": {
+   "topError": null,
+   "notes": null,
+   "truncated": false,
+   "reasons": [],
+   "operations": 19,
+   "paths": [
+    {
+     "outputs": [
+      {
+       "text": "1\n",
+       "channel": "printf"
+      },
+      {
+       "text": "ab\n",
+       "channel": "printf"
+      },
+      {
+       "text": "0.500000\n",
+       "channel": "printf"
+      }
+     ],
+     "trace": [
+      {
+       "line": 6,
+       "text": "標準出力へ出します：1\n",
+       "category": null,
+       "kind": "step"
+      },
+      {
+       "line": 6,
+       "text": "標準出力へ出します：ab\n",
+       "category": null,
+       "kind": "step"
+      },
+      {
+       "line": 6,
+       "text": "標準出力へ出します：0.500000\n",
+       "category": null,
+       "kind": "step"
+      },
+      {
+       "line": 7,
+       "text": "値を返して終了します：0",
+       "category": null,
+       "kind": "step"
+      }
+     ],
+     "error": null,
+     "halt": false,
+     "signal": "return",
+     "vars": {},
+     "modelVariables": {},
+     "groups": [
+      {
+       "title": "変数・参照",
+       "entries": []
+      },
+      {
+       "title": "モデルメモリ（実アドレスではありません）",
+       "entries": []
+      }
+     ],
+     "facts": [],
+     "response": null,
+     "fragment": null
+    }
+   ]
+  },
+  "f-basic": {
+   "topError": null,
+   "notes": null,
+   "truncated": false,
+   "reasons": [],
+   "operations": 9,
+   "paths": [
+    {
+     "outputs": [
+      {
+       "text": "2.500000",
+       "channel": "printf"
+      }
+     ],
+     "trace": [
+      {
+       "line": 6,
+       "text": "標準出力へ出します：2.500000",
+       "category": null,
+       "kind": "step"
+      },
+      {
+       "line": 7,
+       "text": "値を返して終了します：0",
+       "category": null,
+       "kind": "step"
+      }
+     ],
+     "error": null,
+     "halt": false,
+     "signal": "return",
+     "vars": {},
+     "modelVariables": {},
+     "groups": [
+      {
+       "title": "変数・参照",
+       "entries": []
+      },
+      {
+       "title": "モデルメモリ（実アドレスではありません）",
+       "entries": []
+      }
+     ],
+     "facts": [],
+     "response": null,
+     "fragment": null
+    }
+   ]
+  },
+  "f-dot1": {
+   "topError": null,
+   "notes": null,
+   "truncated": false,
+   "reasons": [],
+   "operations": 5,
+   "paths": [
+    {
+     "outputs": [],
+     "trace": [
+      {
+       "line": 6,
+       "text": "このprintf書式はモデルで扱えません",
+       "category": "未対応",
+       "kind": "error"
+      }
+     ],
+     "error": {
+      "line": 6,
+      "message": "このprintf書式はモデルで扱えません",
+      "category": "未対応"
+     },
+     "halt": true,
+     "signal": null,
+     "vars": {},
+     "modelVariables": {},
+     "groups": [
+      {
+       "title": "変数・参照",
+       "entries": []
+      },
+      {
+       "title": "モデルメモリ（実アドレスではありません）",
+       "entries": []
+      }
+     ],
+     "facts": [],
+     "response": null,
+     "fragment": null
+    }
+   ]
+  },
+  "mixed-dsf": {
+   "topError": null,
+   "notes": null,
+   "truncated": false,
+   "reasons": [],
+   "operations": 11,
+   "paths": [
+    {
+     "outputs": [
+      {
+       "text": "1 x 2.500000",
+       "channel": "printf"
+      }
+     ],
+     "trace": [
+      {
+       "line": 6,
+       "text": "標準出力へ出します：1 x 2.500000",
+       "category": null,
+       "kind": "step"
+      },
+      {
+       "line": 7,
+       "text": "値を返して終了します：0",
+       "category": null,
+       "kind": "step"
+      }
+     ],
+     "error": null,
+     "halt": false,
+     "signal": "return",
+     "vars": {},
+     "modelVariables": {},
+     "groups": [
+      {
+       "title": "変数・参照",
+       "entries": []
+      },
+      {
+       "title": "モデルメモリ（実アドレスではありません）",
+       "entries": []
+      }
+     ],
+     "facts": [],
+     "response": null,
+     "fragment": null
+    }
+   ]
+  },
+  "mixed-fd": {
+   "topError": null,
+   "notes": null,
+   "truncated": false,
+   "reasons": [],
+   "operations": 10,
+   "paths": [
+    {
+     "outputs": [
+      {
+       "text": "1.500000 7",
+       "channel": "printf"
+      }
+     ],
+     "trace": [
+      {
+       "line": 6,
+       "text": "標準出力へ出します：1.500000 7",
+       "category": null,
+       "kind": "step"
+      },
+      {
+       "line": 7,
+       "text": "値を返して終了します：0",
+       "category": null,
+       "kind": "step"
+      }
+     ],
+     "error": null,
+     "halt": false,
+     "signal": "return",
+     "vars": {},
+     "modelVariables": {},
+     "groups": [
+      {
+       "title": "変数・参照",
+       "entries": []
+      },
+      {
+       "title": "モデルメモリ（実アドレスではありません）",
+       "entries": []
+      }
+     ],
+     "facts": [],
+     "response": null,
+     "fragment": null
+    }
+   ]
+  },
+  "c-char": {
+   "topError": null,
+   "notes": null,
+   "truncated": false,
+   "reasons": [],
+   "operations": 9,
+   "paths": [
+    {
+     "outputs": [
+      {
+       "text": "A",
+       "channel": "printf"
+      }
+     ],
+     "trace": [
+      {
+       "line": 6,
+       "text": "標準出力へ出します：A",
+       "category": null,
+       "kind": "step"
+      },
+      {
+       "line": 7,
+       "text": "値を返して終了します：0",
+       "category": null,
+       "kind": "step"
+      }
+     ],
+     "error": null,
+     "halt": false,
+     "signal": "return",
+     "vars": {},
+     "modelVariables": {},
+     "groups": [
+      {
+       "title": "変数・参照",
+       "entries": []
+      },
+      {
+       "title": "モデルメモリ（実アドレスではありません）",
+       "entries": []
+      }
+     ],
+     "facts": [],
+     "response": null,
+     "fragment": null
+    }
+   ]
+  },
+  "i-form": {
+   "topError": null,
+   "notes": null,
+   "truncated": false,
+   "reasons": [],
+   "operations": 9,
+   "paths": [
+    {
+     "outputs": [
+      {
+       "text": "123",
+       "channel": "printf"
+      }
+     ],
+     "trace": [
+      {
+       "line": 6,
+       "text": "標準出力へ出します：123",
+       "category": null,
+       "kind": "step"
+      },
+      {
+       "line": 7,
+       "text": "値を返して終了します：0",
+       "category": null,
+       "kind": "step"
+      }
+     ],
+     "error": null,
+     "halt": false,
+     "signal": "return",
+     "vars": {},
+     "modelVariables": {},
+     "groups": [
+      {
+       "title": "変数・参照",
+       "entries": []
+      },
+      {
+       "title": "モデルメモリ（実アドレスではありません）",
+       "entries": []
+      }
+     ],
+     "facts": [],
+     "response": null,
+     "fragment": null
+    }
+   ]
+  },
+  "percent": {
+   "topError": null,
+   "notes": null,
+   "truncated": false,
+   "reasons": [],
+   "operations": 8,
+   "paths": [
+    {
+     "outputs": [
+      {
+       "text": "100%",
+       "channel": "printf"
+      }
+     ],
+     "trace": [
+      {
+       "line": 6,
+       "text": "標準出力へ出します：100%",
+       "category": null,
+       "kind": "step"
+      },
+      {
+       "line": 7,
+       "text": "値を返して終了します：0",
+       "category": null,
+       "kind": "step"
+      }
+     ],
+     "error": null,
+     "halt": false,
+     "signal": "return",
+     "vars": {},
+     "modelVariables": {},
+     "groups": [
+      {
+       "title": "変数・参照",
+       "entries": []
+      },
+      {
+       "title": "モデルメモリ（実アドレスではありません）",
+       "entries": []
+      }
+     ],
+     "facts": [],
+     "response": null,
+     "fragment": null
+    }
+   ]
+  },
+  "u-form": {
+   "topError": null,
+   "notes": null,
+   "truncated": false,
+   "reasons": [],
+   "operations": 12,
+   "paths": [
+    {
+     "outputs": [
+      {
+       "text": "42",
+       "channel": "printf"
+      }
+     ],
+     "trace": [
+      {
+       "line": 6,
+       "text": "u を unsigned int として用意します：42",
+       "category": null,
+       "kind": "step"
+      },
+      {
+       "line": 6,
+       "text": "標準出力へ出します：42",
+       "category": null,
+       "kind": "step"
+      },
+      {
+       "line": 7,
+       "text": "値を返して終了します：0",
+       "category": null,
+       "kind": "step"
+      }
+     ],
+     "error": null,
+     "halt": false,
+     "signal": "return",
+     "vars": {
+      "u": 42
+     },
+     "modelVariables": {},
+     "groups": [
+      {
+       "title": "変数・参照",
+       "entries": [
+        [
+         "u",
+         "42"
+        ]
+       ]
+      },
+      {
+       "title": "モデルメモリ（実アドレスではありません）",
+       "entries": [
+        [
+         "object-1",
+         "u（unsigned int、有効）：[\n  42\n]"
+        ]
+       ]
+      }
+     ],
+     "facts": [],
+     "response": null,
+     "fragment": null
+    }
+   ]
+  },
+  "nan-var": {
+   "topError": null,
+   "notes": null,
+   "truncated": false,
+   "reasons": [],
+   "operations": 14,
+   "paths": [
+    {
+     "outputs": [
+      {
+       "text": "nan",
+       "channel": "printf"
+      }
+     ],
+     "trace": [
+      {
+       "line": 6,
+       "text": "x を double として用意します：nan",
+       "category": null,
+       "kind": "step"
+      },
+      {
+       "line": 6,
+       "text": "標準出力へ出します：nan",
+       "category": null,
+       "kind": "step"
+      },
+      {
+       "line": 7,
+       "text": "値を返して終了します：0",
+       "category": null,
+       "kind": "step"
+      }
+     ],
+     "error": null,
+     "halt": false,
+     "signal": "return",
+     "vars": {
+      "x": "nan"
+     },
+     "modelVariables": {},
+     "groups": [
+      {
+       "title": "変数・参照",
+       "entries": [
+        [
+         "x",
+         "nan"
+        ]
+       ]
+      },
+      {
+       "title": "モデルメモリ（実アドレスではありません）",
+       "entries": [
+        [
+         "object-1",
+         "x（double、有効）：[\n  \"nan\"\n]"
+        ]
+       ]
+      }
+     ],
+     "facts": [],
+     "response": null,
+     "fragment": null
+    }
+   ]
+  },
+  "nan-direct": {
+   "topError": null,
+   "notes": null,
+   "truncated": false,
+   "reasons": [],
+   "operations": 11,
+   "paths": [
+    {
+     "outputs": [
+      {
+       "text": "nan",
+       "channel": "printf"
+      }
+     ],
+     "trace": [
+      {
+       "line": 6,
+       "text": "標準出力へ出します：nan",
+       "category": null,
+       "kind": "step"
+      },
+      {
+       "line": 7,
+       "text": "値を返して終了します：0",
+       "category": null,
+       "kind": "step"
+      }
+     ],
+     "error": null,
+     "halt": false,
+     "signal": "return",
+     "vars": {},
+     "modelVariables": {},
+     "groups": [
+      {
+       "title": "変数・参照",
+       "entries": []
+      },
+      {
+       "title": "モデルメモリ（実アドレスではありません）",
+       "entries": []
+      }
+     ],
+     "facts": [],
+     "response": null,
+     "fragment": null
+    }
+   ]
+  },
+  "inf-pos": {
+   "topError": null,
+   "notes": null,
+   "truncated": false,
+   "reasons": [],
+   "operations": 11,
+   "paths": [
+    {
+     "outputs": [
+      {
+       "text": "inf",
+       "channel": "printf"
+      }
+     ],
+     "trace": [
+      {
+       "line": 6,
+       "text": "標準出力へ出します：inf",
+       "category": null,
+       "kind": "step"
+      },
+      {
+       "line": 7,
+       "text": "値を返して終了します：0",
+       "category": null,
+       "kind": "step"
+      }
+     ],
+     "error": null,
+     "halt": false,
+     "signal": "return",
+     "vars": {},
+     "modelVariables": {},
+     "groups": [
+      {
+       "title": "変数・参照",
+       "entries": []
+      },
+      {
+       "title": "モデルメモリ（実アドレスではありません）",
+       "entries": []
+      }
+     ],
+     "facts": [],
+     "response": null,
+     "fragment": null
+    }
+   ]
+  },
+  "inf-neg": {
+   "topError": null,
+   "notes": null,
+   "truncated": false,
+   "reasons": [],
+   "operations": 12,
+   "paths": [
+    {
+     "outputs": [
+      {
+       "text": "-inf",
+       "channel": "printf"
+      }
+     ],
+     "trace": [
+      {
+       "line": 6,
+       "text": "標準出力へ出します：-inf",
+       "category": null,
+       "kind": "step"
+      },
+      {
+       "line": 7,
+       "text": "値を返して終了します：0",
+       "category": null,
+       "kind": "step"
+      }
+     ],
+     "error": null,
+     "halt": false,
+     "signal": "return",
+     "vars": {},
+     "modelVariables": {},
+     "groups": [
+      {
+       "title": "変数・参照",
+       "entries": []
+      },
+      {
+       "title": "モデルメモリ（実アドレスではありません）",
+       "entries": []
+      }
+     ],
+     "facts": [],
+     "response": null,
+     "fragment": null
+    }
+   ]
+  },
+  "inf-var": {
+   "topError": null,
+   "notes": null,
+   "truncated": false,
+   "reasons": [],
+   "operations": 17,
+   "paths": [
+    {
+     "outputs": [
+      {
+       "text": "inf",
+       "channel": "printf"
+      }
+     ],
+     "trace": [
+      {
+       "line": 6,
+       "text": "a を double として用意します：5",
+       "category": null,
+       "kind": "step"
+      },
+      {
+       "line": 6,
+       "text": "b を double として用意します：inf",
+       "category": null,
+       "kind": "step"
+      },
+      {
+       "line": 6,
+       "text": "標準出力へ出します：inf",
+       "category": null,
+       "kind": "step"
+      },
+      {
+       "line": 7,
+       "text": "値を返して終了します：0",
+       "category": null,
+       "kind": "step"
+      }
+     ],
+     "error": null,
+     "halt": false,
+     "signal": "return",
+     "vars": {
+      "a": 5,
+      "b": "inf"
+     },
+     "modelVariables": {},
+     "groups": [
+      {
+       "title": "変数・参照",
+       "entries": [
+        [
+         "a",
+         "5"
+        ],
+        [
+         "b",
+         "inf"
+        ]
+       ]
+      },
+      {
+       "title": "モデルメモリ（実アドレスではありません）",
+       "entries": [
+        [
+         "object-1",
+         "a（double、有効）：[\n  5\n]"
+        ],
+        [
+         "object-2",
+         "b（double、有効）：[\n  \"inf\"\n]"
+        ]
+       ]
+      }
+     ],
+     "facts": [],
+     "response": null,
+     "fragment": null
+    }
+   ]
+  },
+  "width-form": {
+   "topError": null,
+   "notes": null,
+   "truncated": false,
+   "reasons": [],
+   "operations": 5,
+   "paths": [
+    {
+     "outputs": [],
+     "trace": [
+      {
+       "line": 6,
+       "text": "このprintf書式はモデルで扱えません",
+       "category": "未対応",
+       "kind": "error"
+      }
+     ],
+     "error": {
+      "line": 6,
+      "message": "このprintf書式はモデルで扱えません",
+      "category": "未対応"
+     },
+     "halt": true,
+     "signal": null,
+     "vars": {},
+     "modelVariables": {},
+     "groups": [
+      {
+       "title": "変数・参照",
+       "entries": []
+      },
+      {
+       "title": "モデルメモリ（実アドレスではありません）",
+       "entries": []
+      }
+     ],
+     "facts": [],
+     "response": null,
+     "fragment": null
+    }
+   ]
+  },
+  "ld-form": {
+   "topError": null,
+   "notes": null,
+   "truncated": false,
+   "reasons": [],
+   "operations": 5,
+   "paths": [
+    {
+     "outputs": [],
+     "trace": [
+      {
+       "line": 6,
+       "text": "このprintf書式はモデルで扱えません",
+       "category": "未対応",
+       "kind": "error"
+      }
+     ],
+     "error": {
+      "line": 6,
+      "message": "このprintf書式はモデルで扱えません",
+      "category": "未対応"
+     },
+     "halt": true,
+     "signal": null,
+     "vars": {},
+     "modelVariables": {},
+     "groups": [
+      {
+       "title": "変数・参照",
+       "entries": []
+      },
+      {
+       "title": "モデルメモリ（実アドレスではありません）",
+       "entries": []
+      }
+     ],
+     "facts": [],
+     "response": null,
+     "fragment": null
+    }
+   ]
+  }
+ },
+ "reg02": {
+  "div-decl": {
+   "topError": {
+    "line": 6,
+    "message": "この構文は説明に対応していません：型 div_t の宣言は未対応です",
+    "category": "未対応"
+   },
+   "notes": null,
+   "truncated": false,
+   "reasons": null,
+   "operations": null,
+   "paths": []
+  },
+  "div-direct": {
+   "topError": null,
+   "notes": null,
+   "truncated": false,
+   "reasons": [],
+   "operations": 8,
+   "paths": [
+    {
+     "outputs": [],
+     "trace": [
+      {
+       "line": 6,
+       "text": "この関数は説明に対応していません：div",
+       "category": "エラー",
+       "kind": "error"
+      }
+     ],
+     "error": {
+      "line": 6,
+      "message": "この関数は説明に対応していません：div",
+      "category": "エラー"
+     },
+     "halt": true,
+     "signal": null,
+     "vars": {},
+     "modelVariables": {},
+     "groups": [
+      {
+       "title": "変数・参照",
+       "entries": []
+      },
+      {
+       "title": "モデルメモリ（実アドレスではありません）",
+       "entries": []
+      }
+     ],
+     "facts": [],
+     "response": null,
+     "fragment": null
+    }
+   ]
+  },
+  "div-neg": {
+   "topError": null,
+   "notes": null,
+   "truncated": false,
+   "reasons": [],
+   "operations": 9,
+   "paths": [
+    {
+     "outputs": [],
+     "trace": [
+      {
+       "line": 6,
+       "text": "この関数は説明に対応していません：div",
+       "category": "エラー",
+       "kind": "error"
+      }
+     ],
+     "error": {
+      "line": 6,
+      "message": "この関数は説明に対応していません：div",
+      "category": "エラー"
+     },
+     "halt": true,
+     "signal": null,
+     "vars": {},
+     "modelVariables": {},
+     "groups": [
+      {
+       "title": "変数・参照",
+       "entries": []
+      },
+      {
+       "title": "モデルメモリ（実アドレスではありません）",
+       "entries": []
+      }
+     ],
+     "facts": [],
+     "response": null,
+     "fragment": null
+    }
+   ]
+  },
+  "ldiv-direct": {
+   "topError": null,
+   "notes": null,
+   "truncated": false,
+   "reasons": [],
+   "operations": 8,
+   "paths": [
+    {
+     "outputs": [],
+     "trace": [
+      {
+       "line": 6,
+       "text": "この関数は説明に対応していません：ldiv",
+       "category": "エラー",
+       "kind": "error"
+      }
+     ],
+     "error": {
+      "line": 6,
+      "message": "この関数は説明に対応していません：ldiv",
+      "category": "エラー"
+     },
+     "halt": true,
+     "signal": null,
+     "vars": {},
+     "modelVariables": {},
+     "groups": [
+      {
+       "title": "変数・参照",
+       "entries": []
+      },
+      {
+       "title": "モデルメモリ（実アドレスではありません）",
+       "entries": []
+      }
+     ],
+     "facts": [],
+     "response": null,
+     "fragment": null
+    }
+   ]
+  },
+  "strcmp-lit-neg": {
+   "topError": null,
+   "notes": null,
+   "truncated": false,
+   "reasons": [],
+   "operations": 7,
+   "paths": [
+    {
+     "outputs": [],
+     "trace": [
+      {
+       "line": 6,
+       "text": "この関数は説明に対応していません：strcmp",
+       "category": "エラー",
+       "kind": "error"
+      }
+     ],
+     "error": {
+      "line": 6,
+      "message": "この関数は説明に対応していません：strcmp",
+      "category": "エラー"
+     },
+     "halt": true,
+     "signal": null,
+     "vars": {},
+     "modelVariables": {},
+     "groups": [
+      {
+       "title": "変数・参照",
+       "entries": []
+      },
+      {
+       "title": "モデルメモリ（実アドレスではありません）",
+       "entries": []
+      }
+     ],
+     "facts": [],
+     "response": null,
+     "fragment": null
+    }
+   ]
+  },
+  "strcmp-eq": {
+   "topError": null,
+   "notes": null,
+   "truncated": false,
+   "reasons": [],
+   "operations": 7,
+   "paths": [
+    {
+     "outputs": [],
+     "trace": [
+      {
+       "line": 6,
+       "text": "この関数は説明に対応していません：strcmp",
+       "category": "エラー",
+       "kind": "error"
+      }
+     ],
+     "error": {
+      "line": 6,
+      "message": "この関数は説明に対応していません：strcmp",
+      "category": "エラー"
+     },
+     "halt": true,
+     "signal": null,
+     "vars": {},
+     "modelVariables": {},
+     "groups": [
+      {
+       "title": "変数・参照",
+       "entries": []
+      },
+      {
+       "title": "モデルメモリ（実アドレスではありません）",
+       "entries": []
+      }
+     ],
+     "facts": [],
+     "response": null,
+     "fragment": null
+    }
+   ]
+  },
+  "strcmp-arr": {
+   "topError": null,
+   "notes": null,
+   "truncated": false,
+   "reasons": [],
+   "operations": 17,
+   "paths": [
+    {
+     "outputs": [],
+     "trace": [
+      {
+       "line": 6,
+       "text": "a を char[] として用意します：モデル上の参照先 object-1・要素位置 0（実アドレスではありません）",
+       "category": null,
+       "kind": "step"
+      },
+      {
+       "line": 6,
+       "text": "b を char[] として用意します：モデル上の参照先 object-2・要素位置 0（実アドレスではありません）",
+       "category": null,
+       "kind": "step"
+      },
+      {
+       "line": 6,
+       "text": "この関数は説明に対応していません：strcmp",
+       "category": "エラー",
+       "kind": "error"
+      }
+     ],
+     "error": {
+      "line": 6,
+      "message": "この関数は説明に対応していません：strcmp",
+      "category": "エラー"
+     },
+     "halt": true,
+     "signal": null,
+     "vars": {
+      "a": {
+       "kind": "pointer",
+       "object": "object-1",
+       "offset": 0
+      },
+      "b": {
+       "kind": "pointer",
+       "object": "object-2",
+       "offset": 0
+      }
+     },
+     "modelVariables": {},
+     "groups": [
+      {
+       "title": "変数・参照",
+       "entries": [
+        [
+         "a",
+         "モデル上の参照先 object-1・要素位置 0（実アドレスではありません）"
+        ],
+        [
+         "b",
+         "モデル上の参照先 object-2・要素位置 0（実アドレスではありません）"
+        ]
+       ]
+      },
+      {
+       "title": "モデルメモリ（実アドレスではありません）",
+       "entries": [
+        [
+         "object-1",
+         "a（char、有効）：[\n  97,\n  98,\n  99,\n  0,\n  0,\n  0,\n  0,\n  0\n]"
+        ],
+        [
+         "object-2",
+         "b（char、有効）：[\n  97,\n  98,\n  100,\n  0,\n  0,\n  0,\n  0,\n  0\n]"
+        ]
+       ]
+      }
+     ],
+     "facts": [],
+     "response": null,
+     "fragment": null
+    }
+   ]
+  },
+  "strncmp": {
+   "topError": null,
+   "notes": null,
+   "truncated": false,
+   "reasons": [],
+   "operations": 8,
+   "paths": [
+    {
+     "outputs": [],
+     "trace": [
+      {
+       "line": 6,
+       "text": "この関数は説明に対応していません：strncmp",
+       "category": "エラー",
+       "kind": "error"
+      }
+     ],
+     "error": {
+      "line": 6,
+      "message": "この関数は説明に対応していません：strncmp",
+      "category": "エラー"
+     },
+     "halt": true,
+     "signal": null,
+     "vars": {},
+     "modelVariables": {},
+     "groups": [
+      {
+       "title": "変数・参照",
+       "entries": []
+      },
+      {
+       "title": "モデルメモリ（実アドレスではありません）",
+       "entries": []
+      }
+     ],
+     "facts": [],
+     "response": null,
+     "fragment": null
+    }
+   ]
+  },
+  "strlen": {
+   "topError": null,
+   "notes": null,
+   "truncated": false,
+   "reasons": [],
+   "operations": 7,
+   "paths": [
+    {
+     "outputs": [],
+     "trace": [
+      {
+       "line": 6,
+       "text": "この関数は説明に対応していません：strlen",
+       "category": "エラー",
+       "kind": "error"
+      }
+     ],
+     "error": {
+      "line": 6,
+      "message": "この関数は説明に対応していません：strlen",
+      "category": "エラー"
+     },
+     "halt": true,
+     "signal": null,
+     "vars": {},
+     "modelVariables": {},
+     "groups": [
+      {
+       "title": "変数・参照",
+       "entries": []
+      },
+      {
+       "title": "モデルメモリ（実アドレスではありません）",
+       "entries": []
+      }
+     ],
+     "facts": [],
+     "response": null,
+     "fragment": null
+    }
+   ]
+  },
+  "strchr": {
+   "topError": null,
+   "notes": null,
+   "truncated": false,
+   "reasons": [],
+   "operations": 12,
+   "paths": [
+    {
+     "outputs": [],
+     "trace": [
+      {
+       "line": 6,
+       "text": "buf を char[] として用意します：モデル上の参照先 object-1・要素位置 0（実アドレスではありません）",
+       "category": null,
+       "kind": "step"
+      },
+      {
+       "line": 6,
+       "text": "この関数は説明に対応していません：strchr",
+       "category": "エラー",
+       "kind": "error"
+      }
+     ],
+     "error": {
+      "line": 6,
+      "message": "この関数は説明に対応していません：strchr",
+      "category": "エラー"
+     },
+     "halt": true,
+     "signal": null,
+     "vars": {
+      "buf": {
+       "kind": "pointer",
+       "object": "object-1",
+       "offset": 0
+      }
+     },
+     "modelVariables": {},
+     "groups": [
+      {
+       "title": "変数・参照",
+       "entries": [
+        [
+         "buf",
+         "モデル上の参照先 object-1・要素位置 0（実アドレスではありません）"
+        ]
+       ]
+      },
+      {
+       "title": "モデルメモリ（実アドレスではありません）",
+       "entries": [
+        [
+         "object-1",
+         "buf（char、有効）：[\n  104,\n  101,\n  108,\n  108,\n  111,\n  0,\n  0,\n  0\n]"
+        ]
+       ]
+      }
+     ],
+     "facts": [],
+     "response": null,
+     "fragment": null
+    }
+   ]
+  },
+  "strrchr": {
+   "topError": null,
+   "notes": null,
+   "truncated": false,
+   "reasons": [],
+   "operations": 12,
+   "paths": [
+    {
+     "outputs": [],
+     "trace": [
+      {
+       "line": 6,
+       "text": "buf を char[] として用意します：モデル上の参照先 object-1・要素位置 0（実アドレスではありません）",
+       "category": null,
+       "kind": "step"
+      },
+      {
+       "line": 6,
+       "text": "この関数は説明に対応していません：strrchr",
+       "category": "エラー",
+       "kind": "error"
+      }
+     ],
+     "error": {
+      "line": 6,
+      "message": "この関数は説明に対応していません：strrchr",
+      "category": "エラー"
+     },
+     "halt": true,
+     "signal": null,
+     "vars": {
+      "buf": {
+       "kind": "pointer",
+       "object": "object-1",
+       "offset": 0
+      }
+     },
+     "modelVariables": {},
+     "groups": [
+      {
+       "title": "変数・参照",
+       "entries": [
+        [
+         "buf",
+         "モデル上の参照先 object-1・要素位置 0（実アドレスではありません）"
+        ]
+       ]
+      },
+      {
+       "title": "モデルメモリ（実アドレスではありません）",
+       "entries": [
+        [
+         "object-1",
+         "buf（char、有効）：[\n  104,\n  101,\n  108,\n  108,\n  111,\n  0,\n  0,\n  0\n]"
+        ]
+       ]
+      }
+     ],
+     "facts": [],
+     "response": null,
+     "fragment": null
+    }
+   ]
+  },
+  "strstr": {
+   "topError": null,
+   "notes": null,
+   "truncated": false,
+   "reasons": [],
+   "operations": 12,
+   "paths": [
+    {
+     "outputs": [],
+     "trace": [
+      {
+       "line": 6,
+       "text": "buf を char[] として用意します：モデル上の参照先 object-1・要素位置 0（実アドレスではありません）",
+       "category": null,
+       "kind": "step"
+      },
+      {
+       "line": 6,
+       "text": "この関数は説明に対応していません：strstr",
+       "category": "エラー",
+       "kind": "error"
+      }
+     ],
+     "error": {
+      "line": 6,
+      "message": "この関数は説明に対応していません：strstr",
+      "category": "エラー"
+     },
+     "halt": true,
+     "signal": null,
+     "vars": {
+      "buf": {
+       "kind": "pointer",
+       "object": "object-1",
+       "offset": 0
+      }
+     },
+     "modelVariables": {},
+     "groups": [
+      {
+       "title": "変数・参照",
+       "entries": [
+        [
+         "buf",
+         "モデル上の参照先 object-1・要素位置 0（実アドレスではありません）"
+        ]
+       ]
+      },
+      {
+       "title": "モデルメモリ（実アドレスではありません）",
+       "entries": [
+        [
+         "object-1",
+         "buf（char、有効）：[\n  104,\n  101,\n  108,\n  108,\n  111,\n  32,\n  119,\n  111,\n  114,\n  108,\n  100,\n  0,\n  0,\n  0,\n  0,\n  0\n]"
+        ]
+       ]
+      }
+     ],
+     "facts": [],
+     "response": null,
+     "fragment": null
+    }
+   ]
+  },
+  "strstr-null": {
+   "topError": null,
+   "notes": null,
+   "truncated": false,
+   "reasons": [],
+   "operations": 13,
+   "paths": [
+    {
+     "outputs": [],
+     "trace": [
+      {
+       "line": 6,
+       "text": "buf を char[] として用意します：モデル上の参照先 object-1・要素位置 0（実アドレスではありません）",
+       "category": null,
+       "kind": "step"
+      },
+      {
+       "line": 6,
+       "text": "この関数は説明に対応していません：strstr",
+       "category": "エラー",
+       "kind": "error"
+      }
+     ],
+     "error": {
+      "line": 6,
+      "message": "この関数は説明に対応していません：strstr",
+      "category": "エラー"
+     },
+     "halt": true,
+     "signal": null,
+     "vars": {
+      "buf": {
+       "kind": "pointer",
+       "object": "object-1",
+       "offset": 0
+      }
+     },
+     "modelVariables": {},
+     "groups": [
+      {
+       "title": "変数・参照",
+       "entries": [
+        [
+         "buf",
+         "モデル上の参照先 object-1・要素位置 0（実アドレスではありません）"
+        ]
+       ]
+      },
+      {
+       "title": "モデルメモリ（実アドレスではありません）",
+       "entries": [
+        [
+         "object-1",
+         "buf（char、有効）：[\n  97,\n  98,\n  99,\n  0,\n  0,\n  0,\n  0,\n  0\n]"
+        ]
+       ]
+      }
+     ],
+     "facts": [],
+     "response": null,
+     "fragment": null
+    }
+   ]
+  },
+  "strcpy-pipe": {
+   "topError": null,
+   "notes": null,
+   "truncated": false,
+   "reasons": [],
+   "operations": 8,
+   "paths": [
+    {
+     "outputs": [],
+     "trace": [
+      {
+       "line": 6,
+       "text": "buf を char[] として用意します：モデル上の参照先 object-1・要素位置 0（実アドレスではありません）",
+       "category": null,
+       "kind": "step"
+      },
+      {
+       "line": 6,
+       "text": "この関数は説明に対応していません：strcpy",
+       "category": "エラー",
+       "kind": "error"
+      }
+     ],
+     "error": {
+      "line": 6,
+      "message": "この関数は説明に対応していません：strcpy",
+      "category": "エラー"
+     },
+     "halt": true,
+     "signal": null,
+     "vars": {
+      "buf": {
+       "kind": "pointer",
+       "object": "object-1",
+       "offset": 0
+      }
+     },
+     "modelVariables": {},
+     "groups": [
+      {
+       "title": "変数・参照",
+       "entries": [
+        [
+         "buf",
+         "モデル上の参照先 object-1・要素位置 0（実アドレスではありません）"
+        ]
+       ]
+      },
+      {
+       "title": "モデルメモリ（実アドレスではありません）",
+       "entries": [
+        [
+         "object-1",
+         "buf（char、有効）：0: 未初期化\n1: 未初期化\n2: 未初期化\n3: 未初期化\n4: 未初期化\n5: 未初期化\n6: 未初期化\n7: 未初期化\n8: 未初期化\n9: 未初期化\n10: 未初期化\n11: 未初期化\n12: 未初期化\n13: 未初期化\n14: 未初期化\n15: 未初期化\n16: 未初期化\n17: 未初期化\n18: 未初期化\n19: 未初期化\n20: 未初期化\n21: 未初期化\n22: 未初期化\n23: 未初期化\n24: 未初期化\n25: 未初期化\n26: 未初期化\n27: 未初期化\n28: 未初期化\n29: 未初期化\n30: 未初期化\n31: 未初期化"
+        ]
+       ]
+      }
+     ],
+     "facts": [],
+     "response": null,
+     "fragment": null
+    }
+   ]
+  }
+ },
+ "reg03": {
+  "csharp-array": {
+   "topError": null,
+   "notes": null,
+   "truncated": false,
+   "reasons": [],
+   "operations": 67,
+   "paths": [
+    {
+     "outputs": [
+      {
+       "text": "6",
+       "channel": "Console.WriteLine"
+      }
+     ],
+     "trace": [
+      {
+       "line": 4,
+       "text": "values を int[] として用意します：[\n  1,\n  2,\n  3\n]",
+       "category": null,
+       "kind": "step"
+      },
+      {
+       "line": 5,
+       "text": "total を int として用意します：0",
+       "category": null,
+       "kind": "step"
+      },
+      {
+       "line": 6,
+       "text": "i を int として用意します：0",
+       "category": null,
+       "kind": "step"
+      },
+      {
+       "line": 6,
+       "text": "繰り返し 1回目",
+       "category": null,
+       "kind": "step"
+      },
+      {
+       "line": 7,
+       "text": "式を評価します：1",
+       "category": null,
+       "kind": "step"
+      },
+      {
+       "line": 6,
+       "text": "i を増やします（後置式の値は変更前の 0）",
+       "category": null,
+       "kind": "step"
+      },
+      {
+       "line": 6,
+       "text": "繰り返し 2回目",
+       "category": null,
+       "kind": "step"
+      },
+      {
+       "line": 7,
+       "text": "式を評価します：3",
+       "category": null,
+       "kind": "step"
+      },
+      {
+       "line": 6,
+       "text": "i を増やします（後置式の値は変更前の 1）",
+       "category": null,
+       "kind": "step"
+      },
+      {
+       "line": 6,
+       "text": "繰り返し 3回目",
+       "category": null,
+       "kind": "step"
+      },
+      {
+       "line": 7,
+       "text": "式を評価します：6",
+       "category": null,
+       "kind": "step"
+      },
+      {
+       "line": 6,
+       "text": "i を増やします（後置式の値は変更前の 2）",
+       "category": null,
+       "kind": "step"
+      },
+      {
+       "line": 6,
+       "text": "3回実行してループを終了します",
+       "category": null,
+       "kind": "step"
+      },
+      {
+       "line": 9,
+       "text": "標準出力へ出します：6",
+       "category": null,
+       "kind": "step"
+      }
+     ],
+     "error": null,
+     "halt": false,
+     "signal": null,
+     "vars": {
+      "values": [
+       1,
+       2,
+       3
+      ],
+      "total": 6
+     },
+     "modelVariables": {},
+     "groups": [
+      {
+       "title": "変数・参照",
+       "entries": [
+        [
+         "values",
+         "[\n  1,\n  2,\n  3\n]"
+        ],
+        [
+         "total",
+         "6"
+        ]
+       ]
+      },
+      {
+       "title": "モデルオブジェクト・配列",
+       "entries": [
+        [
+         "object-1",
+         "values（int、有効）：[\n  1,\n  2,\n  3\n]"
+        ],
+        [
+         "object-2",
+         "total（int、有効）：[\n  6\n]"
+        ],
+        [
+         "object-3",
+         "i（int、有効）：[\n  3\n]"
+        ]
+       ]
+      }
+     ],
+     "facts": [],
+     "response": null,
+     "fragment": null
+    }
+   ]
+  },
+  "cs-object": {
+   "topError": null,
+   "notes": null,
+   "truncated": false,
+   "reasons": [],
+   "operations": 18,
+   "paths": [
+    {
+     "outputs": [
+      {
+       "text": "5",
+       "channel": "Console.WriteLine"
+      }
+     ],
+     "trace": [
+      {
+       "line": 6,
+       "text": "first を Counter として用意します：Counter のオブジェクト\nValue: 0",
+       "category": null,
+       "kind": "step"
+      },
+      {
+       "line": 7,
+       "text": "same を Counter として用意します：Counter のオブジェクト\nValue: 0",
+       "category": null,
+       "kind": "step"
+      },
+      {
+       "line": 8,
+       "text": "式を評価します：5",
+       "category": null,
+       "kind": "step"
+      },
+      {
+       "line": 9,
+       "text": "標準出力へ出します：5",
+       "category": null,
+       "kind": "step"
+      }
+     ],
+     "error": null,
+     "halt": false,
+     "signal": null,
+     "vars": {
+      "first": {
+       "__class": "Counter",
+       "Value": 5
+      },
+      "same": {
+       "__class": "Counter",
+       "Value": 5
+      }
+     },
+     "modelVariables": {},
+     "groups": [
+      {
+       "title": "変数・参照",
+       "entries": [
+        [
+         "first",
+         "Counter のオブジェクト\nValue: 5"
+        ],
+        [
+         "same",
+         "Counter のオブジェクト\nValue: 5"
+        ]
+       ]
+      },
+      {
+       "title": "モデルオブジェクト・配列",
+       "entries": [
+        [
+         "object-1",
+         "first（Counter、有効）：0: Counter のオブジェクト\nValue: 5"
+        ],
+        [
+         "object-2",
+         "same（Counter、有効）：0: Counter のオブジェクト\nValue: 5"
+        ]
+       ]
+      }
+     ],
+     "facts": [],
+     "response": null,
+     "fragment": null
+    }
+   ]
+  },
+  "csharp-error": {
+   "topError": null,
+   "notes": null,
+   "truncated": false,
+   "reasons": [],
+   "operations": 11,
+   "paths": [
+    {
+     "outputs": [],
+     "trace": [
+      {
+       "line": 4,
+       "text": "values を int[] として用意します：[\n  1,\n  2\n]",
+       "category": null,
+       "kind": "step"
+      },
+      {
+       "line": 5,
+       "text": "配列範囲外です",
+       "category": "IndexOutOfRangeException",
+       "kind": "error"
+      }
+     ],
+     "error": {
+      "line": 5,
+      "message": "配列範囲外です",
+      "category": "IndexOutOfRangeException"
+     },
+     "halt": true,
+     "signal": null,
+     "vars": {
+      "values": [
+       1,
+       2
+      ]
+     },
+     "modelVariables": {},
+     "groups": [
+      {
+       "title": "変数・参照",
+       "entries": [
+        [
+         "values",
+         "[\n  1,\n  2\n]"
+        ]
+       ]
+      },
+      {
+       "title": "モデルオブジェクト・配列",
+       "entries": [
+        [
+         "object-1",
+         "values（int、有効）：[\n  1,\n  2\n]"
+        ]
+       ]
+      }
+     ],
+     "facts": [],
+     "response": null,
+     "fragment": null
+    }
+   ]
+  },
+  "csharp-price": {
+   "topError": null,
+   "notes": null,
+   "truncated": false,
+   "reasons": [],
+   "operations": 16,
+   "paths": [
+    {
+     "outputs": [
+      {
+       "text": "360",
+       "channel": "Console.WriteLine"
+      }
+     ],
+     "trace": [
+      {
+       "line": 4,
+       "text": "price を int として用意します：120",
+       "category": null,
+       "kind": "step"
+      },
+      {
+       "line": 5,
+       "text": "count を int として用意します：3",
+       "category": null,
+       "kind": "step"
+      },
+      {
+       "line": 6,
+       "text": "total を int として用意します：360",
+       "category": null,
+       "kind": "step"
+      },
+      {
+       "line": 7,
+       "text": "標準出力へ出します：360",
+       "category": null,
+       "kind": "step"
+      }
+     ],
+     "error": null,
+     "halt": false,
+     "signal": null,
+     "vars": {
+      "price": 120,
+      "count": 3,
+      "total": 360
+     },
+     "modelVariables": {},
+     "groups": [
+      {
+       "title": "変数・参照",
+       "entries": [
+        [
+         "price",
+         "120"
+        ],
+        [
+         "count",
+         "3"
+        ],
+        [
+         "total",
+         "360"
+        ]
+       ]
+      },
+      {
+       "title": "モデルオブジェクト・配列",
+       "entries": [
+        [
+         "object-1",
+         "price（int、有効）：[\n  120\n]"
+        ],
+        [
+         "object-2",
+         "count（int、有効）：[\n  3\n]"
+        ],
+        [
+         "object-3",
+         "total（int、有効）：[\n  360\n]"
+        ]
+       ]
+      }
+     ],
+     "facts": [],
+     "response": null,
+     "fragment": null
+    }
+   ]
+  },
+  "csharp-positive-total": {
+   "topError": null,
+   "notes": null,
+   "truncated": false,
+   "reasons": [],
+   "operations": 98,
+   "paths": [
+    {
+     "outputs": [
+      {
+       "text": "11",
+       "channel": "Console.WriteLine"
+      }
+     ],
+     "trace": [
+      {
+       "line": 4,
+       "text": "values を int[] として用意します：[\n  -2,\n  4,\n  0,\n  7\n]",
+       "category": null,
+       "kind": "step"
+      },
+      {
+       "line": 5,
+       "text": "total を int として用意します：0",
+       "category": null,
+       "kind": "step"
+      },
+      {
+       "line": 6,
+       "text": "i を int として用意します：0",
+       "category": null,
+       "kind": "step"
+      },
+      {
+       "line": 6,
+       "text": "繰り返し 1回目",
+       "category": null,
+       "kind": "step"
+      },
+      {
+       "line": 7,
+       "text": "条件が成立しません",
+       "category": null,
+       "kind": "step"
+      },
+      {
+       "line": 6,
+       "text": "i を増やします（後置式の値は変更前の 0）",
+       "category": null,
+       "kind": "step"
+      },
+      {
+       "line": 6,
+       "text": "繰り返し 2回目",
+       "category": null,
+       "kind": "step"
+      },
+      {
+       "line": 7,
+       "text": "条件が成立します",
+       "category": null,
+       "kind": "step"
+      },
+      {
+       "line": 7,
+       "text": "式を評価します：4",
+       "category": null,
+       "kind": "step"
+      },
+      {
+       "line": 6,
+       "text": "i を増やします（後置式の値は変更前の 1）",
+       "category": null,
+       "kind": "step"
+      },
+      {
+       "line": 6,
+       "text": "繰り返し 3回目",
+       "category": null,
+       "kind": "step"
+      },
+      {
+       "line": 7,
+       "text": "条件が成立しません",
+       "category": null,
+       "kind": "step"
+      },
+      {
+       "line": 6,
+       "text": "i を増やします（後置式の値は変更前の 2）",
+       "category": null,
+       "kind": "step"
+      },
+      {
+       "line": 6,
+       "text": "繰り返し 4回目",
+       "category": null,
+       "kind": "step"
+      },
+      {
+       "line": 7,
+       "text": "条件が成立します",
+       "category": null,
+       "kind": "step"
+      },
+      {
+       "line": 7,
+       "text": "式を評価します：11",
+       "category": null,
+       "kind": "step"
+      },
+      {
+       "line": 6,
+       "text": "i を増やします（後置式の値は変更前の 3）",
+       "category": null,
+       "kind": "step"
+      },
+      {
+       "line": 6,
+       "text": "4回実行してループを終了します",
+       "category": null,
+       "kind": "step"
+      },
+      {
+       "line": 9,
+       "text": "標準出力へ出します：11",
+       "category": null,
+       "kind": "step"
+      }
+     ],
+     "error": null,
+     "halt": false,
+     "signal": null,
+     "vars": {
+      "values": [
+       -2,
+       4,
+       0,
+       7
+      ],
+      "total": 11
+     },
+     "modelVariables": {},
+     "groups": [
+      {
+       "title": "変数・参照",
+       "entries": [
+        [
+         "values",
+         "[\n  -2,\n  4,\n  0,\n  7\n]"
+        ],
+        [
+         "total",
+         "11"
+        ]
+       ]
+      },
+      {
+       "title": "モデルオブジェクト・配列",
+       "entries": [
+        [
+         "object-1",
+         "values（int、有効）：[\n  -2,\n  4,\n  0,\n  7\n]"
+        ],
+        [
+         "object-2",
+         "total（int、有効）：[\n  11\n]"
+        ],
+        [
+         "object-3",
+         "i（int、有効）：[\n  4\n]"
+        ]
+       ]
+      }
+     ],
+     "facts": [],
+     "response": null,
+     "fragment": null
+    }
+   ]
+  },
+  "cs-shared-total": {
+   "topError": null,
+   "notes": null,
+   "truncated": false,
+   "reasons": [],
+   "operations": 115,
+   "paths": [
+    {
+     "outputs": [
+      {
+       "text": "15",
+       "channel": "Console.WriteLine"
+      }
+     ],
+     "trace": [
+      {
+       "line": 6,
+       "text": "first を Counter として用意します：Counter のオブジェクト\nTotal: 0",
+       "category": null,
+       "kind": "step"
+      },
+      {
+       "line": 7,
+       "text": "same を Counter として用意します：Counter のオブジェクト\nTotal: 0",
+       "category": null,
+       "kind": "step"
+      },
+      {
+       "line": 8,
+       "text": "values を int[] として用意します：[\n  1,\n  2,\n  3,\n  4,\n  5\n]",
+       "category": null,
+       "kind": "step"
+      },
+      {
+       "line": 10,
+       "text": "i を int として用意します：0",
+       "category": null,
+       "kind": "step"
+      },
+      {
+       "line": 10,
+       "text": "繰り返し 1回目",
+       "category": null,
+       "kind": "step"
+      },
+      {
+       "line": 10,
+       "text": "式を評価します：1",
+       "category": null,
+       "kind": "step"
+      },
+      {
+       "line": 10,
+       "text": "i を増やします（後置式の値は変更前の 0）",
+       "category": null,
+       "kind": "step"
+      },
+      {
+       "line": 10,
+       "text": "繰り返し 2回目",
+       "category": null,
+       "kind": "step"
+      },
+      {
+       "line": 10,
+       "text": "式を評価します：3",
+       "category": null,
+       "kind": "step"
+      },
+      {
+       "line": 10,
+       "text": "i を増やします（後置式の値は変更前の 1）",
+       "category": null,
+       "kind": "step"
+      },
+      {
+       "line": 10,
+       "text": "繰り返し 3回目",
+       "category": null,
+       "kind": "step"
+      },
+      {
+       "line": 10,
+       "text": "式を評価します：6",
+       "category": null,
+       "kind": "step"
+      },
+      {
+       "line": 10,
+       "text": "i を増やします（後置式の値は変更前の 2）",
+       "category": null,
+       "kind": "step"
+      },
+      {
+       "line": 10,
+       "text": "繰り返し 4回目",
+       "category": null,
+       "kind": "step"
+      },
+      {
+       "line": 10,
+       "text": "式を評価します：10",
+       "category": null,
+       "kind": "step"
+      },
+      {
+       "line": 10,
+       "text": "i を増やします（後置式の値は変更前の 3）",
+       "category": null,
+       "kind": "step"
+      },
+      {
+       "line": 10,
+       "text": "繰り返し 5回目",
+       "category": null,
+       "kind": "step"
+      },
+      {
+       "line": 10,
+       "text": "式を評価します：15",
+       "category": null,
+       "kind": "step"
+      },
+      {
+       "line": 10,
+       "text": "i を増やします（後置式の値は変更前の 4）",
+       "category": null,
+       "kind": "step"
+      },
+      {
+       "line": 10,
+       "text": "5回実行してループを終了します",
+       "category": null,
+       "kind": "step"
+      },
+      {
+       "line": 12,
+       "text": "標準出力へ出します：15",
+       "category": null,
+       "kind": "step"
+      }
+     ],
+     "error": null,
+     "halt": false,
+     "signal": null,
+     "vars": {
+      "first": {
+       "__class": "Counter",
+       "Total": 15
+      },
+      "same": {
+       "__class": "Counter",
+       "Total": 15
+      },
+      "values": [
+       1,
+       2,
+       3,
+       4,
+       5
+      ]
+     },
+     "modelVariables": {},
+     "groups": [
+      {
+       "title": "変数・参照",
+       "entries": [
+        [
+         "first",
+         "Counter のオブジェクト\nTotal: 15"
+        ],
+        [
+         "same",
+         "Counter のオブジェクト\nTotal: 15"
+        ],
+        [
+         "values",
+         "[\n  1,\n  2,\n  3,\n  4,\n  5\n]"
+        ]
+       ]
+      },
+      {
+       "title": "モデルオブジェクト・配列",
+       "entries": [
+        [
+         "object-1",
+         "first（Counter、有効）：0: Counter のオブジェクト\nTotal: 15"
+        ],
+        [
+         "object-2",
+         "same（Counter、有効）：0: Counter のオブジェクト\nTotal: 15"
+        ],
+        [
+         "object-3",
+         "values（int、有効）：[\n  1,\n  2,\n  3,\n  4,\n  5\n]"
+        ],
+        [
+         "object-4",
+         "i（int、有効）：[\n  5\n]"
+        ]
+       ]
+      }
+     ],
+     "facts": [],
+     "response": null,
+     "fragment": null
+    }
+   ]
+  }
+ },
+ "reg03codes": {
+  "csharp-array": "using System;\nclass Program {\n    static void Main() {\nint[] values = {1, 2, 3};\nint total = 0;\nfor (int i = 0; i < 3; i++) {\n    total += values[i];\n}\nConsole.WriteLine(total);\n    }\n}",
+  "cs-object": "using System;\nclass Counter { public int Value; }\n\nclass Program {\n    static void Main() {\nCounter first = new Counter();\nCounter same = first;\nsame.Value = 5;\nConsole.WriteLine(first.Value);\n    }\n}",
+  "csharp-error": "using System;\nclass Program {\n    static void Main() {\nint[] values = {1, 2};\nConsole.WriteLine(values[2]);\n    }\n}",
+  "csharp-price": "using System;\nclass Program {\n    static void Main() {\nint price = 120;\nint count = 3;\nint total = price * count;\nConsole.WriteLine(total);\n    }\n}",
+  "csharp-positive-total": "using System;\nclass Program {\n    static void Main() {\nint[] values = {-2, 4, 0, 7};\nint total = 0;\nfor (int i = 0; i < 4; i++) {\n    if (values[i] > 0) { total += values[i]; }\n}\nConsole.WriteLine(total);\n    }\n}",
+  "cs-shared-total": "using System;\nclass Counter { public int Total; }\n\nclass Program {\n    static void Main() {\nCounter first = new Counter();\nCounter same = first;\nint[] values = {1, 2, 3, 4, 5};\nchecked {\n    for (int i = 0; i < 5; i++) { same.Total += values[i]; }\n}\nConsole.WriteLine(first.Total);\n    }\n}"
+ }
+}

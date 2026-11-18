@@ -1,0 +1,16 @@
+test at tests/powershell.test.js:1:1
+✖ tests/powershell.test.js
+  'Promise resolution is still pending but the event loop has already resolved'
+
+test at tests/round2.test.js:1:1
+✖ tests/round2.test.js
+  'Promise resolution is still pending but the event loop has already resolved'
+
+test at tests/round3.test.js:1:1
+✖ tests/round3.test.js
+  'Promise resolution is still pending but the event loop has already resolved'
+
+test at tests/types.test.js:1:1
+✖ tests/types.test.js
+  'Promise resolution is still pending but the event loop has already resolved'
+DONE

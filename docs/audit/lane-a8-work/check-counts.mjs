@@ -1,0 +1,15 @@
+import { getDefinition } from "../../../js/types/registry.js";
+import { mergeCatalog, countByStatus } from "../../../js/core/catalog.js";
+import { loadAdvanced } from "../../../js/core/advanced-loader.js";
+const d = getDefinition("cpp");
+console.log("base reference:", d.reference.length, JSON.stringify(countByStatus(d.reference)));
+const baseUrl = new URL("../../../js/types/cpp/", import.meta.url).href;
+const adv = await loadAdvanced({ id: "cpp" }, { baseUrl });
+console.log("referenceAdvanced:", adv.referenceAdvanced.length, JSON.stringify(countByStatus(adv.referenceAdvanced)));
+console.log("referenceOverrides:", (adv.referenceOverrides || []).length);
+const merged = mergeCatalog(d.reference, adv);
+console.log("merged:", merged.reference.length, JSON.stringify(countByStatus(merged.reference)), "problems:", merged.problems.length);
+const adv2 = await loadAdvanced(d, { baseUrl });
+console.log("with real definition: referenceAdvanced:", adv2.referenceAdvanced.length);
+const merged2 = mergeCatalog(d.reference, adv2);
+console.log("merged2:", merged2.reference.length, JSON.stringify(countByStatus(merged2.reference)));

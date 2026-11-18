@@ -1,0 +1,641 @@
+{
+ "setup": {
+  "loaded": [
+   "advanced-manifest.js",
+   "reference-advanced-part1.js",
+   "reference-advanced-part2.js",
+   "reference-advanced-part3.js",
+   "templates-advanced.js",
+   "glossary-advanced.js",
+   "advanced-engine.js"
+  ],
+  "missing": [],
+  "failed": [],
+  "referenceAdvanced": 1798,
+  "templatesAdvanced": [
+   "cfn-adv-multi-resource",
+   "cfn-adv-fn-transform-loggroup",
+   "cfn-adv-handler-type-count",
+   "cfn-adv-handler-params-stage"
+  ],
+  "mergedReference": 2024,
+  "problems": [],
+  "ledgerSize": 1798,
+  "snapshot": "2026-11-16",
+  "has": {
+   "AWS::S3::Bucket": true,
+   "AWS::SQS::Queue": true,
+   "AWS::SNS::Topic": true,
+   "AWS::Logs::LogGroup": true,
+   "AWS::CloudFormation::WaitCondition": true,
+   "AWS::CloudFormation::WaitConditionHandle": true,
+   "AWS::CloudFormation::CustomResource": true,
+   "AWS::FakeService::Thing": false,
+   "ＡWS::S3::Bucket": false,
+   "AWS::S3::Bucket ": false
+  }
+ },
+ "cfn08": {
+  "hooked": {
+   "error": null,
+   "notes": null,
+   "notesCount": 0,
+   "paths": 1,
+   "truncated": false,
+   "reasons": []
+  },
+  "eqNoNotes": true,
+  "scanNotes": null,
+  "scanElemEq": true
+ },
+ "cfn09": {
+  "hooked": {
+   "error": null,
+   "notes": [
+    "注記：Resources の「Thing」の Type「AWS::FakeService::Thing」は、このアプリのリソースタイプ台帳に載っていません。台帳は 2026-11-16 時点の AWS 公式リソース仕様のスナップショットであり、それ以降に追加された新しいタイプなど、実在しても台帳に未収録の場合があります。これはエラーではなく、このタイプはこのアプリでは検証・参照の対象外であることを示す注記です。"
+   ],
+   "notesCount": 1,
+   "paths": 1,
+   "truncated": false,
+   "reasons": []
+  },
+  "noteText": "注記：Resources の「Thing」の Type「AWS::FakeService::Thing」は、このアプリのリソースタイプ台帳に載っていません。台帳は 2026-11-16 時点の AWS 公式リソース仕様のスナップショットであり、それ以降に追加された新しいタイプなど、実在しても台帳に未収録の場合があります。これはエラーではなく、このタイプはこのアプリでは検証・参照の対象外であることを示す注記です。",
+  "eqNoNotes": true,
+  "scanNotes": [
+   "注記：Resources の「Thing」の Type「AWS::FakeService::Thing」は、このアプリのリソースタイプ台帳に載っていません。台帳は 2026-11-16 時点の AWS 公式リソース仕様のスナップショットであり、それ以降に追加された新しいタイプなど、実在しても台帳に未収録の場合があります。これはエラーではなく、このタイプはこのアプリでは検証・参照の対象外であることを示す注記です。"
+  ],
+  "scanElemEq": true,
+  "baseScanNotes": null
+ },
+ "cfn10": {
+  "hooked": {
+   "error": null,
+   "notes": null,
+   "notesCount": 0,
+   "paths": 1,
+   "truncated": false,
+   "reasons": []
+  },
+  "eqNoNotes": true,
+  "fullEq": true
+ },
+ "cfn11": {
+  "hooked": {
+   "error": null,
+   "notes": null,
+   "notesCount": 0,
+   "paths": 1,
+   "truncated": false,
+   "reasons": []
+  },
+  "eqNoNotes": true,
+  "fullEq": true
+ },
+ "cfn12": {
+  "simNotes": [
+   "注記：Resources の「First」の Type「AWS::FakeService::Thing」は、このアプリのリソースタイプ台帳に載っていません。台帳は 2026-11-16 時点の AWS 公式リソース仕様のスナップショットであり、それ以降に追加された新しいタイプなど、実在しても台帳に未収録の場合があります。これはエラーではなく、このタイプはこのアプリでは検証・参照の対象外であることを示す注記です。",
+   "注記：Resources の「Second」の Type「AWS::FakeService::Thing」は、このアプリのリソースタイプ台帳に載っていません。台帳は 2026-11-16 時点の AWS 公式リソース仕様のスナップショットであり、それ以降に追加された新しいタイプなど、実在しても台帳に未収録の場合があります。これはエラーではなく、このタイプはこのアプリでは検証・参照の対象外であることを示す注記です。"
+  ],
+  "directNested": [
+   {
+    "logicalId": "First",
+    "type": "AWS::FakeService::Thing"
+   },
+   {
+    "logicalId": "Second",
+    "type": "AWS::FakeService::Thing"
+   },
+   {
+    "logicalId": "Third",
+    "type": "AWS::FakeService::Thing"
+   }
+  ],
+  "directDup": [
+   {
+    "logicalId": "A",
+    "type": "AWS::FakeService::Thing"
+   }
+  ]
+ },
+ "cfn13": {
+  "run1": {
+   "error": null,
+   "notes": [
+    "注記：Resources の「Thing」の Type「AWS::FakeService::Thing」は、このアプリのリソースタイプ台帳に載っていません。台帳は 2026-11-16 時点の AWS 公式リソース仕様のスナップショットであり、それ以降に追加された新しいタイプなど、実在しても台帳に未収録の場合があります。これはエラーではなく、このタイプはこのアプリでは検証・参照の対象外であることを示す注記です。"
+   ],
+   "notesCount": 1,
+   "paths": 1,
+   "truncated": false,
+   "reasons": []
+  },
+  "run2": {
+   "error": null,
+   "notes": [
+    "注記：Resources の「Thing」の Type「AWS::FakeService::Thing」は、このアプリのリソースタイプ台帳に載っていません。台帳は 2026-11-16 時点の AWS 公式リソース仕様のスナップショットであり、それ以降に追加された新しいタイプなど、実在しても台帳に未収録の場合があります。これはエラーではなく、このタイプはこのアプリでは検証・参照の対象外であることを示す注記です。"
+   ],
+   "notesCount": 1,
+   "paths": 1,
+   "truncated": false,
+   "reasons": []
+  },
+  "runsEq": true,
+  "doubleApply": {
+   "error": null,
+   "notes": [
+    "注記：Resources の「Thing」の Type「AWS::FakeService::Thing」は、このアプリのリソースタイプ台帳に載っていません。台帳は 2026-11-16 時点の AWS 公式リソース仕様のスナップショットであり、それ以降に追加された新しいタイプなど、実在しても台帳に未収録の場合があります。これはエラーではなく、このタイプはこのアプリでは検証・参照の対象外であることを示す注記です。"
+   ],
+   "notesCount": 1,
+   "paths": 1,
+   "truncated": false,
+   "reasons": []
+  },
+  "refeed": {
+   "error": null,
+   "notes": [
+    "注記：Resources の「Thing」の Type「AWS::FakeService::Thing」は、このアプリのリソースタイプ台帳に載っていません。台帳は 2026-11-16 時点の AWS 公式リソース仕様のスナップショットであり、それ以降に追加された新しいタイプなど、実在しても台帳に未収録の場合があります。これはエラーではなく、このタイプはこのアプリでは検証・参照の対象外であることを示す注記です。"
+   ],
+   "notesCount": 1,
+   "paths": 1,
+   "truncated": false,
+   "reasons": []
+  },
+  "scan1": 1,
+  "scan2": 1,
+  "sharedA": {
+   "error": null,
+   "notes": [
+    "注記：Resources の「Thing」の Type「AWS::FakeService::Thing」は、このアプリのリソースタイプ台帳に載っていません。台帳は 2026-11-16 時点の AWS 公式リソース仕様のスナップショットであり、それ以降に追加された新しいタイプなど、実在しても台帳に未収録の場合があります。これはエラーではなく、このタイプはこのアプリでは検証・参照の対象外であることを示す注記です。"
+   ],
+   "notesCount": 1,
+   "paths": 1,
+   "truncated": false,
+   "reasons": []
+  },
+  "sharedB": {
+   "error": null,
+   "notes": [
+    "注記：Resources の「Thing」の Type「AWS::FakeService::Thing」は、このアプリのリソースタイプ台帳に載っていません。台帳は 2026-11-16 時点の AWS 公式リソース仕様のスナップショットであり、それ以降に追加された新しいタイプなど、実在しても台帳に未収録の場合があります。これはエラーではなく、このタイプはこのアプリでは検証・参照の対象外であることを示す注記です。"
+   ],
+   "notesCount": 1,
+   "paths": 1,
+   "truncated": false,
+   "reasons": []
+  },
+  "defaultsUnchanged": true
+ },
+ "cfn14": {
+  "sim": {
+   "error": null,
+   "notes": null,
+   "notesCount": 0,
+   "paths": 1,
+   "truncated": false,
+   "reasons": []
+  },
+  "scanNotes": null
+ },
+ "cfn15": {
+  "hooked": {
+   "error": null,
+   "notes": null,
+   "notesCount": 0,
+   "paths": 1,
+   "truncated": false,
+   "reasons": []
+  },
+  "eqNoNotes": true,
+  "direct": []
+ },
+ "cfn16": {
+  "intro": "S3バケット・SQSキュー・SNSトピックの3リソースを含むテンプレート全体へTransformを適用します。Typeとプロパティ名はすべて実在のものだけを使い、実際のAWSリソースは作りません。モデルのAddMetadataは、断片のトップレベルにMetadata（Stage: dev）を追加します。",
+  "title": "複数リソースのテンプレートを変換する",
+  "hooked": {
+   "error": null,
+   "notes": null,
+   "notesCount": 0,
+   "paths": 1,
+   "truncated": false,
+   "reasons": []
+  },
+  "eqNoNotes": true,
+  "fragment": {
+   "Resources": {
+    "Bucket": {
+     "Type": "AWS::S3::Bucket",
+     "Properties": {
+      "BucketName": "practice-bucket"
+     }
+    },
+    "Queue": {
+     "Type": "AWS::SQS::Queue",
+     "Properties": {
+      "QueueName": "practice-queue",
+      "DelaySeconds": 5
+     }
+    },
+    "Topic": {
+     "Type": "AWS::SNS::Topic",
+     "Properties": {
+      "DisplayName": "practice",
+      "TopicName": "practice-topic"
+     }
+    }
+   },
+   "Metadata": {
+    "Stage": "dev"
+   }
+  },
+  "outputs": [],
+  "traceTexts": [
+   "AddMetadata に断片を渡します",
+   "モデルハンドラ：関数「handler」を定義します（この時点では中身は実行しません。呼び出されたときに動きます）",
+   "モデルハンドラ：関数「handler」を呼び出します（event = {'fragment': {'Resources': {'Bucket': {'Type': 'AWS::S3::Bucket', 'Properties': …}, 'Queue': {'Type': 'AWS::SQS::Queue', 'Properties': …}, 'Topic': {'Type': 'AWS::SNS::Topic', 'Properties': …}}}, 'params': {}, 'requestId': 'model-request-1', 'region': 'model-region', 'accountId': 'model-account', 'transformId': 'AddMetadata', 'templateParameterValues': {}}、context = None）",
+   "モデルハンドラ：「fragment」に {'Resources': {'Bucket': {'Type': 'AWS::S3::Bucket', 'Properties': {'BucketName': 'practice-bucket'}}, 'Queue': {'Type': 'AWS::SQS::Queue', 'Properties': {'QueueName': 'practice-queue', 'DelaySeconds': 5}}, 'Topic': {'Type': 'AWS::SNS::Topic', 'Properties': {'DisplayName': 'practice', 'TopicName': 'practice-topic'}}}} を代入します",
+   "モデルハンドラ：「fragment」の ['Metadata'] を {'Stage': 'dev'} にします",
+   "モデルハンドラ：呼び出し元へ {'requestId': 'model-request-1', 'status': 'success', 'fragment': {'Resources': {'Bucket': {'Type': 'AWS::S3::Bucket', 'Properties': …}, 'Queue': {'Type': 'AWS::SQS::Queue', 'Properties': …}, 'Topic': {'Type': 'AWS::SNS::Topic', 'Properties': …}}, 'Metadata': {'Stage': 'dev'}}} を返して、関数を終わります",
+   "モデルハンドラ：関数「handler」は {'requestId': 'model-request-1', 'status': 'success', 'fragment': {'Resources': {'Bucket': {'Type': 'AWS::S3::Bucket', 'Properties': …}, 'Queue': {'Type': 'AWS::SQS::Queue', 'Properties': …}, 'Topic': {'Type': 'AWS::SNS::Topic', 'Properties': …}}, 'Metadata': {'Stage': 'dev'}}} を返します"
+  ],
+  "leakObjectObject": false,
+  "leakSet": false
+ },
+ "cfn17": {
+  "intro": "Fn::Transformは同じProperties内の兄弟要素（LogGroupNameとRetentionInDays）を断片としてマクロへ渡します。パラメータは未評価で渡されます。変換対象でないQueueはそのまま残ります。",
+  "title": "Fn::Transformでロググループの設定を変換する",
+  "hooked": {
+   "error": null,
+   "notes": null,
+   "notesCount": 0,
+   "paths": 1,
+   "truncated": false,
+   "reasons": []
+  },
+  "eqNoNotes": true,
+  "fragment": {
+   "Resources": {
+    "LogGroup": {
+     "Type": "AWS::Logs::LogGroup",
+     "Properties": {
+      "LogGroupName": "practice-log",
+      "RetentionInDays": 7,
+      "Metadata": {
+       "Stage": "test"
+      }
+     }
+    },
+    "Queue": {
+     "Type": "AWS::SQS::Queue",
+     "Properties": {
+      "QueueName": "practice-queue"
+     }
+    }
+   }
+  },
+  "outputs": [],
+  "traceTexts": [
+   "AddMetadata に断片を渡します",
+   "モデルハンドラ：関数「handler」を定義します（この時点では中身は実行しません。呼び出されたときに動きます）",
+   "モデルハンドラ：関数「handler」を呼び出します（event = {'fragment': {'LogGroupName': 'practice-log', 'RetentionInDays': 7}, 'params': {'Stage': 'test'}, 'requestId': 'model-request-1', 'region': 'model-region', 'accountId': 'model-account', 'transformId': 'AddMetadata', 'templateParameterValues': {}}、context = None）",
+   "モデルハンドラ：「fragment」に {'LogGroupName': 'practice-log', 'RetentionInDays': 7} を代入します",
+   "モデルハンドラ：「fragment」の ['Metadata'] を {'Stage': 'test'} にします",
+   "モデルハンドラ：呼び出し元へ {'requestId': 'model-request-1', 'status': 'success', 'fragment': {'LogGroupName': 'practice-log', 'RetentionInDays': 7, 'Metadata': {'Stage': 'test'}}} を返して、関数を終わります",
+   "モデルハンドラ：関数「handler」は {'requestId': 'model-request-1', 'status': 'success', 'fragment': {'LogGroupName': 'practice-log', 'RetentionInDays': 7, 'Metadata': {'Stage': 'test'}}} を返します"
+  ],
+  "leakObjectObject": false,
+  "leakSet": false
+ },
+ "cfn17aux": {
+  "base": {
+   "error": null,
+   "notes": null,
+   "notesCount": 0,
+   "paths": 1,
+   "truncated": false,
+   "reasons": []
+  },
+  "hooked": {
+   "error": null,
+   "notes": [
+    "注記：Resources の「Injected」の Type「AWS::FakeService::Thing」は、このアプリのリソースタイプ台帳に載っていません。台帳は 2026-11-16 時点の AWS 公式リソース仕様のスナップショットであり、それ以降に追加された新しいタイプなど、実在しても台帳に未収録の場合があります。これはエラーではなく、このタイプはこのアプリでは検証・参照の対象外であることを示す注記です。"
+   ],
+   "notesCount": 1,
+   "paths": 1,
+   "truncated": false,
+   "reasons": []
+  },
+  "noteText": "注記：Resources の「Injected」の Type「AWS::FakeService::Thing」は、このアプリのリソースタイプ台帳に載っていません。台帳は 2026-11-16 時点の AWS 公式リソース仕様のスナップショットであり、それ以降に追加された新しいタイプなど、実在しても台帳に未収録の場合があります。これはエラーではなく、このタイプはこのアプリでは検証・参照の対象外であることを示す注記です。",
+  "eqNoNotes": true,
+  "fragHasInjected": true
+ },
+ "cfn18a": {
+  "intro": "断片内のリソースを走査し、全体の件数とAWS::S3::Bucketの件数を数えて断片へ記録します。モデルの入力断片にはS3バケットが1件入っています。",
+  "title": "リソースの種類を数えるハンドラ",
+  "hooked": {
+   "error": null,
+   "notes": null,
+   "notesCount": 0,
+   "paths": 1,
+   "truncated": false,
+   "reasons": []
+  },
+  "eqNoNotes": true,
+  "fragment": null,
+  "outputs": [
+   {
+    "channel": "print",
+    "text": "Resources: 1",
+    "line": 10
+   }
+  ],
+  "traceTexts": [
+   "関数「handler」を定義します（この時点では中身は実行しません。呼び出されたときに動きます）",
+   "関数「handler」を呼び出します（event = {'fragment': {'Resources': {'Bucket': {'Type': 'AWS::S3::Bucket'}}}, 'params': {'Stage': 'test'}, 'requestId': 'model-request-1', 'region': 'model-region', 'accountId': 'model-account', 'transformId': 'AddMetadata', 'templateParameterValues': {}}、context = None）",
+   "「fragment」に {'Resources': {'Bucket': {'Type': 'AWS::S3::Bucket'}}} を代入します",
+   "「total」に 0 を代入します",
+   "「buckets」に 0 を代入します",
+   "「fragment['Resources'].items(…)」の要素を1つずつ「name, resource」に入れて、1回繰り返します",
+   "― 1回目 ―",
+   "「total」を 0 から 1 に変えます",
+   "条件「resource['Type'] == 'AWS::S3::Bucket'」は 成立（True） なので、この中身を実行します",
+   "「buckets」を 0 から 1 に変えます",
+   "「fragment」の ['BucketCount'] を 1 にします",
+   "画面に「Resources: 1」と表示します",
+   "呼び出し元へ {'requestId': 'model-request-1', 'status': 'success', 'fragment': {'Resources': {'Bucket': {'Type': 'AWS::S3::Bucket'}}, 'BucketCount': 1}} を返して、関数を終わります",
+   "関数「handler」は {'requestId': 'model-request-1', 'status': 'success', 'fragment': {'Resources': {'Bucket': {'Type': 'AWS::S3::Bucket'}}, 'BucketCount': 1}} を返します"
+  ],
+  "leakObjectObject": false,
+  "leakSet": false
+ },
+ "cfn18b": {
+  "intro": "マクロ引数paramsのStageと、呼び出されたマクロ名transformIdを、全リソースのMetadataへ書き込むハンドラです。モデルのparamsにはStage: testが入っています。",
+  "title": "paramsのステージ名を全リソースへ付けるハンドラ",
+  "hooked": {
+   "error": null,
+   "notes": null,
+   "notesCount": 0,
+   "paths": 1,
+   "truncated": false,
+   "reasons": []
+  },
+  "eqNoNotes": true,
+  "fragment": null,
+  "outputs": [
+   {
+    "channel": "print",
+    "text": "Stage: test",
+    "line": 6
+   }
+  ],
+  "traceTexts": [
+   "関数「handler」を定義します（この時点では中身は実行しません。呼び出されたときに動きます）",
+   "関数「handler」を呼び出します（event = {'fragment': {'Resources': {'Bucket': {'Type': 'AWS::S3::Bucket'}}}, 'params': {'Stage': 'test'}, 'requestId': 'model-request-1', 'region': 'model-region', 'accountId': 'model-account', 'transformId': 'AddMetadata', 'templateParameterValues': {}}、context = None）",
+   "「fragment」に {'Resources': {'Bucket': {'Type': 'AWS::S3::Bucket'}}} を代入します",
+   "「stage」に 'test' を代入します",
+   "「fragment['Resources'].items(…)」の要素を1つずつ「name, resource」に入れて、1回繰り返します",
+   "― 1回目 ―",
+   "「resource」の ['Metadata'] を {'Stage': 'test', 'TransformId': 'AddMetadata'} にします",
+   "画面に「Stage: test」と表示します",
+   "呼び出し元へ {'requestId': 'model-request-1', 'status': 'success', 'fragment': {'Resources': {'Bucket': {'Type': 'AWS::S3::Bucket', 'Metadata': …}}}} を返して、関数を終わります",
+   "関数「handler」は {'requestId': 'model-request-1', 'status': 'success', 'fragment': {'Resources': {'Bucket': {'Type': 'AWS::S3::Bucket', 'Metadata': …}}}} を返します"
+  ],
+  "leakObjectObject": false,
+  "leakSet": false
+ },
+ "cfnB1num": {
+  "hooked": {
+   "error": null,
+   "notes": null,
+   "notesCount": 0,
+   "paths": 1,
+   "truncated": false,
+   "reasons": []
+  },
+  "base": {
+   "error": null,
+   "notes": null,
+   "notesCount": 0,
+   "paths": 1,
+   "truncated": false,
+   "reasons": []
+  },
+  "eqNoNotes": true,
+  "direct": []
+ },
+ "cfnB1list": {
+  "hooked": {
+   "error": null,
+   "notes": null,
+   "notesCount": 0,
+   "paths": 1,
+   "truncated": false,
+   "reasons": []
+  },
+  "base": {
+   "error": null,
+   "notes": null,
+   "notesCount": 0,
+   "paths": 1,
+   "truncated": false,
+   "reasons": []
+  },
+  "eqNoNotes": true,
+  "direct": []
+ },
+ "cfnB2empty": {
+  "hooked": {
+   "error": null,
+   "notes": null,
+   "notesCount": 0,
+   "paths": 1,
+   "truncated": false,
+   "reasons": []
+  },
+  "eqNoNotes": true
+ },
+ "cfnB2emptyRes": {
+  "hooked": {
+   "error": null,
+   "notes": null,
+   "notesCount": 0,
+   "paths": 1,
+   "truncated": false,
+   "reasons": []
+  },
+  "eqNoNotes": true
+ },
+ "cfnB3": {
+  "hooked": {
+   "error": null,
+   "notes": [
+    "注記：Resources の「U0」の Type「AWS::Fake0::Thing」は、このアプリのリソースタイプ台帳に載っていません。台帳は 2026-11-16 時点の AWS 公式リソース仕様のスナップショットであり、それ以降に追加された新しいタイプなど、実在しても台帳に未収録の場合があります。これはエラーではなく、このタイプはこのアプリでは検証・参照の対象外であることを示す注記です。",
+    "注記：Resources の「U1」の Type「AWS::Fake1::Thing」は、このアプリのリソースタイプ台帳に載っていません。台帳は 2026-11-16 時点の AWS 公式リソース仕様のスナップショットであり、それ以降に追加された新しいタイプなど、実在しても台帳に未収録の場合があります。これはエラーではなく、このタイプはこのアプリでは検証・参照の対象外であることを示す注記です。",
+    "注記：Resources の「U2」の Type「AWS::Fake2::Thing」は、このアプリのリソースタイプ台帳に載っていません。台帳は 2026-11-16 時点の AWS 公式リソース仕様のスナップショットであり、それ以降に追加された新しいタイプなど、実在しても台帳に未収録の場合があります。これはエラーではなく、このタイプはこのアプリでは検証・参照の対象外であることを示す注記です。",
+    "注記：Resources の「U3」の Type「AWS::Fake3::Thing」は、このアプリのリソースタイプ台帳に載っていません。台帳は 2026-11-16 時点の AWS 公式リソース仕様のスナップショットであり、それ以降に追加された新しいタイプなど、実在しても台帳に未収録の場合があります。これはエラーではなく、このタイプはこのアプリでは検証・参照の対象外であることを示す注記です。",
+    "注記：Resources の「U4」の Type「AWS::Fake4::Thing」は、このアプリのリソースタイプ台帳に載っていません。台帳は 2026-11-16 時点の AWS 公式リソース仕様のスナップショットであり、それ以降に追加された新しいタイプなど、実在しても台帳に未収録の場合があります。これはエラーではなく、このタイプはこのアプリでは検証・参照の対象外であることを示す注記です。",
+    "注記：Resources の「U5」の Type「AWS::Fake5::Thing」は、このアプリのリソースタイプ台帳に載っていません。台帳は 2026-11-16 時点の AWS 公式リソース仕様のスナップショットであり、それ以降に追加された新しいタイプなど、実在しても台帳に未収録の場合があります。これはエラーではなく、このタイプはこのアプリでは検証・参照の対象外であることを示す注記です。",
+    "注記：Resources の「U6」の Type「AWS::Fake6::Thing」は、このアプリのリソースタイプ台帳に載っていません。台帳は 2026-11-16 時点の AWS 公式リソース仕様のスナップショットであり、それ以降に追加された新しいタイプなど、実在しても台帳に未収録の場合があります。これはエラーではなく、このタイプはこのアプリでは検証・参照の対象外であることを示す注記です。",
+    "注記：Resources の「U7」の Type「AWS::Fake7::Thing」は、このアプリのリソースタイプ台帳に載っていません。台帳は 2026-11-16 時点の AWS 公式リソース仕様のスナップショットであり、それ以降に追加された新しいタイプなど、実在しても台帳に未収録の場合があります。これはエラーではなく、このタイプはこのアプリでは検証・参照の対象外であることを示す注記です。",
+    "注記：Resources の「U8」の Type「AWS::Fake8::Thing」は、このアプリのリソースタイプ台帳に載っていません。台帳は 2026-11-16 時点の AWS 公式リソース仕様のスナップショットであり、それ以降に追加された新しいタイプなど、実在しても台帳に未収録の場合があります。これはエラーではなく、このタイプはこのアプリでは検証・参照の対象外であることを示す注記です。",
+    "注記：Resources の「U9」の Type「AWS::Fake9::Thing」は、このアプリのリソースタイプ台帳に載っていません。台帳は 2026-11-16 時点の AWS 公式リソース仕様のスナップショットであり、それ以降に追加された新しいタイプなど、実在しても台帳に未収録の場合があります。これはエラーではなく、このタイプはこのアプリでは検証・参照の対象外であることを示す注記です。",
+    "注記：Resources の「U10」の Type「AWS::Fake10::Thing」は、このアプリのリソースタイプ台帳に載っていません。台帳は 2026-11-16 時点の AWS 公式リソース仕様のスナップショットであり、それ以降に追加された新しいタイプなど、実在しても台帳に未収録の場合があります。これはエラーではなく、このタイプはこのアプリでは検証・参照の対象外であることを示す注記です。",
+    "注記：Resources の「U11」の Type「AWS::Fake11::Thing」は、このアプリのリソースタイプ台帳に載っていません。台帳は 2026-11-16 時点の AWS 公式リソース仕様のスナップショットであり、それ以降に追加された新しいタイプなど、実在しても台帳に未収録の場合があります。これはエラーではなく、このタイプはこのアプリでは検証・参照の対象外であることを示す注記です。",
+    "注記：Resources の「U12」の Type「AWS::Fake12::Thing」は、このアプリのリソースタイプ台帳に載っていません。台帳は 2026-11-16 時点の AWS 公式リソース仕様のスナップショットであり、それ以降に追加された新しいタイプなど、実在しても台帳に未収録の場合があります。これはエラーではなく、このタイプはこのアプリでは検証・参照の対象外であることを示す注記です。",
+    "注記：Resources の「U13」の Type「AWS::Fake13::Thing」は、このアプリのリソースタイプ台帳に載っていません。台帳は 2026-11-16 時点の AWS 公式リソース仕様のスナップショットであり、それ以降に追加された新しいタイプなど、実在しても台帳に未収録の場合があります。これはエラーではなく、このタイプはこのアプリでは検証・参照の対象外であることを示す注記です。",
+    "注記：Resources の「U14」の Type「AWS::Fake14::Thing」は、このアプリのリソースタイプ台帳に載っていません。台帳は 2026-11-16 時点の AWS 公式リソース仕様のスナップショットであり、それ以降に追加された新しいタイプなど、実在しても台帳に未収録の場合があります。これはエラーではなく、このタイプはこのアプリでは検証・参照の対象外であることを示す注記です。",
+    "注記：Resources の「U15」の Type「AWS::Fake15::Thing」は、このアプリのリソースタイプ台帳に載っていません。台帳は 2026-11-16 時点の AWS 公式リソース仕様のスナップショットであり、それ以降に追加された新しいタイプなど、実在しても台帳に未収録の場合があります。これはエラーではなく、このタイプはこのアプリでは検証・参照の対象外であることを示す注記です。",
+    "注記：Resources の「U16」の Type「AWS::Fake16::Thing」は、このアプリのリソースタイプ台帳に載っていません。台帳は 2026-11-16 時点の AWS 公式リソース仕様のスナップショットであり、それ以降に追加された新しいタイプなど、実在しても台帳に未収録の場合があります。これはエラーではなく、このタイプはこのアプリでは検証・参照の対象外であることを示す注記です。",
+    "注記：Resources の「U17」の Type「AWS::Fake17::Thing」は、このアプリのリソースタイプ台帳に載っていません。台帳は 2026-11-16 時点の AWS 公式リソース仕様のスナップショットであり、それ以降に追加された新しいタイプなど、実在しても台帳に未収録の場合があります。これはエラーではなく、このタイプはこのアプリでは検証・参照の対象外であることを示す注記です。",
+    "注記：Resources の「U18」の Type「AWS::Fake18::Thing」は、このアプリのリソースタイプ台帳に載っていません。台帳は 2026-11-16 時点の AWS 公式リソース仕様のスナップショットであり、それ以降に追加された新しいタイプなど、実在しても台帳に未収録の場合があります。これはエラーではなく、このタイプはこのアプリでは検証・参照の対象外であることを示す注記です。",
+    "注記：Resources の「U19」の Type「AWS::Fake19::Thing」は、このアプリのリソースタイプ台帳に載っていません。台帳は 2026-11-16 時点の AWS 公式リソース仕様のスナップショットであり、それ以降に追加された新しいタイプなど、実在しても台帳に未収録の場合があります。これはエラーではなく、このタイプはこのアプリでは検証・参照の対象外であることを示す注記です。",
+    "注記：Resources の「U20」の Type「AWS::Fake20::Thing」は、このアプリのリソースタイプ台帳に載っていません。台帳は 2026-11-16 時点の AWS 公式リソース仕様のスナップショットであり、それ以降に追加された新しいタイプなど、実在しても台帳に未収録の場合があります。これはエラーではなく、このタイプはこのアプリでは検証・参照の対象外であることを示す注記です。",
+    "注記：Resources の「U21」の Type「AWS::Fake21::Thing」は、このアプリのリソースタイプ台帳に載っていません。台帳は 2026-11-16 時点の AWS 公式リソース仕様のスナップショットであり、それ以降に追加された新しいタイプなど、実在しても台帳に未収録の場合があります。これはエラーではなく、このタイプはこのアプリでは検証・参照の対象外であることを示す注記です。",
+    "注記：Resources の「U22」の Type「AWS::Fake22::Thing」は、このアプリのリソースタイプ台帳に載っていません。台帳は 2026-11-16 時点の AWS 公式リソース仕様のスナップショットであり、それ以降に追加された新しいタイプなど、実在しても台帳に未収録の場合があります。これはエラーではなく、このタイプはこのアプリでは検証・参照の対象外であることを示す注記です。",
+    "注記：Resources の「U23」の Type「AWS::Fake23::Thing」は、このアプリのリソースタイプ台帳に載っていません。台帳は 2026-11-16 時点の AWS 公式リソース仕様のスナップショットであり、それ以降に追加された新しいタイプなど、実在しても台帳に未収録の場合があります。これはエラーではなく、このタイプはこのアプリでは検証・参照の対象外であることを示す注記です。",
+    "注記：Resources の「U24」の Type「AWS::Fake24::Thing」は、このアプリのリソースタイプ台帳に載っていません。台帳は 2026-11-16 時点の AWS 公式リソース仕様のスナップショットであり、それ以降に追加された新しいタイプなど、実在しても台帳に未収録の場合があります。これはエラーではなく、このタイプはこのアプリでは検証・参照の対象外であることを示す注記です。",
+    "注記：Resources の「U25」の Type「AWS::Fake25::Thing」は、このアプリのリソースタイプ台帳に載っていません。台帳は 2026-11-16 時点の AWS 公式リソース仕様のスナップショットであり、それ以降に追加された新しいタイプなど、実在しても台帳に未収録の場合があります。これはエラーではなく、このタイプはこのアプリでは検証・参照の対象外であることを示す注記です。",
+    "注記：Resources の「U26」の Type「AWS::Fake26::Thing」は、このアプリのリソースタイプ台帳に載っていません。台帳は 2026-11-16 時点の AWS 公式リソース仕様のスナップショットであり、それ以降に追加された新しいタイプなど、実在しても台帳に未収録の場合があります。これはエラーではなく、このタイプはこのアプリでは検証・参照の対象外であることを示す注記です。",
+    "注記：Resources の「U27」の Type「AWS::Fake27::Thing」は、このアプリのリソースタイプ台帳に載っていません。台帳は 2026-11-16 時点の AWS 公式リソース仕様のスナップショットであり、それ以降に追加された新しいタイプなど、実在しても台帳に未収録の場合があります。これはエラーではなく、このタイプはこのアプリでは検証・参照の対象外であることを示す注記です。",
+    "注記：Resources の「U28」の Type「AWS::Fake28::Thing」は、このアプリのリソースタイプ台帳に載っていません。台帳は 2026-11-16 時点の AWS 公式リソース仕様のスナップショットであり、それ以降に追加された新しいタイプなど、実在しても台帳に未収録の場合があります。これはエラーではなく、このタイプはこのアプリでは検証・参照の対象外であることを示す注記です。",
+    "注記：Resources の「U29」の Type「AWS::Fake29::Thing」は、このアプリのリソースタイプ台帳に載っていません。台帳は 2026-11-16 時点の AWS 公式リソース仕様のスナップショットであり、それ以降に追加された新しいタイプなど、実在しても台帳に未収録の場合があります。これはエラーではなく、このタイプはこのアプリでは検証・参照の対象外であることを示す注記です。",
+    "注記：Resources の「U30」の Type「AWS::Fake30::Thing」は、このアプリのリソースタイプ台帳に載っていません。台帳は 2026-11-16 時点の AWS 公式リソース仕様のスナップショットであり、それ以降に追加された新しいタイプなど、実在しても台帳に未収録の場合があります。これはエラーではなく、このタイプはこのアプリでは検証・参照の対象外であることを示す注記です。",
+    "注記：Resources の「U31」の Type「AWS::Fake31::Thing」は、このアプリのリソースタイプ台帳に載っていません。台帳は 2026-11-16 時点の AWS 公式リソース仕様のスナップショットであり、それ以降に追加された新しいタイプなど、実在しても台帳に未収録の場合があります。これはエラーではなく、このタイプはこのアプリでは検証・参照の対象外であることを示す注記です。",
+    "注記：Resources の「U32」の Type「AWS::Fake32::Thing」は、このアプリのリソースタイプ台帳に載っていません。台帳は 2026-11-16 時点の AWS 公式リソース仕様のスナップショットであり、それ以降に追加された新しいタイプなど、実在しても台帳に未収録の場合があります。これはエラーではなく、このタイプはこのアプリでは検証・参照の対象外であることを示す注記です。",
+    "注記：Resources の「U33」の Type「AWS::Fake33::Thing」は、このアプリのリソースタイプ台帳に載っていません。台帳は 2026-11-16 時点の AWS 公式リソース仕様のスナップショットであり、それ以降に追加された新しいタイプなど、実在しても台帳に未収録の場合があります。これはエラーではなく、このタイプはこのアプリでは検証・参照の対象外であることを示す注記です。",
+    "注記：Resources の「U34」の Type「AWS::Fake34::Thing」は、このアプリのリソースタイプ台帳に載っていません。台帳は 2026-11-16 時点の AWS 公式リソース仕様のスナップショットであり、それ以降に追加された新しいタイプなど、実在しても台帳に未収録の場合があります。これはエラーではなく、このタイプはこのアプリでは検証・参照の対象外であることを示す注記です。",
+    "注記：Resources の「U35」の Type「AWS::Fake35::Thing」は、このアプリのリソースタイプ台帳に載っていません。台帳は 2026-11-16 時点の AWS 公式リソース仕様のスナップショットであり、それ以降に追加された新しいタイプなど、実在しても台帳に未収録の場合があります。これはエラーではなく、このタイプはこのアプリでは検証・参照の対象外であることを示す注記です。",
+    "注記：Resources の「U36」の Type「AWS::Fake36::Thing」は、このアプリのリソースタイプ台帳に載っていません。台帳は 2026-11-16 時点の AWS 公式リソース仕様のスナップショットであり、それ以降に追加された新しいタイプなど、実在しても台帳に未収録の場合があります。これはエラーではなく、このタイプはこのアプリでは検証・参照の対象外であることを示す注記です。",
+    "注記：Resources の「U37」の Type「AWS::Fake37::Thing」は、このアプリのリソースタイプ台帳に載っていません。台帳は 2026-11-16 時点の AWS 公式リソース仕様のスナップショットであり、それ以降に追加された新しいタイプなど、実在しても台帳に未収録の場合があります。これはエラーではなく、このタイプはこのアプリでは検証・参照の対象外であることを示す注記です。",
+    "注記：Resources の「U38」の Type「AWS::Fake38::Thing」は、このアプリのリソースタイプ台帳に載っていません。台帳は 2026-11-16 時点の AWS 公式リソース仕様のスナップショットであり、それ以降に追加された新しいタイプなど、実在しても台帳に未収録の場合があります。これはエラーではなく、このタイプはこのアプリでは検証・参照の対象外であることを示す注記です。",
+    "注記：Resources の「U39」の Type「AWS::Fake39::Thing」は、このアプリのリソースタイプ台帳に載っていません。台帳は 2026-11-16 時点の AWS 公式リソース仕様のスナップショットであり、それ以降に追加された新しいタイプなど、実在しても台帳に未収録の場合があります。これはエラーではなく、このタイプはこのアプリでは検証・参照の対象外であることを示す注記です。",
+    "注記：Resources の「U40」の Type「AWS::Fake40::Thing」は、このアプリのリソースタイプ台帳に載っていません。台帳は 2026-11-16 時点の AWS 公式リソース仕様のスナップショットであり、それ以降に追加された新しいタイプなど、実在しても台帳に未収録の場合があります。これはエラーではなく、このタイプはこのアプリでは検証・参照の対象外であることを示す注記です。",
+    "注記：Resources の「U41」の Type「AWS::Fake41::Thing」は、このアプリのリソースタイプ台帳に載っていません。台帳は 2026-11-16 時点の AWS 公式リソース仕様のスナップショットであり、それ以降に追加された新しいタイプなど、実在しても台帳に未収録の場合があります。これはエラーではなく、このタイプはこのアプリでは検証・参照の対象外であることを示す注記です。",
+    "注記：Resources の「U42」の Type「AWS::Fake42::Thing」は、このアプリのリソースタイプ台帳に載っていません。台帳は 2026-11-16 時点の AWS 公式リソース仕様のスナップショットであり、それ以降に追加された新しいタイプなど、実在しても台帳に未収録の場合があります。これはエラーではなく、このタイプはこのアプリでは検証・参照の対象外であることを示す注記です。",
+    "注記：Resources の「U43」の Type「AWS::Fake43::Thing」は、このアプリのリソースタイプ台帳に載っていません。台帳は 2026-11-16 時点の AWS 公式リソース仕様のスナップショットであり、それ以降に追加された新しいタイプなど、実在しても台帳に未収録の場合があります。これはエラーではなく、このタイプはこのアプリでは検証・参照の対象外であることを示す注記です。",
+    "注記：Resources の「U44」の Type「AWS::Fake44::Thing」は、このアプリのリソースタイプ台帳に載っていません。台帳は 2026-11-16 時点の AWS 公式リソース仕様のスナップショットであり、それ以降に追加された新しいタイプなど、実在しても台帳に未収録の場合があります。これはエラーではなく、このタイプはこのアプリでは検証・参照の対象外であることを示す注記です。",
+    "注記：Resources の「U45」の Type「AWS::Fake45::Thing」は、このアプリのリソースタイプ台帳に載っていません。台帳は 2026-11-16 時点の AWS 公式リソース仕様のスナップショットであり、それ以降に追加された新しいタイプなど、実在しても台帳に未収録の場合があります。これはエラーではなく、このタイプはこのアプリでは検証・参照の対象外であることを示す注記です。",
+    "注記：Resources の「U46」の Type「AWS::Fake46::Thing」は、このアプリのリソースタイプ台帳に載っていません。台帳は 2026-11-16 時点の AWS 公式リソース仕様のスナップショットであり、それ以降に追加された新しいタイプなど、実在しても台帳に未収録の場合があります。これはエラーではなく、このタイプはこのアプリでは検証・参照の対象外であることを示す注記です。",
+    "注記：Resources の「U47」の Type「AWS::Fake47::Thing」は、このアプリのリソースタイプ台帳に載っていません。台帳は 2026-11-16 時点の AWS 公式リソース仕様のスナップショットであり、それ以降に追加された新しいタイプなど、実在しても台帳に未収録の場合があります。これはエラーではなく、このタイプはこのアプリでは検証・参照の対象外であることを示す注記です。",
+    "注記：Resources の「U48」の Type「AWS::Fake48::Thing」は、このアプリのリソースタイプ台帳に載っていません。台帳は 2026-11-16 時点の AWS 公式リソース仕様のスナップショットであり、それ以降に追加された新しいタイプなど、実在しても台帳に未収録の場合があります。これはエラーではなく、このタイプはこのアプリでは検証・参照の対象外であることを示す注記です。",
+    "注記：Resources の「U49」の Type「AWS::Fake49::Thing」は、このアプリのリソースタイプ台帳に載っていません。台帳は 2026-11-16 時点の AWS 公式リソース仕様のスナップショットであり、それ以降に追加された新しいタイプなど、実在しても台帳に未収録の場合があります。これはエラーではなく、このタイプはこのアプリでは検証・参照の対象外であることを示す注記です。"
+   ],
+   "notesCount": 50,
+   "paths": 1,
+   "truncated": false,
+   "reasons": []
+  },
+  "eqNoNotes": true,
+  "distinctNoteTypes": 50
+ },
+ "cfnB4": {
+  "hits": [
+   {
+    "logicalId": "R",
+    "type": "AWS::X::<script>alert(1)</script>"
+   }
+  ],
+  "noteText": "注記：Resources の「R」の Type「AWS::X::<script>alert(1)</script>」は、このアプリのリソースタイプ台帳に載っていません。台帳は 2026-11-16 時点の AWS 公式リソース仕様のスナップショットであり、それ以降に追加された新しいタイプなど、実在しても台帳に未収録の場合があります。これはエラーではなく、このタイプはこのアプリでは検証・参照の対象外であることを示す注記です。",
+  "noteContainsRaw": true,
+  "simNotes": [
+   "注記：Resources の「R」の Type「AWS::X::<script>alert(1)</script>」は、このアプリのリソースタイプ台帳に載っていません。台帳は 2026-11-16 時点の AWS 公式リソース仕様のスナップショットであり、それ以降に追加された新しいタイプなど、実在しても台帳に未収録の場合があります。これはエラーではなく、このタイプはこのアプリでは検証・参照の対象外であることを示す注記です。"
+  ]
+ },
+ "cfnB5space": {
+  "type": "AWS::S3::Bucket ",
+  "nfkc": "AWS::S3::Bucket ",
+  "ledgerHasOriginal": false,
+  "ledgerHasNFKC": false,
+  "hooked": {
+   "error": null,
+   "notes": [
+    "注記：Resources の「R」の Type「AWS::S3::Bucket 」は、このアプリのリソースタイプ台帳に載っていません。台帳は 2026-11-16 時点の AWS 公式リソース仕様のスナップショットであり、それ以降に追加された新しいタイプなど、実在しても台帳に未収録の場合があります。これはエラーではなく、このタイプはこのアプリでは検証・参照の対象外であることを示す注記です。"
+   ],
+   "notesCount": 1,
+   "paths": 1,
+   "truncated": false,
+   "reasons": []
+  },
+  "noteText": "注記：Resources の「R」の Type「AWS::S3::Bucket 」は、このアプリのリソースタイプ台帳に載っていません。台帳は 2026-11-16 時点の AWS 公式リソース仕様のスナップショットであり、それ以降に追加された新しいタイプなど、実在しても台帳に未収録の場合があります。これはエラーではなく、このタイプはこのアプリでは検証・参照の対象外であることを示す注記です。",
+  "noteContainsOriginal": true,
+  "eqNoNotes": true,
+  "direct": [
+   {
+    "logicalId": "R",
+    "type": "AWS::S3::Bucket "
+   }
+  ]
+ },
+ "cfnB5full": {
+  "type": "ＡWS::S3::Bucket",
+  "nfkc": "AWS::S3::Bucket",
+  "ledgerHasOriginal": false,
+  "ledgerHasNFKC": true,
+  "hooked": {
+   "error": null,
+   "notes": [
+    "注記：Resources の「R」の Type「ＡWS::S3::Bucket」は、このアプリのリソースタイプ台帳に載っていません。台帳は 2026-11-16 時点の AWS 公式リソース仕様のスナップショットであり、それ以降に追加された新しいタイプなど、実在しても台帳に未収録の場合があります。これはエラーではなく、このタイプはこのアプリでは検証・参照の対象外であることを示す注記です。"
+   ],
+   "notesCount": 1,
+   "paths": 1,
+   "truncated": false,
+   "reasons": []
+  },
+  "noteText": "注記：Resources の「R」の Type「ＡWS::S3::Bucket」は、このアプリのリソースタイプ台帳に載っていません。台帳は 2026-11-16 時点の AWS 公式リソース仕様のスナップショットであり、それ以降に追加された新しいタイプなど、実在しても台帳に未収録の場合があります。これはエラーではなく、このタイプはこのアプリでは検証・参照の対象外であることを示す注記です。",
+  "noteContainsOriginal": true,
+  "eqNoNotes": true,
+  "direct": [
+   {
+    "logicalId": "R",
+    "type": "ＡWS::S3::Bucket"
+   }
+  ]
+ },
+ "cfnB6": {
+  "direct": [
+   {
+    "logicalId": "R",
+    "type": "AWS::FakeService::Thing"
+   }
+  ],
+  "sim": {
+   "error": {
+    "line": 1,
+    "message": "処理中に予期しないエラーが発生しました",
+    "category": "エラー"
+   },
+   "notes": [
+    "注記：Resources の「New」の Type「AWS::FakeService::Thing」は、このアプリのリソースタイプ台帳に載っていません。台帳は 2026-11-16 時点の AWS 公式リソース仕様のスナップショットであり、それ以降に追加された新しいタイプなど、実在しても台帳に未収録の場合があります。これはエラーではなく、このタイプはこのアプリでは検証・参照の対象外であることを示す注記です。"
+   ],
+   "notesCount": 1,
+   "paths": 0,
+   "truncated": false,
+   "reasons": null
+  },
+  "simErr": null
+ },
+ "cfnB7": {
+  "ledgerBoth": true,
+  "items": {
+   "AWS::CloudFormation::WaitCondition": {
+    "name": "AWS::CloudFormation::WaitCondition",
+    "category": "AWS::CloudFormation",
+    "syntax": "Type: AWS::CloudFormation::WaitCondition",
+    "description": "AWS::CloudFormation::WaitCondition を作成するリソースタイプです。主要プロパティはCount、Handle、Timeoutです（プロパティは全3件）。",
+    "example": "WaitCondition:\n  Type: AWS::CloudFormation::WaitCondition\n  Properties:\n    Count: 1\n    Handle: \"example\"\n    Timeout: \"example\"",
+    "caution": "",
+    "status": "supported",
+    "returns": "",
+    "source": "https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-waitcondition.html"
+   },
+   "AWS::CloudFormation::WaitConditionHandle": {
+    "name": "AWS::CloudFormation::WaitConditionHandle",
+    "category": "AWS::CloudFormation",
+    "syntax": "Type: AWS::CloudFormation::WaitConditionHandle",
+    "description": "AWS::CloudFormation::WaitConditionHandle を作成するリソースタイプです。このリソースタイプにはプロパティがありません。",
+    "example": "WaitConditionHandle:\n  Type: AWS::CloudFormation::WaitConditionHandle",
+    "caution": "",
+    "status": "supported",
+    "returns": "",
+    "source": "https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-waitconditionhandle.html"
+   }
+  }
+ }
+}

@@ -1,0 +1,128 @@
+{
+ "cppSetup": {
+  "baseRef": 33,
+  "mergedRef": 4948,
+  "baseTpl": 6,
+  "mergedTpl": 14,
+  "loaded": 11,
+  "missing": [],
+  "failed": [],
+  "problems": [],
+  "engineModule": null
+ },
+ "cpp": {
+  "CPP-01": {
+   "simpleOutputs": [
+    {
+     "channel": "cout",
+     "text": "1 ",
+     "line": 7
+    },
+    {
+     "channel": "cout",
+     "text": "2 ",
+     "line": 7
+    },
+    {
+     "channel": "cout",
+     "text": "3 ",
+     "line": 7
+    },
+    {
+     "channel": "cout",
+     "text": "5 ",
+     "line": 7
+    },
+    {
+     "channel": "cout",
+     "text": "8 ",
+     "line": 7
+    },
+    {
+     "channel": "cout",
+     "text": "9 ",
+     "line": 7
+    },
+    {
+     "channel": "cout",
+     "text": "10",
+     "line": 8
+    }
+   ],
+   "simpleTraceSteps": 16,
+   "simpleVars": {
+    "v": [
+     1,
+     2,
+     3,
+     5,
+     8,
+     9
+    ]
+   },
+   "simpleError": null,
+   "identical": true
+  },
+  "CPP-04": {
+   "simpleOutputs": [
+    {
+     "channel": "cout",
+     "text": "2 4 ana 1",
+     "line": 5
+    }
+   ],
+   "simpleTraceSteps": 3,
+   "simpleVars": {
+    "s": "banana"
+   },
+   "simpleError": null,
+   "identical": true
+  }
+ },
+ "cfn": {
+  "fake": {
+   "simpleNotes": null,
+   "advancedNotes": [
+    "注記：Resources の「Thing」の Type「AWS::FakeService::Thing」は、このアプリのリソースタイプ台帳に載っていません。台帳は 2026-11-16 時点の AWS 公式リソース仕様のスナップショットであり、それ以降に追加された新しいタイプなど、実在しても台帳に未収録の場合があります。これはエラーではなく、このタイプはこのアプリでは検証・参照の対象外であることを示す注記です。"
+   ],
+   "eqExceptNotes": true,
+   "fullEq": false,
+   "rerunNotesCount": 1,
+   "rerunFullEq": true
+  },
+  "fakeYaml": {
+   "simpleNotes": null,
+   "advancedNotes": [
+    "注記：Resources の「Thing」の Type「AWS::FakeService::Thing」は、このアプリのリソースタイプ台帳に載っていません。台帳は 2026-11-16 時点の AWS 公式リソース仕様のスナップショットであり、それ以降に追加された新しいタイプなど、実在しても台帳に未収録の場合があります。これはエラーではなく、このタイプはこのアプリでは検証・参照の対象外であることを示す注記です。"
+   ],
+   "eqExceptNotes": true,
+   "fullEq": false,
+   "rerunNotesCount": 1,
+   "rerunFullEq": true
+  },
+  "bucket": {
+   "simpleNotes": null,
+   "advancedNotes": null,
+   "eqExceptNotes": true,
+   "fullEq": true,
+   "rerunNotesCount": 0,
+   "rerunFullEq": true
+  },
+  "custom": {
+   "simpleNotes": null,
+   "advancedNotes": null,
+   "eqExceptNotes": true,
+   "fullEq": true,
+   "rerunNotesCount": 0,
+   "rerunFullEq": true
+  },
+  "scanFake": {
+   "baseElems": [],
+   "hookElems": [],
+   "baseNotes": null,
+   "hookNotes": [
+    "注記：Resources の「Thing」の Type「AWS::FakeService::Thing」は、このアプリのリソースタイプ台帳に載っていません。台帳は 2026-11-16 時点の AWS 公式リソース仕様のスナップショットであり、それ以降に追加された新しいタイプなど、実在しても台帳に未収録の場合があります。これはエラーではなく、このタイプはこのアプリでは検証・参照の対象外であることを示す注記です。"
+   ]
+  }
+ }
+}

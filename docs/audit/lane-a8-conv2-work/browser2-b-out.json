@@ -1,0 +1,23 @@
+{
+ "online_summary": "対応 321 件／未対応 4627 件／未検証 0 件（全 4948 件）",
+ "sw_state_online": {
+  "hasReg": true,
+  "active": true,
+  "controller": true
+ },
+ "caches_online": {
+  "programming-practice-4d33a631405fc1": [
+   "cpp/additional-templates.js",
+   "cpp/index.js",
+   "cpp/reference-details.js"
+  ]
+ },
+ "offline_summary": "対応 321 件／未対応 4627 件／未検証 0 件（全 4948 件）",
+ "offline_lists": {
+  "full": 4948,
+  "ref": 4948,
+  "fullFirst": "シミュレーション対応intint n = 1;モデルでは32ビット符号付き整数です。戻り値：戻り値なし（宣言または制御文）#include <iostream> #include <cstdio> i",
+  "refFirst": "int"
+ },
+ "pageerrors": []
+}

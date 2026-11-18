@@ -1,0 +1,12 @@
+{
+ "modeNote": "高度モード：各言語・ツールの関数を網羅的に収録しています。項目ごとに「対応／未対応／未検証」を表示します。（高度データの一部を読み込めませんでした）",
+ "summary_blocked": "対応 33 件／未対応 0 件／未検証 0 件（全 33 件）",
+ "lists_blocked": {
+  "full": 33,
+  "ref": 33
+ },
+ "blocked_urls": [
+  "http://127.0.0.1:8941/js/types/cpp/reference-advanced-part3.js"
+ ],
+ "pageerrors": []
+}
