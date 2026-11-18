@@ -1,5 +1,8 @@
 import { unknownLabel } from '../../core/presentation.js';
 import{refineCondition}from'../../core/conditions.js';
+/* 高度モード B7（Python 標準ライブラリ差分）のレジストリ。登録が無い
+ * （簡易モード）場合は、以下すべてのフックが素通りし従来挙動と同一になる。 */
+import { STDLIB_MODULES, STDLIB_CLASSES, NOT_HANDLED as STDLIB_NOT_HANDLED, makeNative, makeNativeClass, nativeClassDef, isStdlibModule, stdlibExceptionAncestors, getClassAttrOverride, setClassAttrOverride, deleteClassAttrOverride, getModuleAttrOverride, setModuleAttrOverride, deleteModuleAttrOverride } from './stdlib-registry.js';
 /* sim.js — Python コード説明エンジン（実行シミュレーション）
    コードを実行せず、字句解析→構文解析→部分評価で「何が起きるか」を日本語で説明する。
    決定的な値はエンジン自身が計算した実値のみ。input()・random・ファイル内容など
@@ -17,7 +20,7 @@ const isNum = (v) => !!v && typeof v === 'object' && v.__num === true;
 const BOOL = (b) => ({ __bool: true, v: !!b });
 const isBool = (v) => !!v && typeof v === 'object' && v.__bool === true;
 const NONE = { __none: true };
-const EXC = (kind, text, argRepr) => ({ __exc: true, kind, text, argRepr: argRepr || '' }); // except ... as e で束縛する例外値（str(e) が分かるときだけ作る）
+const EXC = (kind, text, argRepr, attrs) => ({ __exc: true, kind, text, argRepr: argRepr || '', ...(attrs ? { excAttrs: attrs } : {}) }); // except ... as e で束縛する例外値（str(e) が分かるときだけ作る）。attrs は B7 の例外属性（msg/doc/pos 等）の保持用
 const isNone = (v) => v === NONE;
 // リスト {__list:[...]} / タプル {__tuple:[...]} / 辞書 {__dict:Map} / 集合 {__set:[...]}
 const LIST = (a) => ({ __list: a || [] });
@@ -33,6 +36,67 @@ const isFunc = (v) => !!v && typeof v === 'object' && v.__func === true;
 const BUILTIN = (name) => ({ __builtin: name });
 const RANGE = (a) => ({ __range: a }); // a = [数値...]（遅延せず実配列で持つ。上限あり）
 const TYPEVAL = (name) => ({ __type: name }); // type() の結果
+
+/* ===== B6-Py2（高度・組み込み型）：bytes／bytearray／complex／frozenset／frozendict／slice／memoryview の値モデル =====
+   既存のマーカー規約（__num／__set／__dict／__range 等）に倣う。
+   bytes     : {__bytes:[0-255,...]}（不変。配列は作った側だけが持ち、共有しない）
+   bytearray : {__bytearray:[0-255,...]}（可変。配列そのものを共有し、添字代入・memoryview と連動する）
+   complex   : {__complex:{re:Number, im:Number}}
+   frozenset : {__set:[...], __frozenSet:true}（set と同じ表現＋凍結フラグ）
+   frozendict: {__dict:Map, __frozendict:true}（dict と同じ読み取り経路＋凍結フラグ）
+   slice     : {__slice:{start,stop,step}}（各要素はエンジン値か NONE）
+   memoryview: {__memview:{buf:{data:[...]}, off, len, readonly, released, obj}}
+               buf.data は bytearray の内部配列と共有しうる（書き込みが相互に見える） */
+const BYTESV = (a) => ({ __bytes: a || [] });
+const isBytes = (v) => !!v && typeof v === 'object' && Array.isArray(v.__bytes);
+const BYTEARRAY = (a) => ({ __bytearray: a || [] });
+const isBytearray = (v) => !!v && typeof v === 'object' && Array.isArray(v.__bytearray);
+const isBytesLike = (v) => isBytes(v) || isBytearray(v);
+const bytesOf = (v) => isBytes(v) ? v.__bytes : v.__bytearray;
+const CXV = (re, im) => ({ __complex: { re, im } });
+const isComplex = (v) => !!v && typeof v === 'object' && !!v.__complex;
+const isFrozenSet = (v) => isSet(v) && v.__frozenSet === true;
+const FROZENSET = (a) => ({ __set: a || [], __frozenSet: true });
+const isFrozenDict = (v) => isDict(v) && v.__frozendict === true;
+const FROZENDICT = (m) => { const d = DICT(m); d.__frozendict = true; return d; };
+const SLICEV = (start, stop, step) => ({ __slice: { start, stop, step } });
+const isSlice = (v) => !!v && typeof v === 'object' && !!v.__slice;
+const MEMVIEW = (mv) => ({ __memview: mv });
+const isMemview = (v) => !!v && typeof v === 'object' && !!v.__memview;
+const mvBytes = (v) => v.__memview.buf.data.slice(v.__memview.off, v.__memview.off + v.__memview.len);
+// 数値（int／float／bool）か複素数を、複素数の部品 {re, im} にする。対象外は null
+const cxParts = (v) => { if (isComplex(v)) return v.__complex; if (isNum(v)) return { re: v.v, im: 0 }; if (isBool(v)) return { re: v.v ? 1 : 0, im: 0 }; return null; };
+// CPython の bytes repr：印刷可能 ASCII はそのまま、それ以外は \xhh。引用符は ' が無ければ '、' があり " が無ければ "
+function bytesRepr(a) {
+  const hasSq = a.includes(0x27), hasDq = a.includes(0x22);
+  const q = hasSq && !hasDq ? '"' : "'";
+  let out = 'b' + q;
+  for (const b of a) {
+    if (b === 0x5c) out += '\\\\';
+    else if (b === q.charCodeAt(0)) out += '\\' + q;
+    else if (b === 0x0a) out += '\\n';
+    else if (b === 0x0d) out += '\\r';
+    else if (b === 0x09) out += '\\t';
+    else if (b >= 0x20 && b < 0x7f) out += String.fromCharCode(b);
+    else out += '\\x' + b.toString(16).padStart(2, '0');
+  }
+  return out + q;
+}
+// CPython の複素数 repr の部品（float repr から末尾の .0 を落とす。inf／nan はそのまま）
+function cxPart(x) { const s = pyFloatRepr(x); return s.endsWith('.0') ? s.slice(0, -2) : s; }
+function cxRepr(v) {
+  const { re, im } = v.__complex;
+  const imS = (Number.isNaN(im) ? 'nan' : cxPart(im)) + 'j';
+  if (re === 0 && !Object.is(re, -0)) return imS;
+  const sign = (im < 0 || Object.is(im, -0) || Number.isNaN(im)) ? '' : '+';
+  return '(' + cxPart(re) + sign + imS + ')';
+}
+// str.casefold の差分表：CPython 3.12.3（Unicode 15.0.0）の unicodedata で全コードポイントを走査し、
+// casefold が lower と異なる文字だけを収めたもの（生成手順は報告書に記載）。
+// JS の String.prototype.toLowerCase は CPython の lower と全コードポイントで一致することを実測済みのため、
+// casefold(ch) = 本表[ch] ?? ch.toLowerCase() で CPython の casefold を再現する。
+const CASEFOLD_DIFF = {'\u00b5':'\u03bc','\u00df':'ss','\u0149':'\u02bcn','\u017f':'s','\u01f0':'j\u030c','\u0345':'\u03b9','\u0390':'\u03b9\u0308\u0301','\u03b0':'\u03c5\u0308\u0301','\u03c2':'\u03c3','\u03d0':'\u03b2','\u03d1':'\u03b8','\u03d5':'\u03c6','\u03d6':'\u03c0','\u03f0':'\u03ba','\u03f1':'\u03c1','\u03f5':'\u03b5','\u0587':'\u0565\u0582','\u13a0':'\u13a0','\u13a1':'\u13a1','\u13a2':'\u13a2','\u13a3':'\u13a3','\u13a4':'\u13a4','\u13a5':'\u13a5','\u13a6':'\u13a6','\u13a7':'\u13a7','\u13a8':'\u13a8','\u13a9':'\u13a9','\u13aa':'\u13aa','\u13ab':'\u13ab','\u13ac':'\u13ac','\u13ad':'\u13ad','\u13ae':'\u13ae','\u13af':'\u13af','\u13b0':'\u13b0','\u13b1':'\u13b1','\u13b2':'\u13b2','\u13b3':'\u13b3','\u13b4':'\u13b4','\u13b5':'\u13b5','\u13b6':'\u13b6','\u13b7':'\u13b7','\u13b8':'\u13b8','\u13b9':'\u13b9','\u13ba':'\u13ba','\u13bb':'\u13bb','\u13bc':'\u13bc','\u13bd':'\u13bd','\u13be':'\u13be','\u13bf':'\u13bf','\u13c0':'\u13c0','\u13c1':'\u13c1','\u13c2':'\u13c2','\u13c3':'\u13c3','\u13c4':'\u13c4','\u13c5':'\u13c5','\u13c6':'\u13c6','\u13c7':'\u13c7','\u13c8':'\u13c8','\u13c9':'\u13c9','\u13ca':'\u13ca','\u13cb':'\u13cb','\u13cc':'\u13cc','\u13cd':'\u13cd','\u13ce':'\u13ce','\u13cf':'\u13cf','\u13d0':'\u13d0','\u13d1':'\u13d1','\u13d2':'\u13d2','\u13d3':'\u13d3','\u13d4':'\u13d4','\u13d5':'\u13d5','\u13d6':'\u13d6','\u13d7':'\u13d7','\u13d8':'\u13d8','\u13d9':'\u13d9','\u13da':'\u13da','\u13db':'\u13db','\u13dc':'\u13dc','\u13dd':'\u13dd','\u13de':'\u13de','\u13df':'\u13df','\u13e0':'\u13e0','\u13e1':'\u13e1','\u13e2':'\u13e2','\u13e3':'\u13e3','\u13e4':'\u13e4','\u13e5':'\u13e5','\u13e6':'\u13e6','\u13e7':'\u13e7','\u13e8':'\u13e8','\u13e9':'\u13e9','\u13ea':'\u13ea','\u13eb':'\u13eb','\u13ec':'\u13ec','\u13ed':'\u13ed','\u13ee':'\u13ee','\u13ef':'\u13ef','\u13f0':'\u13f0','\u13f1':'\u13f1','\u13f2':'\u13f2','\u13f3':'\u13f3','\u13f4':'\u13f4','\u13f5':'\u13f5','\u13f8':'\u13f0','\u13f9':'\u13f1','\u13fa':'\u13f2','\u13fb':'\u13f3','\u13fc':'\u13f4','\u13fd':'\u13f5','\u1c80':'\u0432','\u1c81':'\u0434','\u1c82':'\u043e','\u1c83':'\u0441','\u1c84':'\u0442','\u1c85':'\u0442','\u1c86':'\u044a','\u1c87':'\u0463','\u1c88':'\ua64b','\u1e96':'h\u0331','\u1e97':'t\u0308','\u1e98':'w\u030a','\u1e99':'y\u030a','\u1e9a':'a\u02be','\u1e9b':'\u1e61','\u1e9e':'ss','\u1f50':'\u03c5\u0313','\u1f52':'\u03c5\u0313\u0300','\u1f54':'\u03c5\u0313\u0301','\u1f56':'\u03c5\u0313\u0342','\u1f80':'\u1f00\u03b9','\u1f81':'\u1f01\u03b9','\u1f82':'\u1f02\u03b9','\u1f83':'\u1f03\u03b9','\u1f84':'\u1f04\u03b9','\u1f85':'\u1f05\u03b9','\u1f86':'\u1f06\u03b9','\u1f87':'\u1f07\u03b9','\u1f88':'\u1f00\u03b9','\u1f89':'\u1f01\u03b9','\u1f8a':'\u1f02\u03b9','\u1f8b':'\u1f03\u03b9','\u1f8c':'\u1f04\u03b9','\u1f8d':'\u1f05\u03b9','\u1f8e':'\u1f06\u03b9','\u1f8f':'\u1f07\u03b9','\u1f90':'\u1f20\u03b9','\u1f91':'\u1f21\u03b9','\u1f92':'\u1f22\u03b9','\u1f93':'\u1f23\u03b9','\u1f94':'\u1f24\u03b9','\u1f95':'\u1f25\u03b9','\u1f96':'\u1f26\u03b9','\u1f97':'\u1f27\u03b9','\u1f98':'\u1f20\u03b9','\u1f99':'\u1f21\u03b9','\u1f9a':'\u1f22\u03b9','\u1f9b':'\u1f23\u03b9','\u1f9c':'\u1f24\u03b9','\u1f9d':'\u1f25\u03b9','\u1f9e':'\u1f26\u03b9','\u1f9f':'\u1f27\u03b9','\u1fa0':'\u1f60\u03b9','\u1fa1':'\u1f61\u03b9','\u1fa2':'\u1f62\u03b9','\u1fa3':'\u1f63\u03b9','\u1fa4':'\u1f64\u03b9','\u1fa5':'\u1f65\u03b9','\u1fa6':'\u1f66\u03b9','\u1fa7':'\u1f67\u03b9','\u1fa8':'\u1f60\u03b9','\u1fa9':'\u1f61\u03b9','\u1faa':'\u1f62\u03b9','\u1fab':'\u1f63\u03b9','\u1fac':'\u1f64\u03b9','\u1fad':'\u1f65\u03b9','\u1fae':'\u1f66\u03b9','\u1faf':'\u1f67\u03b9','\u1fb2':'\u1f70\u03b9','\u1fb3':'\u03b1\u03b9','\u1fb4':'\u03ac\u03b9','\u1fb6':'\u03b1\u0342','\u1fb7':'\u03b1\u0342\u03b9','\u1fbc':'\u03b1\u03b9','\u1fbe':'\u03b9','\u1fc2':'\u1f74\u03b9','\u1fc3':'\u03b7\u03b9','\u1fc4':'\u03ae\u03b9','\u1fc6':'\u03b7\u0342','\u1fc7':'\u03b7\u0342\u03b9','\u1fcc':'\u03b7\u03b9','\u1fd2':'\u03b9\u0308\u0300','\u1fd3':'\u03b9\u0308\u0301','\u1fd6':'\u03b9\u0342','\u1fd7':'\u03b9\u0308\u0342','\u1fe2':'\u03c5\u0308\u0300','\u1fe3':'\u03c5\u0308\u0301','\u1fe4':'\u03c1\u0313','\u1fe6':'\u03c5\u0342','\u1fe7':'\u03c5\u0308\u0342','\u1ff2':'\u1f7c\u03b9','\u1ff3':'\u03c9\u03b9','\u1ff4':'\u03ce\u03b9','\u1ff6':'\u03c9\u0342','\u1ff7':'\u03c9\u0342\u03b9','\u1ffc':'\u03c9\u03b9','\uab70':'\u13a0','\uab71':'\u13a1','\uab72':'\u13a2','\uab73':'\u13a3','\uab74':'\u13a4','\uab75':'\u13a5','\uab76':'\u13a6','\uab77':'\u13a7','\uab78':'\u13a8','\uab79':'\u13a9','\uab7a':'\u13aa','\uab7b':'\u13ab','\uab7c':'\u13ac','\uab7d':'\u13ad','\uab7e':'\u13ae','\uab7f':'\u13af','\uab80':'\u13b0','\uab81':'\u13b1','\uab82':'\u13b2','\uab83':'\u13b3','\uab84':'\u13b4','\uab85':'\u13b5','\uab86':'\u13b6','\uab87':'\u13b7','\uab88':'\u13b8','\uab89':'\u13b9','\uab8a':'\u13ba','\uab8b':'\u13bb','\uab8c':'\u13bc','\uab8d':'\u13bd','\uab8e':'\u13be','\uab8f':'\u13bf','\uab90':'\u13c0','\uab91':'\u13c1','\uab92':'\u13c2','\uab93':'\u13c3','\uab94':'\u13c4','\uab95':'\u13c5','\uab96':'\u13c6','\uab97':'\u13c7','\uab98':'\u13c8','\uab99':'\u13c9','\uab9a':'\u13ca','\uab9b':'\u13cb','\uab9c':'\u13cc','\uab9d':'\u13cd','\uab9e':'\u13ce','\uab9f':'\u13cf','\uaba0':'\u13d0','\uaba1':'\u13d1','\uaba2':'\u13d2','\uaba3':'\u13d3','\uaba4':'\u13d4','\uaba5':'\u13d5','\uaba6':'\u13d6','\uaba7':'\u13d7','\uaba8':'\u13d8','\uaba9':'\u13d9','\uabaa':'\u13da','\uabab':'\u13db','\uabac':'\u13dc','\uabad':'\u13dd','\uabae':'\u13de','\uabaf':'\u13df','\uabb0':'\u13e0','\uabb1':'\u13e1','\uabb2':'\u13e2','\uabb3':'\u13e3','\uabb4':'\u13e4','\uabb5':'\u13e5','\uabb6':'\u13e6','\uabb7':'\u13e7','\uabb8':'\u13e8','\uabb9':'\u13e9','\uabba':'\u13ea','\uabbb':'\u13eb','\uabbc':'\u13ec','\uabbd':'\u13ed','\uabbe':'\u13ee','\uabbf':'\u13ef','\ufb00':'ff','\ufb01':'fi','\ufb02':'fl','\ufb03':'ffi','\ufb04':'ffl','\ufb05':'st','\ufb06':'st','\ufb13':'\u0574\u0576','\ufb14':'\u0574\u0565','\ufb15':'\u0574\u056b','\ufb16':'\u057e\u0576','\ufb17':'\u0574\u056d'};
+function pyCasefold(s) { let out = ''; for (const ch of s) out += Object.hasOwn(CASEFOLD_DIFF, ch) ? CASEFOLD_DIFF[ch] : ch.toLowerCase(); return out; }
 // zip / enumerate / map / filter / reversed の結果（一度読み切ると空になる。表示はアドレスを含むため不明扱い）
 const ITER = (a, kind) => ({ __iter: a, kind, used: false, pos: 0 });
 const EXH = Symbol('exhausted'); // zip/map の歩調消費で「取り尽くした」を表す目印
@@ -43,7 +107,7 @@ function viewItems(v) { const out = []; for (const e of v.__view.__dict.values()
 // 関数内で代入される名前の「代入前」の状態（読むと UnboundLocalError）
 const UNBOUND = { __unbound: true };
 const SAFE = (n) => Number.isSafeInteger(n);
-const TYPE_BUILTINS = ['int', 'float', 'str', 'bool', 'list', 'tuple', 'dict', 'set', 'range', 'type', 'object', 'frozenset', 'bytes', 'complex'];
+const TYPE_BUILTINS = ['int', 'float', 'str', 'bool', 'list', 'tuple', 'dict', 'set', 'range', 'type', 'object', 'frozenset', 'bytes', 'bytearray', 'complex', 'slice', 'memoryview', 'frozendict'];
 // 型ごとの属性名（CPython 3.12 の dir() から。存在しない名前は AttributeError）
 const TYPE_ATTRS = {
   str: 'capitalize casefold center count encode endswith expandtabs find format format_map index isalnum isalpha isascii isdecimal isdigit isidentifier islower isnumeric isprintable isspace istitle isupper join ljust lower lstrip maketrans partition removeprefix removesuffix replace rfind rindex rjust rpartition rsplit rstrip split splitlines startswith strip swapcase title translate upper zfill',
@@ -57,6 +121,13 @@ const TYPE_ATTRS = {
   NoneType: ''
 };
 for (const k of Object.keys(TYPE_ATTRS)) TYPE_ATTRS[k] = new Set(TYPE_ATTRS[k].split(' ').filter(Boolean));
+TYPE_ATTRS.bytes = new Set('capitalize center count decode endswith expandtabs find fromhex hex index isalnum isalpha isascii isdigit islower isspace istitle isupper join ljust lower lstrip maketrans partition removeprefix removesuffix replace rfind rindex rjust rpartition rsplit rstrip split splitlines startswith strip swapcase title translate upper zfill'.split(' '));
+TYPE_ATTRS.bytearray = new Set('append capitalize center clear copy count decode endswith expandtabs extend find fromhex hex index insert isalnum isalpha isascii isdigit islower isspace istitle isupper join ljust lower lstrip maketrans partition pop removeprefix remove removesuffix replace resize reverse rfind rindex rjust rpartition rsplit rstrip split splitlines startswith strip swapcase take_bytes title translate upper zfill'.split(' '));
+TYPE_ATTRS.frozenset = new Set('copy difference intersection isdisjoint issubset issuperset symmetric_difference union'.split(' '));
+TYPE_ATTRS.complex = new Set('conjugate from_number imag real'.split(' '));
+TYPE_ATTRS.slice = new Set('indices start step stop'.split(' '));
+TYPE_ATTRS.memoryview = new Set('c_contiguous cast contiguous count f_contiguous format hex index itemsize nbytes ndim obj readonly release shape strides suboffsets tobytes tolist toreadonly'.split(' '));
+TYPE_ATTRS.frozendict = new Set('copy fromkeys get items keys values'.split(' '));
 const MATH_CONST = { pi: Math.PI, e: Math.E, tau: 2 * Math.PI, inf: Infinity, nan: NaN };
 // math モジュールの公開関数名（CPython 3.12 の math モジュール）。
 // from-import／import * で取り込んだ関数は、属性形（math.sqrt 等）と
@@ -89,6 +160,8 @@ const EXC_PARENTS = {
   ExceptionGroup: ['BaseExceptionGroup', 'Exception'],
   ImportError: 'Exception',
   ModuleNotFoundError: 'ImportError',
+  ImportCycleError: 'ImportError', // B6（Python班1）：docs.python.org/3（3.15）exceptions.html の階層記載で追加
+  PythonFinalizationError: 'RuntimeError', // B6（Python班1）：同上（RuntimeError のサブクラス）
   LookupError: 'Exception',
   IndexError: 'LookupError',
   KeyError: 'LookupError',
@@ -167,7 +240,7 @@ function excMatches(kind, handlerType) {
   return false;
 }
 // 型そのものを表す値か（int | str のような合併型や isinstance の第2引数の判定に使う）
-const isClassValue = (v) => !!v && typeof v === 'object' && (!!v.__union || !!v.__type || !!v.__class || (!!v.__builtin && (TYPE_BUILTINS.includes(v.__builtin) || EXC_NAMES.has(v.__builtin))));
+const isClassValue = (v) => !!v && typeof v === 'object' && (!!v.__union || !!v.__type || !!v.__class || !!v.__ncls || (!!v.__builtin && (TYPE_BUILTINS.includes(v.__builtin) || EXC_NAMES.has(v.__builtin))));
 const BIG = () => ({ __unk: true, desc: 'とても大きな整数・この説明では正確に計算しません' });
 const ELLIPSIS = { __ellipsis: true };
 const isEllipsis = (v) => v === ELLIPSIS;
@@ -186,6 +259,25 @@ const BUILTIN_CONSTANTS = { Ellipsis: ELLIPSIS, NotImplemented: NOTIMPLEMENTED, 
 // 束縛メソッド参照（xs.append を変数に入れた形）。呼ぶと本物のメソッドとして動く
 const METHODREF = (obj, name) => ({ __method: true, obj, name });
 const isMethodRef = (v) => !!v && typeof v === 'object' && v.__method === true;
+// B6-Py3（特殊メソッド・クラス機構班）：classmethod／staticmethod／property／
+// super の値表現。クラス本体に置かれ、属性アクセス時に束縛・発火する。
+const CMVAL = (fn) => ({ __cm: true, fn }); // classmethod ラッパ
+const SMVAL = (fn) => ({ __sm: true, fn }); // staticmethod ラッパ
+const isCM = (v) => !!v && typeof v === 'object' && v.__cm === true;
+const isSM = (v) => !!v && typeof v === 'object' && v.__sm === true;
+const PROPVAL = (fget, fset, fdel) => ({ __prop: true, fget: fget || null, fset: fset || null, fdel: fdel || null });
+const isProp = (v) => !!v && typeof v === 'object' && v.__prop === true;
+const SUPERVAL = (cls, obj) => ({ __super: true, cls, obj }); // obj: インスタンス／クラス／null（未束縛）
+const isSuper = (v) => !!v && typeof v === 'object' && v.__super === true;
+// property.getter／setter／deleter の束縛ラッパ（呼ぶと新しい property を返す）
+const PROPMOD = (prop, kind) => ({ __propmod: true, prop, kind });
+// type.mro の束縛ラッパ（呼ぶと MRO のリストを返す）
+const MROFN = (cls) => ({ __mrofn: true, cls });
+// object.__new__ 相当（super().__new__(cls) 用：新しいインスタンスを作る）
+const OBJNEW = (cls) => ({ __objnew: true, cls });
+// B6-Py3：object.__getattribute__／object.__setattr__ の組み込み相当マーカー
+const OBJGA = { __objga: true };
+const OBJSA = { __objsa: true };
 // 追跡できない書き換えを受けた値は、その場で「不明」に変える（別名からも不明に見える）
 function poison(v, desc) {
   if (!v || typeof v !== 'object' || isUnk(v) || isFunc(v)) return;
@@ -193,6 +285,34 @@ function poison(v, desc) {
   v.__unk = true; v.desc = desc || '中身が実行時に決まる値';
 }
 const isMutableVal = (v) => isList(v) || isDict(v) || isSet(v) || isTuple(v) || (v && (!!v.__range || !!v.__instance)) || isIter(v);
+
+/* ネイティブ値（標準ライブラリのクラスインスタンス）の repr／str／eq 等を
+ * 静的に解決するための最小 ctx。エンジン内部の表示系からのみ使う。
+ * 本格的な ctx（エラー送出・コールバック呼び出し付き）は Interp 側で作る。 */
+function nativeStaticCtx() {
+  return {
+    V: { NUM, BOOL, NONE, LIST, TUPLE, DICT, SET, RANGE, ITER, UNK },
+    isNum, isBool, isNone, isList, isTuple, isDict, isSet, isUnk, isFunc,
+    isNative: (v) => !!v && !!v.__native,
+    isNativeClass: (v) => !!v && !!v.__ncls,
+    num: (v) => isNum(v) ? v.v : isBool(v) ? (v.v ? 1 : 0) : null,
+    str: (v) => typeof v === 'string' ? v : null,
+    listOf: (v) => isList(v) ? v.__list : isTuple(v) ? v.__tuple : (v && v.__range) ? v.__range : null,
+    repr: (v) => reprVal(v), strOf: (v) => strVal(v), typeName: (v) => typeName(v),
+    truthy: (v) => truthy(v),
+    eq: (a, b) => eqVal(a, b),
+    err: (kind, msg) => { throw new Error(kind + ': ' + msg); },
+    diag: () => {}, step: () => {},
+    unk: (desc) => UNK(desc),
+    call: () => UNK(),
+    iterable: () => null,
+    binop: () => UNK(),
+    compare: () => UNK(),
+    native: (q, data) => makeNative(q, data),
+    ncls: (q) => makeNativeClass(q),
+    NOT_HANDLED: STDLIB_NOT_HANDLED,
+  };
+}
 
 function typeName(v) {
   if (isUnk(v)) return '不明';
@@ -202,8 +322,14 @@ function typeName(v) {
   if (typeof v === 'string') return 'str';
   if (isList(v)) return 'list';
   if (isTuple(v)) return 'tuple';
+  if (isBytes(v)) return 'bytes';
+  if (isBytearray(v)) return 'bytearray';
+  if (isComplex(v)) return 'complex';
+  if (isFrozenDict(v)) return 'frozendict';
   if (isDict(v)) return 'dict';
-  if (isSet(v)) return 'set';
+  if (isSet(v)) return v.__frozenSet ? 'frozenset' : 'set';
+  if (isSlice(v)) return 'slice';
+  if (isMemview(v)) return 'memoryview';
   if (v && v.__union) return 'types.UnionType';
   if (v && v.__builtin) return TYPE_BUILTINS.includes(v.__builtin) ? 'type' : 'builtin_function_or_method';
   if (isFunc(v)) return 'function';
@@ -214,8 +340,14 @@ function typeName(v) {
   if (isMethodRef(v)) return 'builtin_function_or_method';
   if (isEllipsis(v)) return 'ellipsis';
   if (isNotImplemented(v)) return 'NotImplementedType';
+  if (isCM(v)) return 'classmethod';
+  if (isSM(v)) return 'staticmethod';
+  if (isProp(v)) return 'property';
+  if (isSuper(v)) return 'super';
   if (v && v.__class) return 'type';
   if (v && v.__instance) return v.cls.cname;
+  if (v && v.__native) { const d = nativeClassDef(v.__native); return d && d.typeName ? d.typeName : v.__native.split('.').pop(); }
+  if (v && v.__ncls) return 'type';
   if (v && v.__exc) return v.kind;
   return '不明';
 }
@@ -236,6 +368,10 @@ function truthy(v) {
   // イテレータ（__iter 系）は __len__ を持たないため従来どおり常に True。
   if (v && v.__range) return v.__range.length > 0;
   if (isView(v)) return v.__view.__dict.size > 0;
+  if (v && v.__native) { const d = nativeClassDef(v.__native); if (d && d.truthy) { const t = d.truthy(nativeStaticCtx(), v); if (t !== null && t !== undefined) return t; } }
+  if (isBytesLike(v)) return bytesOf(v).length > 0;
+  if (isComplex(v)) return v.__complex.re !== 0 || v.__complex.im !== 0;
+  if (isMemview(v)) return v.__memview.len > 0;
   return true;
 }
 function pyFloatRepr(x) {
@@ -399,20 +535,34 @@ function reprVal(v, depth) {
   if (isNum(v)) return fmtNum(v);
   if (isBool(v)) return v.v ? 'True' : 'False';
   if (isNone(v)) return 'None';
+  if (v && v.__native) { const d = nativeClassDef(v.__native); if (d && d.repr) return d.repr(nativeStaticCtx(), v); return '（' + typeName(v) + ' オブジェクト）'; }
+  if (v && v.__ncls) return "<class '" + v.__ncls + "'>";
   if (typeof v === 'string') return pyStrRepr(v);
   if (depth > 3) return '…';
   if (isList(v)) return '[' + v.__list.map(x => reprVal(x, depth + 1)).join(', ') + ']';
   if (isTuple(v)) return v.__tuple.length === 1 ? '(' + reprVal(v.__tuple[0], depth + 1) + ',)' : '(' + v.__tuple.map(x => reprVal(x, depth + 1)).join(', ') + ')';
-  if (isDict(v)) { const ps = []; for (const e of v.__dict.values()) ps.push(reprVal(e.k, depth + 1) + ': ' + reprVal(e.v, depth + 1)); return '{' + ps.join(', ') + '}'; }
-  if (isSet(v)) { if (!v.__set.length) return 'set()'; const ord = setOrder(v); if (ord) return '{' + ord.map(x => reprVal(x, depth + 1)).join(', ') + '}'; const inner = v.__set.map(x => reprVal(x, depth + 1)).join(', '); return /[（）]/.test(inner) ? '（集合・表示の並び順は実行時に決まります）' : '（集合 {' + inner + '}・表示の並び順は実行時に決まります）'; }
+  if (isDict(v)) { const ps = []; for (const e of v.__dict.values()) ps.push(reprVal(e.k, depth + 1) + ': ' + reprVal(e.v, depth + 1)); return isFrozenDict(v) ? 'frozendict({' + ps.join(', ') + '})' : '{' + ps.join(', ') + '}'; }
+  if (isSet(v)) { if (isFrozenSet(v)) { if (!v.__set.length) return 'frozenset()'; const ordF = setOrder(v); const innerF = (ordF || v.__set).map(x => reprVal(x, depth + 1)).join(', '); return 'frozenset({' + innerF + '})'; } if (!v.__set.length) return 'set()'; const ord = setOrder(v); if (ord) return '{' + ord.map(x => reprVal(x, depth + 1)).join(', ') + '}'; const inner = v.__set.map(x => reprVal(x, depth + 1)).join(', '); return /[（）]/.test(inner) ? '（集合・表示の並び順は実行時に決まります）' : '（集合 {' + inner + '}・表示の並び順は実行時に決まります）'; }
+  if (isBytes(v)) return bytesRepr(v.__bytes);
+  if (isBytearray(v)) return 'bytearray(' + bytesRepr(v.__bytearray) + ')';
+  if (isComplex(v)) return cxRepr(v);
+  if (isFrozenSet(v)) { if (!v.__set.length) return 'frozenset()'; const ord2 = setOrder(v); const inner2 = (ord2 || v.__set).map(x => reprVal(x, depth + 1)).join(', '); return 'frozenset({' + inner2 + '})'; }
+  if (isFrozenDict(v)) { const ps2 = []; for (const e of v.__dict.values()) ps2.push(reprVal(e.k, depth + 1) + ': ' + reprVal(e.v, depth + 1)); return 'frozendict({' + ps2.join(', ') + '})'; }
+  if (isSlice(v)) return 'slice(' + reprVal(v.__slice.start) + ', ' + reprVal(v.__slice.stop) + ', ' + reprVal(v.__slice.step) + ')';
+  if (isMemview(v)) return '（memoryview オブジェクト）';
   if (v && v.__union) return v.__union.map(x => (x && (x.__type || x.__builtin)) || (x && x.__class ? x.cname : 'type')).join(' | ');
   if (v && v.__type) return "<class '" + v.__type + "'>";
   if (v && v.__class) return "<class '" + v.cname + "'>";
+  if (v && v.__sentinel) return v.srepr; // B6（Python班1）：sentinel 値の repr は生成時に決めた表示（既定は名前）
   if (v && v.__instance) return '（モデルの ' + v.cls.cname + ' インスタンス）';
   if (v && v.__exc) return v.kind + '(' + v.argRepr + ')';
   if (isEllipsis(v)) return 'Ellipsis';
   if (isNotImplemented(v)) return 'NotImplemented';
   if (isMethodRef(v)) return '（組み込みメソッド ' + v.name + '）';
+  if (isCM(v)) return '（classmethod オブジェクト）';
+  if (isSM(v)) return '（staticmethod オブジェクト）';
+  if (isProp(v)) return '（property オブジェクト）';
+  if (isSuper(v)) return '（super オブジェクト）';
   if (isFunc(v)) return '関数 ' + v.def.name;
   if (v && v.__builtin) return '組み込み関数 ' + v.__builtin;
   if (v && v.__range) { const r = v.rng || [0, v.__range.length, 1]; return 'range(' + r[0] + ', ' + r[1] + (r[2] !== 1 ? ', ' + r[2] : '') + ')'; }
@@ -494,6 +644,7 @@ function pyStrRepr(v) {
 // print / str() 用の完全な表示（入れ子の深さで省略しない。循環参照は CPython と同じく [...] 等で示す）
 function reprFull(v, seen) {
   seen = seen || new Set();
+  if (isFrozenSet(v) || isFrozenDict(v)) return reprVal(v);
   if (isUnk(v)) return unknownLabel({kind:'unknown', source:v.desc});
   if (isNum(v)) return fmtNum(v);
   if (isBool(v)) return v.v ? 'True' : 'False';
@@ -512,12 +663,17 @@ function reprFull(v, seen) {
     seen.delete(v);
     return out;
   }
+  if (isBytes(v) || isBytearray(v) || isComplex(v) || isFrozenSet(v) || isFrozenDict(v) || isSlice(v) || isMemview(v)) return reprVal(v);
   return reprVal(v);
 }
+// B6-Py3：ascii()／f文字列の !a 用に、非 ASCII 文字をエスケープする
+function asciiEsc(s) { let out = ''; for (const ch of s) { const cp = ch.codePointAt(0); if (cp < 128) out += ch; else if (cp <= 0xff) out += '\\x' + cp.toString(16).padStart(2, '0'); else if (cp <= 0xffff) out += '\\u' + cp.toString(16).padStart(4, '0'); else out += '\\U' + cp.toString(16).padStart(8, '0'); } return out; }
 function strVal(v) { // print / str() 用：文字列はそのまま、それ以外は repr とほぼ同じ
   if (typeof v === 'string') return v;
   if (isUnk(v)) return unknownLabel({kind:'unknown', source:v.desc});
   if (v && v.__exc) return v.text; // 例外の str() はメッセージそのもの
+  if (v && v.__native) { const d = nativeClassDef(v.__native); if (d) { if (d.str) return d.str(nativeStaticCtx(), v); if (d.repr) return d.repr(nativeStaticCtx(), v); } }
+  if (v && v.__ncls) return "<class '" + v.__ncls + "'>";
   return reprFull(v);
 }
 function eqVal(a, b) {
@@ -529,6 +685,33 @@ function eqVal(a, b) {
   // 名前が同じなら等しい（xs.append == xs.append）。dictKeyId の ID 規則と
   // 一致させる（等しい値同士は必ず同じキー ID になる）。
   if (a && b && a.__builtin && b.__builtin) return a.__builtin === b.__builtin;
+  if (a && b && a.__ncls && b.__ncls) return a.__ncls === b.__ncls;
+  if ((a && a.__ncls) || (b && b.__ncls)) {
+    // 高度A7班是正：typevalAlias を宣言した標準ライブラリクラス
+    // （types.NoneType／EllipsisType／NotImplementedType）は、エンジンの
+    // 型値（type() の結果）と同一のクラスなので、型名で等価を判定する。
+    const da = a && a.__ncls ? nativeClassDef(a.__ncls) : null;
+    const db = b && b.__ncls ? nativeClassDef(b.__ncls) : null;
+    if (da && da.typevalAlias && b && b.__type) return da.typevalAlias === b.__type;
+    if (db && db.typevalAlias && a && a.__type) return db.typevalAlias === a.__type;
+    return false;
+  }
+  if ((a && a.__native) || (b && b.__native)) {
+    // B7 統合時の基盤修正 F-N：限定名が異なるネイティブ同士でも、まず左の
+    // eq、次に右の eq（反射）を試す（IPv4Interface == IPv4Address のように
+    // CPython で関連クラス間の等価が定義される場合があるため）。
+    if (a && a.__native && b && b.__native && a.__native !== b.__native) {
+      const da = nativeClassDef(a.__native);
+      if (da && da.eq) { const r = da.eq(nativeStaticCtx(), a, b); if (r !== null && r !== undefined) return r; }
+      const db = nativeClassDef(b.__native);
+      if (db && db.eq) { const r = db.eq(nativeStaticCtx(), b, a); if (r !== null && r !== undefined) return r; }
+      return false;
+    }
+    const nv = a && a.__native ? a : b, ov = a && a.__native ? b : a;
+    const d = nativeClassDef(nv.__native);
+    if (d && d.eq) { const r = d.eq(nativeStaticCtx(), nv, ov); if (r !== null && r !== undefined) return r; }
+    return false;
+  }
   if (a && b && a.__method && b.__method) return a.name === b.name && (a.obj === b.obj || eqVal(a.obj, b.obj) === true);
   if (a && b && a.__bound && b.__bound) return a.fn === b.fn && a.instance === b.instance;
   if (isNum(a) && isNum(b)) return a.v === b.v;
@@ -537,6 +720,10 @@ function eqVal(a, b) {
     if (ra && rb) return ra[0] === rb[0] && ra[1] === rb[1] && ra[2] === rb[2];
     return a.__range.length === b.__range.length && a.__range.every((x, i) => eqVal(x, b.__range[i]) === true);
   }
+  if (isBytesLike(a) && isBytesLike(b)) { const x = bytesOf(a), y = bytesOf(b); return x.length === y.length && x.every((v2, i) => v2 === y[i]); }
+  if (isComplex(a) || isComplex(b)) { const pa = cxParts(a), pb = cxParts(b); if (!pa || !pb) return false; return pa.re === pb.re && pa.im === pb.im; }
+  if (isSlice(a) && isSlice(b)) { const f = (x, y) => (isNone(x) && isNone(y)) || eqVal(x, y) === true; return f(a.__slice.start, b.__slice.start) && f(a.__slice.stop, b.__slice.stop) && f(a.__slice.step, b.__slice.step); }
+  if (isMemview(a) || isMemview(b)) { const ba = isMemview(a) ? mvBytes(a) : isBytesLike(a) ? bytesOf(a) : null; const bb = isMemview(b) ? mvBytes(b) : isBytesLike(b) ? bytesOf(b) : null; if (ba === null || bb === null) return false; return ba.length === bb.length && ba.every((v2, i) => v2 === bb[i]); }
   if (isBool(a) && isBool(b)) return a.v === b.v;
   if (isBool(a) && isNum(b)) return (a.v ? 1 : 0) === b.v;
   if (isNum(a) && isBool(b)) return a.v === (b.v ? 1 : 0);
@@ -585,6 +772,10 @@ function dictKeyId(v) {
   if (isNone(v)) return 'z:';
   if (isEllipsis(v)) return 'e:';
   if (isNotImplemented(v)) return 'ni:';
+  if (isBytes(v)) return 'by:' + v.__bytes.join(',');
+  if (isComplex(v)) { const re = v.__complex.re === 0 ? 0 : v.__complex.re, im = v.__complex.im === 0 ? 0 : v.__complex.im; if (im === 0) return 'n:' + re; return 'cx:' + re + ',' + im; } // B6監査D4/D5：虚部0の複素数は実数と同じキーID（CPython の数値キー統一）
+  if (isFrozenSet(v)) { const ids = v.__set.map(dictKeyId); if (ids.some(x => x === null)) return null; return 'fs:' + ids.sort().join('|'); }
+  if (isFrozenDict(v)) { const ids = []; for (const e of v.__dict.values()) { const ki = dictKeyId(e.k), vi = dictKeyId(e.v); if (ki === null || vi === null) return null; ids.push(ki + '=' + vi); } return 'fd:' + ids.sort().join('|'); }
   if (isTuple(v)) { const ids = v.__tuple.map(dictKeyId); if (ids.some(x => x === null)) return null; return 't:' + ids.map(s => s.length + ':' + s).join(','); }
   if (v && v.__range) { const ids = v.__range.map(dictKeyId); if (ids.some(x => x === null)) return null; return 'r:' + ids.map(s => s.length + ':' + s).join(','); }
   if (v && v.__type) return 'ty:' + v.__type;
@@ -602,7 +793,19 @@ function dictKeyId(v) {
     return oid === null ? null : 'm:' + oid + ':' + v.name;
   }
   if (v && v.__bound) return 'b:' + identityKeyId(v.instance) + ':' + identityKeyId(v.fn);
-  if (isFunc(v) || (v && v.__class) || (v && v.__instance) || isIter(v) || (v && v.__exc)) return identityKeyId(v);
+  if (v && v.__ncls) return 'ty:' + v.__ncls;
+  if (v && v.__native) { const d = nativeClassDef(v.__native); if (d && d.hash) { const h = d.hash(nativeStaticCtx(), v); return h === null || h === undefined ? null : 'nv:' + v.__native + ':' + h; } return identityKeyId(v); }
+  // B6-Py3：__hash__ = None のクラスと、__eq__ を定義して __hash__ を
+  // 定義していないクラスのインスタンスは CPython では unhashable
+  // （キーにできない）。それ以外は同一性で引く（__hash__ の戻り値
+  // そのものや __eq__ によるキーの一致までは再現しない）。
+  if (v && v.__instance) {
+    const hh = classLookup(v.cls, '__hash__');
+    if (hh === NONE) return null;
+    if (hh === undefined && classLookup(v.cls, '__eq__') !== undefined) return null;
+    return identityKeyId(v);
+  }
+  if (isFunc(v) || (v && v.__class) || isIter(v) || (v && v.__exc)) return identityKeyId(v);
   return null; // ハッシュ化できない
 }
 function dictGet(d, k) { const id = dictKeyId(k); if (id === null) return undefined; return d.__dict.get(id)?.v; }
@@ -796,7 +999,15 @@ function lexText(text, lineNo) {
         if (!closed) throw new SimDiag(lineNo, 'SyntaxError', '文字列が閉じられていません', '引用符 ' + q + ' を足してください');
         i = j + 1;
       }
-      if (isB) { toks.push({ t: 'BYTES', line: lineNo }); continue; }
+      if (isB) {
+        // B6-Py2：bytes リテラルの中身をバイト列として確定させる（従来は中身を捨てて不明値にしていた）。
+        // 生文字列でなければ str と同じエスケープ解釈をし、各文字のコードポイントをバイト値とする。
+        let barr;
+        if (isRaw) barr = Array.from(raw).map(ch => ch.codePointAt(0));
+        else { const dec = decodePyStr(raw, lineNo); if (dec === null) throw new SimDiag(lineNo, 'SyntaxError', 'bytes リテラルでは \\N{...} は使えません', ''); barr = Array.from(dec).map(ch => ch.codePointAt(0)); }
+        if (barr.some(x => x > 0xff)) throw new SimDiag(lineNo, 'SyntaxError', 'bytes リテラルには ASCII 文字だけが書けます（それ以外は \\x などのエスケープで書いてください）', '');
+        toks.push({ t: 'BYTES', v: barr, line: lineNo }); continue;
+      }
       if (!isRaw) {
         const dec = decodePyStr(raw, lineNo);
         if (dec === null) { toks.push({ t: 'STR', v: '', f: isF, unkstr: true, line: lineNo }); continue; }
@@ -854,7 +1065,7 @@ function lexText(text, lineNo) {
     if (text.substr(i, 3) === '...') { toks.push({ t: 'ELLIPSIS', line: lineNo }); i += 3; continue; }
     const three = text.substr(i, 3), two = text.substr(i, 2);
     if (three === '**=' || three === '//=' || three === '<<=' || three === '>>=') { toks.push({ t: 'OP', v: three, line: lineNo }); i += 3; continue; }
-    if (['==', '!=', '<=', '>=', '+=', '-=', '*=', '/=', '%=', '**', '//', '->', ':=', '<<', '>>', '|=', '&=', '^='].includes(two)) { toks.push({ t: 'OP', v: two, line: lineNo }); i += 2; continue; }
+    if (['==', '!=', '<=', '>=', '+=', '-=', '*=', '/=', '%=', '**', '//', '->', ':=', '<<', '>>', '|=', '&=', '^=', '@='].includes(two)) { toks.push({ t: 'OP', v: two, line: lineNo }); i += 2; continue; }
     if ('+-*/%()[]{},:.;=<>@&|^~'.includes(c)) { toks.push({ t: 'OP', v: c, line: lineNo }); i++; continue; }
     throw new SimDiag(lineNo, 'SyntaxError', '解釈できない文字「' + c + '」があります', '半角の記号で書かれているか確認してください');
   }
@@ -1067,10 +1278,25 @@ function parseClass(lines, i, indent, tc) {
   tc.next(); // class
   const nameTok = tc.next();
   if (nameTok.t !== 'NAME') throw new SimDiag(L.line, 'SyntaxError', 'クラス名が必要です', 'class のあとに名前を書いてください');
-  if (tc.eatOp('(')) { if (!tc.eatOp(')')) throw new SimDiag(L.line, '未対応', '継承・メタクラスは未対応です', ''); }
+  // B6-Py3：継承（基底クラスの並び）に対応する。キーワード引数
+  // （metaclass= 等）はメタクラス機構がないため従来どおり未対応で止める。
+  const bases = [];
+  if (tc.eatOp('(')) {
+    if (!tc.eatOp(')')) {
+      while (true) {
+        const kwTok = tc.peek(), afterKw = tc.peek(1);
+        if (kwTok.t === 'NAME' && afterKw.t === 'OP' && afterKw.v === '=')
+          throw new SimDiag(L.line, '未対応', 'メタクラス等のキーワード引数は未対応です', '基底クラスだけを書いてください');
+        bases.push(parseExpr(tc, L.line));
+        if (tc.eatOp(',')) { if (tc.eatOp(')')) break; continue; }
+        tc.expectOp(')', L.line);
+        break;
+      }
+    }
+  }
   tc.expectOp(':', L.line);
   const s = parseSuite(lines, i, indent, tc, L.line);
-  return { stmts: [{ k: 'class', name: nameTok.v, body: s.body, line: L.line }], next: s.next };
+  return { stmts: [{ k: 'class', name: nameTok.v, bases, body: s.body, line: L.line }], next: s.next };
 }
 function parseIf(lines, i, indent, tc) {
   const L = lines[i];
@@ -1201,9 +1427,11 @@ function parseSimple(tc, line) {
   let committed = false;
   try {
     let tgt = parseTarget(tc, line);
-    // 型注釈つき代入 x: int = 5（注釈は読み飛ばす）。値がなければ注釈だけの文
-    if (tgt.k === 'name' && tc.isOp(':')) { tc.next(); committed = true; parseExpr(tc, line); if (!tc.isOp('=') && !tc.isOp('+=') && !tc.isOp('-=') && !tc.isOp('*=') && !tc.isOp('/=') && !tc.isOp('//=') && !tc.isOp('%=') && !tc.isOp('**=') && !tc.isOp('|=') && !tc.isOp('&=') && !tc.isOp('^=') && !tc.isOp('<<=') && !tc.isOp('>>=')) return { k: 'annassign', target: tgt, line }; }
-    if (tc.isOp('=') || tc.isOp('+=') || tc.isOp('-=') || tc.isOp('*=') || tc.isOp('/=') || tc.isOp('//=') || tc.isOp('%=') || tc.isOp('**=') || tc.isOp('|=') || tc.isOp('&=') || tc.isOp('^=') || tc.isOp('<<=') || tc.isOp('>>=')) {
+    // 型注釈つき代入 x: int = 5。注釈式は __annotations__ 用に保持する
+    // （B6-Py3）。値がなければ注釈だけの文
+    let annExpr = null;
+    if (tgt.k === 'name' && tc.isOp(':')) { tc.next(); committed = true; annExpr = parseExpr(tc, line); if (!tc.isOp('=') && !tc.isOp('+=') && !tc.isOp('-=') && !tc.isOp('*=') && !tc.isOp('/=') && !tc.isOp('//=') && !tc.isOp('%=') && !tc.isOp('**=') && !tc.isOp('|=') && !tc.isOp('&=') && !tc.isOp('^=') && !tc.isOp('<<=') && !tc.isOp('>>=') && !tc.isOp('@=')) return { k: 'annassign', target: tgt, ann: annExpr, line }; }
+    if (tc.isOp('=') || tc.isOp('+=') || tc.isOp('-=') || tc.isOp('*=') || tc.isOp('/=') || tc.isOp('//=') || tc.isOp('%=') || tc.isOp('**=') || tc.isOp('|=') || tc.isOp('&=') || tc.isOp('^=') || tc.isOp('<<=') || tc.isOp('>>=') || tc.isOp('@=')) {
       committed = true;
       const op = tc.next().v;
       if (op === '=') {
@@ -1220,7 +1448,7 @@ function parseSimple(tc, line) {
         }
         for (const t of targets) checkTarget(t, line, false);
         const rhs = parseExprList(tc, line);
-        if (targets.length === 1) return { k: 'assign', target: tgt, expr: rhs, line };
+        if (targets.length === 1) return { k: 'assign', target: tgt, expr: rhs, ann: annExpr, line };
         return { k: 'assignmulti', targets, expr: rhs, line };
       }
       checkTarget(tgt, line, false);
@@ -1402,9 +1630,9 @@ function parsePostfix2(tc, line, forTarget) {
 }
 function parseAtom(tc, line) {
   const t = tc.next();
-  if (t.t === 'NUM') { if (t.cx) return { k: 'cxlit', line }; return { k: 'num', v: t.v, f: t.f, line }; }
+  if (t.t === 'NUM') { if (t.cx) return { k: 'cxlit', v: t.v, line }; return { k: 'num', v: t.v, f: t.f, line }; }
   if (t.t === 'ELLIPSIS') return { k: 'ellipsis', line };
-  if (t.t === 'BYTES') return { k: 'byteslit', line };
+  if (t.t === 'BYTES') return { k: 'byteslit', v: t.v || [], line };
   if (t.t === 'STR') {
     if (t.unkstr) return { k: 'unkexpr', what: '\\N{...}（文字の名前で書くエスケープ）を含む文字列', line };
     // 連続文字列リテラルの連結
@@ -1738,7 +1966,7 @@ class Interp {
     }
     this.steps.push({ line, text, depth: this.depth });
   }
-  err(line, kind, msg, fix, excStr, excRepr) { const d = new SimDiag(line, kind, msg, fix); if (excStr !== undefined) { d.excStr = excStr; d.excRepr = excRepr || ''; } throw d; }
+  err(line, kind, msg, fix, excStr, excRepr, excAttrs) { const d = new SimDiag(line, kind, msg, fix); if (excStr !== undefined) { d.excStr = excStr; d.excRepr = excRepr || ''; } if (excAttrs !== undefined) d.excAttrs = excAttrs; throw d; }
   emitRaw(text, line) { this.outSegs.push({ text, line: line || 0 }); this.outText += text; }
   emitLine(text, line) { if (this.outText && !this.outText.endsWith('\n')) this.emitRaw('\n', 0); this.emitRaw(text + '\n', line || 0); }
   tick() { if (++this.work > MAX_WORK) throw new Flow('budget'); }
@@ -1849,7 +2077,7 @@ class Interp {
           else if (!h) pending = simErr;
           else {
             this.step(s.line, 'エラー（' + simErr.kind + '）が起きたので、except の中身を実行します');
-            if (h.asName) env.set(h.asName, simErr.excStr != null ? EXC(simErr.kind, simErr.excStr, simErr.excRepr) : UNK('発生したエラー（' + simErr.kind + '）'));
+            if (h.asName) env.set(h.asName, simErr.excStr != null ? EXC(simErr.kind, simErr.excStr, simErr.excRepr, simErr.excAttrs) : UNK('発生したエラー（' + simErr.kind + '）'));
             try { this.execBlock(h.body, env, ctx); } catch (e2) { pending = e2; }
             if (h.asName) env.del(h.asName);
           }
@@ -1863,23 +2091,102 @@ class Interp {
         return;
       }
       case 'with': {
+        // B6-Py3：ユーザー定義クラスのインスタンスは __enter__／__exit__
+        // を実際に発火する（as には __enter__ の戻り値を束縛し、本体で
+        // 例外が起きたら __exit__ に例外情報を渡して、真を返せば抑制する）。
+        // それ以外の値（open() の戻り等）は従来どおりの扱いを保つ。
         let genCtx = false;
-        for (const it of s.items) { const v = this.eval(it.e, env); if (isIter(v) || (isUnk(v) && v.desc !== 'ファイルの内容')) genCtx = true; if (it.asName) env.set(it.asName, UNK('with で開いた値')); } // open() の戻り（ファイルの内容）だけは出入りで出力を伴わない既知の形として除外する
+        const entered = [];
+        let enterErr = null;
+        try {
+          for (const it of s.items) {
+            const v = this.eval(it.e, env);
+            if (v && v.__instance) {
+              if (this.specialLookup(v, '__enter__') === undefined) this.err(s.line, 'AttributeError', typeName(v) + ' には __enter__ がありません（with には __enter__ と __exit__ を持つコンテキストマネージャが必要です）', '');
+              const ev2 = this.callSpecial(v, '__enter__', s.line, env);
+              if (it.asName) env.set(it.asName, ev2);
+              entered.push(v);
+              continue;
+            }
+            if (isIter(v) || (isUnk(v) && v.desc !== 'ファイルの内容')) genCtx = true; // open() の戻り（ファイルの内容）だけは出入りで出力を伴わない既知の形として除外する
+            if (it.asName) env.set(it.asName, UNK('with で開いた値'));
+          }
+        } catch (e) { enterErr = e; }
+        if (enterErr) { this.runExits(entered, enterErr, s.line); return; } // __exit__ が抑制しなければ runExits が再送出する。抑制されたら本体は実行しない
         if (genCtx) { // @contextmanager のジェネレータ等：出入りのタイミングで出る出力・副作用は再現できないため、正直にプレースホルダで示す
           this.diag(s.line, 'note', '対応外', 'この with の出入りで行われる処理（出入りの出力や後片付け）はこの説明では再現しません。出入りの出力は「実行時に決まる値」として示します', '');
           this.emitRaw('（with に入るときの出力は実行時に決まります）\n', s.line);
-          this.execBlock(s.body, env, ctx);
+          let bodyErr = null;
+          try { this.execBlock(s.body, env, ctx); } catch (e) { bodyErr = e; }
           this.emitRaw('（with を出るときの出力は実行時に決まります）\n', s.line);
+          if (entered.length) this.runExits(entered, bodyErr, s.line);
+          if (bodyErr) throw bodyErr;
           return;
         }
-        this.execBlock(s.body, env, ctx);
+        let bodyErr = null;
+        try { this.execBlock(s.body, env, ctx); } catch (e) { bodyErr = e; }
+        if (entered.length) this.runExits(entered, bodyErr, s.line);
+        else if (bodyErr) throw bodyErr;
         return;
       }
       case 'class': {
+        // B6-Py3：基底クラスを評価し、type() 3引数形と同じ形のクラス値
+        // （bases／baseTypeNames）を作る。MRO が一貫しない場合は実
+        // CPython と同じくクラス定義の時点で TypeError にする。
+        // クラス作成フック（__init_subclass__／__set_name__ 等）は裁定
+        // どおり発火しない。
+        const bases = []; const baseTypeNames = [];
+        for (const be of (s.bases || [])) {
+          const b = this.eval(be, env);
+          if (isUnk(b)) this.err(s.line, '未対応', '基底クラスの値が実行時に決まるため、継承関係を確定できません', '基底には定義済みのクラスを書いてください');
+          if (b && b.__class) { bases.push(b); continue; }
+          if (b && b.__type) { baseTypeNames.push(b.__type); continue; }
+          if (b && b.__builtin && (TYPE_BUILTINS.includes(b.__builtin) || EXC_NAMES.has(b.__builtin))) { baseTypeNames.push(b.__builtin); continue; }
+          // A6監査PYF-04：__mro_entries__ を定義したインスタンスが基底に
+          // 来た場合は、未対応の object.__mro_entries__ を名指しする
+          if (b && b.__instance && this.specialLookup(b, '__mro_entries__') !== undefined)
+            this.err(s.line, '未対応', 'object.__mro_entries__（基底クラスの差し替え）はこの説明では対応していません', '');
+          // 高度A7班是正：標準ライブラリのクラスは「型」であるため、従来の
+          // 「型だけを書いてください」は虚偽の理由だった。未対応である旨を
+          // 名指しで正直に止める（例：class C(enum.Enum)）。
+          if (b && b.__ncls) this.err(s.line, '未対応', '標準ライブラリのクラス「' + b.__ncls + '」を基底にする継承はこの説明では対応していません', '組み込み型や自分で定義したクラスを基底にしてください');
+          this.err(s.line, 'TypeError', '基底クラスには型だけを書いてください（bases must be types）', '');
+        }
+        const dupKeys = new Set();
+        for (const b of [...bases.map((c) => 'c' + _mroId(c)), ...baseTypeNames.map((n) => 't' + n)])
+          if (dupKeys.has(b)) this.err(s.line, 'TypeError', '基底クラスが重複しています（duplicate base class）', '');
+          else dupKeys.add(b);
         const classEnv = new Env(env);
         try { this.execBlock(s.body, classEnv, { ...ctx, inFunc: false, inLoop: false }); } catch (e) { if (!(e instanceof Flow)) throw e; }
         for (const value of classEnv.vars.values()) if (isFunc(value)) value.env = env;
-        env.set(s.name, { __class: true, cname: s.name, cenv: classEnv });
+        const cls = { __class: true, cname: s.name, cenv: classEnv, bases, baseTypeNames };
+        // クラス本体の型注釈（x: int / x: int = 5）を __annotations__ 用に集める
+        const annDict = DICT();
+        let hasAnn = false;
+        for (const st of (s.body || [])) {
+          const annNode = st && st.k === 'annassign' ? st.ann : st && st.k === 'assign' && st.target && st.target.k === 'name' ? st.ann : null;
+          const annName = st && (st.k === 'annassign' || st.k === 'assign') && st.target && st.target.k === 'name' ? st.target.name : null;
+          if (annNode && annName) {
+            const av = this.eval(annNode, classEnv);
+            const tv = (av && av.__builtin && ['int', 'float', 'str', 'bool', 'list', 'dict', 'tuple', 'set'].includes(av.__builtin)) ? TYPEVAL(av.__builtin) : av;
+            dictSet(annDict, annName, tv); hasAnn = true;
+          }
+        }
+        if (hasAnn) cls.annDict = annDict;
+        if (_linearize(cls, new Set()) === null)
+          this.err(s.line, 'TypeError', 'クラス「' + s.name + '」の継承順序（MRO）を一貫して決められません（Cannot create a consistent method resolution order）', '基底クラスの並び順を見直してください');
+        // B6監査D11：クラス作成フック（__init_subclass__／__set_name__）は
+        // 発火しない（未対応）。関係する定義がある場合は黙って成功せず止める。
+        for (const b of bases) if (classLookup(b, '__init_subclass__') !== undefined) this.err(s.line, '未対応', 'object.__init_subclass__（クラス作成フック）はこの説明では対応していません', '');
+        for (const value of classEnv.vars.values()) if (value && value.__instance && this.specialLookup(value, '__set_name__') !== undefined) this.err(s.line, '未対応', 'object.__set_name__（クラス作成フック）はこの説明では対応していません', '');
+        let clsVal = cls;
+        const decs = this.pendingDec; this.pendingDec = [];
+        for (let k = decs.length - 1; k >= 0; k--) {
+          const dv = this.eval(decs[k].expr, env);
+          clsVal = this.callFn(dv, [clsVal], env, decs[k].line);
+          this.step(decs[k].line, 'デコレータ「' + exprSrc(decs[k].expr) + '」をクラス「' + s.name + '」に適用します');
+        }
+        env.set(s.name, clsVal);
         this.step(s.line, 'クラス「' + s.name + '」を定義します（中身の代入はクラスの属性になります）');
         return;
       }
@@ -1907,6 +2214,9 @@ class Interp {
             if (isUnk(obj)) continue;
             if (isList(obj)) { this.subGet(obj, idx, s.line); let i = Math.trunc(idx.v); if (i < 0) i += obj.__list.length; obj.__list.splice(i, 1); this.step(s.line, 'リストの [' + reprVal(idx) + '] を消します → ' + reprVal(obj)); continue; }
             if (isDict(obj)) { this.subGet(obj, idx, s.line); obj.__dict.delete(dictKeyId(idx)); this.step(s.line, '辞書のキー ' + reprVal(idx) + ' を消します'); continue; }
+            if (obj && obj.__native) { const d = nativeClassDef(obj.__native); const ctx = this.stdlibCtx(env, s.line); if (d && d.delitem) { d.delitem(ctx, obj, idx); this.step(s.line, typeName(obj) + ' の要素 ' + reprVal(idx) + ' を消します'); continue; } this.err(s.line, 'TypeError', typeName(obj) + ' の要素は del で消せません', ''); }
+            // B6-Py3：__delitem__ を発火する
+            if (obj && obj.__instance && this.specialLookup(obj, '__delitem__') !== undefined) { this.callSpecialArgs(obj, '__delitem__', [idx], s.line, env); this.step(s.line, '「' + exprSrc(t.obj) + '」の要素を __delitem__ で消します'); continue; }
             this.err(s.line, 'TypeError', typeName(obj) + ' の要素は del で消せません', '');
           }
           if (t.k === 'slice') {
@@ -1919,6 +2229,16 @@ class Interp {
             const kill = new Set(ix.idx); const keep = obj.__list.filter((_, k) => !kill.has(k)); obj.__list.length = 0; obj.__list.push(...keep);
             this.step(s.line, '「' + exprSrc(t.obj) + '」の一部（スライス）を消します → ' + reprVal(obj));
             continue;
+          }
+          // B6-Py3：属性の del は __delattr__／deleter／__delete__ を発火する。
+          // B7：ネイティブ値・ネイティブクラス・モジュール属性の del もここで扱う（統合第2弾で合成）。
+          if (t.k === 'attr') {
+            const obj = this.eval(t.obj, env);
+            if (obj && obj.__native) { const d = nativeClassDef(obj.__native); const ctx = this.stdlibCtx(env, s.line); if (d && d.delattr) { d.delattr(ctx, obj, t.name); continue; } if (obj.__attrsBag && obj.__attrsBag.has(t.name)) { obj.__attrsBag.delete(t.name); continue; } this.err(s.line, 'AttributeError', typeName(obj) + ' オブジェクトには属性「' + t.name + '」がありません', ''); }
+            if (obj && obj.__ncls) { deleteClassAttrOverride(obj.__ncls, t.name); continue; }
+            if (obj && obj.mod && isStdlibModule(obj.mod)) { deleteModuleAttrOverride(obj.mod, t.name); continue; }
+            if (obj && obj.__instance) { this.delAttrInstance(obj, t.name, s.line, env); this.step(s.line, '属性「' + t.name + '」を消します'); continue; }
+            if (obj && obj.__class) { if (obj.cenv.vars.has(t.name)) { obj.cenv.vars.delete(t.name); this.step(s.line, 'クラス属性「' + t.name + '」を消します'); continue; } this.err(s.line, 'AttributeError', '属性がありません：' + t.name, ''); }
           }
           this.diag(s.line, 'note', '対応外', 'この形の del はこの説明では解釈できません', '');
           if (t.k === 'attr') { const base = t.obj; if (base && base.k === 'name') env.set(base.name, UNK('del の結果')); }
@@ -1940,9 +2260,10 @@ class Interp {
         // ユーザー定義クラスは継承（class X(Exception): の形）がこのエンジンでは未対応
         // （parseClass が「継承・メタクラスは未対応」で停止する）のため、例外を継承した
         // ユーザー定義例外は作れず、通常クラスの raise は TypeError が実 CPython と一致する。
-        const throwExc = (kind, msg, excStr, excRepr) => {
+        const throwExc = (kind, msg, excStr, excRepr, excAttrs) => {
           const d = new SimDiag(s.line, kind, msg, '');
           if (excStr !== undefined) { d.excStr = excStr; d.excRepr = excRepr || ''; }
+          if (excAttrs !== undefined) d.excAttrs = excAttrs;
           d.raised = true; // raise 文で明示的に発生させた例外は SyntaxError 等でも except で捕捉できる
           throw d;
         };
@@ -1950,6 +2271,23 @@ class Interp {
         let headName = null, isCall = false;
         if (s.e.k === 'call' && s.e.fn.k === 'name') { headName = s.e.fn.name; isCall = true; }
         else if (s.e.k === 'name') headName = s.e.name;
+        // B7 統合時の基盤修正 F-B：モジュール属性形の raise
+        // （raise locale.Error("x")／raise locale.Error）を解釈する。
+        // 属性式を評価し、例外値なら送出、例外クラス（ncls）なら生成して送出する。
+        if (headName === null && STDLIB_MODULES.size && (s.e.k === 'attr' || (s.e.k === 'call' && s.e.fn.k === 'attr'))) {
+          const v = this.eval(s.e, env);
+          if (v && v.__exc) throwExc(v.kind, v.text || v.kind + ' を発生させました', v.text, v.argRepr || '', v.excAttrs);
+          if (v && v.__ncls) { const nd = nativeClassDef(v.__ncls); if (nd && nd.exc) throwExc(nd.exc, nd.exc + ' を発生させました', '', ''); }
+          if (isUnk(v)) { this.diag(s.line, 'note', '対応外', 'この形の raise はこの説明では解釈できません', ''); return; }
+          notException('属性の値（' + typeName(v) + '）');
+        }
+        if (headName === null && STDLIB_MODULES.size && s.e.k === 'call') {
+          // 呼び出し結果の例外値を raise する形（raise mod.make_error() 等）
+          const v = this.eval(s.e, env);
+          if (v && v.__exc) throwExc(v.kind, v.text || v.kind + ' を発生させました', v.text, v.argRepr || '', v.excAttrs);
+          if (isUnk(v)) { this.diag(s.line, 'note', '対応外', 'この形の raise はこの説明では解釈できません', ''); return; }
+          notException('呼び出しの戻り値（' + typeName(v) + '）');
+        }
         if (headName === null) {
           // リテラル等の確定値は例外ではない（実 CPython では TypeError）
           if (['num', 'str', 'bool', 'none', 'ellipsis', 'list', 'tuple', 'dict', 'set'].includes(s.e.k)) notException('値 ' + exprSrc(s.e));
@@ -1958,7 +2296,7 @@ class Interp {
         const bound = env.get(headName);
         if (bound === UNBOUND) this.err(s.line, 'UnboundLocalError', '関数の中で代入している変数「' + headName + '」を、代入する前に使っています（関数の中で代入した名前は、その関数のローカル変数になります）', '外側の変数を使いたいなら global ' + headName + ' と宣言するか、引数として渡してください');
         if (bound && bound.__class) notException('クラス「' + headName + '」');
-        if (!isCall && bound && bound.__exc) throwExc(bound.kind, bound.text || bound.kind + ' を発生させました', bound.text, bound.argRepr || '');
+        if (!isCall && bound && bound.__exc) throwExc(bound.kind, bound.text || bound.kind + ' を発生させました', bound.text, bound.argRepr || '', bound.excAttrs);
         let effName = headName;
         if (bound && bound.__builtin) {
           if (EXC_NAMES.has(bound.__builtin)) effName = bound.__builtin; // x = ValueError のような別名経由
@@ -1966,9 +2304,10 @@ class Interp {
         } else if (bound !== undefined) {
           // 変数に束縛された確定値・関数の raise。値が未確定なら断定できないため従来どおり対応外に倒す
           if (isUnk(bound)) { this.diag(s.line, 'note', '対応外', 'この形の raise はこの説明では解釈できません', ''); return; }
+          if (!isCall && bound && bound.__ncls) { const nd = nativeClassDef(bound.__ncls); if (nd && nd.exc) throwExc(nd.exc, nd.exc + ' を発生させました', '', ''); }
           if (!isCall) notException('「' + headName + '」の値（' + typeName(bound) + '）');
           const v = this.eval(s.e, env); // 呼び出し不可なら TypeError で停止する
-          if (v && v.__exc) throwExc(v.kind, v.text || v.kind + ' を発生させました', v.text, v.argRepr || '');
+          if (v && v.__exc) throwExc(v.kind, v.text || v.kind + ' を発生させました', v.text, v.argRepr || '', v.excAttrs);
           if (isUnk(v)) { this.diag(s.line, 'note', '対応外', 'この形の raise はこの説明では解釈できません', ''); return; }
           notException('「' + headName + '」の戻り値（' + typeName(v) + '）');
         }
@@ -1993,6 +2332,9 @@ class Interp {
       }
       case 'import': {
         const t = (s.text || '').trim();
+        // 高度モード B7：stdlib レジストリに登録のあるモジュールは汎用経路で
+        // 取り込む。登録が無い（簡易モード）場合は従来どおり math のみ扱う。
+        if (STDLIB_MODULES.size && this.tryStdlibImport(t, env, s.line)) return;
         const plainM = /^import\s+math(?:\s+as\s+(\w+))?\s*$/.exec(t);
         const fromM = /^from\s+math\s+import\s+\(?(.+?)\)?\s*$/.exec(t);
         if (!plainM && !fromM)
@@ -2327,6 +2669,7 @@ class Interp {
       if (typeof obj === 'string') this.err(line, 'TypeError', '文字列は中身を書き換えられません（文字列は変更できない決まりです）', '新しい文字列を作って代入し直してください');
       if (isTuple(obj)) this.err(line, 'TypeError', 'タプルは中身を書き換えられません', '変えたいときはリストを使ってください');
       if (isUnk(obj)) return;
+      if (isBytearray(obj)) { this.subSet(obj, SLICEV(lo === null ? NONE : lo, hi === null ? NONE : hi, st === null ? NONE : st), v, line); if (record) this.step(line, '「' + exprSrc(t.obj) + '」の一部（スライス）を置き換えます → ' + reprVal(obj)); return; } // B6監査D13
       if (!isList(obj)) this.err(line, 'TypeError', typeName(obj) + ' にはスライスで代入できません', '');
       const ix = this.sliceIdx(obj.__list.length, lo, hi, st, line);
       const seq = this.iterable(v, line, true);
@@ -2338,7 +2681,21 @@ class Interp {
     }
     if (t.k === 'attr') {
       const obj = this.eval(t.obj, env);
-      if (obj && obj.__instance) { obj.attrs.set(t.name, v); if (record) this.step(line, 'モデルインスタンスの属性「' + t.name + '」を ' + reprVal(v) + ' にします'); return; }
+      // B7 統合時の基盤修正 F-D：ネイティブ値・ネイティブクラス・モジュールへの
+      // 属性代入。定義側に setattr があれば委譲し、無ければ保存先へ保持する
+      // （インスタンスは属性バッグ、クラス／モジュールはレジストリの上書き表）。
+      if (obj && obj.__native) {
+        const def = nativeClassDef(obj.__native);
+        const ctx = this.stdlibCtx(env, line);
+        if (def && def.setattr) { def.setattr(ctx, obj, t.name, v); }
+        else { if (!obj.__attrsBag) obj.__attrsBag = new Map(); obj.__attrsBag.set(t.name, v); }
+        if (record) this.step(line, typeName(obj) + ' の属性「' + t.name + '」を ' + reprVal(v) + ' にします');
+        return;
+      }
+      if (obj && obj.__ncls) { setClassAttrOverride(obj.__ncls, t.name, v); if (record) this.step(line, 'クラス「' + obj.__ncls + '」の属性「' + t.name + '」を ' + reprVal(v) + ' にします'); return; }
+      if (obj && obj.mod && isStdlibModule(obj.mod)) { setModuleAttrOverride(obj.mod, t.name, v); if (record) this.step(line, 'モジュール「' + obj.mod + '」の属性「' + t.name + '」を ' + reprVal(v) + ' にします'); return; }
+      // B6-Py3：__setattr__／property の setter／__set__ を発火する
+      if (obj && obj.__instance) { this.setAttrInstance(obj, t.name, v, line, env); if (record) this.step(line, 'モデルインスタンスの属性「' + t.name + '」を ' + reprVal(v) + ' にします'); return; }
       if (obj && obj.__class) { obj.cenv.vars.set(t.name, v); if (record) this.step(line, 'クラス「' + obj.cname + '」の属性「' + t.name + '」を ' + reprVal(v) + ' にします'); return; } // クラス属性は読み取りと同じ保存先へ書く（古い値を確定値として残さない）
       if (isUnk(obj)) return; // インスタンス等、対象が不明な値への代入は値も不明のままにする
       this.diag(line, 'note', '対応外', '属性（.名前）への代入はこの説明では解釈できません', '');
@@ -2348,14 +2705,41 @@ class Interp {
   }
   iterable(v, line, silent) {
     if (isUnk(v)) return null;
+    if (v && v.__native) { const d = nativeClassDef(v.__native); if (d && d.iter) { const r = d.iter(this.stdlibCtx(null, line), v); if (r !== null && r !== undefined) return r; } }
     if (isIter(v)) { const r = this.iterDrain(v); if (this.iterFailed(v)) return null; return r; }
     if (isView(v)) return viewItems(v);
     if (isList(v)) return v.__list.slice();
     if (isTuple(v)) return v.__tuple.slice();
     if (typeof v === 'string') return Array.from(v);
+    if (isBytesLike(v)) return bytesOf(v).map(x => NUM(x, false));
+    if (isMemview(v)) { if (v.__memview.released) return null; return mvBytes(v).map(x => NUM(x, false)); }
     if (isDict(v)) { const ks = []; for (const e of v.__dict.values()) ks.push(e.k); return ks; }
     if (isSet(v)) { const ord = setOrder(v); if (ord) return ord; if (this.orderFree) return v.__set.slice(); return null; } // 並び順が実行時に決まる集合は、順序に関係しない使い方でだけ展開する
     if (v && v.__range) return v.__range.slice();
+    // B6-Py3：__iter__ の戻り値を実体化する。__iter__ が無い場合は
+    // __getitem__ の整数添字プロトコル（IndexError で終了）で走査する。
+    // __iter__ が自分自身を返すイテレータ（__next__ 駆動）は実体化できない
+    // ため未確定（null）にする。
+    if (v && v.__instance) {
+      if (this.specialLookup(v, '__iter__') !== undefined) {
+        const it = this.callSpecial(v, '__iter__', line, null);
+        if (it === undefined || isUnk(it) || it === v) return null;
+        return this.iterable(it, line, true);
+      }
+      if (this.specialLookup(v, '__getitem__') !== undefined) {
+        const out = [];
+        for (let i = 0; i < 10000; i++) {
+          let item;
+          try { item = this.callSpecialArgs(v, '__getitem__', [NUM(i, false)], line, null); }
+          catch (e) { if (e instanceof SimDiag && e.kind === 'IndexError') break; throw e; }
+          if (item === undefined || isUnk(item)) return null;
+          out.push(item);
+        }
+        return out;
+      }
+      if (!silent) this.err(line, 'TypeError', typeName(v) + ' は繰り返し（for）に使えません（__iter__ も __getitem__ も定義されていません）', 'for にはリスト・文字列・range() などの「並び」を指定してください');
+      return null;
+    }
     if (!silent) this.err(line, 'TypeError', typeName(v) + ' は繰り返し（for）に使えません', 'for にはリスト・文字列・range() などの「並び」を指定してください');
     return null;
   }
@@ -2371,8 +2755,13 @@ class Interp {
     if (seq !== null) return seq;
     if (isIter(v)) return null; // 展開に失敗したイテレータは未確定
     if (isSet(v)) return null; // 並び順が決まらない集合（orderFreeOk のときは上で展開済み）
-    if (isList(v) || isTuple(v) || typeof v === 'string' || isDict(v) || isView(v) || (v && v.__range)) return null; // 展開できるはずの形（防御的に未確定）
-    if (v && v.__instance) return null; // ユーザー定義クラスの __iter__ は再現範囲外のため未確定のまま
+    if (isList(v) || isTuple(v) || typeof v === 'string' || isDict(v) || isView(v) || (v && v.__range) || isBytesLike(v) || isMemview(v)) return null; // 展開できるはずの形（防御的に未確定）
+    // B6-Py3：__iter__／__getitem__ を持つインスタンスは実体化の失敗を未確定として扱い、
+    // どちらも持たないインスタンスは確定した非イテラブルとして TypeError にする
+    if (v && v.__instance) {
+      if (this.specialLookup(v, '__iter__') !== undefined || this.specialLookup(v, '__getitem__') !== undefined) return null;
+      this.err(line, 'TypeError', typeName(v) + ' は繰り返しに使えません（イテラブルではありません）', '');
+    }
     this.err(line, 'TypeError', typeName(v) + ' は繰り返しに使えません（イテラブルではありません）', '');
   }
   // R22-N19：「*」の展開先が、確定した非イテラブル（数値・真偽値・None・
@@ -2395,10 +2784,10 @@ function targetName(t) {
 }
 
 /* ============ 式の評価 ============ */
-const PY_BUILTINS = new Set('abs all any ascii bin bool breakpoint bytearray bytes callable chr classmethod compile complex delattr dict dir divmod enumerate eval exec filter float format frozenset getattr globals hasattr hash help hex id input int isinstance issubclass iter len list locals map max memoryview min next object oct open ord pow print property range repr reversed round set setattr slice sorted staticmethod str sum super tuple type vars zip Exception BaseException ValueError TypeError KeyError IndexError ZeroDivisionError NameError AttributeError RuntimeError StopIteration AssertionError ImportError ModuleNotFoundError OSError FileNotFoundError NotImplementedError ArithmeticError LookupError OverflowError RecursionError UnicodeError EOFError KeyboardInterrupt SystemExit BaseExceptionGroup ExceptionGroup BlockingIOError BrokenPipeError BufferError BytesWarning ChildProcessError ConnectionAbortedError ConnectionError ConnectionRefusedError ConnectionResetError DeprecationWarning EncodingWarning EnvironmentError FileExistsError FloatingPointError FutureWarning GeneratorExit IOError ImportWarning IndentationError InterruptedError IsADirectoryError MemoryError NotADirectoryError PendingDeprecationWarning PermissionError ProcessLookupError ReferenceError ResourceWarning RuntimeWarning StopAsyncIteration SyntaxError SyntaxWarning SystemError TabError TimeoutError UnboundLocalError UnicodeDecodeError UnicodeEncodeError UnicodeTranslateError UnicodeWarning UserWarning Warning'.split(' '));
+const PY_BUILTINS = new Set('abs all any aiter anext ascii bin bool breakpoint bytearray bytes callable chr classmethod compile complex delattr dict dir divmod enumerate eval exec filter float format frozenset getattr globals hasattr hash help hex id input int isinstance issubclass iter len list locals map max memoryview min next object oct open ord pow print property range repr reversed round set setattr sentinel slice sorted staticmethod str sum super tuple type vars zip __import__ Exception BaseException ValueError TypeError KeyError IndexError ZeroDivisionError NameError AttributeError RuntimeError StopIteration AssertionError ImportError ModuleNotFoundError ImportCycleError OSError FileNotFoundError NotImplementedError ArithmeticError LookupError OverflowError RecursionError PythonFinalizationError UnicodeError EOFError KeyboardInterrupt SystemExit BaseExceptionGroup ExceptionGroup BlockingIOError BrokenPipeError BufferError BytesWarning ChildProcessError ConnectionAbortedError ConnectionError ConnectionRefusedError ConnectionResetError DeprecationWarning EncodingWarning EnvironmentError FileExistsError FloatingPointError FutureWarning GeneratorExit IOError ImportWarning IndentationError InterruptedError IsADirectoryError MemoryError NotADirectoryError PendingDeprecationWarning PermissionError ProcessLookupError ReferenceError ResourceWarning RuntimeWarning StopAsyncIteration SyntaxError SyntaxWarning SystemError TabError TimeoutError UnboundLocalError UnicodeDecodeError UnicodeEncodeError UnicodeTranslateError UnicodeWarning UserWarning Warning frozendict'.split(' '));
 const BUILTIN_NAMES = ['print', 'len', 'range', 'str', 'int', 'float', 'bool', 'list', 'tuple', 'dict', 'set', 'sum', 'min', 'max', 'abs', 'round', 'sorted', 'reversed', 'enumerate', 'zip', 'type', 'input', 'isinstance', 'ord', 'chr', 'divmod', 'pow', 'any', 'all', 'open'];
 BUILTIN_NAMES.push('repr', 'map', 'filter', 'hex', 'bin', 'oct', 'format', 'next', 'iter');
-const ARITY = { repr: [1, 1], map: [2, 99], filter: [2, 2], hex: [1, 1], bin: [1, 1], oct: [1, 1], format: [1, 2], print: [0, 99], len: [1, 1], range: [1, 3], str: [0, 1], int: [0, 2], float: [0, 1], bool: [0, 1], next: [1, 2], iter: [1, 1], list: [0, 1], tuple: [0, 1], set: [0, 1], dict: [0, 1], sum: [1, 2], min: [0, 99], max: [0, 99], abs: [1, 1], round: [1, 2], sorted: [1, 1], reversed: [1, 1], enumerate: [1, 2], zip: [0, 99], type: [1, 3], input: [0, 1], isinstance: [2, 2], ord: [1, 1], chr: [1, 1], divmod: [2, 2], pow: [2, 3], any: [1, 1], all: [1, 1], open: [1, 3] };
+const ARITY = { repr: [1, 1], map: [2, 99], filter: [2, 2], hex: [1, 1], bin: [1, 1], oct: [1, 1], format: [1, 2], print: [0, 99], len: [1, 1], range: [1, 3], str: [0, 1], int: [0, 2], float: [0, 1], bool: [0, 1], next: [1, 2], iter: [1, 1], list: [0, 1], tuple: [0, 1], set: [0, 1], dict: [0, 1], sum: [1, 2], min: [0, 99], max: [0, 99], abs: [1, 1], round: [1, 2], sorted: [1, 1], reversed: [1, 1], enumerate: [1, 2], zip: [0, 99], type: [1, 3], input: [0, 1], isinstance: [2, 2], ord: [1, 1], chr: [1, 1], divmod: [2, 2], pow: [2, 3], any: [1, 1], all: [1, 1], open: [1, 3], ascii: [1, 1], callable: [1, 1], delattr: [2, 2], dir: [0, 1], getattr: [2, 3], globals: [0, 0], hasattr: [2, 2], hash: [1, 1], id: [1, 1], issubclass: [2, 2], locals: [0, 0], setattr: [3, 3], vars: [0, 1], object: [0, 0], sentinel: [1, 2], aiter: [1, 1], anext: [1, 2], breakpoint: [0, 99], compile: [3, 7], eval: [1, 3], exec: [1, 3], help: [0, 1], __import__: [1, 5], bytes: [0, 3], bytearray: [0, 3], complex: [0, 2], frozenset: [0, 1], slice: [1, 3], memoryview: [1, 1], frozendict: [0, 1] };
 
 // バッチ4 Python追随＋バッチ5是正（R26-N3／N4）：except ハンドラ式の評価・検証
 // （実 CPython 3.12.3 の規則を実走で確認）。
@@ -2421,6 +2810,251 @@ const ARITY = { repr: [1, 1], map: [2, 99], filter: [2, 2], hex: [1, 1], bin: [1
 // （(5, 未定義名) でも NameError）。呼出形の引数も呼び出し前に評価される
 // （except ValueError(未定義名): は NameError）。
 // 戻り値：{ match: boolean } | { err: SimDiag }
+/* ============ 高度モード B7：標準ライブラリ差分のディスパッチ ============
+ * 以下はすべて stdlib レジストリへの登録がある場合にだけ動く追加経路。
+ * 登録が無い（簡易モード）場合は既存経路に一切影響しない。 */
+
+// モジュールのメンバー（定数・データ・関数・クラス・サブモジュール）を引く。
+// 見つからなければ undefined を返す。
+function stdlibModuleMember(mod, name, modVal) {
+  const ov = getModuleAttrOverride(mod, name);
+  if (ov !== undefined) return ov;
+  const def = STDLIB_MODULES.get(mod);
+  if (def) {
+    if (def.constants && name in def.constants) return def.constants[name];
+    if (def.data && name in def.data) return def.data[name];
+    if (def.functions && name in def.functions) return METHODREF(modVal, name);
+    if (def.classes && name in def.classes) return makeNativeClass(mod + '.' + name);
+  }
+  if (isStdlibModule(mod + '.' + name)) { const sv = UNK('モジュール「' + mod + '.' + name + '」の内容'); sv.mod = mod + '.' + name; return sv; }
+  return undefined;
+}
+
+// 標準ライブラリ実装関数へ渡す実行コンテキスト。
+Interp.prototype.stdlibCtx = function (env, line) {
+  const self = this;
+  const e = env || this.globals;
+  return {
+    V: { NUM, BOOL, NONE, LIST, TUPLE, DICT, SET, RANGE, ITER, UNK },
+    isNum, isBool, isNone, isList, isTuple, isDict, isSet, isUnk, isFunc,
+    isNative: (v) => !!v && !!v.__native,
+    isNativeClass: (v) => !!v && !!v.__ncls,
+    num: (v) => isNum(v) ? v.v : isBool(v) ? (v.v ? 1 : 0) : null,
+    int: (v) => { const n = isNum(v) ? v.v : isBool(v) ? (v.v ? 1 : 0) : null; return n === null ? null : Math.trunc(n); },
+    str: (v) => typeof v === 'string' ? v : null,
+    listOf: (v) => isList(v) ? v.__list : isTuple(v) ? v.__tuple : (v && v.__range) ? v.__range : null,
+    repr: (v) => reprVal(v), strOf: (v) => strVal(v), typeName: (v) => typeName(v),
+    truthy: (v) => v === undefined ? null : self.truthyOf(v, line, e),
+    eq: (a, b) => eqVal(a, b),
+    err: (kind, msg, fix) => self.err(line, kind, msg, fix || '', msg, pyStrRepr(msg)),
+    errAttrs: (kind, msg, attrs, fix) => self.err(line, kind, msg, fix || '', msg, pyStrRepr(msg), attrs),
+    emit: (text) => self.emitRaw(String(text), line),
+    callKw: (fn, args, kwargs) => {
+      const kw = kwargs || {};
+      if (fn && fn.__builtin) return self.callBuiltin(fn.__builtin, args || [], kw, e, line, null);
+      if (fn && fn.__method) return self.callMethod(fn.obj, fn.name, args || [], kw, e, line);
+      if (fn && fn.__class) return self.instantiate(fn, args || [], kw, e, line);
+      if (fn && fn.__ncls) return self.stdlibConstruct(fn, args || [], kw, e, line);
+      if (fn && fn.__native) { const d = nativeClassDef(fn.__native); if (d && d.call) return d.call(self.stdlibCtx(e, line), fn, args || [], kw); self.err(line, 'TypeError', typeName(fn) + ' は呼び出し（ ）ができません', ''); }
+      if (isFunc(fn)) return self.callUserFunc(fn, args || [], kw, e, line);
+      return self.callFn(fn, args || [], e, line);
+    },
+    diag: (text) => self.diag(line, 'note', 'note', text, ''),
+    step: (text) => self.step(line, text),
+    unk: (desc) => UNK(desc),
+    call: (fn, args) => self.callFn(fn, args || [], e, line),
+    iterable: (v) => self.iterable(v, line, true),
+    binop: (op, a, b) => self.binOp(op, a, b, line),
+    compare: (op, a, b) => self.compare(op, a, b, line),
+    native: (q, data) => makeNative(q, data),
+    ncls: (q) => makeNativeClass(q),
+    NOT_HANDLED: STDLIB_NOT_HANDLED,
+  };
+};
+
+// import 文の汎用経路。対象が登録済みモジュールでなければ false を返し、
+// 呼び出し側は従来経路（math のみ・それ以外は未対応）へ進む。
+Interp.prototype.tryStdlibImport = function (t, env, line) {
+  let m = /^import\s+(.+)$/.exec(t);
+  if (m) {
+    const parsed = m[1].split(',').map(x => x.trim()).filter(Boolean).map(p => { const q = p.split(/\s+as\s+/); return { mod: q[0].trim(), alias: (q[1] || '').trim() }; });
+    if (!parsed.length || !parsed.every(p => /^[\w.]+$/.test(p.mod) && isStdlibModule(p.mod))) return false;
+    for (const p of parsed) {
+      const top = p.mod.split('.')[0];
+      // B7 統合時の基盤修正 F-A：別名つきの dotted import（import a.b.c as x）は
+      // CPython どおり a.b.c モジュール自体を別名に束縛する（.mod は完全名）。
+      // 別名なしの場合は最上位モジュールを束縛し、属性経由でサブモジュールへ
+      // 辿る（stdlibModuleMember がサブモジュールを解決する）。
+      const bindName = p.alias || top;
+      const mv = UNK('モジュール「' + (p.alias ? p.mod : top) + '」の内容'); mv.mod = p.alias ? p.mod : top;
+      env.set(bindName, mv);
+      this.diag(line, 'note', 'import', p.mod + ' モジュールを読み込み、名前「' + bindName + '」で使えるようにします。高度モードで実装済みの項目はその意味論で計算し、未対応・未検証の項目は正直に停止します', '');
+    }
+    return true;
+  }
+  m = /^from\s+([\w.]+)\s+import\s+\(?(.+?)\)?\s*$/.exec(t);
+  if (m) {
+    const mod = m[1];
+    if (!isStdlibModule(mod)) return false;
+    const def = STDLIB_MODULES.get(mod);
+    const modVal = UNK('モジュール「' + mod + '」の内容'); modVal.mod = mod;
+    const parts = m[2].split(',').map(x => x.trim()).filter(Boolean);
+    const bindOne = (orig, alias) => {
+      const v = stdlibModuleMember(mod, orig, modVal);
+      if (v === undefined) this.err(line, 'ImportError', mod + ' モジュールから「' + orig + '」は import できません（' + mod + ' にその名前はありません）', 'import する名前の綴りを確認してください（実在する名前だけが取り込めます）');
+      env.set(alias, v);
+    };
+    if (parts.some(p => p.split(/\s+as\s+/)[0].trim() === '*')) {
+      const names = def ? [...Object.keys(def.constants || {}), ...Object.keys(def.data || {}), ...Object.keys(def.functions || {}), ...Object.keys(def.classes || {})].filter(n => !n.startsWith('_')) : [];
+      for (const n of [...new Set(names)]) bindOne(n, n);
+      this.diag(line, 'note', 'import', mod + ' モジュールの公開名を全て取り込み、それぞれの名前で使えるようにします', '');
+    } else {
+      for (const part of parts) { const p = part.split(/\s+as\s+/); const orig = p[0].trim(); if (!orig) continue; bindOne(orig, (p[1] || p[0]).trim()); }
+      this.diag(line, 'note', 'import', mod + ' モジュールから指定された名前を取り込み、束縛します。高度モードで実装済みの項目はその意味論で計算します', '');
+    }
+    return true;
+  }
+  return false;
+};
+
+Interp.prototype.stdlibModuleAttr = function (modVal, name, line) {
+  const v = stdlibModuleMember(modVal.mod, name, modVal);
+  if (v !== undefined) return v;
+  this.err(line, 'AttributeError', 'モジュール「' + modVal.mod + '」には属性「' + name + '」はありません', '綴りを確認するか、リファレンスで使える名前を確認してください');
+  return UNK();
+};
+
+Interp.prototype.stdlibKwargs = function (kwargs, env) {
+  // 冪等：AST ノード（k プロパティを持ち、エンジン値のタグを持たないもの）だけを
+  // 評価し、評価済みのエンジン値はそのまま通す。stdlibModuleCall が評価済み
+  // kwargs を stdlibConstruct へ渡しても二重評価にならないための措置
+  // （B7 統合時の基盤修正 F-C）。
+  const kw = {};
+  for (const k of Object.keys(kwargs || {})) {
+    const v = kwargs[k];
+    if (v && typeof v === 'object' && v.k === '__val') { kw[k] = v.v; continue; }
+    if (v && typeof v === 'object' && typeof v.k === 'string' && !Object.keys(v).some(x => x.startsWith('__'))) { kw[k] = this.eval(v, env); continue; }
+    kw[k] = v;
+  }
+  return kw;
+};
+
+Interp.prototype.stdlibModuleCall = function (mod, name, args, kwargs, env, line) {
+  kwargs = this.stdlibKwargs(kwargs, env);
+  const def = STDLIB_MODULES.get(mod);
+  if (def && def.functions && name in def.functions) return def.functions[name](this.stdlibCtx(env, line), args, kwargs || {});
+  if (def && def.classes && name in def.classes) return this.stdlibConstruct(makeNativeClass(mod + '.' + name), args, kwargs, env, line);
+  if (def && ((def.constants && name in def.constants) || (def.data && name in def.data))) this.err(line, 'TypeError', 'モジュール「' + mod + '」の「' + name + '」は値（定数）なので呼び出せません', '');
+  if (isStdlibModule(mod + '.' + name)) this.err(line, 'TypeError', 'モジュール「' + mod + '.' + name + '」は呼び出せません', '');
+  this.err(line, 'AttributeError', 'モジュール「' + mod + '」には属性「' + name + '」はありません', '綴りを確認するか、リファレンスで使える名前を確認してください');
+  return UNK();
+};
+
+Interp.prototype.stdlibNativeAttr = function (obj, name, env, line) {
+  const def = nativeClassDef(obj.__native);
+  if (!def) return UNK('属性「' + name + '」の値');
+  const ctx = this.stdlibCtx(env, line);
+  // 高度A7班是正: attrs の値が getter 関数でない（生値が置かれた）場合は
+  // 値そのものとして返す。以前は関数として呼んで TypeError になり、
+  // シミュレーション全体が落ちた（http.cookiejar.CookiePolicy の例）。
+  if (def.attrs && name in def.attrs) return typeof def.attrs[name] === 'function' ? def.attrs[name](ctx, obj) : def.attrs[name];
+  // B7 統合時の基盤修正 F-D：実行時に代入されたインスタンス属性（属性バッグ）。
+  // CPython の属性解決に倣い、通常メソッドより先に見る。
+  if (obj.__attrsBag && obj.__attrsBag.has(name)) return obj.__attrsBag.get(name);
+  if (def.methods && name in def.methods) return METHODREF(obj, name);
+  // F-J：インスタンス経由でもクラスメソッド・クラス属性へ到達できる。
+  if (def.classMethods && name in def.classMethods) return METHODREF(obj, name);
+  if (def.classAttrs && name in def.classAttrs) { const cv = def.classAttrs[name]; return typeof cv === 'function' ? cv(ctx) : cv; }
+  // F-E：動的属性のフォールバック（mock の子モック自動生成等）。
+  if (def.attrFallback) { const r = def.attrFallback(ctx, obj, name); if (r !== undefined) return r; }
+  this.err(line, 'AttributeError', typeName(obj) + ' オブジェクトには属性「' + name + '」がありません', '綴りを確認するか、リファレンスで使える名前を確認してください');
+  return UNK();
+};
+
+Interp.prototype.stdlibClassAttr = function (clsVal, name, env, line) {
+  const ov = getClassAttrOverride(clsVal.__ncls, name);
+  if (ov !== undefined) return ov;
+  const def = nativeClassDef(clsVal.__ncls);
+  if (!def) return UNK('属性「' + name + '」の値');
+  const ctx = this.stdlibCtx(env, line);
+  if (def.classAttrs && name in def.classAttrs) { const cv = def.classAttrs[name]; return typeof cv === 'function' ? cv(ctx) : cv; }
+  // 高度A7班是正：__name__／__qualname__／__module__ は CPython では全ての
+  // クラスで読める基本属性。登録 def に無くても限定名から合成して返す
+  // （従来は AttributeError になり、type(x).__name__ が標準ライブラリの
+  // クラスで常に失敗していた）。
+  if (name === '__name__' || name === '__qualname__') return clsVal.__ncls.split('.').pop();
+  if (name === '__module__') { const i = clsVal.__ncls.lastIndexOf('.'); return i > 0 ? clsVal.__ncls.slice(0, i) : 'builtins'; }
+  if (def.classMethods && name in def.classMethods) return METHODREF(clsVal, name);
+  if (def.methods && name in def.methods) return METHODREF(clsVal, name);
+  this.err(line, 'AttributeError', 'クラス「' + (def.typeName || clsVal.__ncls) + '」には属性「' + name + '」がありません', '綴りを確認するか、リファレンスで使える名前を確認してください');
+  return UNK();
+};
+
+Interp.prototype.stdlibNativeCall = function (obj, name, args, kwargs, env, line) {
+  kwargs = this.stdlibKwargs(kwargs, env);
+  const def = nativeClassDef(obj.__native);
+  if (def && def.methods && name in def.methods) { this.noteCall(obj.__native + '.' + name, 'method'); return def.methods[name](this.stdlibCtx(env, line), obj, args, kwargs || {}); }
+  if (def && def.attrs && name in def.attrs) { const av = typeof def.attrs[name] === 'function' ? def.attrs[name](this.stdlibCtx(env, line), obj) : def.attrs[name]; return this.callFn(av, args, env, line); }
+  this.err(line, 'AttributeError', typeName(obj) + ' オブジェクトには属性「' + name + '」がありません', '綴りを確認するか、リファレンスで使える名前を確認してください');
+  return UNK();
+};
+
+Interp.prototype.stdlibClassCall = function (clsVal, name, args, kwargs, env, line) {
+  kwargs = this.stdlibKwargs(kwargs, env);
+  const def = nativeClassDef(clsVal.__ncls);
+  if (def && def.classMethods && name in def.classMethods) { this.noteCall(clsVal.__ncls + '.' + name, 'method'); return def.classMethods[name](this.stdlibCtx(env, line), args, kwargs || {}); }
+  this.err(line, 'AttributeError', 'クラス「' + (def && def.typeName ? def.typeName : clsVal.__ncls) + '」には属性「' + name + '」がありません', '綴りを確認するか、リファレンスで使える名前を確認してください');
+  return UNK();
+};
+
+Interp.prototype.stdlibConstruct = function (clsVal, args, kwargs, env, line) {
+  kwargs = this.stdlibKwargs(kwargs, env);
+  const def = nativeClassDef(clsVal.__ncls);
+  if (!def) { this.diag(line, 'note', '対応外', 'クラス「' + clsVal.__ncls + '」の生成はこの説明では解釈できません', ''); return UNK(); }
+  this.noteCall(clsVal.__ncls, 'func');
+  if (def.exc) {
+    let text = '', argRepr = '';
+    if (args.length === 1 && !isUnk(args[0])) { text = strVal(args[0]); argRepr = reprVal(args[0]); }
+    else if (args.length > 1 && args.every(a => !isUnk(a))) { text = strVal(TUPLE(args)); argRepr = args.map(a => reprVal(a)).join(', '); }
+    return EXC(def.exc, text, argRepr);
+  }
+  if (def.construct) return def.construct(this.stdlibCtx(env, line), args, kwargs || {});
+  this.diag(line, 'note', '対応外', 'クラス「' + clsVal.__ncls + '」の生成はこの説明では解釈できません', '');
+  return UNK();
+};
+
+Interp.prototype.stdlibBinOp = function (op, l, r, line) {
+  const ctx = this.stdlibCtx(null, line);
+  if (l && l.__native) { const d = nativeClassDef(l.__native); if (d && d.binop) { const res = d.binop(ctx, l, op, r, false); if (res !== STDLIB_NOT_HANDLED) return res; } }
+  if (r && r.__native) { const d = nativeClassDef(r.__native); if (d && d.binop) { const res = d.binop(ctx, r, op, l, true); if (res !== STDLIB_NOT_HANDLED) return res; } }
+  return STDLIB_NOT_HANDLED;
+};
+
+Interp.prototype.stdlibCompare = function (op, l, r, line) {
+  const ctx = this.stdlibCtx(null, line);
+  if (op === 'in' || op === 'not in') {
+    if (r && r.__native) { const d = nativeClassDef(r.__native); if (d && d.contains) { const res = d.contains(ctx, r, l); if (res !== null && res !== undefined) return BOOL(op === 'in' ? res : !res); return UNK(); } }
+    return STDLIB_NOT_HANDLED;
+  }
+  if (op === '==' || op === '!=') return STDLIB_NOT_HANDLED; // 等しさは eqVal が担う
+  const flip = { '<': '>', '<=': '>=', '>': '<', '>=': '<=' }[op];
+  if (!flip) return STDLIB_NOT_HANDLED;
+  if (l && l.__native) { const d = nativeClassDef(l.__native); if (d && d.compare) { const res = d.compare(ctx, l, op, r); if (res !== null && res !== undefined) return BOOL(res); } }
+  if (r && r.__native) { const d = nativeClassDef(r.__native); if (d && d.compare) { const res = d.compare(ctx, r, flip, l); if (res !== null && res !== undefined) return BOOL(res); } }
+  return STDLIB_NOT_HANDLED;
+};
+
+// 送出された例外種別 raised が、ハンドラ種別 handler にマッチするか。
+// 標準ライブラリ例外の祖先（STDLIB_EXCEPTIONS）と組み込み階層の両方を見る。
+Interp.prototype.stdlibExcMatches = function (raised, handler) {
+  if (raised === handler) return true;
+  const anc = stdlibExceptionAncestors(raised);
+  if (anc.has(handler)) return true;
+  for (const a of anc) if (EXC_NAMES.has(a) && excMatches(a, handler)) return true;
+  if (EXC_NAMES.has(raised) && excMatches(raised, handler)) return true;
+  return false;
+};
+
 Interp.prototype.resolveExceptHandler = function (hh, env, kind) {
   const line = hh.line;
   const typeErr = (what) => new SimDiag(line, 'TypeError', 'except で捕捉できるのは例外クラス（BaseException を継承したクラス）かそのタプルだけです（' + what + 'は例外クラスではありません）', 'except には例外クラスの名前か、例外クラスを要素とするタプルを書いてください');
@@ -2433,8 +3067,14 @@ Interp.prototype.resolveExceptHandler = function (hh, env, kind) {
     if (isUnk(v)) { if (v.mod) noteBad('モジュール「' + v.mod + '」'); return; } // モジュールは確定して例外クラスではない。それ以外の未確定値は判定できない
     if (v && v.__handlerInstance) { noteBad(desc + 'の値（クラスのインスタンス）'); return; }
     if (v && v.__builtin) {
-      if (EXC_NAMES.has(v.__builtin)) { if (excMatches(kind, v.__builtin)) matched = true; }
+      if (EXC_NAMES.has(v.__builtin)) { if (excMatches(kind, v.__builtin) || this.stdlibExcMatches(kind, v.__builtin)) matched = true; }
       else noteBad('「' + v.__builtin + '」');
+      return;
+    }
+    if (v && v.__ncls) {
+      const nd = nativeClassDef(v.__ncls);
+      if (nd && nd.exc) { if (this.stdlibExcMatches(kind, nd.exc)) matched = true; }
+      else noteBad(desc + 'の値（クラス「' + v.__ncls + '」）');
       return;
     }
     // 例外クラスそのものではない確定値（通常クラス・type() の結果・例外のインスタンス・数値・関数など）
@@ -2457,7 +3097,7 @@ Interp.prototype.resolveExceptHandler = function (hh, env, kind) {
     const fnV = this.eval(node.fn, env);
     const args = this.evalArgs(node, env);
     if (args === null) return UNK('呼び出しの結果'); // * 展開の対象が実行時に決まる場合は判定できない
-    const classLike = !!fnV && (!!fnV.__class || !!fnV.__type || !!fnV.__union || (!!fnV.__builtin && (EXC_NAMES.has(fnV.__builtin) || TYPE_BUILTINS.includes(fnV.__builtin))));
+    const classLike = !!fnV && (!!fnV.__class || !!fnV.__type || !!fnV.__union || !!fnV.__ncls || (!!fnV.__builtin && (EXC_NAMES.has(fnV.__builtin) || TYPE_BUILTINS.includes(fnV.__builtin))));
     if (classLike) {
       for (const k of Object.keys(node.kwargs || {})) this.eval(node.kwargs[k], env); // キーワード引数も呼び出し前に評価される
       return { __handlerInstance: true };
@@ -2512,8 +3152,8 @@ Interp.prototype.eval = function (n, env) {
     case 'bool': return BOOL(n.v);
     case 'none': return NONE;
     case 'ellipsis': return ELLIPSIS;
-    case 'byteslit': return UNK('バイト列（bytes）');
-    case 'cxlit': return UNK('複素数');
+    case 'byteslit': return BYTESV((n.v || []).slice());
+    case 'cxlit': return CXV(0, n.v);
     case 'walrus': { if (n.name === '__debug__') this.err(n.line, 'SyntaxError', '「__debug__」には代入できません（cannot assign to __debug__）', '__debug__ は Python が決める組み込み定数です'); const v = this.eval(n.e, env); this.assignTo({ k: 'name', name: n.name, line: n.line }, v, env, n.line, false); return v; }
     case 'name': {
       const v = env.get(n.name);
@@ -2531,9 +3171,25 @@ Interp.prototype.eval = function (n, env) {
         const v = this.eval(p.e, env);
         if (p.doc) out += p.doc;
         if (isUnk(v) || isIter(v)) { hasUnk = true; out += '（実行時に決まる値）'; continue; }
+        // B6-Py3：インスタンスは __format__／__str__／__repr__ を発火する
+        if (v && v.__instance) {
+          if (this.specialLookup(v, '__format__') !== undefined && !p.conv) {
+            const fr = this.callSpecialArgs(v, '__format__', [p.fmt || ''], n.line, env);
+            if (isUnk(fr)) { hasUnk = true; out += '（実行時に決まる値）'; continue; }
+            if (typeof fr !== 'string') this.err(n.line, 'TypeError', '__format__ は文字列を返す必要があります', '__format__ は文字列を返してください');
+            out += fr; continue;
+          }
+          const bv = (p.conv === 'r' || p.conv === 'a' || (p.doc && !p.fmt && !p.conv)) ? this.reprValueOf(v, n.line, env) : this.strValueOf(v, n.line, env);
+          if (isUnk(bv)) { hasUnk = true; out += '（実行時に決まる値）'; continue; }
+          if (p.fmt) this.err(n.line, 'TypeError', 'このオブジェクトには書式指定は使えません（unsupported format string passed to ' + typeName(v) + '.__format__）', '__format__ を定義するか、書式指定なしで使ってください');
+          out += p.conv === 'a' ? asciiEsc(bv) : bv;
+          continue;
+        }
         let base = v;
         if (p.conv === 'r' || p.conv === 'a' || (p.doc && !p.fmt && !p.conv)) base = reprVal(v);
         else if (p.conv === 's') base = strVal(v);
+        // B7 統合時の基盤修正 F-H：ネイティブ値＋書式指定は def.format へ委譲する。
+        if (p.fmt && base && base.__native) { const d = nativeClassDef(base.__native); if (d && d.format) { const fr = d.format(this.stdlibCtx(env, n.line), base, p.fmt); if (typeof fr === 'string') { out += fr; continue; } } }
         const fs = fmtSpec(base, p.fmt);
         // R30F01B-N3（バッチ9 N28）：f文字列側でも、不正な書式指定は
         // 実 CPython どおり ValueError／TypeError で停止する（正当だが
@@ -2553,7 +3209,7 @@ Interp.prototype.eval = function (n, env) {
       return LIST(arr);
     }
     case 'tuple': { const arr = []; for (const it of n.items) { if (it.e && it.e.k === 'star') { const seq = this.unpackSeq(this.eval(it.e.e, env), n.line); if (seq === null) return UNK(); arr.push(...seq); } else arr.push(this.eval(it.e, env)); } return TUPLE(arr); }
-    case 'set': { const arr = []; for (const it of n.items) { let vs; if (it.e && it.e.k === 'star') { const sv = this.eval(it.e.e, env); this.checkUnpackable(sv, n.line); const prev = this.orderFree; this.orderFree = true; vs = this.iterable(sv, n.line); this.orderFree = prev; if (vs === null) return UNK(); } else vs = [this.eval(it.e, env)]; for (const v of vs) { this.needHash(v, n.line); if (isUnk(v)) return UNK(); if (!arr.some(x => eqVal(x, v) === true)) arr.push(v); } } return SET(arr); }
+    case 'set': { const arr = []; for (const it of n.items) { let vs; if (it.e && it.e.k === 'star') { const sv = this.eval(it.e.e, env); this.checkUnpackable(sv, n.line); const prev = this.orderFree; this.orderFree = true; vs = this.iterable(sv, n.line); this.orderFree = prev; if (vs === null) return UNK(); } else vs = [this.eval(it.e, env)]; for (const v of vs) { this.needHash(v, n.line); if (isUnk(v)) return UNK(); if (!arr.some(x => this.eqByVal(x, v, n.line))) arr.push(v); } } return SET(arr); }
     case 'dict': {
       const d = DICT();
       for (const p of n.pairs) { if (p.dstar) { const dv = this.eval(p.dstar, env); if (isUnk(dv)) return UNK(); if (!isDict(dv)) this.err(n.line, 'TypeError', '** のあとには辞書を書いてください', ''); for (const e of dv.__dict.values()) dictSet(d, e.k, e.v); continue; } const k = this.eval(p.k, env); const v = this.eval(p.v, env); if (!isUnk(k) && !dictSet(d, k, v)) this.err(n.line, 'TypeError', '辞書のキーにできない型です（' + typeName(k) + '）', 'キーには文字列や数値を使ってください'); if (isUnk(k)) return UNK(); }
@@ -2563,10 +3219,28 @@ Interp.prototype.eval = function (n, env) {
       const v = this.eval(n.e, env);
       if (n.op === 'not') { const t = this.truthyOf(v, n.line, env); return t === null ? {...UNK(),symbolic:{kind:'unknown',op:'not',a:symbolic(v)}} : BOOL(!t); }
       if (isUnk(v)) return UNK();
+      if (isComplex(v)) { if (n.op === '-') return CXV(-v.__complex.re, -v.__complex.im); if (n.op === '+') return v; this.err(n.line, 'TypeError', '複素数には ~（ビット反転）は使えません', ''); }
       if (isBool(v)) { const nv = v.v ? 1 : 0; return NUM(n.op === '-' ? -nv : n.op === '+' ? nv : ~nv, false); }
       if (isNum(v)) {
         if (n.op === '~') { if (v.f) this.err(n.line, 'TypeError', '小数には ~（ビット反転）は使えません', '整数に対して使ってください'); const tv = Math.trunc(v.v); return NUM(Math.abs(tv) < 2147483648 ? ~tv : Number(~BigInt(tv)), false); }
         return n.op === '-' ? NUM(-v.v, v.f) : v;
+      }
+      // B7 統合時の基盤修正 F-G：ネイティブ値への単項演算の委譲。
+      // def.unary があれば使い、無ければ符号反転のみ 0 - v（反射 binop）で試す。
+      if (v && v.__native) {
+        const d = nativeClassDef(v.__native);
+        const ctx = this.stdlibCtx(env, n.line);
+        if (d && d.unary) { const r = d.unary(ctx, v, n.op); if (r !== STDLIB_NOT_HANDLED && r !== undefined) return r; }
+        if (n.op === '-') {
+          try { const r = this.binOp('-', NUM(0, false), v, n.line); if (!isUnk(r)) return r; } catch (e) { if (!(e instanceof SimDiag)) throw e; }
+        }
+        this.err(n.line, 'TypeError', typeName(v) + ' には符号（' + n.op + '）を付けられません', '数値に対して使ってください');
+      }
+      // B6-Py3：__neg__／__pos__／__invert__ を発火する
+      if (v && v.__instance) {
+        const unMap = { '-': '__neg__', '+': '__pos__', '~': '__invert__' };
+        const unName = unMap[n.op];
+        if (unName && this.specialLookup(v, unName) !== undefined) return this.callSpecial(v, unName, n.line, env);
       }
       this.err(n.line, 'TypeError', typeName(v) + ' には符号（' + n.op + '）を付けられません', '数値に対して使ってください');
       return UNK();
@@ -2621,13 +3295,25 @@ Interp.prototype.eval = function (n, env) {
     }
     case 'attr': {
       const obj = this.eval(n.obj, env);
-      if (obj && obj.__instance) {
-        if (obj.attrs.has(n.name)) return obj.attrs.get(n.name);
-        const classValue = classLookup(obj.cls, n.name);
-        if (classValue !== undefined) {
-          return isFunc(classValue) ? { __bound: true, fn: classValue, instance: obj } : classValue;
+      // B6-Py3：super プロキシ／property オブジェクトの属性
+      if (isSuper(obj)) return this.getAttrSuper(obj, n.name, n.line, env);
+      if (isProp(obj)) {
+        if (n.name === 'fget') return obj.fget || NONE;
+        if (n.name === 'fset') return obj.fset || NONE;
+        if (n.name === 'fdel') return obj.fdel || NONE;
+        if (n.name === '__name__') {
+          if (obj.fget && isFunc(obj.fget)) return obj.fget.def.name;
+          this.err(n.line, 'AttributeError', 'この property には __name__ がありません（getter がありません）', '');
         }
-        this.err(n.line, 'AttributeError', '属性がありません：' + n.name, '');
+        if (n.name === 'getter' || n.name === 'setter' || n.name === 'deleter') return PROPMOD(obj, n.name);
+        this.err(n.line, 'AttributeError', 'property には属性「' + n.name + '」がありません', '');
+      }
+      if (obj && obj.__instance) return this.getAttrInstance(obj, n.name, n.line, env);
+      // B6-Py3：object.__new__／__getattribute__／__setattr__ の組み込み相当
+      if (obj && ((obj.__builtin === 'object') || (obj.__type === 'object'))) {
+        if (n.name === '__new__') return OBJNEW(null);
+        if (n.name === '__getattribute__') return OBJGA;
+        if (n.name === '__setattr__') return OBJSA;
       }
       if (obj && obj.__type && (n.name === '__name__' || n.name === '__qualname__')) return obj.__type;
       if (isFunc(obj) && n.name === '__annotations__') {
@@ -2638,6 +3324,7 @@ Interp.prototype.eval = function (n, env) {
         return d;
       }
       if (isUnk(obj) && obj.mod === 'math' && n.name in MATH_CONST) return NUM(MATH_CONST[n.name], true);
+      if (isUnk(obj) && obj.mod && isStdlibModule(obj.mod)) return this.stdlibModuleAttr(obj, n.name, n.line);
       if (isUnk(obj)) return UNK();
       if (isNone(obj)) this.err(n.line, 'AttributeError', 'None には属性「' + n.name + '」がありません（値が None になっていないか確認してください）', 'return を書き忘れた関数の戻り値などで None になっていないか確認してください');
       if (isNum(obj) && (n.name === 'real' || n.name === 'imag')) return n.name === 'real' ? obj : NUM(0, obj.f);
@@ -2650,9 +3337,42 @@ Interp.prototype.eval = function (n, env) {
       if (isBool(obj) && n.name === 'numerator') return NUM(obj.v ? 1 : 0, false);
       if (isBool(obj) && n.name === 'denominator') return NUM(1, false);
       if (obj && obj.__range && obj.rng && (n.name === 'start' || n.name === 'stop' || n.name === 'step')) return NUM(obj.rng[n.name === 'start' ? 0 : n.name === 'stop' ? 1 : 2], false);
-      if (obj && obj.__class) { const cv = classLookup(obj, n.name); if (cv !== undefined) return cv; return UNK('クラス属性「' + n.name + '」の値'); }
+      // 統合第2弾の合成裁定：基礎の単純な classLookup 行は、B6 が
+      // getAttrClass（ディスクリプタ／classmethod／super 等の完全な
+      // 属性解決）へ置き換えたため、B7 側に残っていた同行は置かない
+      // （残すと全てのクラス属性アクセスを横取りし、B6 の機構が
+      // 影になる）。B7 の例外属性・ネイティブ属性の各行は値の族が
+      // 互いに素なため、getAttrClass より前に置いて共存させる。
+      if (obj && obj.__exc && obj.excAttrs && n.name in obj.excAttrs) return obj.excAttrs[n.name];
+      if (obj && obj.__native) return this.stdlibNativeAttr(obj, n.name, env, n.line);
+      if (obj && obj.__ncls) return this.stdlibClassAttr(obj, n.name, env, n.line);
+      if (isComplex(obj) && (n.name === 'real' || n.name === 'imag')) return NUM(n.name === 'real' ? obj.__complex.re : obj.__complex.im, true);
+      if (isSlice(obj)) { if (n.name === 'start') return obj.__slice.start; if (n.name === 'stop') return obj.__slice.stop; if (n.name === 'step') return obj.__slice.step; }
+      if (isMemview(obj)) {
+        const mv = obj.__memview;
+        if (mv.released) this.err(n.line, 'ValueError', '解放済み（release 済み）の memoryview は使えません（operation forbidden on released memoryview object）', '');
+        if (n.name === 'obj') return mv.obj;
+        if (n.name === 'nbytes') return NUM(mv.len, false);
+        if (n.name === 'readonly') return BOOL(mv.readonly);
+        if (n.name === 'format') return 'B';
+        if (n.name === 'itemsize') return NUM(1, false);
+        if (n.name === 'ndim') return NUM(1, false);
+        if (n.name === 'shape') return TUPLE([NUM(mv.len, false)]);
+        if (n.name === 'strides') return TUPLE([NUM(1, false)]);
+        if (n.name === 'suboffsets') return TUPLE([]);
+        if (n.name === 'c_contiguous' || n.name === 'f_contiguous' || n.name === 'contiguous') return BOOL(true);
+      }
+      { // 型そのものへのクラスメソッド参照（int.from_bytes 等を値として取り出す形）
+        const tname = obj && obj.__type ? obj.__type : obj && obj.__builtin && TYPE_BUILTINS.includes(obj.__builtin) ? obj.__builtin : null;
+        if (tname && ['from_bytes', 'fromhex', 'from_number', 'fromkeys', 'maketrans'].includes(n.name)) return METHODREF(obj, n.name);
+      }
+      if (obj && obj.__class) return this.getAttrClass(obj, n.name, n.line, env);
+      // B6-Py3：__class__ はあらゆる値でその型を返す
+      if (n.name === '__class__' && obj !== undefined && !isUnk(obj)) return TYPEVAL(typeName(obj));
+      // B6監査D12：__annotate__ は未検証（注釈の遅延評価の意味論を確定できない）
+      if (n.name === '__annotate__' && (isFunc(obj) || (obj && obj.__class) || (obj && obj.__instance))) this.err(n.line, '未検証', 'object.__annotate__（注釈の遅延評価）は意味論が未検証のため、この説明では値を返しません', '');
       { const tn = typeName(obj); if (TYPE_ATTRS[tn] && !TYPE_ATTRS[tn].has(n.name)) this.err(n.line, 'AttributeError', tn + ' には属性「' + n.name + '」はありません', '綴りを確認するか、リファレンスで使える名前を確認してください'); }
-      { const tn = typeName(obj); if (TYPE_ATTRS[tn] && TYPE_ATTRS[tn].has(n.name) && (typeof obj === 'string' || isList(obj) || isDict(obj) || isSet(obj) || isTuple(obj) || (obj && obj.__range) || isNum(obj) || isBool(obj))) return METHODREF(obj, n.name); }
+      { const tn = typeName(obj); if (TYPE_ATTRS[tn] && TYPE_ATTRS[tn].has(n.name) && (typeof obj === 'string' || isList(obj) || isDict(obj) || isSet(obj) || isTuple(obj) || (obj && obj.__range) || isNum(obj) || isBool(obj) || isBytesLike(obj) || isComplex(obj) || isSlice(obj) || isMemview(obj))) return METHODREF(obj, n.name); }
       return UNK('属性「' + n.name + '」の値');
     }
     case 'call': return this.evalCall(n, env);
@@ -2668,6 +3388,30 @@ Interp.prototype.eval = function (n, env) {
 const INPLACE_DONE = { __inplace: true };
 // 複合代入（+= など）：リスト・集合・辞書の一部は CPython では同じオブジェクトを書き換える（別名にも反映される）
 Interp.prototype.binOpInPlace = function (op, cur, rhs, line) {
+  // B6-Py3：__iadd__ 等の in-place 特殊メソッドを発火する
+  // （NotImplemented のときは通常の二項演算へフォールバックする）
+  if (cur && cur.__instance) {
+    const IMAP = { '+': '__iadd__', '-': '__isub__', '*': '__imul__', '@': '__imatmul__', '/': '__itruediv__', '//': '__ifloordiv__', '%': '__imod__', '**': '__ipow__', '<<': '__ilshift__', '>>': '__irshift__', '&': '__iand__', '^': '__ixor__', '|': '__ior__' };
+    const inm = IMAP[op];
+    if (inm && this.specialLookup(cur, inm) !== undefined) {
+      const res = this.callSpecialArgs(cur, inm, [rhs], line, null);
+      if (res !== undefined && !isNotImplemented(res)) return res;
+      return this.binOp(op, cur, rhs, line);
+    }
+  }
+  if (isBytearray(cur) && op === '+') {
+    const seq = isBytesLike(rhs) ? bytesOf(rhs) : isMemview(rhs) ? mvBytes(rhs) : null;
+    if (seq === null) { if (!isUnk(rhs)) this.err(line, 'TypeError', 'bytearray に足せるのは bytes のような並びだけです', ''); poison(cur, '書き換えられたかもしれない bytearray'); return INPLACE_DONE; }
+    for (const x of seq) cur.__bytearray.push(x);
+    return INPLACE_DONE;
+  }
+  if (isBytearray(cur) && op === '*') {
+    if (!isNum(rhs) || rhs.f) this.err(line, 'TypeError', 'bytearray の繰り返し回数には整数を使ってください', '');
+    const n = Math.trunc(rhs.v); const orig = cur.__bytearray.slice();
+    cur.__bytearray.length = 0;
+    if (n > 0) for (let k = 0; k < n; k++) for (const x of orig) cur.__bytearray.push(x);
+    return INPLACE_DONE;
+  }
   if (isList(cur) && (op === '+' || op === '*')) {
     if (op === '+') {
       const seq = this.iterable(rhs, line, true);
@@ -2697,7 +3441,9 @@ Interp.prototype.binOpInPlace = function (op, cur, rhs, line) {
   return this.binOp(op, cur, rhs, line);
 };
 Interp.prototype.binOp = function (op, l, r, line) {
-  const res = this.binOp0(op, l, r, line);
+  let res;
+  if ((l && l.__native) || (r && r.__native)) { const nr = this.stdlibBinOp(op, l, r, line); res = nr === STDLIB_NOT_HANDLED ? this.binOp0(op, l, r, line) : nr; }
+  else res = this.binOp0(op, l, r, line);
   if (isNum(res) && !res.f && !SAFE(res.v)) return BIG();
   if (isNum(res) && res.f && !Number.isFinite(res.v) && isNum(l) && isNum(r) && Number.isFinite(l.v) && Number.isFinite(r.v)) {
     if (op === '**') this.err(line, 'OverflowError', '計算結果が大きすぎて小数（float）で表せません', '');
@@ -2705,11 +3451,60 @@ Interp.prototype.binOp = function (op, l, r, line) {
   }
   return res;
 };
+// B6-Py3：二項演算の特殊メソッド発火（左の __add__ 等 → 右の反射
+// __radd__ 等の順。NotImplemented が返れば次の候補へ進む）。
+Interp.prototype.tryBinSpecial = function (op, l, r, line) {
+  const MAP = { '+': ['__add__', '__radd__'], '-': ['__sub__', '__rsub__'], '*': ['__mul__', '__rmul__'], '@': ['__matmul__', '__rmatmul__'], '/': ['__truediv__', '__rtruediv__'], '//': ['__floordiv__', '__rfloordiv__'], '%': ['__mod__', '__rmod__'], '**': ['__pow__', '__rpow__'], '<<': ['__lshift__', '__rlshift__'], '>>': ['__rshift__', '__rrshift__'], '&': ['__and__', '__rand__'], '^': ['__xor__', '__rxor__'], '|': ['__or__', '__ror__'] };
+  const pair = MAP[op];
+  if (!pair) return undefined;
+  const [fwd, rev] = pair;
+  if (l && l.__instance && this.specialLookup(l, fwd) !== undefined) {
+    const res = this.callSpecialArgs(l, fwd, [r], line, null);
+    if (res !== undefined && !isNotImplemented(res)) return res;
+  }
+  if (r && r.__instance && this.specialLookup(r, rev) !== undefined) {
+    const res = this.callSpecialArgs(r, rev, [l], line, null);
+    if (res !== undefined && !isNotImplemented(res)) return res;
+  }
+  return undefined;
+};
+// B6-Py3：__index__ 契約で整数化する。NUM／UNK／null（解釈できない）を返す。
+Interp.prototype.indexValue = function (v, line) {
+  if (isBool(v)) return NUM(v.v ? 1 : 0, false);
+  if (isNum(v) && !v.f) return v;
+  if (v && v.__instance && this.specialLookup(v, '__index__') !== undefined) {
+    const r = this.callSpecial(v, '__index__', line, null);
+    if (isUnk(r)) return r;
+    if (isBool(r)) return NUM(r.v ? 1 : 0, false);
+    if (isNum(r) && !r.f) return r;
+    this.err(line, 'TypeError', '__index__() の戻り値（' + typeName(r) + '）は整数として解釈できません', '__index__ は整数を返してください');
+  }
+  return null;
+};
 Interp.prototype.binOp0 = function (op, l, r, line) {
+  // B6-Py3：ユーザー定義クラスのインスタンスは特殊メソッドを発火する
+  if ((l && l.__instance) || (r && r.__instance)) { const sr = this.tryBinSpecial(op, l, r, line); if (sr !== undefined) return sr; }
   if (op === '@') { this.diag(line, 'note', '対応外', '演算子 @ はこの説明では解釈できません', ''); return UNK(); }
   if (isUnk(l) || isUnk(r)) return {...UNK(),symbolic:{kind:'unknown',op,a:symbolic(l),b:symbolic(r)}};
   const ln = isBool(l) ? NUM(l.v ? 1 : 0, false) : l, rn = isBool(r) ? NUM(r.v ? 1 : 0, false) : r;
+  if (isComplex(l) || isComplex(r)) {
+    const pa = cxParts(l), pb = cxParts(r);
+    if (pa && pb) {
+      if (op === '+') return CXV(pa.re + pb.re, pa.im + pb.im);
+      if (op === '-') return CXV(pa.re - pb.re, pa.im - pb.im);
+      if (op === '*') return CXV(pa.re * pb.re - pa.im * pb.im, pa.re * pb.im + pa.im * pb.re);
+      if (op === '/') { const d = pb.re * pb.re + pb.im * pb.im; if (d === 0) this.err(line, 'ZeroDivisionError', '0（複素数）で割り算はできません', ''); return CXV((pa.re * pb.re + pa.im * pb.im) / d, (pa.im * pb.re - pa.re * pb.im) / d); }
+      if (op === '**') {
+        if (pb.im === 0 && Number.isInteger(pb.re) && Math.abs(pb.re) <= 1000) { let acc = CXV(1, 0); const e = Math.abs(pb.re); for (let k = 0; k < e; k++) acc = CXV(acc.__complex.re * pa.re - acc.__complex.im * pa.im, acc.__complex.re * pa.im + acc.__complex.im * pa.re); if (pb.re < 0) { const d2 = acc.__complex.re ** 2 + acc.__complex.im ** 2; if (d2 === 0) this.err(line, 'ZeroDivisionError', '0 を負の数で累乗することはできません', ''); return CXV(acc.__complex.re / d2, -acc.__complex.im / d2); } return acc; }
+        const rlog = Math.hypot(pa.re, pa.im), ang = Math.atan2(pa.im, pa.re); const lr = Math.log(rlog), na = pb.re * ang + pb.im * lr, nr = Math.exp(pb.re * lr - pb.im * ang); return CXV(nr * Math.cos(na), nr * Math.sin(na));
+      }
+      this.typeErr(line, op, l, r);
+    }
+    if ((isComplex(l) && (isNum(r) || isBool(r))) || (isComplex(r) && (isNum(l) || isBool(l)))) { /* cxParts で処理済み */ }
+    else this.typeErr(line, op, l, r);
+  }
   if (op === '+') {
+    if (isBytesLike(l) && isBytesLike(r)) { const out = bytesOf(l).concat(bytesOf(r)); return isBytearray(l) ? BYTEARRAY(out) : BYTESV(out); }
     if (isNum(ln) && isNum(rn)) return NUM(ln.v + rn.v, ln.f || rn.f);
     if (typeof l === 'string' && typeof r === 'string') { if (l.length + r.length > 200000) return UNK('とても長い文字列'); return l + r; }
     if (isList(l) && isList(r)) { if (l.__list.length + r.__list.length > 200000) return UNK('とても長いリスト'); return LIST(l.__list.concat(r.__list)); }
@@ -2718,10 +3513,12 @@ Interp.prototype.binOp0 = function (op, l, r, line) {
   }
   if (op === '-') {
     if (isNum(ln) && isNum(rn)) return NUM(ln.v - rn.v, ln.f || rn.f);
-    if (isSet(l) && isSet(r)) return SET(l.__set.filter(x => !r.__set.some(y => eqVal(x, y) === true)));
+    if (isSet(l) && isSet(r)) { const res = l.__set.filter(x => !r.__set.some(y => this.eqByVal(x, y, line))); return isFrozenSet(l) ? FROZENSET(res) : SET(res); }
     this.typeErr(line, op, l, r);
   }
   if (op === '*') {
+    if (isBytesLike(l) && isNum(rn) && !rn.f) { const a = repeatArr(bytesOf(l), rn.v); return a === null ? UNK('とても長いバイト列') : isBytes(l) ? BYTESV(a) : BYTEARRAY(a); }
+    if (isNum(ln) && !ln.f && isBytesLike(r)) { const a = repeatArr(bytesOf(r), ln.v); return a === null ? UNK('とても長いバイト列') : isBytes(r) ? BYTESV(a) : BYTEARRAY(a); }
     if (isNum(ln) && isNum(rn)) return NUM(ln.v * rn.v, ln.f || rn.f);
     if (typeof l === 'string' && isNum(rn)) { if (isNum(r) && r.f) this.typeErr(line, op, l, r); return repeatStr(l, rn.v, line, this); }
     if (isNum(ln) && typeof r === 'string') { if (isNum(l) && l.f) this.typeErr(line, op, l, r); return repeatStr(r, ln.v, line, this); }
@@ -2762,11 +3559,12 @@ Interp.prototype.binOp0 = function (op, l, r, line) {
     if (op === '|' && isClassValue(l) && isClassValue(r)) return { __union: [...(l.__union || [l]), ...(r.__union || [r])] }; // 型 | 型 は合併型（Python 3.10 以降、isinstance の第2引数に使える）
     if (isBool(l) && isBool(r) && op !== '<<' && op !== '>>') return BOOL(op === '|' ? (l.v || r.v) : op === '&' ? (l.v && r.v) : (l.v !== r.v));
     if (isSet(l) && isSet(r) && op !== '<<' && op !== '>>') {
-      if (op === '|') { const a = l.__set.slice(); for (const x of r.__set) if (!a.some(y => eqVal(x, y) === true)) a.push(x); return SET(a); }
-      if (op === '&') return SET(l.__set.filter(x => r.__set.some(y => eqVal(x, y) === true)));
-      const kept = l.__set.filter(x => !r.__set.some(y => eqVal(x, y) === true)); for (const x of r.__set) if (!l.__set.some(y => eqVal(x, y) === true) && !kept.some(y => eqVal(x, y) === true)) kept.push(x); return SET(kept); // 対称差：右だけにある要素を足す（共通要素は足さない）
+      const wrap = (arr) => isFrozenSet(l) ? FROZENSET(arr) : SET(arr);
+      if (op === '|') { const a = l.__set.slice(); for (const x of r.__set) if (!a.some(y => this.eqByVal(x, y, line))) a.push(x); return wrap(a); }
+      if (op === '&') return wrap(l.__set.filter(x => r.__set.some(y => this.eqByVal(x, y, line))));
+      const kept = l.__set.filter(x => !r.__set.some(y => this.eqByVal(x, y, line))); for (const x of r.__set) if (!l.__set.some(y => this.eqByVal(x, y, line)) && !kept.some(y => this.eqByVal(x, y, line))) kept.push(x); return wrap(kept); // 対称差：右だけにある要素を足す（共通要素は足さない）
     }
-    if (op === '|' && isDict(l) && isDict(r)) { const d = DICT(); for (const e of l.__dict.values()) dictSet(d, e.k, e.v); for (const e of r.__dict.values()) dictSet(d, e.k, e.v); return d; }
+    if (op === '|' && isDict(l) && isDict(r)) { const d = isFrozenDict(l) ? FROZENDICT() : DICT(); for (const e of l.__dict.values()) dictSet(d, e.k, e.v); for (const e of r.__dict.values()) dictSet(d, e.k, e.v); return d; }
     if ((op === '|' || op === '&') && isView(l) && isView(r) && l.which === 'keys' && r.which === 'keys') {
       const a = viewItems(l), b = viewItems(r);
       return SET(op === '&' ? a.filter(x => b.some(y => eqVal(x, y) === true)) : [...a, ...b.filter(x => !a.some(y => eqVal(x, y) === true))]);
@@ -2822,16 +3620,74 @@ function repeatStr(s, n, line, self) {
 }
 function repeatArr(a, n) { if (n <= 0) return []; if (a.length * n > 100000) return null; const out = []; for (let i = 0; i < n; i++) for (const x of a) out.push(x); return out; }
 
+// B6-Py3：等価比較の特殊メソッド発火（__eq__／__ne__。NotImplemented
+// なら相手側→同一性の既定へ進む）。戻り値が定まれば BOOL／UNK、
+// 発火しなければ undefined。
+Interp.prototype.tryEqSpecial = function (op, l, r, line) {
+  const name = op === '==' ? '__eq__' : '__ne__';
+  const attempt = (inst, other) => {
+    if (!(inst && inst.__instance)) return undefined;
+    let useName = name;
+    // CPython：__ne__ が無く __eq__ だけがある場合は __eq__ の結果を反転する
+    if (this.specialLookup(inst, useName) === undefined) {
+      if (op === '!=' && this.specialLookup(inst, '__eq__') !== undefined) useName = '__eq__';
+      else return undefined;
+    }
+    const res = this.callSpecialArgs(inst, useName, [other], line, null);
+    if (res === undefined || isNotImplemented(res)) return undefined;
+    if (isUnk(res)) return UNK();
+    const t = this.truthyOf(res, line, null);
+    if (t === null) return UNK();
+    return BOOL(useName === '__eq__' && op === '!=' ? !t : t);
+  };
+  const a = attempt(l, r);
+  if (a !== undefined) return a;
+  return attempt(r, l);
+};
+// B6-Py3：in や要素探索での等価判定。どちらかがインスタンスなら
+// __eq__（compare）で判定し、それ以外は従来の eqVal を使う。
+// 同一オブジェクトは CPython と同じく __eq__ より先に一致とする。
+Interp.prototype.eqByVal = function (a, b, line) {
+  if (a === b) return true;
+  if ((a && a.__instance) || (b && b.__instance)) {
+    const c = this.compare('==', a, b, line);
+    return isBool(c) ? c.v : false;
+  }
+  // B6監査D6：集合同士の比較は要素ごとに __eq__ を発火させる
+  if (isSet(a) && isSet(b)) {
+    if (a.__set.length !== b.__set.length) return false;
+    return a.__set.every(x => b.__set.some(y => this.eqByVal(x, y, line)));
+  }
+  return eqVal(a, b) === true;
+};
+// B6-Py3：順序比較の特殊メソッド発火（__lt__ 等と反射の組み合わせ）。
+Interp.prototype.tryOrdSpecial = function (op, l, r, line) {
+  const FWD = { '<': '__lt__', '<=': '__le__', '>': '__gt__', '>=': '__ge__' };
+  const REV = { '<': '__gt__', '<=': '__ge__', '>': '__lt__', '>=': '__le__' };
+  const attempt = (inst, other, name) => {
+    if (!(inst && inst.__instance) || this.specialLookup(inst, name) === undefined) return undefined;
+    const res = this.callSpecialArgs(inst, name, [other], line, null);
+    if (res === undefined || isNotImplemented(res)) return undefined;
+    if (isUnk(res)) return UNK();
+    const t = this.truthyOf(res, line, null);
+    return t === null ? UNK() : BOOL(t);
+  };
+  const a = attempt(l, r, FWD[op]);
+  if (a !== undefined) return a;
+  return attempt(r, l, REV[op]);
+};
 Interp.prototype.compare = function (op, l, r, line) {
  if(isUnk(l)||isUnk(r))return{...UNK(),symbolic:{kind:'unknown',op,a:symbolic(l),b:symbolic(r)}};
+  if ((l && l.__native) || (r && r.__native)) { const cr = this.stdlibCompare(op, l, r, line); if (cr !== STDLIB_NOT_HANDLED) return cr; }
   if (op === 'in' || op === 'not in') {
     let res = null;
     if (isUnk(l) || isUnk(r)) res = null;
     else if (typeof r === 'string' && typeof l === 'string') res = r.includes(l);
-    else if (isList(r)) res = r.__list.some(x => eqVal(x, l) === true);
-    else if (isTuple(r)) res = r.__tuple.some(x => eqVal(x, l) === true);
-    else if (isSet(r)) { if (dictKeyId(l) === null) this.err(line, 'TypeError', typeName(l) + ' は集合の要素にできません（ハッシュできない型です）', ''); res = r.__set.some(x => eqVal(x, l) === true); }
-    else if (isDict(r)) { if (dictKeyId(l) === null) this.err(line, 'TypeError', typeName(l) + ' は辞書のキーにできません（ハッシュできない型です）', ''); res = dictGet(r, l) !== undefined || [...r.__dict.values()].some(e => eqVal(e.k, l) === true); }
+    // B6-Py3：要素か探す値のどちらかがインスタンスなら __eq__ で判定する
+    else if (isList(r)) res = r.__list.some(x => this.eqByVal(x, l, line));
+    else if (isTuple(r)) res = r.__tuple.some(x => this.eqByVal(x, l, line));
+    else if (isSet(r)) { if (dictKeyId(l) === null) this.err(line, 'TypeError', typeName(l) + ' は集合の要素にできません（ハッシュできない型です）', ''); res = r.__set.some(x => this.eqByVal(x, l, line)); }
+    else if (isDict(r)) { if (dictKeyId(l) === null) this.err(line, 'TypeError', typeName(l) + ' は辞書のキーにできません（ハッシュできない型です）', ''); res = dictGet(r, l) !== undefined || [...r.__dict.values()].some(e => this.eqByVal(e.k, l, line)); }
     else if (isIter(r)) {
       // CPython の in は、見つけた所までイテレータを進める（遅延イテレータは必要な分だけ生産する）
       res = false;
@@ -2844,16 +3700,40 @@ Interp.prototype.compare = function (op, l, r, line) {
         if (e) { res = true; break; }
       }
     }
+    else if (isBytesLike(r)) { if (isBytesLike(l)) { const hay = bytesOf(r), ndl = bytesOf(l); res = ndl.length === 0 ? true : hay.some((_, i) => i + ndl.length <= hay.length && ndl.every((x, j) => hay[i + j] === x)); } else if (isNum(l) && !l.f || isBool(l)) { const bv = isBool(l) ? (l.v ? 1 : 0) : l.v; if (bv < 0 || bv > 255) this.err(line, 'ValueError', 'in の左側（バイト値）は 0〜255 の整数にしてください', ''); res = bytesOf(r).includes(bv); } else this.err(line, 'TypeError', 'bytes に対する in の左側は、整数か bytes のような並びにしてください', ''); }
+    else if (isMemview(r)) { if (r.__memview.released) this.err(line, 'ValueError', '解放済み（release 済み）の memoryview は使えません', ''); const hay = mvBytes(r); if (isBytesLike(l)) { const ndl = bytesOf(l); res = ndl.length === 0 ? true : hay.some((_, i) => i + ndl.length <= hay.length && ndl.every((x, j) => hay[i + j] === x)); } else if (isNum(l) && !l.f) res = hay.includes(l.v); else this.err(line, 'TypeError', 'memoryview に対する in の左側は整数か bytes のような並びにしてください', ''); }
     else if (r && r.__range) res = r.__range.some(x => eqVal(x, l) === true);
     else if (isView(r)) res = viewItems(r).some(x => eqVal(x, l) === true);
+    // B6-Py3：__contains__、無ければ __iter__／__getitem__ の走査で判定
+    else if (r && r.__instance) {
+      if (this.specialLookup(r, '__contains__') !== undefined) {
+        const cr = this.callSpecialArgs(r, '__contains__', [l], line, null);
+        if (isUnk(cr)) res = null;
+        else { const t = this.truthyOf(cr, line, null); res = t === null ? null : t; }
+      } else {
+        const seq = this.iterable(r, line, true);
+        if (seq === null) res = null;
+        else { res = false; for (const x of seq) { if (x === l) { res = true; break; } if ((x && x.__instance) || (l && l.__instance)) { const c = this.compare('==', x, l, line); if (!isBool(c)) { res = null; break; } if (c.v) { res = true; break; } continue; } const e = eqVal(x, l); if (e === null) { res = null; break; } if (e) { res = true; break; } } }
+      }
+    }
     else this.err(line, 'TypeError', typeName(r) + ' に対して in は使えません', '右側は文字列・リスト・辞書などの「集まり」にしてください');
     if (res === null) return UNK();
     return BOOL(op === 'in' ? res : !res);
   }
+  // B6-Py3：__eq__／__ne__ が定義されていれば発火する（既定の同一性
+  // 比較より優先。NaN の規則は数値同士のときだけ先行させる）
+  if (op === '==' || op === '!=') {
+    if (!((l && l.__instance) || (r && r.__instance))) {
+      if ((isNum(l) && Number.isNaN(l.v)) || (isNum(r) && Number.isNaN(r.v))) return BOOL(op === '!=');
+    } else {
+      const er = this.tryEqSpecial(op, l, r, line);
+      if (er !== undefined) return er;
+    }
+  }
   // RG-46：NaN は自分自身とも等しくない（CPython の float 比較は同一オブジェクトでも値比較）。
   // eqVal の同一性ショートカットはコンテナ要素・in の同一性規則（[n] == [n] や n in [n] は True）用に残し、ここでのみ先行させる。
-  if (op === '==') { if ((isNum(l) && Number.isNaN(l.v)) || (isNum(r) && Number.isNaN(r.v))) return BOOL(false); const e = eqVal(l, r); return e === null ? UNK() : BOOL(e); }
-  if (op === '!=') { if ((isNum(l) && Number.isNaN(l.v)) || (isNum(r) && Number.isNaN(r.v))) return BOOL(true); const e = eqVal(l, r); return e === null ? UNK() : BOOL(!e); }
+  if (op === '==') { if ((isNum(l) && Number.isNaN(l.v)) || (isNum(r) && Number.isNaN(r.v))) return BOOL(false); const e = (isSet(l) && isSet(r)) ? this.eqByVal(l, r, line) : eqVal(l, r); return e === null ? UNK() : BOOL(e); } // B6監査D6：集合同士は要素の __eq__ を発火させる
+  if (op === '!=') { if ((isNum(l) && Number.isNaN(l.v)) || (isNum(r) && Number.isNaN(r.v))) return BOOL(true); const e = (isSet(l) && isSet(r)) ? !this.eqByVal(l, r, line) : eqVal(l, r); return e === null ? UNK() : BOOL(!e); }
   if (op === 'is' || op === 'is not') {
     let res = null;
     if (isNone(l) || isNone(r)) res = isNone(l) && isNone(r);
@@ -2861,6 +3741,16 @@ Interp.prototype.compare = function (op, l, r, line) {
     // is の結果は実装依存ではなく同一性で確定する（実 CPython でも同様）。
     else if (isEllipsis(l) || isEllipsis(r) || isNotImplemented(l) || isNotImplemented(r)) res = l === r;
     else if (isBool(l) && isBool(r)) res = l.v === r.v;
+    // B7 統合時の基盤修正 F-F：ネイティブ値・ネイティブクラスは同一性が
+    // 確定する（クラスは限定名、インスタンスはオブジェクト同一性）。
+    else if ((l && (l.__native || l.__ncls)) || (r && (r.__native || r.__ncls))) {
+      if (l && l.__ncls && r && r.__ncls) res = l.__ncls === r.__ncls;
+      else if (l && l.__native && r && r.__native) res = l === r;
+      // 高度A7班是正：typevalAlias を宣言したクラスと type() の型値は同一。
+      else if (l && l.__ncls && r && r.__type) { const d = nativeClassDef(l.__ncls); res = !!(d && d.typevalAlias === r.__type); }
+      else if (r && r.__ncls && l && l.__type) { const d = nativeClassDef(r.__ncls); res = !!(d && d.typevalAlias === l.__type); }
+      else res = false;
+    }
     else if (isUnk(l) || isUnk(r)) res = null;
     else {
       this.diag(line, 'note', '注意', 'is は「同じものかどうか」を見る演算子です。値の比較には == を使うのが普通です', '');
@@ -2878,10 +3768,14 @@ Interp.prototype.compare = function (op, l, r, line) {
   }
   // 順序比較
   if (isUnk(l) || isUnk(r)) return UNK();
+  // B6-Py3：__lt__／__le__／__gt__／__ge__ が定義されていれば発火する
+  if ((l && l.__instance) || (r && r.__instance)) { const or2 = this.tryOrdSpecial(op, l, r, line); if (or2 !== undefined) return or2; }
   const ln = isBool(l) ? NUM(l.v ? 1 : 0, false) : l, rn = isBool(r) ? NUM(r.v ? 1 : 0, false) : r;
   let c = null;
   if (isNum(ln) && isNum(rn) && (Number.isNaN(ln.v) || Number.isNaN(rn.v))) return BOOL(false); // RG-46：NaN との順序比較は全て False
   if (isNum(ln) && isNum(rn)) c = ln.v < rn.v ? -1 : ln.v > rn.v ? 1 : 0;
+  else if (isComplex(l) || isComplex(r)) this.err(line, 'TypeError', '複素数は大小比較（' + op + '）ができません', '実部・虚部を取り出して比べてください');
+  else if (isBytesLike(l) && isBytesLike(r)) { const a = bytesOf(l), b = bytesOf(r); c = 0; for (let i = 0; i < Math.min(a.length, b.length) && !c; i++) c = a[i] < b[i] ? -1 : a[i] > b[i] ? 1 : 0; if (!c) c = a.length < b.length ? -1 : a.length > b.length ? 1 : 0; }
   else if (typeof l === 'string' && typeof r === 'string') { const a = Array.from(l), b = Array.from(r); c = 0; for (let i = 0; i < Math.min(a.length, b.length) && !c; i++) { const x = a[i].codePointAt(0), y = b[i].codePointAt(0); c = x < y ? -1 : x > y ? 1 : 0; } if (!c) c = a.length < b.length ? -1 : a.length > b.length ? 1 : 0; }
   else if ((isList(l) && isList(r)) || (isTuple(l) && isTuple(r))) {
     const a = isList(l) ? l.__list : l.__tuple, b = isList(r) ? r.__list : r.__tuple; c = 0;
@@ -2892,8 +3786,8 @@ Interp.prototype.compare = function (op, l, r, line) {
     if (!c) c = a.length < b.length ? -1 : a.length > b.length ? 1 : 0;
   }
   else if (isSet(l) && isSet(r)) {
-    const sub = l.__set.every(x => r.__set.some(y => eqVal(x, y) === true));
-    const sup = r.__set.every(x => l.__set.some(y => eqVal(x, y) === true));
+    const sub = l.__set.every(x => r.__set.some(y => this.eqByVal(x, y, line)));
+    const sup = r.__set.every(x => l.__set.some(y => this.eqByVal(x, y, line)));
     return BOOL(op === '<' ? sub && !sup : op === '<=' ? sub : op === '>' ? sup && !sub : sup);
   }
   else this.err(line, 'TypeError', typeName(l) + ' と ' + typeName(r) + ' は大小比較（' + op + '）ができません', '比べる相手は同じ型（数値同士・文字列同士）にしてください');
@@ -2904,6 +3798,8 @@ Interp.prototype.compare = function (op, l, r, line) {
 // 添字として使える整数か確かめる（bool は 0/1 として使える。float などは TypeError）
 Interp.prototype.intIndex = function (idx, line, what) {
   if (isBool(idx)) return idx.v ? 1 : 0;
+  // B6-Py3：__index__ を持つインスタンスは整数として解釈する
+  if (idx && idx.__instance) { const iv = this.indexValue(idx, line); if (iv !== null && !isUnk(iv)) return iv.v; }
   if (!isNum(idx) || idx.f) this.err(line, 'TypeError', (what || '番号（インデックス）') + 'には整数を使ってください（' + typeName(idx) + ' は使えません）', '');
   return idx.v;
 };
@@ -2926,6 +3822,52 @@ Interp.prototype.indexInt = function (v, line, what) {
 };
 Interp.prototype.subGet = function (obj, idx, line) {
   if (isUnk(obj) || isUnk(idx)) return UNK();
+  // B6-Py3：添字が __index__ を持つインスタンスなら先に整数化する
+  if (idx && idx.__instance) { const iv = this.indexValue(idx, line); if (iv !== null) { if (isUnk(iv)) return UNK(); idx = iv; } }
+  if (obj && obj.__native) { const d = nativeClassDef(obj.__native); if (d && d.getitem) { const r = d.getitem(this.stdlibCtx(null, line), obj, idx); if (r !== STDLIB_NOT_HANDLED) return r; } this.err(line, 'TypeError', typeName(obj) + ' は [ ] で要素を取り出せません', ''); }
+  // B6-Py3：__getitem__／__class_getitem__ を発火する
+  if (obj && obj.__instance) {
+    if (this.specialLookup(obj, '__getitem__') !== undefined) return this.callSpecialArgs(obj, '__getitem__', [idx], line, null);
+    // A6監査PYF-04：dict 派生クラスが __missing__ を定義している場合は、
+    // 未対応の object.__missing__ を名指しする（__getitem__ の不在が原因ではない）
+    if (this.specialLookup(obj, '__missing__') !== undefined && classChain(obj.cls).some(c => (c.baseTypeNames || []).includes('dict')))
+      this.err(line, '未対応', 'object.__missing__（キーが無いときの既定値）はこの説明では対応していません', '');
+    this.err(line, 'TypeError', typeName(obj) + ' には [ ] で要素を取り出す使い方はできません（__getitem__ が定義されていません）', '');
+  }
+  if (obj && obj.__class) {
+    const hit = classLookupOwner(obj, '__class_getitem__');
+    if (hit) {
+      const raw = isCM(hit.value) ? hit.value.fn : hit.value;
+      if (isFunc(raw)) return this.callUserFunc(raw, [obj, idx], {}, this.globals, line);
+      return this.callFn(raw, [obj, idx], this.globals, line);
+    }
+    this.err(line, 'TypeError', typeName(obj) + ' には [ ] で要素を取り出す使い方はできません', '');
+  }
+  // B6-Py2：スライスオブジェクトを添字に使う形（s = slice(1, 3); xs[s]）
+  if (isSlice(idx)) {
+    const sl = idx.__slice;
+    const lo = isNone(sl.start) ? null : sl.start, hi = isNone(sl.stop) ? null : sl.stop, st = isNone(sl.step) ? null : sl.step;
+    if (isMemview(obj)) {
+      if (obj.__memview.released) this.err(line, 'ValueError', '解放済み（release 済み）の memoryview は使えません', '');
+      const arr = mvBytes(obj); const ix = this.sliceIdx(arr.length, lo, hi, st, line); if (ix === null) return UNK();
+      const out = ix.idx.map(k => arr[k]); const buf = { data: out }; return MEMVIEW({ buf, off: 0, len: out.length, readonly: obj.__memview.readonly, released: false, obj: obj.__memview.obj });
+    }
+    return this.sliceGet(obj, lo, hi, st, line);
+  }
+  if (isBytesLike(obj)) {
+    const arr = bytesOf(obj);
+    idx = NUM(this.intIndex(idx, line), false);
+    let i = Math.trunc(idx.v); if (i < 0) i += arr.length;
+    if (i < 0 || i >= arr.length) this.err(line, 'IndexError', '番号 ' + fmtNum(idx) + ' のバイトはありません（長さは ' + arr.length + ' です）', '');
+    return NUM(arr[i], false);
+  }
+  if (isMemview(obj)) {
+    if (obj.__memview.released) this.err(line, 'ValueError', '解放済み（release 済み）の memoryview は使えません', '');
+    idx = NUM(this.intIndex(idx, line), false);
+    let i = Math.trunc(idx.v); if (i < 0) i += obj.__memview.len;
+    if (i < 0 || i >= obj.__memview.len) this.err(line, 'IndexError', '番号 ' + fmtNum(idx) + ' のバイトはありません（長さは ' + obj.__memview.len + ' です）', '');
+    return NUM(obj.__memview.buf.data[obj.__memview.off + i], false);
+  }
   if (typeof obj === 'string' || isList(obj) || isTuple(obj)) {
     const arr = typeof obj === 'string' ? Array.from(obj) : isList(obj) ? obj.__list : obj.__tuple;
     idx = NUM(this.intIndex(idx, line), false);
@@ -2935,10 +3877,12 @@ Interp.prototype.subGet = function (obj, idx, line) {
     return typeof obj === 'string' ? arr[i] : arr[i];
   }
   if (isDict(obj)) {
+    // B6-Py3：__dict__ は属性の現在値を優先して読む（取得後に属性が変わった場合）
+    if (obj.__instDictOf && typeof idx === 'string' && obj.__instDictOf.attrs.has(idx)) return obj.__instDictOf.attrs.get(idx);
     if (dictKeyId(idx) === null) this.err(line, 'TypeError', typeName(idx) + ' は辞書のキーにできません（ハッシュできない型です）', 'キーには文字列・数値・タプルなどを使ってください');
     const v = dictGet(obj, idx);
     if (v === undefined) {
-      if ([...obj.__dict.values()].some(e => eqVal(e.k, idx) === true)) return obj.__dict.get(dictKeyId(idx)).v;
+      const hit = [...obj.__dict.values()].find(e => this.eqByVal(e.k, idx, line)); if (hit) return hit.v; // B6監査D4：ID再引きによるホスト例外漏れを排除
       this.err(line, 'KeyError', 'キー ' + reprVal(idx) + ' は辞書にありません', 'キーの綴りを確認するか、.get(' + reprVal(idx) + ') を使うと無いときに None が返ります');
     }
     return v;
@@ -2953,8 +3897,48 @@ Interp.prototype.subGet = function (obj, idx, line) {
   return UNK();
 };
 Interp.prototype.subSet = function (obj, idx, v, line) {
+  if (obj && obj.__native) { const d = nativeClassDef(obj.__native); if (d && d.setitem) { d.setitem(this.stdlibCtx(null, line), obj, idx, v); return; } this.err(line, 'TypeError', typeName(obj) + ' は [ ] で要素を書き換えられません', ''); }
   if (isUnk(obj)) return;
+  if (isFrozenDict(obj)) this.err(line, 'TypeError', 'frozendict は中身を書き換えられません（\'frozendict\' object does not support item assignment）', '新しい frozendict を作るか、dict に変換してから書き換えてください');
+  if (isBytes(obj)) this.err(line, 'TypeError', 'bytes は中身を書き換えられません（\'bytes\' object does not support item assignment）', '変えたいときは bytearray を使ってください');
+  if (isBytearray(obj)) {
+    if (isSlice(idx)) {
+      const sl = idx.__slice; const lo = isNone(sl.start) ? null : sl.start, hi = isNone(sl.stop) ? null : sl.stop, st = isNone(sl.step) ? null : sl.step;
+      const ix = this.sliceIdx(obj.__bytearray.length, lo, hi, st, line); if (ix === null) { poison(obj, '書き換えられたかもしれない bytearray'); return; }
+      let seq = isBytesLike(v) ? bytesOf(v).slice() : isMemview(v) ? mvBytes(v) : null;
+      if (seq === null && (isList(v) || isTuple(v))) { const items = v.__list || v.__tuple; const conv = items.map((x) => (isBool(x) ? (x.v ? 1 : 0) : isNum(x) && !x.f ? x.v : null)); if (conv.every((x) => x !== null && x >= 0 && x <= 255)) seq = conv; }
+      if (seq === null) this.err(line, 'TypeError', 'bytearray のスライス代入には bytes のような並びを渡してください', '');
+      if (ix.step !== 1 && seq.length !== ix.idx.length) this.err(line, 'ValueError', 'スライス代入の要素数が合いません', '');
+      if (ix.step === 1) obj.__bytearray.splice(ix.a, ix.idx.length, ...seq);
+      else ix.idx.forEach((k, j) => { obj.__bytearray[k] = seq[j]; });
+      return;
+    }
+    idx = NUM(this.intIndex(idx, line), false);
+    let i = Math.trunc(idx.v); if (i < 0) i += obj.__bytearray.length;
+    if (i < 0 || i >= obj.__bytearray.length) this.err(line, 'IndexError', '番号 ' + fmtNum(idx) + ' のバイトはありません（長さは ' + obj.__bytearray.length + ' です）', '');
+    if (isUnk(v)) { obj.__bytearray[i] = 0; poison(obj, '書き換えられたかもしれない bytearray'); return; }
+    const bv = isBool(v) ? (v.v ? 1 : 0) : isNum(v) && !v.f ? v.v : null;
+    if (bv === null || bv < 0 || bv > 255) this.err(line, 'ValueError', 'bytearray の要素は 0〜255 の整数にしてください', '');
+    obj.__bytearray[i] = bv; return;
+  }
+  if (isMemview(obj)) {
+    if (obj.__memview.released) this.err(line, 'ValueError', '解放済み（release 済み）の memoryview は使えません', '');
+    if (obj.__memview.readonly) this.err(line, 'TypeError', '読み取り専用（readonly）の memoryview は書き換えられません', '');
+    idx = NUM(this.intIndex(idx, line), false);
+    let i = Math.trunc(idx.v); if (i < 0) i += obj.__memview.len;
+    if (i < 0 || i >= obj.__memview.len) this.err(line, 'IndexError', '番号が範囲外です', '');
+    const bv = isBool(v) ? (v.v ? 1 : 0) : isNum(v) && !v.f ? v.v : null;
+    if (bv === null || bv < 0 || bv > 255) this.err(line, 'ValueError', 'memoryview の要素は 0〜255 の整数にしてください', '');
+    obj.__memview.buf.data[obj.__memview.off + i] = bv; return;
+  }
   if (isUnk(idx)) { if (isMutableVal(obj)) poison(obj, '書き換えられたかもしれない値'); return; }
+  // B6-Py3：__setitem__ を発火する
+  if (obj && obj.__instance) {
+    if (this.specialLookup(obj, '__setitem__') !== undefined) { this.callSpecialArgs(obj, '__setitem__', [idx, v], line, null); return; }
+    this.err(line, 'TypeError', typeName(obj) + ' には [ ] で代入できません（__setitem__ が定義されていません）', '');
+  }
+  // B6-Py3：インスタンスの __dict__ への代入は属性へも書き戻す
+  if (obj && obj.__instDictOf && typeof idx === 'string') { if (dictSet(obj, idx, v)) obj.__instDictOf.attrs.set(idx, v); return; }
   if (isList(obj)) {
     idx = NUM(this.intIndex(idx, line), false);
     let i = Math.trunc(idx.v); if (i < 0) i += obj.__list.length;
@@ -2968,6 +3952,9 @@ Interp.prototype.subSet = function (obj, idx, v, line) {
 };
 // スライスが指す番号の一覧（CPython の slice.indices と同じ規則）。番号が実行時に決まるなら null
 Interp.prototype.sliceIdx = function (len, lo, hi, st, line) {
+  // B6-Py3：境界が __index__ を持つインスタンスなら先に整数化する
+  const convB = (b) => { if (b && b.__instance) { const iv = this.indexValue(b, line); if (iv === null) this.err(line, 'TypeError', 'スライスの番号には整数か None を使ってください', ''); return iv; } return b; };
+  lo = convB(lo); hi = convB(hi); st = convB(st);
   for (const b of [lo, hi, st]) if (b !== null && !isNone(b) && !isUnk(b) && !(isBool(b) || (isNum(b) && !b.f))) this.err(line, 'TypeError', 'スライスの番号には整数か None を使ってください', '');
   if ([lo, hi, st].some(b => b && isUnk(b))) return null;
   const iv = b => b === null || isNone(b) ? null : isBool(b) ? (b.v ? 1 : 0) : b.v;
@@ -2986,6 +3973,16 @@ Interp.prototype.markUnknownList = function (obj, baseNode, env, line) {
 };
 Interp.prototype.sliceGet = function (obj, lo, hi, st, line) {
   if (isUnk(obj)) return UNK();
+  if (obj && obj.__native) { const d = nativeClassDef(obj.__native); if (d && d.getitem) { const r = d.getitem(this.stdlibCtx(null, line), obj, { __slice: true, lo, hi, step: st }); if (r !== STDLIB_NOT_HANDLED) return r; } }
+  if (isBytesLike(obj) || isMemview(obj)) {
+    if (isMemview(obj) && obj.__memview.released) this.err(line, 'ValueError', '解放済み（release 済み）の memoryview は使えません', '');
+    const arr = isMemview(obj) ? mvBytes(obj) : bytesOf(obj);
+    const ix = this.sliceIdx(arr.length, lo, hi, st, line);
+    if (ix === null) return UNK();
+    const out = ix.idx.map(k => arr[k]);
+    if (isMemview(obj)) { const buf = { data: out }; return MEMVIEW({ buf, off: 0, len: out.length, readonly: obj.__memview.readonly, released: false, obj: obj.__memview.obj }); }
+    return isBytes(obj) ? BYTESV(out) : BYTEARRAY(out);
+  }
   if (typeof obj === 'string' || isList(obj) || isTuple(obj) || (obj && obj.__range)) {
     const arr = typeof obj === 'string' ? Array.from(obj) : isList(obj) ? obj.__list : isTuple(obj) ? obj.__tuple : obj.__range;
     const ix = this.sliceIdx(arr.length, lo, hi, st, line); // CPython の slice.indices と同じ切り詰め規則
@@ -3018,11 +4015,21 @@ Interp.prototype.evalCall = function (n, env) {
   const fn = this.eval(n.fn, env);
   const args = this.evalArgs(n, env);
   if (args === null) return UNK();
+  // B6-Py3：property の getter／setter／deleter、type.mro、object.__new__
+  // 相当、__call__ の発火
+  if (fn && fn.__propmod) return this.applyPropMod(fn, args, n.line);
+  if (fn && fn.__mrofn) return LIST(mroAllOf(fn.cls));
+  if (fn && fn.__objnew) { const t = (args[0] && args[0].__class) ? args[0] : fn.cls; return t ? { __instance: true, cls: t, attrs: new Map() } : UNK(); }
+  if (fn && fn.__objga) { const o = args[0]; if (o && o.__instance) { this._gaBypass = (this._gaBypass || 0) + 1; try { return this.getAttrInstance(o, args[1], n.line, env); } finally { this._gaBypass--; } } return UNK(); }
+  if (fn && fn.__objsa) { const o = args[0]; if (o && o.__instance) { this._saBypass = (this._saBypass || 0) + 1; try { this.setAttrInstance(o, args[1], args[2], n.line, env); } finally { this._saBypass--; } } return NONE; }
+  if (fn && fn.__instance) { const r = this.callSpecialArgs(fn, '__call__', args, n.line, env, n.kwargs); if (r !== undefined) return r; }
   if (fn && fn.__builtin) return this.callBuiltin(fn.__builtin, args, n.kwargs, env, n.line, n);
   if (isFunc(fn)) return this.callUserFunc(fn, args, n.kwargs, env, n.line);
-  if (fn && fn.__bound) return this.callUserFunc(fn.fn, [fn.instance, ...args], n.kwargs, env, n.line);
+  if (fn && fn.__bound) return this.withSuperCtx(fn.owner, fn.instance, () => this.callUserFunc(fn.fn, [fn.instance, ...args], n.kwargs, env, n.line));
   if (fn && fn.__method) return this.callMethod(fn.obj, fn.name, args, n.kwargs, env, n.line);
   if (fn && fn.__class) return this.instantiate(fn, args, n.kwargs, env, n.line);
+  if (fn && fn.__ncls) return this.stdlibConstruct(fn, args, n.kwargs, env, n.line);
+  if (fn && fn.__native) { const cd = nativeClassDef(fn.__native); if (cd && cd.call) return cd.call(this.stdlibCtx(env, n.line), fn, args, this.stdlibKwargs(n.kwargs, env)); this.err(n.line, 'TypeError', typeName(fn) + ' は呼び出し（ ）ができません', ''); }
   if (isUnk(fn)) { for (const a of args) if (isMutableVal(a)) poison(a, '呼び出しで書き換えられたかもしれない値'); return UNK(); }
   this.err(n.line, 'TypeError', typeName(fn) + ' は呼び出し（ ）ができません', '関数名のあとに ( ) を付けて呼び出します。変数と関数を取り違えていないか確認してください');
   return UNK();
@@ -3044,6 +4051,62 @@ Interp.prototype.evalCall = function (n, env) {
 // クラスの属性を、自クラス→継承元（bases）の順に辿って引く。class 文で
 // 作ったクラスは bases を持たないため従来どおり自クラスだけを見るのと等価。
 function classChain(cls) {
+  // B6-Py3：MRO（C3 線形化）の順にクラス値だけを並べる。線形化できない
+  // 場合は従来の幅優先の辿りに倒す（クラス定義時に検証済みの通常クラス
+  // では起きない）。
+  return mroAllOf(cls).filter((c) => !!(c && c.__class));
+}
+// B6-Py3：C3 線形化による MRO 全体（クラス値と組み込み型トークン
+// TYPEVAL の列。末尾は object）。結果はクラス値ごとにキャッシュする。
+const _mroCache = new WeakMap();
+function _mroKey(e) { return e && e.__class ? 'c:' + e.cname + ':' + _mroId(e) : 't:' + (e && e.__type); }
+const _mroIds = new WeakMap(); let _mroSerial = 0;
+function _mroId(c) { let id = _mroIds.get(c); if (id === undefined) { id = ++_mroSerial; _mroIds.set(c, id); } return id; }
+function _directBases(cls) {
+  const out = [];
+  for (const b of (cls.bases || [])) out.push(b);
+  for (const n of (cls.baseTypeNames || [])) out.push(TYPEVAL(n));
+  return out;
+}
+function _linearize(cls, busy) {
+  if (_mroCache.has(cls)) return _mroCache.get(cls);
+  if (busy.has(cls)) return null; // 継承の循環
+  busy.add(cls);
+  const bases = _directBases(cls);
+  let result;
+  if (!bases.length) result = [cls, TYPEVAL('object')];
+  else {
+    const seqs = [];
+    for (const b of bases) {
+      if (b && b.__class) { const sub = _linearize(b, busy); if (sub === null) { busy.delete(cls); return null; } seqs.push(sub.slice()); }
+      else seqs.push([b]);
+    }
+    seqs.push(bases.slice());
+    const merged = [];
+    for (;;) {
+      const live = seqs.filter((s) => s.length);
+      if (!live.length) break;
+      let cand = null;
+      for (const s of live) {
+        const head = s[0], hk = _mroKey(head);
+        if (!live.some((o) => o.slice(1).some((x) => _mroKey(x) === hk))) { cand = head; break; }
+      }
+      if (cand === null) { busy.delete(cls); return null; } // 一貫した順序が作れない
+      merged.push(cand);
+      for (const s of seqs) if (s.length && _mroKey(s[0]) === _mroKey(cand)) s.shift();
+    }
+    result = [cls, ...merged];
+    if (!result.some((e) => e && e.__type === 'object')) result.push(TYPEVAL('object'));
+  }
+  busy.delete(cls);
+  _mroCache.set(cls, result);
+  return result;
+}
+function mroAllOf(cls) {
+  if (!cls || !cls.__class) return [];
+  const r = _linearize(cls, new Set());
+  if (r) return r.slice();
+  // 線形化に失敗した場合のフォールバック（従来の幅優先）
   const out = []; const seen = new Set(); const queue = [cls];
   while (queue.length) {
     const c = queue.shift();
@@ -3051,13 +4114,18 @@ function classChain(cls) {
     seen.add(c); out.push(c);
     for (const b of (c.bases || [])) queue.push(b);
   }
+  out.push(TYPEVAL('object'));
   return out;
 }
 function classLookup(cls, name) {
+  const hit = classLookupOwner(cls, name);
+  return hit ? hit.value : undefined;
+}
+function classLookupOwner(cls, name) {
   for (const c of classChain(cls)) {
-    if (c.cenv && c.cenv.vars && c.cenv.vars.has(name)) return c.cenv.vars.get(name);
+    if (c.cenv && c.cenv.vars && c.cenv.vars.has(name)) return { owner: c, value: c.cenv.vars.get(name) };
   }
-  return undefined;
+  return null;
 }
 Interp.prototype.specialLookup = function (inst, name) {
   const cls = inst && inst.cls;
@@ -3071,6 +4139,234 @@ Interp.prototype.callSpecial = function (inst, name, line, env) {
   if (isFunc(m) || (m && (m.__bound || m.__method || m.__builtin || m.__class))) return this.callFn(m, [inst], env || this.globals, line);
   this.err(line, 'TypeError', name + ' の値（' + typeName(m) + '）は呼び出しできません（' + typeName(m) + ' object is not callable）', 'クラスの中で ' + name + ' は def で定義してください');
   return UNK();
+};
+// B6-Py3：引数つきの特殊メソッド呼び出し（__add__(other) 等の一般形）。
+// 未定義なら undefined、値が未確定なら UNK を返す（callSpecial と同じ契約）。
+Interp.prototype.callSpecialArgs = function (inst, name, args, line, env, kwargs) {
+  const m = this.specialLookup(inst, name);
+  if (m === undefined) return undefined;
+  if (isUnk(m)) return UNK(name + ' の結果');
+  if (isFunc(m)) return this.callUserFunc(m, [inst, ...args], kwargs || {}, env || this.globals, line);
+  if (m && (m.__bound || m.__method || m.__builtin || m.__class)) return this.callFn(m, [inst, ...args], env || this.globals, line);
+  this.err(line, 'TypeError', name + ' の値（' + typeName(m) + '）は呼び出しできません（' + typeName(m) + ' object is not callable）', 'クラスの中で ' + name + ' は def で定義してください');
+  return UNK();
+};
+// B6-Py3：クラス側で見つかった生の値を、アクセス文脈（インスタンス経由／
+// クラス経由）に合わせて束縛・発火する。classmethod はクラスへ、通常関数は
+// インスタンスへ束縛し、property とディスクリプタ（__get__）は発火する。
+Interp.prototype.bindClassAttr = function (cls, hit, inst, line, env) {
+  const raw = hit.value;
+  if (isCM(raw)) return { __bound: true, fn: raw.fn, instance: inst ? inst.cls : cls, owner: hit.owner };
+  if (isSM(raw)) return raw.fn;
+  if (isProp(raw)) {
+    if (!inst) return raw; // クラス経由では property オブジェクト自体
+    if (!raw.fget) this.err(line, 'AttributeError', 'この property には getter がありません（unreadable attribute）', '');
+    return this.callFn(raw.fget, [inst], env, line);
+  }
+  if (raw && raw.__instance && this.specialLookup(raw, '__get__') !== undefined) {
+    const gf = this.specialLookup(raw, '__get__');
+    if (isFunc(gf)) return this.callUserFunc(gf, [raw, inst || NONE, cls], {}, env || this.globals, line);
+    return this.callFn(gf, [raw, inst || NONE, cls], env || this.globals, line);
+  }
+  if (isFunc(raw)) return inst ? { __bound: true, fn: raw, instance: inst, owner: hit.owner } : raw;
+  return raw;
+};
+// B6-Py3：データディスクリプタか（property は常時、インスタンスは
+// __set__／__delete__ を持つとき）。
+Interp.prototype.isDataDesc = function (v) {
+  if (isProp(v)) return true;
+  if (v && v.__instance) return this.specialLookup(v, '__set__') !== undefined || this.specialLookup(v, '__delete__') !== undefined;
+  return false;
+};
+Interp.prototype.instDict = function (inst) {
+  const d = DICT();
+  for (const [k, v] of inst.attrs) dictSet(d, k, v);
+  d.__instDictOf = inst; // B6-Py3：__dict__ 経由の代入を属性へ書き戻すための印
+  return d;
+};
+// B6-Py3：インスタンスの属性読み取り（__getattribute__／データ
+// ディスクリプタ／インスタンス辞書／非データディスクリプタ・束縛／
+// __getattr__ の順。実 CPython の属性解決順に合わせる）。
+Interp.prototype.getAttrInstance = function (obj, name, line, env) {
+  if (name === '__class__') return obj.cls;
+  if (name === '__dict__') return this.instDict(obj);
+  if (name === '__annotations__') return obj.cls.annDict || DICT();
+  const ga = this.specialLookup(obj, '__getattribute__');
+  if (ga !== undefined && name !== '__getattribute__' && !this._gaDepth && !this._gaBypass) {
+    if (isFunc(ga)) {
+      this._gaDepth = (this._gaDepth || 0) + 1;
+      try { return this.callUserFunc(ga, [obj, name], {}, env || this.globals, line); }
+      catch (e) { if (!(e instanceof SimDiag && e.kind === 'AttributeError')) throw e; /* AttributeError なら通常解決＋__getattr__ へ */ }
+      finally { this._gaDepth--; }
+    }
+  }
+  const hit = classLookupOwner(obj.cls, name);
+  if (hit && this.isDataDesc(hit.value)) return this.bindClassAttr(obj.cls, hit, obj, line, env);
+  if (obj.attrs.has(name)) return obj.attrs.get(name);
+  if (hit) return this.bindClassAttr(obj.cls, hit, obj, line, env);
+  const gattr = this.specialLookup(obj, '__getattr__');
+  if (gattr !== undefined && name !== '__getattr__') {
+    if (isFunc(gattr)) return this.callUserFunc(gattr, [obj, name], {}, env || this.globals, line);
+    if (!isUnk(gattr)) return this.callFn(gattr, [obj, name], env || this.globals, line);
+    return UNK('__getattr__ の結果');
+  }
+  this.err(line, 'AttributeError', '属性がありません：' + name, '');
+  return UNK();
+};
+// B6-Py3：クラス経由の属性読み取り。
+Interp.prototype.getAttrClass = function (cls, name, line, env) {
+  if (name === '__name__' || name === '__qualname__') return cls.cname;
+  if (name === '__module__') return '__main__';
+  if (name === '__class__') return TYPEVAL('type');
+  if (name === '__dict__') { const d = DICT(); for (const [k, v] of cls.cenv.vars) dictSet(d, k, v); return d; }
+  if (name === '__annotations__') return cls.annDict || DICT();
+  const hit = classLookupOwner(cls, name);
+  if (hit) return this.bindClassAttr(cls, hit, null, line, env);
+  if (name === 'mro') return MROFN(cls);
+  return UNK('クラス属性「' + name + '」の値');
+};
+// B6-Py3：super プロキシ経由の属性読み取り。MRO で sup.cls の次から探し、
+// 見つけた値を sup.obj へ束縛・発火する。末尾の object の __new__ だけは
+// 組み込み相当（OBJNEW）で補う。
+Interp.prototype.getAttrSuper = function (sup, name, line, env) {
+  const targetCls = sup.obj && sup.obj.__instance ? sup.obj.cls : (sup.obj && sup.obj.__class ? sup.obj : null);
+  const full = targetCls ? mroAllOf(targetCls) : [sup.cls, TYPEVAL('object')];
+  const keyOf = (e) => (e && e.__class ? 'c' + _mroId(e) : 't' + (e && e.__type));
+  const startAt = full.findIndex((e) => keyOf(e) === keyOf(sup.cls));
+  const rest = startAt >= 0 ? full.slice(startAt + 1) : [];
+  for (const e of rest) {
+    if (!e || !e.__class) continue;
+    if (e.cenv && e.cenv.vars && e.cenv.vars.has(name)) {
+      const hit = { owner: e, value: e.cenv.vars.get(name) };
+      if (!sup.obj) return hit.value; // 未束縛 super：生の値を返す
+      if (sup.obj.__instance) return this.bindClassAttr(targetCls, hit, sup.obj, line, env);
+      return this.bindClassAttr(sup.obj, hit, null, line, env); // クラス束縛の super
+    }
+  }
+  if (name === '__new__') return OBJNEW(null);
+  this.err(line, 'AttributeError', "'super' オブジェクトには属性「" + name + "」がありません", '');
+  return UNK();
+};
+// B6-Py3：インスタンスへの属性代入（__setattr__／データディスクリプタ／
+// 通常代入の順）。
+Interp.prototype.setAttrInstance = function (obj, name, v, line, env) {
+  const sa = this.specialLookup(obj, '__setattr__');
+  if (sa !== undefined && !this._saDepth && !this._saBypass) {
+    if (isFunc(sa)) {
+      this._saDepth = (this._saDepth || 0) + 1;
+      try { this.callUserFunc(sa, [obj, name, v], {}, env || this.globals, line); return; }
+      finally { this._saDepth--; }
+    }
+  }
+  const hit = classLookupOwner(obj.cls, name);
+  if (hit && this.isDataDesc(hit.value)) {
+    const raw = hit.value;
+    if (isProp(raw)) {
+      if (!raw.fset) this.err(line, 'AttributeError', 'この property には setter がありません（property has no setter）', 'setter を定義するか、別の属性へ代入してください');
+      this.callFn(raw.fset, [obj, v], env, line);
+      return;
+    }
+    const sf = this.specialLookup(raw, '__set__');
+    if (sf !== undefined) { this.callSpecialArgs(raw, '__set__', [obj, v], line, env); return; }
+    this.err(line, 'AttributeError', 'このディスクリプタには __set__ がありません', '');
+  }
+  obj.attrs.set(name, v);
+};
+// B6-Py3：インスタンスの属性削除（__delattr__／property の deleter／
+// __delete__／通常削除の順）。
+Interp.prototype.delAttrInstance = function (obj, name, line, env) {
+  const da = this.specialLookup(obj, '__delattr__');
+  if (da !== undefined && !this._saDepth) {
+    if (isFunc(da)) {
+      this._saDepth = (this._saDepth || 0) + 1;
+      try { this.callUserFunc(da, [obj, name], {}, env || this.globals, line); return; }
+      finally { this._saDepth--; }
+    }
+  }
+  const hit = classLookupOwner(obj.cls, name);
+  if (hit && this.isDataDesc(hit.value)) {
+    const raw = hit.value;
+    if (isProp(raw)) {
+      if (!raw.fdel) this.err(line, 'AttributeError', 'この property には deleter がありません（property has no deleter）', '');
+      this.callFn(raw.fdel, [obj], env, line);
+      return;
+    }
+    if (this.specialLookup(raw, '__delete__') !== undefined) { this.callSpecialArgs(raw, '__delete__', [obj], line, env); return; }
+  }
+  if (obj.attrs.has(name)) { obj.attrs.delete(name); return; }
+  this.err(line, 'AttributeError', '属性がありません：' + name, '');
+};
+// B6-Py3：with の __exit__ を逆順に呼ぶ。pending（本体や __enter__ で
+// 起きた例外）がある場合は例外型・例外値・None を渡し、いずれかの
+// __exit__ が真を返せば抑制する（この関数は戻る）。抑制されなければ
+// pending を再送出する。__exit__ 自身が例外を出したらそれが新しい
+// pending になる。例外値はエンジンに例外オブジェクトが無いため
+// 「実行時に決まる値」で近似する。
+Interp.prototype.runExits = function (entered, pending, line) {
+  let cur = pending || null;
+  for (let i = entered.length - 1; i >= 0; i--) {
+    const mgr = entered[i];
+    if (this.specialLookup(mgr, '__exit__') === undefined) {
+      if (!cur) this.err(line, 'AttributeError', typeName(mgr) + ' には __exit__ がありません', '');
+      continue;
+    }
+    try {
+      if (cur) {
+        const kind = cur instanceof SimDiag ? cur.kind : 'Exception';
+        const et = TYPEVAL(EXC_NAMES.has(kind) ? kind : 'Exception');
+        const r = this.callSpecialArgs(mgr, '__exit__', [et, UNK('発生した例外'), NONE], line, null);
+        const t = isUnk(r) ? null : this.truthyOf(r, line, null);
+        if (t) cur = null;
+      } else {
+        this.callSpecialArgs(mgr, '__exit__', [NONE, NONE, NONE], line, null);
+      }
+    } catch (e) { cur = e; }
+  }
+  if (cur) throw cur;
+};
+// B6-Py3：引数なし super() のための文脈（メソッドを定義したクラスと
+// self）を、束縛メソッド実行の間だけ差し込む。
+Interp.prototype.withSuperCtx = function (cls, obj, thunk) {
+  if (!cls) return thunk();
+  const prev = this.superCtx;
+  this.superCtx = { cls, obj };
+  try { return thunk(); } finally { this.superCtx = prev; }
+};
+// B6-Py3：インスタンスの文字列表現（__str__ → __repr__ → 既定表記）。
+// 値版（strValueOf／reprValueOf）は文字列か UNK を返し、表示版
+// （strOf／reprOf）は UNK を表示ラベルへ直す。print／str()／f文字列など、
+// 表示・変換が要る場所から使う。
+Interp.prototype.reprValueOf = function (v, line, env) {
+  if (v && v.__instance) {
+    if (this.specialLookup(v, '__repr__') !== undefined) {
+      const r = this.callSpecial(v, '__repr__', line, env);
+      if (typeof r === 'string') return r;
+      if (isUnk(r)) return r;
+      if (r !== undefined) this.err(line, 'TypeError', '__repr__ は文字列を返す必要があります（__repr__ returned non-string）', '__repr__ は文字列を返してください');
+    }
+    return reprVal(v);
+  }
+  return reprVal(v);
+};
+Interp.prototype.strValueOf = function (v, line, env) {
+  if (v && v.__instance) {
+    if (this.specialLookup(v, '__str__') !== undefined) {
+      const r = this.callSpecial(v, '__str__', line, env);
+      if (typeof r === 'string') return r;
+      if (isUnk(r)) return r;
+      if (r !== undefined) this.err(line, 'TypeError', '__str__ は文字列を返す必要があります（__str__ returned non-string）', '__str__ は文字列を返してください');
+    }
+    return this.reprValueOf(v, line, env);
+  }
+  return strVal(v);
+};
+Interp.prototype.strOf = function (v, line, env) {
+  const r = this.strValueOf(v, line, env);
+  return isUnk(r) ? unknownLabel({ kind: 'unknown', source: r.desc }) : r;
+};
+Interp.prototype.reprOf = function (v, line, env) {
+  const r = this.reprValueOf(v, line, env);
+  return isUnk(r) ? unknownLabel({ kind: 'unknown', source: r.desc }) : r;
 };
 // __len__ の戻り値を長さ（0以上の整数）へ是正する。戻り値:
 //   { known: true, len } ／ { known: false }（未確定）／ null（__len__ 自体が無い）
@@ -3117,24 +4413,65 @@ Interp.prototype.truthyOf = function (v, line, env) {
   }
   return truthy(v);
 };
-// インスタンスそのものは追跡しない（UNK）が、__init__ は実行して副作用（クラス属性や外側の変数の書き換え）を追う
+// B6-Py3：生成は __new__ → __init__ の順（実 CPython と同じ）。
+// __new__ が定義されていれば暗黙の staticmethod としてクラスを渡して
+// 呼び、その戻り値がそのクラス（のサブクラス）のインスタンスのときだけ
+// __init__ を実行する。__new__ が無い場合は従来どおり。
 Interp.prototype.instantiate = function (cls, args, kwargs, env, line) {
-  const inst = { __instance: true, cls, attrs: new Map() };
-  const init = classLookup(cls, '__init__');
+  const fresh = () => ({ __instance: true, cls, attrs: new Map() });
+  let inst = null;
+  const newHit = classLookupOwner(cls, '__new__');
+  if (newHit && isFunc(newHit.value)) {
+    const r = this.withSuperCtx(newHit.owner, cls, () => this.callUserFunc(newHit.value, [cls, ...args], kwargs || {}, env, line));
+    if (r && r.__instance) inst = r;
+    else if (isUnk(r)) inst = fresh(); // 戻り値が未確定なら通常のインスタンスとして続ける
+    else return r; // 別種の値を返したら __init__ は呼ばれず、その値が生成結果になる
+  } else inst = fresh();
+  const initHit = classLookupOwner(cls, '__init__');
+  const init = initHit ? initHit.value : undefined;
   if (isFunc(init)) {
-    try { const value = this.callUserFunc(init, [inst, ...args], kwargs || {}, env, line); if (!isNone(value)) this.err(line, 'TypeError', '__init__はNoneを返す必要があります', ''); }
-    catch (e) { if (!(e instanceof Flow && e.kind === 'return')) throw e; }
+    // __init__ は、作られたインスタンスの型がこのクラス（のサブクラス）のときだけ呼ばれる
+    if (inst && inst.__instance && classChain(inst.cls).includes(cls)) {
+      try { const value = this.withSuperCtx(initHit.owner, inst, () => this.callUserFunc(init, [inst, ...args], kwargs || {}, env, line)); if (!isNone(value) && value !== undefined) this.err(line, 'TypeError', '__init__はNoneを返す必要があります', ''); }
+      catch (e) { if (!(e instanceof Flow && e.kind === 'return')) throw e; }
+    }
   }
-  else if (args.length || Object.keys(kwargs || {}).length) this.err(line, 'TypeError', 'このクラスはコンストラクタ引数を受け取りません', '');
+  else if (init === undefined && (args.length || Object.keys(kwargs || {}).length)) {
+    // __new__ だけが定義されている場合も、引数の検証は __new__ 側で済んでいる
+    if (!newHit) this.err(line, 'TypeError', 'このクラスはコンストラクタ引数を受け取りません', '');
+  }
+  // B6監査D10：__del__ は破棄タイミングをモデル化しないため発火しない。
+  // 黙って成功せず、対応外の注記で開示する（項目は未対応のまま）。
+  if (inst && inst.__instance && classLookup(cls, '__del__') !== undefined)
+    this.diag(line, 'note', '対応外', 'object.__del__（インスタンスが破棄されるときの処理）はこの説明では再現しません（破棄のタイミングをモデル化していないため）', '');
   return inst;
+};
+// B6-Py3：property.getter／setter／deleter の適用（新しい property を作る）
+Interp.prototype.applyPropMod = function (wrapper, args, line) {
+  const p = wrapper.prop;
+  const acc = args[0];
+  if (args.length !== 1 || !(isFunc(acc) || acc === undefined)) this.err(line, 'TypeError', 'property.' + wrapper.kind + '() には関数を1つ渡してください', '');
+  if (wrapper.kind === 'getter') return PROPVAL(acc, p.fset, p.fdel);
+  if (wrapper.kind === 'setter') return PROPVAL(p.fget, acc, p.fdel);
+  return PROPVAL(p.fget, p.fset, acc);
 };
 Interp.prototype.callFn = function (fv, args, env, line) {
   // 値として渡された関数の呼び出し（sorted の key、filter/map の関数、デコレータの適用など）も「使った関数」に数える
   if (fv) { if (fv.__builtin) this.noteCall(fv.__builtin, 'func'); else if (fv.__method) this.noteCall(fv.name, 'method'); else if (isFunc(fv) && fv.def && fv.def.name) this.noteCall(fv.def.name, 'func'); }
   if (isUnk(fv)) { for (const a of args) if (isMutableVal(a)) poison(a, '呼び出しで書き換えられたかもしれない値'); return UNK(); }
+  // B6-Py3：ラッパ値の呼び出し（デコレータ適用等の経路）
+  if (fv && fv.__propmod) return this.applyPropMod(fv, args, line);
+  if (fv && fv.__mrofn) return LIST(mroAllOf(fv.cls));
+  if (fv && fv.__objnew) { const t = (args[0] && args[0].__class) ? args[0] : fv.cls; return t ? { __instance: true, cls: t, attrs: new Map() } : UNK(); }
+  if (fv && fv.__objga) { const o = args[0]; if (o && o.__instance) { this._gaBypass = (this._gaBypass || 0) + 1; try { return this.getAttrInstance(o, args[1], line, env); } finally { this._gaBypass--; } } return UNK(); }
+  if (fv && fv.__objsa) { const o = args[0]; if (o && o.__instance) { this._saBypass = (this._saBypass || 0) + 1; try { this.setAttrInstance(o, args[1], args[2], line, env); } finally { this._saBypass--; } } return NONE; }
+  if (fv && fv.__bound) return this.withSuperCtx(fv.owner, fv.instance, () => this.callUserFunc(fv.fn, [fv.instance, ...args], {}, env, line));
+  if (fv && fv.__instance) { const r = this.callSpecialArgs(fv, '__call__', args, line, env); if (r !== undefined) return r; }
   if (fv && fv.__builtin) return this.callBuiltin(fv.__builtin, args, {}, env, line, null);
   if (fv && fv.__method) return this.callMethod(fv.obj, fv.name, args, {}, env, line);
   if (fv && fv.__class) return this.instantiate(fv, args, {}, env, line);
+  if (fv && fv.__ncls) return this.stdlibConstruct(fv, args, {}, env, line);
+  if (fv && fv.__native) { const cd = nativeClassDef(fv.__native); if (cd && cd.call) return cd.call(this.stdlibCtx(env, line), fv, args, {}); this.err(line, 'TypeError', typeName(fv) + ' は呼び出し（ ）ができません', ''); }
   if (isFunc(fv)) return this.callUserFunc(fv, args, {}, env, line);
   this.err(line, 'TypeError', typeName(fv) + ' は呼び出し（ ）ができません', '');
   return UNK();
@@ -3151,6 +4488,24 @@ Interp.prototype.isinstanceCheck = function (obj, ci, line) {
   if (isTuple(ci)) { for (const el of ci.__tuple) { const r = this.isinstanceCheck(obj, el, line); if (r !== false) return r; } return false; }
   if (ci && ci.__union) { for (const el of ci.__union) { const r = this.isinstanceCheck(obj, el, line); if (r !== false) return r; } return false; }
   if (ci && ci.__class) { if (isUnk(obj)) return null; return !!(obj && obj.__instance && classChain(obj.cls).includes(ci)); }
+  if (ci && ci.__ncls) {
+    const cd = nativeClassDef(ci.__ncls);
+    if (isUnk(obj)) return null;
+    if (obj && obj.__exc && cd && cd.exc) return this.stdlibExcMatches(obj.kind, cd.exc);
+    if (obj && obj.__ncls) return obj.__ncls === ci.__ncls;
+    if (!(obj && obj.__native)) {
+      // B7 統合時の基盤修正 F-I：ABC が builtinTypes を宣言している場合、
+      // 組み込み型の値をその ABC のインスタンスとして扱う
+      // （isinstance(3, numbers.Integral) 等。CPython の仮想サブクラス登録に相当）。
+      if (cd && cd.builtinTypes) { const tn = typeName(obj); if (cd.builtinTypes.includes(tn)) return true; }
+      return false;
+    }
+    if (obj.__native === ci.__ncls) return true;
+    const od = nativeClassDef(obj.__native);
+    const seen = new Set(); const queue = [...((od && od.parents) || [])];
+    while (queue.length) { const pp = queue.pop(); if (pp === ci.__ncls) return true; if (seen.has(pp)) continue; seen.add(pp); const pd = nativeClassDef(pp); if (pd && pd.parents) queue.push(...pd.parents); }
+    return false;
+  }
   let name = null;
   if (ci && ci.__type) name = ci.__type;
   else if (ci && ci.__builtin) name = ci.__builtin;
@@ -3158,8 +4513,10 @@ Interp.prototype.isinstanceCheck = function (obj, ci, line) {
     if (EXC_NAMES.has(name)) {
       if (isUnk(obj)) return null;
       if (!(obj && obj.__exc)) return false;
-      // R25-N1：except 照合と同じ完成した階層（excMatches）を使う
-      return excMatches(obj.kind, name);
+      // R25-N1：except 照合と同じ完成した階層（excMatches）を使う。
+      // 高度モード B7：標準ライブラリ例外（種別名が限定名）は登録済みの
+      // 親子関係でも照合する。
+      return excMatches(obj.kind, name) || this.stdlibExcMatches(obj.kind, name);
     }
     // R30F01B-N4（バッチ9 N29）：type() 3引数形で組み込み型を継承元に指定した
     // クラス（例：type('B', (int,), {})）のインスタンスは、その組み込み型の
@@ -3257,6 +4614,207 @@ Interp.prototype.callUserFunc = function (fn, args, kwargs, env, line) {
 };
 
 const ORDER_FREE = new Set(['sorted', 'sum', 'min', 'max', 'any', 'all', 'set', 'len']);
+/* ============ B6（Python班1）：組み込み関数・定数・例外の高度差分ヘルパー ============
+   hash の数値規則は CPython の仕様アルゴリズム（int は 2^61-1 剰余、float は
+   有理数としての剰余、tuple は tupleobject.c の古典アルゴリズム）を BigInt で
+   正確に計算する。結果が JS の数値で正確に表せない大きさのときは、値を
+   捏造せず「実行時に決まる値」に倒す（大きな整数を BIG() に倒す既存方針と
+   同じ）。文字列・bytes・None・同一性ハッシュ（関数・クラス・インスタンス・
+   sentinel 等）は実行ごとに変わりうるため、常に「実行時に決まる値」を返す。 */
+const PY_HASH_MOD = (1n << 61n) - 1n;
+function pyIntHashBig(bv) { let h = bv >= 0n ? bv % PY_HASH_MOD : -((-bv) % PY_HASH_MOD); if (h === -1n) h = -2n; return h; }
+function pyFloatHashBig(x) {
+  if (x === 0) return 0n;
+  const buf = new DataView(new ArrayBuffer(8)); buf.setFloat64(0, x);
+  const bits = buf.getBigUint64(0);
+  const sign = (bits >> 63n) ? -1n : 1n;
+  const expBits = Number((bits >> 52n) & 0x7ffn);
+  let mant = bits & ((1n << 52n) - 1n); let E;
+  if (expBits === 0) E = -1074; else { mant |= (1n << 52n); E = expBits - 1075; }
+  const eMod = ((BigInt(E) % 61n) + 61n) % 61n; // 2^61 ≡ 1 (mod 2^61-1) のため指数は 61 で剰余を取る
+  let h = sign * ((mant % PY_HASH_MOD) * ((1n << eMod) % PY_HASH_MOD) % PY_HASH_MOD);
+  if (h === -1n) h = -2n;
+  return h;
+}
+function pyTupleHashBig(hs) { // CPython（Objects/tupleobject.c）の古典アルゴリズム。64bit 折り返しで計算する
+  const M64 = (1n << 64n) - 1n;
+  let x = 0x345678n; let mult = 1000003n; const n = hs.length;
+  for (let i = 0; i < n; i++) {
+    const y = ((hs[i] % (1n << 64n)) + (1n << 64n)) % (1n << 64n);
+    x = ((x ^ y) * mult) & M64;
+    const len = BigInt(n - 1 - i);
+    mult = (mult + 82520n + len + len) & M64;
+  }
+  x = (x + 97531n) & M64;
+  let s = x >= (1n << 63n) ? x - (1n << 64n) : x;
+  if (s === -1n) s = -2n;
+  return s;
+}
+function numFromHashBig(h) { const n = Number(h); return Number.isSafeInteger(n) && BigInt(n) === h ? NUM(n, false) : null; } // 安全な整数の範囲を超えるハッシュは、表示桁が化けるため数値化しない（BIG() と同じ方針）
+// object()／sentinel() 用の共有クラス値（cenv は空。属性は各インスタンスの attrs が持つ）
+let B6_OBJECT_CLASS = null, B6_SENTINEL_CLASS = null;
+function b6ObjectClass() { if (!B6_OBJECT_CLASS) B6_OBJECT_CLASS = { __class: true, cname: 'object', cenv: new Env(null), bases: [], baseTypeNames: [] }; return B6_OBJECT_CLASS; }
+function b6SentinelClass() { if (!B6_SENTINEL_CLASS) B6_SENTINEL_CLASS = { __class: true, cname: 'sentinel', cenv: new Env(null), bases: [], baseTypeNames: [] }; return B6_SENTINEL_CLASS; }
+function classInfoOf(v) {
+  if (!v || typeof v !== 'object') return null;
+  if (v.__class) return { user: v };
+  if (v.__type) return { builtin: v.__type };
+  if (v.__builtin && (TYPE_BUILTINS.includes(v.__builtin) || EXC_NAMES.has(v.__builtin) || v.__builtin === 'sentinel')) return { builtin: v.__builtin };
+  return null;
+}
+Interp.prototype.pyHash = function (v, line) {
+  if (isUnk(v)) return UNK();
+  if (isBool(v)) return NUM(v.v ? 1 : 0, false);
+  if (isNum(v)) {
+    if (!v.f) { const n = numFromHashBig(pyIntHashBig(BigInt(Math.trunc(v.v)))); return n !== null ? n : UNK('ハッシュ値'); }
+    if (Number.isNaN(v.v)) return UNK('NaN のハッシュ値'); // CPython 3.12.3 実走では実行ごとに変わることを確認済み
+    if (!Number.isFinite(v.v)) return NUM(v.v > 0 ? 314159 : -314159, false);
+    const n = numFromHashBig(pyFloatHashBig(v.v)); return n !== null ? n : UNK('ハッシュ値');
+  }
+  if (typeof v === 'string') return UNK('文字列のハッシュ値'); // PYTHONHASHSEED で実行ごとに変わる
+  if (isNone(v)) return UNK('None のハッシュ値');
+  if (isTuple(v)) {
+    const hs = [];
+    for (const el of v.__tuple) { const eh = this.pyHash(el, line); if (isUnk(eh)) return UNK('タプルのハッシュ値'); hs.push(BigInt(Math.trunc(eh.v))); }
+    const n = numFromHashBig(pyTupleHashBig(hs)); return n !== null ? n : UNK('タプルのハッシュ値');
+  }
+  if (isComplex(v)) {
+    // CPython の complex_hash：実部と虚部のハッシュを 1000003（_PyHASH_IMAG）で合成する
+    const hr = this.pyHash(NUM(v.__complex.re, true), line);
+    const hi = this.pyHash(NUM(v.__complex.im, true), line);
+    if (isUnk(hr) || isUnk(hi)) return UNK('ハッシュ値');
+    let combined = BigInt(Math.trunc(hr.v)) + 1000003n * BigInt(Math.trunc(hi.v));
+    if (combined === -1n) combined = -2n;
+    const n = numFromHashBig(combined); return n !== null ? n : UNK('ハッシュ値');
+  }
+  if (isFrozenSet(v)) {
+    // B6監査D1：CPython 3.12 Objects/setobject.c frozenset_hash を実走9ケースで突合済みの式。
+    // shuffle(h) = ((h ^ 89869747) ^ (h << 16)) * 3644798167（64bit）の XOR 合成に
+    // (要素数+1) * 1927868237 を XOR し、>>11 と >>25 で拡散、* 69069 + 907133923。
+    // 安全整数を超える結果はエンジン既定方針（numFromHashBig）どおり未確定値にする。
+    const MASK = 0xffffffffffffffffn;
+    let h = 0n;
+    for (const el of v.__set) { const eh = this.pyHash(el, line); if (isUnk(eh)) return UNK('ハッシュ値'); const e = BigInt(Math.trunc(eh.v)) & MASK; h ^= ((((e ^ 89869747n) ^ ((e << 16n) & MASK)) * 3644798167n) & MASK); }
+    h ^= (BigInt(v.__set.length + 1) * 1927868237n) & MASK;
+    h ^= (h >> 11n) ^ (h >> 25n);
+    h = (h * 69069n + 907133923n) & MASK;
+    if (h === MASK) h = 590923713n;
+    if (h >= 0x8000000000000000n) h -= 0x10000000000000000n;
+    const n = numFromHashBig(h); return n !== null ? n : UNK('ハッシュ値');
+  }
+  if (isFrozenDict(v)) return UNK('ハッシュ値'); // B6監査D1：ハッシュ可能（PEP 814）だが正確な合成規則を実走で確定できないため決めない
+  if (isMemview(v) && !v.__memview.readonly) this.err(line, 'TypeError', 'ハッシュできない型です（unhashable type: \'memoryview\'）', '書き換え可能な memoryview はハッシュできません');
+  if (isList(v) || isDict(v) || isSet(v) || isView(v) || isBytearray(v)) this.err(line, 'TypeError', 'ハッシュできない型です（unhashable type: \'' + typeName(v) + '\'）', 'ハッシュできるのは数値・タプルなど、変更できない値だけです');
+  return UNK('ハッシュ値'); // 関数・クラス・インスタンス・bytes・range 等は同一性（アドレス）依存のため決めない
+};
+Interp.prototype.pyGetAttr = function (obj, name, env, line) {
+  const NOT = { found: false };
+  if (isUnk(obj)) return { unknown: true };
+  if (obj && obj.__instance) {
+    if (name === '__dict__') { const d = DICT(); for (const [k, v] of obj.attrs) dictSet(d, k, v); return { found: true, value: d }; }
+    if (name === '__class__') return { found: true, value: obj.cls };
+    if (obj.attrs.has(name)) return { found: true, value: obj.attrs.get(name) };
+    const cv = classLookup(obj.cls, name);
+    if (cv !== undefined) return { found: true, value: isFunc(cv) ? { __bound: true, fn: cv, instance: obj } : cv };
+    return NOT;
+  }
+  if (obj && obj.__class) {
+    if (name === '__name__' || name === '__qualname__') return { found: true, value: obj.cname };
+    if (name === '__dict__') { const d = DICT(); for (const [k, v] of obj.cenv.vars) dictSet(d, k, v); return { found: true, value: d }; }
+    const cv = classLookup(obj, name);
+    if (cv !== undefined) return { found: true, value: cv };
+    return NOT;
+  }
+  if (obj && obj.__type) { if (name === '__name__' || name === '__qualname__') return { found: true, value: obj.__type }; return NOT; }
+  if (obj && obj.__builtin) { if (name === '__name__') return { found: true, value: obj.__builtin }; return NOT; }
+  if (isFunc(obj)) {
+    if (name === '__annotations__') {
+      const d = DICT();
+      const toType = (v) => (v && v.__builtin && ['int', 'float', 'str', 'bool', 'list', 'dict', 'tuple', 'set'].includes(v.__builtin)) ? TYPEVAL(v.__builtin) : v;
+      for (const p of obj.def.params) if (p.ann) dictSet(d, p.name, toType(this.eval(p.ann, obj.env || env)));
+      if (obj.def.retAnn) dictSet(d, 'return', toType(this.eval(obj.def.retAnn, obj.env || env)));
+      return { found: true, value: d };
+    }
+    return NOT;
+  }
+  if (isNum(obj) || isBool(obj)) {
+    if (name === 'real') return { found: true, value: isBool(obj) ? NUM(obj.v ? 1 : 0, false) : obj };
+    if (name === 'imag') return { found: true, value: isBool(obj) ? NUM(0, false) : NUM(0, obj.f) };
+    if (name === 'numerator') { if (isBool(obj)) return { found: true, value: NUM(obj.v ? 1 : 0, false) }; if (!obj.f) return { found: true, value: obj }; return NOT; }
+    if (name === 'denominator') { if (isBool(obj) || !obj.f) return { found: true, value: NUM(1, false) }; return NOT; }
+  }
+  if (obj && obj.__range && obj.rng && (name === 'start' || name === 'stop' || name === 'step')) return { found: true, value: NUM(obj.rng[name === 'start' ? 0 : name === 'stop' ? 1 : 2], false) };
+  // B6監査D3：型班の値モデル（複素数・スライス・memoryview）のデータ属性
+  if (isComplex(obj)) { if (name === 'real') return { found: true, value: NUM(obj.__complex.re, true) }; if (name === 'imag') return { found: true, value: NUM(obj.__complex.im, true) }; }
+  if (isSlice(obj)) { if (name === 'start') return { found: true, value: obj.__slice.start }; if (name === 'stop') return { found: true, value: obj.__slice.stop }; if (name === 'step') return { found: true, value: obj.__slice.step }; }
+  if (isMemview(obj)) {
+    const mv = obj.__memview;
+    if (mv.released) this.err(line, 'ValueError', '解放済み（release 済み）の memoryview は使えません', '');
+    if (name === 'obj') return { found: true, value: mv.obj };
+    if (name === 'nbytes') return { found: true, value: NUM(mv.len, false) };
+    if (name === 'readonly') return { found: true, value: BOOL(mv.readonly) };
+    if (name === 'format') return { found: true, value: 'B' };
+    if (name === 'itemsize') return { found: true, value: NUM(1, false) };
+    if (name === 'ndim') return { found: true, value: NUM(1, false) };
+    if (name === 'shape') return { found: true, value: TUPLE([NUM(mv.len, false)]) };
+    if (name === 'strides') return { found: true, value: TUPLE([NUM(1, false)]) };
+    if (name === 'suboffsets') return { found: true, value: TUPLE([]) };
+    if (name === 'c_contiguous' || name === 'f_contiguous' || name === 'contiguous') return { found: true, value: BOOL(true) };
+  }
+  const tn = typeName(obj);
+  if (TYPE_ATTRS[tn] && TYPE_ATTRS[tn].has(name) && (typeof obj === 'string' || isList(obj) || isDict(obj) || isSet(obj) || isTuple(obj) || (obj && obj.__range) || isNum(obj) || isBool(obj) || isBytesLike(obj) || isComplex(obj) || isSlice(obj) || isMemview(obj) || isFrozenDict(obj))) return { found: true, value: METHODREF(obj, name) };
+  return NOT;
+};
+Interp.prototype.pySetAttr = function (obj, name, value, line) {
+  if (obj && obj.__instance) {
+    if (obj.__object) this.err(line, 'AttributeError', '\'object\' object has no attribute \'' + name + '\'（object() のインスタンスには属性を持たせられません）', '');
+    if (obj.__sentinel) this.err(line, 'AttributeError', 'sentinel 値の属性は変更できません', '');
+    obj.attrs.set(name, value); this.step(line, '属性「' + name + '」を ' + reprVal(value) + ' に設定します'); return;
+  }
+  if (obj && obj.__class) { obj.cenv.vars.set(name, value); this.step(line, 'クラス「' + obj.cname + '」の属性「' + name + '」を ' + reprVal(value) + ' に設定します'); return; }
+  this.err(line, 'AttributeError', typeName(obj) + ' には属性「' + name + '」を設定できません（\'' + typeName(obj) + '\' object has no attribute \'' + name + '\'）', '');
+};
+Interp.prototype.pyDelAttr = function (obj, name, line) {
+  if (obj && obj.__instance) {
+    if (obj.attrs.has(name)) { obj.attrs.delete(name); this.step(line, '属性「' + name + '」を削除します'); return; }
+    this.err(line, 'AttributeError', typeName(obj) + ' には属性「' + name + '」がありません', '');
+  }
+  if (obj && obj.__class) {
+    if (obj.cenv.vars.has(name)) { obj.cenv.vars.delete(name); this.step(line, 'クラス「' + obj.cname + '」の属性「' + name + '」を削除します'); return; }
+    this.err(line, 'AttributeError', 'type object \'' + obj.cname + '\' has no attribute \'' + name + '\'', '');
+  }
+  this.err(line, 'AttributeError', typeName(obj) + ' には属性「' + name + '」がありません', '');
+};
+Interp.prototype.issubclassOne = function (src, tgt) {
+  if (tgt.builtin === 'object') return true;
+  if (src.user) {
+    if (tgt.user) return classChain(src.user).includes(tgt.user);
+    if (EXC_NAMES.has(tgt.builtin)) return false; // ユーザー定義クラスは例外を継承できない（クラス継承自体が未対応）
+    return classChain(src.user).some(c => (c.baseTypeNames || []).includes(tgt.builtin));
+  }
+  if (tgt.user) return false;
+  const s = src.builtin, t = tgt.builtin;
+  if (s === t) return true;
+  if (EXC_NAMES.has(s) && EXC_NAMES.has(t)) return excMatches(s, t);
+  if (EXC_NAMES.has(s) || EXC_NAMES.has(t)) return false;
+  if (s === 'bool' && t === 'int') return true;
+  return false;
+};
+Interp.prototype.envDict = function (e) { const d = DICT(); for (const [k, v] of e.vars) { if (v === UNBOUND) continue; dictSet(d, k, v); } return d; };
+Interp.prototype.dirOf = function (obj, env, line) {
+  // B6監査D9：__dir__ を定義したクラスのインスタンスでは、未対応の
+  // object.__dir__ を既定の名前一覧で黙って代用しない
+  if (obj && obj.__instance && this.specialLookup(obj, '__dir__') !== undefined)
+    this.err(line, '未対応', 'object.__dir__（dir() の結果のカスタマイズ）はこの説明では対応していません', '');
+  let names = null;
+  if (obj && obj.__instance) { const s = new Set(); for (const k of obj.attrs.keys()) s.add(k); for (const c of classChain(obj.cls)) for (const k of c.cenv.vars.keys()) s.add(k); names = [...s]; }
+  else if (obj && obj.__class) { const s = new Set(); for (const c of classChain(obj)) for (const k of c.cenv.vars.keys()) s.add(k); s.add('__name__'); names = [...s]; }
+  else if (isFunc(obj)) names = ['__annotations__'];
+  else { const tn = typeName(obj); if (TYPE_ATTRS[tn]) names = [...TYPE_ATTRS[tn]]; else if ((obj && obj.__type) || (obj && obj.__builtin)) names = []; }
+  if (names === null) return UNK();
+  names.sort(); return LIST(names);
+};
+
 Interp.prototype.callBuiltin = function (name, args, kwargs, env, line, node) {
   const prev = this.orderFree; this.orderFree = ORDER_FREE.has(name);
   try { return this.callBuiltin0(name, args, kwargs, env, line, node); } finally { this.orderFree = prev; }
@@ -3265,7 +4823,7 @@ Interp.prototype.callBuiltin0 = function (name, args, kwargs, env, line, node) {
   const kw = {};
   for (const k of Object.keys(kwargs || {})) kw[k] = this.eval(kwargs[k], env);
   // RG-15：宣言範囲外のキーワード引数を無言で無視しない。対応する名前だけを許可し、それ以外は名前を挙げて TypeError で止める
-  const KW_ALLOWED = { print: ['sep', 'end', 'file', 'flush'], int: ['base'], float: [], bool: [], str: ['object', 'encoding', 'errors'], list: [], tuple: [], set: [], repr: [], iter: [], next: [], format: [], hex: [], bin: [], oct: [], map: [], filter: [], input: [], range: [], len: [], sum: ['start'], min: ['key', 'default'], max: ['key', 'default'], abs: [], round: ['number', 'ndigits'], sorted: ['key', 'reverse'], reversed: [], enumerate: ['start'], zip: ['strict'], type: [], isinstance: [], ord: [], chr: [], divmod: [], pow: ['base', 'exp', 'mod'], any: [], all: [] };
+  const KW_ALLOWED = { print: ['sep', 'end', 'file', 'flush'], int: ['base'], float: [], bool: [], str: ['object', 'encoding', 'errors'], list: [], tuple: [], set: [], repr: [], iter: [], next: [], format: [], hex: [], bin: [], oct: [], map: [], filter: [], input: [], range: [], len: [], sum: ['start'], min: ['key', 'default'], max: ['key', 'default'], abs: [], round: ['number', 'ndigits'], sorted: ['key', 'reverse'], reversed: [], enumerate: ['start'], zip: ['strict'], type: [], isinstance: [], ord: [], chr: [], divmod: [], pow: ['base', 'exp', 'mod'], any: [], all: [], ascii: [], callable: [], delattr: [], dir: [], getattr: [], globals: [], hasattr: [], hash: [], id: [], issubclass: [], locals: [], setattr: [], vars: [], object: [], sentinel: ['repr', 'module'], aiter: [], anext: [], breakpoint: [], compile: [], eval: [], exec: [], help: [], __import__: [], bytes: ['encoding', 'errors'], bytearray: ['encoding', 'errors'], complex: ['real', 'imag'], frozenset: [], slice: [], memoryview: [] };
   if (Object.prototype.hasOwnProperty.call(KW_ALLOWED, name)) {
     for (const k of Object.keys(kw)) if (!KW_ALLOWED[name].includes(k)) this.err(line, 'TypeError', name + '() にキーワード引数「' + k + '」はありません', 'キーワード引数「' + k + '」は ' + name + '() では使えません。引数名を確認してください');
   }
@@ -3287,13 +4845,13 @@ Interp.prototype.callBuiltin0 = function (name, args, kwargs, env, line, node) {
       let sep = ' ', end = '\n';
       if (kw.sep !== undefined && !isNone(kw.sep)) { if (isUnk(kw.sep)) { this.emitRaw('（実行時に決まる値）\n', line); return NONE; } if (typeof kw.sep !== 'string') this.err(line, 'TypeError', 'print() の sep は文字列か None にしてください', ''); sep = kw.sep; }
       if (kw.end !== undefined && !isNone(kw.end)) { if (isUnk(kw.end)) { this.emitRaw('（実行時に決まる値）\n', line); return NONE; } if (typeof kw.end !== 'string') this.err(line, 'TypeError', 'print() の end は文字列か None にしてください', ''); end = kw.end; }
-      const text = args.map(a => strVal(a)).join(sep);
+      const text = args.map(a => this.strOf(a, line, env)).join(sep); // B6-Py3：__str__／__repr__ を発火
       this.emitRaw(text + end, line);
       this.step(line, '画面に「' + text + '」と表示します' + (end !== '\n' ? '（改行の代わりに ' + reprVal(end) + ' を付けます）' : ''));
       return NONE;
     }
-    case 'repr': return isUnk(args[0]) || isIter(args[0]) ? UNK() : reprVal(args[0]);
-    case 'iter': { const v = args[0]; if (isUnk(v)) return UNK(); if (isIter(v)) return v; const kind = isList(v) ? 'list_iterator' : isTuple(v) ? 'tuple_iterator' : typeof v === 'string' ? (/^[\x00-\x7f]*$/.test(v) ? 'str_ascii_iterator' : 'str_iterator') : isDict(v) ? 'dict_keyiterator' : isSet(v) ? 'set_iterator' : v && v.__range ? 'range_iterator' : null; if (!kind) this.err(line, 'TypeError', typeName(v) + ' は繰り返しに使えません', ''); const pull = this.srcPull(v, line); if (pull === null) return UNK(); const it = ITER([], kind); it.pull = pull; return it; }
+    case 'repr': { const v0 = args[0]; if (v0 && v0.__instance) return this.reprValueOf(v0, line, env); return isUnk(v0) || isIter(v0) ? UNK() : reprVal(v0); } // B6-Py3：__repr__ を発火
+    case 'iter': { const v = args[0]; if (isUnk(v)) return UNK(); if (isIter(v)) return v; if (v && v.__instance) { const pull = this.srcPull(v, line); if (pull === null) return UNK(); const it2 = ITER([], 'iterator'); it2.pull = pull; return it2; } const kind = isList(v) ? 'list_iterator' : isTuple(v) ? 'tuple_iterator' : typeof v === 'string' ? (/^[\x00-\x7f]*$/.test(v) ? 'str_ascii_iterator' : 'str_iterator') : isDict(v) ? 'dict_keyiterator' : isSet(v) ? 'set_iterator' : v && v.__range ? 'range_iterator' : isBytes(v) ? 'bytes_iterator' : isBytearray(v) ? 'bytearray_iterator' : isMemview(v) ? 'memory_iterator' : null; if (!kind) this.err(line, 'TypeError', typeName(v) + ' は繰り返しに使えません', ''); const pull = this.srcPull(v, line); if (pull === null) return UNK(); const it = ITER([], kind); it.pull = pull; return it; }
     case 'next': { const v = args[0]; if (isUnk(v)) return UNK(); if (!isIter(v)) this.err(line, 'TypeError', typeName(v) + ' は next() に使えません（イテレータではありません）', 'iter() でイテレータにしてから使ってください'); const r = this.iterPull(v); if (this.iterFailed(v)) return UNK(); if (r !== EXH) { this.step(line, v.kind + ' から次の値 ' + reprVal(r) + ' を取り出します'); return r; } if (args.length > 1) return args[1]; this.err(line, 'StopIteration', 'これ以上取り出せる値がありません', 'next(it, 既定値) のように2つ目を渡すと、終わったときにその値が返ります'); return UNK(); }
     case 'format': {
       // R30F01B-N3（バッチ9 N28）：不正な書式指定は未確定値に化けさせず、
@@ -3303,6 +4861,14 @@ Interp.prototype.callBuiltin0 = function (name, args, kwargs, env, line, node) {
       const spec = args.length > 1 ? args[1] : '';
       if (isUnk(spec)) return UNK();
       if (typeof spec !== 'string') this.err(line, 'TypeError', 'format() の2つ目（書式指定）は文字列にしてください（format() argument 2 must be str）', '');
+      // B7 統合時の基盤修正 F-H：ネイティブ値の書式指定は def.format へ委譲する。
+      if (args[0] && args[0].__native) { const d = nativeClassDef(args[0].__native); if (d && d.format) { const fr = d.format(this.stdlibCtx(env, line), args[0], spec); if (typeof fr === 'string') return fr; } }
+      // B6-Py3：__format__ を発火する
+      if (args[0] && args[0].__instance) {
+        if (this.specialLookup(args[0], '__format__') !== undefined) { const fr = this.callSpecialArgs(args[0], '__format__', [spec], line, env); if (typeof fr === 'string') return fr; if (isUnk(fr)) return fr; this.err(line, 'TypeError', '__format__ は文字列を返す必要があります', '__format__ は文字列を返してください'); }
+        if (spec === '') return this.strValueOf(args[0], line, env);
+        this.err(line, 'TypeError', 'このオブジェクトには書式指定は使えません（unsupported format string passed to ' + typeName(args[0]) + '.__format__）', '__format__ を定義するか、書式指定なしで使ってください');
+      }
       const r = fmtSpec(args[0], spec);
       if (r && r.__fmtErr) this.err(line, r.kind, r.msg, '');
       return r === null ? UNK('format の結果') : r;
@@ -3358,6 +4924,8 @@ Interp.prototype.callBuiltin0 = function (name, args, kwargs, env, line, node) {
       if (isSet(v)) return NUM(v.__set.length, false);
       if (isView(v)) return NUM(v.__view.__dict.size, false);
       if (v && v.__range) return NUM(v.__range.length, false);
+      if (isBytesLike(v)) return NUM(bytesOf(v).length, false);
+      if (isMemview(v)) { if (v.__memview.released) this.err(line, 'ValueError', '解放済み（release 済み）の memoryview は使えません（operation forbidden on released memoryview object）', ''); return NUM(v.__memview.len, false); }
       // R29-N15：ユーザー定義クラスのインスタンスは __len__ を引く（実
       // CPython どおり。定義済みなのに「長さがありません」としない）。
       if (v && v.__instance) {
@@ -3367,6 +4935,7 @@ Interp.prototype.callBuiltin0 = function (name, args, kwargs, env, line, node) {
           return NUM(lr.len, false);
         }
       }
+      if (v && v.__native) { const d = nativeClassDef(v.__native); if (d && d.len) { const nn = d.len(this.stdlibCtx(env, line), v); if (nn !== null && nn !== undefined) return NUM(nn, false); } }
       this.err(line, 'TypeError', typeName(v) + ' には長さ（len）がありません', 'len() は文字列・リスト・辞書など「集まり」に使います');
       return UNK();
     }
@@ -3382,7 +4951,7 @@ Interp.prototype.callBuiltin0 = function (name, args, kwargs, env, line, node) {
       for (let k = 0; k < count; k++) arr.push(NUM(start + k * step, false));
       const r = RANGE(arr); r.rng = [start, stop, step]; return r;
     }
-    case 'str': return args.length === 0 ? '' : isUnk(args[0]) ? UNK(args[0].desc) : isIter(args[0]) ? UNK(args[0].kind + ' オブジェクトの文字列表現') : strVal(args[0]);
+    case 'str': return args.length === 0 ? '' : isUnk(args[0]) ? UNK(args[0].desc) : isIter(args[0]) ? UNK(args[0].kind + ' オブジェクトの文字列表現') : this.strValueOf(args[0], line, env); // B6-Py3：__str__ を発火
     case 'int': {
       const v = args[0];
       if (isUnk(v)) return UNK();
@@ -3390,6 +4959,19 @@ Interp.prototype.callBuiltin0 = function (name, args, kwargs, env, line, node) {
       if (args.length > 1) { const b = args[1]; if (isUnk(b)) return UNK(); const bn = this.intIndex(b, line, 'int() の基数'); if (!(bn === 0 || (bn >= 2 && bn <= 36))) this.err(line, 'ValueError', 'int() の基数は 2〜36 か 0 にしてください', ''); if (typeof v !== 'string') this.err(line, 'TypeError', '基数を指定するときは、int() に文字列を渡してください', ''); }
       if (isNum(v)) { if (!Number.isFinite(v.v)) this.err(line, Number.isNaN(v.v) ? 'ValueError' : 'OverflowError', '無限大や NaN は整数に変換できません', ''); const n = Math.trunc(v.v); return SAFE(n) ? NUM(n === 0 ? 0 : n, false) : BIG(); }
       if (isBool(v)) return NUM(v.v ? 1 : 0, false);
+      if (v && v.__native && args.length <= 1) { const d = nativeClassDef(v.__native); if (d && d.toInt) { const r = d.toInt(this.stdlibCtx(env, line), v); if (r !== STDLIB_NOT_HANDLED && r !== undefined) return r; } }
+      // B6-Py3：__int__／__index__／__trunc__ を発火する
+      if (v && v.__instance && args.length <= 1) {
+        for (const mn of ['__int__', '__index__', '__trunc__']) {
+          if (this.specialLookup(v, mn) !== undefined) {
+            const r = this.callSpecial(v, mn, line, env);
+            if (isUnk(r)) return r;
+            if (isBool(r)) return NUM(r.v ? 1 : 0, false);
+            if (isNum(r) && !r.f) return r;
+            this.err(line, 'TypeError', mn + '() の戻り値（' + typeName(r) + '）は整数として解釈できません', mn + ' は整数を返してください');
+          }
+        }
+      }
       if (typeof v === 'string') {
         let base = 10;
         if (args.length > 1) { const b = args[1]; if (isBool(b)) base = b.v ? 1 : 0; else if (isNum(b) && !b.f) base = b.v; }
@@ -3403,6 +4985,19 @@ Interp.prototype.callBuiltin0 = function (name, args, kwargs, env, line, node) {
     case 'float': {
       const v = args[0];
       if (isUnk(v)) return UNK();
+      if (v && v.__native && args.length <= 1) { const d = nativeClassDef(v.__native); if (d && d.toFloat) { const r = d.toFloat(this.stdlibCtx(env, line), v); if (r !== STDLIB_NOT_HANDLED && r !== undefined) return r; } }
+      // B6-Py3：__float__／__index__ を発火する
+      if (v && v.__instance) {
+        for (const mn of ['__float__', '__index__']) {
+          if (this.specialLookup(v, mn) !== undefined) {
+            const r = this.callSpecial(v, mn, line, env);
+            if (isUnk(r)) return r;
+            if (isBool(r)) return NUM(r.v ? 1 : 0, true);
+            if (isNum(r)) return NUM(r.v, true);
+            this.err(line, 'TypeError', mn + '() の戻り値（' + typeName(r) + '）は小数として解釈できません', mn + ' は数値を返してください');
+          }
+        }
+      }
       if (isNum(v)) return NUM(v.v, true);
       if (isBool(v)) return NUM(v.v ? 1 : 0, true);
       if (args.length === 0) return NUM(0, true);
@@ -3464,10 +5059,17 @@ Interp.prototype.callBuiltin0 = function (name, args, kwargs, env, line, node) {
       for (let i = 1; i < items.length; i++) { const c = this.compare(name === 'min' ? '<' : '>', keys[i], keys[bi], line); if (isUnk(c)) return UNK(); if (c.v) bi = i; }
       return items[bi];
     }
-    case 'abs': { const v = args[0]; if (isUnk(v)) return UNK(); if (isBool(v)) return NUM(v.v ? 1 : 0, false); if (isNum(v)) return NUM(Math.abs(v.v), v.f); this.err(line, 'TypeError', typeName(v) + ' には abs() は使えません', '数値に使ってください'); return UNK(); }
+    case 'abs': { const v = args[0]; if (isUnk(v)) return UNK(); if (isBool(v)) return NUM(v.v ? 1 : 0, false); if (isNum(v)) return NUM(Math.abs(v.v), v.f); if (isComplex(v)) return NUM(Math.hypot(v.__complex.re, v.__complex.im), true); if (v && v.__instance && this.specialLookup(v, '__abs__') !== undefined) return this.callSpecial(v, '__abs__', line, env); if (v && v.__native) { const d = nativeClassDef(v.__native); if (d && d.unary) { const r = d.unary(this.stdlibCtx(env, line), v, 'abs'); if (r !== STDLIB_NOT_HANDLED && r !== undefined) return r; } } this.err(line, 'TypeError', typeName(v) + ' には abs() は使えません', '数値に使ってください'); return UNK(); } // B6-Py3：__abs__ を発火／B6 統合：複素数は絶対値（hypot）を返す
     case 'round': {
       let v = args[0]; if (isUnk(v)) return UNK();
       const ndRaw = args.length > 1 ? args[1] : kw.ndigits;
+      // B7 統合時の基盤修正 F-G：ネイティブ値の round() は def.round へ委譲する。
+      if (v && v.__native) { const d = nativeClassDef(v.__native); if (d && d.round) { const r = d.round(this.stdlibCtx(env, line), v, ndRaw); if (r !== STDLIB_NOT_HANDLED && r !== undefined) return r; } this.err(line, 'TypeError', typeName(v) + ' には round() は使えません', ''); }
+      // B6-Py3：__round__ を発火する
+      if (v && v.__instance && this.specialLookup(v, '__round__') !== undefined) {
+        if (ndRaw === undefined || isNone(ndRaw)) return this.callSpecial(v, '__round__', line, env);
+        return this.callSpecialArgs(v, '__round__', [ndRaw], line, env);
+      }
       // bool は int のサブクラスとして 0／1 で扱い、ndigits の検証も含めて
       // 通常の数値と同じ経路で処理する（R7-138：round(True, -1) は 0、
       // round(False, "bad") は TypeError、round(1, True) は 1 が実物）。
@@ -3604,6 +5206,12 @@ Interp.prototype.callBuiltin0 = function (name, args, kwargs, env, line, node) {
           if (b && b.__class) { bases.push(b); continue; }
           if (b && b.__type) { baseTypeNames.push(b.__type); continue; }
           if (b && b.__builtin && (TYPE_BUILTINS.includes(b.__builtin) || EXC_NAMES.has(b.__builtin))) { baseTypeNames.push(b.__builtin); continue; }
+          // A6監査PYF-04：class 文側と同じく __mro_entries__ を名指しする
+          if (b && b.__instance && this.specialLookup(b, '__mro_entries__') !== undefined)
+            this.err(line, '未対応', 'object.__mro_entries__（基底クラスの差し替え）はこの説明では対応していません', '');
+          // 高度A7班是正：クラス文側と同じく、標準ライブラリのクラスは
+          // 型であるため未対応を名指しで止める（虚偽の理由にしない）。
+          if (b && b.__ncls) this.err(line, '未対応', '標準ライブラリのクラス「' + b.__ncls + '」を基底にする継承はこの説明では対応していません', '組み込み型や自分で定義したクラスを基底にしてください');
           this.err(line, 'TypeError', 'type() の継承元には型だけを書いてください（bases must be types）', '');
         }
         // class 文と同じ形のクラス値（__class／cname／cenv）を作り、属性辞書の
@@ -3622,6 +5230,7 @@ Interp.prototype.callBuiltin0 = function (name, args, kwargs, env, line, node) {
       // 返す。これにより type(x) == クラス／type(x) is クラス が実物どおり
       // 成立し、isinstance の第2引数にもそのまま使える。
       if (args[0] && args[0].__instance) return args[0].cls;
+      if (args[0] && args[0].__native) return makeNativeClass(args[0].__native);
       return TYPEVAL(typeName(args[0]));
     }
     case 'isinstance': {
@@ -3633,7 +5242,10 @@ Interp.prototype.callBuiltin0 = function (name, args, kwargs, env, line, node) {
     }
     case 'ord': { const v = args[0]; if (isUnk(v)) return UNK(); if (typeof v === 'string' && Array.from(v).length === 1) return NUM(v.codePointAt(0), false); this.err(line, 'TypeError', 'ord() は1文字の文字列に使います', ''); return UNK(); }
     case 'chr': { const v = args[0]; if (isUnk(v)) return UNK(); const n = this.intIndex(v, line, 'chr() の引数'); if (!(n >= 0 && n <= 0x10FFFF)) this.err(line, 'ValueError', 'chr() の引数は 0〜1114111（0x10FFFF）の範囲にしてください', ''); return String.fromCodePoint(n); }
-    case 'divmod': { const a = args[0], b = args[1]; if (isUnk(a) || isUnk(b)) return UNK(); if (!(isNum(a) || isBool(a)) || !(isNum(b) || isBool(b))) this.err(line, 'TypeError', 'divmod() には数値を渡してください', ''); if ((isBool(b) ? (b.v ? 1 : 0) : b.v) === 0) this.err(line, 'ZeroDivisionError', '0 で割ることはできません', ''); return TUPLE([this.binOp('//', a, b, line), this.binOp('%', a, b, line)]); }
+    case 'divmod': { const a = args[0], b = args[1]; if (isUnk(a) || isUnk(b)) return UNK(); // B6-Py3：__divmod__／__rdivmod__ を発火
+      if (a && a.__instance && this.specialLookup(a, '__divmod__') !== undefined) return this.callSpecialArgs(a, '__divmod__', [b], line, env);
+      if (b && b.__instance && this.specialLookup(b, '__rdivmod__') !== undefined) return this.callSpecialArgs(b, '__rdivmod__', [a], line, env); if ((a && a.__native) || (b && b.__native)) return TUPLE([this.binOp('//', a, b, line), this.binOp('%', a, b, line)]);
+      if (!(isNum(a) || isBool(a)) || !(isNum(b) || isBool(b))) this.err(line, 'TypeError', 'divmod() には数値を渡してください', ''); if ((isBool(b) ? (b.v ? 1 : 0) : b.v) === 0) this.err(line, 'ZeroDivisionError', '0 で割ることはできません', ''); return TUPLE([this.binOp('//', a, b, line), this.binOp('%', a, b, line)]); }
     case 'pow': {
       if (args.length === 3) {
         const [b, e, m] = args;
@@ -3672,6 +5284,254 @@ Interp.prototype.callBuiltin0 = function (name, args, kwargs, env, line, node) {
       for (const x of seq) { const t = this.truthyOf(x, line, env); if (t === null) { sawUnk = true; continue; } if (name === 'any' && t) return BOOL(true); if (name === 'all' && !t) return BOOL(false); }
       return sawUnk ? UNK() : BOOL(name === 'all');
     }
+    case 'ascii': { // repr の結果のうち非 ASCII 文字を \xXX／\uXXXX／\UXXXXXXXX に置換する（CPython の規則）
+      const v = args[0]; if (isUnk(v) || isIter(v)) return UNK();
+      const r = reprVal(v); let out = '';
+      for (const ch of r) { const cp = ch.codePointAt(0); if (cp < 128) { out += ch; continue; } if (cp <= 0xff) out += '\\x' + cp.toString(16).padStart(2, '0'); else if (cp <= 0xffff) out += '\\u' + cp.toString(16).padStart(4, '0'); else out += '\\U' + cp.toString(16).padStart(8, '0'); }
+      return out;
+    }
+    case 'id': return UNK('オブジェクトの識別値（id）'); // id はアドレス依存で実行ごとに変わるため決めない
+    case 'callable': {
+      const v = args[0]; if (isUnk(v)) return UNK();
+      if (isFunc(v) || isMethodRef(v)) return BOOL(true);
+      if (v && (v.__builtin || v.__type || v.__class || v.__bound)) return BOOL(true);
+      if (v && v.__instance) return BOOL(this.specialLookup(v, '__call__') !== undefined);
+      return BOOL(false);
+    }
+    case 'hash': return this.pyHash(args[0], line);
+    case 'getattr': {
+      const o = args[0], nm = args[1];
+      if (isUnk(nm)) return UNK();
+      if (typeof nm !== 'string') this.err(line, 'TypeError', '属性の名前は文字列にしてください（attribute name must be string）', '');
+      if (isUnk(o)) return UNK();
+      const r = this.pyGetAttr(o, nm, env, line);
+      if (r.unknown) return UNK();
+      if (r.found) return r.value;
+      if (args.length > 2) return args[2];
+      this.err(line, 'AttributeError', typeName(o) + ' には属性「' + nm + '」がありません', 'hasattr() で有無を確かめるか、getattr(対象, 名前, 既定値) の形で既定値を渡してください');
+      return UNK();
+    }
+    case 'hasattr': {
+      const o = args[0], nm = args[1];
+      if (isUnk(nm)) return UNK();
+      if (typeof nm !== 'string') this.err(line, 'TypeError', '属性の名前は文字列にしてください（attribute name must be string）', '');
+      if (isUnk(o)) return UNK();
+      const r = this.pyGetAttr(o, nm, env, line);
+      if (r.unknown) return UNK();
+      return BOOL(!!r.found);
+    }
+    case 'setattr': {
+      const o = args[0], nm = args[1];
+      if (isUnk(nm)) return UNK();
+      if (typeof nm !== 'string') this.err(line, 'TypeError', '属性の名前は文字列にしてください（attribute name must be string）', '');
+      if (isUnk(o)) return UNK();
+      this.pySetAttr(o, nm, args[2], line);
+      return NONE;
+    }
+    case 'delattr': {
+      const o = args[0], nm = args[1];
+      if (isUnk(nm)) return UNK();
+      if (typeof nm !== 'string') this.err(line, 'TypeError', '属性の名前は文字列にしてください（attribute name must be string）', '');
+      if (isUnk(o)) return UNK();
+      this.pyDelAttr(o, nm, line);
+      return NONE;
+    }
+    case 'dir': {
+      if (!args.length) { const names = []; for (const [k, v] of env.vars) if (v !== UNBOUND) names.push(k); names.sort(); return LIST(names); }
+      const o = args[0]; if (isUnk(o)) return UNK();
+      return this.dirOf(o, env, line);
+    }
+    case 'globals': return this.envDict(this.globals);
+    case 'locals': return this.envDict(env);
+    case 'vars': {
+      if (!args.length) return this.envDict(env);
+      const o = args[0]; if (isUnk(o)) return UNK();
+      if (o && o.__instance) { const d = DICT(); for (const [k, v] of o.attrs) dictSet(d, k, v); return d; }
+      if (o && o.__class) { const d = DICT(); for (const [k, v] of o.cenv.vars) dictSet(d, k, v); return d; }
+      if (isFunc(o)) return DICT(); // 関数の __dict__（このエンジンでは関数への属性付けを追跡しないため空のスナップショット）
+      this.err(line, 'TypeError', 'vars() の引数には __dict__ を持つオブジェクトを渡してください（vars() argument must have __dict__ attribute）', '');
+      return UNK();
+    }
+    case 'issubclass': {
+      const a = args[0], b = args[1];
+      if (isUnk(a) || isUnk(b)) return UNK();
+      const src = classInfoOf(a);
+      if (!src) this.err(line, 'TypeError', 'issubclass() の1つ目はクラスにしてください（issubclass() arg 1 must be a class）', '1つ目には調べたいクラスそのものを渡してください');
+      const targets = [];
+      const collect = (t) => {
+        if (isUnk(t)) return 'unk';
+        if (isTuple(t)) { for (const el of t.__tuple) { const r = collect(el); if (r) return r; } return null; }
+        if (t && t.__union) { for (const el of t.__union) { const r = collect(el); if (r) return r; } return null; }
+        const ci = classInfoOf(t); if (!ci) return 'bad'; targets.push(ci); return null;
+      };
+      const bad = collect(b);
+      if (bad === 'unk') return UNK();
+      if (bad === 'bad') this.err(line, 'TypeError', 'issubclass() の2つ目はクラスか、クラスを要素とするタプルにしてください（issubclass() arg 2 must be a class or tuple of classes）', '');
+      return BOOL(targets.some(t => this.issubclassOne(src, t)));
+    }
+    case 'object': return { __instance: true, __object: true, cls: b6ObjectClass(), attrs: new Map() };
+    case 'sentinel': { // PEP 661：名前と表示（repr）を持つ、同一性で比較される一意な値
+      const nm = args[0];
+      if (isUnk(nm)) return UNK();
+      if (typeof nm !== 'string') this.err(line, 'TypeError', 'sentinel() の名前（1つ目）は文字列にしてください', '');
+      const rep = args.length > 1 ? args[1] : kw.repr;
+      if (rep !== undefined && isUnk(rep)) return UNK();
+      if (rep !== undefined && !isNone(rep) && typeof rep !== 'string') this.err(line, 'TypeError', 'sentinel() の repr は文字列か None にしてください', '');
+      const mod = kw.module;
+      if (mod !== undefined && isUnk(mod)) return UNK();
+      if (mod !== undefined && !isNone(mod) && typeof mod !== 'string') this.err(line, 'TypeError', 'sentinel() の module は文字列か None にしてください', '');
+      const srepr = (rep === undefined || isNone(rep)) ? nm : rep;
+      const smod = (mod === undefined || isNone(mod)) ? '__main__' : mod; // 呼び出し側モジュールの __name__ はこのエンジンでは '__main__' とみなす
+      const attrs = new Map(); attrs.set('__name__', nm); attrs.set('__module__', smod);
+      return { __instance: true, __sentinel: true, sname: nm, srepr, cls: b6SentinelClass(), attrs };
+    }
+    case 'aiter': case 'anext': this.err(line, '未対応', '非同期イテレータ用の「' + name + '」はこの説明では対応していません（非同期機構がありません）', ''); return UNK();
+    case 'breakpoint': this.err(line, '未対応', 'breakpoint()（デバッガの起動）はこの説明では対応していません', ''); return UNK();
+    case 'compile': case 'eval': case 'exec': this.err(line, '未対応', '動的コード実行の「' + name + '」はこの説明では対応していません（文字列からコードを実行する経路はこのエンジンのモデルと両立しません）', ''); return UNK();
+    case 'help': this.err(line, '未対応', 'help()（対話的ヘルプ）はこの説明では対応していません', ''); return UNK();
+    case '__import__': this.err(line, '未対応', '__import__()（モジュールの読み込み）はこの説明では対応していません', ''); return UNK();
+    /* ===== B6-Py2：bytes／bytearray／complex／frozenset／slice／memoryview／frozendict のコンストラクタ ===== */
+    case 'bytes': case 'bytearray': {
+      const isBA = name === 'bytearray';
+      const wrapB = (a) => isBA ? BYTEARRAY(a) : BYTESV(a);
+      const E = (kind, msg, fix) => this.err(line, kind, msg, fix || '');
+      if (args.length === 0) return wrapB([]);
+      const src0 = args[0];
+      if (isUnk(src0)) return UNK();
+      if (!isBA && src0 && src0.__instance && this.specialLookup(src0, '__bytes__') !== undefined) this.err(line, '未対応', 'object.__bytes__（bytes() への変換）はこの説明では対応していません', ''); // B6監査D15：真因を指す停止
+      if (args.length >= 2 || kw.encoding !== undefined) {
+        if (typeof src0 !== 'string') E('TypeError', 'エンコーディングを指定するときは、' + name + '() に文字列を渡してください', '');
+        const enc = resolveEncoding(args[1] !== undefined ? args[1] : kw.encoding, E);
+        const errors = checkErrorsMode(args[2] !== undefined ? args[2] : kw.errors, E);
+        return wrapB(encodeStrToBytes(src0, enc, errors, E));
+      }
+      if (typeof src0 === 'string') E('TypeError', '文字列から ' + name + '() を作るときは、エンコーディングの指定が必要です（string argument without an encoding）', name + "('abc', 'utf-8') のように書いてください");
+      if (isBool(src0) || (isNum(src0) && !src0.f)) {
+        const n = isBool(src0) ? (src0.v ? 1 : 0) : Math.trunc(src0.v);
+        if (n < 0) E('ValueError', '負の大きさは指定できません', '');
+        if (n > 10000000) return UNK('とても長いバイト列');
+        return wrapB(Array(n).fill(0));
+      }
+      if (isBytesLike(src0)) return wrapB(bytesOf(src0).slice());
+      if (isMemview(src0)) { if (src0.__memview.released) E('ValueError', '解放済み（release 済み）の memoryview は使えません', ''); return wrapB(mvBytes(src0)); }
+      const seq = this.iterableChecked(src0, line, true);
+      if (seq === null) return UNK();
+      const out = seq.map(x => { const bv = isBool(x) ? (x.v ? 1 : 0) : isNum(x) && !x.f ? x.v : null; if (bv === null) E('TypeError', name + '() の要素は整数にしてください（' + typeName(x) + ' は使えません）', ''); if (bv < 0 || bv > 255) E('ValueError', name + '() の要素は 0〜255 の整数にしてください', ''); return bv; });
+      return wrapB(out);
+    }
+    case 'complex': {
+      const E = (kind, msg, fix) => this.err(line, kind, msg, fix || '');
+      let a = args[0], b = args[1];
+      if (kw.real !== undefined) { if (a !== undefined) E('TypeError', 'complex() の引数「real」に値が2つ渡されています', ''); a = kw.real; }
+      if (kw.imag !== undefined) { if (b !== undefined) E('TypeError', 'complex() の引数「imag」に値が2つ渡されています', ''); b = kw.imag; }
+      if (a === undefined) return CXV(0, 0);
+      if (isUnk(a) || (b !== undefined && isUnk(b))) return UNK();
+      if (typeof a === 'string') {
+        if (b !== undefined) E('TypeError', 'complex() に文字列を渡すときは、2つ目の引数は指定できません', '');
+        const pp = parseComplexStr(a, E); return CXV(pp.re, pp.im);
+      }
+      // A6監査PYF-04：__complex__ を定義したインスタンスは、未対応の
+      // object.__complex__ を名指しする（変換できないことが原因ではない）
+      if (a && a.__instance && this.specialLookup(a, '__complex__') !== undefined)
+        E('未対応', 'object.__complex__（複素数への変換のカスタマイズ）はこの説明では対応していません', '');
+      const pa = cxParts(a); if (!pa) E('TypeError', typeName(a) + ' は complex() で変換できません', '');
+      if (b === undefined) return CXV(pa.re, pa.im);
+      const pb = cxParts(b); if (!pb) E('TypeError', typeName(b) + ' は complex() で変換できません', '');
+      return CXV(pa.re - pb.im, pa.im + pb.re);
+    }
+    case 'frozenset': {
+      if (args.length === 0) return FROZENSET();
+      if (isUnk(args[0])) return UNK();
+      if (isFrozenSet(args[0])) return args[0];
+      const seq = this.iterableChecked(args[0], line, true); if (seq === null) return UNK();
+      const out = []; for (const x of seq) { this.needHash(x, line); if (!out.some(y => eqVal(x, y) === true)) out.push(x); }
+      return FROZENSET(out);
+    }
+    case 'slice': {
+      if (args.length === 1) return SLICEV(NONE, args[0], NONE);
+      if (args.length === 2) return SLICEV(args[0], args[1], NONE);
+      return SLICEV(args[0], args[1], args[2]);
+    }
+    case 'memoryview': {
+      const v = args[0];
+      if (isUnk(v)) return UNK();
+      if (isBytes(v)) return MEMVIEW({ buf: { data: v.__bytes }, off: 0, len: v.__bytes.length, readonly: true, released: false, obj: v });
+      if (isBytearray(v)) return MEMVIEW({ buf: { data: v.__bytearray }, off: 0, len: v.__bytearray.length, readonly: false, released: false, obj: v });
+      if (isMemview(v)) { if (v.__memview.released) this.err(line, 'ValueError', '解放済み（release 済み）の memoryview は使えません', ''); return MEMVIEW({ buf: v.__memview.buf, off: v.__memview.off, len: v.__memview.len, readonly: v.__memview.readonly, released: false, obj: v.__memview.obj }); }
+      // A6監査PYF-04：__buffer__ を定義したインスタンスは、未対応の
+      // object.__buffer__ を名指しする（バイト列でないことが原因ではない）
+      if (v && v.__instance && this.specialLookup(v, '__buffer__') !== undefined)
+        this.err(line, '未対応', 'object.__buffer__（バッファの公開）はこの説明では対応していません', '');
+      this.err(line, 'TypeError', 'memoryview() には bytes や bytearray（バイト列）が必要です（memoryview: a bytes-like object is required）', '');
+      return UNK();
+    }
+    case 'frozendict': {
+      const d = FROZENDICT();
+      if (args.length) {
+        if (isUnk(args[0])) return UNK();
+        if (isDict(args[0])) { for (const [id, e] of args[0].__dict) d.__dict.set(id, e); }
+        else {
+          const seq = this.iterable(args[0], line, true); if (seq === null) return UNK();
+          for (const pp of seq) { const kv = isList(pp) ? pp.__list : isTuple(pp) ? pp.__tuple : null; if (!kv || kv.length !== 2) this.err(line, 'ValueError', 'frozendict() には (キー, 値) の組の並びを渡してください', ''); if (isUnk(kv[0])) return UNK(); this.needHash(kv[0], line); dictSet(d, kv[0], kv[1]); }
+        }
+      }
+      for (const k of Object.keys(kw)) dictSet(d, k, kw[k]);
+      return d;
+    }
+    // B6-Py3：classmethod／staticmethod／property／super の意味論
+    case 'classmethod': {
+      const f = args[0];
+      if (args.length !== 1) this.err(line, 'TypeError', 'classmethod() には関数を1つ渡してください', '');
+      if (isUnk(f)) return UNK('classmethod の結果');
+      if (!(isFunc(f) || (f && (f.__builtin || f.__method || f.__bound)))) this.err(line, 'TypeError', 'classmethod() には呼び出せるもの（関数）を渡してください', '');
+      return CMVAL(f);
+    }
+    case 'staticmethod': {
+      const f = args[0];
+      if (args.length !== 1) this.err(line, 'TypeError', 'staticmethod() には関数を1つ渡してください', '');
+      if (isUnk(f)) return UNK('staticmethod の結果');
+      if (!(isFunc(f) || (f && (f.__builtin || f.__method || f.__bound || f.__class)))) this.err(line, 'TypeError', 'staticmethod() には呼び出せるものを渡してください', '');
+      return SMVAL(f);
+    }
+    case 'property': {
+      if (args.length > 4) this.err(line, 'TypeError', 'property() の引数が多すぎます', '');
+      const acc = [0, 1, 2].map((i) => {
+        const a = args[i];
+        if (a === undefined || isNone(a)) return null;
+        if (isUnk(a)) return a;
+        if (!(isFunc(a) || (a && (a.__builtin || a.__method || a.__bound)))) this.err(line, 'TypeError', 'property() の getter／setter／deleter には呼び出せるものか None を渡してください', '');
+        return a;
+      });
+      if (acc.some(isUnk)) return UNK('property の結果');
+      return PROPVAL(acc[0], acc[1], acc[2]);
+    }
+    case 'super': {
+      if (args.length > 2) this.err(line, 'TypeError', 'super() の引数が多すぎます', '');
+      if (args.length === 0) {
+        const ctx = this.superCtx;
+        if (!ctx || !ctx.cls) this.err(line, 'RuntimeError', 'super(): 引数なしの super() は、メソッドの中（__class__ セルがある場所）でだけ使えます', 'super(クラス, オブジェクト) の形で明示するか、クラスの中で定義したメソッドから使ってください');
+        return SUPERVAL(ctx.cls, ctx.obj);
+      }
+      const t = args[0];
+      if (isUnk(t)) return UNK('super の結果');
+      if (!(t && t.__class) && !(t && t.__type) && !(t && t.__builtin && TYPE_BUILTINS.includes(t.__builtin)))
+        this.err(line, 'TypeError', 'super() の1つ目には型を渡してください（super() argument 1 must be type）', '');
+      // 組み込み型に対する super は、ユーザー定義クラスの MRO に現れないため対象外として止める
+      if (!(t && t.__class)) this.err(line, '未対応', '組み込み型に対する super() はこの説明では対応していません', 'ユーザー定義クラスに対して使ってください');
+      if (args.length === 1) return SUPERVAL(t, null);
+      const o = args[1];
+      if (isUnk(o)) return UNK('super の結果');
+      if (o && o.__instance) {
+        if (!classChain(o.cls).includes(t)) this.err(line, 'TypeError', 'super() の2つ目は、1つ目の型のインスタンス（またはサブクラス）でなければなりません', '');
+        return SUPERVAL(t, o);
+      }
+      if (o && o.__class) {
+        if (!classChain(o).includes(t) && o !== t) this.err(line, 'TypeError', 'super() の2つ目（クラス）は、1つ目の型のサブクラスでなければなりません', '');
+        return SUPERVAL(t, o);
+      }
+      this.err(line, 'TypeError', 'super() の2つ目は、1つ目の型のインスタンスかサブクラスでなければなりません', '');
+      return UNK();
+    }
     case 'open': this.diag(line, 'note', '対応外', 'ファイルを開く処理（open）はこの説明では中身を読みません。読み取った内容は「実行時に決まる値」として扱います', ''); return UNK('ファイルの内容');
   }
   this.diag(line, 'note', '対応外', '組み込みの「' + name + '」はこの説明では解釈しません。結果は「実行時に決まる値」として扱います', '');
@@ -3680,7 +5540,13 @@ Interp.prototype.callBuiltin0 = function (name, args, kwargs, env, line, node) {
 // math モジュールの関数：値が決まり、結果が JavaScript と CPython で同じになるものだけ計算する
 Interp.prototype.mathCall = function (name, args, line) {
   if (args.some(isUnk)) return UNK('math.' + name + ' の結果');
-  const x = args[0]; const num = isNum(x) ? x.v : isBool(x) ? (x.v ? 1 : 0) : null;
+  const x = args[0];
+  // B6-Py3：math.floor／ceil／trunc は __floor__／__ceil__／__trunc__ を発火する
+  if (x && x.__instance && args.length === 1) {
+    const mm = { floor: '__floor__', ceil: '__ceil__', trunc: '__trunc__' }[name];
+    if (mm && this.specialLookup(x, mm) !== undefined) return this.callSpecial(x, mm, line, null);
+  }
+  const num = isNum(x) ? x.v : isBool(x) ? (x.v ? 1 : 0) : null;
   if (['sqrt', 'log', 'log2', 'log10', 'floor', 'ceil', 'fabs'].includes(name) && args.length === 1 && num === null) this.err(line, 'TypeError', 'math.' + name + '() には数値を渡してください', '');
   if (num === null || args.length !== 1) return UNK('math.' + name + ' の結果');
   if (name === 'sqrt') { if (num < 0) this.err(line, 'ValueError', '負の数の平方根は求められません（math domain error）', '負になる可能性があるなら、先に条件で確かめてください'); return NUM(Math.sqrt(num), true); }
@@ -3696,6 +5562,214 @@ Interp.prototype.cmpVals = function (a, b, line) {
   return 0;
 };
 
+/* ===== B6-Py2 ヘルパー（encode/decode・bytes/str 共通アルゴリズム・数値変換） ===== */
+const ENC_OK = { 'utf-8': 'utf-8', 'utf8': 'utf-8', 'ascii': 'ascii', 'us-ascii': 'ascii', 'latin-1': 'latin-1', 'latin1': 'latin-1', 'iso-8859-1': 'latin-1', 'iso8859-1': 'latin-1' };
+const ENC_KNOWN_UNSUPPORTED = new Set(['utf-16', 'utf-16-le', 'utf-16-be', 'utf-32', 'utf-32-le', 'utf-32-be', 'utf-7', 'shift_jis', 'shift-jis', 'sjis', 'cp932', 'euc-jp', 'iso-2022-jp', 'gbk', 'gb2312', 'big5', 'euc-kr', 'cp949', 'koi8-r', 'koi8-u', 'cp1252', 'cp1251', 'iso-8859-2', 'mac-roman', 'utf-8-sig', 'utf-16le', 'utf-16be']);
+// エンコーディング名を解決する。対応外は E で停止する（未知の名前は CPython どおり LookupError、既知だが未対応の名前は「未対応」）
+function resolveEncoding(name, E) {
+  if (typeof name !== 'string') E('TypeError', 'エンコーディング名は文字列にしてください', '');
+  const key = name.toLowerCase().replace(/_/g, '-');
+  if (ENC_OK[key]) return ENC_OK[key];
+  if (ENC_KNOWN_UNSUPPORTED.has(key)) E('未対応', 'エンコーディング「' + name + '」はこの説明では対応していません（対応するのは utf-8／ascii／latin-1 だけです）', 'utf-8／ascii／latin-1 のいずれかで試してください');
+  E('LookupError', '未知のエンコーディングです：' + name, 'エンコーディング名を確認してください（対応するのは utf-8／ascii／latin-1 だけです）');
+  return 'utf-8';
+}
+function checkErrorsMode(errors, E) {
+  if (errors === undefined || errors === null) return 'strict';
+  if (typeof errors !== 'string') E('TypeError', 'errors は文字列にしてください', '');
+  if (!['strict', 'ignore', 'replace'].includes(errors)) E('未対応', 'エラー処理「' + errors + '」はこの説明では対応していません（対応するのは strict／ignore／replace だけです）', '');
+  return errors;
+}
+function encodeStrToBytes(s, enc, errors, E) {
+  const out = [];
+  if (enc === 'utf-8') { const u8 = new TextEncoder().encode(s); for (const b of u8) out.push(b); return out; }
+  for (const ch of s) {
+    const cp = ch.codePointAt(0);
+    const lim = enc === 'ascii' ? 0x80 : 0x100;
+    if (cp < lim) { out.push(cp); continue; }
+    if (errors === 'strict') E('UnicodeEncodeError', "'" + enc + "' コーデックでは文字 " + pyStrRepr(ch) + ' をエンコードできません', '');
+    if (errors === 'replace') out.push(0x3f); // '?'
+    // ignore は落とす
+  }
+  return out;
+}
+function decodeBytesToStr(arr, enc, errors, E) {
+  if (enc === 'latin-1') return arr.map(b => String.fromCharCode(b)).join('');
+  if (enc === 'ascii') {
+    let out = '';
+    for (const b of arr) {
+      if (b < 0x80) { out += String.fromCharCode(b); continue; }
+      if (errors === 'strict') E('UnicodeDecodeError', "'ascii' コーデックではバイト 0x" + b.toString(16) + ' をデコードできません', '');
+      if (errors === 'replace') out += '�';
+    }
+    return out;
+  }
+  // utf-8（手作業デコード：errors の3モードを正確に再現する）
+  let out = ''; let i = 0;
+  const bad = () => { if (errors === 'strict') E('UnicodeDecodeError', "'utf-8' コーデックではバイト列をデコードできません（不正な UTF-8 です）", ''); if (errors === 'replace') out += '�'; };
+  while (i < arr.length) {
+    const b0 = arr[i];
+    if (b0 < 0x80) { out += String.fromCharCode(b0); i++; continue; }
+    let need = 0, cp = 0, min = 0;
+    if (b0 >= 0xc2 && b0 <= 0xdf) { need = 1; cp = b0 & 0x1f; min = 0x80; }
+    else if (b0 >= 0xe0 && b0 <= 0xef) { need = 2; cp = b0 & 0x0f; min = 0x800; }
+    else if (b0 >= 0xf0 && b0 <= 0xf4) { need = 3; cp = b0 & 0x07; min = 0x10000; }
+    else { bad(); i++; continue; }
+    let ok = i + need < arr.length;
+    if (ok) { for (let k = 1; k <= need; k++) { const bk = arr[i + k]; if (bk < 0x80 || bk > 0xbf) { ok = false; break; } cp = (cp << 6) | (bk & 0x3f); } }
+    if (!ok || cp < min || cp > 0x10ffff || (cp >= 0xd800 && cp <= 0xdfff)) { bad(); i++; continue; }
+    out += String.fromCodePoint(cp); i += need + 1;
+  }
+  return out;
+}
+// バイト列の部分列探索（find 系）
+function findSub(hay, ndl, start, end) {
+  if (ndl.length === 0) return start <= end ? start : -1;
+  for (let i = start; i + ndl.length <= end; i++) { let m = true; for (let j = 0; j < ndl.length; j++) if (hay[i + j] !== ndl[j]) { m = false; break; } if (m) return i; }
+  return -1;
+}
+function countSub(hay, ndl, start, end) {
+  if (ndl.length === 0) return Math.max(0, end - start) + 1;
+  let c = 0, i = start;
+  for (;;) { const at = findSub(hay, ndl, i, end); if (at < 0) return c; c++; i = at + ndl.length; }
+}
+function bytesIsWs(b) { return b === 0x20 || b === 0x09 || b === 0x0a || b === 0x0d || b === 0x0b || b === 0x0c; }
+function splitBytes(arr, sep, max, fromRight) {
+  if (sep === null) {
+    const out = [];
+    if (!fromRight) {
+      let i = 0; const n = arr.length;
+      while (true) { while (i < n && bytesIsWs(arr[i])) i++; if (i >= n) break; if (max >= 0 && out.length === max) { out.push(arr.slice(i)); break; } let j = i; while (j < n && !bytesIsWs(arr[j])) j++; out.push(arr.slice(i, j)); i = j; }
+      return out;
+    }
+    let j = arr.length;
+    while (true) { while (j > 0 && bytesIsWs(arr[j - 1])) j--; if (j <= 0) break; if (max >= 0 && out.length === max) { out.unshift(arr.slice(0, j)); break; } let i = j; while (i > 0 && !bytesIsWs(arr[i - 1])) i--; out.unshift(arr.slice(i, j)); j = i; }
+    return out;
+  }
+  const parts = []; let i = 0;
+  for (;;) { const at = findSub(arr, sep, i, arr.length); if (at < 0) { parts.push(arr.slice(i)); break; } parts.push(arr.slice(i, at)); i = at + sep.length; }
+  if (max < 0 || parts.length <= max + 1) return parts;
+  if (!fromRight) { const head = parts.slice(0, max); const rest = []; parts.slice(max).forEach((pt, k) => { if (k) rest.push(...sep); rest.push(...pt); }); return head.concat([rest]); }
+  const tail = parts.slice(parts.length - max); const rest = []; parts.slice(0, parts.length - max).forEach((pt, k) => { if (k) rest.push(...sep); rest.push(...pt); }); return [rest].concat(tail);
+}
+const STR_LINE_BOUNDS = new Set(['\n', '\r', '\v', '\f', '\x1c', '\x1d', '\x1e', '\x85', '\u2028', '\u2029']);
+function splitLinesStr(s, keepends) {
+  const a = Array.from(s); const out = []; let cur = '';
+  for (let i = 0; i < a.length; i++) {
+    const ch = a[i];
+    if (STR_LINE_BOUNDS.has(ch)) {
+      let term = ch;
+      if (ch === '\r' && a[i + 1] === '\n') { term = '\r\n'; i++; }
+      out.push(keepends ? cur + term : cur); cur = ''; continue;
+    }
+    cur += ch;
+  }
+  if (cur) out.push(cur);
+  return out;
+}
+const BYTES_LINE_BOUNDS = new Set([0x0a, 0x0d, 0x0b, 0x0c, 0x1c, 0x1d, 0x1e, 0x85]);
+function splitLinesBytes(arr, keepends) {
+  const out = []; let cur = [];
+  for (let i = 0; i < arr.length; i++) {
+    const b = arr[i];
+    if (BYTES_LINE_BOUNDS.has(b)) {
+      let term = [b];
+      if (b === 0x0d && arr[i + 1] === 0x0a) { term = [0x0d, 0x0a]; i++; }
+      out.push(keepends ? cur.concat(term) : cur); cur = []; continue;
+    }
+    cur.push(b);
+  }
+  if (cur.length) out.push(cur);
+  return out;
+}
+function expandTabsStr(s, tabsize) {
+  let out = '', col = 0;
+  for (const ch of s) {
+    if (ch === '\t') { const n = tabsize <= 0 ? 0 : tabsize - (col % tabsize); out += ' '.repeat(n); col += n; }
+    else if (ch === '\n' || ch === '\r') { out += ch; col = 0; }
+    else { out += ch; col++; }
+  }
+  return out;
+}
+function expandTabsBytes(arr, tabsize) {
+  const out = []; let col = 0;
+  for (const b of arr) {
+    if (b === 0x09) { const n = tabsize <= 0 ? 0 : tabsize - (col % tabsize); for (let k = 0; k < n; k++) out.push(0x20); col += n; }
+    else if (b === 0x0a || b === 0x0d) { out.push(b); col = 0; }
+    else { out.push(b); col++; }
+  }
+  return out;
+}
+function hexOfBytes(arr, sep, perSep) {
+  const hex = arr.map(b => b.toString(16).padStart(2, '0')).join('');
+  if (sep === undefined || sep === null) return hex;
+  const groupChars = Math.max(1, perSep) * 2;
+  const groups = [];
+  for (let i = hex.length; i > 0; i -= groupChars) groups.unshift(hex.slice(Math.max(0, i - groupChars), i));
+  return groups.join(sep);
+}
+function parseHexBytes(s, E, what) {
+  const t = s.replace(/[\x09-\x0d\x20]/g, '');
+  if (t.length % 2) E('ValueError', (what || 'fromhex') + '(): 16進文字列の長さは偶数にしてください', '');
+  if (/[^0-9a-fA-F]/.test(t)) E('ValueError', (what || 'fromhex') + '(): 16進数でない文字が含まれています', '');
+  const out = [];
+  for (let i = 0; i < t.length; i += 2) out.push(parseInt(t.substr(i, 2), 16));
+  return out;
+}
+// float.hex()（CPython 形式：0x1.8000000000000p+0）
+function floatHex(x) {
+  if (Number.isNaN(x)) return 'nan';
+  if (x === Infinity) return 'inf';
+  if (x === -Infinity) return '-inf';
+  const sign = (x < 0 || Object.is(x, -0)) ? '-' : '';
+  const ax = Math.abs(x);
+  if (ax === 0) return sign + '0x0.0p+0';
+  const buf = new DataView(new ArrayBuffer(8)); buf.setFloat64(0, ax);
+  const bits = buf.getBigUint64(0);
+  const expBits = Number((bits >> 52n) & 0x7ffn);
+  const mant = bits & ((1n << 52n) - 1n);
+  const frac = mant.toString(16).padStart(13, '0');
+  if (expBits === 0) return sign + '0x0.' + frac + 'p-1022';
+  return sign + '0x1.' + frac + 'p' + (expBits - 1023 >= 0 ? '+' : '') + (expBits - 1023);
+}
+function gcdBig(a, b) { a = a < 0n ? -a : a; b = b < 0n ? -b : b; while (b) { const t = a % b; a = b; b = t; } return a; }
+// float の正確な有理数比 {n:BigInt, d:BigInt}（d>0）
+function floatRatio(x) {
+  if (x === 0) return { n: 0n, d: 1n };
+  const buf = new DataView(new ArrayBuffer(8)); buf.setFloat64(0, Math.abs(x));
+  const bits = buf.getBigUint64(0);
+  const expBits = Number((bits >> 52n) & 0x7ffn);
+  let mant = bits & ((1n << 52n) - 1n); let e2;
+  if (expBits === 0) e2 = -1074; else { mant |= (1n << 52n); e2 = expBits - 1075; }
+  let n, d;
+  if (e2 >= 0) { n = mant << BigInt(e2); d = 1n; } else { n = mant; d = 1n << BigInt(-e2); }
+  const g = gcdBig(n, d); n /= g; d /= g;
+  return { n: x < 0 ? -n : n, d };
+}
+// complex() の文字列解釈（CPython の文法の主要形：実部・虚部・j 接尾辞・括弧・空白）
+function parseComplexStr(raw, E) {
+  let t = raw.trim();
+  if (t.startsWith('(') && t.endsWith(')')) t = t.slice(1, -1).trim();
+  const body = t.replace(/\s+/g, '');
+  if (!body) E('ValueError', '文字列「' + raw + '」は複素数に変換できません', '');
+  const numRe = /^[+-]?(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?$/;
+  const spRe = /^[+-]?(inf(inity)?|nan)$/i;
+  const isNumTok = (s) => numRe.test(s) || spRe.test(s);
+  const toF = (s) => spRe.test(s) ? (/nan/i.test(s) ? NaN : (s.startsWith('-') ? -Infinity : Infinity)) : parseFloat(s);
+  if (/[jJ]$/.test(body)) {
+    const core = body.slice(0, -1);
+    // 実部と虚部の区切り：指数部の符号を除く最後の + / -
+    let cut = -1;
+    for (let i = core.length - 1; i > 0; i--) { if ((core[i] === '+' || core[i] === '-') && !/[eE]/.test(core[i - 1])) { cut = i; break; } }
+    if (cut < 0) { if (!isNumTok(core)) E('ValueError', '文字列「' + raw + '」は複素数に変換できません', ''); return { re: 0, im: toF(core) }; }
+    const reS = core.slice(0, cut), imS = core.slice(cut);
+    if (!isNumTok(reS) || !isNumTok(imS)) E('ValueError', '文字列「' + raw + '」は複素数に変換できません', '');
+    return { re: toF(reS), im: toF(imS) };
+  }
+  if (!isNumTok(body)) E('ValueError', '文字列「' + raw + '」は複素数に変換できません', '');
+  return { re: toF(body), im: 0 };
+}
+
 Interp.prototype.callMethod = function (obj, name, args, kwargs, env, line) {
   // 実行時に確定したレシーバ型で修飾した名前も記録する（R7-151：トレースの
   // 参照チップが str.split 等の項目へ解決できるようにするため。短い名前の
@@ -3707,14 +5781,52 @@ Interp.prototype.callMethod = function (obj, name, args, kwargs, env, line) {
   else if (isTuple(obj)) this.noteCall('tuple.' + name, 'method');
   else if (obj && obj.__range) this.noteCall('range.' + name, 'method');
   else if (isUnk(obj) && obj.mod) this.noteCall(obj.mod + '.' + name, 'method');
+  // B6-Py3：super プロキシ経由のメソッド呼び出し
+  if (isSuper(obj)) { const v = this.getAttrSuper(obj, name, line, env); return this.callFn(v, args, env, line); }
+  // B6-Py3：object.__new__／__getattribute__／__setattr__ の組み込み相当
+  if (obj && (obj.__builtin === 'object' || obj.__type === 'object')) {
+    if (name === '__new__') { const t = args[0]; return (t && t.__class) ? { __instance: true, cls: t, attrs: new Map() } : UNK(); }
+    if (name === '__getattribute__') { const o = args[0]; if (o && o.__instance) { this._gaBypass = (this._gaBypass || 0) + 1; try { return this.getAttrInstance(o, args[1], line, env); } finally { this._gaBypass--; } } return UNK(); }
+    if (name === '__setattr__') { const o = args[0]; if (o && o.__instance) { this._saBypass = (this._saBypass || 0) + 1; try { this.setAttrInstance(o, args[1], args[2], line, env); } finally { this._saBypass--; } } return NONE; }
+  }
   if (obj && (obj.__instance || obj.__class)) {
     const cls = obj.__instance ? obj.cls : obj;
     const own = obj.__instance && obj.attrs.has(name);
+    const hitPre = own ? classLookupOwner(cls, name) : null;
+    if (!own || (hitPre && this.isDataDesc(hitPre.value))) {
+      // B6-Py3：classmethod／staticmethod／property／ディスクリプタ／
+      // type.mro の発火（クラス側に置かれた値の規則）
+      const hit = classLookupOwner(cls, name);
+      if (hit) {
+        const raw = hit.value;
+        if (isCM(raw)) return this.withSuperCtx(hit.owner, obj, () => this.callUserFunc(raw.fn, [cls, ...args], kwargs, env, line));
+        if (isSM(raw)) return this.callUserFunc(raw.fn, args, kwargs, env, line);
+        if (isProp(raw)) {
+          if (!obj.__instance) return this.callFn(raw, args, env, line);
+          if (!raw.fget) this.err(line, 'AttributeError', 'この property には getter がありません（unreadable attribute）', '');
+          const got = this.callFn(raw.fget, [obj], env, line);
+          return this.callFn(got, args, env, line);
+        }
+        if (raw && raw.__instance && this.specialLookup(raw, '__get__') !== undefined) {
+          const got = this.bindClassAttr(cls, hit, obj.__instance ? obj : null, line, env);
+          return this.callFn(got, args, env, line);
+        }
+        if (isFunc(raw)) {
+          if (obj.__instance) return this.withSuperCtx(hit.owner, obj, () => this.callUserFunc(raw, [obj, ...args], kwargs, env, line));
+          return this.callUserFunc(raw, args, kwargs, env, line);
+        }
+        return this.callFn(raw, args, env, line);
+      }
+      if (name === 'mro') return LIST(mroAllOf(cls));
+    }
     const method = own ? obj.attrs.get(name) : classLookup(cls, name);
     if (isFunc(method)) return this.callUserFunc(method, obj.__instance && !own ? [obj, ...args] : args, kwargs, env, line);
     if (method === undefined) this.err(line, 'AttributeError', '属性がありません：' + name, '');
     return this.callFn(method, args, env, line);
   }
+  if (isUnk(obj) && obj.mod && isStdlibModule(obj.mod)) return this.stdlibModuleCall(obj.mod, name, args, kwargs, env, line);
+  if (obj && obj.__native) return this.stdlibNativeCall(obj, name, args, kwargs, env, line);
+  if (obj && obj.__ncls) return this.stdlibClassCall(obj, name, args, kwargs, env, line);
   if (isUnk(obj) && obj.mod === 'math') { const mk = Object.keys(kwargs || {}); if (mk.length) this.err(line, 'TypeError', 'math.' + name + '() にキーワード引数「' + mk[0] + '」はありません', 'キーワード引数「' + mk[0] + '」は math.' + name + '() では使えません'); return this.mathCall(name, args, line); }
   if (isUnk(obj)) return UNK();
   if (isNone(obj)) this.err(line, 'AttributeError', 'None にはメソッド「' + name + '」がありません（値が None になっていないか確認してください）', 'return を書き忘れた関数の戻り値などで None になっていないか確認してください');
@@ -3734,6 +5846,165 @@ Interp.prototype.callMethod = function (obj, name, args, kwargs, env, line) {
       else if ((isTuple(obj) || (obj && obj.__range)) && (name === 'count' || name === 'index')) allowed = [];
       if (allowed) for (const k of kwKeys) if (!allowed.includes(k)) this.err(line, 'TypeError', typeName(obj) + ' のメソッド「' + name + '」にキーワード引数「' + k + '」はありません', 'キーワード引数「' + k + '」は ' + name + '() では使えません。値は位置で渡してください');
     } }
+  /* ===== B6-Py2：クラスメソッド形（型そのものへの呼び出し） ===== */
+  {
+    const tname = obj && obj.__type ? obj.__type : obj && obj.__builtin && TYPE_BUILTINS.includes(obj.__builtin) ? obj.__builtin : null;
+    if (tname) {
+      const E = (kind, msg, fix) => this.err(line, kind, msg, fix || '');
+      if (name === 'fromkeys' && (tname === 'dict' || tname === 'frozendict')) {
+        if (args.length < 1 || args.length > 2) arityErr('1〜2 個');
+        const seq = this.iterableChecked(args[0], line, true); if (seq === null) return UNK();
+        const d = tname === 'frozendict' ? FROZENDICT() : DICT();
+        const val = args.length > 1 ? args[1] : NONE;
+        for (const k of seq) { this.needHash(k, line); dictSet(d, k, val); }
+        return d;
+      }
+      if (name === 'from_bytes' && tname === 'int') {
+        if (args.length < 1 || args.length > 3) arityErr('1〜3 個');
+        let barr = null;
+        if (isBytesLike(args[0])) barr = bytesOf(args[0]).slice();
+        else if (isMemview(args[0])) barr = mvBytes(args[0]);
+        else { const seq = this.iterableChecked(args[0], line, true); if (seq === null) return UNK(); barr = seq.map(x => { const bv = isBool(x) ? (x.v ? 1 : 0) : isNum(x) && !x.f ? x.v : null; if (bv === null || bv < 0 || bv > 255) E('ValueError', 'from_bytes の要素は 0〜255 の整数にしてください', ''); return bv; }); }
+        const order = args[1] !== undefined ? args[1] : 'big';
+        if (order !== 'big' && order !== 'little') E('ValueError', "byteorder は 'big' か 'little' にしてください", '');
+        const signed = args[2] !== undefined ? this.truthyOf(args[2], line, env) === true : (kwargs && kwargs.signed !== undefined ? this.truthyOf(this.eval(kwargs.signed, env), line, env) === true : false);
+        let acc = 0n; const ord = order === 'big' ? barr : barr.slice().reverse();
+        for (const b of ord) acc = (acc << 8n) + BigInt(b);
+        if (signed && barr.length && (order === 'big' ? barr[0] : barr[barr.length - 1]) >= 0x80) acc -= 1n << BigInt(barr.length * 8);
+        return SAFE(Number(acc)) && BigInt(Number(acc)) === acc ? NUM(Number(acc), false) : BIG();
+      }
+      if (name === 'fromhex' && tname === 'float') {
+        if (args.length !== 1) arityErr('1 個必要');
+        if (typeof args[0] !== 'string') E('TypeError', 'float.fromhex() には文字列を渡してください', '');
+        const t = args[0].trim();
+        const hx = /^([+-]?)0[xX]([0-9a-fA-F]*)(?:\.([0-9a-fA-F]*))?(?:[pP]([+-]?\d+))?$/.exec(t);
+        if (hx && (hx[2] || hx[3])) {
+          let mant = 0n; const digits = (hx[2] || '') + (hx[3] || '');
+          for (const ch of digits) mant = mant * 16n + BigInt(parseInt(ch, 16));
+          let exp = (hx[4] ? parseInt(hx[4], 10) : 0) - 4 * (hx[3] || '').length;
+          let val;
+          if (mant === 0n) val = 0;
+          else { while (mant > (1n << 200n)) { mant >>= 1n; exp++; } val = Number(mant) * Math.pow(2, exp); }
+          return NUM(hx[1] === '-' ? -val : val, true);
+        }
+        if (/^[+-]?(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?$/.test(t)) return NUM(parseFloat(t), true);
+        if (/^[+-]?(inf(inity)?|nan)$/i.test(t)) return NUM(/nan/i.test(t) ? NaN : (t.startsWith('-') ? -Infinity : Infinity), true);
+        E('ValueError', '文字列「' + args[0] + '」は float.fromhex() で変換できません', '');
+      }
+      if (name === 'from_number' && (tname === 'float' || tname === 'complex')) {
+        if (args.length !== 1) arityErr('1 個必要');
+        const v = args[0]; if (isUnk(v)) return UNK();
+        if (tname === 'float') { if (isNum(v)) return NUM(v.v, true); if (isBool(v)) return NUM(v.v ? 1 : 0, true); if (v && v.__instance) { for (const mn of ['__float__', '__index__']) { if (this.specialLookup(v, mn) !== undefined) { const r = this.callSpecial(v, mn, line, env); if (isUnk(r)) return r; if (isBool(r)) return NUM(r.v ? 1 : 0, true); if (isNum(r)) return NUM(r.v, true); E('TypeError', mn + '() の戻り値（' + typeName(r) + '）は小数として解釈できません', ''); } } } E('TypeError', 'float.from_number() には数値を渡してください', ''); } // B6監査D14：docs 3.14 の委譲
+        const pp = cxParts(v); if (!pp) E('TypeError', 'complex.from_number() には数値を渡してください', '');
+        return CXV(pp.re, pp.im);
+      }
+      if (name === 'fromhex' && (tname === 'bytes' || tname === 'bytearray')) {
+        if (args.length !== 1) arityErr('1 個必要');
+        if (typeof args[0] !== 'string') E('TypeError', tname + '.fromhex() には文字列を渡してください', '');
+        const barr = parseHexBytes(args[0], E, tname + '.fromhex');
+        return tname === 'bytes' ? BYTESV(barr) : BYTEARRAY(barr);
+      }
+      if (name === 'maketrans' && (tname === 'str' || tname === 'bytes' || tname === 'bytearray')) {
+        return this.maketransImpl(tname, args, line);
+      }
+    }
+  }
+  /* ===== B6-Py2：数値メソッド（int／float／bool） ===== */
+  if (isNum(obj) || isBool(obj)) {
+    const E = (kind, msg, fix) => this.err(line, kind, msg, fix || '');
+    const iv = isBool(obj) ? (obj.v ? 1 : 0) : obj.v;
+    if (name === 'conjugate') { if (args.length) arityErr('0 個'); return isBool(obj) ? NUM(iv, false) : obj; }
+    if (name === 'bit_length' && !obj.f) { if (args.length) arityErr('0 個'); const a = Math.abs(Math.trunc(iv)); return NUM(a === 0 ? 0 : BigInt(a).toString(2).length, false); }
+    if (name === 'bit_count' && !obj.f) { if (args.length) arityErr('0 個'); const a = Math.abs(Math.trunc(iv)); return NUM(a === 0 ? 0 : BigInt(a).toString(2).split('').filter(c => c === '1').length, false); }
+    if (name === 'to_bytes' && !obj.f) {
+      if (args.length < 2 || args.length > 3) arityErr('2〜3 個');
+      const lenA = this.intIndex(args[0], line, 'to_bytes() の長さ'); if (lenA < 0) E('ValueError', 'to_bytes() の長さは 0 以上にしてください', '');
+      const order = args[1]; if (order !== 'big' && order !== 'little') E('ValueError', "byteorder は 'big' か 'little' にしてください", '');
+      const signed = args[2] !== undefined ? this.truthyOf(args[2], line, env) === true : (kwargs && kwargs.signed !== undefined ? this.truthyOf(this.eval(kwargs.signed, env), line, env) === true : false);
+      let n = BigInt(Math.trunc(iv));
+      if (n < 0n && !signed) E('OverflowError', '負の数は signed=False ではバイト列にできません', '');
+      if (n < 0n) n += 1n << BigInt(lenA * 8);
+      if (n < 0n || n >= (1n << BigInt(lenA * 8))) E('OverflowError', '整数が長さ ' + lenA + ' バイトに収まりません', '');
+      const out = []; let tmp = n;
+      for (let k = 0; k < lenA; k++) { out.push(Number(tmp & 0xffn)); tmp >>= 8n; }
+      if (order === 'big') out.reverse();
+      return BYTESV(out);
+    }
+    if (name === 'as_integer_ratio') {
+      if (args.length) arityErr('0 個');
+      if (!obj.f) return TUPLE([NUM(Math.trunc(iv), false), NUM(1, false)]);
+      if (Number.isNaN(obj.v)) E('ValueError', 'NaN は有理数にできません', '');
+      if (!Number.isFinite(obj.v)) E('OverflowError', '無限大は有理数にできません', '');
+      const r = floatRatio(obj.v);
+      // エンジン全体の規約どおり、安全な整数の範囲を超えた要素は BIG（不透明）にする
+      // （int.from_bytes 等と同じ扱い。例：(0.1) の分母 2^55 はこの範囲を超える）
+      const cvt = (b) => (SAFE(Number(b)) && BigInt(Number(b)) === b ? NUM(Number(b), false) : BIG());
+      return TUPLE([cvt(r.n), cvt(r.d)]);
+    }
+    if (name === 'is_integer') { if (args.length) arityErr('0 個'); return BOOL(!obj.f ? true : Number.isInteger(obj.v)); }
+    if (name === 'hex' && obj.f) { if (args.length) arityErr('0 個'); return floatHex(obj.v); }
+  }
+  /* ===== B6-Py2：complex メソッド ===== */
+  if (isComplex(obj)) {
+    if (name === 'conjugate') { if (args.length) arityErr('0 個'); return CXV(obj.__complex.re, -obj.__complex.im); }
+    this.err(line, 'AttributeError', 'complex には「' + name + '」という属性（メソッド）はありません', '');
+  }
+  /* ===== B6-Py2：slice メソッド ===== */
+  if (isSlice(obj)) {
+    if (name === 'indices') {
+      if (args.length !== 1) arityErr('1 個必要');
+      const lenA = this.intIndex(args[0], line, 'indices() の長さ'); if (lenA < 0) this.err(line, 'ValueError', 'indices() の長さは 0 以上にしてください', '');
+      const sl = obj.__slice;
+      const ix = this.sliceIdx(lenA, isNone(sl.start) ? null : sl.start, isNone(sl.stop) ? null : sl.stop, isNone(sl.step) ? null : sl.step, line);
+      if (ix === null) return UNK();
+      return TUPLE([NUM(ix.a, false), NUM(ix.b, false), NUM(ix.step, false)]);
+    }
+    this.err(line, 'AttributeError', 'slice には「' + name + '」という属性（メソッド）はありません', '');
+  }
+  /* ===== B6-Py2：memoryview メソッド ===== */
+  if (isMemview(obj)) {
+    const mv = obj.__memview;
+    const E = (kind, msg, fix) => this.err(line, kind, msg, fix || '');
+    if (mv.released) E('ValueError', '解放済み（release 済み）の memoryview は使えません（operation forbidden on released memoryview object）', '');
+    switch (name) {
+      case 'release': if (args.length) arityErr('0 個'); mv.released = true; return NONE;
+      case 'tobytes': { if (args.length > 1) arityErr('0〜1 個'); return BYTESV(mvBytes(obj)); }
+      case 'tolist': if (args.length) arityErr('0 個'); return LIST(mvBytes(obj).map(x => NUM(x, false)));
+      case 'hex': {
+        if (args.length > 2) arityErr('0〜2 個');
+        let sep = null, per = 1;
+        if (args.length >= 1 && !isNone(args[0])) { if (typeof args[0] !== 'string' || Array.from(args[0]).length !== 1) E('TypeError', 'hex() の区切りは1文字の文字列にしてください', ''); sep = args[0]; }
+        if (args.length >= 2) per = this.intIndex(args[1], line, 'bytes_per_sep');
+        return hexOfBytes(mvBytes(obj), sep, per);
+      }
+      case 'count': case 'index': {
+        if (args.length < 1 || args.length > 3) arityErr('1〜3 個');
+        const arr = mvBytes(obj);
+        const bd = (v, d) => { if (v === undefined) return d; let k = this.intIndex(v, line, '開始・終了位置'); if (k < 0) { k += arr.length; if (k < 0) k = 0; } return Math.min(k, arr.length); };
+        const st = bd(args[1], 0), en = bd(args[2], arr.length);
+        if (isBytesLike(args[0])) { // B6監査D8：memoryview の count／index は要素（int）との一致で数える（bytes.count の部分列意味論ではない。docs 3.14／gh-125420）
+          if (name === 'count') return NUM(0, false);
+          E('ValueError', reprVal(args[0]) + ' は memoryview の中にありません', '');
+        }
+        const bv = isBool(args[0]) ? (args[0].v ? 1 : 0) : isNum(args[0]) && !args[0].f ? args[0].v : null;
+        if (bv === null || bv < 0 || bv > 255) E('TypeError', 'memoryview の ' + name + '() には 0〜255 の整数か bytes のような並びを渡してください', '');
+        if (name === 'count') return NUM(arr.slice(st, en).filter(x => x === bv).length, false);
+        const at = arr.slice(st, en).indexOf(bv); if (at < 0) E('ValueError', reprVal(args[0]) + ' は memoryview の中にありません', '');
+        return NUM(st + at, false);
+      }
+      case 'toreadonly': if (args.length) arityErr('0 個'); return MEMVIEW({ buf: mv.buf, off: mv.off, len: mv.len, readonly: true, released: false, obj: mv.obj });
+      case 'cast': {
+        if (args.length < 1 || args.length > 2) arityErr('1〜2 個');
+        if (args[0] !== 'B') E('未対応', 'memoryview.cast() は書式 \'B\' だけに対応しています（他の書式はこの説明では対応していません）', "'B' で試してください");
+        return MEMVIEW({ buf: mv.buf, off: mv.off, len: mv.len, readonly: mv.readonly, released: false, obj: mv.obj });
+      }
+    }
+    this.err(line, 'AttributeError', 'memoryview には「' + name + '」という属性（メソッド）はありません', '');
+  }
+  /* ===== B6-Py2：bytes／bytearray メソッド ===== */
+  if (isBytesLike(obj)) {
+    return this.callBytesMethod(obj, name, args, kwargs, env, line);
+  }
   if (typeof obj === 'string') {
     const S = (f, min, max) => { if (args.length < min || args.length > max) arityErr(min === max ? min + ' 個必要' : min + '〜' + max + ' 個'); return f(); };
     switch (name) {
@@ -3827,7 +6098,74 @@ Interp.prototype.callMethod = function (obj, name, args, kwargs, env, line) {
       case 'isidentifier': return S(() => { const a = Array.from(obj); return BOOL(a.length > 0 && (a[0] === '_' || /^\p{XID_Start}$/u.test(a[0])) && a.slice(1).every((ch) => ch !== '\u200c' && ch !== '\u200d' && /^\p{XID_Continue}$/u.test(ch))); }, 0, 0);
       case 'islower': return S(() => { const a = Array.from(obj); return BOOL(a.some((ch) => /^\p{Lowercase}$/u.test(ch)) && !a.some((ch) => /^\p{Uppercase}$/u.test(ch) || /^\p{Lt}$/u.test(ch))); }, 0, 0);
       case 'isupper': return S(() => { const a = Array.from(obj); return BOOL(a.some((ch) => /^\p{Uppercase}$/u.test(ch)) && !a.some((ch) => /^\p{Lowercase}$/u.test(ch) || /^\p{Lt}$/u.test(ch))); }, 0, 0);
-      case 'format': this.diag(line, 'note', '対応外', '文字列の format() はこの説明では解釈できません', 'f文字列を使うと説明できます'); return UNK();
+      case 'casefold': return S(() => pyCasefold(obj), 0, 0);
+      case 'center': case 'ljust': case 'rjust': return S(() => {
+        const w = this.intIndex(args[0], line, '幅');
+        let fill = ' ';
+        if (args[1] !== undefined) { if (typeof args[1] !== 'string' || Array.from(args[1]).length !== 1) this.err(line, 'TypeError', '埋め文字は1文字の文字列にしてください', ''); fill = args[1]; }
+        const a = Array.from(obj); if (a.length >= w) return obj;
+        const n = w - a.length;
+        if (name === 'ljust') return obj + fill.repeat(n);
+        if (name === 'rjust') return fill.repeat(n) + obj;
+        const l = Math.floor(n / 2); return fill.repeat(l) + obj + fill.repeat(n - l);
+      }, 1, 2);
+      case 'encode': return S(() => {
+        const enc = resolveEncoding(args[0] !== undefined ? args[0] : (kwargs && kwargs.encoding !== undefined ? this.eval(kwargs.encoding, env) : 'utf-8'), (k, m, f) => this.err(line, k, m, f || ''));
+        const errors = checkErrorsMode(args[1] !== undefined ? args[1] : (kwargs && kwargs.errors !== undefined ? this.eval(kwargs.errors, env) : undefined), (k, m, f) => this.err(line, k, m, f || ''));
+        return BYTESV(encodeStrToBytes(obj, enc, errors, (k, m, f) => this.err(line, k, m, f || '')));
+      }, 0, 2);
+      case 'expandtabs': return S(() => expandTabsStr(obj, args[0] !== undefined ? this.intIndex(args[0], line, 'tabsize') : 8), 0, 1);
+      case 'format': { if (args.some(isUnk)) return UNK(); return this.strFormatImpl(obj, args, kwargs, env, line, null); }
+      case 'format_map': return S(() => { if (!isDict(args[0])) this.err(line, 'TypeError', 'format_map() には辞書（マッピング）を渡してください', ''); return this.strFormatImpl(obj, [], {}, env, line, args[0]); }, 1, 1);
+      case 'isprintable': return S(() => BOOL(Array.from(obj).every((ch) => ch === ' ' || !NONPRINT_RE.test(ch))), 0, 0);
+      case 'istitle': return S(() => {
+        const a = Array.from(obj); let prevCased = false, hasCased = false;
+        for (const ch of a) {
+          const isUp = /^\p{Uppercase}$/u.test(ch) || /^\p{Lt}$/u.test(ch), isLow = /^\p{Lowercase}$/u.test(ch);
+          if (isUp) { if (prevCased) return BOOL(false); prevCased = true; hasCased = true; }
+          else if (isLow) { if (!prevCased) return BOOL(false); prevCased = true; hasCased = true; }
+          else prevCased = false;
+        }
+        return BOOL(hasCased);
+      }, 0, 0);
+      case 'maketrans': return this.maketransImpl('str', args, line);
+      case 'partition': case 'rpartition': return S(() => {
+        if (typeof args[0] !== 'string') this.err(line, 'TypeError', name + '() には文字列を渡してください', '');
+        if (args[0] === '') this.err(line, 'ValueError', '区切り（sep）に空文字列は使えません', '');
+        const at = name === 'partition' ? obj.indexOf(args[0]) : obj.lastIndexOf(args[0]);
+        if (at < 0) return name === 'partition' ? TUPLE([obj, '', '']) : TUPLE(['', '', obj]);
+        return TUPLE([obj.slice(0, at), args[0], obj.slice(at + args[0].length)]);
+      }, 1, 1);
+      case 'removeprefix': case 'removesuffix': return S(() => {
+        if (typeof args[0] !== 'string') this.err(line, 'TypeError', name + '() には文字列を渡してください', '');
+        if (name === 'removeprefix') return obj.startsWith(args[0]) ? obj.slice(args[0].length) : obj;
+        return obj.endsWith(args[0]) ? obj.slice(0, obj.length - args[0].length) : obj;
+      }, 1, 1);
+      case 'splitlines': return S(() => LIST(splitLinesStr(obj, args[0] !== undefined ? this.truthyOf(args[0], line, env) === true : false)), 0, 1);
+      case 'swapcase': return S(() => Array.from(obj).map((ch) => {
+        if (/^\p{Lowercase}$/u.test(ch)) return ch.toUpperCase();
+        if (/^\p{Uppercase}$/u.test(ch) || /^\p{Lt}$/u.test(ch)) return ch.toLowerCase();
+        return ch;
+      }).join(''), 0, 0);
+      case 'translate': return S(() => {
+        if (!isDict(args[0])) this.err(line, 'TypeError', 'translate() には辞書（変換表）を渡してください', '');
+        let out = '';
+        for (const ch of obj) {
+          const v = dictGet(args[0], NUM(ch.codePointAt(0), false));
+          if (v === undefined) { out += ch; continue; }
+          if (isNone(v)) continue;
+          if (typeof v === 'string') { out += v; continue; }
+          if (isNum(v) && !v.f) { out += String.fromCodePoint(v.v); continue; }
+          this.err(line, 'TypeError', 'translate() の変換表の値は文字列・整数・None のいずれかにしてください', '');
+        }
+        return out;
+      }, 1, 1);
+      case 'zfill': return S(() => {
+        const w = this.intIndex(args[0], line, '幅');
+        const a = Array.from(obj); if (a.length >= w) return obj;
+        const sign = (a[0] === '+' || a[0] === '-') ? 1 : 0;
+        return a.slice(0, sign).join('') + '0'.repeat(w - a.length) + a.slice(sign).join('');
+      }, 1, 1);
     }
   }
   if (isList(obj)) {
@@ -3856,8 +6194,11 @@ Interp.prototype.callMethod = function (obj, name, args, kwargs, env, line) {
     }
   }
   if (isDict(obj)) {
+    if (name === 'fromkeys') { if (args.length < 1 || args.length > 2) arityErr('1〜2 個'); const seq = this.iterableChecked(args[0], line, true); if (seq === null) return UNK(); const d = isFrozenDict(obj) ? FROZENDICT() : DICT(); const val = args.length > 1 ? args[1] : NONE; for (const k of seq) { this.needHash(k, line); dictSet(d, k, val); } return d; }
+    if (isFrozenDict(obj) && ['update', 'pop', 'popitem', 'setdefault', 'clear'].includes(name)) this.err(line, 'AttributeError', 'frozendict には「' + name + '」という属性（メソッド）はありません（frozendict は変更できません）', '新しい frozendict を作るか、dict に変換してから書き換えてください');
+    if (isFrozenDict(obj) && name === 'copy') { if (args.length) arityErr('0 個'); const d = FROZENDICT(); for (const [id, e] of obj.__dict) d.__dict.set(id, e); return d; }
     switch (name) {
-      case 'get': { if (args.length < 1 || args.length > 2) arityErr('1〜2 個'); if (isUnk(args[0])) return UNK(); this.needHash(args[0], line); const v = dictGet(obj, args[0]); if (v !== undefined) return v; if ([...obj.__dict.values()].some(e => eqVal(e.k, args[0]) === true)) return obj.__dict.get(dictKeyId(args[0])).v; return args.length > 1 ? args[1] : NONE; }
+      case 'get': { if (args.length < 1 || args.length > 2) arityErr('1〜2 個'); if (isUnk(args[0])) return UNK(); this.needHash(args[0], line); const v = dictGet(obj, args[0]); if (v !== undefined) return v; const hitG = [...obj.__dict.values()].find(e => this.eqByVal(e.k, args[0], line)); if (hitG) return hitG.v; return args.length > 1 ? args[1] : NONE; }
       case 'keys': if (args.length) arityErr('0 個'); return VIEW(obj, 'keys');
       case 'values': if (args.length) arityErr('0 個'); return VIEW(obj, 'values');
       case 'items': if (args.length) arityErr('0 個'); return VIEW(obj, 'items');
@@ -3879,23 +6220,27 @@ Interp.prototype.callMethod = function (obj, name, args, kwargs, env, line) {
     }
   }
   if (isSet(obj)) {
+    if (isFrozenSet(obj) && ['add', 'remove', 'discard', 'update', 'clear', 'pop', 'intersection_update', 'difference_update', 'symmetric_difference_update'].includes(name)) this.err(line, 'AttributeError', 'frozenset には「' + name + '」という属性（メソッド）はありません（frozenset は変更できません）', '新しい frozenset を作ってください');
     switch (name) {
-      case 'add': if (args.length !== 1) arityErr('1 個必要'); this.needHash(args[0], line); obj.__set.push(args[0]); if (!obj.__set.slice(0, -1).some(x => eqVal(x, args[0]) === true)) this.step(line, '集合に ' + reprVal(args[0]) + ' を追加します'); else obj.__set.pop(); return NONE;
-      case 'remove': { if (args.length !== 1) arityErr('1 個必要'); if (isUnk(args[0])) { poison(obj, '書き換えられたかもしれない集合'); return NONE; } this.needHash(args[0], line); const at = obj.__set.findIndex(x => eqVal(x, args[0]) === true); if (at < 0) this.err(line, 'KeyError', reprVal(args[0]) + ' は集合にありません', ''); obj.__set.splice(at, 1); return NONE; }
-      case 'discard': { if (args.length !== 1) arityErr('1 個必要'); if (isUnk(args[0])) { poison(obj, '書き換えられたかもしれない集合'); return NONE; } this.needHash(args[0], line); const at = obj.__set.findIndex(x => eqVal(x, args[0]) === true); if (at >= 0) obj.__set.splice(at, 1); return NONE; }
+      case 'isdisjoint': { if (args.length !== 1) arityErr('1 個必要'); const seq = this.iterableChecked(args[0], line, true); if (seq === null) return UNK(); return BOOL(!obj.__set.some(x => seq.some(y => this.eqByVal(x, y, line)))); }
+      case 'issubset': { if (args.length !== 1) arityErr('1 個必要'); const seq = this.iterableChecked(args[0], line, true); if (seq === null) return UNK(); return BOOL(obj.__set.every(x => seq.some(y => this.eqByVal(x, y, line)))); }
+      case 'issuperset': { if (args.length !== 1) arityErr('1 個必要'); const seq = this.iterableChecked(args[0], line, true); if (seq === null) return UNK(); return BOOL(seq.every(x => obj.__set.some(y => this.eqByVal(x, y, line)))); }
+      case 'add': if (args.length !== 1) arityErr('1 個必要'); this.needHash(args[0], line); obj.__set.push(args[0]); if (!obj.__set.slice(0, -1).some(x => this.eqByVal(x, args[0], line))) this.step(line, '集合に ' + reprVal(args[0]) + ' を追加します'); else obj.__set.pop(); return NONE;
+      case 'remove': { if (args.length !== 1) arityErr('1 個必要'); if (isUnk(args[0])) { poison(obj, '書き換えられたかもしれない集合'); return NONE; } this.needHash(args[0], line); const at = obj.__set.findIndex(x => this.eqByVal(x, args[0], line)); if (at < 0) this.err(line, 'KeyError', reprVal(args[0]) + ' は集合にありません', ''); obj.__set.splice(at, 1); return NONE; }
+      case 'discard': { if (args.length !== 1) arityErr('1 個必要'); if (isUnk(args[0])) { poison(obj, '書き換えられたかもしれない集合'); return NONE; } this.needHash(args[0], line); const at = obj.__set.findIndex(x => this.eqByVal(x, args[0], line)); if (at >= 0) obj.__set.splice(at, 1); return NONE; }
       // 集合の演算メソッドは順序に依存しないため、引数の集合は並び順が未確定でも展開してよい（PY-01）。
       // 引数は CPython どおり複数受け付け（union 等）、確定した非イテラブルは TypeError で止める（PY-04）。
-      case 'update': { for (const a of args) { const seq = this.iterableChecked(a, line, true); if (seq === null) { poison(obj, '書き換えられたかもしれない集合'); return NONE; } for (const x of seq) { this.needHash(x, line); if (!obj.__set.some(y => eqVal(x, y) === true)) obj.__set.push(x); } } this.step(line, '集合に要素を追加します → ' + reprVal(obj)); return NONE; }
+      case 'update': { for (const a of args) { const seq = this.iterableChecked(a, line, true); if (seq === null) { poison(obj, '書き換えられたかもしれない集合'); return NONE; } for (const x of seq) { this.needHash(x, line); if (!obj.__set.some(y => this.eqByVal(x, y, line))) obj.__set.push(x); } } this.step(line, '集合に要素を追加します → ' + reprVal(obj)); return NONE; }
       case 'clear': if (args.length) arityErr('0 個'); obj.__set.length = 0; this.step(line, '集合を空にします'); return NONE;
       case 'pop': { if (args.length) arityErr('0 個'); if (!obj.__set.length) this.err(line, 'KeyError', '空の集合から pop() はできません', ''); poison(obj, '要素が取り出された集合'); return UNK('取り出した要素'); }
-      case 'intersection_update': { for (const a of args) { const seq = this.iterableChecked(a, line, true); if (seq === null) { poison(obj, '書き換えられたかもしれない集合'); return NONE; } for (const x of seq) this.needHash(x, line); const kept = obj.__set.filter(x => seq.some(y => eqVal(x, y) === true)); obj.__set.length = 0; for (const x of kept) obj.__set.push(x); } return NONE; }
-      case 'difference_update': { for (const a of args) { const seq = this.iterableChecked(a, line, true); if (seq === null) { poison(obj, '書き換えられたかもしれない集合'); return NONE; } for (const x of seq) this.needHash(x, line); const kept = obj.__set.filter(x => !seq.some(y => eqVal(x, y) === true)); obj.__set.length = 0; for (const x of kept) obj.__set.push(x); } return NONE; }
-      case 'symmetric_difference_update': { if (args.length !== 1) arityErr('1 個必要'); const seq = this.iterableChecked(args[0], line, true); if (seq === null) { poison(obj, '書き換えられたかもしれない集合'); return NONE; } const kept = obj.__set.filter(x => !seq.some(y => eqVal(x, y) === true)); const add = seq.filter(x => !obj.__set.some(y => eqVal(x, y) === true)); obj.__set.length = 0; for (const x of kept) obj.__set.push(x); for (const x of add) { this.needHash(x, line); if (!obj.__set.some(y => eqVal(x, y) === true)) obj.__set.push(x); } return NONE; }
-      case 'union': { const out = obj.__set.slice(); for (const a of args) { const seq = this.iterableChecked(a, line, true); if (seq === null) return UNK(); for (const x of seq) { this.needHash(x, line); if (!out.some(y => eqVal(x, y) === true)) out.push(x); } } return SET(out); }
-      case 'intersection': { let cur = obj.__set.slice(); for (const a of args) { const seq = this.iterableChecked(a, line, true); if (seq === null) return UNK(); for (const x of seq) this.needHash(x, line); cur = cur.filter(x => seq.some(y => eqVal(x, y) === true)); } return SET(cur); }
-      case 'difference': { let cur = obj.__set.slice(); for (const a of args) { const seq = this.iterableChecked(a, line, true); if (seq === null) return UNK(); for (const x of seq) this.needHash(x, line); cur = cur.filter(x => !seq.some(y => eqVal(x, y) === true)); } return SET(cur); }
-      case 'symmetric_difference': { if (args.length !== 1) arityErr('1 個必要'); const seq = this.iterableChecked(args[0], line, true); if (seq === null) return UNK(); for (const x of seq) this.needHash(x, line); const kept = obj.__set.filter(x => !seq.some(y => eqVal(x, y) === true)); for (const x of seq) if (!obj.__set.some(y => eqVal(x, y) === true) && !kept.some(y => eqVal(x, y) === true)) kept.push(x); return SET(kept); }
-      case 'copy': if (args.length) arityErr('0 個'); return SET(obj.__set.slice());
+      case 'intersection_update': { for (const a of args) { const seq = this.iterableChecked(a, line, true); if (seq === null) { poison(obj, '書き換えられたかもしれない集合'); return NONE; } for (const x of seq) this.needHash(x, line); const kept = obj.__set.filter(x => seq.some(y => this.eqByVal(x, y, line))); obj.__set.length = 0; for (const x of kept) obj.__set.push(x); } return NONE; }
+      case 'difference_update': { for (const a of args) { const seq = this.iterableChecked(a, line, true); if (seq === null) { poison(obj, '書き換えられたかもしれない集合'); return NONE; } for (const x of seq) this.needHash(x, line); const kept = obj.__set.filter(x => !seq.some(y => this.eqByVal(x, y, line))); obj.__set.length = 0; for (const x of kept) obj.__set.push(x); } return NONE; }
+      case 'symmetric_difference_update': { if (args.length !== 1) arityErr('1 個必要'); const seq = this.iterableChecked(args[0], line, true); if (seq === null) { poison(obj, '書き換えられたかもしれない集合'); return NONE; } const kept = obj.__set.filter(x => !seq.some(y => this.eqByVal(x, y, line))); const add = seq.filter(x => !obj.__set.some(y => this.eqByVal(x, y, line))); obj.__set.length = 0; for (const x of kept) obj.__set.push(x); for (const x of add) { this.needHash(x, line); if (!obj.__set.some(y => this.eqByVal(x, y, line))) obj.__set.push(x); } return NONE; }
+      case 'union': { const out = obj.__set.slice(); for (const a of args) { const seq = this.iterableChecked(a, line, true); if (seq === null) return UNK(); for (const x of seq) { this.needHash(x, line); if (!out.some(y => this.eqByVal(x, y, line))) out.push(x); } } return isFrozenSet(obj) ? FROZENSET(out) : SET(out); }
+      case 'intersection': { let cur = obj.__set.slice(); for (const a of args) { const seq = this.iterableChecked(a, line, true); if (seq === null) return UNK(); for (const x of seq) this.needHash(x, line); cur = cur.filter(x => seq.some(y => this.eqByVal(x, y, line))); } return isFrozenSet(obj) ? FROZENSET(cur) : SET(cur); }
+      case 'difference': { let cur = obj.__set.slice(); for (const a of args) { const seq = this.iterableChecked(a, line, true); if (seq === null) return UNK(); for (const x of seq) this.needHash(x, line); cur = cur.filter(x => !seq.some(y => this.eqByVal(x, y, line))); } return isFrozenSet(obj) ? FROZENSET(cur) : SET(cur); }
+      case 'symmetric_difference': { if (args.length !== 1) arityErr('1 個必要'); const seq = this.iterableChecked(args[0], line, true); if (seq === null) return UNK(); for (const x of seq) this.needHash(x, line); const kept = obj.__set.filter(x => !seq.some(y => this.eqByVal(x, y, line))); for (const x of seq) if (!obj.__set.some(y => this.eqByVal(x, y, line)) && !kept.some(y => this.eqByVal(x, y, line))) kept.push(x); return isFrozenSet(obj) ? FROZENSET(kept) : SET(kept); }
+      case 'copy': if (args.length) arityErr('0 個'); return isFrozenSet(obj) ? FROZENSET(obj.__set.slice()) : SET(obj.__set.slice());
     }
   }
   if (obj && obj.__range && name === 'count') { if (args.length !== 1) arityErr('1 個必要'); if (isUnk(args[0])) return UNK(); return NUM(obj.__range.filter(x => eqVal(x, args[0]) === true).length, false); }
@@ -3912,6 +6257,382 @@ Interp.prototype.callMethod = function (obj, name, args, kwargs, env, line) {
   { const tn = typeName(obj); if (TYPE_ATTRS[tn] && !TYPE_ATTRS[tn].has(name)) this.err(line, 'AttributeError', tn + ' には「' + name + '」という属性（メソッド）はありません', '綴りを確認するか、リファレンスで使えるメソッドを確認してください'); }
   this.diag(line, 'note', '対応外', typeName(obj) + ' の「' + name + '」はこの説明では解釈できません', 'リファレンスで使い方を確認し、実際の動きは実行して確かめてください');
   return UNK(typeName(obj) + '.' + name + ' の結果');
+};
+
+
+/* ===== B6-Py2：bytes／bytearray のメソッド本体（共通実装） ===== */
+Interp.prototype.callBytesMethod = function (obj, name, args, kwargs, env, line) {
+  const E = (kind, msg, fix) => this.err(line, kind, msg, fix || '');
+  const arityErr = (need) => this.err(line, 'TypeError', 'メソッド「' + name + '」の引数の数が合いません（' + need + '）', 'リファレンスで使い方を確認してください');
+  const isBA = isBytearray(obj);
+  const arr = bytesOf(obj);
+  const wrap = (a) => isBA ? BYTEARRAY(a) : BYTESV(a);
+  const tn = isBA ? 'bytearray' : 'bytes';
+  if (args.some(isUnk)) return UNK();
+  const subArr = (v, what) => {
+    if (isBytesLike(v)) return bytesOf(v).slice();
+    if (isMemview(v)) { if (v.__memview.released) E('ValueError', '解放済み（release 済み）の memoryview は使えません', ''); return mvBytes(v); }
+    E('TypeError', (what || name) + '() には bytes のような並びを渡してください（' + typeName(v) + ' は使えません）', '');
+    return null;
+  };
+  const subOrInt = (v) => { // find 系：bytes-like か 0〜255 の整数
+    if (isBytesLike(v) || isMemview(v)) return { arr: subArr(v) };
+    const bv = isBool(v) ? (v.v ? 1 : 0) : isNum(v) && !v.f ? v.v : null;
+    if (bv !== null) { if (bv < 0 || bv > 255) E('ValueError', 'バイト値は 0〜255 の整数にしてください', ''); return { arr: [bv] }; }
+    E('TypeError', name + '() には bytes のような並びか 0〜255 の整数を渡してください', '');
+    return null;
+  };
+  const bounds = (st0, en0) => {
+    const L = arr.length;
+    const bd = (v, d) => { if (v === undefined || isNone(v)) return d; let k = this.intIndex(v, line, '開始・終了位置'); if (k < 0) { k += L; if (k < 0) k = 0; } return Math.min(k, L); };
+    return [bd(st0, 0), bd(en0, L)];
+  };
+  switch (name) {
+    case 'decode': {
+      if (args.length > 2) arityErr('0〜2 個');
+      const enc = resolveEncoding(args[0] !== undefined ? args[0] : (kwargs && kwargs.encoding !== undefined ? this.eval(kwargs.encoding, env) : 'utf-8'), E);
+      const errors = checkErrorsMode(args[1] !== undefined ? args[1] : (kwargs && kwargs.errors !== undefined ? this.eval(kwargs.errors, env) : undefined), E);
+      return decodeBytesToStr(arr, enc, errors, E);
+    }
+    case 'hex': {
+      if (args.length > 2) arityErr('0〜2 個');
+      let sep = null, per = 1;
+      if (args.length >= 1 && !isNone(args[0])) { if (typeof args[0] !== 'string' || Array.from(args[0]).length !== 1) E('TypeError', 'hex() の区切りは1文字の文字列にしてください', ''); sep = args[0]; }
+      if (args.length >= 2) per = this.intIndex(args[1], line, 'bytes_per_sep');
+      return hexOfBytes(arr, sep, per);
+    }
+    case 'count': { if (args.length < 1 || args.length > 3) arityErr('1〜3 個'); const [st, en] = bounds(args[1], args[2]); return NUM(countSub(arr, subOrInt(args[0]).arr, st, en), false); }
+    case 'find': case 'index': case 'rfind': case 'rindex': {
+      if (args.length < 1 || args.length > 3) arityErr('1〜3 個');
+      const [st, en] = bounds(args[1], args[2]);
+      const ndl = subOrInt(args[0]).arr;
+      let at;
+      if (name === 'find' || name === 'index') at = findSub(arr, ndl, st, en);
+      else { at = -1; for (let i = en - ndl.length; i >= st; i--) { if (ndl.every((x, j) => arr[i + j] === x)) { at = i; break; } } if (ndl.length === 0) at = en; }
+      if (at < 0) { if (name === 'index' || name === 'rindex') E('ValueError', '部分列は見つかりません', 'find() を使うと、無いときに -1 が返ります'); return NUM(-1, false); }
+      return NUM(at, false);
+    }
+    case 'startswith': case 'endswith': {
+      if (args.length < 1 || args.length > 3) arityErr('1〜3 個');
+      const [st, en] = bounds(args[1], args[2]);
+      const cands = isTuple(args[0]) ? args[0].__tuple : [args[0]];
+      for (const c of cands) {
+        if (isUnk(c)) return UNK();
+        const ndl = subArr(c);
+        if (en - st < ndl.length) continue;
+        const part = name === 'startswith' ? arr.slice(st, st + ndl.length) : arr.slice(en - ndl.length, en);
+        if (part.every((x, j) => x === ndl[j])) return BOOL(true);
+      }
+      return BOOL(false);
+    }
+    case 'join': {
+      if (args.length !== 1) arityErr('1 個必要');
+      const seq = this.iterableChecked(args[0], line, false); if (seq === null) return UNK();
+      const out = [];
+      seq.forEach((x, i) => { if (i) out.push(...arr); out.push(...subArr(x, 'join')); });
+      return wrap(out);
+    }
+    case 'maketrans': return this.maketransImpl(tn, args, line);
+    case 'partition': case 'rpartition': {
+      if (args.length !== 1) arityErr('1 個必要');
+      const sep = subArr(args[0]);
+      if (!sep.length) E('ValueError', '区切り（sep）に空のバイト列は使えません', '');
+      const at = name === 'partition' ? findSub(arr, sep, 0, arr.length) : (() => { let a2 = -1; for (let i = arr.length - sep.length; i >= 0; i--) if (sep.every((x, j) => arr[i + j] === x)) { a2 = i; break; } return a2; })();
+      if (at < 0) return name === 'partition' ? TUPLE([wrap(arr.slice()), wrap([]), wrap([])]) : TUPLE([wrap([]), wrap([]), wrap(arr.slice())]);
+      return TUPLE([wrap(arr.slice(0, at)), wrap(sep.slice()), wrap(arr.slice(at + sep.length))]);
+    }
+    case 'removeprefix': case 'removesuffix': {
+      if (args.length !== 1) arityErr('1 個必要');
+      const p = subArr(args[0]);
+      if (name === 'removeprefix') return wrap(p.length && arr.slice(0, p.length).every((x, j) => x === p[j]) ? arr.slice(p.length) : arr.slice());
+      return wrap(p.length && arr.slice(arr.length - p.length).every((x, j) => x === p[j]) ? arr.slice(0, arr.length - p.length) : arr.slice());
+    }
+    case 'replace': {
+      if (args.length < 2 || args.length > 3) arityErr('2〜3 個');
+      const oldA = subArr(args[0]), newA = subArr(args[1]);
+      let cnt = args[2] !== undefined ? this.intIndex(args[2], line, 'replace() の回数') : -1;
+      if (cnt < 0) cnt = Infinity;
+      const out = []; let i = 0, used = 0;
+      if (!oldA.length) { // 空の置換は間と両端へ挿入
+        while (i <= arr.length && used < cnt) { out.push(...newA); used++; if (i < arr.length) out.push(arr[i]); i++; }
+        out.push(...arr.slice(i)); return wrap(out);
+      }
+      while (used < cnt) { const at = findSub(arr, oldA, i, arr.length); if (at < 0) break; out.push(...arr.slice(i, at), ...newA); i = at + oldA.length; used++; }
+      out.push(...arr.slice(i)); return wrap(out);
+    }
+    case 'center': case 'ljust': case 'rjust': {
+      if (args.length < 1 || args.length > 2) arityErr('1〜2 個');
+      const w = this.intIndex(args[0], line, '幅');
+      let fill = 0x20;
+      if (args[1] !== undefined) { const f = subArr(args[1]); if (f.length !== 1) E('TypeError', '埋め文字は長さ1のバイト列にしてください', ''); fill = f[0]; }
+      if (arr.length >= w) return wrap(arr.slice());
+      const n = w - arr.length;
+      if (name === 'ljust') return wrap(arr.concat(Array(n).fill(fill)));
+      if (name === 'rjust') return wrap(Array(n).fill(fill).concat(arr));
+      const l = Math.floor(n / 2); return wrap(Array(l).fill(fill).concat(arr, Array(n - l).fill(fill)));
+    }
+    case 'lstrip': case 'rstrip': case 'strip': {
+      if (args.length > 1) arityErr('0〜1 個');
+      const set = args[0] !== undefined && !isNone(args[0]) ? new Set(subArr(args[0])) : null;
+      const drop = (b) => set ? set.has(b) : bytesIsWs(b);
+      let i = 0, j = arr.length;
+      if (name !== 'rstrip') while (i < j && drop(arr[i])) i++;
+      if (name !== 'lstrip') while (j > i && drop(arr[j - 1])) j--;
+      return wrap(arr.slice(i, j));
+    }
+    case 'split': case 'rsplit': {
+      if (args.length > 2) arityErr('0〜2 個');
+      const sepA = args[0]; const maxA = args[1];
+      const mx = maxA !== undefined ? this.intIndex(maxA, line, 'maxsplit') : -1;
+      const parts = (sepA === undefined || isNone(sepA)) ? splitBytes(arr, null, mx < 0 ? -1 : mx, name === 'rsplit') : (() => { const sep = subArr(sepA); if (!sep.length) E('ValueError', '区切りに空のバイト列は使えません', ''); return splitBytes(arr, sep, mx < 0 ? -1 : mx, name === 'rsplit'); })();
+      return LIST(parts.map(pt => wrap(pt)));
+    }
+    case 'capitalize': {
+      if (args.length) arityErr('0 個');
+      const out = arr.map(b => (b >= 0x41 && b <= 0x5a) ? b + 0x20 : b);
+      if (out.length && out[0] >= 0x61 && out[0] <= 0x7a) out[0] -= 0x20;
+      return wrap(out);
+    }
+    case 'expandtabs': { if (args.length > 1) arityErr('0〜1 個'); const ts = args[0] !== undefined ? this.intIndex(args[0], line, 'tabsize') : 8; return wrap(expandTabsBytes(arr, ts)); }
+    case 'lower': if (args.length) arityErr('0 個'); return wrap(arr.map(b => (b >= 0x41 && b <= 0x5a) ? b + 0x20 : b));
+    case 'upper': if (args.length) arityErr('0 個'); return wrap(arr.map(b => (b >= 0x61 && b <= 0x7a) ? b - 0x20 : b));
+    case 'swapcase': if (args.length) arityErr('0 個'); return wrap(arr.map(b => (b >= 0x41 && b <= 0x5a) ? b + 0x20 : (b >= 0x61 && b <= 0x7a) ? b - 0x20 : b));
+    case 'title': {
+      if (args.length) arityErr('0 個');
+      const out = []; let prevCased = false;
+      for (const b of arr) {
+        const isLow = b >= 0x61 && b <= 0x7a, isUp = b >= 0x41 && b <= 0x5a;
+        if (isLow || isUp) { out.push(prevCased ? (isUp ? b + 0x20 : b) : (isLow ? b - 0x20 : b)); prevCased = true; }
+        else { out.push(b); prevCased = false; }
+      }
+      return wrap(out);
+    }
+    case 'splitlines': { if (args.length > 1) arityErr('0〜1 個'); const keep = args[0] !== undefined ? this.truthyOf(args[0], line, env) === true : false; return LIST(splitLinesBytes(arr, keep).map(pt => wrap(pt))); }
+    case 'zfill': { if (args.length !== 1) arityErr('1 個必要'); const w = this.intIndex(args[0], line, '幅'); if (arr.length >= w) return wrap(arr.slice()); const sign = (arr[0] === 0x2b || arr[0] === 0x2d) ? 1 : 0; return wrap(arr.slice(0, sign).concat(Array(w - arr.length).fill(0x30), arr.slice(sign))); }
+    case 'translate': {
+      if (args.length < 1 || args.length > 2) arityErr('1〜2 個');
+      const del = args[1] !== undefined ? new Set(subArr(args[1])) : new Set();
+      if (isNone(args[0])) return wrap(arr.filter(b => !del.has(b)));
+      const table = subArr(args[0]);
+      if (table.length !== 256) E('ValueError', 'translate() の変換表は長さ256のバイト列にしてください', '');
+      return wrap(arr.filter(b => !del.has(b)).map(b => table[b]));
+    }
+    case 'isalpha': if (args.length) arityErr('0 個'); return BOOL(arr.length > 0 && arr.every(b => (b >= 0x41 && b <= 0x5a) || (b >= 0x61 && b <= 0x7a)));
+    case 'isdigit': if (args.length) arityErr('0 個'); return BOOL(arr.length > 0 && arr.every(b => b >= 0x30 && b <= 0x39));
+    case 'isascii': if (args.length) arityErr('0 個'); return BOOL(arr.every(b => b < 0x80));
+    case 'isspace': if (args.length) arityErr('0 個'); return BOOL(arr.length > 0 && arr.every(bytesIsWs));
+    case 'isalnum': if (args.length) arityErr('0 個'); return BOOL(arr.length > 0 && arr.every(b => (b >= 0x30 && b <= 0x39) || (b >= 0x41 && b <= 0x5a) || (b >= 0x61 && b <= 0x7a)));
+    case 'islower': { if (args.length) arityErr('0 個'); const cased = arr.filter(b => (b >= 0x41 && b <= 0x5a) || (b >= 0x61 && b <= 0x7a)); return BOOL(cased.length > 0 && cased.every(b => b >= 0x61 && b <= 0x7a)); }
+    case 'isupper': { if (args.length) arityErr('0 個'); const cased = arr.filter(b => (b >= 0x41 && b <= 0x5a) || (b >= 0x61 && b <= 0x7a)); return BOOL(cased.length > 0 && cased.every(b => b >= 0x41 && b <= 0x5a)); }
+    case 'istitle': {
+      if (args.length) arityErr('0 個');
+      let prevCased = false, hasCased = false, ok = true;
+      for (const b of arr) {
+        const isLow = b >= 0x61 && b <= 0x7a, isUp = b >= 0x41 && b <= 0x5a;
+        if (isUp) { if (prevCased) ok = false; prevCased = true; hasCased = true; }
+        else if (isLow) { if (!prevCased) ok = false; prevCased = true; hasCased = true; }
+        else prevCased = false;
+      }
+      return BOOL(ok && hasCased);
+    }
+    /* ---- bytearray 専用 ---- */
+    case 'resize': {
+      if (!isBA) break;
+      if (args.length !== 1) arityErr('1 個必要');
+      const n = this.intIndex(args[0], line, 'resize() の大きさ');
+      if (n < 0) E('ValueError', 'resize() の大きさは 0 以上にしてください', '');
+      if (n < arr.length) arr.length = n; else while (arr.length < n) arr.push(0);
+      return NONE;
+    }
+    case 'take_bytes': {
+      if (!isBA) break;
+      if (args.length > 1) arityErr('0〜1 個');
+      let n = arr.length;
+      if (args.length && !isNone(args[0])) { n = this.intIndex(args[0], line, 'take_bytes() のバイト数'); if (n !== null && n < 0) n = arr.length + n; if (n === null || n < 0 || n > arr.length) E('IndexError', 'take_bytes() のバイト数が範囲外です（長さは ' + arr.length + ' です）', ''); } // B6監査D7：docs 3.15 の意味論（範囲外は IndexError、負数は末尾から数える）
+      const out = arr.splice(0, n);
+      return BYTESV(out);
+    }
+    case 'append': {
+      if (!isBA) break;
+      if (args.length !== 1) arityErr('1 個必要');
+      const bv = isBool(args[0]) ? (args[0].v ? 1 : 0) : isNum(args[0]) && !args[0].f ? args[0].v : null;
+      if (bv === null || bv < 0 || bv > 255) E('ValueError', 'append() には 0〜255 の整数を渡してください', '');
+      arr.push(bv); return NONE;
+    }
+    case 'extend': {
+      if (!isBA) break;
+      if (args.length !== 1) arityErr('1 個必要');
+      if (isBytesLike(args[0])) { for (const b of bytesOf(args[0])) arr.push(b); return NONE; }
+      const seq = this.iterableChecked(args[0], line, true); if (seq === null) return UNK();
+      for (const x of seq) { const bv = isBool(x) ? (x.v ? 1 : 0) : isNum(x) && !x.f ? x.v : null; if (bv === null || bv < 0 || bv > 255) E('ValueError', 'extend() の要素は 0〜255 の整数にしてください', ''); arr.push(bv); }
+      return NONE;
+    }
+    case 'insert': {
+      if (!isBA) break;
+      if (args.length !== 2) arityErr('2 個必要');
+      let i = this.intIndex(args[0], line, 'insert() の番号'); if (i < 0) i = Math.max(0, arr.length + i); if (i > arr.length) i = arr.length;
+      const bv = isBool(args[1]) ? (args[1].v ? 1 : 0) : isNum(args[1]) && !args[1].f ? args[1].v : null;
+      if (bv === null || bv < 0 || bv > 255) E('ValueError', 'insert() には 0〜255 の整数を渡してください', '');
+      arr.splice(i, 0, bv); return NONE;
+    }
+    case 'pop': {
+      if (!isBA) break;
+      if (args.length > 1) arityErr('0〜1 個');
+      if (!arr.length) E('IndexError', '空の bytearray から pop() はできません', '');
+      let i = args.length ? this.intIndex(args[0], line, 'pop() の番号') : arr.length - 1;
+      if (i < 0) i += arr.length;
+      if (i < 0 || i >= arr.length) E('IndexError', 'pop() の番号が範囲外です', '');
+      return NUM(arr.splice(i, 1)[0], false);
+    }
+    case 'remove': {
+      if (!isBA) break;
+      if (args.length !== 1) arityErr('1 個必要');
+      const bv = isBool(args[0]) ? (args[0].v ? 1 : 0) : isNum(args[0]) && !args[0].f ? args[0].v : null;
+      if (bv === null || bv < 0 || bv > 255) E('ValueError', 'remove() には 0〜255 の整数を渡してください', '');
+      const at = arr.indexOf(bv); if (at < 0) E('ValueError', 'そのバイトは bytearray にありません', '');
+      arr.splice(at, 1); return NONE;
+    }
+    case 'clear': if (!isBA) break; if (args.length) arityErr('0 個'); arr.length = 0; return NONE;
+    case 'copy': if (args.length) arityErr('0 個'); return wrap(arr.slice());
+    case 'reverse': if (!isBA) break; if (args.length) arityErr('0 個'); arr.reverse(); return NONE;
+  }
+  this.err(line, 'AttributeError', tn + ' には「' + name + '」という属性（メソッド）はありません', '綴りを確認するか、リファレンスで使えるメソッドを確認してください');
+  return UNK();
+};
+/* ===== B6-Py2：maketrans（str／bytes／bytearray 共通） ===== */
+Interp.prototype.maketransImpl = function (tname, args, line) {
+  const E = (kind, msg, fix) => this.err(line, kind, msg, fix || '');
+  if (tname === 'str') {
+    if (args.length < 1 || args.length > 3) this.err(line, 'TypeError', 'str.maketrans() の引数の数が合いません（1〜3 個）', '');
+    const d = DICT();
+    const put = (k, v) => dictSet(d, k, v);
+    if (args.length === 1 && isDict(args[0])) {
+      for (const e of args[0].__dict.values()) {
+        let k = e.k;
+        if (typeof k === 'string') { const ka = Array.from(k); if (ka.length !== 1) E('ValueError', 'maketrans の辞書のキー（文字列）は1文字にしてください', ''); k = NUM(ka[0].codePointAt(0), false); }
+        else if (!(isNum(k) && !k.f)) E('TypeError', 'maketrans の辞書のキーは1文字の文字列か整数にしてください', '');
+        const v = e.v;
+        if (!(isNone(v) || typeof v === 'string' || (isNum(v) && !v.f))) E('TypeError', 'maketrans の辞書の値は文字列・整数・None のいずれかにしてください', '');
+        put(k, v);
+      }
+      return d;
+    }
+    if (typeof args[0] !== 'string' || (args[1] !== undefined && typeof args[1] !== 'string')) E('TypeError', 'str.maketrans() の1・2つ目は文字列にしてください', '');
+    const x = Array.from(args[0]), y = args[1] !== undefined ? Array.from(args[1]) : null;
+    if (y && x.length !== y.length) E('ValueError', 'maketrans の1つ目と2つ目は同じ長さにしてください', '');
+    x.forEach((ch, i) => put(NUM(ch.codePointAt(0), false), y ? y[i] : ch));
+    if (args[2] !== undefined) { if (typeof args[2] !== 'string') E('TypeError', 'str.maketrans() の3つ目は文字列にしてください', ''); for (const ch of Array.from(args[2])) put(NUM(ch.codePointAt(0), false), NONE); }
+    return d;
+  }
+  // bytes／bytearray.maketrans(frm, to)：長さ256の変換表（bytes）を返す
+  if (args.length !== 2) this.err(line, 'TypeError', tname + '.maketrans() には2つの引数が必要です', '');
+  const frm = isBytesLike(args[0]) ? bytesOf(args[0]) : null, to = isBytesLike(args[1]) ? bytesOf(args[1]) : null;
+  if (!frm || !to) E('TypeError', tname + '.maketrans() には bytes のような並びを2つ渡してください', '');
+  if (frm.length !== to.length) E('ValueError', 'maketrans の2つの引数は同じ長さにしてください', '');
+  const table = Array.from({ length: 256 }, (_, i) => i);
+  frm.forEach((b, i) => { table[b] = to[i]; });
+  return BYTESV(table);
+};
+
+
+/* ===== B6-Py2：str.format／format_map の本体 ===== */
+Interp.prototype.strFormatImpl = function (obj, args, kwargs, env, line, mapping) {
+  const E = (kind, msg, fix) => this.err(line, kind, msg, fix || '');
+  const kwVals = {};
+  if (mapping) { /* format_map：mapping は dict 値 */ }
+  else for (const k of Object.keys(kwargs || {})) kwVals[k] = this.eval(kwargs[k], env);
+  let autoIdx = 0, usedAuto = false, usedManual = false;
+  const resolveField = (field) => {
+    // field = 名前（空／数字／識別子）＋ (.属性 | [キー]) の連鎖
+    const m = /^([^.[]*)(.*)$/.exec(field);
+    const head = m[1]; let rest = m[2];
+    let base;
+    if (mapping) {
+      const key = /^\d+$/.test(head) ? NUM(parseInt(head, 10), false) : head;
+      base = dictGet(mapping, key);
+      if (base === undefined) { const e = new SimDiag(line, 'KeyError', 'キー ' + reprVal(key) + ' は辞書にありません', ''); throw e; }
+    } else if (head === '') {
+      if (usedManual) E('ValueError', '自動番号（{}）と手動番号（{0}）は混ぜられません', '');
+      usedAuto = true;
+      if (autoIdx >= args.length) E('IndexError', '位置引数の番号が範囲外です（' + autoIdx + '）', '');
+      base = args[autoIdx++];
+    } else if (/^\d+$/.test(head)) {
+      if (usedAuto) E('ValueError', '自動番号（{}）と手動番号（{0}）は混ぜられません', '');
+      usedManual = true;
+      const i = parseInt(head, 10);
+      if (i >= args.length) E('IndexError', '位置引数の番号が範囲外です（' + i + '）', '');
+      base = args[i];
+    } else {
+      if (!(head in kwVals)) E('KeyError', 'キー「' + head + '」に対応する引数がありません', '');
+      base = kwVals[head];
+    }
+    while (rest) {
+      if (rest[0] === '.') {
+        const mm = /^\.([^.[]+)(.*)$/.exec(rest); const an = mm[1]; rest = mm[2];
+        if (isComplex(base) && (an === 'real' || an === 'imag')) base = NUM(an === 'real' ? base.__complex.re : base.__complex.im, true);
+        else if (isNum(base) && (an === 'real' || an === 'imag')) base = an === 'real' ? base : NUM(0, base.f);
+        else if (isBool(base) && (an === 'real' || an === 'imag')) base = NUM(an === 'real' ? (base.v ? 1 : 0) : 0, false);
+        else E('未対応', 'format の属性参照「.' + an + '」はこの説明では対応していません', '');
+      } else if (rest[0] === '[') {
+        const close = rest.indexOf(']'); if (close < 0) E('ValueError', '書式文字列の [ が閉じられていません', '');
+        const keyS = rest.slice(1, close); rest = rest.slice(close + 1);
+        if (isDict(base)) { const key = /^-?\d+$/.test(keyS) ? NUM(parseInt(keyS, 10), false) : keyS; const v = dictGet(base, key); if (v === undefined) E('KeyError', 'キー ' + reprVal(key) + ' は辞書にありません', ''); base = v; }
+        else if (isList(base) || isTuple(base) || typeof base === 'string') { if (!/^-?\d+$/.test(keyS)) E('TypeError', '添字には整数を使ってください', ''); base = this.subGet(base, NUM(parseInt(keyS, 10), false), line); }
+        else E('未対応', 'format の添字参照はこの説明では対応していません', '');
+      } else E('ValueError', '書式文字列のフィールドが正しくありません', '');
+    }
+    return base;
+  };
+  const render = (s, depth) => {
+    let out = ''; let i = 0;
+    const a = Array.from(s);
+    // Array.from だと位置がずれるため、通常の文字列走査で処理する
+    out = ''; i = 0;
+    while (i < s.length) {
+      const ch = s[i];
+      if (ch === '{') {
+        if (s[i + 1] === '{') { out += '{'; i += 2; continue; }
+        // フィールド終端（入れ子は spec 内の1段まで数える）
+        let d = 1, j = i + 1;
+        while (j < s.length && d > 0) { if (s[j] === '{') d++; else if (s[j] === '}') d--; j++; }
+        if (d > 0) E('ValueError', '書式文字列の { が閉じられていません', '');
+        const inner = s.slice(i + 1, j - 1); i = j;
+        // conv と spec の分離
+        let fieldPart = inner, conv = null, spec = null;
+        const colonAt = (() => { let dd = 0; for (let k = 0; k < inner.length; k++) { if (inner[k] === '{') dd++; else if (inner[k] === '}') dd--; else if (inner[k] === ':' && dd === 0) return k; } return -1; })();
+        if (colonAt >= 0) { fieldPart = inner.slice(0, colonAt); spec = inner.slice(colonAt + 1); }
+        const bangAt = fieldPart.indexOf('!');
+        if (bangAt >= 0) { conv = fieldPart.slice(bangAt + 1); fieldPart = fieldPart.slice(0, bangAt); if (conv.length !== 1 || !'sra'.includes(conv)) E('ValueError', '変換指定「!' + conv + '」は使えません（!s／!r／!a のいずれか）', ''); }
+        let value = resolveField(fieldPart);
+        if (isUnk(value)) return null;
+        let baseStr;
+        if (conv === 'r') baseStr = reprVal(value);
+        else if (conv === 'a') baseStr = reprVal(value).replace(/[^\x00-\x7f]/g, (c) => { const cp = c.codePointAt(0); return cp <= 0xff ? '\\x' + cp.toString(16).padStart(2, '0') : cp <= 0xffff ? '\\u' + cp.toString(16).padStart(4, '0') : '\\U' + cp.toString(16).padStart(8, '0'); });
+        else if (conv === 's') baseStr = strVal(value);
+        if (spec !== null && spec.includes('{')) {
+          if (depth >= 1) E('未対応', '書式指定の中の入れ子が深すぎます', '');
+          const sub = render(spec, depth + 1); if (sub === null) return null; spec = sub;
+        }
+        if (spec === null || spec === '') { out += conv ? baseStr : strVal(value); continue; }
+        // fmtSpec は値そのものを受け取る。conv 済みの場合は文字列として整形する
+        const target = conv ? baseStr : value;
+        const r = fmtSpec(target, spec);
+        if (r && r.__fmtErr) E(r.kind, r.msg, '');
+        if (r === null) return null;
+        out += r;
+        continue;
+      }
+      if (ch === '}') {
+        if (s[i + 1] === '}') { out += '}'; i += 2; continue; }
+        E('ValueError', '書式文字列に単独の } があります', '');
+      }
+      out += ch; i++;
+    }
+    return out;
+  };
+  const r = render(obj, 0);
+  if (r === null) { this.diag(line, 'note', '対応外', '書式指定の一部はこの説明では扱いません。その部分は「実行時に決まる値」として示します', ''); return UNK('format の結果'); }
+  return r;
 };
 
 Interp.prototype.evalComp = function (n, env) {
@@ -3981,6 +6702,8 @@ Interp.prototype.srcPull = function (v, line) {
   if (isTuple(v)) { const arr = v.__tuple; let i = 0; return () => (i < arr.length ? arr[i++] : EXH); }
   if (typeof v === 'string') { const arr = Array.from(v); let i = 0; return () => (i < arr.length ? arr[i++] : EXH); }
   if (v && v.__range) { const arr = v.__range; let i = 0; return () => (i < arr.length ? arr[i++] : EXH); }
+  if (isBytesLike(v)) { const arr = bytesOf(v); let i = 0; return () => (i < arr.length ? NUM(arr[i++], false) : EXH); }
+  if (isMemview(v)) { if (v.__memview.released) return null; const snap = mvBytes(v); let i = 0; return () => (i < snap.length ? NUM(snap[i++], false) : EXH); }
   if (isDict(v) || isView(v)) {
     let snap = null, i = 0;
     return () => {
@@ -3988,7 +6711,7 @@ Interp.prototype.srcPull = function (v, line) {
       return i < snap.length ? snap[i++] : EXH;
     };
   }
-  if (v && v.__instance) return null; // ユーザー定義クラスの __iter__ は再現範囲外のため未確定のまま
+  if (v && v.__instance) { const seq = this.iterable(v, line, true); if (seq === null) return null; let i = 0; return () => (i < seq.length ? seq[i++] : EXH); } // B6-Py3：__iter__／__getitem__ を実体化して引く
   const seq = this.iterable(v, line);
   if (seq === null) return null;
   let i = 0;
@@ -4098,6 +6821,24 @@ function fmtSpec(v, fmt) {
     const sfill = fill !== undefined && explicitAlign !== undefined ? fill : (zero ? '0' : ' ');
     const body = prec !== null ? [...v].slice(0, prec).join('') : v;
     return padTo(body, sfill, explicitAlign || '<', width);
+  }
+  // ---- 複素数（B6-Py2：空の型指定と f／e 型＋幅・揃えのみ対応。それ以外は未対応として null） ----
+  if (isComplex(v)) {
+    if (prec !== null && !type) return null; // 型指定なし＋精度は未対応（捏造しない）
+    if (type && !['f', 'F', 'e', 'E'].includes(type)) return null;
+    if (group) return null;
+    const { re, im } = v.__complex;
+    const p2 = prec === null ? 6 : prec;
+    const part = (x) => { if (!Number.isFinite(x)) return String(x); if (!type) { const s = cxPart(x); return s; } if (type === 'f' || type === 'F') return decFixed(x, p2).replace(/^-/, ''); const de = decExp(Math.abs(x), p2); return de.body + 'e' + (de.exp < 0 ? '-' : '+') + String(Math.abs(de.exp)).padStart(2, '0'); };
+    let body;
+    if (!type && prec === null) body = cxRepr(v);
+    else {
+      const reS = (re < 0 || Object.is(re, -0) ? '-' : (sign === '+' ? '+' : sign === ' ' ? ' ' : '')) + part(Math.abs(re));
+      const imSign = (im < 0 || Object.is(im, -0)) ? '-' : '+';
+      body = reS + imSign + part(Math.abs(im)) + 'j';
+    }
+    const a2 = align || '>';
+    return padTo(body, fill || ' ', a2, width);
   }
   // ---- 数値以外（bool は数値として別扱い） ----
   const isBoolV = isBool(v);
@@ -4289,7 +7030,10 @@ function simulatePythonPaths(code, options={}) {
 
 
 function fromModel(v){if(v?.kind==='unknown')return UNK(v.source);if(v===null)return NONE;if(typeof v==='number')return NUM(v,!Number.isInteger(v));if(typeof v==='boolean')return BOOL(v);if(Array.isArray(v))return LIST(v.map(fromModel));if(typeof v==='object'){let d=DICT();for(let [k,x]of Object.entries(v)){let key=String(k);dictSet(d,key,fromModel(x));}return d;}return v;}
-function toModel(v,seen=new Set()){if(isUnk(v))return{kind:'unknown',source:v.desc};if(isNum(v)||isBool(v))return v.v;if(isNone(v))return null;if(isList(v)||v?.__tuple){if(seen.has(v))return{kind:'unknown',source:'循環参照'};seen.add(v);return(v.__list||v.__tuple).map(x=>toModel(x,new Set(seen)));}if(isDict(v)){if(seen.has(v))return{kind:'unknown',source:'循環参照'};seen.add(v);return Object.fromEntries([...v.__dict.values()].map(x=>[String(x.k),toModel(x.v,new Set(seen))]));}if(isFunc(v))return{kind:'unknown',source:'関数オブジェクト'};return v;}
-export {simulatePython,simulatePythonPaths,splitLines,parseProgram,collectUsed,UNK,fromModel,toModel};
+function toModel(v,seen=new Set()){if(isUnk(v))return{kind:'unknown',source:v.desc};if(isNum(v)||isBool(v))return v.v;if(isNone(v))return null;if(isList(v)||v?.__tuple){if(seen.has(v))return{kind:'unknown',source:'循環参照'};seen.add(v);return(v.__list||v.__tuple).map(x=>toModel(x,new Set(seen)));}if(isDict(v)){if(seen.has(v))return{kind:'unknown',source:'循環参照'};seen.add(v);return Object.fromEntries([...v.__dict.values()].map(x=>[String(x.k),toModel(x.v,new Set(seen))]));}if(isFunc(v))return{kind:'unknown',source:'関数オブジェクト'};if(v&&v.__native)return{kind:'unknown',source:reprVal(v)};if(v&&v.__ncls)return{kind:'unknown',source:v.__ncls};return v;}
+/* 高度モード B7：標準ライブラリ実装モジュール（advanced/）が使う公開 API。
+ * 値コンストラクタと判定・表示関数をそのまま渡す（NONE 等の単例を複製しない）。 */
+const PyAPI = { NUM, BOOL, NONE, LIST, TUPLE, DICT, SET, RANGE, ITER, UNK, ELLIPSIS, NOTIMPLEMENTED, isNum, isBool, isNone, isList, isTuple, isDict, isSet, isUnk, isFunc, reprVal, reprFull, strVal, typeName, truthy, dictGet, dictSet, dictKeyId };
+export {simulatePython,simulatePythonPaths,splitLines,parseProgram,collectUsed,UNK,fromModel,toModel,PyAPI};
 
 function symbolic(v){if(isUnk(v))return v.symbolic||{kind:'unknown',source:v.desc,id:v.identity};if(isNum(v)||isBool(v))return v.v;if(isNone(v))return null;return v;}
