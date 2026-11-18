@@ -8,6 +8,9 @@ import {
   unsupported,
 } from "./script.js";
 import { sourceFailure, rows } from "./data.js";
+// 高度モード ブロックB5（C#）：高度側の呼び出し意味論テーブル。
+// 委譲は call ディスパッチ末尾の managed 限定ブロック1箇所だけから行う。
+import { handleAdvancedCall, advancedValueText } from "../types/csharp/advanced-engine.js";
 // RG-81（R21-N8）: エラーのカテゴリは category 引数だけが持つ。メッセージ
 // 本文に「未対応：」「未確認：」等の接頭辞を焼き込むと、カテゴリと合成する
 // 表示で二重になるため、このファイルの fail メッセージには付けない。
@@ -453,6 +456,33 @@ function transformSource(source, language, deadline) {
       const word = rest.match(/^[A-Za-z_][A-Za-z0-9_]*/)[0];
       const after = i + word.length;
       if (word === "std" && src.slice(after, after + 2) === "::") {
+        // A8収束ラウンド是正：std::NULL は高度カタログで未対応の項目だが、
+        // std:: を落とすと基盤エンジンの NULL リテラルとして評価され、
+        // 未対応の表示に反して黙って成功してしまう。実C++にも std::NULL は
+        // 存在しないため、変換層で名指しして止める。
+        if (
+          language === "cpp" &&
+          /^NULL(?![A-Za-z0-9_])/.test(src.slice(after + 2))
+        )
+          unsupported("std::NULL は未対応です", line);
+        advance(after + 2);
+        continue;
+      }
+      // B8（cpp-engine-a）：std::numbers::pi と std::string::npos は、
+      // :: のままでは式パーサが扱えないため、C# の Math.PI と同じ
+      // メンバー参照の形（numbers.pi／string.npos）へ寄せる。対象は
+      // この2つの修飾だけに限り、他の :: には触らない。
+      // 統合時修正（コーディネーター）：string 側は後続が npos の場合に
+      // 限定する。無条件に string:: を潰すと std::string::iterator 等の
+      // 型名（cpp-engine-b が処理する）まで壊れるため。
+      if (
+        language === "cpp" &&
+        src.slice(after, after + 2) === "::" &&
+        (word === "numbers" ||
+          (word === "string" &&
+            /^npos(?![A-Za-z0-9_])/.test(src.slice(after + 2))))
+      ) {
+        out += word + ".";
         advance(after + 2);
         continue;
       }
@@ -618,9 +648,156 @@ function parse(source, language, deadline) {
     }
     p.ts = ts;
   }
+  // B8（cpp-engine-b）：C++ の呼び出し引数位置の波括弧初期化子リスト
+  // （v.assign({1,2})、insert(it, {1,2}) 等）は、共有パーサが "{" を
+  // レコードリテラルとして読んでしまうため、そのままでは受理できない。
+  // 呼び出し括弧の直下（直前が "(" または引数区切りの ","）にある "{"
+  // と、書き換えたリストの要素位置にある "{" だけを配列リテラルの
+  // "[", "]" へ置き換える。ブロック・宣言の初期化子・代入の右辺の
+  // "{" は対象外（従来経路が処理する）。C／C# には適用しない。
+  if (language === "cpp") {
+    const ts = p.ts,
+      out = [];
+    const stack = []; // {t:"call"|"paren"|"list"|"block"|"bracket"}
+    const sigPrev = () => {
+      for (let k = out.length - 1; k >= 0; k--)
+        if (out[k].v !== "\n") return out[k];
+      return null;
+    };
+    const sigPrev2 = () => {
+      let seen = 0;
+      for (let k = out.length - 1; k >= 0; k--) {
+        if (out[k].v === "\n") continue;
+        if (++seen === 2) return out[k];
+      }
+      return null;
+    };
+    // 型名そのもの・宣言子（型 名前(…)）の括弧は呼び出しではない
+    // （string({...}) の関数形式キャストや string s({…}) の直接初期化は
+    // 従来の "{" 経路が処理するため、書き換え対象から外す）。
+    const TYPE_WORDS = new Set([
+      "int", "long", "double", "float", "bool", "char", "string", "short",
+      "unsigned", "signed", "void", "auto", "vector", "array", "pair",
+    ]);
+    for (let i = 0; i < ts.length; i++) {
+      const tk = ts[i],
+        v = tk.v;
+      if (v === "(") {
+        const pv = sigPrev();
+        const ppv = sigPrev2();
+        const isDeclParen =
+          pv?.k === "id" &&
+          (TYPE_WORDS.has(pv.v) ||
+            TYPE_WORDS.has(ppv?.v) ||
+            [">", ">>", "::"].includes(ppv?.v) ||
+            ppv?.k === "id");
+        const isCall =
+          pv &&
+          (pv.k === "id" ||
+            pv.v === ")" ||
+            pv.v === "]") &&
+          !isDeclParen &&
+          !["if", "for", "while", "switch", "catch"].includes(pv.v);
+        stack.push({ t: isCall ? "call" : "paren" });
+        out.push(tk);
+        continue;
+      }
+      if (v === ")") {
+        while (stack.length && !["call", "paren"].includes(stack.at(-1).t))
+          stack.pop();
+        if (stack.length) stack.pop();
+        out.push(tk);
+        continue;
+      }
+      if (v === "[") {
+        stack.push({ t: "bracket" });
+        out.push(tk);
+        continue;
+      }
+      if (v === "]") {
+        while (stack.length && stack.at(-1).t !== "bracket") stack.pop();
+        if (stack.length) stack.pop();
+        out.push(tk);
+        continue;
+      }
+      if (v === "{") {
+        const pv = sigPrev(),
+          top = stack.at(-1);
+        const inCallArg =
+          top?.t === "call" && pv && (pv.v === "(" || pv.v === ",");
+        const inListElem =
+          top?.t === "list" && pv && (pv.v === "[" || pv.v === ",");
+        if (inCallArg || inListElem) {
+          stack.push({ t: "list" });
+          out.push({ v: "[", line: tk.line });
+          continue;
+        }
+        stack.push({ t: "block" });
+        out.push(tk);
+        continue;
+      }
+      if (v === "}") {
+        const top = stack.at(-1);
+        if (top?.t === "list") {
+          stack.pop();
+          out.push({ v: "]", line: tk.line });
+          continue;
+        }
+        if (top?.t === "block") stack.pop();
+        out.push(tk);
+        continue;
+      }
+      out.push(tk);
+    }
+    p.ts = out;
+  }
+  // B8: 関数オブジェクト（std::greater<int>() 等）の構築は、比較関数を
+  // 指定する形式として未対応であることを名指しで止める（cpp のみ）。
+  // 通常の比較式と取り違えないよう「名前 <...> (」の形だけを対象にする。
+  if (language === "cpp") {
+    const FUNCTORS = new Set([
+      "greater", "less", "greater_equal", "less_equal", "equal_to", "not_equal_to",
+      "plus", "minus", "multiplies", "divides", "modulus", "negate",
+      "logical_and", "logical_or", "logical_not",
+    ]);
+    const ts = p.ts;
+    for (let i = 0; i < ts.length; i++) {
+      if (ts[i].k !== "id" || !FUNCTORS.has(ts[i].v)) continue;
+      if (ts[i + 1]?.v !== "<") continue;
+      let depth = 0,
+        j = i + 1,
+        closed = false;
+      for (; j < ts.length; j++) {
+        if (ts[j].v === "<") depth++;
+        else if (ts[j].v === ">") {
+          depth--;
+          if (depth === 0) { closed = true; break; }
+        } else if (ts[j].v === ">>") {
+          depth -= 2;
+          if (depth <= 0) { closed = true; break; }
+        }
+      }
+      if (closed && ts[j + 1]?.v === "(")
+        unsupported(
+          "比較関数や演算を指定する形式（関数オブジェクト）は未対応です",
+          ts[i].line,
+        );
+    }
+  }
   const genericNames =
     language === "cpp"
-      ? ["vector", "set", "map", "pair", "unordered_map", "unordered_set", "deque", "queue", "stack", "list"]
+      ? ["vector", "set", "map", "pair", "unordered_map", "unordered_set", "deque", "queue", "stack", "list",
+         // A8班（高度A8監査）：カタログ収載のクラステンプレートのうち
+         // 従来リストに無く、宣言が汎用エラーに化けていたもの
+         // （std::optional の初期化子形が「代入先が不正です」等）。
+         // いずれも値モデル未実装のため、map／set と同じ名指しで止める。
+         "optional", "variant", "tuple", "span", "expected", "function",
+         "complex", "bitset", "valarray", "shared_ptr", "unique_ptr",
+         "weak_ptr", "priority_queue", "multimap", "multiset",
+         "unordered_multimap", "unordered_multiset", "forward_list",
+         "basic_string", "initializer_list", "atomic", "lock_guard",
+         "unique_lock", "scoped_lock", "shared_lock", "promise", "future",
+         "packaged_task", "barrier", "counting_semaphore"]
       : language === "csharp"
         ? ["List", "Dictionary", "HashSet", "Queue", "Stack", "SortedDictionary", "SortedSet", "LinkedList"]
         : [];
@@ -641,11 +818,231 @@ function parse(source, language, deadline) {
     }
     if (close < 0) continue;
     const after = p.ts[close + 1];
+    // B8（cpp-engine-b）：高度モードで値モデルを実装した3クラス
+    // （vector／array／pair）の宣言と、そのイテレータ型の宣言は
+    // 未対応にせず、宣言パーサ（tryParseCppDecl）へ委ねる。それ以外
+    // のジェネリック型（set／map／deque 等）は従来どおり名指しで止める。
+    if (
+      language === "cpp" &&
+      ["vector", "array", "pair"].includes(p.ts[i].v) &&
+      after &&
+      (after.k === "id" || after.v === "::")
+    )
+      continue;
     if (after && (after.k === "id" || after.v === "(" || after.v === "["))
       unsupported(
         `ジェネリック型 ${p.ts[i].v}<...> の宣言は未対応です`,
         p.ts[i].line,
       );
+  }
+  // A6監査CF-06：C の複素数型（double complex 等）の宣言は、宣言パーサが
+  // 「; が必要です」という汎用構文エラーで止めていた。div_t 等の単一型名と
+  // 同じく、型を名指して止める。変数名としての complex（<complex.h> を
+  // 読まない文脈では通常の識別子）と区別するため、浮動小数点型の語
+  // （float／double／long）の直後に complex／_Complex が続き、その次が
+  // 宣言子名（識別子）の形だけを対象にする。
+  if (language === "c") {
+    const prevSig = (j) => {
+      while (j >= 0 && p.ts[j]?.v === "\n" && !p.ts[j]?.k) j--;
+      return j;
+    };
+    const nextSig = (j) => {
+      while (p.ts[j]?.v === "\n" && !p.ts[j]?.k) j++;
+      return j;
+    };
+    const FLOATW = ["float", "double", "long"];
+    for (let i = 0; i < p.ts.length; i++) {
+      const t = p.ts[i];
+      if (t.v !== "complex" && t.v !== "_Complex") continue;
+      const pi = prevSig(i - 1),
+        pv = p.ts[pi]?.v;
+      const ni = nextSig(i + 1),
+        nv = p.ts[ni]?.v;
+      let typeName = null;
+      if (FLOATW.includes(pv) && p.ts[ni]?.k === "id") {
+        const longBefore = pv === "double" && p.ts[prevSig(pi - 1)]?.v === "long";
+        typeName = (longBefore ? "long double" : pv === "long" ? "long double" : pv) + " complex";
+      } else if (t.v === "_Complex" && FLOATW.includes(nv) && p.ts[nextSig(ni + 1)]?.k === "id") {
+        typeName = (nv === "long" ? "long double" : nv) + " complex";
+      }
+      if (typeName) unsupported(`型 ${typeName} の宣言は未対応です`, t.line);
+    }
+  }
+  // A8班（高度A8監査・C++）：未対応の修飾名・構文が式パーサの汎用
+  // 構文エラー（「; が必要です」「) が必要です」等、原因を誤認させる
+  // 文言）に化けていた3系統を、受理範囲は変えずに名指しで止める。
+  // いずれも cpp のみ。C／C# のトークン列には適用しない。
+  if (language === "cpp") {
+    const ts = p.ts;
+    const prevSigIdx = (j) => {
+      for (let k = j - 1; k >= 0; k--) if (ts[k].v !== "\n") return k;
+      return -1;
+    };
+    const skipAnglesFwd = (j) => {
+      // ts[j] === "<" から対応する ">" の次を返す。無ければ -1。
+      let depth = 0;
+      for (; j < ts.length; j++) {
+        if (ts[j].v === "<") depth++;
+        else if (ts[j].v === ">") {
+          depth--;
+          if (depth === 0) return j + 1;
+        } else if (ts[j].v === ">>") {
+          depth -= 2;
+          if (depth <= 0) return j + 1;
+        }
+      }
+      return -1;
+    };
+    // (1) 修飾名チェーン（std::ranges::sort、std::filesystem::path、
+    // std::execution::par、std::string::size_type 等）。変換層で
+    // std:: は除かれるため、トークン列では先頭セグメントから読む。
+    // 除外：string／vector／array のイテレータ型（宣言パーサが処理
+    // する）、std::numbers::* と std::string::npos（変換層でメンバ
+    // 参照へ寄せられる正規形。空白を挟んだ形に備えた保険）、同一
+    // ソース内で宣言された利用者型の名前（宣言自体が別途名指しで
+    // 止まるため、その文言を優先する）。
+    {
+      const ITER = new Set([
+        "iterator", "const_iterator", "reverse_iterator", "const_reverse_iterator",
+      ]);
+      const declaredHeads = new Set();
+      for (let i = 0; i < ts.length; i++) {
+        if (["enum", "struct", "class", "namespace", "typedef", "union"].includes(ts[i].v)) {
+          const nx = ts[i + 1];
+          if (nx?.k === "id") declaredHeads.add(nx.v);
+          else if (nx?.v === "class" && ts[i + 2]?.k === "id")
+            declaredHeads.add(ts[i + 2].v);
+        }
+      }
+      for (let i = 0; i < ts.length; i++) {
+        if (ts[i].k !== "id") continue;
+        if (ts[i - 1]?.v === "::" || ts[i - 1]?.v === ".") continue;
+        let j = i + 1;
+        if (ts[j]?.v === "<") {
+          const e = skipAnglesFwd(j);
+          if (e < 0) continue;
+          j = e;
+        }
+        if (ts[j]?.v !== "::") continue;
+        const segments = [ts[i].v];
+        let okChain = true;
+        while (ts[j]?.v === "::") {
+          const seg = ts[j + 1];
+          if (!seg || seg.k !== "id") { okChain = false; break; }
+          segments.push(seg.v);
+          j += 2;
+          if (ts[j]?.v === "<") {
+            const e = skipAnglesFwd(j);
+            if (e < 0) { okChain = false; break; }
+            j = e;
+          }
+        }
+        if (!okChain || segments.length < 2) continue;
+        const tail = segments[segments.length - 1];
+        if (ITER.has(tail) && ["string", "vector", "array"].includes(segments[0])) continue;
+        if (segments[0] === "numbers") continue;
+        if (segments.length === 2 && segments[0] === "string" && tail === "npos") continue;
+        if (declaredHeads.has(segments[0])) continue;
+        unsupported(`std::${segments.join("::")} は未対応です`, ts[i].line);
+      }
+    }
+    // (2) 明示的なテンプレート引数を付けた呼び出し
+    // （std::make_pair<int, int>(...) 等）。関数形式キャストや比較式
+    // （a < b > (c)）と取り違えないよう、引数リストの形（型名・
+    // カンマ・:: のみで構成され、カンマ／::／型キーワード始まりの
+    // いずれかを含む）だけを対象にする。ジェネリック型名と関数
+    // オブジェクト名は先行する各チェックが処理するため除外する。
+    {
+      const TYPE_HEADS = new Set([
+        "int", "long", "double", "float", "char", "bool", "unsigned",
+        "signed", "short", "void", "size_t",
+      ]);
+      const FN_SET = new Set([
+        "make_pair", "byteswap", "forward", "move", "swap", "make_tuple",
+        "make_unique", "make_shared", "make_optional",
+      ]);
+      const EXCLUDED = new Set([
+        ...genericNames,
+        "greater", "less", "greater_equal", "less_equal", "equal_to",
+        "not_equal_to", "plus", "minus", "multiplies", "divides",
+        "modulus", "negate", "logical_and", "logical_or", "logical_not",
+        "if", "for", "while", "switch", "catch", "return", "sizeof",
+        "static_cast", "dynamic_cast", "const_cast", "reinterpret_cast",
+        "new", "delete", "throw", "string", "vector", "array", "pair",
+      ]);
+      for (let i = 0; i < ts.length; i++) {
+        if (ts[i].k !== "id" || EXCLUDED.has(ts[i].v)) continue;
+        if (ts[i + 1]?.v !== "<") continue;
+        const close = skipAnglesFwd(i + 1);
+        if (close < 0 || ts[close]?.v !== "(") continue;
+        const pi = prevSigIdx(i);
+        if (pi >= 0 && (ts[pi].k === "id" || ts[pi].v === ")" || ts[pi].v === "]" || ts[pi].k === "number")) continue;
+        const inner = ts.slice(i + 2, close - 1);
+        if (!inner.length) continue;
+        const allowed = (t) =>
+          t.k === "id" || t.k === "number" ||
+          [",", "::", "<", ">", ">>", "*", "&"].includes(t.v);
+        if (!inner.every(allowed)) continue;
+        const discriminated =
+          inner.some((t) => t.v === "," || t.v === "::") ||
+          TYPE_HEADS.has(inner[0].v) ||
+          FN_SET.has(ts[i].v);
+        if (!discriminated) continue;
+        unsupported(
+          `明示的なテンプレート引数（${ts[i].v}<...>）は未対応です`,
+          ts[i].line,
+        );
+      }
+    }
+    // (3) ラムダ式。添字（直前が識別子等）と取り違えないよう、引数・
+    // 初期化の位置にある "[" で、捕捉リストの形をしていて、直後に
+    // 引数リスト／本体が続くものだけを対象にする。呼び出しの引数内
+    // にある場合は、その呼び出し名も併せて名指す。
+    {
+      for (let i = 0; i < ts.length; i++) {
+        if (ts[i].v !== "[") continue;
+        const pi = prevSigIdx(i);
+        if (pi < 0) continue;
+        if (!["(", ",", "=", "return"].includes(ts[pi].v)) continue;
+        let depth = 0,
+          closeB = -1;
+        for (let j = i; j < ts.length; j++) {
+          if (ts[j].v === "[") depth++;
+          else if (ts[j].v === "]") {
+            depth--;
+            if (depth === 0) { closeB = j; break; }
+          }
+        }
+        if (closeB < 0) continue;
+        const inner = ts.slice(i + 1, closeB);
+        const captureLike = inner.every(
+          (t) => t.k === "id" || t.k === "number" ||
+            ["&", "=", ",", "*", "[", "]"].includes(t.v),
+        );
+        if (!captureLike) continue;
+        let nx = closeB + 1;
+        while (ts[nx]?.v === "\n") nx++;
+        if (!["(", "{", "->"].includes(ts[nx]?.v)) continue;
+        // 囲んでいる呼び出しの名前を後方走査で特定する。
+        let callee = null,
+          d2 = 0;
+        for (let k = i - 1; k >= 0; k--) {
+          const v = ts[k].v;
+          if (v === ")") d2++;
+          else if (v === "(") {
+            if (d2 === 0) {
+              const ci = prevSigIdx(k);
+              if (ci >= 0 && ts[ci].k === "id") callee = ts[ci].v;
+              break;
+            }
+            d2--;
+          } else if (d2 === 0 && (v === ";" || v === "{" || v === "}")) break;
+        }
+        if (callee)
+          unsupported(`${callee} へ渡すラムダ式は未対応です`, ts[i].line);
+        unsupported("ラムダ式は未対応です", ts[i].line);
+      }
+    }
   }
   // RG-365〜RG-369（修正バッチ12・C#班）共通の先読みヘルパー群。
   // いずれもトークン列に対する純粋な形検査であり、受理範囲は変えず、
@@ -786,15 +1183,45 @@ function parse(source, language, deadline) {
           return true;
       return false;
     })();
+    // === 高度モード ブロックB5（C#）修正2A：TryParse 一般化（ここから） ===
+    // CS-F08／CS-F09-1：TryParse のレシーバを「型名.TryParse」一般へ
+    // 広げる。int／double は CLR 名（Int32／Double）もエイリアスへ
+    // 正規化して既存意味論で実行し、それ以外の型は out を取り除いて
+    // 解析を通し、実行時の call 側（B5 修正2Aブロック）で項目名を
+    // 挙げた名前付き停止にする。値がエイリアス文字列の型だけが対応。
+    const CS_B5_TRYPARSE = {
+      int: "int", Int32: "int", double: "double", Double: "double",
+      long: null, Int64: null, float: null, Single: null,
+      bool: null, Boolean: null, char: null, Char: null,
+      byte: null, Byte: null, sbyte: null, SByte: null,
+      short: null, Int16: null, ushort: null, UInt16: null,
+      uint: null, UInt32: null, ulong: null, UInt64: null,
+      decimal: null, Decimal: null, DateTime: null, TimeSpan: null,
+    };
+    // CLR 型名 → エイリアス（out 宣言の型名の正規化に使う）。
+    const CS_B5_CLR_ALIAS = {
+      Int32: "int", Int64: "long", Int16: "short", UInt16: "ushort",
+      UInt32: "uint", UInt64: "ulong", SByte: "sbyte", Byte: "byte",
+      Char: "char", Boolean: "bool", Single: "float", Double: "double",
+      Decimal: "decimal",
+    };
+    // === 高度モード ブロックB5（C#）修正2A：TryParse 一般化（ここまで） ===
     for (let i = 2; i < p.ts.length; i++) {
       if (
         p.ts[i].v !== "TryParse" ||
         p.ts[i - 1].v !== "." ||
-        !["int", "double"].includes(p.ts[i - 2].v) ||
+        !Object.hasOwn(CS_B5_TRYPARSE, p.ts[i - 2].v) ||
         p.ts[i + 1]?.v !== "("
       )
         continue;
       const baseType = p.ts[i - 2].v;
+      // === 高度モード ブロックB5（C#）修正2A：TryParse 一般化（ここから） ===
+      // 対応型の CLR 名レシーバはエイリアスへ書き換え、call 側の
+      // 既存の int.TryParse／double.TryParse 意味論へ届ける。
+      const tryParseAlias = CS_B5_TRYPARSE[baseType];
+      if (tryParseAlias && tryParseAlias !== baseType)
+        p.ts[i - 2].v = tryParseAlias;
+      // === 高度モード ブロックB5（C#）修正2A：TryParse 一般化（ここまで） ===
       // R25-N26：第2引数が存在するのに out で始まらない呼び出しは、
       // 実 C# では CS1620 のコンパイルエラー（dotnet 実測）。out の
       // 有無は実行時には区別できない（書き換えで out が取り除かれる）
@@ -857,22 +1284,101 @@ function parse(source, language, deadline) {
           if (
             n1?.k === "id" &&
             n2?.k === "id" &&
-            ["int", "long", "double", "float", "short", "uint", "ulong", "ushort", "byte", "sbyte", "char", "bool", "string", "var"].includes(n1.v)
+            ["int", "long", "double", "float", "short", "uint", "ulong", "ushort", "byte", "sbyte", "char", "bool", "string", "var", "Int32", "Int64", "Int16", "UInt16", "UInt32", "UInt64", "SByte", "Byte", "Char", "Boolean", "Single", "Double", "Decimal", "decimal", "DateTime", "TimeSpan"].includes(n1.v)
           ) {
             p.ts.splice(j, 1);
+            // === 高度モード ブロックB5（C#）修正2A（ここから） ===
+            // out 宣言の型名は CLR 名でもエイリアスへ正規化する
+            // （var の場合はレシーバ型。未対応型はレシーバの型名）。
+            const declType =
+              n1.v === "var"
+                ? (tryParseAlias ?? CS_B5_CLR_ALIAS[baseType] ?? baseType)
+                : (CS_B5_CLR_ALIAS[n1.v] ?? n1.v);
+            // === 高度モード ブロックB5（C#）修正2A（ここまで） ===
             pendingDecls.push({
               k: "declare",
               name: n2.v,
-              type: n1.v === "var" ? baseType : n1.v,
-              value: { k: "literal", value: 0, line: n2.line },
+              type: declType,
+              // === 高度モード ブロックB5（C#）修正2A（ここから） ===
+              // bool／string の out 宣言は数値 0 では初期化できない
+              // ため、型の既定値を置く（数値型は従来どおり 0）。
+              value: {
+                k: "literal",
+                value: declType === "bool" ? false : declType === "string" ? null : 0,
+                line: n2.line,
+              },
+              // === 高度モード ブロックB5（C#）修正2A（ここまで） ===
               line: n2.line,
-              refs: [n1.v === "var" ? baseType : n1.v],
+              refs: [declType],
             });
           }
           break;
         }
       }
     }
+    // === 高度モード ブロックB5（C#）修正2A：ref／out／in 引数修飾（ここから） ===
+    // CS-F09-2：managed の呼び出し引数で ref／out／in 修飾を構文として
+    // 受理する。修飾は引数の先頭（直前の有意トークンが "(" または ","）
+    // でのみ取り除き、ディスパッチ先（高度側の名前付き停止等）へ届く
+    // ようにする。foreach の in や ref ローカル（直前が "="）は引数
+    // 位置ではないため対象外。TryParse の out は上の専用処理で除去
+    // 済みであり、ここに残る out はその他の呼び出しのものである。
+    // out 型名 変数名 の形は TryParse と同じく宣言として取り出す。
+    {
+      const sigIdxB5 = (from) => {
+        let j = from;
+        while (p.ts[j]?.v === "\n" && !p.ts[j]?.k) j++;
+        return j;
+      };
+      const rebuilt = [];
+      let prevSigV = null;
+      for (let idx = 0; idx < p.ts.length; idx++) {
+        const tk = p.ts[idx];
+        if (tk.v === "\n" && !tk.k) {
+          rebuilt.push(tk);
+          continue;
+        }
+        if (
+          ["ref", "in", "out"].includes(tk.v) &&
+          (prevSigV === "(" || prevSigV === ",")
+        ) {
+          const j1 = sigIdxB5(idx + 1),
+            n1 = p.ts[j1];
+          if (n1?.k === "id" && n1.v !== "_") {
+            if (tk.v === "out") {
+              const j2 = sigIdxB5(j1 + 1),
+                n2 = p.ts[j2];
+              if (
+                n2?.k === "id" &&
+                ["int", "long", "double", "float", "short", "uint", "ulong", "ushort", "byte", "sbyte", "char", "bool", "string", "var", "Int32", "Int64", "Int16", "UInt16", "UInt32", "UInt64", "SByte", "Byte", "Char", "Boolean", "Single", "Double", "Decimal", "decimal", "DateTime", "TimeSpan"].includes(n1.v)
+              ) {
+                const declType =
+                  n1.v === "var" ? "int" : (CS_B5_CLR_ALIAS[n1.v] ?? n1.v);
+                pendingDecls.push({
+                  k: "declare",
+                  name: n2.v,
+                  type: declType,
+                  value: {
+                    k: "literal",
+                    value: declType === "bool" ? false : declType === "string" ? null : 0,
+                    line: n2.line,
+                  },
+                  line: n2.line,
+                  refs: [declType],
+                });
+                idx = j2 - 1; // 型名まで読み飛ばし、変数名は引数として残す
+                continue;
+              }
+            }
+            continue; // 修飾トークンだけを取り除く
+          }
+        }
+        rebuilt.push(tk);
+        prevSigV = tk.v;
+      }
+      p.ts = rebuilt;
+    }
+    // === 高度モード ブロックB5（C#）修正2A：ref／out／in 引数修飾（ここまで） ===
   }
   if (["c", "cpp"].includes(language)) p.parseCast = function(meta) {
     const start = this.i;
@@ -1413,7 +1919,13 @@ function parse(source, language, deadline) {
         this.cCommaDepth = 0;
         let value;
         try {
-          value = this.expr(0);
+          // B8（cpp-engine-b）：代入の右辺の波括弧初期化子リスト
+          // （v = {1,2,3};、p = {1, "x"};）は初期化子リストとして読む
+          // （共有パーサのレコードリテラル読みに落とさない）。C は従来どおり。
+          value =
+            language === "cpp" && op === "=" && this.peek("{")
+              ? parseBracedInit(this)
+              : this.expr(0);
         } finally {
           this.assignOk = savedAssignOk;
           this.noComma = savedNoComma;
@@ -1564,6 +2076,325 @@ function parse(source, language, deadline) {
     }
     return value;
   };
+  // ===== B8（cpp-engine-b）：C++ コンテナ／イテレータ／auto 宣言のパーサ =====
+  // 型指定を読み、正規化した型文字列と構造（spec）を返す。宣言の形で
+  // なければ parser.i を戻して null を返す。ハードな誤り（array の
+  // 要素数の形など）は名指しで停止する。
+  const CPP_ITER_NAMES = ["iterator", "const_iterator", "reverse_iterator", "const_reverse_iterator"];
+  const takeGreater = (parser) => {
+    const v = parser.ts[parser.i]?.v;
+    if (v === ">") {
+      parser.take();
+      return;
+    }
+    if (v === ">>" || v === ">>>") {
+      const tk = parser.ts[parser.i],
+        parts = [...v].map(() => ({ v: ">", line: tk.line }));
+      parser.ts.splice(parser.i, 1, ...parts);
+      parser.take();
+      return;
+    }
+    throw new PracticeError(
+      "型引数リストの > が必要です",
+      parser.ts[parser.i]?.line ?? 1,
+      "SyntaxError",
+    );
+  };
+  const parseCppTypeSpec = (parser) => {
+    const startI = parser.i;
+    let isConst = false;
+    if (parser.peek("const")) {
+      parser.take();
+      isConst = true;
+    }
+    const w = parser.ts[parser.i];
+    if (!w || w.k !== "id") {
+      parser.i = startI;
+      return null;
+    }
+    let spec = null;
+    if (["vector", "array", "pair"].includes(w.v)) {
+      const kind = w.v;
+      parser.take();
+      if (!parser.peek("<")) {
+        parser.i = startI;
+        return null;
+      }
+      parser.take();
+      const e1 = parseCppTypeSpec(parser);
+      if (!e1 || e1.kind === "iterator" || e1.kind === "auto") {
+        parser.i = startI;
+        return null;
+      }
+      if (kind === "vector") {
+        takeGreater(parser);
+        spec = { kind: "vector", elem: e1, text: `vector<${e1.text}>` };
+      } else if (kind === "pair") {
+        if (!parser.peek(",")) {
+          parser.i = startI;
+          return null;
+        }
+        parser.take();
+        const e2 = parseCppTypeSpec(parser);
+        if (!e2 || e2.kind === "iterator" || e2.kind === "auto") {
+          parser.i = startI;
+          return null;
+        }
+        takeGreater(parser);
+        spec = { kind: "pair", t1: e1, t2: e2, text: `pair<${e1.text},${e2.text}>` };
+      } else {
+        if (!parser.peek(",")) {
+          parser.i = startI;
+          return null;
+        }
+        parser.take();
+        const sz = parser.ts[parser.i];
+        let sizeExpr = null,
+          sizeText = null;
+        if (sz?.k === "number") {
+          sizeExpr = { k: "literal", value: Number(sz.v), raw: sz.v, line: sz.line };
+          sizeText = sz.v;
+          parser.take();
+        } else if (sz?.k === "id") {
+          sizeExpr = { k: "var", name: sz.v, line: sz.line };
+          sizeText = sz.v;
+          parser.take();
+        } else
+          unsupported(
+            "std::array の要素数は整数リテラルまたは変数で指定してください",
+            sz?.line ?? w.line,
+          );
+        takeGreater(parser);
+        spec = { kind: "array", elem: e1, sizeExpr, text: `array<${e1.text},${sizeText}>` };
+      }
+    } else if (
+      builtinTypes.includes(w.v) ||
+      ["unsigned", "signed", "long", "short"].includes(w.v)
+    ) {
+      // 複合型名（unsigned int 等）は宣言パーサ本体と同じ正規化表で畳む。
+      const typeWordSet = ["int", "long", "short", "char", "unsigned", "signed", "bool", "double", "float"];
+      let j = parser.i;
+      const words = [];
+      while (typeWordSet.includes(parser.ts[j]?.v)) words.push(parser.ts[j++].v);
+      if (words.length > 1) {
+        const normalized = {
+          "long long": "long",
+          "unsigned long long": "unsigned long",
+          "signed long long": "long",
+          "long int": "long",
+          "signed long int": "long",
+          "unsigned long int": "unsigned long",
+          "short int": "short",
+          "signed short int": "short",
+          "unsigned short int": "unsigned short",
+          "unsigned int": "unsigned int",
+          "signed int": "int",
+          "unsigned long": "unsigned long",
+          "signed long": "long",
+          "unsigned short": "unsigned short",
+          "signed short": "short",
+          "unsigned char": "unsigned char",
+          "signed char": "signed char",
+        }[words.join(" ")];
+        if (!normalized) {
+          parser.i = startI;
+          return null;
+        }
+        parser.i = j;
+        spec = { kind: "scalar", text: normalized };
+      } else {
+        parser.take();
+        spec = { kind: "scalar", text: w.v };
+      }
+    } else {
+      parser.i = startI;
+      return null;
+    }
+    // イテレータ型（コンテナ::iterator 等。string::iterator も含む）。
+    if (
+      parser.peek("::") &&
+      CPP_ITER_NAMES.includes(parser.ts[parser.i + 1]?.v) &&
+      (spec.kind !== "scalar" || spec.text === "string")
+    ) {
+      parser.take();
+      const itName = parser.take().v;
+      return {
+        kind: "iterator",
+        host: spec,
+        iterName: itName,
+        rev: itName.includes("reverse"),
+        constIt: itName.includes("const"),
+        text: `${spec.text}::${itName}`,
+        isConst,
+      };
+    }
+    return { ...spec, isConst };
+  };
+  // 宣言文の形（型 名前 初期化子?）なら declare ノードを返す。
+  const tryParseCppDecl = (parser) => {
+    const startI = parser.i,
+      line = parser.ts[startI]?.line ?? 1,
+      t0 = parser.ts[startI];
+    let gate = false;
+    if (t0?.v === "auto")
+      gate =
+        parser.ts[startI + 1]?.k === "id" || parser.ts[startI + 1]?.v === "[";
+    else if (t0?.v === "const") {
+      const t1 = parser.ts[startI + 1];
+      gate =
+        !!t1 &&
+        (["vector", "array", "pair", "auto"].includes(t1.v) ||
+          (t1.v === "string" && parser.ts[startI + 2]?.v === "::"));
+    } else if (["vector", "array", "pair"].includes(t0?.v))
+      gate = parser.ts[startI + 1]?.v === "<";
+    else if (t0?.v === "string") gate = parser.ts[startI + 1]?.v === "::";
+    if (!gate) return null;
+    if (t0.v === "auto" && parser.ts[startI + 1]?.v === "[")
+      unsupported("構造化束縛は未対応です", line);
+    let spec;
+    if (t0.v === "auto") {
+      parser.take();
+      spec = { kind: "auto", text: "auto" };
+    } else {
+      spec = parseCppTypeSpec(parser);
+      if (!spec) {
+        parser.i = startI;
+        return null;
+      }
+    }
+    const declarators = [];
+    for (;;) {
+      if (parser.peek("*"))
+        unsupported(
+          spec.kind === "iterator"
+            ? "イテレータへのポインタは未対応です"
+            : "コンテナへのポインタは未対応です",
+          line,
+        );
+      if (parser.peek("&"))
+        unsupported("コンテナ／イテレータへの参照の宣言は未対応です", line);
+      const nameTok = parser.ts[parser.i];
+      if (!nameTok || nameTok.k !== "id") {
+        if (declarators.length === 0) {
+          parser.i = startI;
+          return null;
+        }
+        throw new PracticeError("変数名が必要です", line);
+      }
+      parser.take();
+      if (parser.peek("["))
+        unsupported("コンテナの配列は未対応です", line);
+      let value = null,
+        initArgs = null,
+        bracedInit = false;
+      if (parser.peek("(")) {
+        parser.take();
+        if (parser.peek("{")) {
+          value = parseBracedInit(parser);
+          bracedInit = true;
+          parser.take(")");
+        } else {
+          const args = [];
+          parser.cNoComma = (parser.cNoComma || 0) + 1;
+          try {
+            while (!parser.peek(")")) {
+              args.push(parser.expr());
+              if (!parser.peek(",")) break;
+              parser.take();
+            }
+          } finally {
+            parser.cNoComma--;
+          }
+          parser.take(")");
+          initArgs = args;
+        }
+      } else if (parser.peek("{")) {
+        value = parseBracedInit(parser);
+        bracedInit = true;
+      } else if (parser.peek("=")) {
+        parser.take();
+        if (parser.peek("{")) {
+          value = parseBracedInit(parser);
+          bracedInit = true;
+        } else value = parser.expr();
+      }
+      declarators.push({
+        k: "declare",
+        name: nameTok.v,
+        type: spec.text,
+        cppKind: spec.kind,
+        cppSpec: spec,
+        value,
+        initArgs,
+        bracedInit,
+        array: false,
+        pointer: false,
+        line,
+        refs: [spec.kind === "iterator" ? "iterator" : spec.kind === "auto" ? "auto" : spec.text.split("<")[0]],
+      });
+      if (!parser.peek(",")) break;
+      parser.take();
+    }
+    if (declarators.length === 1) return declarators[0];
+    return {
+      k: "declareGroup",
+      declarations: declarators,
+      line,
+      refs: [...new Set(declarators.flatMap((d) => d.refs))],
+    };
+  };
+  // 範囲 for のヘッダ（型 名前 : 対象）を試行する。形が違えば null。
+  const tryParseRangeFor = (parser) => {
+    const startI = parser.i,
+      line = parser.ts[startI]?.line ?? 1;
+    let isConst = false;
+    if (parser.peek("const")) {
+      parser.take();
+      isConst = true;
+    }
+    let spec = null;
+    if (parser.peek("auto")) {
+      parser.take();
+      spec = { kind: "auto", text: "auto" };
+    } else spec = parseCppTypeSpec(parser);
+    if (!spec || spec.kind === "iterator") {
+      parser.i = startI;
+      return null;
+    }
+    let ref = false;
+    if (parser.peek("&")) {
+      parser.take();
+      ref = true;
+    }
+    const nameTok = parser.ts[parser.i];
+    if (!nameTok || nameTok.k !== "id") {
+      parser.i = startI;
+      return null;
+    }
+    parser.take();
+    if (!parser.peek(":")) {
+      parser.i = startI;
+      return null;
+    }
+    parser.take();
+    let collection;
+    if (parser.peek("{")) collection = parseBracedInit(parser);
+    else collection = parser.expr();
+    if (!parser.peek(")")) {
+      parser.i = startI;
+      return null;
+    }
+    parser.take(")");
+    return {
+      name: nameTok.v,
+      varType: spec.text,
+      varSpec: spec,
+      ref,
+      isConst,
+      collection,
+      line,
+    };
+  };
   p.simple = function () {
     let t = this.ts[this.i];
     // RG-366（修正バッチ12・C#班）：var によるタプル分解代入
@@ -1574,10 +2405,17 @@ function parse(source, language, deadline) {
       this.ts[sigNext(this.ts, this.i + 1)]?.v === "("
     )
       unsupported("タプル（分解代入）", t.line);
+    // B8（cpp-engine-b）：C++ のコンテナ／イテレータ／auto 宣言は
+    // 専用パーサが受理する（形が合わなければ従来経路へ戻す）。
+    if (language === "cpp") {
+      const cppDecl = tryParseCppDecl(this);
+      if (cppDecl) return cppDecl;
+    }
     if (["let", "const", "auto", "var"].includes(t.v))
       unsupported("この宣言・型推論はモデルで未対応です：" + t.v, t.line);
-    if (t.v === "cout") {
-      if (language !== "cpp") unsupported("coutはC++専用です", t.line);
+    if (["cout", "cerr", "clog"].includes(t.v)) {
+      if (language !== "cpp") unsupported(t.v + "はC++専用です", t.line);
+      const streamName = t.v;
       this.take();
       let values = [];
       while (this.peek("<<")) {
@@ -1589,13 +2427,13 @@ function parse(source, language, deadline) {
           this.coutChain--;
         }
       }
-      if (!values.length) unsupported("coutの書式", t.line);
+      if (!values.length) unsupported(streamName + "の書式", t.line);
       return {
         k: "action",
-        action: "cout",
+        action: streamName,
         values,
         line: t.line,
-        refs: ["cout"],
+        refs: streamName === "cout" ? ["cout"] : [],
       };
     }
     if (t.v === "new") unsupported("newを文として使うことはできません", t.line);
@@ -1667,7 +2505,11 @@ function parse(source, language, deadline) {
     }
     const compositeTypes = ["unsigned int", "unsigned long", "unsigned short", "unsigned char", "signed char", "short", "unsigned", "signed", ...(language === "csharp" ? ["uint", "ulong", "ushort", "byte", "sbyte"] : [])];
     if (
-      (builtinTypes.includes(t.v) || classes[t.v] || compositeTypes.includes(t.v)) &&
+      (builtinTypes.includes(t.v) ||
+        classes[t.v] ||
+        compositeTypes.includes(t.v) ||
+        // B8（cpp-engine-a）：std::div の戻り値型だけは C++ でのみ型名として受理する。
+        (language === "cpp" && ["div_t", "ldiv_t", "lldiv_t"].includes(t.v))) &&
       this.ts[this.i + 1]?.v !== "("
     ) {
       let type = this.take().v;
@@ -2359,6 +3201,34 @@ function parse(source, language, deadline) {
       this.take();
       this.take("(");
       const line = t.line;
+      // B8（cpp-engine-b）：範囲 for（for (型 名前 : 対象)）は C++ 専用
+      // の形として先に試行する。形が合わなければ読み位置を戻し、
+      // 従来の for として読み直す（通常 for の初期化部に ":" は現れない）。
+      if (language === "cpp") {
+        const saveRf = this.i;
+        let rf = null;
+        try {
+          rf = tryParseRangeFor(this);
+        } catch {
+          rf = null;
+        }
+        if (rf) {
+          return {
+            k: "each",
+            name: rf.name,
+            varType: rf.varType,
+            varSpec: rf.varSpec,
+            rangeRef: rf.ref,
+            rangeConst: rf.isConst,
+            cppRange: true,
+            collection: rf.collection,
+            body: this.body(),
+            line,
+            refs: ["for"],
+          };
+        }
+        this.i = saveRf;
+      }
       const exprFull = () => {
         this.cCommaDepth = (this.cCommaDepth || 0) + 1;
         try {
@@ -2374,6 +3244,14 @@ function parse(source, language, deadline) {
           builtinTypes.includes(h.v) ||
           classes[h.v] ||
           ["unsigned", "signed", "short", "long", "uint", "ulong", "ushort", "byte", "sbyte"].includes(h.v)
+        )
+          return true;
+        // B8（cpp-engine-b）：for 初期化部のコンテナ／イテレータ／auto
+        // 宣言（auto it = v.begin() 等）も宣言として読む。
+        if (
+          language === "cpp" &&
+          (["vector", "array", "pair", "auto", "const"].includes(h.v) ||
+            (h.v === "string" && this.ts[this.i + 1]?.v === "::"))
         )
           return true;
         return h.k === "id" && this.ts[this.i + 1]?.k === "id";
@@ -2518,7 +3396,7 @@ function parse(source, language, deadline) {
     const n = innerStatement.call(this);
     if (
       ["declare", "declareGroup", "assign", "expression", "return", "break", "continue"].includes(n.k) ||
-      (n.k === "action" && n.action === "cout")
+      (n.k === "action" && ["cout", "cerr", "clog"].includes(n.action))
     ) {
       if (!this.peek(";"))
         throw new PracticeError("; が必要です", this.ts[this.i]?.line ?? n.line, "SyntaxError");
@@ -2571,7 +3449,18 @@ function parse(source, language, deadline) {
     );
   return { nodes, classes };
 }
-export function createCFamily({ id, name, extensions, language }) {
+// 高度モード（ブロックB6）のライブラリ拡張フック用センチネル。
+// 種類の index.js が createCFamily の library オプションへ渡した
+// ハンドラが「この名前は扱わない」と返すときに使う。
+export const LIBRARY_UNHANDLED = Symbol("library-unhandled");
+
+export function createCFamily({ id, name, extensions, language, library = null }) {
+  // 高度モード（ブロックB6）：ライブラリ拡張ファクトリは後付けで
+  // 差し替えられる（definition.installAdvancedLibrary）。高度エンジン
+  // フック（advanced-engine.js の applyAdvancedEngine）が使う入口で、
+  // エンジン本体にモード分岐は持たない（契約 advanced-interface.md
+  // 第5章(e)）。従来どおり library オプションでの同時指定も可能。
+  let libraryFactory = library;
   const managed = id === "csharp";
   let reference = rows([
     [
@@ -2860,7 +3749,7 @@ export function createCFamily({ id, name, extensions, language }) {
       "ushort n = 1;",
       "16ビット符号なし整数（System.UInt16）です。範囲は 0〜65535。",
       "ushort n = 1;",
-      "既定（unchecked）では、範囲を超える演算・変換は 65536 の剰余で折り返します。checked では OverflowException になります。また ushort.MaxValue／MinValue は静的メンバーの表になく未対応として停止します（型自体は対応済み）。",
+      "既定（unchecked）では、範囲を超える演算・変換は 65536 の剰余で折り返します。checked では OverflowException になります。ushort.MaxValue／MinValue 自体も参照できます。",
     ],
     [
       "byte",
@@ -3155,6 +4044,12 @@ export function createCFamily({ id, name, extensions, language }) {
     },
     reference,
     templates,
+    // 高度モード（ブロックB6）：高度エンジンフックからのライブラリ
+    // 拡張の後付け入口（モード分岐ではない。導入後は単一エンジンの
+    // 一部として両モードで同じ結果を返す）。
+    installAdvancedLibrary(factory) {
+      libraryFactory = factory;
+    },
     // 用語集は言語ごとに分ける（旧実装は3種類で同一配列を共有し、C# に
     // ポインタ／未定義動作、C に参照オブジェクトが混入していた：RG-136）。
     glossary: [
@@ -3223,7 +4118,7 @@ export function createCFamily({ id, name, extensions, language }) {
         "mainまたは文の断片、単純宣言、代入、If / For / While、掲載出力。複数宣言子（int a = 1, b = 2; のように、1つの宣言に複数の名前を初期化子の有無を混ぜて書く形）にも対応します。宣言子ごとのポインタ（C／C++）・配列の修飾や、for の初期化部での複数宣言子も同じです。多次元配列にも対応します（C／C++ は連鎖添字の多次元配列、C# は矩形配列（int[,]）とジャグ配列（int[][]））。" +
         (managed
           ? "スコープ：同じスコープでの同名の再宣言はエラーとして停止します。外側で宣言した名前を内側のブロック・for・foreach で再宣言する形（シャドーイング）は、実 C# の規則どおり CS0136 として停止します（内側の宣言が先にある場合も同じです。兄弟ブロック同士の同名宣言は対応します）。未対応：型推論（auto / var）、動的確保・解放、複雑な型・テンプレート・関数定義。"
-          : "スコープ：内側のブロックや for の初期化部で外側と同じ名前を再宣言する形（シャドーイング）に対応します（ブロックを抜けると外側の変数に戻ります）。同じスコープでの同名の再宣言はエラーとして停止します。ただしファイルスコープの大域変数と同名の変数を main の直下で宣言する形は、同一スコープとして停止します。未対応：型推論（auto / var）、動的確保・解放、複雑な型・テンプレート・関数定義。") +
+          : "スコープ：内側のブロックや for の初期化部で外側と同じ名前を再宣言する形（シャドーイング）に対応します（ブロックを抜けると外側の変数に戻ります）。同じスコープでの同名の再宣言はエラーとして停止します。ただしファイルスコープの大域変数と同名の変数を main の直下で宣言する形は、同一スコープとして停止します。未対応：型推論（auto / var）、複雑な型・テンプレート・関数定義。動的確保・解放は未対応（ただし高度モードの C では malloc／calloc／realloc／free をモデル範囲で対応し、その範囲は各項目の注意に開示します。C++ の new／delete は高度モードでも未対応です）。") +
         "64ビット整数の安全な精度範囲外は未確認として停止。",
       sources: managed
         ? [
@@ -3407,7 +4302,28 @@ export function createCFamily({ id, name, extensions, language }) {
           if (typeof v === "boolean")
             return managed ? (v ? "True" : "False") : v;
           if (typeof v === "number" && Object.is(v, -0)) return "-0";
+          // === 高度モード ブロックB5（C#）表示修正（ここから） ===
+          // __adv 値（DateTime／TimeSpan／List／HashSet）は内部表現の
+          // まま表示せず、C# の ToString 形にする。配列要素マップより
+          // 前に置く（List／HashSet は配列として保持されるため）。
+          // managed 限定で、対象外は null が返り従来経路に落ちる。
+          if (managed && v && typeof v === "object" && v.__adv) {
+            const advText = advancedValueText(v);
+            if (advText !== null) return advText;
+          }
+          // === 高度モード ブロックB5（C#）表示修正（ここまで） ===
           if (Array.isArray(v)) return v.map((x) => transformDisplay(x));
+          if (language === "cpp" && v && typeof v === "object") {
+            if (v.__pair)
+              return {
+                first: transformDisplay(v.first),
+                second: transformDisplay(v.second),
+              };
+            if (v.kind === "cpp-iterator")
+              return v.singular
+                ? "イテレータ（未初期化）"
+                : `イテレータ（位置 ${v.pos}）`;
+          }
           if (v && typeof v === "object" && v.__class) {
             const o = { ...v };
             for (const k of Object.keys(o)) o[k] = transformDisplay(o[k]);
@@ -3435,6 +4351,57 @@ export function createCFamily({ id, name, extensions, language }) {
           sbyte: "SByte", short: "Int16", ushort: "UInt16", uint: "UInt32",
           ulong: "UInt64",
         };
+        // === 高度モード ブロックB5（C#）修正2A：型推論テーブル（ここから） ===
+        // CS-F11：高度メソッドの戻り型。advanced-engine.js の実装が
+        // char／short／sbyte を返す呼び出し（エイリアス形・CLR 名形の
+        // 両方）について、typeOf が int と誤推論して型付き変数への
+        // 代入が CS0266 にならないよう、正しい型を返す。
+        // char[] を返す String.ToCharArray はレシーバ依存のため
+        // typeOf 側の構造判定で扱う。
+        const CS_B5_CALL_RETURN_TYPES = {
+          "Char.Parse": "char", "char.Parse": "char",
+          "Char.ToLower": "char", "char.ToLower": "char",
+          "Char.ToUpper": "char", "char.ToUpper": "char",
+          "Char.ToLowerInvariant": "char", "char.ToLowerInvariant": "char",
+          "Char.ToUpperInvariant": "char", "char.ToUpperInvariant": "char",
+          "Convert.ToChar": "char",
+          "Convert.ToInt16": "short",
+          "Convert.ToSByte": "sbyte",
+          "SByte.Parse": "sbyte", "sbyte.Parse": "sbyte",
+          "Int16.Parse": "short", "short.Parse": "short",
+        };
+        // CS-F02 随伴：静的定数メンバーの型。MaxValue／MinValue 等の
+        // 値の型をレシーバ型名（エイリアス形・CLR 名形）から返す
+        // （従来は一律 int で、float／double 定数の表示と代入検査が
+        // 実型とずれていた）。
+        const CS_B5_MEMBER_TYPES = {
+          "int.MaxValue": "int", "int.MinValue": "int",
+          "Int32.MaxValue": "int", "Int32.MinValue": "int",
+          "long.MaxValue": "long", "long.MinValue": "long",
+          "Int64.MaxValue": "long", "Int64.MinValue": "long",
+          "short.MaxValue": "short", "short.MinValue": "short",
+          "Int16.MaxValue": "short", "Int16.MinValue": "short",
+          "ushort.MaxValue": "ushort", "ushort.MinValue": "ushort",
+          "UInt16.MaxValue": "ushort", "UInt16.MinValue": "ushort",
+          "uint.MaxValue": "uint", "uint.MinValue": "uint",
+          "UInt32.MaxValue": "uint", "UInt32.MinValue": "uint",
+          "ulong.MaxValue": "ulong", "ulong.MinValue": "ulong",
+          "UInt64.MaxValue": "ulong", "UInt64.MinValue": "ulong",
+          "byte.MaxValue": "byte", "byte.MinValue": "byte",
+          "Byte.MaxValue": "byte", "Byte.MinValue": "byte",
+          "sbyte.MaxValue": "sbyte", "sbyte.MinValue": "sbyte",
+          "SByte.MaxValue": "sbyte", "SByte.MinValue": "sbyte",
+          "char.MaxValue": "char", "char.MinValue": "char",
+          "Char.MaxValue": "char", "Char.MinValue": "char",
+          "float.MaxValue": "float", "float.MinValue": "float",
+          "Single.MaxValue": "float", "Single.MinValue": "float",
+          "double.MaxValue": "double", "double.MinValue": "double",
+          "Double.MaxValue": "double", "Double.MinValue": "double",
+          "bool.TrueString": "string", "bool.FalseString": "string",
+          "Boolean.TrueString": "string", "Boolean.FalseString": "string",
+          "string.Empty": "string", "String.Empty": "string",
+        };
+        // === 高度モード ブロックB5（C#）修正2A：型推論テーブル（ここまで） ===
         function csArrayTypeName(node, value, s, typeHint) {
           for (const cand of [node ? csTypeStrOf(node, s) : null, typeHint]) {
             const p = cand ? csParseTypeStr(cand) : null;
@@ -3443,6 +4410,18 @@ export function createCFamily({ id, name, extensions, language }) {
               return (sys ? "System." + sys : p.elem) + p.suffix;
             }
           }
+          // === 高度モード ブロックB5（C#）修正2A：表示側（ここから） ===
+          // CS-F05：高度側が生成した配列に要素型タグ __elemSys
+          // （非列挙プロパティ、例 "Int32"）がある場合は、値ベース
+          // 推定（整数要素→Double の誤判定）より優先して使う。
+          if (
+            managed &&
+            Array.isArray(value) &&
+            typeof value.__elemSys === "string" &&
+            value.__elemSys
+          )
+            return "System." + value.__elemSys + "[]";
+          // === 高度モード ブロックB5（C#）修正2A：表示側（ここまで） ===
           let depth = 0,
             cur = value;
           while (Array.isArray(cur)) {
@@ -3468,6 +4447,16 @@ export function createCFamily({ id, name, extensions, language }) {
           return null;
         }
         function csConcatText(v, type, node, s) {
+          // === 高度モード ブロックB5（C#）表示修正（ここから） ===
+          // __adv 値（DateTime／TimeSpan／List／HashSet）の連結・補間は
+          // C# の ToString 形にする（従来は String(v) の
+          // "[object Object]" や配列型名の誤導出になっていた）。
+          // csConcatText は managed の文字列連結経路からだけ呼ばれる。
+          if (managed && v && typeof v === "object" && v.__adv) {
+            const advText = advancedValueText(v);
+            if (advText !== null) return advText;
+          }
+          // === 高度モード ブロックB5（C#）表示修正（ここまで） ===
           // R29-N22 根因：文字列連結・補間の中の配列は、実物では
           // ToString（型名）になる。JS の String(配列)（要素のカンマ
           // 連結）で代用していたため "v=1,2,3" になっていた。
@@ -3575,11 +4564,42 @@ export function createCFamily({ id, name, extensions, language }) {
             // 引数が int へ変換されるため常に int、C++ では double
             // オーバーロードが選ばれるため引数型のまま。
             const nm = callName(a.target);
+            // B8: コンテナ・イテレータ関連の呼び出しの結果型。
+            if (language === "cpp") {
+              const ct = cppCallType(a, s);
+              if (ct) return ct;
+            }
             if (nm === "abs") {
               const at = a.args?.length ? typeOf(a.args[0], s) : "int";
               if (["float", "double"].includes(at))
                 return !managed && language === "cpp" ? at : "int";
               return "int";
+            }
+            // B8（cpp-engine-a）：C++ スカラー関数と std::string メンバの
+            // 結果型。printf の型照合・cout の表示・整数／浮動小数点の
+            // 演算規則がこの型で決まるため、実物の戻り型に合わせる。
+            if (language === "cpp") {
+              const base = nm.includes(".") ? nm.slice(nm.lastIndexOf(".") + 1) : nm;
+              const memberTarget = a.target?.k === "member" ? a.target.target : null;
+              if (memberTarget && typeOf(memberTarget, s) === "string") {
+                if (["substr", "assign", "append", "insert", "replace", "erase"].includes(base)) return "string";
+                if (["at", "front", "back"].includes(base)) return "char";
+                if (["empty", "starts_with", "ends_with", "contains"].includes(base)) return "bool";
+                return "int";
+              }
+              if (!nm.includes(".")) {
+                if (["sqrt", "pow", "fmod", "remainder", "exp", "exp2", "log", "log2", "log10", "sin", "cos", "tan", "asin", "acos", "atan", "atan2", "sinh", "cosh", "tanh", "asinh", "acosh", "atanh", "cbrt", "hypot", "fmin", "fmax", "fdim", "fabs", "copysign", "ldexp", "scalbn", "scalbln", "logb", "nextafter", "nexttoward", "round", "trunc", "floor", "ceil", "rint", "nearbyint", "atof", "strtod", "stod", "nan"].includes(base)) return "double";
+                if (base === "stof" || base === "strtof") return "float";
+                if (["isnan", "isinf", "isfinite", "isnormal", "signbit", "isgreater", "isgreaterequal", "isless", "islessequal", "islessgreater", "isunordered", "has_single_bit", "isalpha", "isdigit", "isalnum", "isspace", "isupper", "islower", "ispunct", "isxdigit", "iscntrl", "isprint", "isgraph"].includes(base)) return "bool";
+                if (base === "to_string") return "string";
+                if (base === "div") return "div_t";
+                if (base === "ldiv") return "ldiv_t";
+                if (base === "lldiv") return "lldiv_t";
+                if (["stol", "stoll", "atol", "atoll", "strtol", "strtoll", "labs", "llabs", "lround", "llround", "lrint", "llrint"].includes(base)) return "long";
+                if (["stoul", "stoull", "strtoul", "strtoull"].includes(base)) return "unsigned long";
+                if (["bit_ceil", "bit_floor", "bit_width", "countl_zero", "countl_one", "countr_zero", "countr_one", "popcount", "rotl", "rotr", "byteswap"].includes(base))
+                  return a.args?.length ? typeOf(a.args[0], s) : "int";
+              }
             }
             if (nm === "Console.ReadLine") return "string";
             // R7-168（修正バッチ13）：checked／unchecked 式の結果型は
@@ -3591,6 +4611,28 @@ export function createCFamily({ id, name, extensions, language }) {
               a.args?.length === 1
             )
               return typeOf(a.args[0], s);
+            // 高度モード（ブロックB6）：ライブラリ拡張が戻り型を
+            // 宣言する関数（sqrt 等）はその型を返す。宣言が無い
+            // 呼び出しは従来どおり int とみなす。
+            if (libraryReturnType) {
+              const lt = libraryReturnType(
+                nm,
+                (a.args || []).map((x) => typeOf(x, s)),
+              );
+              if (lt) return lt;
+            }
+            // === 高度モード ブロックB5（C#）修正2A（ここから） ===
+            // CS-F11：高度メソッドの戻り型（char／short／sbyte）は
+            // テーブルから、String.ToCharArray の char[] はメソッド名の
+            // 構造判定から返す（レシーバは文字列式のため名前では
+            // 決まらない）。
+            if (managed) {
+              const advRetB5 = CS_B5_CALL_RETURN_TYPES[nm];
+              if (advRetB5) return advRetB5;
+              if (a.target?.k === "member" && a.target.name === "ToCharArray")
+                return "char[]";
+            }
+            // === 高度モード ブロックB5（C#）修正2A（ここまで） ===
             return "int";
           }
           if (a.k === "ternary") {
@@ -3618,12 +4660,39 @@ export function createCFamily({ id, name, extensions, language }) {
                   ? "long"
                   : "int";
           }
-          if (managed && a.k === "member") return classes[typeOf(a.target, s)]?.[a.name]?.type || "int";
+          if (language === "cpp" && a.k === "member" && a.target?.k === "var" && a.target.name === "numbers") return "double";
+          if (language === "cpp" && a.k === "member" && a.target?.k === "var" && a.target.name === "string" && a.name === "npos") return "unsigned long";
+          if (managed && a.k === "member") {
+            // === 高度モード ブロックB5（C#）修正2A（ここから） ===
+            // CS-F02 随伴：静的定数メンバーはレジストリの型を返す。
+            const memberTypeB5 = CS_B5_MEMBER_TYPES[callName(a)];
+            if (memberTypeB5) return memberTypeB5;
+            // === 高度モード ブロックB5（C#）修正2A（ここまで） ===
+            return classes[typeOf(a.target, s)]?.[a.name]?.type || "int";
+          }
+          // B8: pair の first／second、イテレータ経由の pair メンバの型。
+          if (language === "cpp" && a.k === "member") {
+            const sp = parseCppTypeText(typeOf(a.target, s));
+            if (sp?.kind === "pair")
+              return a.name === "first" ? sp.t1.text : a.name === "second" ? sp.t2.text : "int";
+            if (sp?.kind === "iterator") {
+              const esp = parseCppTypeText(sp.elem);
+              if (esp?.kind === "pair")
+                return a.name === "first" ? esp.t1.text : a.name === "second" ? esp.t2.text : "int";
+            }
+          }
           if (a.k === "var") return s.types[a.name] || s.loopVarTypes?.[a.name] || (["true", "false"].includes(a.name) && language !== "c" ? "bool" : "int");
           if (a.k === "binary") {
             if (["==", "!=", "<", ">", "<=", ">=", "&&", "||"].includes(a.op)) return language === "c" ? "int" : "bool";
             let l = typeOf(a.a, s),
               r = typeOf(a.b, s);
+            // B8: イテレータ ± 整数の結果型はイテレータ型そのもの。
+            if (language === "cpp" && (a.op === "+" || a.op === "-")) {
+              const lsp = parseCppTypeText(l),
+                rsp = parseCppTypeText(r);
+              if (lsp?.kind === "iterator" && rsp?.kind !== "iterator") return l;
+              if (rsp?.kind === "iterator" && a.op === "+") return r;
+            }
             if (language === "cpp" && a.op === "+" && [l, r].includes("string")) return "string";
             // R22-N22（RG-05 別表面）：C# では string との + は連結であり、
             // 結果型は string。左結合チェーン（"x" + 1 + 2）でも後続の + が
@@ -3670,6 +4739,12 @@ export function createCFamily({ id, name, extensions, language }) {
             // csTypeStrOf と従来経路をそのまま使う。
             if (!managed) {
               const tt = typeOf(a.target, s);
+              // B8: コンテナ／イテレータへの添字は要素型。
+              if (language === "cpp") {
+                const sp = parseCppTypeText(tt);
+                if (sp && (["vector", "array"].includes(sp.kind) || sp.kind === "iterator"))
+                  return sp.kind === "iterator" ? sp.elem : sp.elem.text;
+              }
               if (tt === "string") return "char";
               if (tt.endsWith("[]")) return tt.slice(0, -2) || "int";
               if (tt.endsWith("*")) return tt.slice(0, -1) || "int";
@@ -3688,6 +4763,11 @@ export function createCFamily({ id, name, extensions, language }) {
               // "int[]" の末尾の "*" だけを剥がす旧実装では配列型が
               // そのまま残り、printf の型検査が虚偽の不一致になった。
               const t = typeOf(a.arg, s);
+              // B8: イテレータの逆参照は要素型。
+              if (language === "cpp") {
+                const sp = parseCppTypeText(t);
+                if (sp?.kind === "iterator") return sp.elem;
+              }
               if (t.endsWith("[]")) return t.slice(0, -2);
               return t.replace(/\*$/, "");
             }
@@ -3738,6 +4818,54 @@ export function createCFamily({ id, name, extensions, language }) {
           if (!managed && ["char", "unsigned char", "signed char"].includes(t))
             return 8;
           return t === "char" && !managed ? 8 : 32;
+        }
+        // A6監査CF-03：要素型のバイト幅（LP64 モデル）。width() は整数の
+        // ビット幅専用（double を32と数える）ため、メモリ範囲判定には
+        // 使えない。判定できない型（構造体等）は 0 を返し、呼び出し側は
+        // 従来の要素単位検査に倒す。
+        function byteSizeOf(type) {
+          if (!type) return 0;
+          const t = String(type).trim();
+          if (t.includes("*")) return 8;
+          if (t.includes("long double")) return 16;
+          if (t.includes("double")) return 8;
+          if (t.includes("long")) return 8;
+          if (t.includes("float")) return 4;
+          if (t.includes("short")) return 2;
+          if (t.includes("char")) return 1;
+          if (t === "bool") return 1;
+          if (t.includes("int")) return 4;
+          return 0;
+        }
+        // ポインタ値の式が「指す先の型」を返す（ポインタでない式は null）。
+        // 二項の +/- は typeOf が算術型へ畳んでしまうため、ポインタ側の
+        // オペランドへ再帰して型を取り出す（*(p - 1) 等の形の要）。
+        function pointeeTypeOf(node, s) {
+          if (!node || typeof node !== "object") return null;
+          if (node.k === "binary" && (node.op === "+" || node.op === "-"))
+            return pointeeTypeOf(node.a, s) ?? pointeeTypeOf(node.b, s);
+          if (node.k === "unary" && node.op === "*") {
+            const inner = pointeeTypeOf(node.arg, s);
+            if (!inner || !inner.includes("*")) return null;
+            return inner.slice(0, inner.lastIndexOf("*")).trim() || null;
+          }
+          const t = typeOf(node, s);
+          if (typeof t !== "string") return null;
+          const x = t.trim();
+          if (!x.includes("*")) return null;
+          return x.slice(0, x.lastIndexOf("*")).trim() || null;
+        }
+        // アクセス式（添字／逆参照）から要素型を取り出す。ポインタ型は
+        // 末尾の * を剥がして指す先の型にする。
+        function elemTypeOf(node, s) {
+          if (!node || typeof node !== "object") return null;
+          if (node.k === "unary" && node.op === "*") return pointeeTypeOf(node.arg, s);
+          if (node.k === "binary") return pointeeTypeOf(node, s);
+          let t = typeOf(node, s);
+          if (typeof t !== "string") return null;
+          t = t.trim();
+          if (t.endsWith("*")) t = t.slice(0, t.lastIndexOf("*")).trim();
+          return t || null;
         }
         // D3 追随（修正バッチ2・追随班）：C# の定数式かどうかの構文判定。
         // リテラル、定数への単項 -／+／~、定数同士の二項演算、定数への
@@ -3873,6 +5001,17 @@ export function createCFamily({ id, name, extensions, language }) {
             }
             return v;
           }
+          // B8（cpp-engine-a）：div 系の結果オブジェクトは数値変換を
+          // 介さずそのまま保持する（.quot／.rem を持つ値）。
+          if (
+            language === "cpp" &&
+            ["div_t", "ldiv_t", "lldiv_t"].includes(type) &&
+            v &&
+            typeof v === "object" &&
+            "quot" in v &&
+            "rem" in v
+          )
+            return v;
           if (type === "bool") {
             if (managed && typeof v !== "boolean")
               api.fail("bool型が必要です", node);
@@ -4116,6 +5255,9 @@ export function createCFamily({ id, name, extensions, language }) {
           if (expr.k === "index") {
             let target = api.read(expr.target, s),
               index = api.read(expr.indexes[0], s);
+            // A6監査CF-02派生：NULL ポインタへの添字アクセスを名指しする
+            if (!managed && target === null)
+              api.fail("NULLポインタへのアクセスです", node, "未定義動作");
             if (!isPtr(target))
               api.fail("モデルポインタと整数添字が必要です", node);
             // R23-N5 書き込み側：小数の添字を「ポインタと整数添字が
@@ -4129,7 +5271,10 @@ export function createCFamily({ id, name, extensions, language }) {
             return api.read(expr.arg, s);
           api.fail("このアドレス指定は未対応です", node);
         }
-        function deref(ptr, s, api, node) {
+        function deref(ptr, s, api, node, elemType) {
+          // A6監査CF-02派生：NULL ポインタの参照は汎用文言でなく名指しする
+          if (!managed && ptr === null)
+            api.fail("NULLポインタの参照です", node, "未定義動作");
           if (!isPtr(ptr) || !s.model.memory[ptr.object]?.alive)
             api.fail(
               managed
@@ -4139,6 +5284,22 @@ export function createCFamily({ id, name, extensions, language }) {
               managed ? "NullReferenceException" : "未定義動作",
             );
           let mem = s.model.memory[ptr.object];
+          // A6監査CF-03：ヒープ確保は char 型メモリにバイト数分の要素を
+          // 置くため、要素幅の広い型でアクセスする場合は要素単位でなく
+          // バイト単位で範囲を判定する（幅が広くないアクセスは従来どおり）。
+          if (!managed && elemType) {
+            const ew = byteSizeOf(elemType),
+              mw = byteSizeOf(mem.type);
+            if (ew > 0 && mw > 0 && ew > mw) {
+              if (ptr.offset < 0 || (ptr.offset + 1) * ew > mem.values.length * mw)
+                api.fail(
+                  "配列の有効範囲外を読み書きしています",
+                  node,
+                  "未定義動作",
+                );
+              return mem;
+            }
+          }
           if (ptr.offset < 0 || ptr.offset >= mem.values.length)
             api.fail(
               "配列の有効範囲外を読み書きしています",
@@ -4169,6 +5330,545 @@ export function createCFamily({ id, name, extensions, language }) {
             text += String.fromCharCode(c);
           }
           api.fail("終端のヌル文字がない文字列の読み取り", node, "未定義動作");
+        }
+        // B8（cpp-engine-a）：C++ スカラー関数群（<cmath>／<cstdlib>／
+        // <cctype>／<cstring>／std::stoi 系／std::to_string／<bit>）と
+        // std::string メンバ関数の実行。language === "cpp" のときだけ
+        // call から呼ばれる。担当外の名前（コンテナ／イテレータ／
+        // <algorithm> 等）は null を返し、従来の停止に委ねる。
+        function cppScalarCall(name, args, values, s, api, node) {
+          const done = (value) => ({ handled: true, value });
+          const fail = (msg, cat = "CompileError") => api.fail(msg, node, cat);
+          const need = (counts) => {
+            if (!counts.includes(args.length))
+              fail(`引数の個数が合いません（${args.length}個は渡せません）`);
+          };
+          const asNum = (v, argNode) => {
+            if (typeof v === "boolean") return Number(v);
+            if (typeof v === "string" && v.length === 1 && typeOf(argNode, s) === "char") return v.charCodeAt(0);
+            if (typeof v !== "number") fail("引数は数値でなければなりません");
+            return v;
+          };
+          const idx = (v, argNode) => Math.trunc(asNum(v, argNode));
+          const asText = (v, argNode) => {
+            if (typeof v === "string") return v;
+            if (isPtr(v)) return cString(v, s, api, node);
+            if (typeof v === "number" && typeOf(argNode, s) === "char") return String.fromCharCode(v);
+            fail("引数は文字列でなければなりません");
+          };
+          const asChar = (v, argNode) => {
+            if (typeof v === "string" && v.length === 1) return v;
+            if (typeof v === "number") return String.fromCharCode(v);
+            if (typeof v === "boolean") return String.fromCharCode(Number(v));
+            fail("引数は文字でなければなりません");
+          };
+          const rhe = (x) => {
+            // 偶数への丸め（rint／nearbyint／remainder の商）。
+            if (!Number.isFinite(x)) return x;
+            const f = Math.floor(x), d = x - f;
+            if (d > 0.5) return f + 1;
+            if (d < 0.5) return f;
+            return Math.abs(f) % 2 === 0 ? f : f + 1;
+          };
+          const roundAway = (x) => Math.sign(x) * Math.round(Math.abs(x));
+          const parseIntPrefix = (text, base) => {
+            let t = String(text).replace(/^\s+/, ""), sign = 1n;
+            if (t.startsWith("+")) t = t.slice(1);
+            else if (t.startsWith("-")) { sign = -1n; t = t.slice(1); }
+            let b = base;
+            if (b === 0) {
+              if (/^0[xX]/.test(t)) { b = 16; t = t.slice(2); }
+              else if (t.length > 1 && t.startsWith("0")) b = 8;
+              else b = 10;
+            } else if (b === 16 && /^0[xX]/.test(t)) t = t.slice(2);
+            if (b < 2 || b > 36) return null;
+            const digits = "0123456789abcdefghijklmnopqrstuvwxyz";
+            let val = 0n, any = false;
+            for (const ch of t) {
+              const d = digits.indexOf(ch.toLowerCase());
+              if (d < 0 || d >= b) break;
+              val = val * BigInt(b) + BigInt(d);
+              any = true;
+            }
+            return any ? sign * val : null;
+          };
+          const parseFloatPrefix = (text) => {
+            const m = String(text).match(/^\s*[+-]?(?:inf(?:inity)?|nan|(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?)/i);
+            if (!m) return null;
+            const t = m[0].trim().toLowerCase();
+            if (/^[+-]?inf/.test(t)) return t.startsWith("-") ? -Infinity : Infinity;
+            if (/^[+-]?nan/.test(t)) return NaN;
+            return Number(m[0]);
+          };
+          const cmpText = (a, b) => {
+            const n = Math.min(a.length, b.length);
+            for (let i = 0; i < n; i++) {
+              const d = a.charCodeAt(i) - b.charCodeAt(i);
+              if (d) return d;
+            }
+            return a.length - b.length;
+          };
+          /* ---------- std::string メンバ ---------- */
+          if (node?.target?.k === "member") {
+            const targetNode = node.target.target;
+            const method = name.slice(name.lastIndexOf(".") + 1);
+            if (typeOf(targetNode, s) !== "string") return null;
+            const cur = api.read(targetNode, s);
+            if (isUnknown(cur)) return done(unknown(`未確定の文字列の ${method}`));
+            if (typeof cur !== "string") return null;
+            const MUTATING = ["assign", "append", "insert", "erase", "replace", "resize", "clear", "push_back", "pop_back", "swap", "reserve", "shrink_to_fit"];
+            if (![...MUTATING, "size", "length", "empty", "at", "front", "back", "substr", "find", "rfind", "find_first_of", "find_first_not_of", "find_last_of", "find_last_not_of", "compare", "starts_with", "ends_with", "contains"].includes(method)) return null;
+            if (values.some(isUnknown)) {
+              if (MUTATING.includes(method))
+                api.write(targetNode, api.freshUnknown("未確定の文字列", s), s, node);
+              return done(unknown(`未確定の引数による ${method}`));
+            }
+            const setStr = (next) => { api.write(targetNode, next, s, node); return next; };
+            const outOfRange = () => fail("添字／位置が文字列の範囲外です（std::out_of_range）", "std::out_of_range");
+            const needleOf = (i) =>
+              typeof values[i] === "number" || typeOf(args[i], s) === "char"
+                ? asChar(values[i], args[i])
+                : asText(values[i], args[i]);
+            switch (method) {
+              case "size": case "length": need([0]); return done(cur.length);
+              case "empty": need([0]); return done(cur.length === 0);
+              case "at": {
+                need([1]);
+                const p = idx(values[0], args[0]);
+                if (p < 0 || p >= cur.length) outOfRange();
+                return done(cur.charCodeAt(p));
+              }
+              case "front":
+                need([0]);
+                if (!cur.length) fail("空文字列への front() は未定義動作です", "未定義動作");
+                return done(cur.charCodeAt(0));
+              case "back":
+                need([0]);
+                if (!cur.length) fail("空文字列への back() は未定義動作です", "未定義動作");
+                return done(cur.charCodeAt(cur.length - 1));
+              case "substr": {
+                need([0, 1, 2]);
+                const p = args.length ? idx(values[0], args[0]) : 0;
+                if (p < 0 || p > cur.length) outOfRange();
+                let c = args.length >= 2 ? idx(values[1], args[1]) : -1;
+                if (c < 0) c = cur.length - p;
+                return done(cur.slice(p, p + c));
+              }
+              case "find": case "rfind": case "find_first_of": case "find_first_not_of": case "find_last_of": case "find_last_not_of": {
+                need([1, 2, 3]);
+                let needle = needleOf(0);
+                if (args.length === 3 && (method === "find" || method === "rfind")) {
+                  const c = idx(values[2], args[2]);
+                  needle = asText(values[0], args[0]).slice(0, Math.max(0, c));
+                }
+                const posGiven = args.length >= 2 ? idx(values[1], args[1]) : null;
+                if (method === "find") {
+                  const p = posGiven ?? 0;
+                  if (p < 0) return done(-1);
+                  return done(cur.indexOf(needle, p));
+                }
+                if (method === "rfind") {
+                  let p = posGiven ?? -1;
+                  if (p === -1) p = cur.length;
+                  if (p < 0) return done(-1);
+                  if (needle === "") return done(Math.min(p, cur.length));
+                  return done(cur.lastIndexOf(needle, p));
+                }
+                if (method === "find_first_of" || method === "find_first_not_of") {
+                  const p = posGiven ?? 0, want = method === "find_first_of";
+                  if (p < 0) return done(-1);
+                  for (let i = p; i < cur.length; i++)
+                    if (needle.includes(cur[i]) === want) return done(i);
+                  return done(-1);
+                }
+                let p = posGiven ?? -1;
+                if (p === -1) p = cur.length - 1;
+                const want = method === "find_last_of";
+                for (let i = Math.min(p, cur.length - 1); i >= 0; i--)
+                  if (needle.includes(cur[i]) === want) return done(i);
+                return done(-1);
+              }
+              case "compare": {
+                need([1, 3, 5]);
+                if (args.length === 1) return done(cmpText(cur, asText(values[0], args[0])));
+                const p = idx(values[0], args[0]);
+                if (p < 0 || p > cur.length) outOfRange();
+                let c = idx(values[1], args[1]);
+                if (c < 0) c = cur.length - p;
+                const mine = cur.slice(p, p + c);
+                if (args.length === 3) return done(cmpText(mine, asText(values[2], args[2])));
+                const other = asText(values[2], args[2]);
+                const p2 = idx(values[3], args[3]);
+                if (p2 < 0 || p2 > other.length) outOfRange();
+                let c2 = idx(values[4], args[4]);
+                if (c2 < 0) c2 = other.length - p2;
+                return done(cmpText(mine, other.slice(p2, p2 + c2)));
+              }
+              case "starts_with": need([1]); return done(cur.startsWith(needleOf(0)));
+              case "ends_with": need([1]); return done(cur.endsWith(needleOf(0)));
+              case "contains": need([1]); return done(cur.includes(needleOf(0)));
+              case "assign": case "append": {
+                need([1, 2, 3]);
+                const base = method === "append" ? cur : "";
+                if (args.length === 1) return done(setStr(base + asText(values[0], args[0])));
+                if (args.length === 2) {
+                  const c = idx(values[0], args[0]);
+                  if (c < 0) fail("個数が不正です", "std::length_error");
+                  return done(setStr(base + asChar(values[1], args[1]).repeat(c)));
+                }
+                const src = asText(values[0], args[0]), p = idx(values[1], args[1]);
+                if (p < 0 || p > src.length) outOfRange();
+                let c = idx(values[2], args[2]);
+                if (c < 0) c = src.length - p;
+                return done(setStr(base + src.slice(p, p + c)));
+              }
+              case "push_back":
+                need([1]);
+                setStr(cur + asChar(values[0], args[0]));
+                return done(null);
+              case "pop_back":
+                need([0]);
+                if (!cur.length) fail("空文字列への pop_back() は未定義動作です", "未定義動作");
+                setStr(cur.slice(0, -1));
+                return done(null);
+              case "clear": need([0]); setStr(""); return done(null);
+              case "reserve": need([0, 1]); return done(null);
+              case "shrink_to_fit": need([0]); return done(null);
+              case "insert": {
+                need([2, 3]);
+                const p = idx(values[0], args[0]);
+                if (p < 0 || p > cur.length) outOfRange();
+                if (args.length === 2)
+                  return done(setStr(cur.slice(0, p) + asText(values[1], args[1]) + cur.slice(p)));
+                const c = idx(values[1], args[1]);
+                if (c < 0) fail("個数が不正です", "std::length_error");
+                return done(setStr(cur.slice(0, p) + asChar(values[2], args[2]).repeat(c) + cur.slice(p)));
+              }
+              case "erase": {
+                need([0, 1, 2]);
+                const p = args.length ? idx(values[0], args[0]) : 0;
+                if (p < 0 || p > cur.length) outOfRange();
+                let c = args.length >= 2 ? idx(values[1], args[1]) : -1;
+                if (c < 0) c = cur.length - p;
+                return done(setStr(cur.slice(0, p) + cur.slice(p + c)));
+              }
+              case "replace": {
+                need([3, 5]);
+                const p = idx(values[0], args[0]);
+                if (p < 0 || p > cur.length) outOfRange();
+                let c = idx(values[1], args[1]);
+                if (c < 0) c = cur.length - p;
+                let ins;
+                if (args.length === 3) ins = asText(values[2], args[2]);
+                else {
+                  const src = asText(values[2], args[2]), p2 = idx(values[3], args[3]);
+                  if (p2 < 0 || p2 > src.length) outOfRange();
+                  let c2 = idx(values[4], args[4]);
+                  if (c2 < 0) c2 = src.length - p2;
+                  ins = src.slice(p2, p2 + c2);
+                }
+                return done(setStr(cur.slice(0, p) + ins + cur.slice(p + c)));
+              }
+              case "resize": {
+                need([1, 2]);
+                const n = idx(values[0], args[0]);
+                if (n < 0) fail("resize のサイズが不正です", "std::length_error");
+                if (n > 200000) fail("resize のサイズがモデルの上限を超えます", "limit");
+                const fill = args.length === 2 ? asChar(values[1], args[1]) : "\0";
+                setStr(n <= cur.length ? cur.slice(0, n) : cur + fill.repeat(n - cur.length));
+                return done(null);
+              }
+              case "swap": {
+                need([1]);
+                const otherNode = args[0];
+                if (!["var", "index", "member"].includes(otherNode?.k))
+                  fail("swap の引数は文字列変数でなければなりません");
+                const other = api.read(otherNode, s);
+                if (typeof other !== "string") fail("swap の引数は文字列でなければなりません");
+                api.write(otherNode, cur, s, node);
+                setStr(other);
+                return done(null);
+              }
+            }
+            return null;
+          }
+          /* ---------- 自由関数 ---------- */
+          if (name.includes(".")) return null;
+          if (name === "srand") { need([1]); return done(null); }
+          if (name === "rand") {
+            need([0]);
+            return done(api.freshUnknown("rand の戻り値（実行ごとに変わる値）", s));
+          }
+          if (values.some(isUnknown)) return done(unknown(`${name} の戻り値`));
+          const D1 = { sqrt: Math.sqrt, exp: Math.exp, log: Math.log, log2: Math.log2, log10: Math.log10, sin: Math.sin, cos: Math.cos, tan: Math.tan, asin: Math.asin, acos: Math.acos, atan: Math.atan, sinh: Math.sinh, cosh: Math.cosh, tanh: Math.tanh, asinh: Math.asinh, acosh: Math.acosh, atanh: Math.atanh, cbrt: Math.cbrt, fabs: Math.abs, floor: Math.floor, ceil: Math.ceil, trunc: Math.trunc };
+          if (Object.hasOwn(D1, name)) { need([1]); return done(D1[name](asNum(values[0], args[0]))); }
+          if (name === "exp2") { need([1]); return done(2 ** asNum(values[0], args[0])); }
+          if (name === "round") { need([1]); return done(roundAway(asNum(values[0], args[0]))); }
+          if (name === "rint" || name === "nearbyint") { need([1]); return done(rhe(asNum(values[0], args[0]))); }
+          if (name === "lround" || name === "llround" || name === "lrint" || name === "llrint") {
+            need([1]);
+            const x = asNum(values[0], args[0]);
+            const r = name.endsWith("round") ? roundAway(x) : rhe(x);
+            if (!Number.isSafeInteger(r)) fail("結果が安全整数の範囲外です", "未確認");
+            return done(r);
+          }
+          const nextAfterImpl = (x, y) => {
+            if (Number.isNaN(x) || Number.isNaN(y)) return NaN;
+            if (x === y) return y;
+            if (x === 0) return y > 0 ? Number.MIN_VALUE : -Number.MIN_VALUE;
+            const buf = new DataView(new ArrayBuffer(8));
+            buf.setFloat64(0, x);
+            let bits = buf.getBigUint64(0);
+            bits += (y > x) !== (x < 0) ? 1n : -1n;
+            buf.setBigUint64(0, bits);
+            return buf.getFloat64(0);
+          };
+          const D2 = {
+            pow: (x, y) => x ** y,
+            fmod: (x, y) => x % y,
+            remainder: (x, y) => (y === 0 ? NaN : x - rhe(x / y) * y),
+            atan2: Math.atan2,
+            hypot: Math.hypot,
+            fmin: (x, y) => (Number.isNaN(x) ? y : Number.isNaN(y) ? x : Math.min(x, y)),
+            fmax: (x, y) => (Number.isNaN(x) ? y : Number.isNaN(y) ? x : Math.max(x, y)),
+            fdim: (x, y) => (x > y ? x - y : 0),
+            copysign: (x, y) => Math.abs(x) * (Object.is(y, -0) || y < 0 ? -1 : 1),
+            ldexp: (x, e) => x * 2 ** Math.trunc(e),
+            scalbn: (x, e) => x * 2 ** Math.trunc(e),
+            scalbln: (x, e) => x * 2 ** Math.trunc(e),
+            nextafter: nextAfterImpl,
+            nexttoward: nextAfterImpl,
+          };
+          if (Object.hasOwn(D2, name)) { need([2]); return done(D2[name](asNum(values[0], args[0]), asNum(values[1], args[1]))); }
+          if (["isnan", "isinf", "isfinite", "isnormal", "signbit", "fpclassify", "logb", "ilogb"].includes(name)) {
+            need([1]);
+            const x = asNum(values[0], args[0]);
+            if (name === "isnan") return done(Number.isNaN(x));
+            if (name === "isinf") return done(!Number.isFinite(x) && !Number.isNaN(x));
+            if (name === "isfinite") return done(Number.isFinite(x));
+            if (name === "isnormal") return done(x !== 0 && Number.isFinite(x) && Math.abs(x) >= 2.2250738585072014e-308);
+            if (name === "signbit") return done(x < 0 || Object.is(x, -0));
+            if (name === "fpclassify") return done(Number.isNaN(x) ? 0 : !Number.isFinite(x) ? 1 : x === 0 ? 2 : Math.abs(x) < 2.2250738585072014e-308 ? 3 : 4);
+            if (name === "logb") return done(x === 0 ? -Infinity : Number.isNaN(x) ? NaN : !Number.isFinite(x) ? Infinity : Math.floor(Math.log2(Math.abs(x))));
+            return done(x === 0 ? -2147483648 : Number.isNaN(x) ? 2147483647 : !Number.isFinite(x) ? 2147483647 : Math.floor(Math.log2(Math.abs(x))));
+          }
+          if (["isgreater", "isgreaterequal", "isless", "islessequal", "islessgreater", "isunordered"].includes(name)) {
+            need([2]);
+            const x = asNum(values[0], args[0]), y = asNum(values[1], args[1]);
+            if (name === "isunordered") return done(Number.isNaN(x) || Number.isNaN(y));
+            if (name === "isgreater") return done(x > y);
+            if (name === "isgreaterequal") return done(x >= y);
+            if (name === "isless") return done(x < y);
+            if (name === "islessequal") return done(x <= y);
+            return done(x < y || x > y);
+          }
+          if (name === "nan") { need([1]); return done(NaN); }
+          /* <cstdlib> 文字列変換 */
+          if (["atoi", "atol", "atoll"].includes(name)) {
+            need([1]);
+            const parsed = parseIntPrefix(asText(values[0], args[0]), 10);
+            if (parsed === null) return done(0);
+            if (name === "atoi" && (parsed > 2147483647n || parsed < -2147483648n))
+              fail("atoi の結果が int の範囲外です", "未定義動作");
+            if (parsed > BigInt(Number.MAX_SAFE_INTEGER) || parsed < BigInt(Number.MIN_SAFE_INTEGER))
+              fail("結果が安全整数の範囲外です", "未確認");
+            return done(Number(parsed));
+          }
+          if (name === "atof" || name === "strtod" || name === "strtof") {
+            need(name === "atof" ? [1] : [1, 2]);
+            const v = parseFloatPrefix(asText(values[0], args[0]));
+            const r = v === null ? 0 : v;
+            return done(name === "strtof" ? Math.fround(r) : r);
+          }
+          if (["strtol", "strtoll", "strtoul", "strtoull"].includes(name)) {
+            need([2, 3]);
+            const base = args.length >= 3 ? idx(values[2], args[2]) : 0;
+            let parsed = parseIntPrefix(asText(values[0], args[0]), base);
+            if (parsed === null) return done(0);
+            if (name === "strtoul" || name === "strtoull") {
+              const MOD = 1n << 64n;
+              parsed = ((parsed % MOD) + MOD) % MOD;
+            }
+            if (parsed > BigInt(Number.MAX_SAFE_INTEGER) || parsed < BigInt(Number.MIN_SAFE_INTEGER))
+              fail("結果が安全整数の範囲外です", "未確認");
+            return done(Number(parsed));
+          }
+          if (["div", "ldiv", "lldiv"].includes(name)) {
+            need([2]);
+            const n = idx(values[0], args[0]), d = idx(values[1], args[1]);
+            if (d === 0) fail("0 で割る除算です", "未定義動作");
+            // A5班監査: 整数除算の商に -0 は存在しない（演算子側と同根）。
+            let quot = Math.trunc(n / d);
+            if (quot === 0) quot = 0;
+            return done({ quot, rem: n - quot * d });
+          }
+          if (name === "labs" || name === "llabs") {
+            need([1]);
+            const r = Math.abs(asNum(values[0], args[0]));
+            if (!Number.isSafeInteger(r)) fail("結果が安全整数の範囲外です", "未確認");
+            return done(r);
+          }
+          /* <cctype>（"C" ロケール） */
+          const CTYPE = {
+            isalpha: (c) => (c >= 65 && c <= 90) || (c >= 97 && c <= 122),
+            isdigit: (c) => c >= 48 && c <= 57,
+            isalnum: (c) => ((c >= 65 && c <= 90) || (c >= 97 && c <= 122) || (c >= 48 && c <= 57)),
+            isspace: (c) => [9, 10, 11, 12, 13, 32].includes(c),
+            isupper: (c) => c >= 65 && c <= 90,
+            islower: (c) => c >= 97 && c <= 122,
+            ispunct: (c) => c >= 33 && c <= 126 && !((c >= 65 && c <= 90) || (c >= 97 && c <= 122) || (c >= 48 && c <= 57)),
+            isxdigit: (c) => (c >= 48 && c <= 57) || (c >= 65 && c <= 70) || (c >= 97 && c <= 102),
+            iscntrl: (c) => (c >= 0 && c < 32) || c === 127,
+            isprint: (c) => c >= 32 && c <= 126,
+            isgraph: (c) => c >= 33 && c <= 126,
+          };
+          if (Object.hasOwn(CTYPE, name)) {
+            need([1]);
+            const c = idx(values[0], args[0]);
+            return done(c === -1 ? false : CTYPE[name](c));
+          }
+          if (name === "tolower" || name === "toupper") {
+            need([1]);
+            const c = idx(values[0], args[0]);
+            if (c === -1) return done(-1);
+            if (name === "tolower") return done(c >= 65 && c <= 90 ? c + 32 : c);
+            return done(c >= 97 && c <= 122 ? c - 32 : c);
+          }
+          /* <cstring> */
+          if (name === "strlen") { need([1]); return done(asText(values[0], args[0]).length); }
+          if (name === "strcmp") { need([2]); return done(cmpText(asText(values[0], args[0]), asText(values[1], args[1]))); }
+          if (name === "strncmp") {
+            need([3]);
+            const a = asText(values[0], args[0]), b = asText(values[1], args[1]), n = idx(values[2], args[2]);
+            for (let i = 0; i < n; i++) {
+              const ca = i < a.length ? a.charCodeAt(i) : 0, cb = i < b.length ? b.charCodeAt(i) : 0;
+              if (ca !== cb) return done(ca - cb);
+              if (ca === 0) return done(0);
+            }
+            return done(0);
+          }
+          if (name === "strchr" || name === "strrchr") {
+            need([2]);
+            const wasPtr = isPtr(values[0]);
+            const text = asText(values[0], args[0]);
+            const code = ((idx(values[1], args[1]) % 256) + 256) % 256;
+            if (code === 0) return done(wasPtr ? { ...values[0], offset: values[0].offset + text.length } : "");
+            const ch = String.fromCharCode(code);
+            const at = name === "strchr" ? text.indexOf(ch) : text.lastIndexOf(ch);
+            if (at < 0) return done(null);
+            return done(wasPtr ? { ...values[0], offset: values[0].offset + at } : text.slice(at));
+          }
+          if (name === "strstr") {
+            need([2]);
+            const wasPtr = isPtr(values[0]);
+            const big = asText(values[0], args[0]), needle = asText(values[1], args[1]);
+            if (needle === "") return done(values[0]);
+            const at = big.indexOf(needle);
+            if (at < 0) return done(null);
+            return done(wasPtr ? { ...values[0], offset: values[0].offset + at } : big.slice(at));
+          }
+          /* std::stoi 系／std::to_string */
+          if (["stoi", "stol", "stoll", "stoul", "stoull", "stof", "stod"].includes(name)) {
+            need([1, 2, 3]);
+            if (typeof values[0] !== "string") fail("第1引数は文字列でなければなりません");
+            const text = values[0];
+            if (name === "stof" || name === "stod") {
+              const v = parseFloatPrefix(text);
+              if (v === null) fail("変換できる数値がありません（std::invalid_argument）", "std::invalid_argument");
+              if (!Number.isFinite(v) && !/^\s*[+-]?inf/i.test(text))
+                fail("変換結果が範囲外です（std::out_of_range）", "std::out_of_range");
+              return done(name === "stof" ? Math.fround(v) : v);
+            }
+            const base = args.length >= 3 ? idx(values[2], args[2]) : 10;
+            let parsed = parseIntPrefix(text, base);
+            if (parsed === null) fail("変換できる数値がありません（std::invalid_argument）", "std::invalid_argument");
+            if (name === "stoi" && (parsed > 2147483647n || parsed < -2147483648n))
+              fail("変換結果が int の範囲外です（std::out_of_range）", "std::out_of_range");
+            if (name === "stoul" || name === "stoull") {
+              const MOD = 1n << 64n;
+              parsed = ((parsed % MOD) + MOD) % MOD;
+            }
+            if (parsed > BigInt(Number.MAX_SAFE_INTEGER) || parsed < BigInt(Number.MIN_SAFE_INTEGER))
+              fail("変換結果が安全整数の範囲外です", "未確認");
+            return done(Number(parsed));
+          }
+          if (name === "to_string") {
+            need([1]);
+            const v = values[0];
+            if (typeof v === "boolean") return done(String(Number(v)));
+            if (typeof v === "string") {
+              if (typeOf(args[0], s) === "char" && v.length === 1) return done(String(v.charCodeAt(0)));
+              fail("to_string の引数は数値でなければなりません");
+            }
+            if (typeof v !== "number") fail("to_string の引数は数値でなければなりません");
+            if (Number.isNaN(v)) return done("nan");
+            if (!Number.isFinite(v)) return done(v > 0 ? "inf" : "-inf");
+            if (["double", "float"].includes(typeOf(args[0], s)) || !Number.isInteger(v))
+              return done(Object.is(v, -0) ? "-0.000000" : formatFixed6(v));
+            return done(String(v));
+          }
+          /* <bit> */
+          if (["has_single_bit", "bit_ceil", "bit_floor", "bit_width", "countl_zero", "countl_one", "countr_zero", "countr_one", "popcount", "rotl", "rotr", "byteswap"].includes(name)) {
+            need(name === "rotl" || name === "rotr" ? [2] : [1]);
+            const t0 = typeOf(args[0], s);
+            const w = t0.includes("char") ? 8 : t0.includes("short") ? 16 : t0.includes("long") ? 64 : 32;
+            const xv = asNum(values[0], args[0]);
+            if (!Number.isSafeInteger(Math.trunc(xv))) fail("引数が安全整数の範囲外です", "未確認");
+            const mask = (1n << BigInt(w)) - 1n;
+            const x = BigInt.asUintN(w, BigInt(Math.trunc(xv)));
+            const toNum = (b) => {
+              if (b > BigInt(Number.MAX_SAFE_INTEGER)) fail("結果が安全整数の範囲外です", "未確認");
+              return Number(b);
+            };
+            const bitWidth = (b) => (b === 0n ? 0 : b.toString(2).length);
+            const pop = (b) => b.toString(2).replaceAll("0", "").length;
+            switch (name) {
+              case "has_single_bit": return done(x !== 0n && (x & (x - 1n)) === 0n);
+              case "bit_width": return done(bitWidth(x));
+              case "popcount": return done(pop(x));
+              case "countl_zero": return done(w - bitWidth(x));
+              case "countl_one": {
+                let c = 0;
+                for (let i = w - 1; i >= 0 && ((x >> BigInt(i)) & 1n) === 1n; i--) c++;
+                return done(c);
+              }
+              case "countr_zero": {
+                if (x === 0n) return done(w);
+                let c = 0;
+                while (((x >> BigInt(c)) & 1n) === 0n) c++;
+                return done(c);
+              }
+              case "countr_one": {
+                let c = 0;
+                while (c < w && ((x >> BigInt(c)) & 1n) === 1n) c++;
+                return done(c);
+              }
+              case "bit_ceil": {
+                if (x <= 1n) return done(1);
+                const p = 1n << BigInt(bitWidth(x - 1n));
+                if (p > (1n << BigInt(w - 1))) fail("bit_ceil の結果が型で表せません", "未定義動作");
+                return done(toNum(p));
+              }
+              case "bit_floor":
+                if (x === 0n) return done(0);
+                return done(toNum(1n << BigInt(bitWidth(x) - 1)));
+              case "rotl": case "rotr": {
+                let sc = idx(values[1], args[1]);
+                sc = ((sc % w) + w) % w;
+                if (sc === 0) return done(toNum(x));
+                const r = name === "rotl"
+                  ? ((x << BigInt(sc)) | (x >> BigInt(w - sc))) & mask
+                  : ((x >> BigInt(sc)) | (x << BigInt(w - sc))) & mask;
+                return done(toNum(r));
+              }
+              case "byteswap": {
+                let r = 0n;
+                for (let i = 0; i < w / 8; i++) r = (r << 8n) | ((x >> BigInt(8 * i)) & 0xffn);
+                return done(toNum(r));
+              }
+            }
+          }
+          return null;
         }
         // R25-N8（C家族分）：C#（managed）の代入は semantics.step／
         // read が右辺を先に読む経路のため、共有 executeProgram の
@@ -4274,6 +5974,2157 @@ export function createCFamily({ id, name, extensions, language }) {
               return "";
           }
         }
+        // 高度モード（ブロックB6）：printf の書式処理を切り出した共通
+        // 関数。printf 本体と、ライブラリ拡張（sprintf 等）が同じ書式
+        // 規則・同じ型検査・同じ停止文面を共有するためのもの。挙動は
+        // 切り出し前と同一（書式の受理範囲は %d %i %s %f %c %u %% のみ）。
+        function formatPrintf(fmt, args, values, s, api, node) {
+          if (isPtr(fmt)) fmt = cString(fmt, s, api, node);
+          if (typeof fmt !== "string")
+            api.fail("printfの書式文字列が必要です", node);
+          // R7-162（修正バッチ13）：書式文字列は最初のヌル文字で
+          // 終端する（gcc 実測：printf("A\0B%d",7) の出力は "A" で
+          // 戻り値は 1。ヌル以降の書式は読まれず、余った引数は
+          // 実物でも無視される）。
+          const nulAt = fmt.indexOf("\0");
+          const truncatedAtNul = nulAt >= 0;
+          if (truncatedAtNul) fmt = fmt.slice(0, nulAt);
+          if (fmt.replace(/%[%disfcu]/g, "").includes("%")) api.fail("このprintf書式はモデルで扱えません", node, "未対応");
+          const rest = values.slice(1);
+          let i = 0;
+          let text = fmt.replace(/%([%disfcu])/g, (_, type) => {
+            if (type === "%") return "%";
+            let sourceArg = args[i + 1],
+              sourceType = typeOf(sourceArg, s),
+              v = rest[i++];
+            if (typeof v === "boolean") v = Number(v);
+            // B6監査（A-C P2-1是正）：「実行時に決まる値」は型のある値であり、
+            // 値が数値でないことを理由に「書式と型が一致しない（未定義動作）」
+            // とするのは虚偽原因。宣言型と書式の整合だけを検査し、値は
+            // ラベルで表示する（rand() の printf が標準的な使い方のため）。
+            if (isUnknown(v)) {
+              if (
+                ((type === "d" || type === "i" || type === "c") &&
+                  !["int", "char", "signed char", "unsigned char", "short", "unsigned short", "bool"].includes(sourceType)) ||
+                (type === "u" && sourceType !== "unsigned int") ||
+                (type === "f" && !["float", "double"].includes(sourceType)) ||
+                // A6監査CF-07：%s も宣言型検査の対象（char ポインタ／
+                // char 配列でない未確定値をラベル表示で通さない）
+                (type === "s" &&
+                  !(/\bchar\b/.test(sourceType) &&
+                    (sourceType.includes("*") || sourceType.includes("["))))
+              )
+                api.fail(
+                  "printfの書式と引数型が一致しません",
+                  node,
+                  "未定義動作",
+                );
+              return formatValue(v);
+            }
+            if (type === "s") v = cString(v, s, api, node);
+            if (
+              ((type === "d" || type === "i" || type === "c") &&
+                !["int", "char", "signed char", "unsigned char", "short", "unsigned short", "bool"].includes(sourceType)) ||
+              (type === "u" && sourceType !== "unsigned int") ||
+              (type === "f" && !["float", "double"].includes(sourceType))
+            )
+              api.fail(
+                "printfの書式と引数型が一致しません",
+                node,
+                "未定義動作",
+              );
+            if (
+              (type === "s" && typeof v !== "string") ||
+              (type !== "s" && typeof v !== "number")
+            )
+              api.fail(
+                "printfの書式と引数型が一致しません",
+                node,
+                "未定義動作",
+              );
+            // RG-04 追加表面（R21-N6）: 非有限値の %f は C の実物表記
+            // （inf／-inf／nan）。JS の toFixed が返す "Infinity" を出さない。
+            // R7-44（修正バッチ13）：%c は int の引数を unsigned char へ
+            // 変換してから1バイト出力する（gcc 実測：256 は 00、
+            // -1 は FF）。コード点として文字化すると存在しない
+            // 文字（U+0100 等）を捏造する。
+            return type === "f" ? (!Number.isFinite(v) ? (Number.isNaN(v) ? "nan" : v > 0 ? "inf" : "-inf") : Object.is(v, -0) ? "-0.000000" : formatFixed6(Number(v))) : type === "c" ? String.fromCharCode(((Math.trunc(v) % 256) + 256) % 256) : String(v);
+          });
+          if (i !== rest.length && !(truncatedAtNul && i < rest.length))
+            api.fail("printfの書式または引数の数は未対応です", node);
+          return text;
+        }
+        // 高度モード（ブロックB6）：種類が library オプションを渡した
+        // 場合のみ、エンジン内部ヘルパーを束ねてライブラリ拡張を
+        // 生成する。渡さない種類（C++／C#）では null のままで、呼び出し
+        // 経路に一切現れない。library ファクトリは
+        // { call, returnType } を返す（returnType は任意）。
+        const libraryImpl = libraryFactory
+          ? libraryFactory({
+              typeOf,
+              cString,
+              isPtr,
+              deref,
+              targetPointer,
+              width,
+              allocate,
+              isUnknown,
+              formatPrintf,
+              language,
+              managed,
+            })
+          : null;
+        const libraryCall = libraryImpl?.call ?? null;
+        const libraryReturnType = libraryImpl?.returnType ?? null;
+        // ===== B8（cpp-engine-b）：コンテナ／イテレータ／アルゴリズム =====
+        // 値モデル：vector／array の値は要素の JS 配列そのもの（変数へ
+        // の代入・引数渡しでは castElem が要素ごとの複写を作り、C++ の
+        // 値セマンティクスを再現する）。pair は {__pair, t1, t2, first,
+        // second}。イテレータは {kind:"cpp-iterator", arr／strVar／
+        // strObj（指す対象）, pos（begin からの歩数）, elem, rev,
+        // constIt, itype} で、「指す対象＋位置」を表す。コンテナ側の
+        // 破壊的操作は配列をその場で変更するため、既存イテレータは
+        // 同じ配列を見続ける（変数への再代入で対象が切り替わった場合
+        // は旧対象を見続ける。実物では無効化＝未定義動作の領域であり、
+        // モデルでは旧対象の値が読める点が相違として残る）。
+        const isIterVal = (v) => v?.kind === "cpp-iterator",
+          isPairVal = (v) => v?.__pair === true;
+        function parseCppTypeText(text) {
+          if (typeof text !== "string" || !text) return null;
+          let i = 0;
+          const parseBase = () => {
+            const m = /^[A-Za-z_][\w]*/.exec(text.slice(i));
+            if (!m) return null;
+            let word = m[0];
+            i += word.length;
+            if (["unsigned", "signed"].includes(word)) {
+              const m2 = /^\s+(int|long|short|char)\b/.exec(text.slice(i));
+              if (m2) {
+                word = word + " " + m2[1];
+                i += m2[0].length;
+              } else word = word === "unsigned" ? "unsigned int" : "int";
+            }
+            if (text[i] === "<") {
+              i++;
+              if (word === "vector") {
+                const e = parseType();
+                if (!e || text[i] !== ">") return null;
+                i++;
+                return { kind: "vector", elem: e, text: `vector<${e.text}>` };
+              }
+              if (word === "pair") {
+                const a = parseType();
+                if (!a || text[i] !== ",") return null;
+                i++;
+                const b = parseType();
+                if (!b || text[i] !== ">") return null;
+                i++;
+                return { kind: "pair", t1: a, t2: b, text: `pair<${a.text},${b.text}>` };
+              }
+              if (word === "array") {
+                const e = parseType();
+                if (!e || text[i] !== ",") return null;
+                i++;
+                const m3 = /^\d+/.exec(text.slice(i));
+                if (!m3) return null;
+                const sz = Number(m3[0]);
+                i += m3[0].length;
+                if (text[i] !== ">") return null;
+                i++;
+                return { kind: "array", elem: e, size: sz, text: `array<${e.text},${sz}>` };
+              }
+              return null;
+            }
+            return { kind: "scalar", text: word };
+          };
+          const parseType = () => {
+            const base = parseBase();
+            if (!base) return null;
+            const m4 = /^::(const_iterator|const_reverse_iterator|reverse_iterator|iterator)\b/.exec(text.slice(i));
+            if (m4) {
+              i += m4[0].length;
+              return {
+                kind: "iterator",
+                host: base,
+                elem: base.kind === "scalar" ? "char" : base.elem.text,
+                iterName: m4[1],
+                rev: m4[1].includes("reverse"),
+                constIt: m4[1].includes("const"),
+                text: `${base.text}::${m4[1]}`,
+              };
+            }
+            return base;
+          };
+          const r = parseType();
+          return r && i === text.length ? r : null;
+        }
+        function finalizeCppSpec(spec, s, api, node) {
+          if (!spec) return spec;
+          if (spec.kind === "vector")
+            return { ...spec, elem: finalizeCppSpec(spec.elem, s, api, node) };
+          if (spec.kind === "pair")
+            return {
+              ...spec,
+              t1: finalizeCppSpec(spec.t1, s, api, node),
+              t2: finalizeCppSpec(spec.t2, s, api, node),
+            };
+          if (spec.kind === "array") {
+            const elem = finalizeCppSpec(spec.elem, s, api, node);
+            let size = spec.size;
+            if (size === undefined) {
+              const sz = api.read(spec.sizeExpr, s);
+              if (!Number.isInteger(sz) || sz < 0 || sz > 10000)
+                api.fail("std::array の要素数が不正です", node, "CompileError");
+              size = sz;
+            }
+            return { ...spec, elem, size, text: `array<${elem.text},${size}>` };
+          }
+          if (spec.kind === "iterator")
+            return { ...spec, host: finalizeCppSpec(spec.host, s, api, node) };
+          return spec;
+        }
+        function defaultForSpec(spec, s, api, node) {
+          if (!spec) return 0;
+          if (spec.kind === "scalar") {
+            if (spec.text === "string") return "";
+            if (spec.text === "bool") return false;
+            return 0;
+          }
+          if (spec.kind === "vector") return [];
+          if (spec.kind === "array")
+            return Array.from({ length: spec.size ?? 0 }, () =>
+              defaultForSpec(spec.elem, s, api, node),
+            );
+          if (spec.kind === "pair")
+            return {
+              __pair: true,
+              t1: spec.t1.text,
+              t2: spec.t2.text,
+              first: defaultForSpec(spec.t1, s, api, node),
+              second: defaultForSpec(spec.t2, s, api, node),
+            };
+          if (spec.kind === "iterator")
+            return {
+              kind: "cpp-iterator",
+              singular: true,
+              pos: 0,
+              elem:
+                spec.host.kind === "scalar"
+                  ? "char"
+                  : spec.host.elem?.text || "int",
+              rev: !!spec.rev,
+              constIt: !!spec.constIt,
+              itype: spec.text,
+            };
+          return 0;
+        }
+        function castElem(v, spec, s, api, node) {
+          if (!spec || isUnknown(v)) return v;
+          if (spec.kind === "scalar") return cast(v, spec.text, s, node, api);
+          if (spec.kind === "vector") {
+            if (!Array.isArray(v))
+              api.fail(
+                `型が一致しません：${spec.text} の値が必要です`,
+                node,
+                "CompileError",
+              );
+            return v.map((e) => castElem(e, spec.elem, s, api, node));
+          }
+          if (spec.kind === "array") {
+            if (!Array.isArray(v))
+              api.fail(
+                `型が一致しません：${spec.text} の値が必要です`,
+                node,
+                "CompileError",
+              );
+            if (v.length > spec.size)
+              api.fail(
+                "std::array の初期化子が要素数を超えています",
+                node,
+                "CompileError",
+              );
+            const out = v.map((e) => castElem(e, spec.elem, s, api, node));
+            while (out.length < spec.size)
+              out.push(defaultForSpec(spec.elem, s, api, node));
+            return out;
+          }
+          if (spec.kind === "pair") {
+            if (isPairVal(v))
+              return {
+                __pair: true,
+                t1: spec.t1.text,
+                t2: spec.t2.text,
+                first: castElem(v.first, spec.t1, s, api, node),
+                second: castElem(v.second, spec.t2, s, api, node),
+              };
+            if (Array.isArray(v) && v.length === 2)
+              return {
+                __pair: true,
+                t1: spec.t1.text,
+                t2: spec.t2.text,
+                first: castElem(v[0], spec.t1, s, api, node),
+                second: castElem(v[1], spec.t2, s, api, node),
+              };
+            api.fail(
+              `型が一致しません：${spec.text} の値が必要です`,
+              node,
+              "CompileError",
+            );
+          }
+          if (spec.kind === "iterator") {
+            if (!isIterVal(v))
+              api.fail("イテレータの値が必要です", node, "CompileError");
+            return v;
+          }
+          return v;
+        }
+        function compareElems(a, b, spec, s, api, node) {
+          if (isUnknown(a) || isUnknown(b))
+            api.fail("未確定の値同士の比較はできません", node, "未確認");
+          const sp =
+            spec ||
+            (isPairVal(a) && isPairVal(b)
+              ? {
+                  kind: "pair",
+                  t1: parseCppTypeText(a.t1),
+                  t2: parseCppTypeText(a.t2),
+                }
+              : Array.isArray(a) && Array.isArray(b)
+                ? { kind: "vector", elem: null }
+                : { kind: "scalar", text: "int" });
+          if (sp.kind === "pair") {
+            const c1 = compareElems(a.first, b.first, sp.t1, s, api, node);
+            return c1 !== 0
+              ? c1
+              : compareElems(a.second, b.second, sp.t2, s, api, node);
+          }
+          if (sp.kind === "vector" || sp.kind === "array") {
+            const n = Math.min(a.length, b.length);
+            for (let k = 0; k < n; k++) {
+              const c = compareElems(a[k], b[k], sp.elem, s, api, node);
+              if (c !== 0) return c;
+            }
+            return a.length < b.length ? -1 : a.length > b.length ? 1 : 0;
+          }
+          let x = a,
+            y = b;
+          if (sp.text === "char" || sp.text === "bool") {
+            if (typeof x === "string" && x.length === 1) x = x.charCodeAt(0);
+            if (typeof y === "string" && y.length === 1) y = y.charCodeAt(0);
+            if (typeof x === "boolean") x = Number(x);
+            if (typeof y === "boolean") y = Number(y);
+          }
+          if (typeof x === "string" && typeof y === "string")
+            return x < y ? -1 : x > y ? 1 : 0;
+          if (typeof x === "number" && typeof y === "number")
+            return x < y ? -1 : x > y ? 1 : 0;
+          if (typeof x === "boolean" && typeof y === "boolean")
+            return x === y ? 0 : x ? 1 : -1;
+          api.fail("比較できる型の組み合わせではありません", node, "CompileError");
+        }
+        function binaryOpVal(op, a, b, s, api, node) {
+          if (typeof a === "string" && typeof b === "string" && op === "+") {
+            if (a.length + b.length > 200000)
+              return unknown("とても長い文字列");
+            return a + b;
+          }
+          const lit = (v) => ({
+            k: "literal",
+            value: v,
+            raw: typeof v === "number" ? String(v) : undefined,
+            line: node?.line ?? 1,
+          });
+          return semantics.binary(
+            op,
+            a,
+            b,
+            { k: "binary", op, a: lit(a), b: lit(b), line: node?.line ?? 1 },
+            s,
+            api,
+          );
+        }
+        // --- イテレータの基本操作 ---
+        function iterLen(it, s, api, node) {
+          if (it.singular)
+            api.fail("初期化されていないイテレータです", node, "未定義動作");
+          if (it.arr) return it.arr.length;
+          if (it.strVar) {
+            const v = s.vars[it.strVar];
+            if (typeof v !== "string")
+              api.fail("イテレータの指す文字列がありません", node);
+            return v.length;
+          }
+          if (it.strObj) return it.strObj.str.length;
+          api.fail("イテレータの指す対象がありません", node, "未定義動作");
+        }
+        function iterString(it, s) {
+          return it.strVar ? s.vars[it.strVar] : it.strObj?.str;
+        }
+        function iterGet(it, s, api, node) {
+          const len = iterLen(it, s, api, node),
+            idx = it.rev ? len - 1 - it.pos : it.pos;
+          if (idx < 0 || idx >= len)
+            api.fail(
+              "イテレータの指す先がありません（範囲外の参照）",
+              node,
+              "未定義動作",
+            );
+          let v;
+          if (it.arr) v = it.arr[idx];
+          else {
+            const str = iterString(it, s);
+            if (typeof str !== "string")
+              api.fail("イテレータの指す文字列がありません", node);
+            v = str.charCodeAt(idx);
+          }
+          if (v?.kind === "uninitialized")
+            api.fail("未初期化の要素です", node, "未定義動作");
+          return v;
+        }
+        function iterSet(it, val, s, api, node) {
+          if (it.constIt)
+            api.fail(
+              "const イテレータ経由では要素を書き換えできません",
+              node,
+              "CompileError",
+            );
+          const len = iterLen(it, s, api, node),
+            idx = it.rev ? len - 1 - it.pos : it.pos;
+          if (idx < 0 || idx >= len)
+            api.fail(
+              "イテレータの指す先がありません（範囲外への書き込み）",
+              node,
+              "未定義動作",
+            );
+          const spec = parseCppTypeText(it.elem),
+            cv = spec ? castElem(val, spec, s, api, node) : val;
+          if (it.arr) {
+            it.arr[idx] = cv;
+            return;
+          }
+          if (it.strVar) {
+            const cur = s.vars[it.strVar],
+              ch = typeof cv === "string" ? cv : String.fromCharCode(cv),
+              next = cur.slice(0, idx) + ch + cur.slice(idx + 1);
+            s.vars[it.strVar] = next;
+            const id = s.addresses?.[it.strVar];
+            if (id && s.model.memory[id]) s.model.memory[id].values[0] = next;
+            return;
+          }
+          api.fail(
+            "一時文字列のイテレータ経由の書き込みは未対応です",
+            node,
+            "未対応",
+          );
+        }
+        function iterAdvanceVal(it, n, s, api, node) {
+          const len = iterLen(it, s, api, node),
+            pos = it.pos + n;
+          if (!Number.isInteger(n))
+            api.fail("イテレータの移動量は整数でなければなりません", node, "CompileError");
+          if (pos < 0 || pos > len)
+            api.fail(
+              "イテレータの移動が範囲を超えています",
+              node,
+              "未定義動作",
+            );
+          return { ...it, pos };
+        }
+        function iterSameHost(a, b) {
+          return (
+            (a.arr && a.arr === b.arr) ||
+            (a.strVar && a.strVar === b.strVar) ||
+            (a.strObj && a.strObj === b.strObj)
+          );
+        }
+        function makeArrIter(arr, hostSpec, elemText, pos, rev, constIt) {
+          const iterName = constIt
+            ? rev
+              ? "const_reverse_iterator"
+              : "const_iterator"
+            : rev
+              ? "reverse_iterator"
+              : "iterator";
+          return {
+            kind: "cpp-iterator",
+            arr,
+            pos,
+            elem: elemText,
+            rev: !!rev,
+            constIt: !!constIt,
+            itype: `${hostSpec.text}::${iterName}`,
+          };
+        }
+        // イテレータ／生ポインタ共通の参照・書込み・移動・差。
+        function iterOrPtrGet(val, s, api, node) {
+          if (isIterVal(val)) return iterGet(val, s, api, node);
+          if (isPtr(val)) {
+            const mem = deref(val, s, api, node, elemTypeOf(node, s)),
+              v = mem.values[val.offset];
+            if (v?.kind === "uninitialized")
+              api.fail("未初期化の配列要素です", node, "未定義動作");
+            return v;
+          }
+          api.fail("イテレータが必要です", node, "CompileError");
+        }
+        function iterOrPtrSet(val, v, s, api, node) {
+          if (isIterVal(val)) return iterSet(val, v, s, api, node);
+          if (isPtr(val)) {
+            const mem = deref(val, s, api, node, elemTypeOf(node, s));
+            mem.values[val.offset] = cast(v, mem.type, s, node, api);
+            // スカラー変数を指すポインタ経由の書き込みは変数側にも同期する
+            // （既存の参照書き込みと同じ規則）。
+            for (const [name, id] of Object.entries(s.addresses))
+              if (id === val.object && !String(s.types[name] || "").endsWith("[]"))
+                s.vars[name] = mem.values[val.offset];
+            return;
+          }
+          api.fail("イテレータが必要です", node, "CompileError");
+        }
+        function iterOrPtrAdvance(val, n, s, api, node) {
+          if (isIterVal(val)) return iterAdvanceVal(val, n, s, api, node);
+          if (isPtr(val)) {
+            const mem = s.model.memory[val.object];
+            if (!mem || !Number.isInteger(n))
+              api.fail("ポインタの移動が不正です", node, "CompileError");
+            const off = val.offset + n;
+            if (off < 0 || off > mem.values.length)
+              api.fail(
+                "ポインタの移動が範囲を超えています",
+                node,
+                "未定義動作",
+              );
+            return { ...val, offset: off };
+          }
+          api.fail("イテレータが必要です", node, "CompileError");
+        }
+        function iterOrPtrDiff(a, b, s, api, node) {
+          if (isIterVal(a) && isIterVal(b)) {
+            if (!iterSameHost(a, b))
+              api.fail(
+                "異なるコンテナのイテレータ同士は演算できません",
+                node,
+                "未定義動作",
+              );
+            return a.pos - b.pos;
+          }
+          if (isPtr(a) && isPtr(b)) {
+            if (a.object !== b.object)
+              api.fail(
+                "異なる配列のポインタ同士は演算できません",
+                node,
+                "未定義動作",
+              );
+            return a.offset - b.offset;
+          }
+          api.fail("イテレータ同士の組が必要です", node, "CompileError");
+        }
+        function iterOrPtrElemSpec(val, s) {
+          if (isIterVal(val)) return parseCppTypeText(val.elem);
+          if (isPtr(val))
+            return parseCppTypeText(s.model.memory[val.object]?.type) ||
+              { kind: "scalar", text: s.model.memory[val.object]?.type || "int" };
+          return null;
+        }
+        function makeRange(fv, lv, s, api, node) {
+          const size = iterOrPtrDiff(lv, fv, s, api, node);
+          if (size < 0)
+            api.fail("範囲の終わりが先頭より前にあります", node, "CompileError");
+          return {
+            size,
+            elem: iterOrPtrElemSpec(fv, s),
+            first: fv,
+            get(k) {
+              return iterOrPtrGet(
+                iterOrPtrAdvance(fv, k, s, api, node),
+                s,
+                api,
+                node,
+              );
+            },
+            set(k, v) {
+              iterOrPtrSet(
+                iterOrPtrAdvance(fv, k, s, api, node),
+                v,
+                s,
+                api,
+                node,
+              );
+            },
+            values() {
+              const out = [];
+              for (let k = 0; k < size; k++) out.push(this.get(k));
+              return out;
+            },
+          };
+        }
+        // --- 呼び出しの結果型（typeOf から使う） ---
+        function cppCallType(a, s) {
+          const nm = callName(a.target);
+          if (a.target?.k === "member") {
+            const method = a.target.name,
+              ot = typeOf(a.target.target, s),
+              ospec = parseCppTypeText(ot);
+            const iterNameFor = (m) => {
+              const rev = m.startsWith("r") || m.startsWith("cr"),
+                cst = m.startsWith("c");
+              return rev
+                ? cst
+                  ? "const_reverse_iterator"
+                  : "reverse_iterator"
+                : cst
+                  ? "const_iterator"
+                  : "iterator";
+            };
+            const ITER_METHOD_NAMES = ["begin", "end", "cbegin", "cend", "rbegin", "rend", "crbegin", "crend"];
+            if (ot === "string" && ITER_METHOD_NAMES.includes(method))
+              return `string::${iterNameFor(method)}`;
+            if (ospec?.kind === "iterator" && method === "base")
+              return ospec.text.replace("reverse_iterator", "iterator");
+            if (!ospec || !["vector", "array", "pair"].includes(ospec.kind))
+              return null;
+            if (ospec.kind === "pair") return method === "swap" ? "int" : null;
+            if (ITER_METHOD_NAMES.includes(method))
+              return `${ospec.text}::${iterNameFor(method)}`;
+            if (["at", "front", "back"].includes(method)) return ospec.elem.text;
+            if (method === "size" || method === "max_size") return "int";
+            if (method === "empty") return "bool";
+            if (["insert", "emplace", "erase"].includes(method))
+              return `${ospec.text}::iterator`;
+            if (method === "emplace_back") return ospec.elem.text;
+            return null;
+          }
+          if (a.target?.k !== "var") return null;
+          const t0 = a.args?.length ? typeOf(a.args[0], s) : "int";
+          switch (nm) {
+            case "make_pair": {
+              if (a.args?.length !== 2) return null;
+              const norm = (t) => (t === "char[]" ? "string" : t);
+              return `pair<${norm(t0)},${norm(typeOf(a.args[1], s))}>`;
+            }
+            case "minmax":
+              return a.args?.length === 2 ? `pair<${t0},${t0}>` : null;
+            case "equal_range":
+              return a.args?.length === 3 ? `pair<${t0},${t0}>` : null;
+            case "mismatch":
+              return a.args?.length === 3
+                ? `pair<${t0},${typeOf(a.args[2], s)}>`
+                : null;
+            case "distance":
+              return "int";
+            case "lower_bound":
+            case "upper_bound":
+            case "find":
+            case "min_element":
+            case "max_element":
+            case "remove":
+            case "unique":
+            case "next":
+            case "prev":
+            case "fill_n":
+              return t0;
+            case "copy":
+            case "copy_n":
+            case "partial_sum":
+            case "adjacent_difference":
+              return a.args?.length >= 3 ? typeOf(a.args[2], s) : null;
+            case "clamp":
+              return t0;
+            case "min":
+            case "max": {
+              if (a.args?.length === 2) return t0;
+              if (a.args?.length === 1 && a.args[0].k === "array" && a.args[0].items?.length)
+                return typeOf(a.args[0].items[0], s);
+              return t0;
+            }
+            case "accumulate":
+              return a.args?.length >= 3 ? typeOf(a.args[2], s) : null;
+            case "inner_product":
+              return a.args?.length >= 4 ? typeOf(a.args[3], s) : null;
+            case "exchange":
+            case "move":
+            case "forward":
+            case "as_const":
+              return t0;
+            case "is_sorted":
+            case "binary_search":
+            case "equal":
+            case "lexicographical_compare":
+            case "next_permutation":
+            case "prev_permutation":
+              return "bool";
+            case "count":
+              return "int";
+          }
+          return null;
+        }
+        // --- コンテナのメンバ呼び出し ---
+        function cppMemberCall(memberNode, args, s, api, node) {
+          const method = memberNode.name,
+            objNode = memberNode.target,
+            ot = typeOf(objNode, s),
+            ospec = parseCppTypeText(ot);
+          const ITER_METHODS = ["begin", "end", "cbegin", "cend", "rbegin", "rend", "crbegin", "crend"];
+          // std::string のイテレータ取得（イテレータモデル担当分）。
+          // 文字列の他のメンバは cpp-engine-a の担当のため素通りする。
+          if (ot === "string" && ITER_METHODS.includes(method)) {
+            if (args.length !== 0)
+              api.fail(`${method} は引数を取りません`, node, "CompileError");
+            const strVal = api.read(objNode, s);
+            if (isUnknown(strVal))
+              return { handled: true, value: unknown("未確定の文字列のイテレータ") };
+            if (typeof strVal !== "string") return null;
+            const isRev = method.startsWith("r") || method.startsWith("cr");
+            const isConst = method.startsWith("c");
+            const isEnd = method.includes("end");
+            const iterName = isConst
+              ? isRev
+                ? "const_reverse_iterator"
+                : "const_iterator"
+              : isRev
+                ? "reverse_iterator"
+                : "iterator";
+            const host =
+              objNode.k === "var" && s.types[objNode.name] === "string"
+                ? { strVar: objNode.name }
+                : { strObj: { str: strVal } };
+            return {
+              handled: true,
+              value: {
+                kind: "cpp-iterator",
+                ...host,
+                pos: isEnd ? strVal.length : 0,
+                elem: "char",
+                rev: isRev,
+                constIt: isConst,
+                itype: `string::${iterName}`,
+              },
+            };
+          }
+          if (ospec?.kind === "iterator" && method === "base") {
+            const itv = api.read(objNode, s);
+            if (!isIterVal(itv)) return null;
+            if (!itv.rev)
+              api.fail("base() は reverse_iterator のメンバです", node, "CompileError");
+            const len = iterLen(itv, s, api, node);
+            return {
+              handled: true,
+              value: {
+                ...itv,
+                rev: false,
+                pos: len - itv.pos,
+                itype: itv.itype.replace("reverse_iterator", "iterator"),
+              },
+            };
+          }
+          if (!ospec || !["vector", "array", "pair"].includes(ospec.kind))
+            return null;
+          const obj = api.read(objNode, s);
+          if (isUnknown(obj))
+            return { handled: true, value: unknown(`未確定の対象の ${method}`) };
+          if (ospec.kind === "pair") {
+            if (!isPairVal(obj)) return null;
+            if (method === "swap") {
+              if (args.length !== 1)
+                api.fail("swap は引数を1つ取ります", node, "CompileError");
+              const other = api.read(args[0], s);
+              if (!isPairVal(other))
+                api.fail("swap の引数は pair です", node, "CompileError");
+              const f = obj.first,
+                sc = obj.second;
+              obj.first = other.first;
+              obj.second = other.second;
+              other.first = f;
+              other.second = sc;
+              return { handled: true, value: null };
+            }
+            return null;
+          }
+          if (!Array.isArray(obj)) return null;
+          const arr = obj,
+            elem = ospec.elem,
+            isVec = ospec.kind === "vector";
+          const iterFor = (pos, rev = false, constIt = false) =>
+            makeArrIter(arr, ospec, elem.text, pos, rev, constIt);
+          const checkIndex = (iv, allowEnd = false) => {
+            if (!Number.isInteger(iv))
+              api.fail("添字は整数型でなければなりません", node, "CompileError");
+            const hi = allowEnd ? arr.length : arr.length - 1;
+            if (iv < 0 || iv > hi)
+              api.fail("範囲外の添字です", node, "未定義動作");
+          };
+          const elemAt = (idx) => {
+            const v = arr[idx];
+            if (v?.kind === "uninitialized")
+              api.fail("未初期化の要素です", node, "未定義動作");
+            return v;
+          };
+          const posIndex = (itv) => {
+            if (!isIterVal(itv) || itv.arr !== arr)
+              api.fail("別のコンテナのイテレータです", node, "CompileError");
+            if (itv.rev)
+              api.fail("この操作には通常のイテレータが必要です", node, "未対応");
+            return itv.pos;
+          };
+          switch (method) {
+            case "size":
+              if (args.length) break;
+              return { handled: true, value: arr.length };
+            case "max_size":
+              if (!isVec && args.length === 0)
+                return { handled: true, value: ospec.size };
+              return null;
+            case "empty":
+              if (args.length) break;
+              return { handled: true, value: arr.length === 0 };
+            case "at": {
+              if (args.length !== 1) break;
+              const iv = api.read(args[0], s);
+              if (!Number.isInteger(iv))
+                api.fail("添字は整数型でなければなりません", node, "CompileError");
+              if (iv < 0 || iv >= arr.length)
+                api.fail(
+                  "範囲外の添字です（std::out_of_range が送出されます）",
+                  node,
+                  "例外",
+                );
+              return { handled: true, value: elemAt(iv) };
+            }
+            case "front":
+              if (args.length) break;
+              if (!arr.length)
+                api.fail("空のコンテナに対する front() です", node, "未定義動作");
+              return { handled: true, value: elemAt(0) };
+            case "back":
+              if (args.length) break;
+              if (!arr.length)
+                api.fail("空のコンテナに対する back() です", node, "未定義動作");
+              return { handled: true, value: elemAt(arr.length - 1) };
+            case "begin":
+            case "cbegin":
+            case "rbegin":
+            case "crbegin":
+              if (args.length) break;
+              return {
+                handled: true,
+                value: iterFor(0, method.includes("rbegin"), method.startsWith("c")),
+              };
+            case "end":
+            case "cend":
+            case "rend":
+            case "crend":
+              if (args.length) break;
+              return {
+                handled: true,
+                value: iterFor(arr.length, method.includes("rend"), method.startsWith("c")),
+              };
+            case "push_back": {
+              if (!isVec) return null;
+              if (args.length !== 1) break;
+              arr.push(castElem(api.read(args[0], s), elem, s, api, node));
+              return { handled: true, value: null };
+            }
+            case "pop_back": {
+              if (!isVec) return null;
+              if (args.length) break;
+              if (!arr.length)
+                api.fail("空の vector に対する pop_back() です", node, "未定義動作");
+              arr.pop();
+              return { handled: true, value: null };
+            }
+            case "emplace_back": {
+              if (!isVec) return null;
+              let v;
+              if (args.length === 1)
+                v = castElem(api.read(args[0], s), elem, s, api, node);
+              else if (elem.kind === "pair" && args.length === 2)
+                v = {
+                  __pair: true,
+                  t1: elem.t1.text,
+                  t2: elem.t2.text,
+                  first: castElem(api.read(args[0], s), elem.t1, s, api, node),
+                  second: castElem(api.read(args[1], s), elem.t2, s, api, node),
+                };
+              else break;
+              arr.push(v);
+              return { handled: true, value: arr[arr.length - 1] };
+            }
+            case "insert": {
+              if (!isVec) return null;
+              if (args.length < 2 || args.length > 3) break;
+              const idx = posIndex(api.read(args[0], s));
+              checkIndex(idx, true);
+              let vals;
+              if (args.length === 2) {
+                const v = api.read(args[1], s);
+                vals =
+                  args[1].k === "array" && Array.isArray(v)
+                    ? v.map((e) => castElem(e, elem, s, api, node))
+                    : [castElem(v, elem, s, api, node)];
+              } else {
+                const second = api.read(args[1], s);
+                if (isIterVal(second) || isPtr(second)) {
+                  const r = makeRange(second, api.read(args[2], s), s, api, node);
+                  vals = r.values().map((e) => castElem(e, elem, s, api, node));
+                } else {
+                  if (!Number.isInteger(second) || second < 0 || second > 10000)
+                    api.fail("insert の個数が不正です", node, "CompileError");
+                  const v = castElem(api.read(args[2], s), elem, s, api, node);
+                  vals = Array.from({ length: second }, () =>
+                    castElem(v, elem, s, api, node),
+                  );
+                }
+              }
+              arr.splice(idx, 0, ...vals);
+              return { handled: true, value: iterFor(idx) };
+            }
+            case "emplace": {
+              if (!isVec) return null;
+              if (args.length < 2) break;
+              const idx = posIndex(api.read(args[0], s));
+              checkIndex(idx, true);
+              let v;
+              const rest = args.slice(1);
+              if (rest.length === 1)
+                v = castElem(api.read(rest[0], s), elem, s, api, node);
+              else if (elem.kind === "pair" && rest.length === 2)
+                v = {
+                  __pair: true,
+                  t1: elem.t1.text,
+                  t2: elem.t2.text,
+                  first: castElem(api.read(rest[0], s), elem.t1, s, api, node),
+                  second: castElem(api.read(rest[1], s), elem.t2, s, api, node),
+                };
+              else break;
+              arr.splice(idx, 0, v);
+              return { handled: true, value: iterFor(idx) };
+            }
+            case "erase": {
+              if (!isVec) return null;
+              if (args.length === 1) {
+                const idx = posIndex(api.read(args[0], s));
+                checkIndex(idx);
+                arr.splice(idx, 1);
+                return { handled: true, value: iterFor(idx) };
+              }
+              if (args.length === 2) {
+                const i1 = posIndex(api.read(args[0], s)),
+                  i2 = posIndex(api.read(args[1], s));
+                if (i2 < i1)
+                  api.fail("erase の範囲が逆転しています", node, "CompileError");
+                arr.splice(i1, i2 - i1);
+                return { handled: true, value: iterFor(i1) };
+              }
+              break;
+            }
+            case "clear":
+              if (!isVec) return null;
+              if (args.length) break;
+              arr.length = 0;
+              return { handled: true, value: null };
+            case "resize": {
+              if (!isVec) return null;
+              if (args.length < 1 || args.length > 2) break;
+              const n = api.read(args[0], s);
+              if (!Number.isInteger(n) || n < 0 || n > 10000)
+                api.fail("resize の要素数が不正です", node, "CompileError");
+              const hasVal = args.length === 2,
+                rawVal = hasVal ? api.read(args[1], s) : null;
+              while (arr.length < n)
+                arr.push(
+                  hasVal
+                    ? castElem(rawVal, elem, s, api, node)
+                    : defaultForSpec(elem, s, api, node),
+                );
+              arr.length = n;
+              return { handled: true, value: null };
+            }
+            case "assign": {
+              if (!isVec) return null;
+              let vals = null;
+              if (args.length === 1 && args[0].k === "array") {
+                const v = api.read(args[0], s);
+                vals = v.map((e) => castElem(e, elem, s, api, node));
+              } else if (args.length === 2) {
+                const first = api.read(args[0], s);
+                if (isIterVal(first) || isPtr(first)) {
+                  const r = makeRange(first, api.read(args[1], s), s, api, node);
+                  vals = r.values().map((e) => castElem(e, elem, s, api, node));
+                } else if (Number.isInteger(first) && first >= 0 && first <= 10000) {
+                  const v = api.read(args[1], s);
+                  vals = Array.from({ length: first }, () =>
+                    castElem(v, elem, s, api, node),
+                  );
+                }
+              }
+              if (!vals) break;
+              arr.length = 0;
+              arr.push(...vals);
+              return { handled: true, value: null };
+            }
+            case "swap": {
+              if (args.length !== 1) break;
+              const other = api.read(args[0], s);
+              if (!Array.isArray(other))
+                api.fail("swap の引数は同じコンテナ型です", node, "CompileError");
+              if (other === arr) return { handled: true, value: null };
+              const mine = arr.slice(),
+                theirs = other.slice();
+              arr.length = 0;
+              arr.push(...theirs);
+              if (["var", "index", "member"].includes(args[0].k))
+                api.write(args[0], mine, s, node);
+              else {
+                other.length = 0;
+                other.push(...mine);
+              }
+              return { handled: true, value: null };
+            }
+            case "fill": {
+              if (isVec) return null;
+              if (args.length !== 1) break;
+              const raw = api.read(args[0], s);
+              for (let k = 0; k < arr.length; k++)
+                arr[k] = castElem(raw, elem, s, api, node);
+              return { handled: true, value: null };
+            }
+            case "reserve": {
+              if (!isVec) return null;
+              if (args.length !== 1) break;
+              api.read(args[0], s); // 容量予約はモデルの動作に影響しない
+              return { handled: true, value: null };
+            }
+            case "shrink_to_fit":
+              if (!isVec) return null;
+              if (args.length) break;
+              return { handled: true, value: null };
+          }
+          // 引数の個数が合わないメンバ呼び出しは、個数を名指して止める。
+          if (
+            ["size", "empty", "at", "front", "back", "begin", "cbegin", "end", "cend", "rbegin", "crbegin", "rend", "crend", "push_back", "pop_back", "clear", "fill", "swap", "reserve", "shrink_to_fit"].includes(method)
+          )
+            api.fail(`${method} の引数の数が違います`, node, "CompileError");
+          return null;
+        }
+        // --- <algorithm>／<numeric>／<utility>／<iterator> の自由関数 ---
+        function cppCall(name, args, s, api, node) {
+          if (node?.target?.k === "member") return cppMemberCall(node.target, args, s, api, node);
+          if (node?.target?.k !== "var") return null;
+          const R = (a) => api.read(a, s),
+            H = (value) => ({ handled: true, value }),
+            arity = (ns) => {
+              if (!ns.includes(args.length))
+                api.fail(`${name} の引数の数が違います`, node, "CompileError");
+            },
+            noComp = () =>
+              api.fail("比較関数や演算を指定する形式は未対応です", node, "未対応"),
+            range2 = () => makeRange(R(args[0]), R(args[1]), s, api, node),
+            cmpOp = (op, c) =>
+              op === "==" ? c === 0 : op === "!=" ? c !== 0 : op === "<" ? c < 0 : op === "<=" ? c <= 0 : op === ">" ? c > 0 : c >= 0;
+          switch (name) {
+            case "swap": {
+              arity([2]);
+              if (!["var", "index", "member"].includes(args[0].k) || !["var", "index", "member"].includes(args[1].k))
+                api.fail("swap の引数は左辺値が必要です", node, "CompileError");
+              const va = R(args[0]),
+                vb = R(args[1]);
+              api.write(args[0], vb, s, node);
+              api.write(args[1], va, s, node);
+              return H(null);
+            }
+            case "exchange": {
+              arity([2]);
+              if (!["var", "index", "member"].includes(args[0].k))
+                api.fail("exchange の第1引数は左辺値が必要です", node, "CompileError");
+              const old = R(args[0]);
+              api.write(args[0], R(args[1]), s, node);
+              return H(old);
+            }
+            case "move":
+            case "forward":
+            case "as_const":
+              arity([1]);
+              return H(R(args[0]));
+            case "make_pair": {
+              arity([2]);
+              const v1 = R(args[0]),
+                v2 = R(args[1]);
+              const norm = (t, v) => (t === "char[]" && typeof v === "string" ? "string" : t);
+              return H({
+                __pair: true,
+                t1: norm(typeOf(args[0], s), v1),
+                t2: norm(typeOf(args[1], s), v2),
+                first: v1,
+                second: v2,
+              });
+            }
+            case "distance":
+              arity([2]);
+              return H(iterOrPtrDiff(R(args[1]), R(args[0]), s, api, node));
+            case "advance": {
+              arity([2]);
+              if (!["var", "index", "member"].includes(args[0].k))
+                api.fail("advance の第1引数は左辺値が必要です", node, "CompileError");
+              const cur = R(args[0]),
+                nv = iterOrPtrAdvance(cur, R(args[1]), s, api, node);
+              api.write(args[0], nv, s, node);
+              return H(null);
+            }
+            case "next":
+            case "prev": {
+              arity([1, 2]);
+              const n = args.length === 2 ? R(args[1]) : 1;
+              return H(
+                iterOrPtrAdvance(R(args[0]), name === "next" ? n : -n, s, api, node),
+              );
+            }
+            case "sort":
+            case "stable_sort": {
+              arity([2, 3]);
+              if (args.length === 3) noComp();
+              const r = range2(),
+                vals = r.values();
+              vals.sort((x, y) => compareElems(x, y, r.elem, s, api, node));
+              for (let k = 0; k < vals.length; k++) r.set(k, vals[k]);
+              return H(null);
+            }
+            case "reverse": {
+              arity([2]);
+              const r = range2(),
+                vals = r.values().reverse();
+              for (let k = 0; k < vals.length; k++) r.set(k, vals[k]);
+              return H(null);
+            }
+            case "fill": {
+              arity([3]);
+              const r = range2(),
+                v = R(args[2]);
+              for (let k = 0; k < r.size; k++)
+                r.set(k, r.elem ? castElem(v, r.elem, s, api, node) : v);
+              return H(null);
+            }
+            case "fill_n": {
+              arity([3]);
+              const first = R(args[0]),
+                n = R(args[1]),
+                v = R(args[2]);
+              if (!Number.isInteger(n) || n < 0)
+                api.fail("fill_n の個数が不正です", node, "CompileError");
+              const spec = iterOrPtrElemSpec(first, s);
+              for (let k = 0; k < n; k++)
+                iterOrPtrSet(
+                  iterOrPtrAdvance(first, k, s, api, node),
+                  spec ? castElem(v, spec, s, api, node) : v,
+                  s,
+                  api,
+                  node,
+                );
+              return H(iterOrPtrAdvance(first, n, s, api, node));
+            }
+            case "find": {
+              arity([3]);
+              const r = range2(),
+                v = R(args[2]);
+              for (let k = 0; k < r.size; k++)
+                if (compareElems(r.get(k), v, r.elem, s, api, node) === 0)
+                  return H(iterOrPtrAdvance(r.first, k, s, api, node));
+              return H(R(args[1]));
+            }
+            case "count": {
+              arity([3]);
+              const r = range2(),
+                v = R(args[2]);
+              let c = 0;
+              for (let k = 0; k < r.size; k++)
+                if (compareElems(r.get(k), v, r.elem, s, api, node) === 0) c++;
+              return H(c);
+            }
+            case "min":
+            case "max": {
+              arity([1, 2]);
+              if (args.length === 2) {
+                const a = R(args[0]),
+                  b = R(args[1]),
+                  c = compareElems(a, b, null, s, api, node);
+                return H(name === "min" ? (c <= 0 ? a : b) : c >= 0 ? a : b);
+              }
+              const list = R(args[0]);
+              if (!Array.isArray(list) || !list.length)
+                api.fail(`${name} の初期化子リストが空か、形式が違います`, node, "CompileError");
+              let best = list[0];
+              for (const v of list.slice(1)) {
+                const c = compareElems(v, best, null, s, api, node);
+                if (name === "min" ? c < 0 : c > 0) best = v;
+              }
+              return H(best);
+            }
+            case "minmax": {
+              arity([2]);
+              const a = R(args[0]),
+                b = R(args[1]),
+                c = compareElems(a, b, null, s, api, node),
+                t = typeOf(args[0], s);
+              return H({
+                __pair: true,
+                t1: t,
+                t2: t,
+                first: c <= 0 ? a : b,
+                second: c <= 0 ? b : a,
+              });
+            }
+            case "clamp": {
+              arity([3]);
+              const v = R(args[0]),
+                lo = R(args[1]),
+                hi = R(args[2]);
+              if (compareElems(v, lo, null, s, api, node) < 0) return H(lo);
+              if (compareElems(hi, v, null, s, api, node) < 0) return H(hi);
+              return H(v);
+            }
+            case "iter_swap": {
+              arity([2]);
+              const a = R(args[0]),
+                b = R(args[1]),
+                va = iterOrPtrGet(a, s, api, node),
+                vb = iterOrPtrGet(b, s, api, node);
+              iterOrPtrSet(a, vb, s, api, node);
+              iterOrPtrSet(b, va, s, api, node);
+              return H(null);
+            }
+            case "rotate": {
+              arity([3]);
+              const f = R(args[0]),
+                m = R(args[1]),
+                l = R(args[2]),
+                r = makeRange(f, l, s, api, node),
+                mid = iterOrPtrDiff(m, f, s, api, node),
+                vals = r.values(),
+                out = [...vals.slice(mid), ...vals.slice(0, mid)];
+              for (let k = 0; k < out.length; k++) r.set(k, out[k]);
+              return H(iterOrPtrAdvance(f, r.size - mid, s, api, node));
+            }
+            case "binary_search": {
+              arity([3]);
+              const r = range2(),
+                v = R(args[2]);
+              let lo = 0,
+                hi = r.size;
+              while (lo < hi) {
+                const mid = (lo + hi) >> 1,
+                  c = compareElems(r.get(mid), v, r.elem, s, api, node);
+                if (c === 0) return H(true);
+                if (c < 0) lo = mid + 1;
+                else hi = mid;
+              }
+              return H(false);
+            }
+            case "lower_bound":
+            case "upper_bound": {
+              arity([3]);
+              const r = range2(),
+                v = R(args[2]);
+              let lo = 0,
+                hi = r.size;
+              while (lo < hi) {
+                const mid = (lo + hi) >> 1,
+                  c = compareElems(r.get(mid), v, r.elem, s, api, node);
+                if (name === "lower_bound" ? c < 0 : c <= 0) lo = mid + 1;
+                else hi = mid;
+              }
+              return H(iterOrPtrAdvance(r.first, lo, s, api, node));
+            }
+            case "equal_range": {
+              arity([3]);
+              const lo = cppCall("lower_bound", args, s, api, node).value,
+                hi = cppCall("upper_bound", args, s, api, node).value,
+                t = typeOf(args[0], s);
+              return H({ __pair: true, t1: t, t2: t, first: lo, second: hi });
+            }
+            case "equal": {
+              arity([3, 4]);
+              const r1 = range2(),
+                f2 = R(args[2]);
+              if (args.length === 4) {
+                const r2 = makeRange(f2, R(args[3]), s, api, node);
+                if (r2.size !== r1.size) return H(false);
+                for (let k = 0; k < r1.size; k++)
+                  if (compareElems(r1.get(k), r2.get(k), r1.elem, s, api, node) !== 0)
+                    return H(false);
+                return H(true);
+              }
+              for (let k = 0; k < r1.size; k++)
+                if (
+                  compareElems(
+                    r1.get(k),
+                    iterOrPtrGet(iterOrPtrAdvance(f2, k, s, api, node), s, api, node),
+                    r1.elem,
+                    s,
+                    api,
+                    node,
+                  ) !== 0
+                )
+                  return H(false);
+              return H(true);
+            }
+            case "mismatch": {
+              arity([3]);
+              const r1 = range2(),
+                f2 = R(args[2]),
+                t = typeOf(args[0], s);
+              let k = 0;
+              while (
+                k < r1.size &&
+                compareElems(
+                  r1.get(k),
+                  iterOrPtrGet(iterOrPtrAdvance(f2, k, s, api, node), s, api, node),
+                  r1.elem,
+                  s,
+                  api,
+                  node,
+                ) === 0
+              )
+                k++;
+              return H({
+                __pair: true,
+                t1: t,
+                t2: typeOf(args[2], s),
+                first: iterOrPtrAdvance(r1.first, k, s, api, node),
+                second: iterOrPtrAdvance(f2, k, s, api, node),
+              });
+            }
+            case "is_sorted": {
+              arity([2]);
+              const r = range2();
+              for (let k = 1; k < r.size; k++)
+                if (compareElems(r.get(k), r.get(k - 1), r.elem, s, api, node) < 0)
+                  return H(false);
+              return H(true);
+            }
+            case "nth_element": {
+              arity([3]);
+              const f = R(args[0]),
+                nth = R(args[1]),
+                r = makeRange(f, R(args[2]), s, api, node),
+                ni = iterOrPtrDiff(nth, f, s, api, node),
+                vals = r.values();
+              if (ni < 0 || ni >= vals.length)
+                api.fail("nth_element の位置が範囲外です", node, "未定義動作");
+              const sorted = [...vals].sort((x, y) =>
+                compareElems(x, y, r.elem, s, api, node),
+              );
+              const out = [
+                ...sorted.slice(0, ni),
+                sorted[ni],
+                ...sorted.slice(ni + 1),
+              ];
+              for (let k = 0; k < out.length; k++) r.set(k, out[k]);
+              return H(null);
+            }
+            case "partial_sort": {
+              arity([3]);
+              const f = R(args[0]),
+                m = R(args[1]),
+                r = makeRange(f, R(args[2]), s, api, node),
+                mi = iterOrPtrDiff(m, f, s, api, node),
+                vals = r.values(),
+                sorted = [...vals].sort((x, y) =>
+                  compareElems(x, y, r.elem, s, api, node),
+                );
+              for (let k = 0; k < vals.length; k++) r.set(k, sorted[k]);
+              void mi;
+              return H(null);
+            }
+            case "copy": {
+              arity([3]);
+              const r = range2(),
+                out = R(args[2]);
+              for (let k = 0; k < r.size; k++)
+                iterOrPtrSet(
+                  iterOrPtrAdvance(out, k, s, api, node),
+                  r.get(k),
+                  s,
+                  api,
+                  node,
+                );
+              return H(iterOrPtrAdvance(out, r.size, s, api, node));
+            }
+            case "copy_n": {
+              arity([3]);
+              const f = R(args[0]),
+                n = R(args[1]),
+                out = R(args[2]);
+              if (!Number.isInteger(n) || n < 0)
+                api.fail("copy_n の個数が不正です", node, "CompileError");
+              for (let k = 0; k < n; k++)
+                iterOrPtrSet(
+                  iterOrPtrAdvance(out, k, s, api, node),
+                  iterOrPtrGet(iterOrPtrAdvance(f, k, s, api, node), s, api, node),
+                  s,
+                  api,
+                  node,
+                );
+              return H(iterOrPtrAdvance(out, n, s, api, node));
+            }
+            case "min_element":
+            case "max_element": {
+              arity([2]);
+              const r = range2();
+              if (!r.size) return H(R(args[1]));
+              let bi = 0;
+              for (let k = 1; k < r.size; k++) {
+                const c = compareElems(r.get(k), r.get(bi), r.elem, s, api, node);
+                if (name === "min_element" ? c < 0 : c > 0) bi = k;
+              }
+              return H(iterOrPtrAdvance(r.first, bi, s, api, node));
+            }
+            case "lexicographical_compare": {
+              arity([4]);
+              const r1 = makeRange(R(args[0]), R(args[1]), s, api, node),
+                r2 = makeRange(R(args[2]), R(args[3]), s, api, node),
+                n = Math.min(r1.size, r2.size);
+              for (let k = 0; k < n; k++) {
+                const c = compareElems(r1.get(k), r2.get(k), r1.elem, s, api, node);
+                if (c !== 0) return H(c < 0);
+              }
+              return H(r1.size < r2.size);
+            }
+            case "next_permutation":
+            case "prev_permutation": {
+              arity([2]);
+              const r = range2(),
+                vals = r.values(),
+                dir = name === "next_permutation" ? 1 : -1;
+              let i = vals.length - 2;
+              while (
+                i >= 0 &&
+                compareElems(vals[i], vals[i + 1], r.elem, s, api, node) * dir >= 0
+              )
+                i--;
+              if (i < 0) {
+                const sorted = [...vals].sort((x, y) =>
+                  compareElems(x, y, r.elem, s, api, node),
+                );
+                const fin = dir > 0 ? sorted : [...sorted].reverse();
+                for (let k = 0; k < fin.length; k++) r.set(k, fin[k]);
+                return H(false);
+              }
+              let j = vals.length - 1;
+              while (
+                compareElems(vals[j], vals[i], r.elem, s, api, node) * dir <= 0
+              )
+                j--;
+              [vals[i], vals[j]] = [vals[j], vals[i]];
+              const tail = vals.splice(i + 1).reverse();
+              const out = [...vals, ...tail];
+              for (let k = 0; k < out.length; k++) r.set(k, out[k]);
+              return H(true);
+            }
+            case "remove": {
+              arity([3]);
+              const r = range2(),
+                v = R(args[2]),
+                vals = r.values(),
+                kept = vals.filter(
+                  (x) => compareElems(x, v, r.elem, s, api, node) !== 0,
+                );
+              for (let k = 0; k < kept.length; k++) r.set(k, kept[k]);
+              return H(iterOrPtrAdvance(r.first, kept.length, s, api, node));
+            }
+            case "replace": {
+              arity([4]);
+              const r = range2(),
+                oldV = R(args[2]),
+                newV = R(args[3]);
+              for (let k = 0; k < r.size; k++)
+                if (compareElems(r.get(k), oldV, r.elem, s, api, node) === 0)
+                  r.set(k, r.elem ? castElem(newV, r.elem, s, api, node) : newV);
+              return H(null);
+            }
+            case "unique": {
+              arity([2]);
+              const r = range2(),
+                vals = r.values(),
+                kept = vals.filter(
+                  (x, k) =>
+                    k === 0 ||
+                    compareElems(x, vals[k - 1], r.elem, s, api, node) !== 0,
+                );
+              for (let k = 0; k < kept.length; k++) r.set(k, kept[k]);
+              return H(iterOrPtrAdvance(r.first, kept.length, s, api, node));
+            }
+            case "accumulate": {
+              arity([3, 4]);
+              if (args.length === 4) noComp();
+              const r = range2();
+              let acc = R(args[2]);
+              for (let k = 0; k < r.size; k++)
+                acc = binaryOpVal("+", acc, r.get(k), s, api, node);
+              return H(acc);
+            }
+            case "inner_product": {
+              arity([4, 5, 6]);
+              if (args.length > 4) noComp();
+              const r = makeRange(R(args[0]), R(args[1]), s, api, node),
+                f2 = R(args[2]);
+              let acc = R(args[3]);
+              for (let k = 0; k < r.size; k++) {
+                const prod = binaryOpVal(
+                  "*",
+                  r.get(k),
+                  iterOrPtrGet(iterOrPtrAdvance(f2, k, s, api, node), s, api, node),
+                  s,
+                  api,
+                  node,
+                );
+                acc = binaryOpVal("+", acc, prod, s, api, node);
+              }
+              return H(acc);
+            }
+            case "iota": {
+              arity([3]);
+              const r = range2();
+              let v = R(args[2]);
+              for (let k = 0; k < r.size; k++) {
+                r.set(k, r.elem ? castElem(v, r.elem, s, api, node) : v);
+                v = binaryOpVal("+", v, 1, s, api, node);
+              }
+              return H(null);
+            }
+            case "partial_sum": {
+              arity([3, 4]);
+              if (args.length === 4) noComp();
+              const r = range2(),
+                out = R(args[2]),
+                vals = r.values();
+              let acc = null;
+              for (let k = 0; k < vals.length; k++) {
+                acc = k === 0 ? vals[0] : binaryOpVal("+", acc, vals[k], s, api, node);
+                iterOrPtrSet(iterOrPtrAdvance(out, k, s, api, node), acc, s, api, node);
+              }
+              return H(iterOrPtrAdvance(out, vals.length, s, api, node));
+            }
+            case "adjacent_difference": {
+              arity([3, 4]);
+              if (args.length === 4) noComp();
+              const r = range2(),
+                out = R(args[2]),
+                vals = r.values();
+              for (let k = 0; k < vals.length; k++) {
+                const v =
+                  k === 0 ? vals[0] : binaryOpVal("-", vals[k], vals[k - 1], s, api, node);
+                iterOrPtrSet(iterOrPtrAdvance(out, k, s, api, node), v, s, api, node);
+              }
+              return H(iterOrPtrAdvance(out, vals.length, s, api, node));
+            }
+          }
+          return null;
+        }
+        // at()／front()／back() の戻り参照を添字ノードへ書き換える。
+        function cppRefTarget(t) {
+          if (!t || t.k !== "call" || t.target?.k !== "member") return t;
+          const m = t.target.name,
+            obj = t.target.target;
+          if (m === "at" && t.args?.length === 1)
+            return { k: "index", target: obj, indexes: [t.args[0]], viaAt: true, line: t.line };
+          if (m === "front" && !t.args?.length)
+            return { k: "index", target: obj, indexes: [{ k: "literal", value: 0, raw: "0", line: t.line }], line: t.line };
+          if (m === "back" && !t.args?.length)
+            return {
+              k: "index",
+              target: obj,
+              indexes: [
+                {
+                  k: "binary",
+                  op: "-",
+                  a: { k: "call", target: { k: "member", target: obj, name: "size", line: t.line }, args: [], line: t.line },
+                  b: { k: "literal", value: 1, raw: "1", line: t.line },
+                  line: t.line,
+                },
+              ],
+              line: t.line,
+            };
+          return t;
+        }
+        // --- 読み取り（添字／メンバ／逆参照） ---
+        function cppRead(a, s, api) {
+          if (a.k === "index") {
+            const sp = parseCppTypeText(typeOf(a.target, s));
+            if (sp && (["vector", "array"].includes(sp.kind) || sp.kind === "iterator")) {
+              const target = api.read(a.target, s);
+              if (isUnknown(target))
+                return { handled: true, value: unknown("未確定の値の要素") };
+              const index = api.read(a.indexes[0], s);
+              if (isUnknown(index))
+                api.fail("未確定の添字による参照は未対応です", a, "未対応");
+              let iv = index;
+              if (typeof iv === "boolean") iv = Number(iv);
+              if (typeof iv === "string" && iv.length === 1) iv = iv.charCodeAt(0);
+              if (!Number.isInteger(iv))
+                api.fail("添字は整数型でなければなりません", a, "CompileError");
+              if (isIterVal(target))
+                return {
+                  handled: true,
+                  value: iterGet(iterAdvanceVal(target, iv, s, api, a), s, api, a),
+                };
+              if (Array.isArray(target)) {
+                if (iv < 0 || iv >= target.length)
+                  api.fail("範囲外の添字です", a, "未定義動作");
+                const v = target[iv];
+                if (v?.kind === "uninitialized")
+                  api.fail("未初期化の要素です", a, "未定義動作");
+                return { handled: true, value: v };
+              }
+            }
+            return null;
+          }
+          if (a.k === "member") {
+            const sp = parseCppTypeText(typeOf(a.target, s));
+            if (sp?.kind === "pair") {
+              const obj = api.read(a.target, s);
+              if (isUnknown(obj))
+                return { handled: true, value: unknown(`未確定の対象の ${a.name}`) };
+              if (!isPairVal(obj)) return null;
+              if (a.name === "first" || a.name === "second")
+                return { handled: true, value: obj[a.name] };
+              api.fail("フィールドがありません：" + a.name, a, "CompileError");
+            }
+            if (sp?.kind === "iterator") {
+              const itv = api.read(a.target, s);
+              if (!isIterVal(itv)) return null;
+              const el = iterGet(itv, s, api, a);
+              if (isPairVal(el)) {
+                if (a.name === "first" || a.name === "second")
+                  return { handled: true, value: el[a.name] };
+                api.fail("フィールドがありません：" + a.name, a, "CompileError");
+              }
+              api.fail(
+                "イテレータの指す要素にそのメンバはありません：" + a.name,
+                a,
+                "CompileError",
+              );
+            }
+            return null;
+          }
+          if (a.k === "unary" && a.op === "*") {
+            if (parseCppTypeText(typeOf(a.arg, s))?.kind === "iterator") {
+              const v = api.read(a.arg, s);
+              if (isIterVal(v)) return { handled: true, value: iterGet(v, s, api, a) };
+            }
+            return null;
+          }
+          if (a.k === "unary" && a.op === "&") {
+            const inner = a.arg;
+            if (inner?.k === "index") {
+              const sp = parseCppTypeText(typeOf(inner.target, s));
+              if (sp && ["vector", "array", "iterator"].includes(sp.kind))
+                api.fail("コンテナ要素へのポインタは未対応です", a, "未対応");
+            }
+            if (inner?.k === "unary" && inner.op === "*") {
+              if (parseCppTypeText(typeOf(inner.arg, s))?.kind === "iterator")
+                api.fail(
+                  "イテレータの指す要素へのポインタは未対応です",
+                  a,
+                  "未対応",
+                );
+            }
+            return null;
+          }
+          return null;
+        }
+        // --- 書き込み（変数／添字／メンバ／逆参照） ---
+        function cppWrite(a, v, s, api, node) {
+          if (a.k === "var") {
+            const type = s.types[a.name];
+            if (type === undefined) return false;
+            const sp = parseCppTypeText(type);
+            if (!sp) return false;
+            if (sp.kind === "vector" || sp.kind === "array") {
+              const nv = castElem(v, finalizeCppSpec(sp, s, api, node), s, api, node);
+              s.vars[a.name] = nv;
+              const id = s.addresses[a.name];
+              if (id && s.model.memory[id]) s.model.memory[id].values[0] = nv;
+              return true;
+            }
+            if (sp.kind === "pair") {
+              const nv = castElem(v, sp, s, api, node);
+              s.vars[a.name] = nv;
+              const id = s.addresses[a.name];
+              if (id && s.model.memory[id]) s.model.memory[id].values[0] = nv;
+              return true;
+            }
+            if (sp.kind === "iterator") {
+              if (!isIterVal(v))
+                api.fail("イテレータの値が必要です", node, "CompileError");
+              s.vars[a.name] = v;
+              const id = s.addresses[a.name];
+              if (id && s.model.memory[id]) s.model.memory[id].values[0] = v;
+              return true;
+            }
+            return false;
+          }
+          if (a.k === "index") {
+            const sp = parseCppTypeText(typeOf(a.target, s));
+            if (!sp || !(["vector", "array"].includes(sp.kind) || sp.kind === "iterator"))
+              return false;
+            const target = api.read(a.target, s);
+            const index = api.read(a.indexes[0], s);
+            if (!Number.isInteger(index))
+              api.fail("添字は整数型でなければなりません", node, "CompileError");
+            if (isIterVal(target)) {
+              iterSet(iterAdvanceVal(target, index, s, api, node), v, s, api, node);
+              return true;
+            }
+            if (Array.isArray(target)) {
+              if (index < 0 || index >= target.length)
+                api.fail(
+                  a.viaAt
+                    ? "範囲外の添字です（std::out_of_range が送出されます）"
+                    : "範囲外の添字への書き込みです",
+                  node,
+                  a.viaAt ? "例外" : "未定義動作",
+                );
+              target[index] = castElem(v, sp.kind === "iterator" ? null : sp.elem, s, api, node);
+              return true;
+            }
+            return false;
+          }
+          if (a.k === "member") {
+            const sp = parseCppTypeText(typeOf(a.target, s));
+            if (sp?.kind === "pair") {
+              const obj = api.read(a.target, s);
+              if (!isPairVal(obj)) return false;
+              if (a.name === "first") obj.first = castElem(v, sp.t1, s, api, node);
+              else if (a.name === "second") obj.second = castElem(v, sp.t2, s, api, node);
+              else api.fail("フィールドがありません：" + a.name, node, "CompileError");
+              return true;
+            }
+            if (sp?.kind === "iterator") {
+              const itv = api.read(a.target, s);
+              if (!isIterVal(itv)) return false;
+              const el = iterGet(itv, s, api, node);
+              if (!isPairVal(el)) return false;
+              const esp = parseCppTypeText(el.t1 ? `pair<${el.t1},${el.t2}>` : "");
+              if (a.name === "first")
+                el.first = esp ? castElem(v, esp.t1, s, api, node) : v;
+              else if (a.name === "second")
+                el.second = esp ? castElem(v, esp.t2, s, api, node) : v;
+              else api.fail("フィールドがありません：" + a.name, node, "CompileError");
+              return true;
+            }
+            return false;
+          }
+          if (a.k === "unary" && a.op === "*") {
+            if (parseCppTypeText(typeOf(a.arg, s))?.kind === "iterator") {
+              const ptr = api.read(a.arg, s);
+              if (isIterVal(ptr)) {
+                iterSet(ptr, v, s, api, node);
+                return true;
+              }
+            }
+            return false;
+          }
+          return false;
+        }
+        // --- 二項演算（イテレータ演算と比較） ---
+        function cppBinary(op, a, b, node, s, api, lt, rt) {
+          if (isIterVal(a) || isIterVal(b)) {
+            if (op === "+") {
+              if (isIterVal(a) && typeof b === "number")
+                return { value: iterAdvanceVal(a, b, s, api, node) };
+              if (typeof a === "number" && isIterVal(b))
+                return { value: iterAdvanceVal(b, a, s, api, node) };
+              api.fail("イテレータと加算できるのは整数だけです", node, "CompileError");
+            }
+            if (op === "-") {
+              if (isIterVal(a) && isIterVal(b)) {
+                if (!iterSameHost(a, b))
+                  api.fail(
+                    "異なるコンテナのイテレータ同士は演算できません",
+                    node,
+                    "未定義動作",
+                  );
+                return { value: a.pos - b.pos };
+              }
+              if (isIterVal(a) && typeof b === "number")
+                return { value: iterAdvanceVal(a, -b, s, api, node) };
+              api.fail("イテレータの減算の形式が違います", node, "CompileError");
+            }
+            if (["==", "!=", "<", "<=", ">", ">="].includes(op)) {
+              if (!isIterVal(a) || !isIterVal(b))
+                api.fail(
+                  "イテレータと比較できるのはイテレータだけです",
+                  node,
+                  "CompileError",
+                );
+              if (!iterSameHost(a, b))
+                api.fail(
+                  "異なるコンテナのイテレータ同士は比較できません",
+                  node,
+                  "未定義動作",
+                );
+              const d = a.pos - b.pos;
+              return {
+                value:
+                  op === "==" ? d === 0 : op === "!=" ? d !== 0 : op === "<" ? d < 0 : op === "<=" ? d <= 0 : op === ">" ? d > 0 : d >= 0,
+              };
+            }
+            api.fail("このイテレータ演算は未対応です", node, "未対応");
+          }
+          if (["==", "!=", "<", "<=", ">", ">="].includes(op)) {
+            const lsp = parseCppTypeText(lt),
+              rsp = parseCppTypeText(rt);
+            const lCont = lsp && ["vector", "array", "pair"].includes(lsp.kind),
+              rCont = rsp && ["vector", "array", "pair"].includes(rsp.kind);
+            if (lCont || rCont) {
+              if (!lCont || !rCont || lsp.kind !== rsp.kind)
+                api.fail(
+                  `型が一致しません：${lt} と ${rt} は比較できません`,
+                  node,
+                  "CompileError",
+                );
+              const c = compareElems(a, b, lsp, s, api, node);
+              return {
+                value:
+                  op === "==" ? c === 0 : op === "!=" ? c !== 0 : op === "<" ? c < 0 : op === "<=" ? c <= 0 : op === ">" ? c > 0 : c >= 0,
+              };
+            }
+            if ((isPairVal(a) || isPairVal(b)) && !(isPairVal(a) && isPairVal(b)))
+              api.fail("pair と比較できるのは pair だけです", node, "CompileError");
+            if (isPairVal(a) && isPairVal(b)) {
+              const c = compareElems(a, b, null, s, api, node);
+              return {
+                value:
+                  op === "==" ? c === 0 : op === "!=" ? c !== 0 : op === "<" ? c < 0 : op === "<=" ? c <= 0 : op === ">" ? c > 0 : c >= 0,
+              };
+            }
+          }
+          return null;
+        }
+        // --- 宣言の実行 ---
+        function cppDeclare(n, s, api) {
+          if (Object.hasOwn(s.types, n.name))
+            api.fail(
+              `同じスコープで名前が重複しています：${n.name}`,
+              n,
+              "SyntaxError",
+            );
+          const spec = finalizeCppSpec(n.cppSpec, s, api, n);
+          // 初期化子の中の自己参照は未初期化として扱う（RG-06 と同じ）。
+          s.vars[n.name] = uninitialized;
+          s.types[n.name] = spec.text;
+          const finish = (v, typeText) => {
+            s.vars[n.name] = v;
+            s.types[n.name] = typeText;
+            allocate(s, n.name, [v], typeText);
+            api.note(
+              s,
+              n,
+              `${n.name} を ${typeText} として用意します：${fmtFor(v, typeText)}`,
+            );
+            return [s];
+          };
+          if (spec.kind === "auto") {
+            if (!n.value && !n.initArgs)
+              api.fail("auto には初期化子が必要です", n, "CompileError");
+            const srcNode = n.initArgs ? n.initArgs[0] : n.value;
+            if (n.initArgs && n.initArgs.length !== 1)
+              api.fail("auto の初期化子は1つだけです", n, "CompileError");
+            const v = api.read(srcNode, s);
+            if (isIterVal(v)) return finish(v, v.itype);
+            if (isPairVal(v)) {
+              const ps = parseCppTypeText(`pair<${v.t1},${v.t2}>`);
+              return finish(castElem(v, ps, s, api, n), ps.text);
+            }
+            if (Array.isArray(v)) {
+              const ss = parseCppTypeText(typeOf(srcNode, s));
+              if (ss && ["vector", "array"].includes(ss.kind))
+                return finish(castElem(v, ss, s, api, n), ss.text);
+              api.fail(
+                "auto の型推論はコンテナ・イテレータ・pair の初期化子だけ対応します",
+                n,
+                "未対応",
+              );
+            }
+            // スカラーの auto 推論は従来どおり未対応（監査テストで確定済みの
+            // 境界）。推論できるのはコンテナ・イテレータ・pair の初期化子だけ。
+            api.fail(
+              "auto の型推論はコンテナ・イテレータ・pair の初期化子だけ対応します（スカラーは未対応です）",
+              n,
+              "未対応",
+            );
+          }
+          if (spec.kind === "iterator") {
+            let v;
+            if (n.initArgs) {
+              if (n.initArgs.length !== 1)
+                api.fail("イテレータの初期化子は1つだけです", n, "CompileError");
+              v = api.read(n.initArgs[0], s);
+            } else if (n.value) v = api.read(n.value, s);
+            else v = defaultForSpec(spec, s, api, n);
+            if (!isIterVal(v))
+              api.fail("イテレータで初期化してください", n, "CompileError");
+            const hostElem =
+              spec.host.kind === "scalar" ? "char" : spec.host.elem?.text;
+            if (!v.singular && hostElem && v.elem !== hostElem)
+              api.fail("イテレータの要素型が一致しません", n, "CompileError");
+            if (!v.singular && !!spec.rev !== !!v.rev)
+              api.fail("イテレータの種類（通常／逆向き）が一致しません", n, "CompileError");
+            if (!v.singular && !spec.constIt && v.constIt)
+              api.fail(
+                "const イテレータを通常のイテレータへ変換できません",
+                n,
+                "CompileError",
+              );
+            return finish(v, spec.text);
+          }
+          if (spec.kind === "pair" || spec.kind === "vector" || spec.kind === "array") {
+            let v;
+            if (n.bracedInit) {
+              const raw = api.read(n.value, s);
+              if (!Array.isArray(raw))
+                api.fail("初期化子リストが必要です", n, "CompileError");
+              if (spec.kind === "pair") {
+                if (raw.length === 0) v = defaultForSpec(spec, s, api, n);
+                else if (raw.length !== 2)
+                  api.fail("pair の初期化子は2要素です", n, "CompileError");
+                else
+                  v = {
+                    __pair: true,
+                    t1: spec.t1.text,
+                    t2: spec.t2.text,
+                    first: castElem(raw[0], spec.t1, s, api, n),
+                    second: castElem(raw[1], spec.t2, s, api, n),
+                  };
+              } else v = castElem(raw, spec, s, api, n);
+            } else if (n.initArgs) {
+              v = buildFromArgs(n.initArgs, spec, s, api, n);
+            } else if (n.value) {
+              v = castElem(api.read(n.value, s), spec, s, api, n);
+            } else if (spec.kind === "vector") v = [];
+            else if (spec.kind === "pair") v = defaultForSpec(spec, s, api, n);
+            else
+              v = Array.from({ length: spec.size }, () =>
+                spec.elem.kind === "scalar"
+                  ? spec.elem.text === "string"
+                    ? ""
+                    : uninitialized
+                  : defaultForSpec(spec.elem, s, api, n),
+              );
+            return finish(v, spec.text);
+          }
+          return null;
+        }
+        function buildFromArgs(argNodes, spec, s, api, n) {
+          const R = (a) => api.read(a, s);
+          if (spec.kind === "pair") {
+            if (argNodes.length === 0) return defaultForSpec(spec, s, api, n);
+            if (argNodes.length === 2)
+              return {
+                __pair: true,
+                t1: spec.t1.text,
+                t2: spec.t2.text,
+                first: castElem(R(argNodes[0]), spec.t1, s, api, n),
+                second: castElem(R(argNodes[1]), spec.t2, s, api, n),
+              };
+            if (argNodes.length === 1) return castElem(R(argNodes[0]), spec, s, api, n);
+            api.fail("pair のコンストラクタの引数の数が違います", n, "CompileError");
+          }
+          if (spec.kind === "array")
+            api.fail(
+              "std::array は ( ) による初期化はできません（{ } を使ってください）",
+              n,
+              "CompileError",
+            );
+          // vector
+          if (argNodes.length === 0) return [];
+          if (argNodes.length === 1) {
+            const v = R(argNodes[0]);
+            if (isIterVal(v) || isPtr(v))
+              api.fail("vector の範囲コンストラクタには2つのイテレータが必要です", n, "CompileError");
+            if (Array.isArray(v) || isPairVal(v))
+              return castElem(v, spec, s, api, n);
+            if (typeof v === "number") {
+              if (!Number.isInteger(v) || v < 0 || v > 10000)
+                api.fail("vector の要素数が不正です", n, "CompileError");
+              return Array.from({ length: v }, () =>
+                defaultForSpec(spec.elem, s, api, n),
+              );
+            }
+            api.fail("vector のコンストラクタの形式は未対応です", n, "未対応");
+          }
+          if (argNodes.length === 2) {
+            const a = R(argNodes[0]);
+            if (isIterVal(a) || isPtr(a)) {
+              const r = makeRange(a, R(argNodes[1]), s, api, n);
+              return r.values().map((e) => castElem(e, spec.elem, s, api, n));
+            }
+            if (typeof a === "number") {
+              if (!Number.isInteger(a) || a < 0 || a > 10000)
+                api.fail("vector の要素数が不正です", n, "CompileError");
+              const raw = R(argNodes[1]);
+              return Array.from({ length: a }, () =>
+                castElem(raw, spec.elem, s, api, n),
+              );
+            }
+            api.fail("vector のコンストラクタの形式は未対応です", n, "未対応");
+          }
+          api.fail("vector のコンストラクタの引数が多すぎます", n, "CompileError");
+        }
+        // --- 範囲 for の実行（参照書き戻しを含む専用ループ） ---
+        function cppRangeFor(n, s, api) {
+          const collNode = n.collection,
+            collVal = api.read(collNode, s);
+          if (isUnknown(collVal))
+            api.fail("未確定または配列でない繰り返し対象", n, "未対応");
+          const collSpec = parseCppTypeText(typeOf(collNode, s));
+          let elems = null,
+            elemSpec = null,
+            writeBackHost = null; // (state, i, castedValue) => void
+          if (
+            Array.isArray(collVal) &&
+            collSpec &&
+            ["vector", "array"].includes(collSpec.kind)
+          ) {
+            elemSpec = collSpec.elem;
+            elems = collVal.slice();
+            writeBackHost = (st, i2, v2) => {
+              const hv = api.read(collNode, st);
+              if (Array.isArray(hv)) hv[i2] = v2;
+            };
+          } else if (typeof collVal === "string") {
+            elemSpec = { kind: "scalar", text: "char" };
+            elems = collVal.split("").map((c) => c.charCodeAt(0));
+            if (collNode.k === "var" && s.types[collNode.name] === "string") {
+              const varName = collNode.name;
+              writeBackHost = (st, i2, v2) => {
+                const cur = st.vars[varName];
+                if (typeof cur !== "string") return;
+                const ch = typeof v2 === "string" ? v2 : String.fromCharCode(v2),
+                  next = cur.slice(0, i2) + ch + cur.slice(i2 + 1);
+                st.vars[varName] = next;
+                const id = st.addresses?.[varName];
+                if (id && st.model.memory[id]) st.model.memory[id].values[0] = next;
+              };
+            }
+          } else if (
+            isPtr(collVal) &&
+            collNode.k === "var" &&
+            String(s.types[collNode.name] || "").endsWith("[]")
+          ) {
+            const mem = s.model.memory[collVal.object];
+            if (!mem) api.fail("繰り返し対象のメモリがありません", n);
+            elemSpec =
+              parseCppTypeText(mem.type) || { kind: "scalar", text: mem.type };
+            elems = mem.values.slice(collVal.offset);
+            const objId = collVal.object,
+              baseOff = collVal.offset;
+            writeBackHost = (st, i2, v2) => {
+              const m2 = st.model.memory[objId];
+              if (m2) m2.values[baseOff + i2] = v2;
+            };
+          } else if (collNode.k === "array" && Array.isArray(collVal)) {
+            elems = collVal.slice();
+            elemSpec = null;
+          } else
+            api.fail(
+              "範囲 for の対象はコンテナ・文字列・配列でなければなりません",
+              n,
+              "CompileError",
+            );
+          let varSpec = n.varSpec ? finalizeCppSpec(n.varSpec, s, api, n) : null;
+          if (!varSpec || varSpec.kind === "auto") {
+            const dt = elemSpec
+              ? elemSpec.text
+              : elems.length
+                ? typeof elems[0] === "string"
+                  ? "string"
+                  : typeof elems[0] === "boolean"
+                    ? "bool"
+                    : "int"
+                : "int";
+            varSpec = parseCppTypeText(dt) || { kind: "scalar", text: dt };
+          }
+          const writeBack = !!n.rangeRef && !n.rangeConst && !!writeBackHost;
+          const saved = {
+            hadVar: Object.hasOwn(s.vars, n.name),
+            val: s.vars[n.name],
+            hadType: Object.hasOwn(s.types, n.name),
+            type: s.types[n.name],
+          };
+          let active = [s];
+          const done = [],
+            total = elems.length;
+          for (let i = 0; ; i++) {
+            if (i >= total) {
+              done.push(...active);
+              break;
+            }
+            if (i >= LIMITS.iterations) {
+              for (const st of active) {
+                if (st.halt || st.signal) {
+                  done.push(st);
+                  continue;
+                }
+                api.note(st, n, "ループ上限で説明を停止しました", "limit");
+                st.halt = true;
+                done.push(st);
+              }
+              break;
+            }
+            const next = [];
+            for (const st of active) {
+              if (st.halt || st.signal) {
+                done.push(st);
+                continue;
+              }
+              let bindVal = elems[i];
+              if (bindVal?.kind === "uninitialized")
+                api.fail("未初期化の要素です", n, "未定義動作");
+              if (!writeBack && varSpec)
+                bindVal = castElem(bindVal, varSpec, st, api, n);
+              st.vars[n.name] = bindVal;
+              st.types[n.name] = varSpec.text;
+              api.note(st, n, `繰り返し ${i + 1}回目`);
+              st.loopDepth = (st.loopDepth || 0) + 1;
+              (st.loopIterations ??= []).push(i + 1);
+              const outs = api.run(
+                [{ k: "block", body: n.body, line: n.line, refs: [] }],
+                [st],
+              );
+              for (const out of outs) {
+                out.loopDepth--;
+                out.loopIterations.pop();
+                if (writeBack && !out.error) {
+                  const wb = out.vars[n.name];
+                  writeBackHost(
+                    out,
+                    i,
+                    elemSpec ? castElem(wb, elemSpec, out, api, n) : wb,
+                  );
+                }
+                if (out.signal === "break") {
+                  out.signal = null;
+                  done.push(out);
+                } else if (out.halt || out.signal === "return") done.push(out);
+                else {
+                  out.signal = null;
+                  next.push(out);
+                }
+              }
+            }
+            active = next;
+            if (done.length + active.length > LIMITS.paths)
+              active = active.slice(0, Math.max(0, LIMITS.paths - done.length));
+            if (!active.length) break;
+          }
+          for (const st of done) {
+            if (saved.hadVar) st.vars[n.name] = saved.val;
+            else delete st.vars[n.name];
+            if (saved.hadType) st.types[n.name] = saved.type;
+            else delete st.types[n.name];
+          }
+          return done;
+        }
         const semantics = {
           dialect: language,
           blockScopes: true,
@@ -4326,9 +8177,24 @@ export function createCFamily({ id, name, extensions, language }) {
                 line,
                 "CompileError",
               );
+            // B8: コンテナ・イテレータ・pair も条件には置けない（bool 変換なし）。
+            if (language === "cpp" && node && s) {
+              const sp = parseCppTypeText(typeOf(node, s));
+              if (sp && ["vector", "array", "pair", "iterator"].includes(sp.kind))
+                throw new PracticeError(
+                  "コンテナ・イテレータ・pair を条件には使えません（bool への変換がありません）",
+                  line,
+                  "CompileError",
+                );
+            }
             return Boolean(v);
           },
           step(n, s, api) {
+            // B8: C++ のコンテナ宣言と範囲 for は専用実行へ。
+            if (language === "cpp") {
+              if (n.k === "each" && n.cppRange) return cppRangeFor(n, s, api);
+              if (n.k === "declare" && n.cppKind) return cppDeclare(n, s, api);
+            }
             // R27-N11：宣言子列（int a = 1, b = 2; 等）は、宣言子ごとの
             // declare ノードを同じスコープで順に実行する。
             if (n.k === "declareGroup")
@@ -4434,6 +8300,9 @@ export function createCFamily({ id, name, extensions, language }) {
               }
             }
             if (n.k === "assign") {
+              // B8: at()／front()／back() は参照を返すため代入先になれる。
+              // 検証より前に等価な添字ノードへ書き換える（cpp のみ）。
+              if (language === "cpp") n.target = cppRefTarget(n.target);
               // R25-N14（C家族の同根表面）：文として届く代入（C／C++
               // では主にポインタ逆参照への代入と %= 形）は、従来は
               // managed と %= だけをここで処理し、それ以外は共有
@@ -5258,6 +9127,11 @@ export function createCFamily({ id, name, extensions, language }) {
             }
           },
           read(a, s, api) {
+            // B8: コンテナ／イテレータ／pair の読み取り。
+            if (language === "cpp") {
+              const r = cppRead(a, s, api);
+              if (r) return r;
+            }
             // R29-N19：矩形配列の foreach 用に平坦化して読む（step で
             // 差し替えられた専用ノード）。行優先に全要素を並べる。
             if (managed && a.k === "rectFlat") {
@@ -5368,6 +9242,8 @@ export function createCFamily({ id, name, extensions, language }) {
               };
             }
             if (a.k === "assign") {
+              // B8: 参照を返すメンバ呼び出しの代入先書き換え（cpp のみ）。
+              if (language === "cpp") a.target = cppRefTarget(a.target);
               validateAssignTarget(a.target, a, api);
               let v = api.read(a.value, s);
               if (a.op && a.op !== "=") {
@@ -5822,7 +9698,7 @@ export function createCFamily({ id, name, extensions, language }) {
             }
             if (a.k === "unary" && a.op === "*") {
               let ptr = api.read(a.arg, s),
-                mem = deref(ptr, s, api, a),
+                mem = deref(ptr, s, api, a, elemTypeOf(a, s)),
                 value = mem.values[ptr.offset];
               if (value?.kind === "uninitialized")
                 api.fail("未初期化の配列要素です", a, "未定義動作");
@@ -6000,12 +9876,45 @@ export function createCFamily({ id, name, extensions, language }) {
                   api.fail("配列範囲外です", a, "IndexOutOfRangeException");
                 return { handled: true, value: target[index] };
               }
+              // A6監査CF-02派生：NULL ポインタへの添字は、対象の展開で
+              // ホスト例外に化けず、NULL へのアクセスとして名指しする
+              if (target === null)
+                api.fail("NULLポインタへのアクセスです", a, "未定義動作");
               let ptr = { ...target, offset: target.offset + index },
-                mem = deref(ptr, s, api, a),
+                mem = deref(ptr, s, api, a, elemTypeOf(a, s)),
                 value = mem.values[ptr.offset];
               if (value?.kind === "uninitialized")
                 api.fail("未初期化の配列要素です", a, "未定義動作");
               return { handled: true, value };
+            }
+            // B8（cpp-engine-a）：std::numbers の数学定数と
+            // std::string::npos。npos の実値は size_t の最大値
+            // （18446744073709551615）で安全整数の範囲外のため、
+            // モデルでは「見つからなかった位置」の番兵として -1 で
+            // 表す（find 系の戻り値と一致させ、== npos の慣用形が
+            // そのまま成り立つようにする。報告書に制限として明記）。
+            if (language === "cpp" && a.k === "member" && a.target?.k === "var") {
+              if (a.target.name === "numbers") {
+                const numbersConsts = {
+                  e: Math.E,
+                  log2e: Math.log2(Math.E),
+                  log10e: Math.log10(Math.E),
+                  pi: Math.PI,
+                  inv_pi: 1 / Math.PI,
+                  inv_sqrtpi: 0.56418958354775628695,
+                  ln2: Math.LN2,
+                  ln10: Math.LN10,
+                  sqrt2: Math.SQRT2,
+                  sqrt3: 1.7320508075688772935,
+                  egamma: 0.57721566490153286061,
+                  phi: 1.6180339887498948482,
+                };
+                if (Object.hasOwn(numbersConsts, a.name))
+                  return { handled: true, value: numbersConsts[a.name] };
+                api.fail(`std::numbers::${a.name} は未対応です`, a, "未対応");
+              }
+              if (a.target.name === "string" && a.name === "npos")
+                return { handled: true, value: -1 };
             }
             if (managed && a.k === "member") {
               if (a.target.k === "var") {
@@ -6027,6 +9936,40 @@ export function createCFamily({ id, name, extensions, language }) {
                     "Math.E": Math.E,
                     "String.Empty": "",
                     "string.Empty": "",
+                    // === 高度モード ブロックB5（C#）修正2A：型名レジストリ補完（ここから） ===
+                    // CS-F02／CS-F09-3：CLR 型名形をエイリアス等価として
+                    // 登録する。値は全て ~/dotnet（SDK 8.0.428）実走で
+                    // 裏付けた（Single は float の最大値の倍精度表現、
+                    // Double は double の最大値そのもの）。
+                    "Int32.MaxValue": 2147483647,
+                    "Int32.MinValue": -2147483648,
+                    "Int16.MaxValue": 32767,
+                    "Int16.MinValue": -32768,
+                    "UInt16.MaxValue": 65535,
+                    "UInt16.MinValue": 0,
+                    "ushort.MaxValue": 65535,
+                    "ushort.MinValue": 0,
+                    "UInt32.MaxValue": 4294967295,
+                    "UInt32.MinValue": 0,
+                    "SByte.MaxValue": 127,
+                    "SByte.MinValue": -128,
+                    "Byte.MaxValue": 255,
+                    "Byte.MinValue": 0,
+                    "Char.MaxValue": "\uffff",
+                    "Char.MinValue": "\u0000",
+                    "Boolean.TrueString": "True",
+                    "Boolean.FalseString": "False",
+                    "bool.TrueString": "True",
+                    "bool.FalseString": "False",
+                    "Single.MaxValue": 3.4028234663852886e38,
+                    "Single.MinValue": -3.4028234663852886e38,
+                    "float.MaxValue": 3.4028234663852886e38,
+                    "float.MinValue": -3.4028234663852886e38,
+                    "Double.MaxValue": 1.7976931348623157e308,
+                    "Double.MinValue": -1.7976931348623157e308,
+                    "double.MaxValue": 1.7976931348623157e308,
+                    "double.MinValue": -1.7976931348623157e308,
+                    // === 高度モード ブロックB5（C#）修正2A：型名レジストリ補完（ここまで） ===
                   };
                 if (Object.hasOwn(statics, key))
                   return { handled: true, value: statics[key] };
@@ -6035,6 +9978,16 @@ export function createCFamily({ id, name, extensions, language }) {
                     handled: true,
                     value: unknown(key + "（64ビット境界値）"),
                   };
+                // === 高度モード ブロックB5（C#）修正2A（ここから） ===
+                // CS-F02：64ビット境界値の CLR 名形もエイリアス形と
+                // 同じく未確定値として返す。Decimal は96ビット精度を
+                // 再現できないため、下の型名表で名前付き停止に倒す。
+                if (key === "Int64.MaxValue" || key === "Int64.MinValue" || key === "UInt64.MaxValue")
+                  return {
+                    handled: true,
+                    value: unknown(key + "（64ビット境界値）"),
+                  };
+                // === 高度モード ブロックB5（C#）修正2A（ここまで） ===
                 if (
                   ["int", "long", "double", "float", "char", "bool", "string", "String", "Math", "short", "uint", "ulong", "ushort", "byte", "sbyte", "DateTime", "Console"].includes(a.target.name)
                 )
@@ -6043,6 +9996,20 @@ export function createCFamily({ id, name, extensions, language }) {
                     a,
                     "未対応",
                   );
+                // === 高度モード ブロックB5（C#）修正2A（ここから） ===
+                // CS-F02／CS-F09-3：CLR 型名・TimeSpan・Decimal・
+                // ConsoleColor のメンバー読み取りも、NameError では
+                // なく型とメンバーを名指した未対応停止にする
+                // （TimeSpan.Zero／MaxValue／MinValue は値を捏造しない）。
+                if (
+                  ["Int32", "Int64", "Int16", "UInt16", "UInt32", "UInt64", "SByte", "Byte", "Char", "Boolean", "Single", "Double", "Decimal", "decimal", "TimeSpan", "ConsoleColor"].includes(a.target.name)
+                )
+                  api.fail(
+                    `型 ${a.target.name} のメンバー ${a.name} は未対応です`,
+                    a,
+                    "未対応",
+                  );
+                // === 高度モード ブロックB5（C#）修正2A（ここまで） ===
               }
               let obj = api.read(a.target, s);
               if (obj === null)
@@ -6089,6 +10056,8 @@ export function createCFamily({ id, name, extensions, language }) {
             return null;
           },
           write(a, v, s, api, node) {
+            // B8: コンテナ／イテレータ／pair への書き込み。
+            if (language === "cpp" && cppWrite(a, v, s, api, node)) return true;
             if (a.k === "var") {
               if (!Object.hasOwn(s.types, a.name))
                 api.fail(
@@ -6176,7 +10145,7 @@ export function createCFamily({ id, name, extensions, language }) {
                   a.k === "index"
                     ? targetPointer(a, s, api, node)
                     : api.read(a.arg, s),
-                mem = deref(ptr, s, api, node);
+                mem = deref(ptr, s, api, node, elemTypeOf(a, s));
               let value = cast(v, mem.type, s, node, api);
               mem.values[ptr.offset] = value;
               let variable = mem.name;
@@ -6262,6 +10231,22 @@ export function createCFamily({ id, name, extensions, language }) {
               return true;
             }
             if (managed && a.k === "member") {
+              // === 高度モード ブロックB5（C#）修正2A（ここから） ===
+              // CS-F09-3：型名へのメンバー書き込み（Console.Title や
+              // Console.ForegroundColor への代入形）は、対象を読む前に
+              // 型とメンバーを名指した未対応停止にする（従来は対象の
+              // 読み取りが NameError になっていた）。読み取り側の型名
+              // 表（エイリアス形＋CLR 名形）と同範囲を対象にする。
+              if (
+                a.target.k === "var" &&
+                ["int", "long", "double", "float", "char", "bool", "string", "String", "Math", "short", "uint", "ulong", "ushort", "byte", "sbyte", "DateTime", "TimeSpan", "Console", "Int32", "Int64", "Int16", "UInt16", "UInt32", "UInt64", "SByte", "Byte", "Char", "Boolean", "Single", "Double", "Decimal", "decimal", "ConsoleColor"].includes(a.target.name)
+              )
+                api.fail(
+                  `型 ${a.target.name} のメンバー ${a.name} は未対応です`,
+                  node,
+                  "未対応",
+                );
+              // === 高度モード ブロックB5（C#）修正2A（ここまで） ===
               let obj = api.read(a.target, s);
               if (obj === null)
                 api.fail("null参照です", node, "NullReferenceException");
@@ -6280,6 +10265,20 @@ export function createCFamily({ id, name, extensions, language }) {
               if (typeof b === "boolean") b = Number(b);
             }
             if (isPtr(a) || isPtr(b)) {
+              // A6監査CF-02：等価比較（== / !=）は具体評価する。相手は
+              // ポインタ同士（対象＋位置の同一性）か NULL／整数 0
+              // （実ポインタは決して等しくない）。関係演算などは従来
+              // どおり名指しで止める。
+              if (op === "==" || op === "!=") {
+                const nullish = (v) => v === null || v === 0;
+                let eq;
+                if (isPtr(a) && isPtr(b))
+                  eq = a.object === b.object && a.offset === b.offset;
+                else if (isPtr(a) && nullish(b)) eq = false;
+                else if (isPtr(b) && nullish(a)) eq = false;
+                else api.fail("このポインタ比較・演算は未対応です", node);
+                return op === "==" ? eq : !eq;
+              }
               if (op === "+" || op === "-") {
                 let ptr = isPtr(a) ? a : b,
                   amount = isPtr(a) ? b : a;
@@ -6290,7 +10289,15 @@ export function createCFamily({ id, name, extensions, language }) {
                     offset: ptr.offset + (op === "-" ? -amount : amount),
                   },
                   mem = s.model.memory[ptr.object];
-                if (next.offset < 0 || next.offset > mem.values.length)
+                // A6監査CF-03：要素幅の広い型のポインタでは、形成範囲も
+                // バイト単位で判定する（ヒープの char メモリ等）。
+                const ew = byteSizeOf(pointeeTypeOf(isPtr(a) ? (node.k === "assign" ? node.target : node.a) : (node.k === "assign" ? node.value : node.b), s)),
+                  mw = mem ? byteSizeOf(mem.type) : 0;
+                if (
+                  ew > 0 && mw > 0 && ew > mw
+                    ? next.offset < 0 || next.offset * ew > mem.values.length * mw
+                    : next.offset < 0 || next.offset > mem.values.length
+                )
                   api.fail(
                     "配列の先頭〜一つ先を超えるポインタ演算",
                     node,
@@ -6300,10 +10307,34 @@ export function createCFamily({ id, name, extensions, language }) {
               }
               api.fail("このポインタ比較・演算は未対応です", node);
             }
+            // A6収束ラウンド第2回：ヌルポインタ値（モデルでは JS の null）と
+            // 数値の等価比較。C11 6.3.2.3／6.5.9（C++ も同旨）では整数定数 0 は
+            // ヌルポインタ定数であり、ポインタとの等価比較ではポインタ型へ
+            // 変換されるため、null と 0 は等しく、null と 0 以外の数値は等しく
+            // ない。従来はこの経路が baseBinary の JS 緩い等価（null == 0 が
+            // false）に委ねられ、NULL == 0 が実 C と逆の 0 を返していた。
+            // 関係演算は JS 側でも null が 0 に読み替えられて実 C と一致する
+            // ため対象外とし、ポインタ実体との比較は上の CF-02 ブロックが
+            // 担う（実ポインタは null／0 と決して等しくない）。
+            if (
+              !managed &&
+              (op === "==" || op === "!=") &&
+              (a === null || b === null) &&
+              (a === null || typeof a === "number") &&
+              (b === null || typeof b === "number")
+            ) {
+              const eq = (a === null ? 0 : a) === (b === null ? 0 : b);
+              return op === "==" ? eq : !eq;
+            }
             const na = node.k === "assign" ? node.target : node.a,
               nb = node.k === "assign" ? node.value : node.b;
             const lt = typeOf(na, s),
               rt = typeOf(nb, s);
+            // B8: イテレータ演算・コンテナ／pair の比較。
+            if (language === "cpp") {
+              const r = cppBinary(op, a, b, node, s, api, lt, rt);
+              if (r) return r.value;
+            }
             if (managed) {
               if (
                 ["&", "|", "^"].includes(op) &&
@@ -6569,7 +10600,11 @@ export function createCFamily({ id, name, extensions, language }) {
               );
             let result =
               op === "/" && integer ? Math.trunc(a / b) : baseBinary(op, a, b);
-            if (op === "%" && integer && result === 0) result = 0;
+            // A5班監査: Math.trunc は -1/3 のような商で -0 を返すが、
+            // 整数除算・剰余の結果に負のゼロは存在しない（実 C#／C／
+            // C++ では 0）。% 側だけにあった正規化を / にも広げる。
+            // 浮動小数点の -0 は正当なため integer の場合に限る。
+            if ((op === "/" || op === "%") && integer && result === 0) result = 0;
             if (
               integer &&
               Number.isInteger(a) &&
@@ -6626,6 +10661,11 @@ export function createCFamily({ id, name, extensions, language }) {
             return result;
           },
           call(name, args, s, api, node) {
+            // B8: コンテナのメンバ呼び出しと <algorithm> 等の自由関数。
+            if (language === "cpp") {
+              const r = cppCall(name, args, s, api, node);
+              if (r) return r.value;
+            }
             if (!managed && builtinTypes.includes(name)) api.fail("キャストのこの形式は未対応です（関数形式ではなく (型)式 を使用してください）", node, "未対応");
             if (managed && ["checked", "unchecked"].includes(name)) {
               if (args.length !== 1)
@@ -6721,10 +10761,41 @@ export function createCFamily({ id, name, extensions, language }) {
               writeOut(ok ? parsed : 0);
               return ok;
             }
+            // === 高度モード ブロックB5（C#）修正2A：TryParse 一般化（ここから） ===
+            // CS-F08／CS-F09-1：int／double 以外の型名.TryParse は、解析を
+            // 通した上で（out 引数を評価する前に）項目名を挙げて停止する。
+            if (managed && name.endsWith(".TryParse")) {
+              const recvB5 = name.slice(0, -".TryParse".length).split(".").pop();
+              if (
+                !["int", "double"].includes(recvB5) &&
+                Object.hasOwn(
+                  {
+                    long: 1, Int64: 1, float: 1, Single: 1, bool: 1, Boolean: 1,
+                    char: 1, Char: 1, byte: 1, Byte: 1, sbyte: 1, SByte: 1,
+                    short: 1, Int16: 1, ushort: 1, UInt16: 1, uint: 1, UInt32: 1,
+                    ulong: 1, UInt64: 1, decimal: 1, Decimal: 1,
+                    DateTime: 1, TimeSpan: 1,
+                  },
+                  recvB5,
+                )
+              )
+                api.fail(
+                  `${name} は未対応です（対応しているのは int と double のみ）`,
+                  node,
+                  "未対応",
+                );
+            }
+            // === 高度モード ブロックB5（C#）修正2A：TryParse 一般化（ここまで） ===
             // D13：引数を評価する前に未順序の競合を検査する。
             if (!managed && name === "printf")
               checkUnsequencedArgs(args, node, api);
             let values = args.map((a) => api.read(a, s));
+            // B8（cpp-engine-a）：C++ スカラー関数／std::string メンバ。
+            // C／C# では従来どおりこの分岐に入らない。
+            if (language === "cpp") {
+              const r = cppScalarCall(name, args, values, s, api, node);
+              if (r) return r.value;
+            }
             if (name === "Console.ReadLine") {
               if (!managed) api.fail("未対応の関数です", node);
               // 固定引数関数の同根一掃（R24-N9）：引数なしが正規形で、
@@ -6751,13 +10822,34 @@ export function createCFamily({ id, name, extensions, language }) {
               let text;
               if (typeof v0 === "boolean") text = v0 ? "True" : "False";
               else if (v0 === null) text = "";
+              // === 高度モード ブロックB5（C#）表示修正（ここから） ===
+              // __adv 値（DateTime／TimeSpan／List／HashSet）は、配列
+              // 分岐（List／HashSet は配列として保持され、従来は型名を
+              // 誤導出していた）より前に C# の ToString 形へ変換する。
+              else if (
+                managed &&
+                v0 &&
+                typeof v0 === "object" &&
+                v0.__adv &&
+                advancedValueText(v0) !== null
+              )
+                text = advancedValueText(v0);
+              // === 高度モード ブロックB5（C#）表示修正（ここまで） ===
               else if (Array.isArray(v0)) {
                 // R29-N21：char[] には Console.WriteLine(char[]) の
                 // オーバーロードがあり、型名ではなく文字そのものを
                 // 出力する（dotnet 実測）。1次元 char[] の場合だけ
                 // その扱いにし、それ以外は宣言型から導出した型名。
                 const shape = csArrayShape(args[0], s, argType);
-                if (shape?.elem === "char" && shape.suffix === "[]")
+                // === 高度モード ブロックB5（C#）修正2A（ここから） ===
+                // CS-F05／F06：高度側生成の配列は宣言型から形を導出
+                // できないため、要素型タグ __elemSys が "Char" の配列も
+                // char[] オーバーロード（文字そのものを出力）で扱う。
+                if (
+                  (shape?.elem === "char" && shape.suffix === "[]") ||
+                  (managed && v0.__elemSys === "Char")
+                )
+                // === 高度モード ブロックB5（C#）修正2A（ここまで） ===
                   text = v0
                     .map((ch) =>
                       typeof ch === "number"
@@ -6787,7 +10879,6 @@ export function createCFamily({ id, name, extensions, language }) {
             }
             if (name === "printf") {
               if (managed) api.fail("C#のprintfは未対応です", node);
-              let [fmt, ...rest] = values;
               // R7-177（修正バッチ13）：書式は文字列リテラルだけでなく
               // char 配列・char* 経由でも渡せる（gcc／g++ 実測：
               // char fmt[]="%d"; printf(fmt,7) は 7 を出力）。ポインタは
@@ -6799,55 +10890,9 @@ export function createCFamily({ id, name, extensions, language }) {
                   node,
                   "CompileError",
                 );
-              if (isPtr(fmt)) fmt = cString(fmt, s, api, node);
-              if (typeof fmt !== "string")
-                api.fail("printfの書式文字列が必要です", node);
-              // R7-162（修正バッチ13）：書式文字列は最初のヌル文字で
-              // 終端する（gcc 実測：printf("A\0B%d",7) の出力は "A" で
-              // 戻り値は 1。ヌル以降の書式は読まれず、余った引数は
-              // 実物でも無視される）。
-              const nulAt = fmt.indexOf("\0");
-              const truncatedAtNul = nulAt >= 0;
-              if (truncatedAtNul) fmt = fmt.slice(0, nulAt);
-              if (fmt.replace(/%[%disfcu]/g, "").includes("%")) api.fail("このprintf書式はモデルで扱えません", node, "未対応");
-              let i = 0;
-              let text = fmt.replace(/%([%disfcu])/g, (_, type) => {
-                if (type === "%") return "%";
-                let sourceArg = args[i + 1],
-                  sourceType = typeOf(sourceArg, s),
-                  v = rest[i++];
-                if (typeof v === "boolean") v = Number(v);
-                if (type === "s") v = cString(v, s, api, node);
-                if (
-                  ((type === "d" || type === "i" || type === "c") &&
-                    !["int", "char", "signed char", "unsigned char", "short", "unsigned short", "bool"].includes(sourceType)) ||
-                  (type === "u" && sourceType !== "unsigned int") ||
-                  (type === "f" && !["float", "double"].includes(sourceType))
-                )
-                  api.fail(
-                    "printfの書式と引数型が一致しません",
-                    node,
-                    "未定義動作",
-                  );
-                if (
-                  (type === "s" && typeof v !== "string") ||
-                  (type !== "s" && typeof v !== "number")
-                )
-                  api.fail(
-                    "printfの書式と引数型が一致しません",
-                    node,
-                    "未定義動作",
-                  );
-                // RG-04 追加表面（R21-N6）: 非有限値の %f は C の実物表記
-                // （inf／-inf／nan）。JS の toFixed が返す "Infinity" を出さない。
-                // R7-44（修正バッチ13）：%c は int の引数を unsigned char へ
-                // 変換してから1バイト出力する（gcc 実測：256 は 00、
-                // -1 は FF）。コード点として文字化すると存在しない
-                // 文字（U+0100 等）を捏造する。
-                return type === "f" ? (!Number.isFinite(v) ? (Number.isNaN(v) ? "nan" : v > 0 ? "inf" : "-inf") : Object.is(v, -0) ? "-0.000000" : formatFixed6(Number(v))) : type === "c" ? String.fromCharCode(((Math.trunc(v) % 256) + 256) % 256) : String(v);
-              });
-              if (i !== rest.length && !(truncatedAtNul && i < rest.length))
-                api.fail("printfの書式または引数の数は未対応です", node);
+              // 書式処理の実体は formatPrintf（高度モードのライブラリ
+              // 拡張と共有するため切り出した。挙動は従来と同一）。
+              const text = formatPrintf(values[0], args, values, s, api, node);
               s.outputs.push({ channel: "printf", text, line: node.line });
               api.note(s, node, "標準出力へ出します：" + text);
               return new TextEncoder().encode(text).length;
@@ -6899,14 +10944,49 @@ export function createCFamily({ id, name, extensions, language }) {
                 api.fail("absの結果がintで表せません", node, "未定義動作");
               return Math.abs(v);
             }
+            // 高度モード（ブロックB6）：種類がライブラリ拡張を持つ
+            // 場合のみ、組み込みで扱わなかった名前を委譲する。委譲先が
+            // LIBRARY_UNHANDLED を返した名前は従来どおり正直に停止する。
+            if (libraryCall) {
+              checkUnsequencedArgs(args, node, api);
+              const r = libraryCall(name, args, values, s, api, node);
+              if (r !== LIBRARY_UNHANDLED) return r;
+            }
+            // === 高度モード ブロックB5（C#）委譲ブロック（ここから） ===
+            // managed（C#）の場合だけ、最終フォールスルーの直前で高度側
+            // テーブルへ委譲する。C／C++ の挙動は変えない。テーブルが
+            // 対象外（null）を返した場合は従来どおり直後の fail に落ちる。
+            if (managed) {
+              const adv = handleAdvancedCall({
+                name, args, values, s, api, node,
+                typeOf, isUnknown, unknown,
+                csDoubleText, csFloatText, csArrayTypeName, csArrayShape,
+                callName,
+              });
+              if (adv) return adv.value;
+            }
+            // === 高度モード ブロックB5（C#）委譲ブロック（ここまで） ===
             api.fail("この関数は説明に対応していません：" + name, node);
           },
           action(n, s, api) {
-            if (n.action === "cout") {
+            if (["cout", "cerr", "clog"].includes(n.action)) {
+              // B8: コンテナ・イテレータ・pair 自体の出力は未対応（実 C++ でも
+              // 標準の operator<< はない）。engine-a の cerr/clog 拡張と
+              // engine-b のコンテナ出力ガードを合成した形。
+              if (language === "cpp")
+                for (const v of n.values) {
+                  const sp = parseCppTypeText(typeOf(v, s));
+                  if (sp && ["vector", "array", "pair", "iterator"].includes(sp.kind))
+                    api.fail(
+                      "コンテナ・イテレータ・pair 自体は std::cout へ出力できません（要素を取り出して出力してください）",
+                      n,
+                      "未対応",
+                    );
+                }
               let text = n.values
                 .map((v) => { const value = api.read(v, s); const vt = typeOf(v, s); return typeof value === "boolean" ? String(Number(value)) : ["char", "signed char", "unsigned char"].includes(vt) ? String.fromCharCode(value) : isPtr(value) && s.model.memory[value.object]?.type === "char" ? cString(value, s, api, n) : typeof value === "number" ? (Object.is(value, -0) ? "-0" : vt === "double" || vt === "float" || !Number.isInteger(value) ? cppGText(value) : String(value)) : formatValue(transformDisplay(value)); })
                 .join("");
-              s.outputs.push({ channel: "cout", text, line: n.line });
+              s.outputs.push({ channel: n.action, text, line: n.line });
               api.note(s, n, "標準出力へ出します：" + text);
               return [s];
             }
