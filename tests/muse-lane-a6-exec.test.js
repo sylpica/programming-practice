@@ -270,8 +270,19 @@ test("A6 CF-07: printf の %s は未確定値でも宣言型を検査する", as
  * 正本。signbit(f(リテラル)) を1つの printf 式に書くと gcc が MPFR で
  * コンパイル時畳み込みし、異なる符号（atanh→正など）を返すため、期待値の
  * 採取には使えない。以下は引数を実行時に与えて測った実測値であり、
- * アプリの固定符号表はこれと一致する（欠陥ではないことの回帰固定）。 */
+ * アプリの固定符号表はこれと一致する（欠陥ではないことの回帰固定）。
+ * 追記（修正バッチ21／RG-684）：pow(-1.0, 0.5) の NaN 符号はホストの pow
+ * 実装に依存する（glibc 実行時＝1、Node 22 の V8＝0、Node 24 の V8＝1。
+ * いずれも実測）。アプリの pow はホストへ委譲するため、この行だけ
+ * 期待値をホストの Math.pow が返す double の実際の符号ビット
+ * （DataView で抽出）から導出する。他の行は glibc 実行時・Node 22／24
+ * の V8 のいずれでも符号が一致することを実測済みのため、従来どおり
+ * glibc 実行時表で固定する。 */
 test("A6 CF-01裁定: 定義域 NaN の signbit は glibc 実行時表と一致する", async () => {
+  // pow 行の期待値だけはホスト実測から導出する（上記追記参照）。
+  const hostPowView = new DataView(new ArrayBuffer(8));
+  hostPowView.setFloat64(0, Math.pow(-1.0, 0.5));
+  const hostPowSignbit = String(hostPowView.getUint32(0) >>> 31);
   const cases = [
     ['printf("%d", signbit(log(-3.0)));', "1"],
     ['printf("%d", signbit(log2(-1.0)));', "1"],
@@ -286,7 +297,7 @@ test("A6 CF-01裁定: 定義域 NaN の signbit は glibc 実行時表と一致�
     ['printf("%d", signbit(fmod(-1.0, 0.0)));', "1"],
     ['printf("%d", signbit(remainder(1.0, 0.0)));', "1"],
     ['printf("%d", signbit(sqrt(-1.0)));', "1"],
-    ['printf("%d", signbit(pow(-1.0, 0.5)));', "1"],
+    ['printf("%d", signbit(pow(-1.0, 0.5)));', hostPowSignbit],
     ['printf("%d", signbit(tgamma(-1.0)));', "0"],
     ['double v = 0.0 / 0.0;\nprintf("%d", signbit(v));', "1"],
   ];

@@ -48,10 +48,13 @@ test("adv-b4 vba-data: 全211件が漏れなく存在する（棚卸しとの多
   assert.deepEqual(multiset(ALL_ITEMS.map((r) => r.name)), multiset(EXPECTED_COMBINED));
 });
 
-test("adv-b4 vba-data: 棚卸しファイル実物から機械抽出した名前とも一致する", () => {
+test("adv-b4 vba-data: 棚卸しファイル実物から機械抽出した名前とも一致する", (t) => {
   const here = dirname(fileURLToPath(import.meta.url));
   const invPath = join(here, "..", "..", "advanced-inventory", "inventory-vba.md");
-  if (!existsSync(invPath)) return; // 棚卸しが同梱されない環境では埋め込みリストで担保
+  // 棚卸しはリポジトリ外（監査ワークスペース）にのみ存在する。解決できない
+  // 環境では理由明示でスキップする（従来は無言で return していたため、
+  // 未実施が合格に見えていた。修正バッチ21／RG-684）。
+  if (!existsSync(invPath)) return t.skip("棚卸しファイル（advanced-inventory/inventory-vba.md）が配置されていない環境のため実物照合をスキップ");
   const text = readFileSync(invPath, "utf8");
   const names = [];
   for (const line of text.split("\n")) {

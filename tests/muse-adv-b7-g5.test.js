@@ -29,7 +29,7 @@ async function expectErr(code, pattern) {
 }
 
 /* ---------- リファレンス整合 ---------- */
-test('G5 リファレンス：backlog の自群143件と name 集合が一致し、全項目が正規形', () => {
+test('G5 リファレンス：backlog の自群143件と name 集合が一致し、全項目が正規形', (t) => {
   // 棚卸しファイルの相対位置はツリー構成で異なる（B7 作業ツリーでは
   // ../../adv-b7-tools、統合正本ツリーでは ../../work/adv-b7-tools）。
   // 統合第2弾で両対応にした（照合内容そのものは不変）。
@@ -37,6 +37,11 @@ test('G5 リファレンス：backlog の自群143件と name 集合が一致し
     new URL('../../adv-b7-tools/backlog.json', import.meta.url),
     new URL('../../work/adv-b7-tools/backlog.json', import.meta.url),
   ].find((u) => existsSync(u));
+  // backlog はリポジトリ外（監査ワークスペース）にのみ存在する。素の
+  // チェックアウト（CI 等）では候補が全て不在になるため、その場合は
+  // 理由明示でスキップする（データがある環境では従来どおり全件実行し、
+  // アサーションは不変。修正バッチ21／RG-684）。
+  if (!backlogUrl) return t.skip('棚卸しツール（adv-b7-tools/backlog.json）が配置されていない環境のため実物照合をスキップ');
   const backlog = JSON.parse(readFileSync(backlogUrl, 'utf8'));
   const items = Array.isArray(backlog) ? backlog : backlog.items;
   const want = items

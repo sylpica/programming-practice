@@ -413,9 +413,27 @@ const CASES = {
   "expected": "False False True True"
  }
 };
+// re.inline-flag-scoped の翻訳結果（(?i:abc)d ＋ du フラグ）は、ホストの
+// V8 がインラインフラググループを受け付ける版数でのみ実行できる
+// （Node 22 の V8 は Invalid group で拒否する）。受け付けない環境では
+// アプリは PatternError で正直に停止するのが設計どおりの挙動のため、
+// その停止をアサートする（修正バッチ21／RG-684）。
+const HOST_ACCEPTS_INLINE_FLAG_GROUP = (() => {
+  try {
+    new RegExp('(?i:abc)d', 'du');
+    return true;
+  } catch {
+    return false;
+  }
+})();
 for (const [name, c] of Object.entries(CASES)) {
   test('B7 G3 F-01: ' + name, async () => {
     const r = await run(c.code);
+    if (name === 're.inline-flag-scoped' && !HOST_ACCEPTS_INLINE_FLAG_GROUP) {
+      assert.ok(errs(r).length > 0, name + ' はホストが翻訳結果を受け付けないため PatternError で停止すべき');
+      assert.match(errs(r)[0], /PatternError/, name + ' の停止理由が PatternError であること');
+      return;
+    }
     assert.deepEqual(errs(r), [], name + ' でエラー');
     let actual = outs(r).join('\n');
     let expected = c.expected;

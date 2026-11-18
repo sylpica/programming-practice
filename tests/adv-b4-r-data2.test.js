@@ -80,10 +80,13 @@ test("adv-b4 r-data2: names は関数名だけ。項目名は names ∪ 非関�
   }
 });
 
-test("adv-b4 r-data2: 棚卸し実物からの機械抽出と網羅照合（漏れ・重複なし）", () => {
+test("adv-b4 r-data2: 棚卸し実物からの機械抽出と網羅照合（漏れ・重複なし）", (t) => {
   const here = dirname(fileURLToPath(import.meta.url));
   const invPath = join(here, "..", "..", "..", "advanced-inventory", "inventory-r.md");
-  if (!existsSync(invPath)) return; // 棚卸しが同梱されない環境では埋め込み件数で担保
+  // 棚卸しはリポジトリ外（監査ワークスペース）にのみ存在する。解決できない
+  // 環境では理由明示でスキップする（従来は無言で return していたため、
+  // 未実施が合格に見えていた。修正バッチ21／RG-684）。
+  if (!existsSync(invPath)) return t.skip("棚卸しファイル（advanced-inventory/inventory-r.md）が配置されていない環境のため実物照合をスキップ");
   const text = readFileSync(invPath, "utf8");
   const headings = []; // [topic, name]
   for (const line of text.split("\n")) {

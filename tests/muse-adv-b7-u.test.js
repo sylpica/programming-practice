@@ -110,7 +110,7 @@ test('B7-U: 例外・__future__・test.support の特記が付いている', () 
   assert.equal(exceptions, 118);
 });
 
-test('B7-U: backlog／uncovered との全件照合（名前集合・source・role 由来文面）', () => {
+test('B7-U: backlog／uncovered との全件照合（名前集合・source・role 由来文面）', (t) => {
   const here = path.dirname(fileURLToPath(import.meta.url));
   // 棚卸しツールの相対位置はツリー構成で異なる（B7 作業ツリーでは
   // ../../adv-b7-tools、統合正本ツリーでは ../../work/adv-b7-tools）。
@@ -119,6 +119,11 @@ test('B7-U: backlog／uncovered との全件照合（名前集合・source・rol
     path.resolve(here, '..', '..', 'adv-b7-tools'),
     path.resolve(here, '..', '..', 'work', 'adv-b7-tools'),
   ].find((d) => fs.existsSync(path.join(d, 'backlog.json')));
+  // 棚卸しツールはリポジトリ外（監査ワークスペース）にのみ存在する。素の
+  // チェックアウト（CI 等）では候補が全て不在になるため、その場合は
+  // 理由明示でスキップする（データがある環境では従来どおり全件実行し、
+  // アサーションは不変。修正バッチ21／RG-684）。
+  if (!toolsDir) return t.skip('棚卸しツール（adv-b7-tools/backlog.json）が配置されていない環境のため実物照合をスキップ');
   const backlogPath = path.join(toolsDir, 'backlog.json');
   const uncoveredPath = path.join(toolsDir, 'uncovered-modules.json');
   assert.ok(fs.existsSync(backlogPath), `backlog が必要: ${backlogPath}`);

@@ -126,6 +126,12 @@ function inventoryNamesAL() {
     new URL("../../advanced-inventory/inventory-r.md", import.meta.url),
   ];
   const url = candidates.find((u) => fs.existsSync(u));
+  // 棚卸しはリポジトリ外（監査ワークスペース）にのみ存在する。素の
+  // チェックアウト（CI 等）では候補が全て不在になるため、その場合は
+  // null を返し、呼び出し側のテストが理由明示でスキップする（データが
+  // ある環境では従来どおり全件実行し、アサーションは不変。
+  // 修正バッチ21／RG-684）。
+  if (!url) return null;
   const raw = fs.readFileSync(url, "utf8");
   const out = new Map(); // topic -> names[]
   for (const line of raw.split("\n")) {
@@ -187,8 +193,9 @@ test("names は関数名だけ（重複なし）。項目名は names ∪ 非関
   }
 });
 
-test("網羅：棚卸し A〜L の関数名が 基礎 ∪ names ∪ 高度項目 に漏れなく現れる", () => {
+test("網羅：棚卸し A〜L の関数名が 基礎 ∪ names ∪ 高度項目 に漏れなく現れる", (t) => {
   const inv = inventoryNamesAL();
+  if (inv === null) return t.skip("棚卸しファイル（advanced-inventory/inventory-r.md）が配置されていない環境のため実物照合をスキップ");
   assert.ok(inv.size >= 200, `トピック数が想定より少ない: ${inv.size}`);
   const covered = new Set([...baseNames, ...names, ...referenceAdvanced.map((r) => r.name)]);
   const missing = [];
@@ -198,8 +205,9 @@ test("網羅：棚卸し A〜L の関数名が 基礎 ∪ names ∪ 高度項目
   assert.deepEqual(missing, []);
 });
 
-test("項目名の実在：全項目名が棚卸し A〜L トピックの対象名に現れる", () => {
+test("項目名の実在：全項目名が棚卸し A〜L トピックの対象名に現れる", (t) => {
   const inv = inventoryNamesAL();
+  if (inv === null) return t.skip("棚卸しファイル（advanced-inventory/inventory-r.md）が配置されていない環境のため実物照合をスキップ");
   const all = new Set();
   for (const ns of inv.values()) for (const n of ns) all.add(n);
   for (const r of referenceAdvanced) assert.ok(all.has(r.name), `棚卸しに無い項目名: ${r.name}`);

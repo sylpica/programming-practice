@@ -49,19 +49,30 @@ const inventoryUrl = [
 ]
   .map((p) => new URL(p, import.meta.url))
   .find((u) => existsSync(u));
-const inventory = readFileSync(inventoryUrl, "utf8");
-const inventoryMissing = [];
-for (const line of inventory.split("\n")) {
-  if (!line.startsWith("| ")) continue;
-  const cells = line.split("|").map((c) => c.trim());
-  if (cells[3] === "未収録") inventoryMissing.push(cells[1]);
+// 棚卸しはリポジトリ外（監査ワークスペース）にのみ存在する。素の
+// チェックアウト（CI 等）では候補が全て不在になり、従来はモジュール
+// 読込時点で例外になってファイル全体が落ちていた。データが解決できない
+// 環境では (a) の実物照合2件だけを理由明示でスキップする（データがある
+// 環境では従来どおり全件実行し、アサーションは不変。修正バッチ21／RG-684）。
+const inventory = inventoryUrl ? readFileSync(inventoryUrl, "utf8") : null;
+const inventoryMissing = inventory === null ? null : [];
+if (inventory !== null) {
+  for (const line of inventory.split("\n")) {
+    if (!line.startsWith("| ")) continue;
+    const cells = line.split("|").map((c) => c.trim());
+    if (cells[3] === "未収録") inventoryMissing.push(cells[1]);
+  }
 }
+const INVENTORY_SKIP =
+  "棚卸しファイル（advanced-inventory/inventory-powerapps.md）が配置されていない環境のため実物照合をスキップ";
 
-test("(a) 棚卸しの未収録は193件である", () => {
+test("(a) 棚卸しの未収録は193件である", (t) => {
+  if (inventoryMissing === null) return t.skip(INVENTORY_SKIP);
   assert.equal(inventoryMissing.length, 193);
 });
 
-test("(a) referenceAdvanced は未収録193件と過不足なく一致する", () => {
+test("(a) referenceAdvanced は未収録193件と過不足なく一致する", (t) => {
+  if (inventoryMissing === null) return t.skip(INVENTORY_SKIP);
   const names = referenceAdvanced.map((r) => r.name);
   assert.equal(names.length, 193);
   assert.equal(new Set(names).size, 193, "重複があります");

@@ -69,9 +69,17 @@ test("B5-JS Math: host-delegated functions match Node", async () => {
     ["0 1 0 0 0 0"],
   );
   await ok(
-    "console.log(Math.fround(1.337), Math.f16round(1.5), Math.round(2.5), Math.floor(-0.5));",
-    ["1.3370000123977661 1.5 3 -1"],
+    "console.log(Math.fround(1.337), Math.round(2.5), Math.floor(-0.5));",
+    ["1.3370000123977661 3 -1"],
   );
+  // Math.f16round はホスト委譲のため、ホスト（V8）の版数で有無が変わる
+  // （Node 22 の V8 には無い）。有る環境では計算結果を、無い環境では
+  // アプリの正直な名指し停止を、それぞれアサートする（修正バッチ21／RG-684）。
+  if (typeof Math.f16round === "function") {
+    await ok("console.log(Math.f16round(1.5));", ["1.5"]);
+  } else {
+    await fails("console.log(Math.f16round(1.5));", /^Math\.f16round は未対応です：ホストに実装がありません/, "未対応");
+  }
 });
 test("B5-JS Math: constants via property reads", async () => {
   await ok(
@@ -423,8 +431,15 @@ test("B5-JS RegExp construction, exec/test, flags", async () => {
   );
   await fails("console.log(RegExp('('));", /RegExp/, "SyntaxError");
   await fails("console.log(RegExp('a', 'x'));", /RegExp/, "SyntaxError");
-  // Node 実走どおり、先頭の英数字は \xHH 形式へエスケープされる
-  await ok("console.log(RegExp.escape('a.b*c'), RegExp());", ["\\x61\\.b\\*c /(?:)/"]);
+  // Node 実走どおり、先頭の英数字は \xHH 形式へエスケープされる。
+  // RegExp.escape はホスト委譲のため、ホスト（V8）の版数で有無が変わる
+  // （Node 22 の V8 には無い）。有る環境では計算結果を、無い環境では
+  // アプリの正直な名指し停止を、それぞれアサートする（修正バッチ21／RG-684）。
+  if (typeof RegExp.escape === "function") {
+    await ok("console.log(RegExp.escape('a.b*c'), RegExp());", ["\\x61\\.b\\*c /(?:)/"]);
+  } else {
+    await fails("console.log(RegExp.escape('a.b*c'), RegExp());", /^RegExp\.escape は未対応です：ホストに実装がありません/, "未対応");
+  }
   await ok("console.log('caa'.replace(RegExp('a+'), 'X'), 'caa'.match(RegExp('a+'))[0]);", ["cX aa"]);
 });
 
@@ -738,9 +753,18 @@ test("FIX2a JS-B5-01: %TypedArray%.from / .of for all 12 constructors", async ()
   for (const name of [
     "Int8Array", "Uint8Array", "Uint8ClampedArray", "Int16Array",
     "Uint16Array", "Int32Array", "Uint32Array", "Float32Array",
-    "Float64Array", "Float16Array",
+    "Float64Array",
   ]) {
     await ok(`console.log(${name}.from([1, 2]).toString(), ${name}.of(3).toString());`, ["1,2 3"], );
+  }
+  // Float16Array は要素変換をホスト DataView に委譲するため、ホスト
+  // （V8）の版数で有無が変わる（Node 22 の V8 には無い）。有る環境では
+  // 計算結果を、無い環境ではアプリの正直な名指し停止を、それぞれ
+  // アサートする（修正バッチ21／RG-684）。
+  if (typeof Float16Array === "function") {
+    await ok("console.log(Float16Array.from([1, 2]).toString(), Float16Array.of(3).toString());", ["1,2 3"]);
+  } else {
+    await fails("console.log(Float16Array.from([1, 2]).toString(), Float16Array.of(3).toString());", /^Float16Array は未対応です：ホストに実装がありません/, "未対応");
   }
   await ok("console.log(BigInt64Array.from([1n, 2n]).toString(), BigUint64Array.of(3n).toString());", ["1,2 3"]);
   // 配列状・文字列・Set・既存 TypedArray からの変換（Node 実走どおり）
@@ -758,13 +782,31 @@ test("FIX2a JS-B5-02: static BYTES_PER_ELEMENT for all 12 constructors", async (
     ["1 1 1 2 2 4 4 4 8 2 8 8"],
   );
   // インスタンス経由（従来どおり）も壊れていない
-  await ok("console.log(Uint8Array([1]).BYTES_PER_ELEMENT, Float16Array([1]).BYTES_PER_ELEMENT);", ["1 2"]);
+  await ok("console.log(Uint8Array([1]).BYTES_PER_ELEMENT);", ["1"]);
+  // Float16Array の静的読み取りはアプリ自身の表で答えるためホストに
+  // 依存しない（上の12種一括の行で両環境とも固定）。一方、インスタンス
+  // 生成はホスト DataView への委譲を含むため、ホスト（V8）の版数で
+  // 有無が変わる（Node 22 の V8 には無い）。有る環境では値を、無い
+  // 環境ではアプリの正直な名指し停止をアサートする（修正バッチ21／RG-684）。
+  if (typeof Float16Array === "function") {
+    await ok("console.log(Float16Array([1]).BYTES_PER_ELEMENT);", ["2"]);
+  } else {
+    await fails("console.log(Float16Array([1]).BYTES_PER_ELEMENT);", /^Float16Array は未対応です：ホストに実装がありません/, "未対応");
+  }
 });
 test("FIX2a JS-B5-03: [Symbol.toStringTag] and [Symbol.unscopables] reads", async () => {
   await ok(
-    "console.log(Map()[Symbol.toStringTag], Set()[Symbol.toStringTag], WeakMap()[Symbol.toStringTag], WeakSet()[Symbol.toStringTag], Date(0)[Symbol.toStringTag], RegExp('a')[Symbol.toStringTag], Error('e')[Symbol.toStringTag], TypeError('e')[Symbol.toStringTag], ArrayBuffer(1)[Symbol.toStringTag], DataView(ArrayBuffer(1))[Symbol.toStringTag], Uint8Array(1)[Symbol.toStringTag], Float16Array(1)[Symbol.toStringTag], BigInt64Array(1)[Symbol.toStringTag]);",
-    ["Map Set WeakMap WeakSet Date RegExp Error Error ArrayBuffer DataView Uint8Array Float16Array BigInt64Array"],
+    "console.log(Map()[Symbol.toStringTag], Set()[Symbol.toStringTag], WeakMap()[Symbol.toStringTag], WeakSet()[Symbol.toStringTag], Date(0)[Symbol.toStringTag], RegExp('a')[Symbol.toStringTag], Error('e')[Symbol.toStringTag], TypeError('e')[Symbol.toStringTag], ArrayBuffer(1)[Symbol.toStringTag], DataView(ArrayBuffer(1))[Symbol.toStringTag], Uint8Array(1)[Symbol.toStringTag], BigInt64Array(1)[Symbol.toStringTag]);",
+    ["Map Set WeakMap WeakSet Date RegExp Error Error ArrayBuffer DataView Uint8Array BigInt64Array"],
   );
+  // Float16Array の生成はホスト（V8）の版数で有無が変わる（Node 22 の
+  // V8 には無い）。有る環境では toStringTag の値を、無い環境ではアプリの
+  // 正直な名指し停止をアサートする（修正バッチ21／RG-684）。
+  if (typeof Float16Array === "function") {
+    await ok("console.log(Float16Array(1)[Symbol.toStringTag]);", ["Float16Array"]);
+  } else {
+    await fails("console.log(Float16Array(1)[Symbol.toStringTag]);", /^Float16Array は未対応です：ホストに実装がありません/, "未対応");
+  }
   await ok(
     "console.log({}[Symbol.toStringTag], [1][Symbol.toStringTag], 'x'[Symbol.toStringTag], (1)[Symbol.toStringTag], true[Symbol.toStringTag], 10n[Symbol.toStringTag], Symbol('s')[Symbol.toStringTag], Math[Symbol.toStringTag], JSON[Symbol.toStringTag]);",
     ["Object Array String Number Boolean BigInt Symbol Math JSON"],
