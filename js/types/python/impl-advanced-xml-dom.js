@@ -1,0 +1,61 @@
+/* 高度モード B7 G10：xml.dom（定数と例外対応付けのみ実装。
+ * ノードクラスの意味論は未検証＝リファレンス側裁定。値は CPython 3.12.3 実走抽出）。 */
+import { PyAPI } from './engine.js';
+import { registerStdlibModule } from './stdlib-registry.js';
+const { NUM, NONE } = PyAPI;
+const C = {
+  "EMPTY_NAMESPACE": NONE,
+  "XML_NAMESPACE": "http://www.w3.org/XML/1998/namespace",
+  "XMLNS_NAMESPACE": "http://www.w3.org/2000/xmlns/",
+  "XHTML_NAMESPACE": "http://www.w3.org/1999/xhtml",
+  "DOMSTRING_SIZE_ERR": NUM(2, false),
+  "INDEX_SIZE_ERR": NUM(1, false),
+  "HIERARCHY_REQUEST_ERR": NUM(3, false),
+  "WRONG_DOCUMENT_ERR": NUM(4, false),
+  "INVALID_CHARACTER_ERR": NUM(5, false),
+  "NO_DATA_ALLOWED_ERR": NUM(6, false),
+  "NO_MODIFICATION_ALLOWED_ERR": NUM(7, false),
+  "NOT_FOUND_ERR": NUM(8, false),
+  "NOT_SUPPORTED_ERR": NUM(9, false),
+  "INUSE_ATTRIBUTE_ERR": NUM(10, false),
+  "INVALID_STATE_ERR": NUM(11, false),
+  "SYNTAX_ERR": NUM(12, false),
+  "INVALID_MODIFICATION_ERR": NUM(13, false),
+  "NAMESPACE_ERR": NUM(14, false),
+  "INVALID_ACCESS_ERR": NUM(15, false),
+  "VALIDATION_ERR": NUM(16, false),
+};
+const NODE_C = {
+  "ATTRIBUTE_NODE": NUM(2, false),
+  "CDATA_SECTION_NODE": NUM(4, false),
+  "COMMENT_NODE": NUM(8, false),
+  "DOCUMENT_FRAGMENT_NODE": NUM(11, false),
+  "DOCUMENT_NODE": NUM(9, false),
+  "DOCUMENT_TYPE_NODE": NUM(10, false),
+  "ELEMENT_NODE": NUM(1, false),
+  "ENTITY_NODE": NUM(6, false),
+  "ENTITY_REFERENCE_NODE": NUM(5, false),
+  "NOTATION_NODE": NUM(12, false),
+  "PROCESSING_INSTRUCTION_NODE": NUM(7, false),
+  "TEXT_NODE": NUM(3, false),
+};
+registerStdlibModule('xml.dom', { constants: C, classes: {
+  Node: { typeName: 'Node', classAttrs: NODE_C },
+  "DOMException": { typeName: "DOMException", exc: 'xml.dom.DOMException', excParents: ["Exception"] },
+  "DomstringSizeErr": { typeName: "DomstringSizeErr", exc: 'xml.dom.DomstringSizeErr', excParents: ["xml.dom.DOMException", "Exception"] },
+  "HierarchyRequestErr": { typeName: "HierarchyRequestErr", exc: 'xml.dom.HierarchyRequestErr', excParents: ["xml.dom.DOMException", "Exception"] },
+  "IndexSizeErr": { typeName: "IndexSizeErr", exc: 'xml.dom.IndexSizeErr', excParents: ["xml.dom.DOMException", "Exception"] },
+  "InuseAttributeErr": { typeName: "InuseAttributeErr", exc: 'xml.dom.InuseAttributeErr', excParents: ["xml.dom.DOMException", "Exception"] },
+  "InvalidAccessErr": { typeName: "InvalidAccessErr", exc: 'xml.dom.InvalidAccessErr', excParents: ["xml.dom.DOMException", "Exception"] },
+  "InvalidCharacterErr": { typeName: "InvalidCharacterErr", exc: 'xml.dom.InvalidCharacterErr', excParents: ["xml.dom.DOMException", "Exception"] },
+  "InvalidModificationErr": { typeName: "InvalidModificationErr", exc: 'xml.dom.InvalidModificationErr', excParents: ["xml.dom.DOMException", "Exception"] },
+  "InvalidStateErr": { typeName: "InvalidStateErr", exc: 'xml.dom.InvalidStateErr', excParents: ["xml.dom.DOMException", "Exception"] },
+  "NamespaceErr": { typeName: "NamespaceErr", exc: 'xml.dom.NamespaceErr', excParents: ["xml.dom.DOMException", "Exception"] },
+  "NoDataAllowedErr": { typeName: "NoDataAllowedErr", exc: 'xml.dom.NoDataAllowedErr', excParents: ["xml.dom.DOMException", "Exception"] },
+  "NoModificationAllowedErr": { typeName: "NoModificationAllowedErr", exc: 'xml.dom.NoModificationAllowedErr', excParents: ["xml.dom.DOMException", "Exception"] },
+  "NotFoundErr": { typeName: "NotFoundErr", exc: 'xml.dom.NotFoundErr', excParents: ["xml.dom.DOMException", "Exception"] },
+  "NotSupportedErr": { typeName: "NotSupportedErr", exc: 'xml.dom.NotSupportedErr', excParents: ["xml.dom.DOMException", "Exception"] },
+  "SyntaxErr": { typeName: "SyntaxErr", exc: 'xml.dom.SyntaxErr', excParents: ["xml.dom.DOMException", "Exception"] },
+  "ValidationErr": { typeName: "ValidationErr", exc: 'xml.dom.ValidationErr', excParents: ["xml.dom.DOMException", "Exception"] },
+  "WrongDocumentErr": { typeName: "WrongDocumentErr", exc: 'xml.dom.WrongDocumentErr', excParents: ["xml.dom.DOMException", "Exception"] },
+} });

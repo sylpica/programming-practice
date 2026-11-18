@@ -1,0 +1,12 @@
+/* 高度モード B7 G10：xml.parsers.expat（ErrorString と例外対応付けのみ。
+ * パーサ本体はコールバック属性代入をエンジンが扱えないため未検証）。 */
+import { PyAPI } from './engine.js';
+import { registerStdlibModule } from './stdlib-registry.js';
+const MESSAGES = {"1": "out of memory", "2": "syntax error", "3": "no element found", "4": "not well-formed (invalid token)", "5": "unclosed token", "6": "partial character", "7": "mismatched tag", "8": "duplicate attribute", "9": "junk after document element", "10": "illegal parameter entity reference", "11": "undefined entity", "12": "recursive entity reference", "13": "asynchronous entity", "14": "reference to invalid character number", "15": "reference to binary entity", "16": "reference to external entity in attribute", "17": "XML or text declaration not at start of entity", "18": "unknown encoding", "19": "encoding specified in XML declaration is incorrect", "20": "unclosed CDATA section", "21": "error in processing external entity reference", "22": "document is not standalone", "23": "unexpected parser state - please send a bug report", "24": "entity declared in parameter entity", "25": "requested feature requires XML_DTD support in Expat", "26": "cannot change setting once parsing has begun", "27": "unbound prefix", "28": "must not undeclare prefix", "29": "incomplete markup in parameter entity", "30": "XML declaration not well-formed", "31": "text declaration not well-formed", "32": "illegal character(s) in public id", "33": "parser suspended", "34": "parser not suspended", "35": "parsing aborted", "36": "parsing finished", "37": "cannot suspend in external parameter entity", "38": "reserved prefix (xml) must not be undeclared or bound to another namespace name", "39": "reserved prefix (xmlns) must not be declared or undeclared", "40": "prefix must not be bound to one of the reserved namespace names", "41": "invalid argument", "42": "a successful prior call to function XML_GetBuffer is required", "43": "limit on input amplification factor (from DTD and entities) breached"};
+registerStdlibModule('xml.parsers.expat', {
+  functions: { ErrorString: (ctx, args) => { const c = ctx.num(args[0]); return c !== null && String(c) in MESSAGES ? MESSAGES[String(c)] : ctx.V.NONE; } },
+  classes: {
+    ExpatError: { typeName: 'ExpatError', exc: 'xml.parsers.expat.ExpatError', excParents: ['Exception'] },
+    error: { typeName: 'error', exc: 'xml.parsers.expat.ExpatError', excParents: ['Exception'] },
+  },
+});

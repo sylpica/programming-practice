@@ -1,0 +1,312 @@
+/* 高度モード B7 G7: gettext のリファレンス（正規形）。
+* 状態（status）は実装の裁定結果。出典は公式ドキュメント 3.15 と CPython 3.12.3 実走。 */
+export const referenceAdvanced = [
+ {
+  "name": "gettext.GNUTranslations",
+  "category": "国際化",
+  "syntax": "class GNUTranslations(fp=None)",
+  "description": ".mo カタログを読み込む翻訳クラス。",
+  "example": "import gettext\ngettext.GNUTranslations(fp)",
+  "caution": "カタログファイルを前提とするため未対応。",
+  "status": "unsupported",
+  "source": "https://docs.python.org/ja/3.15/library/gettext.html",
+  "returns": "クラス"
+ },
+ {
+  "name": "gettext.GNUTranslations.gettext",
+  "category": "国際化",
+  "syntax": "GNUTranslations.gettext(message)",
+  "description": "カタログでメッセージを翻訳する。",
+  "example": "t.gettext('hi')",
+  "caution": "GNUTranslations 自体が未対応で到達できないため未検証。",
+  "status": "unverified",
+  "source": "https://docs.python.org/ja/3.15/library/gettext.html",
+  "returns": "str"
+ },
+ {
+  "name": "gettext.GNUTranslations.ngettext",
+  "category": "国際化",
+  "syntax": "GNUTranslations.ngettext(singular, plural, n)",
+  "description": "カタログの複数形規則で翻訳する。",
+  "example": "t.ngettext('one', 'many', 2)",
+  "caution": "GNUTranslations 自体が未対応で到達できないため未検証。",
+  "status": "unverified",
+  "source": "https://docs.python.org/ja/3.15/library/gettext.html",
+  "returns": "str"
+ },
+ {
+  "name": "gettext.GNUTranslations.npgettext",
+  "category": "国際化",
+  "syntax": "GNUTranslations.npgettext(context, singular, plural, n)",
+  "description": "文脈付きで単複を翻訳する。",
+  "example": "t.npgettext('menu', 'one', 'many', 2)",
+  "caution": "GNUTranslations 自体が未対応で到達できないため未検証。",
+  "status": "unverified",
+  "source": "https://docs.python.org/ja/3.15/library/gettext.html",
+  "returns": "str"
+ },
+ {
+  "name": "gettext.GNUTranslations.pgettext",
+  "category": "国際化",
+  "syntax": "GNUTranslations.pgettext(context, message)",
+  "description": "文脈付きで翻訳する。",
+  "example": "t.pgettext('menu', 'File')",
+  "caution": "GNUTranslations 自体が未対応で到達できないため未検証。",
+  "status": "unverified",
+  "source": "https://docs.python.org/ja/3.15/library/gettext.html",
+  "returns": "str"
+ },
+ {
+  "name": "gettext.NullTranslations",
+  "category": "国際化",
+  "syntax": "class NullTranslations(fp=None)",
+  "description": "翻訳しない翻訳クラス。gettext は原文をそのまま返し、ngettext は n の規則で単複を選ぶ。",
+  "example": "import gettext\nt = gettext.NullTranslations()\nprint(t.gettext('hi'), t.ngettext('one', 'many', 2))",
+  "caution": "",
+  "status": "supported",
+  "source": "https://docs.python.org/ja/3.15/library/gettext.html",
+  "returns": "クラス"
+ },
+ {
+  "name": "gettext.NullTranslations._parse",
+  "category": "国際化",
+  "syntax": "NullTranslations._parse(fp)",
+  "description": "内部メソッド。NullTranslations では何もしない（カタログ情報を既定値で初期化する）。",
+  "example": "import gettext\ngettext.NullTranslations()._parse(None)",
+  "caution": "内部実装の詳細は再現範囲外。",
+  "status": "supported",
+  "source": "https://docs.python.org/ja/3.15/library/gettext.html",
+  "returns": "None"
+ },
+ {
+  "name": "gettext.NullTranslations.add_fallback",
+  "category": "国際化",
+  "syntax": "NullTranslations.add_fallback(fallback)",
+  "description": "フォールバック先の翻訳オブジェクトを登録する。",
+  "example": "import gettext\nt = gettext.NullTranslations()\nt.add_fallback(gettext.NullTranslations())",
+  "caution": "",
+  "status": "supported",
+  "source": "https://docs.python.org/ja/3.15/library/gettext.html",
+  "returns": "None"
+ },
+ {
+  "name": "gettext.NullTranslations.charset",
+  "category": "国際化",
+  "syntax": "NullTranslations.charset()",
+  "description": "カタログの文字セットを返す（NullTranslations では None）。",
+  "example": "import gettext\nprint(gettext.NullTranslations().charset())",
+  "caution": "",
+  "status": "supported",
+  "source": "https://docs.python.org/ja/3.15/library/gettext.html",
+  "returns": "str または None"
+ },
+ {
+  "name": "gettext.NullTranslations.gettext",
+  "category": "国際化",
+  "syntax": "NullTranslations.gettext(message)",
+  "description": "原文をそのまま返す（fallback があればそちらに委ねる）。",
+  "example": "import gettext\nprint(gettext.NullTranslations().gettext('hi'))",
+  "caution": "",
+  "status": "supported",
+  "source": "https://docs.python.org/ja/3.15/library/gettext.html",
+  "returns": "str"
+ },
+ {
+  "name": "gettext.NullTranslations.info",
+  "category": "国際化",
+  "syntax": "NullTranslations.info()",
+  "description": "カタログのメタ情報を辞書で返す（NullTranslations では空）。",
+  "example": "import gettext\nprint(gettext.NullTranslations().info())",
+  "caution": "",
+  "status": "supported",
+  "source": "https://docs.python.org/ja/3.15/library/gettext.html",
+  "returns": "dict"
+ },
+ {
+  "name": "gettext.NullTranslations.install",
+  "category": "国際化",
+  "syntax": "NullTranslations.install(names=None)",
+  "description": "この翻訳オブジェクトの gettext を builtins に組み込む。",
+  "example": "import gettext\ngettext.NullTranslations().install()",
+  "caution": "builtins への組み込みを再現できないため未検証。",
+  "status": "unverified",
+  "source": "https://docs.python.org/ja/3.15/library/gettext.html",
+  "returns": "None"
+ },
+ {
+  "name": "gettext.NullTranslations.ngettext",
+  "category": "国際化",
+  "syntax": "NullTranslations.ngettext(singular, plural, n)",
+  "description": "n == 1 のとき単数形、それ以外は複数形を返す。",
+  "example": "import gettext\nprint(gettext.NullTranslations().ngettext('one', 'many', 1))",
+  "caution": "",
+  "status": "supported",
+  "source": "https://docs.python.org/ja/3.15/library/gettext.html",
+  "returns": "str"
+ },
+ {
+  "name": "gettext.NullTranslations.npgettext",
+  "category": "国際化",
+  "syntax": "NullTranslations.npgettext(context, singular, plural, n)",
+  "description": "n の規則で単複を選んで返す。",
+  "example": "import gettext\nprint(gettext.NullTranslations().npgettext('menu', 'one', 'many', 2))",
+  "caution": "",
+  "status": "supported",
+  "source": "https://docs.python.org/ja/3.15/library/gettext.html",
+  "returns": "str"
+ },
+ {
+  "name": "gettext.NullTranslations.pgettext",
+  "category": "国際化",
+  "syntax": "NullTranslations.pgettext(context, message)",
+  "description": "原文をそのまま返す。",
+  "example": "import gettext\nprint(gettext.NullTranslations().pgettext('menu', 'File'))",
+  "caution": "",
+  "status": "supported",
+  "source": "https://docs.python.org/ja/3.15/library/gettext.html",
+  "returns": "str"
+ },
+ {
+  "name": "gettext.bindtextdomain",
+  "category": "国際化",
+  "syntax": "bindtextdomain(domain, localedir=None)",
+  "description": "ドメインとカタログ探索ディレクトリを結び付け、その値を返す。",
+  "example": "import gettext\nprint(gettext.bindtextdomain('app', '/tmp/loc'))",
+  "caution": "localedir を省略した場合の既定値はプラットフォーム依存のため未確定値になる。",
+  "status": "supported",
+  "source": "https://docs.python.org/ja/3.15/library/gettext.html",
+  "returns": "str"
+ },
+ {
+  "name": "gettext.dgettext",
+  "category": "国際化",
+  "syntax": "dgettext(domain, message)",
+  "description": "ドメインを指定して翻訳する。カタログが無い状態では原文を返す。",
+  "example": "import gettext\nprint(gettext.dgettext('app', 'hello'))",
+  "caution": "",
+  "status": "supported",
+  "source": "https://docs.python.org/ja/3.15/library/gettext.html",
+  "returns": "str"
+ },
+ {
+  "name": "gettext.dngettext",
+  "category": "国際化",
+  "syntax": "dngettext(domain, singular, plural, n)",
+  "description": "ドメイン指定版の ngettext。",
+  "example": "import gettext\nprint(gettext.dngettext('app', 'one', 'many', 1))",
+  "caution": "",
+  "status": "supported",
+  "source": "https://docs.python.org/ja/3.15/library/gettext.html",
+  "returns": "str"
+ },
+ {
+  "name": "gettext.dnpgettext",
+  "category": "国際化",
+  "syntax": "dnpgettext(domain, context, singular, plural, n)",
+  "description": "ドメイン＋文脈指定版の npgettext。",
+  "example": "import gettext\nprint(gettext.dnpgettext('app', 'menu', 'one', 'many', 1))",
+  "caution": "",
+  "status": "supported",
+  "source": "https://docs.python.org/ja/3.15/library/gettext.html",
+  "returns": "str"
+ },
+ {
+  "name": "gettext.dpgettext",
+  "category": "国際化",
+  "syntax": "dpgettext(domain, context, message)",
+  "description": "ドメイン＋文脈指定版の pgettext。",
+  "example": "import gettext\nprint(gettext.dpgettext('app', 'menu', 'File'))",
+  "caution": "",
+  "status": "supported",
+  "source": "https://docs.python.org/ja/3.15/library/gettext.html",
+  "returns": "str"
+ },
+ {
+  "name": "gettext.find",
+  "category": "国際化",
+  "syntax": "find(domain, localedir=None, languages=None, all=False)",
+  "description": "カタログファイル（.mo）のパスを探す。",
+  "example": "import gettext\ngettext.find('app')",
+  "caution": "ファイルシステムの探索に依存するため未検証。",
+  "status": "unverified",
+  "source": "https://docs.python.org/ja/3.15/library/gettext.html",
+  "returns": "str または None（list の場合もある）"
+ },
+ {
+  "name": "gettext.gettext",
+  "category": "国際化",
+  "syntax": "gettext(message)",
+  "description": "現在のドメインでメッセージを翻訳する。カタログが無い状態では原文をそのまま返す（恒等）。",
+  "example": "import gettext\nprint(gettext.gettext('hello'))",
+  "caution": "この環境では翻訳カタログを読み込めないため、常に原文が返る。",
+  "status": "supported",
+  "source": "https://docs.python.org/ja/3.15/library/gettext.html",
+  "returns": "str"
+ },
+ {
+  "name": "gettext.install",
+  "category": "国際化",
+  "syntax": "install(domain, localedir=None, codeset=None, names=None)",
+  "description": "翻訳関数を builtins に組み込む。",
+  "example": "import gettext\ngettext.install('app')",
+  "caution": "builtins への組み込みをこの環境で再現できないため未検証。",
+  "status": "unverified",
+  "source": "https://docs.python.org/ja/3.15/library/gettext.html",
+  "returns": "None"
+ },
+ {
+  "name": "gettext.ngettext",
+  "category": "国際化",
+  "syntax": "ngettext(singular, plural, n)",
+  "description": "単複に応じたメッセージを選ぶ。カタログが無い状態では n == 1 のとき単数形、それ以外は複数形を返す。",
+  "example": "import gettext\nprint(gettext.ngettext('one', 'many', 2))",
+  "caution": "",
+  "status": "supported",
+  "source": "https://docs.python.org/ja/3.15/library/gettext.html",
+  "returns": "str"
+ },
+ {
+  "name": "gettext.npgettext",
+  "category": "国際化",
+  "syntax": "npgettext(context, singular, plural, n)",
+  "description": "文脈付きの ngettext。カタログが無い状態では n の規則で選ぶ。",
+  "example": "import gettext\nprint(gettext.npgettext('menu', 'one', 'many', 3))",
+  "caution": "",
+  "status": "supported",
+  "source": "https://docs.python.org/ja/3.15/library/gettext.html",
+  "returns": "str"
+ },
+ {
+  "name": "gettext.pgettext",
+  "category": "国際化",
+  "syntax": "pgettext(context, message)",
+  "description": "文脈付きで翻訳する。カタログが無い状態では原文を返す。",
+  "example": "import gettext\nprint(gettext.pgettext('menu', 'File'))",
+  "caution": "",
+  "status": "supported",
+  "source": "https://docs.python.org/ja/3.15/library/gettext.html",
+  "returns": "str"
+ },
+ {
+  "name": "gettext.textdomain",
+  "category": "国際化",
+  "syntax": "textdomain(domain=None)",
+  "description": "現在のデフォルトドメインを取得・設定する。既定は 'messages'。",
+  "example": "import gettext\nprint(gettext.textdomain(), gettext.textdomain('app'))",
+  "caution": "",
+  "status": "supported",
+  "source": "https://docs.python.org/ja/3.15/library/gettext.html",
+  "returns": "str"
+ },
+ {
+  "name": "gettext.translation",
+  "category": "国際化",
+  "syntax": "translation(domain, localedir=None, languages=None, class_=None, fallback=False, codeset=None)",
+  "description": "カタログを読み込んで翻訳オブジェクトを返す。fallback=True でカタログが無ければ NullTranslations を返す。",
+  "example": "import gettext\nt = gettext.translation('app', fallback=True)\nprint(t.gettext('hello'))",
+  "caution": "カタログの読み込み自体はファイル前提で未対応のため未検証。fallback=True の NullTranslations 返却のみ再現する。",
+  "status": "unverified",
+  "source": "https://docs.python.org/ja/3.15/library/gettext.html",
+  "returns": "Translations オブジェクト"
+ }
+];
