@@ -1,0 +1,7 @@
+r <- tryCatch(rank(NULL), error = function(e) paste("ERR:", conditionMessage(e)))
+print(r)
+cat("rank NULL len:", length(r), "\n")
+r2 <- tryCatch(xtfrm(NULL), error = function(e) paste("ERR:", conditionMessage(e)))
+print(r2)
+r3 <- tryCatch(sort(NULL, partial = 1), error = function(e) paste("ERR:", conditionMessage(e)))
+print(r3)

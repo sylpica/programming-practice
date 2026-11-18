@@ -1,0 +1,7 @@
+cat("sort NULL is.null:", is.null(sort(NULL)), "\n")
+cat("sort.int NULL is.null:", is.null(sort.int(NULL)), "\n")
+cat("rev NULL is.null:", is.null(rev(NULL)), "\n")
+cat("order NULL len:", length(order(NULL)), "is.null:", is.null(order(NULL)), "\n")
+cat("rank NULL len:", length(rank(NULL)), "is.null:", is.null(rank(NULL)), "\n")
+cat("sort na.last=TRUE on NULL:", is.null(sort(NULL, na.last = TRUE)), "\n")
+cat("sort decreasing NULL:", is.null(sort(NULL, decreasing = TRUE)), "\n")

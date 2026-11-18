@@ -1,0 +1,18 @@
+loader loaded: 11 missing: 0 failed: 0
+merged counts: {"total":4948,"supported":321,"unsupported":4627,"unverified":0} problems: 0
+advanced supported: 288
+not in previous 274 ledger: ["std::vector","std::pair","std::string::const_iterator","std::string::const_reverse_iterator","std::string::iterator","std::string::reverse_iterator","std::array::const_iterator","std::array::const_reverse_iterator","std::array::iterator","std::array::reverse_iterator","std::vector::const_iterator","std::vector::const_reverse_iterator","std::vector::iterator","std::vector::reverse_iterator"]
+FAIL std::forward -> 未対応:この構文は説明に対応していません：明示的なテンプレート引数（forward<...>）は未対応です
+FAIL std::pair -> 未対応:auto の型推論はコンテナ・イテレータ・pair の初期化子だけ対応します（スカラーは未対応です）
+FAIL std::inner_product -> エラー:この関数は説明に対応していません：b.begin
+FAIL std::partial_sum -> エラー:この関数は説明に対応していません：out.begin
+FAIL std::adjacent_difference -> エラー:この関数は説明に対応していません：out.begin
+FAIL std::mismatch -> エラー:この関数は説明に対応していません：b.begin
+FAIL std::equal -> エラー:この関数は説明に対応していません：b.begin
+FAIL std::copy -> エラー:この関数は説明に対応していません：out.begin
+FAIL std::copy_n -> エラー:この関数は説明に対応していません：out.begin
+FAIL std::lexicographical_compare -> エラー:この関数は説明に対応していません：b.begin
+RESULT supported 288: tier1 249, tier2 29, fail 10
+B8 9件: ["std::forward","std::inner_product","std::partial_sum","std::adjacent_difference","std::mismatch","std::equal","std::copy","std::copy_n","std::lexicographical_compare"]
+今回失敗のうち B8 に無いもの（新規失敗候補）: ["std::pair"]
+B8 9件のうち今回失敗に無いもの: []
