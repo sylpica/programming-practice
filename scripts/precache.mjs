@@ -28,7 +28,7 @@ function walk(dir) {
 //   読み込み契約）。sw.js は生成された遅延集合への所属で判定し、分類の
 //   正本はこの生成器に一本化する。
 const STATIC_IMPORT_RE =
-  /(?:import|export)\s+(?:[^"']*?\s+from\s+)?["']([^"']+)["']/g;
+  /(?:import|export)\s*(?:[^"';]*?\bfrom\s*)?["']([^"']+)["']/g;
 const LITERAL_DYNAMIC_IMPORT_RE = /import\s*\(\s*["']([^"']+)["']\s*\)/g;
 function importTargets(file) {
   const src = fs.readFileSync(path.join(root, file), "utf8");
