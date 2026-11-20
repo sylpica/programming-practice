@@ -32,8 +32,8 @@ export const TEMPLATES = [
   },
   {
     id: 'tpl-strings', title: '文字列の加工', level: '基礎', file: 'tpl_strings.py',
-    code: 'name = "  Yuya Kohno  "\nprint(name.strip())\nparts = "2026-11-10".split("-")\nprint(parts)\nprint("/".join(parts))\nprint("Python".replace("Py", "My"))',
-    expected: 'Yuya Kohno\n[\'2026\', \'11\', \'10\']\n2026/11/10\nMython',
+    code: 'name = "  Taro Yamada  "\nprint(name.strip())\nparts = "2026-11-10".split("-")\nprint(parts)\nprint("/".join(parts))\nprint("Python".replace("Py", "My"))',
+    expected: 'Taro Yamada\n[\'2026\', \'11\', \'10\']\n2026/11/10\nMython',
     explain: '文字列のメソッドで、空白の除去（strip）、分割（split）、結合（join）、置換（replace）ができます。文字列はイミュータブル（変更不可能）なので、メソッドは元の文字列を書き換えず、結果を新しい値として返します。返ってくる型はメソッドによって異なり、strip・join・replace は新しい文字列、split は分割した文字列のリストを返します。'
   },
   {

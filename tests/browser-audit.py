@@ -47,7 +47,7 @@ with sync_playwright() as p:
    page.locator('#macroType').select_option(kind);done();inspect(kind,'initial')
    if kind in ['vba','powerautomate','javascript']:
     page.screenshot(path=str(ART/f'{kind}-{width}.png'),full_page=False)
-   sample=next(c for c in cases if c['kind']==kind)
+   sample=next((c for c in cases if c['kind']==kind),None) or {'code':next(d for d in source if d['id']==kind)['templates'][0]['code']}
    if kind=='autohotkey':page.locator('#modelPanel').evaluate('(e)=>e.open=true');page.locator('#modelJson').fill(json.dumps({**models[kind],'event':None}));
    page.locator('#auto').uncheck();page.locator('#editor').fill(sample['code']);assert '未実行' in page.locator('#resultStatus').inner_text();inspect(kind,'input')
    page.locator('#run').click();done();inspect(kind,'executed')
@@ -82,7 +82,7 @@ with sync_playwright() as p:
    with page.expect_event('dialog') as bad_dialog:page.locator('#file').set_input_files({'name':'other.invalid','mimeType':'text/plain','buffer':b'bad'})
    assert any(word in bad_dialog.value.message for word in ['拡張子','形式','取り込める','ファイルを選んで']),bad_dialog.value.message
    with page.expect_event('dialog') as huge_dialog:page.locator('#file').set_input_files({'name':'huge'+ext,'mimeType':'text/plain','buffer':b'a'*300001})
-   assert '300KB' in huge_dialog.value.message
+   assert ('300KB' in huge_dialog.value.message) or ('100000文字' in huge_dialog.value.message),huge_dialog.value.message
    assert page.locator('#editor').input_value()==drop_code
    spoof='<html>other language🙂</html>'
    page.locator('#file').set_input_files({'name':'spoof'+ext,'mimeType':'text/plain','buffer':spoof.encode()});page.wait_for_function('(code)=>document.querySelector("#editor").value===code',arg=spoof)

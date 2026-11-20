@@ -25,7 +25,7 @@ with sync_playwright() as p:
     assert page.locator('.right-column .model-panel').count()==0
    page.locator('#template').select_option('');assert not explanation.is_visible()
    # Blank lines push the selected statement far outside the editor viewport.
-   sample=next(x['code'] for x in fixtures if x['kind']==kind)
+   sample=next((x['code'] for x in fixtures if x['kind']==kind), d['templates'][0]['code'])
    if kind=='cloudformation':sample=d['templates'][0]['code']
    if kind=='autohotkey':
     if page.locator('#modelPanel').get_attribute('open') is None:page.locator('#modelPanel summary').click()

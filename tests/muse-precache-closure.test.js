@@ -50,7 +50,7 @@ function walkJs(dir) {
 // 動的 import）を再計算する。
 function bootClosure() {
   const STATIC_RE =
-    /(?:import|export)\s+(?:[^"']*?\s+from\s+)?["']([^"']+)["']/g;
+    /(?:import|export)\s*(?:[^"';]*?\bfrom\s*)?["']([^"']+)["']/g;
   const DYN_RE = /import\s*\(\s*["']([^"']+)["']\s*\)/g;
   const seen = new Set();
   const queue = ["js/app.js", "js/worker.js"];
